@@ -1,14 +1,5 @@
 name: CI
-on:
-
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-     - main
-
-  # schedule:
-  #   - cron: '0 2 * * *' # run at 2 AM UTC
+on: [push]
 
 jobs:
 
@@ -31,6 +22,7 @@ jobs:
         run: |
           git config --global advice.detachedHead false
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
+          mkdir $HOME/src
 
       ################################################################
       # EMSCRIPTEN ITSELF
@@ -62,7 +54,7 @@ jobs:
           python -m pip install git+https://github.com/DerThorsten/conda-build.git@emscripten
           python -m pip install git+https://github.com/DerThorsten/conda.git@emscripten
           python -m pip install git+https://github.com/DerThorsten/boa.git@emscripten
-          git clone --branch emscripten --depth 1 https://github.com/DerThorsten/conda-forge-pinning-feedstock.git  /src/conda-forge-pinning-feedstock
-          cp /src/conda-forge-pinning-feedstock/recipe/conda_build_config.yaml $HOME
+          git clone --branch emscripten --depth 1 https://github.com/DerThorsten/conda-forge-pinning-feedstock.git  $HOME/src/conda-forge-pinning-feedstock
+          cp $HOME/src/conda-forge-pinning-feedstock/recipe/conda_build_config.yaml $HOME
 
 
