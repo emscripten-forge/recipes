@@ -1,6 +1,11 @@
 name: CI
 on: [push]
 
+
+
+
+
+
 jobs:
 
   emscripten_wasm:
@@ -49,7 +54,7 @@ jobs:
       ################################################################   
       - name: "install custom non-master dependencies"
         run: |
-          micromamba actiavet ci_env
+          micromamba activate ci_env
           python -m pip install git+https://github.com/DerThorsten/conda-build.git@emscripten
           python -m pip install git+https://github.com/DerThorsten/conda.git@emscripten
           python -m pip install git+https://github.com/DerThorsten/boa.git@emscripten
@@ -57,3 +62,16 @@ jobs:
           cp $HOME/src/conda-forge-pinning-feedstock/recipe/conda_build_config.yaml $HOME
 
 
+      ################################################################
+      # build things
+      ################################################################   
+      - name: "install custom non-master dependencies"
+        run: |
+          echo "${HOME}/src/emsdk/" >> $PATH
+          echo "${HOME}/src/emsdk/upstream/emscripten/" >> $PATH
+          micromamba activate ci_env
+
+          boa build  $GITHUB_WORKSPACE/recipes/emscripten_emscripten-32  
+          boa build  $GITHUB_WORKSPACE/recipes/python 
+          boa build  $GITHUB_WORKSPACE/recipes/python   --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/pybind11 --target-platform=emscripten-32
