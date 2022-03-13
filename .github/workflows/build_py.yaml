@@ -1,0 +1,60 @@
+name: CI
+on:
+
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+     - main
+
+  schedule:
+    - cron: '0 2 * * *' # run at 2 AM UTC
+
+jobs:
+
+  emscripten_wasm:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        emsdk_ver: ["2.0.27","2.0.32", "latest"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      ################################################################
+      # EMSCRIPTEN ITSELF
+      ################################################################
+      - name: install emsdk
+        shell: bash -l {0}
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git /opt/emsdk
+          cd /opt/emsdk 
+           
+          ./emsdk install ${{matrix.emsdk_ver}}
+           
+      ################################################################
+      # MAMBA
+      ################################################################
+      - name: install mamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: ci_env.yml
+          environment-name: ci-env
+
+
+
+
+
+      ################################################################
+      # install custom things
+      ################################################################   
+
+      - name: "install things which exist only at DerThorsten github packages"
+        run: |
+          pip install git+https://github.com/DerThorsten/conda-build.git@emscripten
+          pip install git+https://github.com/DerThorsten/conda.git@emscripten
+          pip install git+https://github.com/DerThorsten/boa.git@emscripten
+
+
+      
