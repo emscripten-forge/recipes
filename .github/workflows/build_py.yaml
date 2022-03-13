@@ -38,8 +38,8 @@ jobs:
       - name: install emsdk
         shell: bash -l {0}
         run: |
-          git clone https://github.com/emscripten-core/emsdk.git /opt/emsdk
-          cd /opt/emsdk 
+          git clone https://github.com/emscripten-core/emsdk.git /src/emsdk
+          cd /src/emsdk 
            
           ./emsdk install ${{matrix.emsdk_ver}}
            
@@ -58,10 +58,11 @@ jobs:
       ################################################################   
       - name: "install custom non-master dependencies"
         run: |
+          micromamba actiavet ci_env
           python -m pip install git+https://github.com/DerThorsten/conda-build.git@emscripten
           python -m pip install git+https://github.com/DerThorsten/conda.git@emscripten
           python -m pip install git+https://github.com/DerThorsten/boa.git@emscripten
-          git clone --branch emscripten --depth 1 https://github.com/DerThorsten/conda-forge-pinning-feedstock.git  /src
+          git clone --branch emscripten --depth 1 https://github.com/DerThorsten/conda-forge-pinning-feedstock.git  /src/conda-forge-pinning-feedstock
           cp /src/conda-forge-pinning-feedstock/recipe/conda_build_config.yaml $HOME
 
 
