@@ -22,6 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+
+      ################################################################
+      # CONFIG
+      ################################################################
+      - name: global config
+        shell: bash -l {0}
+        run: |
+          git config --global advice.detachedHead false
+          cp .github/workflows/condarc $HOME
+          
       ################################################################
       # EMSCRIPTEN ITSELF
       ################################################################
@@ -43,18 +53,15 @@ jobs:
           environment-name: ci-env
 
 
-
-
-
       ################################################################
-      # install custom things
+      # install / clone custom non-master things
       ################################################################   
-
       - name: "install things which exist only at DerThorsten github packages"
         run: |
           pip install git+https://github.com/DerThorsten/conda-build.git@emscripten
           pip install git+https://github.com/DerThorsten/conda.git@emscripten
           pip install git+https://github.com/DerThorsten/boa.git@emscripten
+          git clone --branch emscripten --depth 1 https://github.com/DerThorsten/conda-forge-pinning-feedstock.git  /src
+          cp /src/conda-forge-pinning-feedstock/recipe/conda_build_config.yaml $HOME
 
 
-      
