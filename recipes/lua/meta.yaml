@@ -1,0 +1,61 @@
+{% set version = "5.4.4" %}
+
+package:
+  name: lua
+  version: {{ version }}
+source:
+  - url: http://www.lua.org/ftp/lua-{{ version }}.tar.gz
+    sha256: 164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61
+    patches:
+      # Enables Lua to look for packages on a relative path
+      - luaconf.patch
+      # Build as a shared library
+      - liblua.so.patch
+      # Enables readline on linux
+      - Makefile.patch
+  - path: CMakeLists.txt
+
+build:
+  number: 0
+  detect_binary_files_with_prefix: true
+  run_exports:
+    # http://www.lua.org/versions.html#numbering
+    - {{ pin_subpackage('lua', max_pin='x.x') }}
+
+requirements:
+  build:
+    - {{ compiler('c') }}  # [not win]
+    - vs2017_win-64  # [win64]
+    - vs2017_win-32  # [win32]
+    - ninja          # [win]
+    - cmake          # [win]
+    - sed            # [unix]
+    - make           # [unix]
+  host:
+    - readline  # [not win]
+    - ncurses   # [not win]
+  run:
+    - readline  # [not win]
+    - ncurses   # [not win]
+
+test:
+  commands:
+    - test -f $PREFIX/lib/liblua$SHLIB_EXT  # [unix]
+    - if not exist %LIBRARY_INC%\\lua.h exit 1  # [win]
+    - if not exist %LIBRARY_BIN%\\lua.dll exit 1  # [win]
+    - if not exist %LIBRARY_BIN%\\lua.exe exit 1  # [win]
+    - if not exist %LIBRARY_BIN%\\lua.exe exit 1  # [win]
+    - lua -v
+    - lua -e "print(package.path)"
+
+about:
+  home: http://www.lua.org/
+  summary: Lua is a powerful, fast, lightweight, embeddable scripting language
+  license: MIT
+  license_file: doc/readme.html
+
+extra:
+  recipe-maintainers:
+    - alexbw
+    - seanyen
+    - izahn
