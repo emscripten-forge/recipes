@@ -11,7 +11,7 @@ jobs:
   emscripten_wasm:
     runs-on: ubuntu-latest
     env:
-      EMSDK_DIR: /src/emsdk
+      CONDA_EMSDK_DIR: /src/emsdk
     strategy:
       fail-fast: false
       matrix:
@@ -38,7 +38,7 @@ jobs:
         shell: bash -l {0}
         run: |
           sudo git clone https://github.com/emscripten-core/emsdk.git /src/emsdk
-          pushd $EMSDK_DIR
+          pushd $CONDA_EMSDK_DIR
           sudo ./emsdk install ${{matrix.emsdk_ver}}
           popd
       ################################################################
@@ -73,12 +73,12 @@ jobs:
         shell: bash -l {0}
         run: |
           micromamba activate ci-env
-          echo "EMSDK_DIR=" $EMSDK_DIR
-          pushd $EMSDK_DIR
+          echo "CONDA_EMSDK_DIR=" $CONDA_EMSDK_DIR
+          pushd $CONDA_EMSDK_DIR
           sudo ./emsdk activate ${{matrix.emsdk_ver}}
-          source $EMSDK_DIR/emsdk_env.sh
+          source $CONDA_EMSDK_DIR/emsdk_env.sh
           popd
-          echo "EMSDK_DIR=" $EMSDK_DIR
+          echo "CONDA_EMSDK_DIR=" $CONDA_EMSDK_DIR
           boa build  $GITHUB_WORKSPACE/recipes/emscripten_emscripten-32 
           boa build  $GITHUB_WORKSPACE/recipes/bitfurnace
           boa build  $GITHUB_WORKSPACE/recipes/libffi     --target-platform=emscripten-32

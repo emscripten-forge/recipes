@@ -1,10 +1,10 @@
-echo "ACTIVATE ALIASES FRESH!!! EMSDK_DIR===>" $EMSDK_DIR 
+echo "ACTIVATE ALIASES FRESH!!! CONDA_EMSDK_DIR===>" $CONDA_EMSDK_DIR 
 
 unset PYTHON
 
 
 
-pushd $EMSDK_DIR
+pushd $CONDA_EMSDK_DIR
 ./emsdk install  3.1.2
 ./emsdk activate 3.1.2
 popd
