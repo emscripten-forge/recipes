@@ -1,6 +1,6 @@
 echo "ACTIVATE ALIASES FRESH!!! CONDA_EMSDK_DIR===>" $CONDA_EMSDK_DIR 
 
-unset PYTHON
+# unset PYTHON
 
 
 
