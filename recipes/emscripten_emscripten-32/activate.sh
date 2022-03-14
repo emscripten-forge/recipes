@@ -1,6 +1,8 @@
-echo "ACTIVATE ALIASES FRESH!!!"
+echo "ACTIVATE ALIASES FRESH!!! EMSDK_DIR===>" $EMSDK_DIR 
 
 unset PYTHON
+
+
 
 pushd $EMSDK_DIR
 ./emsdk install  3.1.2
