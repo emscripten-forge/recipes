@@ -29,7 +29,7 @@ jobs:
         run: |
           git config --global advice.detachedHead false
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
-          mkdir $HOME/src
+          mkdir -p $HOME/src/emsdk
 
       ################################################################
       # EMSCRIPTEN ITSELF
@@ -37,8 +37,8 @@ jobs:
       - name: install emsdk
         shell: bash -l {0}
         run: |
-          git clone https://github.com/emscripten-core/emsdk.git /src/emsdk
-          pushd $CONDA_EMSDK_DIR
+          git clone https://github.com/emscripten-core/emsdk.git $HOME/src/emsdk
+          pushd $HOME/src/emsdk
           ./emsdk install ${{matrix.emsdk_ver}}
           popd
       ################################################################
@@ -72,6 +72,7 @@ jobs:
       - name: "build things"
         shell: bash -l {0}
         run: |
+          export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
           echo "CONDA_EMSDK_DIR=" $CONDA_EMSDK_DIR
           pushd $CONDA_EMSDK_DIR
