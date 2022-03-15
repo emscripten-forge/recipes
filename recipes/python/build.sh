@@ -28,7 +28,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
     # export PYTHON=${BUILD_PREFIX}/bin/python3.11
 
     # make zlib available (todo check if this makes sense in the conda context)
-    # embuilder build zlib
+    embuilder build zlib
 
 
 
