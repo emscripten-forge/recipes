@@ -11,6 +11,7 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 cmake ${CMAKE_ARGS} ..              \
     -GNinja                         \
     -DCMAKE_BUILD_TYPE=Release      \
+    -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
 
