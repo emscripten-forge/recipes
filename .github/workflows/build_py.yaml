@@ -48,7 +48,7 @@ jobs:
       - name: install mamba
         uses: mamba-org/provision-with-micromamba@main
         with:
-          environment-file: .github/workflows/ci_env.yml
+          environment-file: ci_env.yml
           environment-name: ci-env
 
       ################################################################
@@ -80,66 +80,45 @@ jobs:
           micromamba activate ci-env
           boa build  $GITHUB_WORKSPACE/recipes/emscripten_emscripten-32 
           boa build  $GITHUB_WORKSPACE/recipes/bitfurnace
-          boa build  $GITHUB_WORKSPACE/recipes/zlib       --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/zlib     --target-platform=emscripten-32
           boa build  $GITHUB_WORKSPACE/recipes/sqlite     --target-platform=emscripten-32
           boa build  $GITHUB_WORKSPACE/recipes/libffi     --target-platform=emscripten-32
           boa build  $GITHUB_WORKSPACE/recipes/bzip2      --target-platform=emscripten-32
           boa build  $GITHUB_WORKSPACE/recipes/python 
           boa build  $GITHUB_WORKSPACE/recipes/python     --target-platform=emscripten-32
           boa build  $GITHUB_WORKSPACE/recipes/pybind11   --target-platform=emscripten-32
-
+          boa build  $GITHUB_WORKSPACE/recipes/embind11   --target-platform=emscripten-32
 
 
       ################################################################
       # create env from above build packages
       ################################################################  
-      - name: "build things"
+      - name: "create emscripten-32 env"
         shell: bash -l {0}
         run: |
-          micromamba create -n emforgetest  --platform=emscripten-32 python pybind11 six parso
+          micromamba create -n emforgetest  --platform=emscripten-32 python pybind11 embind11 six parso
 
 
       ################################################################
-      # use env to build smth
+      # pack things
       ################################################################  
-      - name: "build things"
+      - name: "Pack things"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
           micromamba activate ci-env
-          pushd $CONDA_EMSDK_DIR
-          ./emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_EMSDK_DIR/emsdk_env.sh
-          popd
-          #
-          git clone --branch main --depth 1 https://github.com/DerThorsten/embind11 $HOME/src/embind11
-          cd $HOME/src/embind11
-          mkdir bld
-          cd  bld
-          #
-          export PREFIX=$HOME/micromamba/envs/emforgetest
-          export CMAKE_PREFIX_PATH=$PREFIX 
-          export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
-          #
+          mkdir -p $HOME/serve
+          cd $HOME/serve
           emboa pack python core $HOME/micromamba/envs/emforgetest --version=3.11
-          #
-          emcmake cmake  \
-              -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
-              -DCMAKE_VERBOSE_MAKEFILE=ON \
-              -DCMAKE_FIND_DEBUG_MODE=ON \
-              -DCMAKE_PROJECT_INCLUDE=overwriteProp.cmake \
-              -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-              ..
-
-          make -j12
-          #
           emboa pack python pure-so \
               $HOME/micromamba/envs/emforgetest \
-              embind11.so \
-              embind11 \
-              --version=3.11
-          #
+              $HOME/micromamba/envs/emforgetest/lib/python3.11/site-packages/embind11_side.so \
+              embind11_side
+          cp $HOME/micromamba/envs/emforgetest/bin/embed.js .
+          cp $HOME/micromamba/envs/emforgetest/bin/embed.wasm .
+          cp $HOME/micromamba/envs/emforgetest/bin/embind11.html .
+
 
 
 
@@ -147,4 +126,4 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
           branch: gh-pages # The branch the action should deploy to.
-          folder: /home/runner/src/embind11/bld
+          folder: /home/runner/serve
