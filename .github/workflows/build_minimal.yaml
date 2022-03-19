@@ -67,8 +67,8 @@ jobs:
       - name: pull already uploaded packages
         shell: bash -l {0}
         run: |
-          python ./pull_packages.py ${{ env.GITHUB_OWNER }} ${{ env.TARGET_PLATFORM }} ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
-
+          python ./pull_packages.py ${{ env.GITHUB_OWNER }} linux-64      ${{ secrets.GITHUB_TOKEN }}
+          python ./pull_packages.py ${{ env.GITHUB_OWNER }} emscripten-32 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
 
       ################################################################
       # EMSCRIPTEN ITSELF
@@ -120,7 +120,8 @@ jobs:
       - name: create_oras_push
         shell: bash -l {0}
         run: |
-          python ./upload_packages.py ${{ env.GITHUB_OWNER }} ${{ env.TARGET_PLATFORM }} ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
+          python ./upload_packages.py ${{ env.GITHUB_OWNER }} linux-64 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
+          python ./upload_packages.py ${{ env.GITHUB_OWNER }} emscripten-32 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
         if: always()
 
 

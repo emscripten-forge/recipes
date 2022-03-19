@@ -40,5 +40,5 @@ with open("packages.json", "r") as read_file:
 packagesList = packages_json["pkgs"][trgt]
 
 # strData = str(data)
-for pkg in packagesList:
+for pkg in packages_json["pkgs"]["trgt"]:
     oras.pull(pkg, "latest", str(path))
