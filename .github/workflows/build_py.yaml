@@ -21,6 +21,14 @@ jobs:
       - uses: actions/checkout@v2
 
       ################################################################
+      # timestamp
+      ################################################################
+      - name: generate cache timestamp
+        id: cache_timestamp
+        shell: bash -l {0}
+        run: echo ::set-output name=timestamp::"$(TZ=UTC date +%F)"
+
+      ################################################################
       # CONFIG
       ################################################################
       - name: global config
@@ -30,17 +38,6 @@ jobs:
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
           cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
           mkdir -p $HOME/src/emsdk
-
-      ################################################################
-      # EMSCRIPTEN ITSELF
-      ################################################################
-      - name: install emsdk
-        shell: bash -l {0}
-        run: |
-          git clone https://github.com/emscripten-core/emsdk.git $HOME/src/emsdk
-          pushd $HOME/src/emsdk
-          ./emsdk install ${{matrix.emsdk_ver}}
-          popd
 
       ################################################################
       # MAMBA
@@ -54,10 +51,32 @@ jobs:
       ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
-      - name: posst env install config
+      - name: post env install config
         shell: bash -l {0}
         run: |
+          mkdir -p $HOME/micromamba/envs/ci-env/conda-bld/emscripten-32
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc_post $HOME/.condarc
+
+      ################################################################
+      # Pull packages
+      ################################################################
+      - name: pull already uploaded packages
+        shell: bash -l {0}
+        run: |
+          python ./pull_packages.py ${{ env.GITHUB_OWNER }} linux-64      ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
+          python ./pull_packages.py ${{ env.GITHUB_OWNER }} emscripten-32 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
+
+
+      ################################################################
+      # EMSCRIPTEN ITSELF
+      ################################################################
+      - name: install emsdk
+        shell: bash -l {0}
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git $HOME/src/emsdk
+          pushd $HOME/src/emsdk
+          ./emsdk install ${{matrix.emsdk_ver}}
+          popd
 
       ################################################################
       # install / clone custom non-master things
@@ -78,16 +97,16 @@ jobs:
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/emscripten_emscripten-32 
-          boa build  $GITHUB_WORKSPACE/recipes/bitfurnace
-          boa build  $GITHUB_WORKSPACE/recipes/zlib     --target-platform=emscripten-32
-          boa build  $GITHUB_WORKSPACE/recipes/sqlite     --target-platform=emscripten-32
-          boa build  $GITHUB_WORKSPACE/recipes/libffi     --target-platform=emscripten-32
-          boa build  $GITHUB_WORKSPACE/recipes/bzip2      --target-platform=emscripten-32
-          boa build  $GITHUB_WORKSPACE/recipes/python 
-          boa build  $GITHUB_WORKSPACE/recipes/python     --target-platform=emscripten-32
-          boa build  $GITHUB_WORKSPACE/recipes/pybind11   --target-platform=emscripten-32
-          boa build  $GITHUB_WORKSPACE/recipes/embind11   --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/emscripten_emscripten-32  --skip-existing  
+          boa build  $GITHUB_WORKSPACE/recipes/bitfurnace                --skip-existing    
+          boa build  $GITHUB_WORKSPACE/recipes/zlib                      --skip-existing  --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/sqlite                    --skip-existing  --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/libffi                    --skip-existing  --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/bzip2                     --skip-existing  --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/python                    --skip-existing        
+          boa build  $GITHUB_WORKSPACE/recipes/python                    --skip-existing  --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/pybind11                  --skip-existing  --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/embind11                  --skip-existing  --target-platform=emscripten-32
 
 
       ################################################################
@@ -119,6 +138,22 @@ jobs:
           cp $HOME/micromamba/envs/emforgetest/bin/embed.wasm .
           cp $HOME/micromamba/envs/emforgetest/bin/embind11.html .
 
+
+      ################################################################
+      # upload packages
+      ################################################################   
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: micromamba_pkgs
+          path: ~/micromamba/envs/ci-env/conda-bld/**/*.tar.bz2 # or path/to/artifact
+
+      - name: create_oras_push
+        shell: bash -l {0}
+        run: |
+          python ./upload_packages.py ${{ env.GITHUB_OWNER }} linux-64 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
+          python ./upload_packages.py ${{ env.GITHUB_OWNER }} emscripten-32 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
+        if: always()
 
 
 
