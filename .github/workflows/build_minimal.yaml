@@ -11,6 +11,8 @@ jobs:
   build_minimal:
     runs-on: ubuntu-latest
     env:
+      TARGET_PLATFORM: emscripten-32
+      GITHUB_OWNER: "emscripten-forge"
       CONDA_EMSDK_DIR: /src/emsdk
     strategy:
       fail-fast: false
@@ -19,6 +21,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+
+      ################################################################
+      # timestamp
+      ################################################################
+      - name: generate cache timestamp
+        id: cache_timestamp
+        shell: bash -l {0}
+        run: echo ::set-output name=timestamp::"$(TZ=UTC date +%F)"
+
 
       ################################################################
       # CONFIG
@@ -32,6 +44,15 @@ jobs:
           mkdir -p $HOME/src/emsdk
 
       ################################################################
+      # MAMBA
+      ################################################################
+      - name: install mamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: ci_env.yml
+          environment-name: ci-env
+
+      ################################################################
       # EMSCRIPTEN ITSELF
       ################################################################
       - name: install emsdk
@@ -41,15 +62,6 @@ jobs:
           pushd $HOME/src/emsdk
           ./emsdk install ${{matrix.emsdk_ver}}
           popd
-
-      ################################################################
-      # MAMBA
-      ################################################################
-      - name: install mamba
-        uses: mamba-org/provision-with-micromamba@main
-        with:
-          environment-file: ci_env.yml
-          environment-name: ci-env
 
       ################################################################
       # POST ENV INSTALL CONFIG
