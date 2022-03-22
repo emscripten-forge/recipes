@@ -12,6 +12,10 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
     add_definitions(-DBZ_DEBUG) # enable extra assertions
 endif()
 
+if(EMSCRIPTEN)
+    add_definitions(-D_FILE_OFFSET_BITS=64)
+endif()
+
 set(BZ2_SOURCES
     blocksort.c
     huffman.c
