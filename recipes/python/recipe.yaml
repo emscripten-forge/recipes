@@ -1,5 +1,6 @@
 context:
-  version: 3.11.0
+  version: 3.10.2
+  build_py_version: '3.10'
 
 package:
   name: python
@@ -9,21 +10,21 @@ package:
 # source:
 
 source:
-  git_url: https://github.com/python/cpython
-  git_rev: 12a2e41e8a276ec3a68f3e5f94b02752185c66fb
+  url: https://www.python.org/ftp/python/{{ version }}/Python-{{ version }}.tgz
+  sha256: 3c0ede893011319f9b0a56b44953a3d52c7abf9657c23fb4bc9ced93b86e9c97
   patches:
-    # - sel(emscripten): patches/0001-call-trampolines-to-handle-fpcast-troubles.patch
-    # - sel(emscripten): patches/0002-dont-test-undecodable-filenames.patch
-    - sel(emscripten): patches/0007-testing.patch
-    # - sel(emscripten): patches/0008-drop-pwd-built-in-module.patch
-    - sel(emscripten): patches/ctypes-dont-deref-function-pointer.patch
-    - sel(emscripten): patches/remove-duplicate-symbols-from-cfield.c.patch
-    # - sel(emscripten): patches/xfail-core-ctypes-tests-that-don-t-work.patch
-    # - sel(emscripten): 0005-add-emscripten-host.patch
-    # - sel(emscripten): 0006-fix-Py_Sigset_Converter.patch
-    # - sel(emscripten): keyboard-interrupt.patch
+    - sel(emscripten): patches/0001-Patch-in-call-trampolines-to-handle-fpcast-troubles.patch
+    - sel(emscripten): patches/0002-add-emscripten-host.patch
+    - sel(emscripten): patches/0003-fix-Py_Sigset_Converter.patch
+    - sel(emscripten): patches/0004-testing.patch
+    - sel(emscripten): patches/0005-Drop-pwd-built-in-module.patch
+    - sel(emscripten): patches/0006-Don-t-dereference-function-pointer.patch
+    - sel(emscripten): patches/0007-Patch-in-keyboard-interrupt-handling.patch
+    - sel(emscripten): patches/0008-Remove-duplicate-symbols-from-cfield.c.patch
+    - sel(emscripten): patches/0009-xfail-core-ctypes-tests-that-don-t-work.patch
+    - sel(emscripten): patches/0010-Fix-_PyImport_LoadDynamicModuleWithSpec-fpcast.patch
 
-# - url: https://github.com/python/cpython/archive/refs/tags/v{{ version }}.tar.gz
+
 
 build:
   number: 0
@@ -35,7 +36,7 @@ build:
 requirements:
   build:
     - sel(unix):          make           
-    - sel(emscripten):    python {{version}}
+    - sel(unix):          python {{build_py_version}}
     - sel(emscripten):    "{{ compiler('c') }}"
   host:
     - bzip2

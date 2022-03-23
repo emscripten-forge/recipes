@@ -27,7 +27,7 @@ if [[ "$target_platform" != emscripten-* ]]; then
                                  -DSQLITE_ENABLE_RTREE=1"
 
     if [[ $target_platform =~ linux.* ]]; then
-        export CFLAGS="${CFLAGS} -DHAVE_PREAD64 -DHAVE_PWRITE64"
+        export CFLAGS="${CFLAGS} -DHAVE_PREAD64 -DHAVE_PWRITE64 "
     fi
 
     if [[ "$target_platform" == "linux-ppc64le" ]]; then
@@ -67,7 +67,7 @@ else
                 --enable-threadsafe \
                 --enable-shared=no \
                 --disable-tcl \
-                CFLAGS="${CFLAGS} -I${PREFIX}/include" \
+                CFLAGS="${CFLAGS} -I${PREFIX}/include -fPIC" \
                 LDFLAGS="${LDFLAGS} -L${PREFIX}/lib" \
                 CPPFLAGS="-DSQLITE_OMIT_POPEN"; \
 
