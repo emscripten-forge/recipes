@@ -46,9 +46,21 @@ install(TARGETS bz2
     LIBRARY DESTINATION lib)
 
 if(NOT BZIP2_SKIP_TOOLS)
+    include(GNUInstallDirs)
     add_executable(bzip2 bzip2.c ${BZ2_SOURCES})
     add_executable(bzip2recover bzip2recover.c ${BZ2_SOURCES})
     install(TARGETS bzip2 bzip2recover DESTINATION tools/bzip2)
+
+    install(FILES
+    "$<TARGET_FILE_DIR:bzip2>/bzip2.js"
+    "$<TARGET_FILE_DIR:bzip2>/bzip2.wasm"
+    DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+
+    install(FILES
+    "$<TARGET_FILE_DIR:bzip2recover>/bzip2recover.js"
+    "$<TARGET_FILE_DIR:bzip2recover>/bzip2recover.wasm"
+    DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 if(NOT BZIP2_SKIP_HEADERS)
