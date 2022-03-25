@@ -39,7 +39,8 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     sed -i -e 's/libinstall:.*/libinstall:/' Makefile; 
     
-    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
+    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
+    #emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
     cp ${LIB}  ${PREFIX}/lib/ 
     echo "LS"
     # ls
