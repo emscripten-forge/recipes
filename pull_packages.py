@@ -30,9 +30,7 @@ if not path.is_dir:
     path.mkdir(mode=511, parents=False, exist_ok=True)(f" {base}did NOT exist")
 
 # import json file
-trgt = "linux"
-if "osx" in target_platform:
-    trgt = "osx"
+trgt = target_platform
 
 with open("packages.json", "r") as read_file:
     packages_json = json.load(read_file)
@@ -41,6 +39,4 @@ packagesList = packages_json["pkgs"][trgt]
 
 # strData = str(data)
 for pkg in packages_json["pkgs"][trgt]:
-    oras.pull(pkg, "latest", str(path))
-for pkg in packages_json["pkgs"]["emscripten-32"]:
     oras.pull(pkg, "latest", str(path))
