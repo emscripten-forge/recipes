@@ -1,6 +1,8 @@
 #!/bin/bash
 
 
+PYTHON=${BUILD_PREFIX}/bin/python3.10
+
 export DBGFLAGS=-g0
 export OPTFLAGS=-O2
 export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC"
