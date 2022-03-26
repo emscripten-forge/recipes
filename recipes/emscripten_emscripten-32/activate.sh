@@ -1,6 +1,6 @@
 echo "ACTIVATE EMSDK: CONDA_EMSDK_DIR===>" $CONDA_EMSDK_DIR 
 
-unset PYTHON
+#unset PYTHON
 
 pushd $CONDA_EMSDK_DIR
 ./emsdk install  3.1.2
