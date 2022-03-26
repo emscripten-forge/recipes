@@ -15,6 +15,10 @@ jobs:
         emsdk_ver: ["3.1.2"]
 
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
 
 
@@ -121,7 +125,13 @@ jobs:
       fail-fast: false
       matrix:
         emsdk_ver: ["3.1.2"]
+        skip_exisiting: ["","--skip-existing"]
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
       - uses: actions/checkout@v2
 
       ################################################################
@@ -217,56 +227,56 @@ jobs:
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/zlib --skip-existing --target-platform=emscripten-32   
+          boa build  $GITHUB_WORKSPACE/recipes/zlib ${{skip_exisiting}} --target-platform=emscripten-32   
 
       - name: "sqlite"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/sqlite --skip-existing --target-platform=emscripten-32 
+          boa build  $GITHUB_WORKSPACE/recipes/sqlite ${{skip_exisiting}} --target-platform=emscripten-32 
 
       - name: "libffi"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/libffi --skip-existing --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/libffi ${{skip_exisiting}} --target-platform=emscripten-32
 
       - name: "bzip2"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/bzip2 --skip-existing --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/bzip2 ${{skip_exisiting}} --target-platform=emscripten-32
 
       - name: "python_abi"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/python_abi --skip-existing --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/python_abi ${{skip_exisiting}} --target-platform=emscripten-32
 
       - name: "python"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/python --skip-existing --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/python ${{skip_exisiting}} --target-platform=emscripten-32
 
       - name: "pybind11"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/pybind11 --skip-existing --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/pybind11 ${{skip_exisiting}} --target-platform=emscripten-32
 
       - name: "embind11"
         shell: bash -l {0}
         run: |
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           micromamba activate ci-env
-          boa build  $GITHUB_WORKSPACE/recipes/embind11 --skip-existing --target-platform=emscripten-32
+          boa build  $GITHUB_WORKSPACE/recipes/embind11 ${{skip_exisiting}} --target-platform=emscripten-32
 
       ################################################################
       # create env from above build packages
@@ -339,6 +349,10 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
 
       ################################################################
