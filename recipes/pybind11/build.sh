@@ -1,4 +1,4 @@
-
+#!/bin/bash
 unset PYTHON
 mkdir build
 cd build
