@@ -4,6 +4,7 @@ echo "INITAL " $PYTHON
 OLD_PYTHON=$PYTHON
 unset PYTHON
 MYPYTHON=${BUILD_PREFIX}/bin/python3
+export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
 pushd $CONDA_EMSDK_DIR
 ./emsdk install  3.1.2
 ./emsdk activate 3.1.2

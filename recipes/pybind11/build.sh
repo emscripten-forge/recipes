@@ -1,5 +1,5 @@
 
-# unset PYTHON
+unset PYTHON
 mkdir build
 cd build
 

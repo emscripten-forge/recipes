@@ -1,6 +1,7 @@
 echo "ACTIVATE EMSDK: CONDA_EMSDK_DIR===>" $CONDA_EMSDK_DIR 
 
-unset PYTHON
+export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python
+
 
 pushd $CONDA_EMSDK_DIR
 ./emsdk install  3.1.2
@@ -23,3 +24,4 @@ cmake () {
 # configue () {
 #     emconfigue configue "$@"
 # }
+echo "ACTIVATE EMSDK DONE"
