@@ -1,6 +1,6 @@
 echo "ACTIVATE EMSDK: CONDA_EMSDK_DIR===>" $CONDA_EMSDK_DIR 
 
-export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python
+export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
 
 
 pushd $CONDA_EMSDK_DIR
