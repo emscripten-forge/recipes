@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "INITAL " $PYTHON
+
 OLD_PYTHON=$PYTHON
 unset PYTHON
 MYPYTHON=${BUILD_PREFIX}/bin/python3
@@ -12,7 +12,7 @@ source emsdk_env.sh
 export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
 popd
 
-echo "PY_VER" $PY_VER
+
 
 if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   echo "Setting up cross-python"
@@ -51,19 +51,16 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
     # For recipes using {{ PYTHON }}
     cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
 
-    echo "1)"
 
     # don't set LIBRARY_PATH
     # See https://github.com/conda-forge/matplotlib-feedstock/pull/309#issuecomment-972213735
     sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python        || true
     sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python$PY_VER || true
 
-    echo "2)"
     # undo symlink
     rm $BUILD_PREFIX/venv/build/bin/python
     cp $BUILD_PREFIX/bin/python $BUILD_PREFIX/venv/build/bin/python
 
-    echo "3)"
     # For recipes looking at python on PATH
     rm $BUILD_PREFIX/bin/python
     echo "#!/bin/bash" > $BUILD_PREFIX/bin/python
@@ -75,7 +72,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
       mkdir -p $BUILD_PREFIX/venv/lib/python$PY_VER
       ln -s $BUILD_PREFIX/venv/lib/python$PY_VER $BUILD_PREFIX/venv/lib/pypy$PY_VER
     fi
-    echo "4)"
+
     rm -rf $BUILD_PREFIX/venv/cross
     if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
       find $PREFIX/lib/python$PY_VER/site-packages/ -name "*.so" -exec rm {} \;
