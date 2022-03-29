@@ -41,15 +41,21 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     sed -i -e 's/libinstall:.*/libinstall:/' Makefile; 
     
-    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
-    #emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
+    # emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
+    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
     cp ${LIB}  ${PREFIX}/lib/ 
-    echo "LS"
+
+    emmake make CROSS_COMPILE=yes -j8
+
+    cp build/lib.emscripten-3.10/_sysconfigdata__emscripten_.py ${PREFIX}/lib/python3.10/ 
+    # echo "LS"
     # ls
     # ls Modules
     # mkdir -p $PREFIX/lib/python_internal
     # cp -t $PREFIX/lib/python_internal Modules/_decimal/libmpdec/libmpdec.a
     # cp -t $PREFIX/lib/python_internal Modules/expat/libexpat.a
+
+    # exit 125
 
 else
     mkdir -p build
