@@ -8,8 +8,3 @@ export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1  -s WASM=1  -std
 # export LDFLAGS="-s SIDE_MODULE=1"
 
 LDFLAGS="$LDFLAGS"  python setup.py install
-
-
-echo "EMBOA TEST IN BUILD"
-
-${BUILD_PREFIX}/bin/testipy.sh
