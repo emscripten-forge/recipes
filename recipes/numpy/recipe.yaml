@@ -1,0 +1,62 @@
+context:
+  version: '1.21.4'
+  cross_target_plattform: emscripten-32
+  target_plattform: emscripten-32
+
+package:
+  name: numpy
+  version: '1.21.4'
+source:
+  url: https://github.com/numpy/numpy/archive/refs/tags/v1.21.4.tar.gz
+  sha256: 59a157443cfdb9d2576a14833ca1c1c9ef96fc091955a9b6829464df39501d8c
+  # path: /home/derthorsten/src/numpy
+  # sha256: e6c76a87633aa3fa16614b61ccedfae45b91df2767cf097aa9c933932a7ed1e0
+  # url: https://files.pythonhosted.org/packages/fb/48/b0708ebd7718a8933f0d3937513ef8ef2f4f04529f1f66ca86d873043921/numpy-1.21.4.zip
+  patches:
+    - patches/disable-maybe-uninitialized.patch
+    - patches/dont-include-execinfo.patch
+    - patches/fix-longdouble.patch
+    - patches/fix-static-init-of-nditer-pywrap.patch
+    - patches/init-alloc-cache.patch
+    - patches/use-local-blas-lapack.patch
+    - patches/make-int-return-values.patch
+    - patches/fix-ieee754.patch
+    - patches/disable-optimization.patch
+    - patches/not-build-lapack-lite-as-64-bit.patch
+    - patches/fix-invalid-asm-instruction.patch
+    - patches/fix-comparator-function-signatures.patch
+    - patches/fix-random_float_fill-return-type.patch
+    - patches/fix-math-feature-detection-for-wasm.patch
+build:
+  number: 0
+
+requirements:
+  build:
+    # - '{{ compiler("c") }}'
+    - cross-python_emscripten-32
+    - cython
+    - pip
+  host:
+    - python 3.10
+  run:
+    - python
+
+
+
+about:
+  home: https://github.com/pybind/pybind11
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Seamless operability between C++11 and Python
+  doc_url: https://pybind11.readthedocs.io/
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_numpy.py
+
+  recipe-maintainers:
+    - DerThorsten
+
