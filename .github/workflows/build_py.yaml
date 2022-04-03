@@ -104,7 +104,12 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
-          ./build_packages.sh ${{matrix.build_name}}  ${{matrix.skip_exisiting}}
+          pushd $CONDA_EMSDK_DIR
+          ./emsdk activate 3.1.2
+          source emsdk_env.sh
+          export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
+          popd
+          ./build_packages.sh python --skip-existing
 
  
       ################################################################
@@ -266,6 +271,11 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
+          pushd $CONDA_EMSDK_DIR
+          ./emsdk activate 3.1.2
+          source emsdk_env.sh
+          popd
+          export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
           ./build_packages.sh python --skip-existing
 
 
