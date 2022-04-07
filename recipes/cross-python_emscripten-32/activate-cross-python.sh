@@ -1,17 +1,13 @@
 #!/bin/bash
-
-
 OLD_PYTHON=$PYTHON
 unset PYTHON
-MYPYTHON=${BUILD_PREFIX}/bin/python3
+MYPYTHON=${BUILD_PREFIX}/bin/python
 export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
-pushd $CONDA_EMSDK_DIR
-./emsdk install  3.1.2
-./emsdk activate 3.1.2
-source emsdk_env.sh
-export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
-popd
 
+
+# this will activate emscripten in case it has not yet 
+# been activated
+source ${BUILD_PREFIX}/bin/activate_emscripten.sh
 
 
 if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
@@ -35,7 +31,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   tail -3 $sysconfigdata_fn
   unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
   if [[ ! -d $BUILD_PREFIX/venv ]]; then
-    $BUILD_PREFIX/bin/python -m crossenv $PREFIX/bin/python3 \
+    $BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \
         --sysroot $PREFIX \
         --without-pip $BUILD_PREFIX/venv \
         --sysconfigdata-file "$sysconfigdata_fn" \
@@ -51,6 +47,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
     # For recipes using {{ PYTHON }}
     cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
 
+    export PYTHON=$MYPYTHON
 
     # don't set LIBRARY_PATH
     # See https://github.com/conda-forge/matplotlib-feedstock/pull/309#issuecomment-972213735
@@ -81,7 +78,6 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
       rm -rf $PREFIX/lib/python$PY_VER/site-packages
       mkdir $PREFIX/lib/python$PY_VER/site-packages
     fi
-    echo "5)" $PYTHON
     rm -rf $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
     ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
     sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $OLD_PYTHON
@@ -93,5 +89,10 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   fi
   unset sysconfigdata_fn
   export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
-  echo "Finished setting up cross-python"
+
 fi
+
+# setting up flags
+
+export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
+export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
