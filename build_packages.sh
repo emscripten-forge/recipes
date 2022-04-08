@@ -17,8 +17,11 @@ for i in "${!PKG_NAMES[@]}"; do
     if [[ ${BUILD_OR_HOST[i]} == "build" ]]; then
         boa build recipes/$PKG_NAME  $SKIP
     else
-        boa build recipes/$PKG_NAME --target-platform=emscripten-32  $SKIP
-        python browser_test_package.py $SCRIPT_DIR/recipes/$PKG_NAME
-        python better_test_package.py $SCRIPT_DIR/recipes/$PKG_NAME
+        # boa build recipes/$PKG_NAME --target-platform=emscripten-32  $SKIP
+
+        ./build_and_test.sh  recipes/$PKG_NAME --target-platform=emscripten-32  $SKIP
+
+        # python browser_test_package.py $SCRIPT_DIR/recipes/$PKG_NAME
+        # python better_test_package.py $SCRIPT_DIR/recipes/$PKG_NAME
     fi
 done
