@@ -9,7 +9,7 @@ echo  "${*:2}"
 tmpfile=$(mktemp /tmp/abc-script.XXXXXX)
 
 boa build $RECIPE_DIR ${@:2} > $tmpfile
-
+cat $tmpfile
 if cat  $tmpfile | grep -q 'Skipping existing'; then
     echo "Skipping testing"
 else
