@@ -57,6 +57,7 @@ let res = (async function() {
 
 
 def get_pytest_files(recipe_dir, recipe):
+    recipe_dir = os.path.abspath(recipe_dir)
     extra = recipe.get('extra',{})
     emscripten_tests = extra.get('emscripten_tests',{})
     python = emscripten_tests.get('python',{})
