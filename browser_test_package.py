@@ -152,6 +152,7 @@ def create_html(work_dir):
 
 
 def get_pytest_files(recipe_dir, recipe):
+    recipe_dir = os.path.abspath(recipe_dir)
     extra = recipe.get('extra',{})
     emscripten_tests = extra.get('emscripten_tests',{})
     python = emscripten_tests.get('python',{})
@@ -170,6 +171,7 @@ def create_test_env(pkg_name, prefix):
     assert returncode == 0
 
 def pack(prefix, pytest_files):
+    print("pytest_files", pytest_files)
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
     cmd = [f"emboa pack python core {prefix} --version=3.10 "]
