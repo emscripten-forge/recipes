@@ -233,6 +233,8 @@ async def playwright_main(page_url, run_forever=True):
         # browser = await p.chromium.launch(headless=False, slow_mo=100)
         browser = await p.chromium.launch()
         page = await browser.new_page()
+        page.set_default_timeout(20000)
+        page.set_default_navigation_timeout(20000)
         await page.goto(page_url)
         
         pytest_output = await page.locator('id=pytest_output').input_value()
