@@ -10,12 +10,14 @@ from distutils.errors import CCompilerError, DistutilsExecError, \
 os.environ['DISABLE_NUMCODECS_SSE2'] = "1"
 os.environ['DISABLE_NUMCODECS_AVX2'] = "1"
 
-try:
-    from Cython.Build import cythonize
-except ImportError:
-    have_cython = False
-else:
-    have_cython = True
+from Cython.Build import cythonize
+have_cython = True
+# try:
+#     from Cython.Build import cythonize
+# except ImportError:
+#     have_cython = False
+# else:
+#     have_cython = True
 
 # determine CPU support for SSE2 and AVX2
 # cpu_info = cpuinfo.get_cpu_info()
