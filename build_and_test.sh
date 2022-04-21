@@ -13,7 +13,7 @@ cat $tmpfile
 if cat  $tmpfile | grep -q 'Skipping existing'; then
     echo "Skipping testing"
 else
-    python testing/node_test_package.py     $RECIPE_DIR
+    # python testing/node_test_package.py     $RECIPE_DIR
     python testing/browser_test_package.py  $RECIPE_DIR
 fi
 
