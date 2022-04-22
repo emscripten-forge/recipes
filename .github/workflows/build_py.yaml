@@ -115,49 +115,6 @@ jobs:
 
  
       ################################################################
-      # create env from above build packages
-      ################################################################  
-      - name: "create emscripten-32 env"
-        shell: bash -l {0}
-        run: |
-          if [[ ${{matrix.build_name}} == "python" ]]; then
-            micromamba create -n emforgetest  --platform=emscripten-32 python pybind11 pytest_driver six parso
-          else
-            micromamba create -n emforgetest  --platform=emscripten-32 sqlite
-          fi
-
-      ################################################################
-      # pack things
-      ################################################################  
-      - name: "Pack things"
-        if: ${{ matrix.build_name == 'python' }}
-        shell: bash -l {0}
-        run: |
-          export CONDA_EMSDK_DIR=$HOME/src/emsdk
-          pushd $CONDA_EMSDK_DIR
-          ./emsdk activate 3.1.2
-          source emsdk_env.sh
-          popd
-          export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
-          micromamba activate ci-env
-          mkdir -p $HOME/serve
-          cd $HOME/serve
-          emboa pack python core $HOME/micromamba/envs/emforgetest --version=3.10
-          emboa pack python pure-so \
-              $HOME/micromamba/envs/emforgetest \
-              $HOME/micromamba/envs/emforgetest/lib/python3.10/site-packages/embind11_side.so \
-              embind11_side \
-              --version=3.10
-          emboa pack python pure-so \
-              $HOME/micromamba/envs/emforgetest \
-              $HOME/micromamba/envs/emforgetest/lib/python3.10/site-packages/embind11_side2.so \
-              embind11_side2 \
-              --version=3.10
-          cp $HOME/micromamba/envs/emforgetest/bin/embed.js .
-          cp $HOME/micromamba/envs/emforgetest/bin/embed.wasm .
-          cp $HOME/micromamba/envs/emforgetest/bin/embind11.html .
-
-      ################################################################
       # upload packages
       ################################################################   
 
