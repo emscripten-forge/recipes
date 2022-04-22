@@ -17,7 +17,7 @@ fi
 # Configure step
 cmake ${CMAKE_ARGS} ..              \
     -GNinja                         \
-    -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
+    -DCMAKE_PROJECT_INCLUDE=overwriteProp.cmake \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
     -DENV_NODE=$FEATURE_ENV_NODE \
