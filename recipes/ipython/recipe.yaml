@@ -1,0 +1,57 @@
+context:
+  version: '7.32.0'
+  cross_target_plattform: emscripten-32
+  target_plattform: emscripten-32
+
+package:
+  name: ipython
+  version: '7.32.0'
+source:
+  url: https://pypi.io/packages/source/i/ipython/ipython-{{ version }}.tar.gz
+  # sha256: 70e5eb132cac594a34b5f799bd252589009905f05104728aea6a403ec2519dc1
+
+build:
+  number: 1
+
+requirements:
+  build:
+    # - '{{ compiler("c") }}'
+    - cross-python_emscripten-32
+    - pip
+  host:
+    - python 3.10
+  run:
+    - python
+    - backcall
+    - decorator
+    - jedi >=0.16
+    - matplotlib-inline
+    - pickleshare
+    - prompt-toolkit >=2.0.0,<3.1.0,!=3.0.0,!=3.0.1
+    - pygments >=2.4.0
+    - stack_data
+    - traitlets >=5
+    - pexpect
+
+about:
+  home: https://ipython.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'IPython: Productive Interactive Computing'
+  description: |
+    IPython provides a rich architecture for interactive computing with
+    a powerful interactive shell, a kernel for Jupyter, high performance
+    tools for parallel computing, and more.
+  doc_url: https://ipython.readthedocs.io
+  dev_url: https://github.com/ipython/ipython
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_ipython.py
+
+  recipe-maintainers:
+    - DerThorsten
+

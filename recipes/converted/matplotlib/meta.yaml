@@ -1,0 +1,55 @@
+package:
+  name: matplotlib
+  version: 3.5.1
+
+source:
+  url: https://files.pythonhosted.org/packages/8a/46/425a44ab9a71afd2f2c8a78b039c1af8ec21e370047f0ad6e43ca819788e/matplotlib-3.5.1.tar.gz
+  sha256: b2e9810e09c3a47b73ce9cab5a72243a1258f61e7900969097a817232246ce1c
+
+  patches:
+    - patches/disable_macosx_backend.patch
+    - patches/hardcoded-font-cache.patch
+    - patches/fix-threading.patch
+
+  extras:
+    - - src/browser_backend.py
+      - lib/matplotlib/backends/browser_backend.py
+    - - src/wasm_backend.py
+      - lib/matplotlib/backends/wasm_backend.py
+    - - src/html5_canvas_backend.py
+      - lib/matplotlib/backends/html5_canvas_backend.py
+    - - src/setup.cfg
+      - ./mplsetup.cfg
+
+build:
+  cflags: -s USE_FREETYPE=1 -s USE_LIBPNG=1 -s USE_ZLIB=1
+  ldflags: -s USE_FREETYPE=1 -s USE_LIBPNG=1 -s USE_ZLIB=1
+  replace-libs:
+    - png16=png
+  post: |
+    cd build/matplotlib-3.5.1/dist/matplotlib-3.5.1/
+    rm -rf matplotlib/backends/qt_editor
+    rm -rf matplotlib/backends/web_backend
+    rm -rf sphinxext
+    cp $PKGDIR/src/fontlist.json matplotlib
+    cp $PKGDIR/src/Humor-Sans-1.0.ttf matplotlib/mpl-data/fonts/ttf/Humor-Sans.ttf
+    mkdir -p $PKGDIR/../../build/fonts
+    cp matplotlib/mpl-data/fonts/ttf/* $PKGDIR/../../build/fonts/
+
+requirements:
+  run:
+    - cycler
+    - distutils
+    - fonttools
+    - kiwisolver
+    - numpy
+    - packaging
+    - Pillow
+    - pyparsing
+    - python-dateutil
+    - pytz
+
+test:
+  imports:
+    - matplotlib
+    - mpl_toolkits
