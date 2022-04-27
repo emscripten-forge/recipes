@@ -19,34 +19,6 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import ssl
 
 
-
-NODE_TEST_FILE_STR_TEMPLATE = """
-const {{ test, expect }} = require('@playwright/test');
-
-test('my test', async ({{ page }}) => {{
-  await page.goto('{page_url}');
-
-  // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/TEST_TITLE/);
-
-  // Expect an attribute "to be strictly equal" to the value.
-  //await expect(page.locator('text=Get Started').first()).toHaveAttribute('href', '/docs/intro');
-
-  //await page.click('text=Get Started');
-  // Expect some text to be visible on the page.
-  //await expect(page.locator('text=Introduction').first()).toBeVisible();
-
-  // const value = await page.$eval("#post", (el) => el.value);
-  const value = await page.locator('id=post').value
-
-  // await expect(page.locator('id=post')).toHaveText(/0/);
-
-  page.Console.ReadLine();
-}});
-"""
-
-
-
 HTML_FILE_STR = """<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -57,7 +29,7 @@ HTML_FILE_STR = """<!DOCTYPE html>
   </head>
   <body>
     <!-- page content -->
-    <script type="application/javascript" src="embed.js"></script>
+    <script type="application/javascript" src="pytest_driver.js"></script>
     <script type="application/javascript">
 
 
@@ -93,11 +65,8 @@ let res = (async function() {
     var deps = await waitRunDependency()
 
     myModule.initialize_interpreter()
-    var main_scope = myModule.main_scope()
     var ret = myModule.run_tests("/tests")
 
-    main_scope.delete()
-    
     var pytest_output = document.createElement('TEXTAREA');
     document.body.appendChild(pytest_output);
     pytest_output.setAttribute("name", "pytest_output");
@@ -164,7 +133,7 @@ def get_pytest_files(recipe_dir, recipe):
 def create_test_env(pkg_name, prefix):
     # cmd = ['$MAMBA_EXE' ,'create','--prefix', prefix,'--platform=emscripten-32'] + [pkg_name] #+ ['--dryrun']
     print("prefix",prefix)
-    cmd = [f'$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python embind11 pytest {pkg_name}']
+    cmd = [f'$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python pytest_driver pytest {pkg_name}']
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     returncode = ret.returncode
@@ -183,9 +152,9 @@ def pack(prefix, pytest_files):
 
 def copy_from_prefix(prefix,work_dir):
     # copy wasm / js file to work dir
-    js_file = os.path.join(prefix,'bin','embed.js')
+    js_file = os.path.join(prefix,'bin','pytest_driver.js')
     shutil.copy(js_file, work_dir)
-    wasm_file = os.path.join(prefix,'bin','embed.wasm')
+    wasm_file = os.path.join(prefix,'bin','pytest_driver.wasm')
     shutil.copy(wasm_file, work_dir)
 
 
