@@ -84,7 +84,7 @@ jobs:
 
       ################################################################
       # install / clone custom non-master things
-      ################################################################   
+      ################################################################
       - name: "install custom non-master dependencies"
         shell: bash -l {0}
         run: |
@@ -95,28 +95,25 @@ jobs:
           python -m pip install playwright
           playwright install
 
-
-
-
       ################################################################
       # build packages
-      ################################################################   
+      ################################################################
       - name: "build packages"
         shell: bash -l {0}
         run: |
           cd ${GITHUB_WORKSPACE}
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           pushd $CONDA_EMSDK_DIR
-          ./emsdk activate 3.1.2
+          ./emsdk activate ${{matrix.emsdk_ver}}
           source emsdk_env.sh
           export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
           popd
           ./build_packages.sh ${{matrix.build_name}} --skip-existing
 
- 
+
       ################################################################
       # upload packages
-      ################################################################   
+      ################################################################
 
       - uses: actions/upload-artifact@v2
         with:
