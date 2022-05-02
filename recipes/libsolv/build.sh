@@ -8,7 +8,11 @@ emcmake cmake -DCMAKE_INSTALL_PREFIX=$PREFIX \
       -DENABLE_CONDA=ON \
       -DMULTI_SEMANTICS=ON \
       -DCMAKE_BUILD_TYPE=Release \
+      -DDISABLE_SHARED=ON\
       -DENABLE_STATIC=ON \
+      -DZLIB_USE_STATIC_LIBS=ON \
+      -DZLIB_LIBRARY=$PREFIX/lib/libz_static.a \
+      -DZLIB_INCLUDE_DIR=$PREFIX/include \
       ${CMAKE_ARGS} \
       ..
 
