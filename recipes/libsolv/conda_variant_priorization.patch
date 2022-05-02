@@ -3,14 +3,14 @@ index 21ad6bfb..408a236a 100644
 --- a/src/conda.c
 +++ b/src/conda.c
 @@ -134,7 +134,7 @@ solv_vercmp_conda(const char *s1, const char *q1, const char *s2, const char *q2
-        return -1;
-          if (s1p - s1 > s2p - s2)
-        return 1;
--         r = s1p - s1 ? strncmp(s1, s2, s1p - s1) : 0;
-+         r = (s1p - s1) ? strncmp(s1, s2, s1p - s1) : 0;
-          if (r)
-        return r;
-        }
+ 		return -1;
+ 	      if (s1p - s1 > s2p - s2)
+ 		return 1;
+-	      r = s1p - s1 ? strncmp(s1, s2, s1p - s1) : 0;
++	      r = (s1p - s1) ? strncmp(s1, s2, s1p - s1) : 0;
+ 	      if (r)
+ 		return r;
+ 	    }
 diff --git a/src/policy.c b/src/policy.c
 index c02d2373..d6354cd2 100644
 --- a/src/policy.c
@@ -36,7 +36,7 @@ index c02d2373..d6354cd2 100644
 +  int i, j, r;
 +  Solvable *s, *best;
 +
-+  if (plist->count < 2)        /* no need to prune for a single entry */
++  if (plist->count < 2)		/* no need to prune for a single entry */
 +    return;
 +  POOL_DEBUG(SOLV_DEBUG_POLICY, "prune_to_best_version %d\n", plist->count);
 +
@@ -50,10 +50,10 @@ index c02d2373..d6354cd2 100644
 +      s = pool->solvables + plist->elements[i];
 +
 +      POOL_DEBUG(SOLV_DEBUG_POLICY, "- %s [%d]%s\n",
-+        pool_solvable2str(pool, s), plist->elements[i], 
-+        (pool->installed && s->repo == pool->installed) ? "I" : "");
++		 pool_solvable2str(pool, s), plist->elements[i], 
++		 (pool->installed && s->repo == pool->installed) ? "I" : "");
 +
-+      if (!best)       /* if no best yet, the current is best */
++      if (!best)		/* if no best yet, the current is best */
 +        {
 +          best = s;
 +          continue;
@@ -63,7 +63,7 @@ index c02d2373..d6354cd2 100644
 +      if (best->name != s->name)   /* new name */
 +        {
 +          plist->elements[j++] = best - pool->solvables; /* move old best to front */
-+          best = s;        /* take current as new best */
++          best = s;		/* take current as new best */
 +          continue;
 +        }
 +     
@@ -75,10 +75,10 @@ index c02d2373..d6354cd2 100644
 +        r = pool_link_evrcmp(pool, best, s);
 +#endif
 +      if (r < 0)
-+   best = s;
++	best = s;
 +    }
 +
-+  plist->elements[j++] = best - pool->solvables;   /* finish last group */
++  plist->elements[j++] = best - pool->solvables;	/* finish last group */
 +  plist->count = j;
 +
 +  /* we reduced the list to one package per name, now look at
@@ -314,7 +314,7 @@ index c02d2373..d6354cd2 100644
    int i, j, r;
    Solvable *s, *best;
  
--  if (plist->count < 2)        /* no need to prune for a single entry */
+-  if (plist->count < 2)		/* no need to prune for a single entry */
 +  if (plist->count < 2)         /* no need to prune for a single entry */
      return;
 -  POOL_DEBUG(SOLV_DEBUG_POLICY, "prune_to_best_version %d\n", plist->count);
@@ -326,12 +326,12 @@ index c02d2373..d6354cd2 100644
        s = pool->solvables + plist->elements[i];
  
        POOL_DEBUG(SOLV_DEBUG_POLICY, "- %s [%d]%s\n",
--        pool_solvable2str(pool, s), plist->elements[i], 
--        (pool->installed && s->repo == pool->installed) ? "I" : "");
+-		 pool_solvable2str(pool, s), plist->elements[i], 
+-		 (pool->installed && s->repo == pool->installed) ? "I" : "");
 +                 pool_solvable2str(pool, s), plist->elements[i], 
 +                 (pool->installed && s->repo == pool->installed) ? "I" : "");
  
--      if (!best)       /* if no best yet, the current is best */
+-      if (!best)		/* if no best yet, the current is best */
 +      if (!best)                /* if no best yet, the current is best */
          {
            best = s;
@@ -340,7 +340,7 @@ index c02d2373..d6354cd2 100644
        if (best->name != s->name)   /* new name */
          {
            plist->elements[j++] = best - pool->solvables; /* move old best to front */
--          best = s;        /* take current as new best */
+-          best = s;		/* take current as new best */
 +          best = s;             /* take current as new best */
            continue;
          }
@@ -359,14 +359,14 @@ index c02d2373..d6354cd2 100644
 -#endif
 -#ifdef ENABLE_CONDA
 -      if (pool->disttype == DISTTYPE_CONDA)
--   {
--     if (r == 0)
--       r = (best->repo ? best->repo->subpriority : 0) - (s->repo ? s->repo->subpriority : 0);
--     if (r == 0)
--       r = pool_buildversioncmp(pool, best, s);
--     if (r == 0)
--       r = pool_buildflavorcmp(pool, best, s);
--   }
+-	{
+-	  if (r == 0)
+-	    r = (best->repo ? best->repo->subpriority : 0) - (s->repo ? s->repo->subpriority : 0);
+-	  if (r == 0)
+-	    r = pool_buildversioncmp(pool, best, s);
+-	  if (r == 0)
+-	    r = pool_buildflavorcmp(pool, best, s);
+-	}
 -#endif
 +      if (r == 0)
 +        r = (best->repo ? best->repo->subpriority : 0) - (s->repo ? s->repo->subpriority : 0);
@@ -376,10 +376,10 @@ index c02d2373..d6354cd2 100644
 +      if (r == 0)
 +        r = pool_buildflavorcmp(pool, best, s);
        if (r < 0)
--   best = s;
+-	best = s;
 +        best = s;
      }
--  plist->elements[j++] = best - pool->solvables;   /* finish last group */
+-  plist->elements[j++] = best - pool->solvables;	/* finish last group */
 -  plist->count = j;
  
 -  /* we reduced the list to one package per name, now look at
