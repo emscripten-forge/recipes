@@ -1,20 +1,32 @@
+context:
+  name: cytoolz
+  version: '0.11.2'
+
 package:
   name: cytoolz
-  version: 0.11.2
+  version: '{{ version }}'
+
 source:
-- sha256: ea23663153806edddce7e4153d1d407d62357c05120a4e8485bddf1bd5ab22b4
-  url: https://files.pythonhosted.org/packages/b7/a9/9437d8e6a8ba420cb52832a4895614c61bf574bfb3978d5b0806b8ab95be/cytoolz-0.11.2.tar.gz
-requirements:
-  run:
-  - nose
-  - toolz
-  build:
-  - cross-python_emscripten-32
-  - pip
-  host:
-  - python 3.10
+  - url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/cytoolz-{{ version }}.tar.gz
+    sha256: ea23663153806edddce7e4153d1d407d62357c05120a4e8485bddf1bd5ab22b4
+
 build:
   number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - "{{ compiler('c') }}"
+  host:
+    # - cython
+    - python
+    - pip
+  run:
+    - nose
+    - toolz >=0.10.0
+
 extra:
   emscripten_tests:
     python:
