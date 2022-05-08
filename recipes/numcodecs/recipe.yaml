@@ -1,29 +1,37 @@
+context:
+  name: numcodecs
+  version: '0.9.1'
+
 package:
   name: numcodecs
-  version: 0.9.1
-source:
-- sha256: 35adbcc746b95e3ac92e949a161811f5aa2602b9eb1ef241b5ea6f09bb220997
-  url: https://files.pythonhosted.org/packages/2c/b0/980143fa7467569fd81f0d00530c46dcf41ff790738261985dc10a26d4ec/numcodecs-0.9.1.tar.gz
-  patches:
-  - patches/fixblosc.patch
-  - patches/fixsetup.patch
-  - patches/fixzlib.patch
-- path: setup.py
-requirements:
-  run:
-  - numpy
-  - msgpack
-  build:
-  - cross-python_emscripten-32
-  - pip
-  - setuptools_scm
-  - cython
+  version: '{{ version }}'
 
-  host:
-  - python 3.10
+source:
+  - url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+    sha256: 35adbcc746b95e3ac92e949a161811f5aa2602b9eb1ef241b5ea6f09bb220997
+    patches:
+      - patches/fixblosc.patch
+      - patches/fixsetup.patch
+      - patches/fixzlib.patch
+  - path: setup.py
 
 build:
   number: 0
+
+requirements:
+  build:
+    - '{{ compiler("c") }}'
+    - cross-python_emscripten-32
+    - cython
+    - python
+  host:
+    - python
+    - pip
+    - setuptools_scm
+  run:
+    - numpy
+    - msgpack
+
 extra:
   emscripten_tests:
     python:

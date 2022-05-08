@@ -1,2 +1,2 @@
 #!/bin/bash
-${PYTHON} -m pip install *.whl
+${PYTHON} -m pip install . --no-deps -v

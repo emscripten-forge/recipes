@@ -1,22 +1,36 @@
+context:
+  version: '4.29.1'
+  name: fonttools
+
 package:
   name: fonttools
-  version: 4.29.1
+  version: "{{ version }}"
+
 source:
-- url: https://files.pythonhosted.org/packages/1d/46/65a58d7b92905e2767000b3f6eb1d0301e9ed7d459d14461075c1db63349/fonttools-4.29.1-py3-none-any.whl
-  sha256: 1933415e0fbdf068815cb1baaa1f159e17830215f7e8624e5731122761627557
-about:
-  home: http://github.com/fonttools/fonttools
-  PyPI: https://pypi.org/project/fontTools
-  summary: Tools to manipulate font files
-  license: MIT
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/fonttools-{{ version }}.zip
+  sha256: 2b18a172120e32128a80efee04cff487d5d140fe7d817deb648b2eee023a40e4
+
 build:
   number: 0
+
 requirements:
   build:
-  - cross-python_emscripten-32
-  - pip
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - "{{ compiler('c') }}"
   host:
-  - python 3.10
+    # - cython
+    - pip
+    - python
+  run:
+    - python
+
+about:
+  home: http://github.com/fonttools/fonttools
+  summary: Tools to manipulate font files
+  license: MIT
+
 extra:
   emscripten_tests:
     python:

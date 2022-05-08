@@ -1,58 +1,49 @@
 package:
   name: matplotlib
   version: 3.5.1
-source:
-- url: https://files.pythonhosted.org/packages/8a/46/425a44ab9a71afd2f2c8a78b039c1af8ec21e370047f0ad6e43ca819788e/matplotlib-3.5.1.tar.gz
-  sha256: b2e9810e09c3a47b73ce9cab5a72243a1258f61e7900969097a817232246ce1c
-  patches:
-  - patches/disable_macosx_backend.patch
-  - patches/hardcoded-font-cache.patch
-  - patches/fix-threading.patch
-- path: mplsetup.cfg
-- path: setupext.py
 
+source:
+  - url: https://files.pythonhosted.org/packages/8a/46/425a44ab9a71afd2f2c8a78b039c1af8ec21e370047f0ad6e43ca819788e/matplotlib-3.5.1.tar.gz
+    sha256: b2e9810e09c3a47b73ce9cab5a72243a1258f61e7900969097a817232246ce1c
+    patches:
+    - patches/disable_macosx_backend.patch
+    - patches/hardcoded-font-cache.patch
+    - patches/fix-threading.patch
+  - path: mplsetup.cfg
+  - path: setupext.py
 
 build:
-  cflags: -s USE_FREETYPE=1 -s USE_LIBPNG=1 -s USE_ZLIB=1
-  ldflags: -s USE_FREETYPE=1 -s USE_LIBPNG=1 -s USE_ZLIB=1
+  number: 0
 
-  # post: 'cd build/matplotlib-3.5.1/dist/matplotlib-3.5.1/
-
-  #   rm -rf matplotlib/backends/qt_editor
-
-  #   rm -rf matplotlib/backends/web_backend
-
-  #   rm -rf sphinxext
-
-  #   cp $PKGDIR/src/fontlist.json matplotlib
-
-  #   cp $PKGDIR/src/Humor-Sans-1.0.ttf matplotlib/mpl-data/fonts/ttf/Humor-Sans.ttf
-
-  #   mkdir -p $PKGDIR/../../build/fonts
-
-  #   cp matplotlib/mpl-data/fonts/ttf/* $PKGDIR/../../build/fonts/
-
-  #   '
 requirements:
-  run:
-  - cycler
-  - fonttools
-  - kiwisolver
-  - numpy  1.21.4
-  - packaging
-  - pillow
-  - pyparsing
-  - python-dateutil
-  - pytz
   build:
-  - cross-python_emscripten-32
-  - pip
-  - setuptools_scm_git_archive
-  - certifi
-  - numpy  1.21.4
+    - python
+    - numpy
+    - cross-python_emscripten-32
+
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    - sel(not win): pkg-config
+
+    # TODO add certifi package to emscripten-32 and depend in host on this
+    - certifi
+
   host:
-  - python 3.10
-  - numpy  1.21.4
+    - python
+    - pip
+    - numpy
+    - setuptools_scm_git_archive
+  run:
+    - cycler
+    - fonttools
+    - kiwisolver
+    - numpy
+    - packaging
+    - pillow
+    - pyparsing
+    - python-dateutil
+    - pytz
+
 extra:
   emscripten_tests:
     python:

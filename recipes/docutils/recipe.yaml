@@ -1,17 +1,28 @@
+context:
+  name: docutils
+  version: '0.18.1'
+
 package:
   name: docutils
-  version: 0.18.1
+  version: '{{ version }}'
+
 source:
-- sha256: 23010f129180089fbcd3bc08cfefccb3b890b0050e1ca00c867036e9d161b98c
-  url: https://files.pythonhosted.org/packages/8d/14/69b4bad34e3f250afe29a854da03acb6747711f3df06c359fa053fae4e76/docutils-0.18.1-py2.py3-none-any.whl
+  - url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/docutils-{{ version }}.tar.gz
+    sha256: 679987caf361a7539d76e584cbeddc311e3aee937877c87346f31debc63e9d06
+    
 build:
   number: 0
+
 requirements:
   build:
-  - cross-python_emscripten-32
-  - pip
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
   host:
-  - python 3.10
+    - python
+    - pip
+  run:
+    - python
+
 extra:
   emscripten_tests:
     python:
