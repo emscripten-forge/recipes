@@ -110,10 +110,19 @@ jobs:
           export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
           popd
           ./build_packages.sh ${{matrix.build_name}} --skip-existing
-
+      
+      ################################################################
+      # quetz upload packages
+      ################################################################
+      - name: quetz_upload_packages
+        shell: bash -l {0}
+        run: |
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2
 
       ################################################################
-      # upload packages
+      # github upload packages
       ################################################################
 
       - uses: actions/upload-artifact@v2
