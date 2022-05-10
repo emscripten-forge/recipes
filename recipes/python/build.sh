@@ -47,7 +47,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     emmake make CROSS_COMPILE=yes -j8
 
-    #cp build/lib.emscripten-3.10/_sysconfigdata__emscripten_.py ${PREFIX}/lib/python3.10/ 
+    cp build/lib.emscripten-3.10/_sysconfigdata__emscripten_.py ${PREFIX}/lib/python3.10/ 
     # echo "LS"
     # ls
     # ls Modules
