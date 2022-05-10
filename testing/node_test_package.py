@@ -149,7 +149,7 @@ def test_dir_context(pkg_name, debug, debug_dir):
             yield temp_dir
 
 
-def test_package(recipe_dir, debug, debug_dir):
+def test_package(recipe_dir, debug=False, debug_dir=None):
     assert os.path.isdir(recipe_dir)
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
 
