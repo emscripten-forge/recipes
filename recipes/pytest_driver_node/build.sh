@@ -5,9 +5,6 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX 
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
 
-
-
-
 if [[ $FEATURE_ENV_NODE == 1 ]]; then
     echo "FEATURE_ENV_NODE ENABLED"
 else
