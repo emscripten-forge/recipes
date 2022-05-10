@@ -19,16 +19,17 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
     sysconfigdata_fn=$(find "$PREFIX/lib/pypy$PY_VER/" -name "_sysconfigdata_*.py" -type f)
   else
     # find "$PREFIX/lib/" -name "_sysconfigdata*.py" -not -name ${_CONDA_PYTHON_SYSCONFIGDATA_NAME}.py -type f -exec rm -f {} +
-    sysconfigdata_fn="$PREFIX/lib/python3.10/_sysconfigdata__emscripten_.py"
-    # sysconfigdata_fn="$PREFIX/lib/python/${_CONDA_PYTHON_SYSCONFIGDATA_NAME}.py"
+    sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_.py
+    envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_new.py
+    sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_new.py
   fi
   # decho "build_time_vars['LDFLAGS'] = build_time_vars['LDSHARED'] " >> $sysconfigdata_fn 
 
-  sed -i 's/-lffi/ /g' $sysconfigdata_fn
-  sed -i 's/-lz/ /g' $sysconfigdata_fn
-  sed -i 's/-fdiagnostics-color=always/ /g' $sysconfigdata_fn
+  # sed -i 's/-lffi/ /g' $sysconfigdata_fn
+  # sed -i 's/-lz/ /g' $sysconfigdata_fn
+  # sed -i 's/-fdiagnostics-color=always/ /g' $sysconfigdata_fn
+  # tail -3 $sysconfigdata_fn
 
-  tail -3 $sysconfigdata_fn
   unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
   if [[ ! -d $BUILD_PREFIX/venv ]]; then
     $BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \
