@@ -65,10 +65,8 @@ class BuildArgs:
 
 
 def boa_build(recipes_dir, recipe_name, platform):
-    print(f"build {recipe_name} for {platform} ")
     platform_args = {"host": ["--target-platform=emscripten-32"], "build": []}[platform]
     recipe_dir = os.path.join(recipes_dir, recipe_name)
-    print(recipe_dir)
     build_args = BuildArgs(recipe_dir)
     if platform == "host":
         build_args.target_platform = "emscripten-32"
@@ -85,7 +83,7 @@ def test_package(recipes_dir, recipe_name):
 def build_recipes_with_changes(old, new, recipes_dir):
 
     recipes_with_changes = find_recipes_with_changes(old=old, new=new)
-
+    print(f"{recipes_with_changes=}")
     with open("package_platforms.json") as f:
         data = json.load(f)
     data_dict = {}
