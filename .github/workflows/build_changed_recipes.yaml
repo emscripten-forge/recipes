@@ -1,6 +1,5 @@
-name: Build All
-on: 
-  - pull_request
+name: Build recipes with changes
+on: [push, pull_request]
 
 jobs:
 
@@ -14,15 +13,18 @@ jobs:
       fail-fast: false
       matrix:
         emsdk_ver: ["3.1.2"]
-        build_name: ["minimal","python"]
-        skip_exisiting: ["","--skip-existing"]
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
 
-      - uses: actions/checkout@v2
+
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
 
       ################################################################
       # timestamp
@@ -51,27 +53,8 @@ jobs:
         with:
           environment-file: ci_env.yml
           environment-name: ci-env
-          micromamba-version: '0.22.0'
+          micromamba-version: '0.23.1'
 
-      ################################################################
-      # POST ENV INSTALL CONFIG
-      ################################################################
-      - name: post env install config
-        shell: bash -l {0}
-        run: |
-          mkdir -p $HOME/micromamba/envs/ci-env/conda-bld/emscripten-32
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc_post $HOME/.condarc
-
-      ################################################################
-      # Pull packages
-      ################################################################
-      - name: pull already uploaded packagesc
-        if: ${{ matrix.skip_exisiting == '--skip-existing' }}
-        shell: bash -l {0}
-        run: |
-          python ./pull_packages.py ${{ env.GITHUB_OWNER }} noarch        ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
-          python ./pull_packages.py ${{ env.GITHUB_OWNER }} linux-64      ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
-          python ./pull_packages.py ${{ env.GITHUB_OWNER }} emscripten-32 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
 
       ################################################################
       # EMSCRIPTEN ITSELF
@@ -98,11 +81,12 @@ jobs:
           playwright install
 
       ################################################################
-      # build packages
+      # build recipes with changes
       ################################################################
       - name: "build packages"
         shell: bash -l {0}
         run: |
+          conda config --add channels https://repo.mamba.pm/emscripten-forge
           cd ${GITHUB_WORKSPACE}
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           pushd $CONDA_EMSDK_DIR
@@ -110,23 +94,16 @@ jobs:
           source emsdk_env.sh
           export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
           popd
-          ./build_packages.sh ${{matrix.build_name}}  # --skip-existing=fast
+          python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes origin/main HEAD
 
-
-      # ################################################################
-      # # upload packages
-      # ################################################################
-
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: micromamba_pkgs
-      #     path: ~/micromamba/envs/ci-env/conda-bld/**/*.tar.bz2 # or path/to/artifact\
-      #   if: ${{ matrix.skip_exisiting == '' }}
-
-      # - name: create_oras_push
-      #   shell: bash -l {0}
-      #   run: |
-      #     python ./upload_packages.py ${{ env.GITHUB_OWNER }} noarch        ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
-      #     python ./upload_packages.py ${{ env.GITHUB_OWNER }} linux-64      ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
-      #     python ./upload_packages.py ${{ env.GITHUB_OWNER }} emscripten-32 ${CONDA_PREFIX} ${{ secrets.GITHUB_TOKEN }}
-      #   if: ${{ matrix.skip_exisiting == '' }}
+      
+      ################################################################
+      # quetz upload packages
+      ################################################################
+      - name: "quetz upload packages"
+        if: github.event_name == 'push'
+        shell: bash -l {0}
+        run: |
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
