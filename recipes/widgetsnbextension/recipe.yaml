@@ -1,0 +1,46 @@
+context:
+  version: "3.6.0"
+
+package:
+  name: widgetsnbextension
+  version: '{{ version }}'
+
+source:
+  url: https://pypi.io/packages/source/w/widgetsnbextension/widgetsnbextension-{{ version }}.tar.gz
+  sha256: e84a7a9fcb9baf3d57106e184a7389a8f8eb935bf741a5eb9d60aa18cc029a80
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - notebook >=4.4.1
+  run:
+    - python
+    - notebook >=4.4.1
+
+test:
+  imports:
+    - widgetsnbextension
+
+about:
+  home: http://ipython.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: Interactive Widgets for Jupyter
+  description: |
+    Interactive HTML widgets for Jupyter notebooks.
+  doc_url: https://pypi.python.org/pypi/widgetsnbextension
+  dev_url: https://github.com/jupyter-widgets/ipywidgets/tree/master/widgetsnbextension
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+    - martinRenou
