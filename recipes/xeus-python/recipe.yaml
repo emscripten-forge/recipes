@@ -1,0 +1,50 @@
+context:
+  version: 0.13.8
+
+package:
+  name: xeus-python
+  version: '{{ version }}'
+
+source:
+  # url: https://github.com/jupyter-xeus/xeus/archive/refs/tags/{{ version }}.tar.gz
+  # path: /home/derthorsten/src/xeus
+  git_url: https://github.com/martinRenou/xeus-python
+  git_rev: b6ec5d755b465ea2594bcddab28b683066e4cc97
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - '{{ compiler("cxx") }}'
+    - cmake
+    - ninja
+  host:
+    - nlohmann_json
+    - xeus
+    - pybind11
+    - pybind11_json
+    - xtl
+  run:
+    - ipython
+    - jedi
+    - xeus-python-shell >=0.3
+
+test:
+  commands:
+    - sel(emscripten): test -f $PREFIX/bin/xpython_wasm.wasm
+    - sel(emscripten): test -f $PREFIX/bin/xpython_wasm.js
+
+about:
+  home: https://github.com/jupyter-xeus/xeus-python
+  license: BSD-3
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-python
+  doc_url: https://github.com/jupyter-xeus/xeus-python
+  dev_url: https://github.com/jupyter-xeus/xeus-python
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+    - martinRenou
