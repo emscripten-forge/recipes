@@ -89,11 +89,31 @@ jobs:
           python -m pip install playwright
           playwright install
 
+
+
+
       ################################################################
-      # build recipes with changes
+      # build recipes with changes PUSH
       ################################################################
       - name: "build packages"
         shell: bash -l {0}
+        if: github.event_name == 'push'
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          export CONDA_EMSDK_DIR=$HOME/src/emsdk
+          pushd $CONDA_EMSDK_DIR
+          ./emsdk activate ${{matrix.emsdk_ver}}
+          source emsdk_env.sh
+          export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
+          popd
+          python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes main~1 main
+
+      ################################################################
+      # build recipes with changes PUSH
+      ################################################################
+      - name: "build packages"
+        shell: bash -l {0}
+        if: github.event_name == 'pull_request'
         run: |
           cd ${GITHUB_WORKSPACE}
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
@@ -103,6 +123,7 @@ jobs:
           export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
           popd
           python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes origin/main HEAD
+
 
       
       ################################################################
