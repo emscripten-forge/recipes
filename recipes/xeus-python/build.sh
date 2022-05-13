@@ -16,7 +16,13 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_BUILD_TYPE=Release                        \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM            
-    
+    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM
+
 # Build step
+ninja
+
+cd ..
+${PYTHON} wasm_patches/patch_it.py
+cd build
+
 ninja install
