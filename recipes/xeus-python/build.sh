@@ -16,9 +16,7 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_BUILD_TYPE=Release                        \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DCMAKE_PROJECT_INCLUDE=cmake/overwriteProp.cmake \
-    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM            \
-    -DCMAKE_FIND_DEBUG_MODE=OFF
-
+    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM            
+    
 # Build step
 ninja install
