@@ -55,6 +55,15 @@ jobs:
           environment-name: ci-env
           micromamba-version: '0.23.1'
 
+      ################################################################
+      # POST ENV INSTALL CONFIG
+      ################################################################
+      - name: post env install config
+        shell: bash -l {0}
+        run: |
+          mkdir -p $HOME/micromamba/envs/ci-env/conda-bld/emscripten-32
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc_post $HOME/.condarc
+
 
       ################################################################
       # EMSCRIPTEN ITSELF
@@ -86,7 +95,6 @@ jobs:
       - name: "build packages"
         shell: bash -l {0}
         run: |
-          conda config --add channels https://repo.mamba.pm/emscripten-forge
           cd ${GITHUB_WORKSPACE}
           export CONDA_EMSDK_DIR=$HOME/src/emsdk
           pushd $CONDA_EMSDK_DIR

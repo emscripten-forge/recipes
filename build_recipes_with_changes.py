@@ -1,13 +1,3 @@
-# from git import Repo
-
-
-# repo = Repo("/home/derthorsten/src/emscripten-forge/recipes")
-# assert not repo.bare
-# hcommit = repo.head.commit
-
-# for diff_added in hcommit.diff("HEAD^").iter_change_type("A"):
-#     print(diff_addevd)
-
 from boa.core.monkeypatch import *
 from boa.core.run_build import run_build
 import subprocess
