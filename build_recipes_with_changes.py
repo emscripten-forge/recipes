@@ -4,10 +4,16 @@ import subprocess
 import os
 import json
 
+from collections import OrderedDict
+
 from dataclasses import dataclass, field
 
 from testing.browser_test_package import test_package as browser_test_package
 from testing.node_test_package import test_package as node_test_package
+
+RECIPES_SUBDIR_MAPPING = OrderedDict(
+    [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
+)
 
 
 def find_files_with_changes(old, new):
@@ -31,15 +37,18 @@ def find_files_with_changes(old, new):
 def find_recipes_with_changes(old, new):
 
     files_with_changes = find_files_with_changes(old=old, new=new)
-    recipes_with_changes = set()
-    for file_with_change in files_with_changes:
-        if file_with_change.startswith("recipes/"):
-            file_with_change = file_with_change[len("recipes/") :]
-            file_with_change = os.path.normpath(file_with_change)
-            recipe = file_with_change.split(os.sep)[0]
-            recipes_with_changes.add(recipe)
+    recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
 
-    recipes_with_changes = sorted(list(recipes_with_changes))
+    for subdir in RECIPES_SUBDIR_MAPPING.keys():
+        for file_with_change in files_with_changes:
+            if file_with_change.startswith(f"recipes/{subdir}"):
+                file_with_change = file_with_change[len(f"recipes/{subdir}") :]
+                file_with_change = os.path.normpath(file_with_change)
+                recipe = file_with_change.split(os.sep)[0]
+                recipes_with_changes[subdir].add(recipe)
+
+    for subdir in RECIPES_SUBDIR_MAPPING.keys():
+        recipes_with_changes[subdir] = sorted(list(recipes_with_changes[subdir]))
     return recipes_with_changes
 
 
@@ -55,11 +64,10 @@ class BuildArgs:
 
 
 def boa_build(recipes_dir, recipe_name, platform):
-    platform_args = {"host": ["--target-platform=emscripten-32"], "build": []}[platform]
     recipe_dir = os.path.join(recipes_dir, recipe_name)
     build_args = BuildArgs(recipe_dir)
-    if platform == "host":
-        build_args.target_platform = "emscripten-32"
+    if platform:
+        build_args.target_platform = platform
     run_build(build_args)
 
 
@@ -70,42 +78,52 @@ def test_package(recipes_dir, recipe_name):
     browser_test_package(recipe_dir)
 
 
-def build_recipes_with_changes(old, new, recipes_dir):
+from typing import List, Optional
+import typer
 
-    recipes_with_changes = find_recipes_with_changes(old=old, new=new)
-    print(f"{recipes_with_changes=}")
-    with open("package_platforms.json") as f:
-        data = json.load(f)
-    data_dict = {}
-    for platform, pkgs in data.items():
-        data_dict[platform] = set(pkgs)
+app = typer.Typer()
 
-    for recipe_with_change in recipes_with_changes:
 
-        for platform, pkgs in data_dict.items():
-            if recipe_with_change in pkgs:
+@app.command()
+def build_recipes_with_changes(
+    old, new, recipes_dir, dryrun: Optional[bool] = typer.Option(True)
+):
 
+    recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
+    print(f"{recipes_with_changes_per_subdir=}")
+
+    for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
+        for recipe_with_change in recipe_with_changes:
+
+            if not dryrun:
                 boa_build(
-                    recipes_dir=recipes_dir,
+                    recipes_dir=os.path.join(recipes_dir, subdir),
                     recipe_name=recipe_with_change,
-                    platform=platform,
+                    platform=RECIPES_SUBDIR_MAPPING[subdir],
                 )
 
                 test_package(
-                    recipes_dir=recipes_dir,
+                    recipes_dir=os.path.join(recipes_dir, subdir),
                     recipe_name=recipe_with_change,
                 )
+            else:
+                print(f"dryrun build: {os.path.join(recipes_dir, subdir)}")
 
 
 if __name__ == "__main__":
+    app()
 
-    import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("recipes_dir")
-    parser.add_argument("old")
-    parser.add_argument("new")
-    args = parser.parse_args()
-    build_recipes_with_changes(old=args.old, new=args.new, recipes_dir=args.recipes_dir)
+# if __name__ == "__main__":
 
-    sys.exit(0)
+
+#     import argparse
+
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("recipes_dir")
+#     parser.add_argument("old")
+#     parser.add_argument("new")
+#     args = parser.parse_args()
+#     build_recipes_with_changes(old=args.old, new=args.new, recipes_dir=args.recipes_dir)
+
+#     sys.exit(0)

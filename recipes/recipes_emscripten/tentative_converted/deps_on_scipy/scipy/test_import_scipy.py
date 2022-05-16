@@ -1,0 +1,40 @@
+
+def test_import_scipy():
+    import scipy
+    import scipy.cluster
+    import scipy.cluster.vq
+    import scipy.cluster.hierarchy
+    import scipy.constants
+    import scipy.fft
+    import scipy.fftpack
+    import scipy.integrate
+    import scipy.interpolate
+    import scipy.io
+    import scipy.io.arff
+    import scipy.io.matlab
+    import scipy.io.wavfile
+    import scipy.linalg
+    import scipy.linalg.blas
+    import scipy.linalg.cython_blas
+    import scipy.linalg.lapack
+    import scipy.linalg.cython_lapack
+    import scipy.linalg.interpolative
+    import scipy.misc
+    import scipy.ndimage
+    import scipy.odr
+    import scipy.optimize
+    import scipy.signal
+    import scipy.signal.windows
+    import scipy.sparse
+    import scipy.sparse.linalg
+    import scipy.sparse.csgraph
+    import scipy.spatial
+    import scipy.spatial.distance
+    import scipy.spatial.transform
+    import scipy.special
+    import scipy.stats
+    import scipy.stats.contingency
+    import scipy.stats.distributions
+    import scipy.stats.mstats
+    import scipy.stats.qmc
+    

@@ -1,0 +1,40 @@
+
+def test_import_scikit-learn():
+    import sklearn
+    import sklearn.calibration
+    import sklearn.cluster
+    import sklearn.compose
+    import sklearn.covariance
+    import sklearn.cross_decomposition
+    import sklearn.datasets
+    import sklearn.decomposition
+    import sklearn.discriminant_analysis
+    import sklearn.dummy
+    import sklearn.ensemble
+    import sklearn.exceptions
+    import sklearn.externals
+    import sklearn.feature_extraction
+    import sklearn.feature_selection
+    import sklearn.gaussian_process
+    import sklearn.impute
+    import sklearn.isotonic
+    import sklearn.kernel_approximation
+    import sklearn.kernel_ridge
+    import sklearn.linear_model
+    import sklearn.manifold
+    import sklearn.metrics
+    import sklearn.mixture
+    import sklearn.model_selection
+    import sklearn.multiclass
+    import sklearn.multioutput
+    import sklearn.naive_bayes
+    import sklearn.neighbors
+    import sklearn.neural_network
+    import sklearn.pipeline
+    import sklearn.preprocessing
+    import sklearn.random_projection
+    import sklearn.semi_supervised
+    import sklearn.svm
+    import sklearn.tree
+    import sklearn.utils
+    
