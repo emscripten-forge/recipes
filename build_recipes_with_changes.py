@@ -92,7 +92,7 @@ def build_recipes_with_changes(
 ):
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
-    # print(f"{recipes_with_changes_per_subdir=}")
+    print(f"{recipes_with_changes_per_subdir=}")
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         for recipe_with_change in recipe_with_changes:
