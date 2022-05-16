@@ -3,6 +3,7 @@ from boa.core.run_build import run_build
 import subprocess
 import os
 import json
+import warnings
 
 from collections import OrderedDict
 
@@ -28,9 +29,10 @@ def find_files_with_changes(old, new):
     output_str = result.stdout.decode()
     error_str = result.stderr.decode()
     if len(error_str):
-        print(len(error_str))
+        print(error_str)
 
     files_with_changes = output_str.splitlines()
+    # print(files_with_changes)
     return files_with_changes
 
 
@@ -42,7 +44,7 @@ def find_recipes_with_changes(old, new):
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
         for file_with_change in files_with_changes:
             if file_with_change.startswith(f"recipes/{subdir}"):
-                file_with_change = file_with_change[len(f"recipes/{subdir}") :]
+                file_with_change = file_with_change[len(f"recipes/{subdir}/") :]
                 file_with_change = os.path.normpath(file_with_change)
                 recipe = file_with_change.split(os.sep)[0]
                 recipes_with_changes[subdir].add(recipe)
@@ -86,44 +88,34 @@ app = typer.Typer()
 
 @app.command()
 def build_recipes_with_changes(
-    old, new, recipes_dir, dryrun: Optional[bool] = typer.Option(True)
+    old, new, recipes_dir, dryrun: Optional[bool] = typer.Option(False)
 ):
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
-    print(f"{recipes_with_changes_per_subdir=}")
+    # print(f"{recipes_with_changes_per_subdir=}")
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         for recipe_with_change in recipe_with_changes:
 
-            if not dryrun:
-                boa_build(
-                    recipes_dir=os.path.join(recipes_dir, subdir),
-                    recipe_name=recipe_with_change,
-                    platform=RECIPES_SUBDIR_MAPPING[subdir],
-                )
+            recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
+            if os.path.isdir(recipes_dir):
+                if not dryrun:
+                    boa_build(
+                        recipes_dir=os.path.join(recipes_dir, subdir),
+                        recipe_name=recipe_with_change,
+                        platform=RECIPES_SUBDIR_MAPPING[subdir],
+                    )
 
-                test_package(
-                    recipes_dir=os.path.join(recipes_dir, subdir),
-                    recipe_name=recipe_with_change,
-                )
+                    test_package(
+                        recipes_dir=os.path.join(recipes_dir, subdir),
+                        recipe_name=recipe_with_change,
+                    )
+
+                else:
+                    print(f"dryrun build: {os.path.join(subdir,recipe_with_change)}")
             else:
-                print(f"dryrun build: {os.path.join(recipes_dir, subdir)}")
+                warnings.warn(f"skipping nonexisting dir {recipe_dir}")
 
 
 if __name__ == "__main__":
     app()
-
-
-# if __name__ == "__main__":
-
-
-#     import argparse
-
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("recipes_dir")
-#     parser.add_argument("old")
-#     parser.add_argument("new")
-#     args = parser.parse_args()
-#     build_recipes_with_changes(old=args.old, new=args.new, recipes_dir=args.recipes_dir)
-
-#     sys.exit(0)
