@@ -92,6 +92,7 @@ app = typer.Typer()
 def build_recipes_with_changes(
     recipes_dir, old, new, dryrun: Optional[bool] = typer.Option(False)
 ):
+    base_work_dir = os.getcwd()
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
     print(f"{recipes_with_changes_per_subdir=}")
@@ -102,12 +103,13 @@ def build_recipes_with_changes(
             recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
             if os.path.isdir(recipes_dir):
                 if not dryrun:
+                    os.chdir(base_work_dir)
                     boa_build(
                         recipes_dir=os.path.join(recipes_dir, subdir),
                         recipe_name=recipe_with_change,
                         platform=RECIPES_SUBDIR_MAPPING[subdir],
                     )
-
+                    os.chdir(base_work_dir)
                     test_package(
                         recipes_dir=os.path.join(recipes_dir, subdir),
                         recipe_name=recipe_with_change,
