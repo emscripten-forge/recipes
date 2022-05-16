@@ -88,7 +88,7 @@ app = typer.Typer()
 
 @app.command()
 def build_recipes_with_changes(
-    old, new, recipes_dir, dryrun: Optional[bool] = typer.Option(False)
+    recipes_dir, old, new, dryrun: Optional[bool] = typer.Option(False)
 ):
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
