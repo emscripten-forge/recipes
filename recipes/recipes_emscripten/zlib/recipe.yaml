@@ -1,0 +1,53 @@
+context:
+  version: 1.2.12
+
+package:
+  name: zlib
+  version: '{{ version }}'
+
+source:
+  url: http://zlib.net/zlib-{{ version }}.tar.gz
+  sha256: 91844808532e5ce316b3c010929493c0244f3d37593afd6de04f71821d5136d9
+
+build:
+  number: 0
+  # run_exports:
+  # mostly OK, but some scary symbol removal.  Let's try for trusting them.
+  #    https://abi-laboratory.pro/tracker/timeline/zlib/
+  # - '{{ pin_subpackage("zlib", max_pin="x.x") }}'
+
+requirements:
+  build:
+    - sel(emscripten): python
+    - bitfurnace
+    - '{{ compiler("c") }}'
+    - cmake
+    - ninja
+
+features:
+  - name: static
+    default: false
+
+# test:
+#   commands:
+#     - sel(unix): test -f ${PREFIX}/lib/libz.a
+
+about:
+  home: http://zlib.net/
+  # http://zlib.net/zlib_license.html
+  license: Zlib
+  summary: Massively spiffy yet delicately unobtrusive compression library
+  license_family: Other
+  license_file: license.txt
+
+  description: |
+    zlib is designed to be a free, general-purpose, lossless data-compression
+    library for use on virtually any computer hardware and operating system.
+
+  doc_url: http://zlib.net/manual.html
+  dev_url: https://github.com/madler/zlib
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+

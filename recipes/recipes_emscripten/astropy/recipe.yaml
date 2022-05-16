@@ -1,0 +1,40 @@
+context:
+  version: '5.0.4'
+
+package:
+  name: astropy
+  version: '{{ version }}'
+
+source:
+  - url: https://pypi.io/packages/source/a/astropy/astropy-{{ version }}.tar.gz
+    sha256: 001184f1a9c3f526a363883ce28efb9cbf076df3d151ca3e131509a248f0dfb9
+    patches:
+      - patches/skip_ep.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_emscripten-32
+  - python
+  - cython
+  - numpy
+  host:
+  - python
+  - pip
+  - extension-helpers
+  - jinja2
+  - markupsafe
+  - numpy
+  run:
+  - numpy
+  - pyerfa
+  - pyyaml
+  - packaging
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_import_astropy.py

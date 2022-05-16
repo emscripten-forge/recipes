@@ -1,0 +1,32 @@
+context:
+  version: '1.9'
+
+package:
+  name: sympy
+  version: '{{ version }}'
+
+source:
+  - url: https://pypi.io/packages/source/s/sympy/sympy-{{ version }}.tar.gz
+    sha256: c7a880e229df96759f955d4f3970d4cabce79f60f5b18830c08b90ce77cd5fdc
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - mpmath
+    - pip
+    - python
+  run:
+    - mpmath
+    - python
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_import_sympy.py

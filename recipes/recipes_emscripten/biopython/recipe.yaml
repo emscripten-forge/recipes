@@ -1,0 +1,31 @@
+context:
+  name: biopython
+  version: '1.79'
+
+package:
+  name: biopython
+  version: '{{ version }}'
+
+source:
+- url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: edb07eac99d3b8abd7ba56ff4bedec9263f76dfc3c3f450e7d2e2bcdecf8559b
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-python_emscripten-32
+    - python
+    - "{{ compiler('c') }}"
+  host:
+    - python
+    - pip
+  run:
+    - numpy
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_import_biopython.py
