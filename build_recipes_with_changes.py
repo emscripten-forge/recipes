@@ -39,11 +39,13 @@ def find_files_with_changes(old, new):
 def find_recipes_with_changes(old, new):
 
     files_with_changes = find_files_with_changes(old=old, new=new)
+
     recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
 
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
         for file_with_change in files_with_changes:
-            if file_with_change.startswith(f"recipes/{subdir}"):
+            if file_with_change.startswith(f"recipes/{subdir}/"):
+                # print(file_with_change)
                 file_with_change = file_with_change[len(f"recipes/{subdir}/") :]
                 file_with_change = os.path.normpath(file_with_change)
                 recipe = file_with_change.split(os.sep)[0]
@@ -112,6 +114,7 @@ def build_recipes_with_changes(
                     )
 
                 else:
+                    # pass
                     print(f"dryrun build: {os.path.join(subdir,recipe_with_change)}")
             else:
                 warnings.warn(f"skipping nonexisting dir {recipe_dir}")
