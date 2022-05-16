@@ -75,7 +75,7 @@ def boa_build(recipes_dir, recipe_name, platform):
 
 def test_package(recipes_dir, recipe_name):
     recipe_dir = os.path.join(recipes_dir, recipe_name)
-
+    print(f"Test recipe dir: {recipe_dir}")
     node_test_package(recipe_dir)
     browser_test_package(recipe_dir)
 
