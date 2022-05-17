@@ -1,7 +1,7 @@
 name: Build recipes with changes
-on: 
+on:
   push:
-    branches:    
+    branches:
       - 'main'
   pull_request:
 
@@ -12,7 +12,6 @@ jobs:
     env:
       TARGET_PLATFORM: emscripten-32
       GITHUB_OWNER: "emscripten-forge"
-      CONDA_EMSDK_DIR: /src/emsdk
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +46,6 @@ jobs:
           git config --global advice.detachedHead false
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
           cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
-          mkdir -p $HOME/src/emsdk
 
       ################################################################
       # MAMBA
@@ -57,7 +55,7 @@ jobs:
         with:
           environment-file: ci_env.yml
           environment-name: ci-env
-          micromamba-version: '0.23.1'
+          micromamba-version: '0.23.2'
 
       ################################################################
       # POST ENV INSTALL CONFIG
@@ -70,15 +68,13 @@ jobs:
 
 
       ################################################################
-      # EMSCRIPTEN ITSELF
+      # Setup emsdk
       ################################################################
       - name: install emsdk
         shell: bash -l {0}
         run: |
-          git clone https://github.com/emscripten-core/emsdk.git $HOME/src/emsdk
-          pushd $HOME/src/emsdk
-          ./emsdk install ${{matrix.emsdk_ver}}
-          popd
+          micromamba activate ci-env
+          emsdk install ${{matrix.emsdk_ver}}
 
       ################################################################
       # install / clone custom non-master things
@@ -87,14 +83,11 @@ jobs:
         shell: bash -l {0}
         run: |
           micromamba activate ci-env
-          python -m pip install git+https://github.com/emscripten-forge/emboa@main
+          python -m pip install emperator
           python -m pip install git+https://github.com/DerThorsten/boa.git@update
           python -m pip install git+https://github.com/DerThorsten/bitfurnace.git@emscripten_new
           python -m pip install playwright
           playwright install
-
-
-
 
       ################################################################
       # build recipes with changes PUSH
@@ -103,13 +96,11 @@ jobs:
         shell: bash -l {0}
         if: github.event_name == 'push'
         run: |
+          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          export CONDA_EMSDK_DIR=$HOME/src/emsdk
-          pushd $CONDA_EMSDK_DIR
-          ./emsdk activate ${{matrix.emsdk_ver}}
-          source emsdk_env.sh
-          export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
-          popd
+          export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
+          emsdk activate ${{matrix.emsdk_ver}}
+          source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
           python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes origin/main~1 origin/main
 
       ################################################################
@@ -119,17 +110,14 @@ jobs:
         shell: bash -l {0}
         if: github.event_name == 'pull_request'
         run: |
+          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          export CONDA_EMSDK_DIR=$HOME/src/emsdk
-          pushd $CONDA_EMSDK_DIR
-          ./emsdk activate ${{matrix.emsdk_ver}}
-          source emsdk_env.sh
-          export FILE_PACKAGER=$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py
-          popd
+          export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
+          emsdk activate ${{matrix.emsdk_ver}}
+          source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
           python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes origin/main HEAD
 
 
-      
       ################################################################
       # quetz upload packages
       ################################################################
