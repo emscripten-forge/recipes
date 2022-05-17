@@ -15,41 +15,45 @@ import pathlib
 import shutil
 import os
 
+
 def safe_unlink(p):
-	assert(prefix in p.parents)
-	p.unlink()
+    assert prefix in p.parents
+    p.unlink()
+
 
 def rm(path):
-	if isinstance(path, pathlib.PurePath):
-		safe_unlink(path)
-	else:
-		for p in path:
-			safe_unlink(p)
+    if isinstance(path, pathlib.PurePath):
+        safe_unlink(path)
+    else:
+        for p in path:
+            safe_unlink(p)
+
 
 class Recipe(CMake):
+    def post_install(self):
+        if target_platform.startswith("win"):
+            (library_lib / "zlib.lib").unlink()
+            (library_bin / "zlib.dll").unlink()
+        else:
+            print(features)
+            if not features.static and not variables.target_platform.startswith(
+                "emscripten"
+            ):
+                # delete the .a library
+                rm(prefix / "lib" / "libz.a")
+            else:
+                rm((prefix / "lib").glob("libz*.dylib"))
 
-	def post_install(self):
-		if target_platform.startswith('win'):
-			(library_lib / "zlib.lib").unlink()
-			(library_bin / "zlib.dll").unlink()
-		else:
-			print(features)
-			if not features.static and not variables.target_platform.startswith("emscripten"):
-				# delete the .a library
-				rm(prefix / "lib" / "libz.a")
-			else:
-				rm((prefix / "lib").glob("libz*.dylib"))
+    def __init__(self):
+        print("Activated features: ", features)
 
-	def __init__(self):
-		print("Activated features: ", features)
-
-		if target_platform.startswith('win'):
-			self.cmake_args["CMAKE_C_FLAGS_RELEASE"] = "/MT /O2 /Ob2 /DNDEBUG"
-		self.cflags += ['-fPIC']
-		self.cxxflags += ['-fPIC']
-
+        if target_platform.startswith("win"):
+            self.cmake_args["CMAKE_C_FLAGS_RELEASE"] = "/MT /O2 /Ob2 /DNDEBUG"
+        self.cflags += ["-fPIC"]
+        self.cxxflags += ["-fPIC"]
 
 
 if variables.target_platform.startswith("emscripten"):
-	shutil.copy2(os.path.join(variables.recipe_dir, "CMakeLists.txt"),
-		variables.src_dir)
+    shutil.copy2(
+        os.path.join(variables.recipe_dir, "CMakeLists.txt"), variables.src_dir
+    )
