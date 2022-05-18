@@ -248,6 +248,8 @@ def test_package(recipe):
     pytest_files = get_pytest_files(recipe_dir, recipe)
     has_tests = len(pytest_files) > 0
 
+    old_cwd = os.getcwd()
+
     if has_tests:
         pkg_name = recipe["package"]["name"]
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -268,6 +270,7 @@ def test_package(recipe):
             finally:
                 server.shutdown()
                 thread.join()
+    os.chdir(old_cwd)
 
 
 # if __name__ == "__main__":
