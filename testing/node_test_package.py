@@ -175,7 +175,7 @@ def test_package(recipe, debug=False, debug_dir=None):
             patch(work_dir=work_dir)
             run_node_tests(work_dir=work_dir)
 
-    os.chdir(work_dir)
+    os.chdir(old_cwd)
 
 
 # if __name__ == "__main__":
