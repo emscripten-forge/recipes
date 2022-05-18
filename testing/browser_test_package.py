@@ -145,10 +145,10 @@ def pack(prefix, pytest_files):
     print("pytest_files", pytest_files)
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
-    cmd = [f"emperator pack python core {prefix} --version=3.10 "]
+    cmd = [f"empack pack python core {prefix} --version=3.10 "]
     ret = subprocess.run(cmd, shell=True)
 
-    cmd = [f"emperator pack file  {pytest_files[0]}  '/tests'  testdata"]
+    cmd = [f"empack pack file  {pytest_files[0]}  '/tests'  testdata"]
     ret = subprocess.run(cmd, shell=True)
 
 
