@@ -149,13 +149,9 @@ def test_dir_context(pkg_name, debug, debug_dir):
             yield temp_dir
 
 
-def test_package(recipe_dir, debug=False, debug_dir=None):
-    assert os.path.isdir(recipe_dir)
-    recipe_file = os.path.join(recipe_dir, "recipe.yaml")
-
-    has_tests = False
-    with open(recipe_file, "r") as stream:
-        recipe = yaml.safe_load(stream)
+def test_package(recipe, debug=False, debug_dir=None):
+    recipe_dir, _ = os.path.split(recipe["recipe_file"])
+    assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     pytest_files = get_pytest_files(recipe_dir, recipe)
     has_tests = len(pytest_files) > 0
 
@@ -177,20 +173,20 @@ def test_package(recipe_dir, debug=False, debug_dir=None):
             run_node_tests(work_dir=work_dir)
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    import argparse
+#     import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("recipe_dir")
-    parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
-    parser.add_argument("--debug-dir", type=str)
-    args = parser.parse_args()
-    print(args.debug_dir)
-    if args.debug and args.debug_dir is None:
-        raise RuntimeError("missing arg: --debug-dir")
-    test_package(args.recipe_dir, debug=args.debug, debug_dir=args.debug_dir)
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("pkg_spec")
+#     parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
+#     parser.add_argument("--debug-dir", type=str)
+#     args = parser.parse_args()
+#     print(args.debug_dir)
+#     if args.debug and args.debug_dir is None:
+#         raise RuntimeError("missing arg: --debug-dir")
+#     test_package(args.pkg_spec, debug=args.debug, debug_dir=args.debug_dir)
 
-    import sys
+#     import sys
 
-    sys.exit(0)
+#     sys.exit(0)

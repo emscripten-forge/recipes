@@ -5,7 +5,7 @@ import os
 import json
 import warnings
 import tempfile
-
+import rich
 from collections import OrderedDict
 
 from dataclasses import dataclass, field
@@ -42,7 +42,7 @@ def find_recipes_with_changes(old, new):
     files_with_changes = find_files_with_changes(old=old, new=new)
 
     recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
-    print("recipes_with_changes", recipes_with_changes)
+    # print("recipes_with_changes", recipes_with_changes)
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
         for file_with_change in files_with_changes:
             if file_with_change.startswith(f"recipes/{subdir}/"):
@@ -69,24 +69,26 @@ class BuildArgs:
     post_build_callback: object = None
 
 
+def test_package(recipe):
+    # recipe_dir = os.path.join(recipes_dir, recipe_name)
+    print(f"Test recipe: {recipe}")
+    node_test_package(recipe)
+    browser_test_package(recipe)
+
+
 def post_build_callback(recipe):
+    rich.pretty.pprint(recipe)
     print("in post_build_callback", recipe)
+    test_package(recipe)
 
 
 def boa_build(recipes_dir, recipe_name, platform):
     recipe_dir = os.path.join(recipes_dir, recipe_name)
     build_args = BuildArgs(recipe_dir)
+    build_args.post_build_callback = post_build_callback
     if platform:
         build_args.target_platform = platform
-        build_args.post_build_callback = post_build_callback
     run_build(build_args)
-
-
-def test_package(recipes_dir, recipe_name):
-    recipe_dir = os.path.join(recipes_dir, recipe_name)
-    print(f"Test recipe dir: {recipe_dir}")
-    node_test_package(recipe_dir)
-    browser_test_package(recipe_dir)
 
 
 from typing import List, Optional
@@ -102,8 +104,7 @@ def build_recipes_with_changes(
     base_work_dir = os.getcwd()
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
-    # recipes_with_changes_per_subdir["recipes_emscripten"].append("regex")
-    print(f"{recipes_with_changes_per_subdir=}")
+    rich.pretty.pprint(recipes_with_changes_per_subdir)
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
 
@@ -121,10 +122,6 @@ def build_recipes_with_changes(
                         platform=RECIPES_SUBDIR_MAPPING[subdir],
                     )
                     os.chdir(base_work_dir)
-                    test_package(
-                        recipes_dir=os.path.join(recipes_dir, subdir),
-                        recipe_name=recipe_with_change,
-                    )
 
                 else:
                     # pass
