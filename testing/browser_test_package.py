@@ -240,13 +240,11 @@ def run_playwright_tests(work_dir, port):
     asyncio.run(playwright_main(page_url=page_url))
 
 
-def test_package(recipe_dir):
-    assert os.path.isdir(recipe_dir)
+def test_package(recipe):
+    recipe_dir, _ = os.path.split(recipe["recipe_file"])
+    assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
 
-    has_tests = False
-    with open(recipe_file, "r") as stream:
-        recipe = yaml.safe_load(stream)
     pytest_files = get_pytest_files(recipe_dir, recipe)
     has_tests = len(pytest_files) > 0
 
@@ -272,16 +270,16 @@ def test_package(recipe_dir):
                 thread.join()
 
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    import argparse
+#     import argparse
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("recipe_dir")
-    args = parser.parse_args()
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("recipe_dir")
+#     args = parser.parse_args()
 
-    test_package(args.recipe_dir)
+#     test_package(args.recipe_dir)
 
-    import sys
+#     import sys
 
-    sys.exit(0)
+#     sys.exit(0)
