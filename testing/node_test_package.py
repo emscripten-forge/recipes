@@ -150,6 +150,9 @@ def test_dir_context(pkg_name, debug, debug_dir):
 
 
 def test_package(recipe, debug=False, debug_dir=None):
+
+    old_cwd = os.getcwd()
+
     recipe_dir, _ = os.path.split(recipe["recipe_file"])
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     pytest_files = get_pytest_files(recipe_dir, recipe)
@@ -171,6 +174,8 @@ def test_package(recipe, debug=False, debug_dir=None):
             copy_from_prefix(prefix=prefix, work_dir=work_dir)
             patch(work_dir=work_dir)
             run_node_tests(work_dir=work_dir)
+
+    os.chdir(old_cwd)
 
 
 # if __name__ == "__main__":

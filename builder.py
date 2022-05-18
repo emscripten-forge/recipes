@@ -7,9 +7,10 @@ import warnings
 import tempfile
 import rich
 from collections import OrderedDict
-
+import functools
 from dataclasses import dataclass, field
 
+import empack
 from testing.browser_test_package import test_package as browser_test_package
 from testing.node_test_package import test_package as node_test_package
 
@@ -76,19 +77,64 @@ def test_package(recipe):
     browser_test_package(recipe)
 
 
-def post_build_callback(recipe):
-    rich.pretty.pprint(recipe)
-    print("in post_build_callback", recipe)
-    test_package(recipe)
+def emscripten_pack_package(recipe):
+    pack_conda_pkg(
+        recipe=recipe,
+    )
 
 
-def boa_build(recipes_dir, recipe_name, platform):
-    recipe_dir = os.path.join(recipes_dir, recipe_name)
+def post_build_callback(
+    recipe,
+    target_platform,
+    sorted_outputs,
+    pack_prefix,
+    pack_outdir,
+    skip_tests,
+    skip_pack,
+):
+    assert len(sorted_outputs) == 1, "only one output per pkg atm"
+    rich.pretty.pprint(
+        {
+            "target_platform": target_platform,
+            "recipe": recipe,
+            "sorted_outputs": sorted_outputs[0],
+        }
+    )
+    if target_platform == "emscripten-32" and (not skip_tests):
+        test_package(recipe)
+
+    if target_platform == "emscripten-32":
+        empack.file_packager.pack_conda_pkg(
+            recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir
+        )
+
+
+def boa_build(
+    recipe_dir,
+    platform,
+    pack_prefix,
+    pack_outdir,
+    skip_tests=False,
+    skip_pack=False,
+    skip_existing=False,
+):
+
+    base_work_dir = os.getcwd()
     build_args = BuildArgs(recipe_dir)
-    build_args.post_build_callback = post_build_callback
+    if skip_existing:
+        build_args.skip_existing = "yes"
+
+    build_args.post_build_callback = functools.partial(
+        post_build_callback,
+        skip_tests=skip_tests,
+        skip_pack=skip_pack,
+        pack_prefix=pack_prefix,
+        pack_outdir=pack_outdir,
+    )
     if platform:
         build_args.target_platform = platform
     run_build(build_args)
+    os.chdir(base_work_dir)
 
 
 from typing import List, Optional
@@ -97,9 +143,46 @@ import typer
 app = typer.Typer()
 
 
-@app.command()
-def build_recipes_with_changes(
-    recipes_dir, old, new, dryrun: Optional[bool] = typer.Option(False)
+build_app = typer.Typer()
+app.add_typer(build_app, name="build")
+
+
+@build_app.command()
+def explicit(
+    recipe_dir,
+    pack_prefix: str,
+    pack_outdir: str,
+    emscripten_32: Optional[bool] = typer.Option(False),
+    skip_tests: Optional[bool] = typer.Option(False),
+    skip_pack: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(False),
+):
+    assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
+    platform = ""
+    if emscripten_32:
+        platform = "emscripten-32"
+    boa_build(
+        recipe_dir=recipe_dir,
+        platform=platform,
+        skip_tests=skip_tests,
+        skip_pack=skip_pack,
+        pack_prefix=pack_prefix,
+        skip_existing=skip_existing,
+        pack_outdir=pack_outdir,
+    )
+
+
+@build_app.command()
+def changed(
+    recipes_dir,
+    old,
+    new,
+    pack_prefix: str,
+    pack_outdir: str,
+    dryrun: Optional[bool] = typer.Option(False),
+    skip_tests: Optional[bool] = typer.Option(False),
+    skip_pack: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(False),
 ):
     base_work_dir = os.getcwd()
 
@@ -108,20 +191,21 @@ def build_recipes_with_changes(
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
 
-        # copy the recipes with changes to a temp dir
-
         for recipe_with_change in recipe_with_changes:
 
             recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
-            if os.path.isdir(recipes_dir):
+            print("THE RECIPE DIR", recipe_dir)
+            if os.path.isdir(recipe_dir):
                 if not dryrun:
-                    os.chdir(base_work_dir)
                     boa_build(
-                        recipes_dir=os.path.join(recipes_dir, subdir),
-                        recipe_name=recipe_with_change,
+                        recipe_dir=recipe_dir,
                         platform=RECIPES_SUBDIR_MAPPING[subdir],
+                        skip_tests=skip_tests,
+                        skip_pack=skip_pack,
+                        pack_prefix=pack_prefix,
+                        pack_outdir=pack_outdir,
+                        skip_existing=skip_existing,
                     )
-                    os.chdir(base_work_dir)
 
                 else:
                     # pass
