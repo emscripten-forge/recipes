@@ -64,6 +64,8 @@ jobs:
         shell: bash -l {0}
         run: |
           mkdir -p $HOME/micromamba/envs/ci-env/conda-bld/emscripten-32
+          mkdir -p $HOME/packed
+
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc_post $HOME/.condarc
           micromamba activate ci-env
           playwright install
@@ -88,7 +90,7 @@ jobs:
         shell: bash -l {0}
         run: |
           micromamba activate ci-env
-          python -m pip install empack                                                        --no-deps --ignore-installed
+          python -m pip install git+https://github.com/emscripten-forge/empack.git@pack_pkg      --no-deps --ignore-installed
           python -m pip install git+https://github.com/DerThorsten/boa.git@postcb                --no-deps --ignore-installed
           python -m pip install git+https://github.com/DerThorsten/bitfurnace.git@emscripten_new --no-deps --ignore-installed
 
@@ -105,7 +107,7 @@ jobs:
           export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
           emsdk activate ${{matrix.emsdk_ver}}
           source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
-          python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes origin/main~1 origin/main
+          python builder.py build changed $GITHUB_WORKSPACE/recipes origin/main~1 origin/main ~/webenv ~/packed
 
       ################################################################
       # build recipes with changes PULL_REQUEST
@@ -119,8 +121,18 @@ jobs:
           export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
           emsdk activate ${{matrix.emsdk_ver}}
           source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
-          python build_recipes_with_changes.py $GITHUB_WORKSPACE/recipes origin/main HEAD
+          python builder.py build changed  $GITHUB_WORKSPACE/recipes origin/main HEAD  ~/webenv ~/packed
 
+
+      ################################################################
+      # github upload packages
+      ################################################################
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: emscripten_packed_pkgs
+          path: ~/packed/* # or path/to/artifact\
+        if: ${{ matrix.skip_exisiting == '' }}
 
       ################################################################
       # quetz upload packages
