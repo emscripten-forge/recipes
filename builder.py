@@ -60,7 +60,7 @@ def find_recipes_with_changes(old, new):
 
 @dataclass
 class BuildArgs:
-    target: str
+    target: str = ""
     recipe_dir: str = ""
     command: str = "build"
     features: list[str] = field(default_factory=list)
@@ -110,10 +110,11 @@ def post_build_callback(
 
 
 def boa_build(
-    recipe_dir,
     platform,
     pack_prefix,
     pack_outdir,
+    target="",
+    recipe_dir="",
     skip_tests=False,
     skip_pack=False,
     skip_existing=False,
@@ -148,6 +149,31 @@ app.add_typer(build_app, name="build")
 
 
 @build_app.command()
+def directory(
+    recipes_dir,
+    pack_prefix: str,
+    pack_outdir: str,
+    emscripten_32: Optional[bool] = typer.Option(False),
+    skip_tests: Optional[bool] = typer.Option(False),
+    skip_pack: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(False),
+):
+    # assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
+    platform = ""
+    if emscripten_32:
+        platform = "emscripten-32"
+    boa_build(
+        recipe_dir=recipes_dir,
+        platform=platform,
+        skip_tests=skip_tests,
+        skip_pack=skip_pack,
+        pack_prefix=pack_prefix,
+        skip_existing=skip_existing,
+        pack_outdir=pack_outdir,
+    )
+
+
+@build_app.command()
 def explicit(
     recipe_dir,
     pack_prefix: str,
@@ -162,7 +188,7 @@ def explicit(
     if emscripten_32:
         platform = "emscripten-32"
     boa_build(
-        recipe_dir=recipe_dir,
+        target=recipe_dir,
         platform=platform,
         skip_tests=skip_tests,
         skip_pack=skip_pack,
@@ -198,7 +224,7 @@ def changed(
             if os.path.isdir(recipe_dir):
                 if not dryrun:
                     boa_build(
-                        recipe_dir=recipe_dir,
+                        target=recipe_dir,
                         platform=RECIPES_SUBDIR_MAPPING[subdir],
                         skip_tests=skip_tests,
                         skip_pack=skip_pack,
