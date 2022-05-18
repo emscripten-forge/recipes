@@ -51,7 +51,7 @@ let res = (async function() {
   }
   catch(e){
     console.log(e)
-    throw "Test(s) failed!"+String(e); 
+    throw "Test(s) failed!"+String(e);
   }
   return ret
 })().then(
@@ -59,7 +59,7 @@ let res = (async function() {
     console.log("test r",r)
     if(r == 1)
     {
-      throw "Test(s) failed!"; 
+      throw "Test(s) failed!";
     }
   }
 )
@@ -92,12 +92,12 @@ def pack(prefix, pytest_files):
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
     cmd = [
-        f"emboa pack python core {prefix} --version=3.10 --export-name='global.Module'"
+        f"emperator pack python core {prefix} --version=3.10 --export-name='global.Module'"
     ]
     ret = subprocess.run(cmd, shell=True)
 
     cmd = [
-        f"emboa pack file  {pytest_files[0]}  '/tests'  testdata --export-name='global.Module'"
+        f"emperator pack file  {pytest_files[0]}  '/tests'  testdata --export-name='global.Module'"
     ]
     ret = subprocess.run(cmd, shell=True)
 

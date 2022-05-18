@@ -72,7 +72,7 @@ let res = (async function() {
     pytest_output.setAttribute("name", "pytest_output");
     pytest_output.id = "pytest_output"
     pytest_output.value = pytestOutputString
-    
+
 
     var pytest_retcode = document.createElement('TEXTAREA');
     document.body.appendChild(pytest_retcode);
@@ -87,7 +87,7 @@ let res = (async function() {
     console.log("test r",r)
     if(r == 1)
     {
-      throw "Test(s) failed!"; 
+      throw "Test(s) failed!";
     }
   }
 )
@@ -145,10 +145,10 @@ def pack(prefix, pytest_files):
     print("pytest_files", pytest_files)
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
-    cmd = [f"emboa pack python core {prefix} --version=3.10 "]
+    cmd = [f"emperator pack python core {prefix} --version=3.10 "]
     ret = subprocess.run(cmd, shell=True)
 
-    cmd = [f"emboa pack file  {pytest_files[0]}  '/tests'  testdata"]
+    cmd = [f"emperator pack file  {pytest_files[0]}  '/tests'  testdata"]
     ret = subprocess.run(cmd, shell=True)
 
 
