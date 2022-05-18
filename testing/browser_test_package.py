@@ -245,9 +245,6 @@ def test_package(recipe):
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
 
-    has_tests = False
-    with open(recipe_file, "r") as stream:
-        recipe = yaml.safe_load(stream)
     pytest_files = get_pytest_files(recipe_dir, recipe)
     has_tests = len(pytest_files) > 0
 
