@@ -113,17 +113,22 @@ def boa_build(
     platform,
     pack_prefix,
     pack_outdir,
-    target="",
-    recipe_dir="",
+    target=None,
+    recipe_dir=None,
     skip_tests=False,
     skip_pack=False,
     skip_existing=False,
 ):
 
     base_work_dir = os.getcwd()
-    build_args = BuildArgs(recipe_dir)
+    build_args = BuildArgs()
     if skip_existing:
         build_args.skip_existing = "yes"
+
+    if target is not None:
+        build_args.target = target
+    if recipe_dir is not None:
+        build_args.recipe_dir = recipe_dir
 
     build_args.post_build_callback = functools.partial(
         post_build_callback,
