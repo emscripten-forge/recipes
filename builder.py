@@ -139,6 +139,7 @@ def boa_build(
     )
     if platform:
         build_args.target_platform = platform
+    print(build_args)
     run_build(build_args)
     os.chdir(base_work_dir)
 
@@ -168,7 +169,8 @@ def directory(
     if emscripten_32:
         platform = "emscripten-32"
     boa_build(
-        recipe_dir=recipes_dir,
+        target=recipes_dir,
+        recipe_dir=None,
         platform=platform,
         skip_tests=skip_tests,
         skip_pack=skip_pack,
