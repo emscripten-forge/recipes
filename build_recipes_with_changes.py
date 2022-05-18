@@ -4,6 +4,7 @@ import subprocess
 import os
 import json
 import warnings
+import tempfile
 
 from collections import OrderedDict
 
@@ -41,7 +42,7 @@ def find_recipes_with_changes(old, new):
     files_with_changes = find_files_with_changes(old=old, new=new)
 
     recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
-
+    print("recipes_with_changes", recipes_with_changes)
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
         for file_with_change in files_with_changes:
             if file_with_change.startswith(f"recipes/{subdir}/"):
@@ -65,6 +66,11 @@ class BuildArgs:
     variant_config_files: list[str] = field(default_factory=list)
     target_platform: str = ""
     skip_existing: str = "default"
+    post_build_callback: object = None
+
+
+def post_build_callback(recipe):
+    print("in post_build_callback", recipe)
 
 
 def boa_build(recipes_dir, recipe_name, platform):
@@ -72,6 +78,7 @@ def boa_build(recipes_dir, recipe_name, platform):
     build_args = BuildArgs(recipe_dir)
     if platform:
         build_args.target_platform = platform
+        build_args.post_build_callback = post_build_callback
     run_build(build_args)
 
 
@@ -95,9 +102,13 @@ def build_recipes_with_changes(
     base_work_dir = os.getcwd()
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
+    # recipes_with_changes_per_subdir["recipes_emscripten"].append("regex")
     print(f"{recipes_with_changes_per_subdir=}")
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
+
+        # copy the recipes with changes to a temp dir
+
         for recipe_with_change in recipe_with_changes:
 
             recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
