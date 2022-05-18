@@ -4,6 +4,7 @@ on:
     branches:
       - 'main'
   pull_request:
+  workflow_dispatch:
 
 jobs:
 
@@ -110,6 +111,23 @@ jobs:
           python builder.py build changed $GITHUB_WORKSPACE/recipes origin/main~1 origin/main ~/webenv ~/packed
 
       ################################################################
+      # build ALL recipes
+      ################################################################
+      - name: "build packages workflow_dispatch"
+        shell: bash -l {0}
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          micromamba activate ci-env
+          cd ${GITHUB_WORKSPACE}
+          export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
+          emsdk activate ${{matrix.emsdk_ver}}
+          source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
+
+          python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes_emscripten  /home/runner/webenv /home/runner/packed --skip-tests --skip-pack
+          python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes_emscripten  /home/runner/webenv /home/runner/packed --emscripten-32
+
+
+      ################################################################
       # build recipes with changes PULL_REQUEST
       ################################################################
       - name: "build packages pull_request"
@@ -128,16 +146,38 @@ jobs:
       # github upload emscripten packed pkgs
       ################################################################
       - uses: actions/upload-artifact@v2
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' 
         with:
           name: emscripten_packed_pkgs
           path: ~/packed/* # or path/to/artifact\
+
+      ################################################################
+      # github upload emscripten packed pkgs
+      ################################################################
+      - uses: actions/upload-artifact@v2
+        if: github.event_name == 'workflow_dispatch' 
+        with:
+          name: emscripten_packed_pkgs
+          path: ~/packed/* # or path/to/artifact\
+
+
 
       ################################################################
       # quetz upload packages
       ################################################################
       - name: "quetz upload packages"
         if: github.event_name == 'push'
+        shell: bash -l {0}
+        run: |
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+
+      ################################################################
+      # quetz upload packages
+      ################################################################
+      - name: "quetz upload packages"
+        if: github.event_name == 'workflow_dispatch'
         shell: bash -l {0}
         run: |
           QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client --force https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
