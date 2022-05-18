@@ -182,6 +182,7 @@ def changed(
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_pack: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(False),
 ):
     base_work_dir = os.getcwd()
 
@@ -193,6 +194,7 @@ def changed(
         for recipe_with_change in recipe_with_changes:
 
             recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
+            print("THE RECIPE DIR", recipe_dir)
             if os.path.isdir(recipe_dir):
                 if not dryrun:
                     boa_build(
@@ -202,6 +204,7 @@ def changed(
                         skip_pack=skip_pack,
                         pack_prefix=pack_prefix,
                         pack_outdir=pack_outdir,
+                        skip_existing=skip_existing,
                     )
 
                 else:
