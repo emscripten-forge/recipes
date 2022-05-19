@@ -1,4 +1,4 @@
-name: Build recipes with changes
+name: build recipes
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build_packages:
+  build_recipes:
     runs-on: ubuntu-latest
     env:
       TARGET_PLATFORM: emscripten-32
@@ -161,7 +161,6 @@ jobs:
           path: ~/packed/* # or path/to/artifact\
 
 
-
       ################################################################
       # quetz upload packages
       ################################################################
@@ -173,13 +172,3 @@ jobs:
           QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
           QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
 
-      ################################################################
-      # quetz upload packages
-      ################################################################
-      - name: "quetz upload packages"
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash -l {0}
-        run: |
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
