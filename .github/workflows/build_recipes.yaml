@@ -105,9 +105,8 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
           emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
+          source $CONDA_EMSDK_DIR/emsdk_env.sh
           python builder.py build changed $GITHUB_WORKSPACE/recipes origin/main~1 origin/main ~/webenv ~/packed
 
       ################################################################
@@ -119,9 +118,8 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
           emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
+          source $CONDA_EMSDK_DIR/emsdk_env.sh
 
           python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes             /home/runner/webenv /home/runner/packed --skip-tests --skip-pack
           python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes_emscripten  /home/runner/webenv /home/runner/packed --emscripten-32
@@ -136,9 +134,8 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          export CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
           emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_PREFIX/opt/emsdk/emsdk_env.sh
+          source $CONDA_EMSDK_DIR/emsdk_env.sh
           python builder.py build changed  $GITHUB_WORKSPACE/recipes origin/main HEAD  /home/runner/webenv /home/runner/packed
 
 
@@ -146,7 +143,7 @@ jobs:
       # github upload emscripten packed pkgs
       ################################################################
       - uses: actions/upload-artifact@v2
-        if: github.event_name == 'push' 
+        if: github.event_name == 'push'
         with:
           name: emscripten_packed_pkgs
           path: ~/packed/* # or path/to/artifact\
@@ -155,7 +152,7 @@ jobs:
       # github upload emscripten packed pkgs
       ################################################################
       - uses: actions/upload-artifact@v2
-        if: github.event_name == 'workflow_dispatch' 
+        if: github.event_name == 'workflow_dispatch'
         with:
           name: emscripten_packed_pkgs
           path: ~/packed/* # or path/to/artifact\
