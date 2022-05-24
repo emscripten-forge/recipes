@@ -5,12 +5,12 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
     export PYTHON=${BUILD_PREFIX}/bin/python3
 
-    pushd $CONDA_EMSDK_DIR
-    ./emsdk install  3.1.2
-    ./emsdk activate 3.1.2
-    source emsdk_env.sh
+    emsdk install  3.1.2
+    emsdk activate 3.1.2
+    export CONDA_EMSDK_DIR=$BUILD_PREFIX/lib/python$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")/site-packages/emsdk
+    source $CONDA_EMSDK_DIR/emsdk_env.sh
+
     export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
-    popd
 
     export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true"
 
