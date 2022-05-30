@@ -1,6 +1,9 @@
 #include <pybind11/embed.h> 
 #include <emscripten/bind.h>
+#include <pyjs/export_pyjs_module.hpp>
+#include <pyjs/export_js_module.hpp>
 #include <sstream>
+
 
 namespace py = pybind11;
 namespace em = emscripten;
@@ -15,7 +18,14 @@ int run_tests(const std::string & testdir)
     return ret.cast<int>();
 }
 
+PYBIND11_EMBEDDED_MODULE(pyjs, m) {
+    pyjs::export_pyjs_module(m);
+}
+
 EMSCRIPTEN_BINDINGS(my_module) {
+    
+    pyjs::export_js_module();
+
     em::function("run_tests", &run_tests);
     em::function("initialize_interpreter",em::select_overload<void()>([](){
         py::initialize_interpreter(true,0,nullptr,false);
