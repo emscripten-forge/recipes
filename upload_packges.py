@@ -16,7 +16,7 @@ def extract_name_version_build(full_pkg):
     print (f"pkg_fullname: {pkg_fullname}")
     name_and_version = pkg_fullname[0:-8]
     print (f"name_and_version: {name_and_version}")
-    name, version, build = name_and_version.rsplit("-",3)
+    name, version, build = name_and_version.rsplit("-",2)
 
     return [name, f"{version}-{build}"]
 
