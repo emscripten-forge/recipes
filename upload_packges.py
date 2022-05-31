@@ -54,8 +54,8 @@ if __name__ == "__main__":
         oci = OCI(host, user_or_org)
         
         base_dir = f"{str(conda_prefix)}/{channel}/{subdir}"
-
-        for path in pathlib.Path(base_dir):
+        #for child in p.iterdir()
+        for path in pathlib.Path(base_dir).iterdir():
             path_to_archive = str (path)
             if path.is_file() and path_to_archive.endswith(".tar.bz2"):
                 pkg_name, pkg_version_and_build = extract_name_version_build (path_to_archive)
