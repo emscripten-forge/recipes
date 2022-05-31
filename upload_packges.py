@@ -11,8 +11,11 @@ dot_data_file_media_type = "vnd.emscript.data"
 dot_js_file_media_type = "application/js"
 
 def extract_name_version_build(full_pkg):
+    print(f"full_pkg: {full_pkg}")
     pkg_fullname = full_pkg.rsplit("/", -1)[-1]
+    print (f"pkg_fullname: {pkg_fullname}")
     name_and_version = pkg_fullname[0:-8]
+    print (f"name_and_version: {name_and_version}")
     name, version, build = name_and_version.rsplit("-",3)
 
     return [name, f"{version}-{build}"]
