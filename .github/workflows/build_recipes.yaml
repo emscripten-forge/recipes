@@ -13,10 +13,13 @@ jobs:
     env:
       TARGET_PLATFORM: emscripten-32
       GITHUB_OWNER: "emscripten-forge"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      CHANNEL: "conda-bld"
     strategy:
       fail-fast: false
       matrix:
         emsdk_ver: ["3.1.2"]
+        subdir: [emscripten-32,linux-64,noarch]
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -167,4 +170,12 @@ jobs:
           QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
           QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
           QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+
+      - name:  upload packages to github OCI
+        shell: bash -l {0}
+        run: |
+          python -m pip install git+https://github.com/mamba-org/conda_oci_mirror@main
+          echo ${{ env.GITHUB_TOKEN }} | oras login https://ghcr.io -u ${{ env.GITHUB_OWNER }} --password-stdin
+          python upload_packges.py ${{ env.GITHUB_OWNER }} ${CONDA_PREFIX} ${{ env.CHANNEL }} ${{ matrix.subdir }}
+
 
