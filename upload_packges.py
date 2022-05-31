@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
         oci = OCI(host, user_or_org)
         
-        base_dir = f"{conda_prefix}/{channel}/{subdir}"
+        base_dir = f"{str(conda_prefix)}/{channel}/{subdir}"
 
         for path in pathlib.Path(base_dir):
             path_to_archive = str (path)
