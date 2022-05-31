@@ -12,6 +12,7 @@ let Module = {};
 console.log("require pytest_driver.js")
 var createModule = require('./pytest_driver.js')
 
+
 function waitRunDependency() {
   const promise = new Promise((r) => {
     Module.monitorRunDependencies = (n) => {
@@ -80,7 +81,7 @@ def create_test_env(pkg_name, prefix):
     # cmd = ['$MAMBA_EXE' ,'create','--prefix', prefix,'--platform=emscripten-32'] + [pkg_name] #+ ['--dryrun']
     print("prefix", prefix)
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pytest_driver_node=0.3.1" pytest {pkg_name}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pytest_driver_node=0.5.1" pytest {pkg_name}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)

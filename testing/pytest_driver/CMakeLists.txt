@@ -4,25 +4,10 @@ project(pytest_driver VERSION 0.1.0 DESCRIPTION "pytest_driver description")
 
 option(ENV_NODE "Build for the node env" OFF)
 
-if(ENV_NODE)
-    SET(ENVIRONMENT "node")
-else()
-    SET(ENVIRONMENT "web")
-endif()
 
-set(EM_FLAGS "${EM_FLAGS} -s ENVIRONMENT=${ENVIRONMENT} --bind -s DISABLE_EXCEPTION_THROWING=0 -s DISABLE_EXCEPTION_CATCHING=0  -s NO_DISABLE_EXCEPTION_CATCHING -fexceptions ")
-set(EM_FLAGS "${EM_FLAGS} -fPIC -s LZ4=1")
-set(EM_FLAGS "${EM_FLAGS} --post-js post.js")
-set(EM_FLAGS "${EM_FLAGS} --pre-js pre.js")
-set(EM_FLAGS "${EM_FLAGS} -s ALLOW_MEMORY_GROWTH")
-
-set(EM_LINKER_FLAGS "${EM_LINKER_FLAGS} -WASM=1 -s FORCE_FILESYSTEM=1 -s MODULARIZE -s ERROR_ON_UNDEFINED_SYMBOLS=1")
-set(EM_LINKER_FLAGS "${EM_LINKER_FLAGS} -s EXPORT_NAME=\"createModule\" -s EXPORT_ES6=0 -s USE_ES6_IMPORT_META=0 -s ERROR_ON_UNDEFINED_SYMBOLS=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EM_FLAGS} ${EM_LINKER_FLAGS}")
-set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS}  ${EM_FLAGS} ${EM_LINKER_FLAGS}")
 
 find_package(pybind11 REQUIRED CONFIG)
-set(pyjs_REQUIRED_VERSION 0.1.0)
+set(pyjs_REQUIRED_VERSION 0.2.0)
 find_package(pyjs ${pyjs_REQUIRED_VERSION} REQUIRED)
 
 SET(PYTHON_UTIL_LIBS 
@@ -38,10 +23,58 @@ add_executable(pytest_driver pytest_driver.cpp)
 
 target_link_libraries(pytest_driver PRIVATE ${PYTHON_UTIL_LIBS} pybind11::embed pyjs)
 
-set_target_properties(pytest_driver PROPERTIES 
-    LINK_FLAGS "-s MAIN_MODULE=1  -lstdc++ ${EM_FLAGS} "
-    CXX_FLAGS  "${EM_FLAGS} -fPIC"
+
+if(ENV_NODE)
+    SET(ENVIRONMENT "node")
+    target_compile_definitions(pytest_driver PUBLIC -DPYTEST_DRIVER_NODE)  # -D removed
+else()
+    SET(ENVIRONMENT "web,worker")
+     target_compile_definitions(pytest_driver PUBLIC -DPYTEST_DRIVER_WEB)  # -D removed
+endif()
+
+
+
+target_compile_options(pytest_driver PRIVATE -fPIC)
+
+
+target_compile_options(pytest_driver
+    PUBLIC --std=c++17
+    PUBLIC -Wno-deprecated
+    PUBLIC "SHELL: --bind"
+    PUBLIC "SHELL: -s ENVIRONMENT=${ENVIRONMENT}"
+    PUBLIC "SHELL: -fwasm-exceptions"
+    PUBLIC "SHELL: -s FORCE_FILESYSTEM"
+    PUBLIC "SHELL: -s LZ4=1"
 )
+
+target_link_options(pytest_driver
+    PUBLIC --bind
+    PUBLIC -Wno-unused-command-line-argument
+    PUBLIC "SHELL: --bind"
+    PUBLIC "SHELL: -s MODULARIZE=1"
+    PUBLIC "SHELL: -s EXPORT_NAME=\"createModule\""
+    PUBLIC "SHELL: -s EXPORT_ES6=0"
+    PUBLIC "SHELL: -s USE_ES6_IMPORT_META=0"
+    PUBLIC "SHELL: -s DEMANGLE_SUPPORT=0"
+    PUBLIC "SHELL: -s ASSERTIONS=0"
+    PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
+    PUBLIC "SHELL: -s EXIT_RUNTIME=1"
+    PUBLIC "SHELL: -s WASM=1"
+    PUBLIC "SHELL: -s USE_PTHREADS=0"
+    PUBLIC "SHELL: -fwasm-exceptions"
+    PUBLIC "SHELL: -s MAIN_MODULE=1"
+    PUBLIC "SHELL: -s ENVIRONMENT=${ENVIRONMENT}"
+    PUBLIC "SHELL: -s TOTAL_STACK=512mb"
+    PUBLIC "SHELL: -s INITIAL_MEMORY=1024mb"
+    PUBLIC "SHELL: -s FORCE_FILESYSTEM"
+    PUBLIC "SHELL: -s LZ4=1"
+    PUBLIC "SHELL: --post-js post.js"
+    PUBLIC "SHELL: --pre-js pre.js"
+)
+
+
+
+
 
 include(GNUInstallDirs)
 install(TARGETS pytest_driver

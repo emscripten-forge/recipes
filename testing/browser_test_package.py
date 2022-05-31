@@ -19,86 +19,10 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import ssl
 
 
-HTML_FILE_STR = """<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>TEST_TITLE</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js"></script>
-  </head>
-  <body>
-    <!-- page content -->
-    <script type="application/javascript" src="pytest_driver.js"></script>
-    <script type="application/javascript">
+import os
 
-
-function waitRunDependency() {
-  const promise = new Promise((r) => {
-    Module.monitorRunDependencies = (n) => {
-      if (n === 0) {
-        r();
-      }
-    };
-  });
-  Module.addRunDependency("dummy");
-  Module.removeRunDependency("dummy");
-  return promise;
-}
-var pytestOutputString = ""
-const print = (text) => {
-  console.log(text)
-  pytestOutputString += text;
-  pytestOutputString += "\\n";
-}
-const sink = (text) =>{}
-
-let res = (async function() {
-
-    var opts = {}
-    opts = {print:sink, error:sink};
-    var myModule = await createModule({print:print,error:print})
-    Module = myModule
-    globalThis.Module = Module
-    await import('./python_data.js')
-    await import('./testdata.js')
-    var deps = await waitRunDependency()
-
-    myModule.initialize_interpreter()
-    var ret = myModule.run_tests("/tests")
-
-    var pytest_output = document.createElement('TEXTAREA');
-    document.body.appendChild(pytest_output);
-    pytest_output.setAttribute("name", "pytest_output");
-    pytest_output.id = "pytest_output"
-    pytest_output.value = pytestOutputString
-
-
-    var pytest_retcode = document.createElement('TEXTAREA');
-    document.body.appendChild(pytest_retcode);
-    pytest_retcode.setAttribute("name", "pytest_retcode");
-    pytest_retcode.id = "pytest_retcode"
-    pytest_retcode.value = String(ret)
-
-    return ret
-
-})().then(
-  (r) => {
-    console.log("test r",r)
-    if(r == 1)
-    {
-      throw "Test(s) failed!";
-    }
-  }
-)
-
-
-
-
-    </script>
-  </body>
-</html>
-"""
+THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+TESTPAGE_DIR = os.path.join(THIS_DIR, "testpage")
 
 
 def find_free_port():
@@ -114,9 +38,9 @@ def serve_forever(httpd, work_dir, port):
 
 
 def create_html(work_dir):
-    # Write the file out again
-    with open(os.path.join(work_dir, "test.html"), "w") as file:
-        file.write(HTML_FILE_STR)
+
+    shutil.copy(os.path.join(TESTPAGE_DIR, "empty.html"), work_dir)
+    shutil.copy(os.path.join(TESTPAGE_DIR, "worker.js"), work_dir)
 
 
 def get_pytest_files(recipe_dir, recipe):
@@ -133,7 +57,7 @@ def create_test_env(pkg_name, prefix):
     # cmd = ['$MAMBA_EXE' ,'create','--prefix', prefix,'--platform=emscripten-32'] + [pkg_name] #+ ['--dryrun']
     print("prefix", prefix)
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pytest_driver=0.3.1" pytest {pkg_name}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pytest_driver=0.5.1" pytest {pkg_name}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -200,41 +124,80 @@ from playwright.async_api import async_playwright
 from playwright.async_api import Page
 
 
-async def playwright_main(page_url, run_forever=True):
+async def playwright_main(page_url):
     async with async_playwright() as p:
         # browser = await p.chromium.launch(headless=False, slow_mo=100)
-        browser = await p.chromium.launch()
+        browser = await p.chromium.launch(headless=True)  # slow_mo=1000)
         page = await browser.new_page()
-        page.set_default_timeout(60000)
-        page.set_default_navigation_timeout(60000)
+
+        async def handle_worker(worker):
+            test_output = await worker.evaluate_handle(
+                """async () => 
+            {
+                const sink = (text) =>{}
+                var pytestOutputString = ""
+                const print = (text) => {
+                  console.log(text)
+                  pytestOutputString += text;
+                  pytestOutputString += "\\n";
+                }
+
+                function waitRunDependency() {
+                  const promise = new Promise((r) => {
+                    Module.monitorRunDependencies = (n) => {
+                      if (n === 0) {
+                        r();
+                      }
+                    };
+                  });
+                  Module.addRunDependency("dummy");
+                  Module.removeRunDependency("dummy");
+                  return promise;
+                }
+
+
+                var myModule = await createModule({print:print,error:print})
+                var Module = myModule
+
+
+                globalThis.Module = Module
+                await import('./python_data.js')
+                await import('./testdata.js')
+                var deps = await waitRunDependency()
+                myModule.initialize_interpreter()
+                var ret = myModule.run_tests("/tests")
+                var msg = {
+                    return_code: ret,
+                    pytest_output: pytestOutputString
+                }
+                self.postMessage(msg)
+                return msg
+            }"""
+            )
+
+        page.on("worker", handle_worker)
         await page.goto(page_url)
+        await page.wait_for_function("() => globalThis.done")
 
-        pytest_output = await page.locator("id=pytest_output").input_value()
-        print("pytest_output", pytest_output)
-
-        pytest_retcode = await page.locator("id=pytest_retcode").input_value()
-        print("pytest_retcode", pytest_retcode)
-        # if pytest_retcode != "0":
-        #     print("tests failed")
-        #     return int(pytest_retcode)
-
+        test_output = await page.evaluate_handle(
+            """
+            () => 
+            {   
+            return globalThis.test_output
+            }
+        """
+        )
+        return_code = int(str(await test_output.get_property("return_code")))
+        pytest_output = await test_output.get_property("pytest_output")
         await browser.close()
-
-        # if False and run_forever:
-        #     print('Press CTRL-D to stop')
-        #     reader = asyncio.StreamReader()
-        #     pipe = sys.stdin
-        #     loop = asyncio.get_event_loop()
-        #     await loop.connect_read_pipe(lambda: asyncio.StreamReaderProtocol(reader), pipe)
-        #     async for line in reader:
-        #         print(f'Got: {line.decode()!r}')
-        # else:
-        #     await browser.close()
+        print(pytest_output)
+        if return_code != 0:
+            sys.exit(return_code)
 
 
 def run_playwright_tests(work_dir, port):
     # Write the file out again
-    page_url = f"http://0.0.0.0:{port}/test.html"
+    page_url = f"http://0.0.0.0:{port}/empty.html"
     os.chdir(work_dir)
 
     asyncio.run(playwright_main(page_url=page_url))
@@ -271,18 +234,3 @@ def test_package(recipe):
                 server.shutdown()
                 thread.join()
     os.chdir(old_cwd)
-
-
-# if __name__ == "__main__":
-
-#     import argparse
-
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("recipe_dir")
-#     args = parser.parse_args()
-
-#     test_package(args.recipe_dir)
-
-#     import sys
-
-#     sys.exit(0)

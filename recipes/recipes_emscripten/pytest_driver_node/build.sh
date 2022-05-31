@@ -14,6 +14,7 @@ fi
 # Configure step
 cmake ${CMAKE_ARGS} ..              \
     -GNinja                         \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PROJECT_INCLUDE=overwriteProp.cmake \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
