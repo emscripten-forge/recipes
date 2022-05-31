@@ -20,7 +20,8 @@ def extract_name_version_build(full_pkg):
 
 def push_new_layers(oci, prefix, pkg_name, pkg_version_and_build):
     files_location = "/home/runner/packed"
-    old_manifest = oci.get_manifest(pkg_name, pkg_version_and_build)
+    upload_name = prefix + pkg_name
+    old_manifest = oci.get_manifest(upload_name, pkg_version_and_build)
 
     js_fn = f"{files_location}/{pkg_name}-{pkg_version_and_build}.js"
     data_fn = f"{files_location}/{pkg_name}-{pkg_version_and_build}.data"
@@ -36,7 +37,7 @@ def push_new_layers(oci, prefix, pkg_name, pkg_version_and_build):
         Layer(pathlib.Path(data_fn), dot_data_file_media_type)
     ]
 
-    oci.push_image(prefix + pkg_name, pkg_version_and_build, new_layers, old_manifest=old_manifest)
+    oci.push_image(upload_name, pkg_version_and_build, new_layers, old_manifest=old_manifest)
 
 if __name__ == "__main__":
     # total arguments
@@ -45,8 +46,8 @@ if __name__ == "__main__":
     if args_len < 5:
         print(f"expecting 4 arguments but only {args_len} were provided")
     else:
-        host = "https://ghcr.io"
         user_or_org = sys.argv[1]
+        host = f"https://ghcr.io/{user_or_org}"
         conda_prefix = sys.argv[2]
         channel = sys.argv[3]
         subdir = sys.argv[4]
