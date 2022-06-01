@@ -54,9 +54,8 @@ if __name__ == "__main__":
         conda_prefix = sys.argv[2]
         channel = sys.argv[3]
         subdir = sys.argv[4]
+        oci = OCI("https://ghcr.io", user_or_org)
 
-        oci = OCI(host, user_or_org)
-        
         base_dir = f"{str(conda_prefix)}/{channel}/{subdir}"
         #for child in p.iterdir()
         for path in pathlib.Path(base_dir).iterdir():
