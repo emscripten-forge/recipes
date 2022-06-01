@@ -9,7 +9,8 @@ import rich
 from collections import OrderedDict
 import functools
 from dataclasses import dataclass, field
-
+import tempfile
+import shutil
 import empack
 from testing.browser_test_package import test_package as browser_test_package
 from testing.node_test_package import test_package as node_test_package
@@ -17,6 +18,16 @@ from testing.node_test_package import test_package as node_test_package
 RECIPES_SUBDIR_MAPPING = OrderedDict(
     [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
 )
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def restore_cwd():
+    base_work_dir = os.getcwd()
+    yield
+    os.chdir(base_work_dir)
 
 
 def find_files_with_changes(old, new):
@@ -92,6 +103,7 @@ def post_build_callback(
     skip_tests,
     skip_pack,
 ):
+
     assert len(sorted_outputs) == 1, "only one output per pkg atm"
     rich.pretty.pprint(
         {
@@ -101,12 +113,14 @@ def post_build_callback(
         }
     )
     if target_platform == "emscripten-32" and (not skip_tests):
-        test_package(recipe)
+        with restore_cwd():
+            test_package(recipe)
 
     if target_platform == "emscripten-32":
-        empack.file_packager.pack_conda_pkg(
-            recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir
-        )
+        with restore_cwd():
+            empack.file_packager.pack_conda_pkg(
+                recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir
+            )
 
 
 def boa_build(
@@ -139,7 +153,6 @@ def boa_build(
     )
     if platform:
         build_args.target_platform = platform
-    print(build_args)
     run_build(build_args)
     os.chdir(base_work_dir)
 
@@ -207,7 +220,7 @@ def explicit(
 
 @build_app.command()
 def changed(
-    recipes_dir,
+    root_dir,
     old,
     new,
     pack_prefix: str,
@@ -218,33 +231,52 @@ def changed(
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     base_work_dir = os.getcwd()
+    recipes_dir = os.path.join(root_dir, "recipes")
+    pytest_driver_src_dir = os.path.join(base_work_dir, "testing", "pytest_driver")
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
     rich.pretty.pprint(recipes_with_changes_per_subdir)
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
 
-        for recipe_with_change in recipe_with_changes:
+        # create a  temp dir and copy all changed recipes
+        # to that dir (because Then we can let boa do the
+        # topological sorting
+        with tempfile.TemporaryDirectory() as tmp_folder_root:
 
-            recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
-            print("THE RECIPE DIR", recipe_dir)
-            if os.path.isdir(recipe_dir):
-                if not dryrun:
-                    boa_build(
-                        target=recipe_dir,
-                        platform=RECIPES_SUBDIR_MAPPING[subdir],
-                        skip_tests=skip_tests,
-                        skip_pack=skip_pack,
-                        pack_prefix=pack_prefix,
-                        pack_outdir=pack_outdir,
-                        skip_existing=skip_existing,
-                    )
+            tmp_recipes_root = os.path.join(
+                tmp_folder_root, "recipes", "recipes_per_platform"
+            )
+            os.makedirs(tmp_folder_root, exist_ok=True)
 
-                else:
-                    # pass
-                    print(f"dryrun build: {os.path.join(subdir,recipe_with_change)}")
-            else:
-                warnings.warn(f"skipping nonexisting dir {recipe_dir}")
+            tmp_pytest_driver_src_dir = os.path.join(
+                tmp_folder_root, "testing", "pytest_driver"
+            )
+            os.makedirs(tmp_folder_root, exist_ok=True)
+            shutil.copytree(pytest_driver_src_dir, tmp_pytest_driver_src_dir)
+
+            for recipe_with_change in recipe_with_changes:
+                recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
+
+                # diff can shown deleted recipe as changed
+                if os.path.isdir(recipe_dir):
+
+                    tmp_recipe_dir = os.path.join(tmp_recipes_root, recipe_with_change)
+                    # os.mkdir(tmp_recipe_dir)
+                    shutil.copytree(recipe_dir, tmp_recipe_dir)
+
+            print([x[0] for x in os.walk(tmp_recipes_root)])
+
+            boa_build(
+                target=tmp_recipes_root,
+                recipe_dir=None,
+                platform=RECIPES_SUBDIR_MAPPING[subdir],
+                skip_tests=skip_tests,
+                skip_pack=skip_pack,
+                pack_prefix=pack_prefix,
+                skip_existing=skip_existing,
+                pack_outdir=pack_outdir,
+            )
 
 
 if __name__ == "__main__":

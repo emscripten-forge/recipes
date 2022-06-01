@@ -12,6 +12,7 @@ let Module = {};
 console.log("require pytest_driver.js")
 var createModule = require('./pytest_driver.js')
 
+
 function waitRunDependency() {
   const promise = new Promise((r) => {
     Module.monitorRunDependencies = (n) => {
@@ -36,13 +37,9 @@ let res = (async function() {
   Module = myModule
   global.Module = Module
 
-  console.log("import python_data")
   await import('./python_data.js')
-  console.log("import testdata")
   await import('./testdata.js')
-  console.log("waitRunDependency")
   var deps = await waitRunDependency()
-  console.log("waitRunDependency DONE")
   myModule.initialize_interpreter()
   myModule.print = print
   myModule.error = print
@@ -80,7 +77,7 @@ def create_test_env(pkg_name, prefix):
     # cmd = ['$MAMBA_EXE' ,'create','--prefix', prefix,'--platform=emscripten-32'] + [pkg_name] #+ ['--dryrun']
     print("prefix", prefix)
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pytest_driver_node=0.3.1" pytest {pkg_name}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pytest_driver_node=0.5.1" pytest {pkg_name}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -130,7 +127,7 @@ def run_node_tests(work_dir):
         file.write(NODE_TEST_FILE_STR)
 
     os.chdir(work_dir)
-    cmd = [f"node   --trace-uncaught test.js"]
+    cmd = [f"$CONDA_PREFIX/bin/node   --trace-uncaught test.js"]
     ret = subprocess.run(cmd, shell=True)
     if ret.returncode != 0:
         raise RuntimeError("Tests Failed")
@@ -168,9 +165,7 @@ def test_package(recipe, debug=False, debug_dir=None):
             os.mkdir(work_dir)
             os.chdir(work_dir)
             create_test_env(pkg_name=pkg_name, prefix=prefix)
-            print("PACK STUFF")
             pack(prefix=prefix, pytest_files=pytest_files)
-            print("COPY FROM PREFIX")
             copy_from_prefix(prefix=prefix, work_dir=work_dir)
             patch(work_dir=work_dir)
             run_node_tests(work_dir=work_dir)
