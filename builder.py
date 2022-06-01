@@ -231,7 +231,7 @@ def changed(
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     base_work_dir = os.getcwd()
-    recipes_dir = os.path.join(base_work_dir, "recipes")
+    recipes_dir = os.path.join(root_dir, "recipes")
     pytest_driver_src_dir = os.path.join(base_work_dir, "testing", "pytest_driver")
 
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)

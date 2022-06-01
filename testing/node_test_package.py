@@ -127,7 +127,7 @@ def run_node_tests(work_dir):
         file.write(NODE_TEST_FILE_STR)
 
     os.chdir(work_dir)
-    cmd = [f"node   --trace-uncaught test.js"]
+    cmd = [f"$CONDA_PREFIX/bin/node   --trace-uncaught test.js"]
     ret = subprocess.run(cmd, shell=True)
     if ret.returncode != 0:
         raise RuntimeError("Tests Failed")
