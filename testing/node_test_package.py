@@ -37,13 +37,9 @@ let res = (async function() {
   Module = myModule
   global.Module = Module
 
-  console.log("import python_data")
   await import('./python_data.js')
-  console.log("import testdata")
   await import('./testdata.js')
-  console.log("waitRunDependency")
   var deps = await waitRunDependency()
-  console.log("waitRunDependency DONE")
   myModule.initialize_interpreter()
   myModule.print = print
   myModule.error = print
@@ -169,9 +165,7 @@ def test_package(recipe, debug=False, debug_dir=None):
             os.mkdir(work_dir)
             os.chdir(work_dir)
             create_test_env(pkg_name=pkg_name, prefix=prefix)
-            print("PACK STUFF")
             pack(prefix=prefix, pytest_files=pytest_files)
-            print("COPY FROM PREFIX")
             copy_from_prefix(prefix=prefix, work_dir=work_dir)
             patch(work_dir=work_dir)
             run_node_tests(work_dir=work_dir)

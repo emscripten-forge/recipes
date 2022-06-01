@@ -3,10 +3,12 @@ import os
 import wasm_requests
 
 
-in_node = "PYTEST_DRIVER_NODE" in os.environ
+skip_node = pytest.mark.skipif(
+    "PYTEST_DRIVER_NODE" in os.environ, reason="requires browser, not node"
+)
 
 
-@pytest.mark.skipif(in_node, reason="requires browser not node")
+@skip_node
 def test_wasm_requests():
 
     # get with query params
