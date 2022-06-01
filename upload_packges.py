@@ -24,6 +24,7 @@ def extract_name_version_build(full_pkg):
 def push_new_layers(oci, prefix, pkg_name, pkg_version_and_build):
     files_location = "/home/runner/packed"
     upload_name = prefix + pkg_name
+    print(f"!! prefix + upload_name= {prefix}///{upload_name}")
     old_manifest = oci.get_manifest(upload_name, pkg_version_and_build)
 
     js_fn = f"{files_location}/{pkg_name}-{pkg_version_and_build}.js"
@@ -62,7 +63,9 @@ if __name__ == "__main__":
             path_to_archive = str (path)
             if path.is_file() and path_to_archive.endswith(".tar.bz2"):
                 pkg_name, pkg_version_and_build = extract_name_version_build (path_to_archive)
+                
                 #push image
+                print (f"------xxxxxx-----> {path_to_archive} ßßßßß {host} ßßßß {channel}")
                 upload_conda_package(path_to_archive, host, channel, oci)
                 
                 #add layers
