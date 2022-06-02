@@ -51,6 +51,7 @@ if __name__ == "__main__":
         print(f"expecting 4 arguments but only {args_len} were provided")
     else:
         user_or_org = sys.argv[1]
+        print(f"++++++++++user_or_org: {user_or_org}; Type = {type(user_or_org)}")
         host = f"https://ghcr.io/{user_or_org}"
         conda_prefix = sys.argv[2]
         channel = sys.argv[3]
