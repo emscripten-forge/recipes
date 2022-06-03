@@ -24,7 +24,6 @@ def extract_name_version_build(full_pkg):
 def push_new_layers(oci, prefix, pkg_name, pkg_version_and_build):
     files_location = "/home/runner/packed"
     upload_name = prefix + pkg_name
-    print(f"!! prefix + upload_name= {prefix}///{upload_name}")
     old_manifest = oci.get_manifest(upload_name, pkg_version_and_build)
 
     js_fn = f"{files_location}/{pkg_name}-{pkg_version_and_build}.js"
@@ -51,7 +50,6 @@ if __name__ == "__main__":
         print(f"expecting 4 arguments but only {args_len} were provided")
     else:
         user_or_org = sys.argv[1]
-        print(f"++++++++++user_or_org: {user_or_org}; Type = {type(user_or_org)}")
         host = f"https://ghcr.io"
         conda_prefix = sys.argv[2]
         channel = sys.argv[3]
@@ -67,7 +65,6 @@ if __name__ == "__main__":
                 pkg_name, pkg_version_and_build = extract_name_version_build (path_to_archive)
                 
                 #push image
-                print (f"------path_to_archive-----> {path_to_archive} ßßhostßßß {host} ßßchannelßß {channel}--------remote_loc------->{remote_loc}")
                 upload_conda_package(path_to_archive, remote_loc, channel, new_oci)
                 
                 print(f"File uploaded to {remote_loc}")
