@@ -74,6 +74,7 @@ if __name__ == "__main__":
 
                 print(f"File uploaded to {remote_loc}")
                 #add layers
+                pkg_name = pkg_name.replace("_","-")
                 push_new_layers(new_oci, f"{channel}/{subdir}/", pkg_name, pkg_version_and_build)
 
                 #print the manifest
