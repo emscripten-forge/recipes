@@ -56,7 +56,7 @@ if __name__ == "__main__":
         subdir = sys.argv[4]
         new_oci = OCI(host, user_or_org)
 
-        remote_loc = f"{host}/{user_or_org}"
+        remote_loc = f"ghcr.io/{user_or_org}"
         base_dir = f"{str(conda_prefix)}/{channel}/{subdir}"
         #for child in p.iterdir()
         for path in pathlib.Path(base_dir).iterdir():
