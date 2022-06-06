@@ -45,7 +45,7 @@ def push_new_layers(oci, prefix, pkg_name, pkg_version_and_build):
 if __name__ == "__main__":
     # total arguments
     args_len = len(sys.argv)
-    
+
     if args_len < 5:
         print(f"expecting 4 arguments but only {args_len} were provided")
     else:
@@ -63,10 +63,15 @@ if __name__ == "__main__":
             path_to_archive = str (path)
             if path.is_file() and path_to_archive.endswith(".tar.bz2"):
                 pkg_name, pkg_version_and_build = extract_name_version_build (path_to_archive)
-                
+
                 #push image
+                print (f"?????????????????????????path is: {path_to_archive}")
+                print (f"?????????????????????????remote loc is: {remote_loc}")
+                print (f"?????????????????????????channel is: {channel}")
+                print (f"?????????????????????????OCI location: {new_oci.location}")
+                print (f"?????????????????????????OCI user: {new_oci.user_or_org}")
                 upload_conda_package(path_to_archive, remote_loc, channel, new_oci)
-                
+
                 print(f"File uploaded to {remote_loc}")
                 #add layers
                 push_new_layers(new_oci, f"{channel}/{subdir}/", pkg_name, pkg_version_and_build)
