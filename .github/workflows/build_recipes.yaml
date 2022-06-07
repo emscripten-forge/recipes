@@ -2,7 +2,7 @@ name: build recipes
 on:
   push:
     branches:
-      - 'add_new_layer'
+      - 'main'
   pull_request:
   workflow_dispatch:
 
@@ -161,11 +161,22 @@ jobs:
           name: emscripten_packed_pkgs
           path: ~/packed/* # or path/to/artifact\
 
-
       ################################################################
       # quetz upload packages
       ################################################################
-      - name:  upload packages to githubO CI
+      - name: "quetz upload packages"
+        if: github.event_name == 'push'
+        shell: bash -l {0}
+        run: |
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+
+
+      ################################################################
+      # upload packages to OCI Registry
+      ################################################################
+      - name:  upload packages to github OCI
         run: |
           python -m pip install git+https://github.com/MichaelKora/conda_oci_mirror@main
           echo ${{ env.GITHUB_TOKEN }} | oras login https://ghcr.io -u ${{ env.GITHUB_OWNER }} --password-stdin
