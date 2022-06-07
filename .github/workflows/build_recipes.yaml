@@ -19,7 +19,6 @@ jobs:
       fail-fast: false
       matrix:
         emsdk_ver: ["3.1.2"]
-        subdir: [emscripten-32,linux-64,noarch]
         
     steps:
       - name: Cancel Previous Runs
@@ -179,5 +178,7 @@ jobs:
         run: |
           python -m pip install git+https://github.com/MichaelKora/conda_oci_mirror@main
           echo ${{ env.GITHUB_TOKEN }} | oras login https://ghcr.io -u ${{ env.GITHUB_OWNER }} --password-stdin
-          python upload_packges.py ${{ env.GITHUB_OWNER }} ${CONDA_PREFIX} ${{ env.CHANNEL }} ${{ matrix.subdir }}
+          python upload_packges.py ${{ env.GITHUB_OWNER }} ${CONDA_PREFIX} ${{ env.CHANNEL }} emscripten-32
+          python upload_packges.py ${{ env.GITHUB_OWNER }} ${CONDA_PREFIX} ${{ env.CHANNEL }} noarch
+          python upload_packges.py ${{ env.GITHUB_OWNER }} ${CONDA_PREFIX} ${{ env.CHANNEL }} linux-64
         shell: bash -l {0}
