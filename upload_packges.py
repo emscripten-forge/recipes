@@ -60,20 +60,23 @@ if __name__ == "__main__":
 
         remote_loc = f"ghcr.io/{user_or_org}"
         base_dir = f"{str(conda_prefix)}/{channel}/{subdir}"
-        # for child in p.iterdir()
-        for path in pathlib.Path(base_dir).iterdir():
-            path_to_archive = str(path)
-            if path.is_file() and path_to_archive.endswith(".tar.bz2"):
-                pkg_name, pkg_version_and_build = extract_name_version_build(path_to_archive)
+        
+        # make sure the directory exists
+        if pathlib.Path(base_dir).exists():
+            # for child in p.iterdir()
+            for path in pathlib.Path(base_dir).iterdir():
+                path_to_archive = str(path)
+                if path.is_file() and path_to_archive.endswith(".tar.bz2"):
+                    pkg_name, pkg_version_and_build = extract_name_version_build(path_to_archive)
 
-                # push image
-                upload_conda_package(path_to_archive, remote_loc, channel, new_oci)
-                print(f"File uploaded to {remote_loc}")
+                    # push imagel
+                    upload_conda_package(path_to_archive, remote_loc, channel, new_oci)
+                    print(f"File uploaded to {remote_loc}")
 
-                # add layers
-                pkg_name = pkg_name.replace("_", "-")
-                push_new_layers(new_oci, f"{channel}/{subdir}/", pkg_name, pkg_version_and_build)
+                    # add layers
+                    pkg_name = pkg_name.replace("_", "-")
+                    push_new_layers(new_oci, f"{channel}/{subdir}/", pkg_name, pkg_version_and_build)
 
-                # print the manifest
-                m = new_oci.get_manifest(f"{channel}/{subdir}/{pkg_name}", pkg_version_and_build)
-                pprint(m)
+                    # print the manifest
+                    m = new_oci.get_manifest(f"{channel}/{subdir}/{pkg_name}", pkg_version_and_build)
+                    pprint(m)
