@@ -2,7 +2,7 @@ name: build recipes
 on:
   push:
     branches:
-      - 'main'
+      - 'add_new_layer'
   pull_request:
   workflow_dispatch:
 
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TARGET_PLATFORM: emscripten-32
-      GITHUB_USER: "emscripten-forge"
+      GITHUB_USER: ${{ github.actor }}
       GITHUB_TOKEN: ${{ github.token }}
       CHANNEL: "conda-bld"
     strategy:
@@ -176,7 +176,6 @@ jobs:
       ################################################################
       - name:  upload packages to github OCI
         run: |
-          source source.sh ${{ env.GITHUB_USER }}
           python -m pip install git+https://github.com/MichaelKora/conda_oci_mirror@main
           echo ${{ env.GITHUB_TOKEN }} | oras login https://ghcr.io -u ${{ env.GITHUB_USER }} --password-stdin
           python upload_packges.py ${{ env.GITHUB_USER }} ${CONDA_PREFIX} ${{ env.CHANNEL }} emscripten-32
