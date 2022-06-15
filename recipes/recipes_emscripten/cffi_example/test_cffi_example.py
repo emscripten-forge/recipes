@@ -1,4 +1,4 @@
-import pytest
+dimport pytest
 
 
 def test_import_cffi_example():
