@@ -66,7 +66,8 @@ if __name__ == "__main__":
             # for child in p.iterdir()
             for path in pathlib.Path(base_dir).iterdir():
                 path_to_archive = str(path)
-                if path.is_file() and path_to_archive.endswith(".tar.bz2"):
+                if path.exists() and path_to_archive.endswith(".tar.bz2"):
+                    print (f"!!!!!Path dir is:  {path_to_archive}")
                     pkg_name, pkg_version_and_build = extract_name_version_build(path_to_archive)
 
                     # push imagel
