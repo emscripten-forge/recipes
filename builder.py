@@ -98,6 +98,7 @@ def post_build_callback(
     recipe,
     target_platform,
     sorted_outputs,
+    final_names,
     pack_prefix,
     pack_outdir,
     skip_tests,
@@ -110,6 +111,7 @@ def post_build_callback(
             "target_platform": target_platform,
             "recipe": recipe,
             "sorted_outputs": sorted_outputs[0],
+            "final_names" : final_names[0]
         }
     )
     if target_platform == "emscripten-32" and (not skip_tests):
@@ -119,7 +121,7 @@ def post_build_callback(
     if target_platform == "emscripten-32":
         with restore_cwd():
             empack.file_packager.pack_conda_pkg(
-                recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir
+                recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir, outname=final_names[0]
             )
 
 
