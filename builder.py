@@ -246,7 +246,7 @@ def changed(
         # topological sorting
         with tempfile.TemporaryDirectory() as tmp_folder_root:
 
-            tmp_recipes_root = os.path.join(
+            tmp_recipes_root_str = os.path.join(
                 tmp_folder_root, "recipes", "recipes_per_platform"
             )
             os.makedirs(tmp_folder_root, exist_ok=True)
@@ -263,14 +263,14 @@ def changed(
                 # diff can shown deleted recipe as changed
                 if os.path.isdir(recipe_dir):
 
-                    tmp_recipe_dir = os.path.join(tmp_recipes_root, recipe_with_change)
+                    tmp_recipe_dir = os.path.join(tmp_recipes_root_str, recipe_with_change)
                     # os.mkdir(tmp_recipe_dir)
                     shutil.copytree(recipe_dir, tmp_recipe_dir)
 
-            print([x[0] for x in os.walk(tmp_recipes_root)])
+            print([x[0] for x in os.walk(tmp_recipes_root_str)])
 
             boa_build(
-                target=tmp_recipes_root,
+                target=tmp_recipes_root_str,
                 recipe_dir=None,
                 platform=RECIPES_SUBDIR_MAPPING[subdir],
                 skip_tests=skip_tests,
