@@ -279,6 +279,7 @@ def changed(
                 skip_existing=skip_existing,
                 pack_outdir=pack_outdir,
             )
+        tmp_folder_root.cleanup()
 
 
 if __name__ == "__main__":
