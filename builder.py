@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 import tempfile
 import shutil
 import empack
+import glob
 from testing.browser_test_package import test_package as browser_test_package
 from testing.node_test_package import test_package as node_test_package
 
@@ -94,6 +95,20 @@ def emscripten_pack_package(recipe):
     )
 
 
+def cleanup():
+    prefix = os.environ['CONDA_PREFIX']
+    conda_bld_dir = os.path.join(prefix, "conda-bld")
+
+    do_not_delete = ["noarch","linux-64","emscripten-32"]
+    do_not_delete = [os.path.join(conda_bld_dir,d) for d in do_not_delete]
+
+    for dirname in glob.iglob(os.path.join(conda_bld_dir,"**"), recursive=False):
+        if os.path.isdir(dirname):
+            if dirname not in do_not_delete:
+                print(f"DELETING {dirname}")
+                shutil.rmtree(dirname)
+ 
+
 def post_build_callback(
     recipe,
     target_platform,
@@ -104,6 +119,8 @@ def post_build_callback(
     skip_tests,
     skip_pack,
 ):
+
+    # cleanup
 
     assert len(sorted_outputs) == 1, "only one output per pkg atm"
     rich.pretty.pprint(
@@ -123,6 +140,9 @@ def post_build_callback(
             empack.file_packager.pack_conda_pkg(
                 recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir, outname=final_names[0]
             )
+
+    cleanup()
+
 
 
 def boa_build(
