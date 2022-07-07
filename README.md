@@ -19,7 +19,7 @@ Good example recipes are:
  * [cffi_example](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/cffi_example/recipe.yaml) for a `cffi` based package.
  * [xeus-python](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/xeus-python/recipe.yaml) for a package with a CMake-based build system
  
- Once the PR is merged, the package is build and upoaded to 
+ Once the PR is merged, the package is build and upoaded to https://beta.mamba.pm/channels/emscripten-forge
 
 ## Outlook
 
