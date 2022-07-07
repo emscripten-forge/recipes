@@ -14,7 +14,7 @@ LIB=libpython3.10.a
 SYSCONFIG_NAME=_sysconfigdata__emscripten_
 
 if [[ $target_platform == "emscripten-32" ]]; then
-    cp ${RECIPE_DIR}/config.site .
+    cp ${RECIPE_DIR}/config/config.site .
 
     CONFIG_SITE=./config.site READELF=true emconfigure \
       ./configure \
@@ -31,9 +31,9 @@ if [[ $target_platform == "emscripten-32" ]]; then
           --prefix=${PREFIX}  \
     
 
-    cp ${RECIPE_DIR}/Setup.local ./Modules/
+    cp ${RECIPE_DIR}/config/Setup.local ./Modules/
 
-    cat ${RECIPE_DIR}/pyconfig.undefs.h >> ./pyconfig.h
+    cat ${RECIPE_DIR}/config/pyconfig.undefs.h >> ./pyconfig.h
 
 
     emmake make CROSS_COMPILE=yes ${LIB} -j8
@@ -62,7 +62,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     # remove the removal modules
     pushd ${PREFIX}/lib/python3.10/
-    rm -rf `cat ${RECIPE_DIR}/remove_modules.txt`
+    rm -rf `cat ${RECIPE_DIR}/config/remove_modules.txt`
     popd
 
     # unwanted test dirs
