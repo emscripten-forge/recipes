@@ -1,5 +1,6 @@
 mkdir build
 cd build
+mkdir -p $PREFIX
 
 # Configure step
 cmake ${CMAKE_ARGS} ..                    \
