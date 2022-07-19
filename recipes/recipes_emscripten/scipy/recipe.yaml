@@ -1,0 +1,154 @@
+context:
+  version: "1.8.1"
+
+package:
+  name: scipy
+  version: "{{ version }}"
+
+# use 'python_impl' in meta.yaml so it gets picked up by rendering
+# [python_impl == "pypy"]
+
+source:
+  # The sdist distributed by scipy contains pre-compiled pythran sources,
+  # as well as the relevant submodules; by taking the tarball from github
+  # we can compile pythran ourselves (or not), but manually need to include
+  # the submodules (not in tarball due to dear-github/dear-github#214)
+  - url: https://github.com/scipy/scipy/archive/refs/tags/v{{ version }}.tar.gz
+    sha256: fb6936f0c4a4f94bd2af7922cd1a94577ec472d4626a29aa95d8c228cdb45b94
+    # patches:
+    #   # backport scipy/scipy#15532 to fix timeout of a long-running test
+    #   - patches/0001-parametrize-test_ldl_type_size_combinations.patch
+  # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/_lib
+  # - git_url: https://github.com/scipy/boost-headers-only.git
+  #   git_rev: 2110ce20e59917b85b12059b3ddd8b133549f662
+  #   folder: scipy/_lib/boost
+  # - git_url: https://github.com/scipy/unuran.git
+  #   git_rev: a63d39160e5ecc4402e7ed0e8417f4c3ff9634cb
+  #   folder: scipy/_lib/unuran
+  # # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/sparse/linalg/_propack
+  # - git_url: https://github.com/scipy/PROPACK.git
+  #   git_rev: 92f466393256df649fc8542c39dd647816dded25
+  #   folder: scipy/sparse/linalg/_propack/PROPACK
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - sel(build_platform != target_platform): python
+    - sel(build_platform != target_platform): cross-python_{{ target_platform }}
+    - sel(build_platform != target_platform): cython
+    # - tempita
+    - pip
+    - sel(build_platform != target_platform): numpy
+    - sel(build_platform != target_platform): pybind11
+    - sel(build_platform != target_platform): setuptools <60
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    # # pythran code needs clang-cl on windows
+    # - clang                                  # [win]
+    # - {{ compiler('fortran') }}              # [unix]
+  host:
+    - clapack
+    # - libblas
+    # - libcblas
+    # - liblapack
+    - python
+    - setuptools <60
+    # - cython
+    - pybind11
+    - pythran
+    - numpy
+    - pip
+  run:
+    - python
+    - numpy
+    # - "{{ pin_compatible('numpy') }}"
+
+# {% set tests_to_skip = "_not_a_real_test" %}
+# # skip a test that fails with MKL + AVX512 (non-AVX512 passes)
+# {% set tests_to_skip = tests_to_skip + " or test_x0_equals_Mb[bicgstab]" %}
+# # these multithreading tests occasionally hang in emulation
+# {% set tests_to_skip = tests_to_skip + " or test_immediate_updating" %}         # [aarch64 or ppc64le]
+# {% set tests_to_skip = tests_to_skip + " or test_mixed_threads_processes" %}    # [aarch64 or ppc64le]
+# {% set tests_to_skip = tests_to_skip + " or test_multiprocess[fft]" %}          # [aarch64 or ppc64le]
+# {% set tests_to_skip = tests_to_skip + " or (test__differential_evolution and test_parallel)" %}  # [aarch64 or ppc64le]
+# # on the slowest agents, these tests take more than 20min in emulation
+# {% set tests_to_skip = tests_to_skip + " or (test_lsq_linear and test_large_rank_deficient)" %}   # [aarch64 or ppc64le]
+# # needs one or two gc.collect()
+# {% set tests_to_skip = tests_to_skip + " or test_cdist_refcount" %}             # [python_impl == "pypy"]
+# # unclear why a warning isn't raised. Might be related to scipy/scipy#15121
+# {% set tests_to_skip = tests_to_skip + " or test_boost_eval_issue_14606" %}     # [python_impl == "pypy"]
+
+# test:
+#   requires:
+#     - pytest
+#     - pytest-timeout
+#     - pytest-xdist
+#     - mpmath
+#   commands:
+#     # show SIMD features (some failures occur depending on presence/absence of e.g. AVX512)
+#     - python -c "import numpy; numpy.show_config()"
+#     # the tests ppc64le and aarch64 are currently run through emulation in QEMU;
+#     # since this takes much longer, do not run the most heavy-weight tests, i.e. use
+#     # label='fast'; same for PyPy due to huge runtime; otherwise set label='full'
+#     {% set label = "'fast'" if (aarch64 or ppc64le or python_impl == "pypy") else "'full'" %}
+#     # for signature of scipy.test see below (note default: label='fast'):
+#     # https://github.com/scipy/scipy/blob/v1.7.0/scipy/_lib/_testutils.py#L27
+#     {% set param = "verbose=1, label=" + label + ", tests=None" %}
+#     {% set extra = "extra_argv=['-k', 'not (" + tests_to_skip + ")', '-nauto', '--timeout=1200', '--durations=50']" %}
+#     - python -c "import scipy, sys; sys.exit(not scipy.test({{ param }}, {{ extra }}))"  # [not ppc64le]
+#     # NOTE: test suite is skipped on ppc due to bugs in QEMU code that cause
+#     # CI to fail, even though the tests would run through on native hardware
+#   imports:
+#     - scipy
+#     # reference for public API is effectively
+#     # https://github.com/scipy/scipy/blob/master/scipy/_lib/tests/test_public_api.py
+#     - scipy.cluster
+#     - scipy.cluster.hierarchy
+#     - scipy.cluster.vq
+#     - scipy.constants
+#     - scipy.fft
+#     - scipy.fftpack
+#     - scipy.integrate
+#     - scipy.interpolate
+#     - scipy.io
+#     - scipy.io.arff
+#     - scipy.io.matlab
+#     - scipy.io.wavfile
+#     - scipy.linalg
+#     - scipy.linalg.blas
+#     - scipy.linalg.cython_blas
+#     - scipy.linalg.cython_lapack
+#     - scipy.linalg.interpolative
+#     - scipy.linalg.lapack
+#     - scipy.misc
+#     - scipy.ndimage
+#     - scipy.odr
+#     - scipy.optimize
+#     - scipy.signal
+#     - scipy.signal.windows
+#     - scipy.sparse
+#     - scipy.sparse.csgraph
+#     - scipy.sparse.linalg
+#     - scipy.spatial
+#     - scipy.spatial.distance
+#     - scipy.spatial.transform
+#     - scipy.special
+#     - scipy.stats
+#     - scipy.stats.contingency
+#     - scipy.stats.distributions
+#     - scipy.stats.mstats
+#     - scipy.stats.qmc
+#     - scipy.stats.sampling
+
+about:
+  home: http://www.scipy.org/
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Scientific Library for Python
+  description: |
+    SciPy is a Python-based ecosystem of open-source software for mathematics,
+    science, and engineering.
+  doc_url: http://www.scipy.org/docs.html
+  dev_url: https://github.com/scipy/scipy
