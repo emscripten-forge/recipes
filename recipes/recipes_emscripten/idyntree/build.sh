@@ -3,6 +3,11 @@
 mkdir build
 cd build
 
+export CMAKE_PREFIX_PATH=$PREFIX
+export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
+
+echo "=====> CMAKE_ARGS: ${CMAKE_ARGS}"
+
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_TESTING:BOOL=${BUILD_TESTING} \
