@@ -16,7 +16,7 @@ emconfigure ./configure --prefix="${PREFIX}" \
             --without-python \
             --with-iconv="${PREFIX}" \
             --with-zlib="${PREFIX}" \
-            --with-icu \
+            --without-icu \
             --with-lzma="${PREFIX}" \
 
 emmake make -j${CPU_COUNT:-3}
