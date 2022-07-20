@@ -1,0 +1,80 @@
+context:
+  version: "0.11.0"
+
+package:
+  name: pythran
+  version: "{{ version }}"
+
+source:
+  url: https://github.com/serge-sans-paille/pythran/archive/refs/tags/{{ version }}.tar.gz
+  sha256: e095a1e984f8f44cfdccb8dd797aec4f38d98a9026611235f55e6d5d3c300f08
+
+build:
+  number: 0
+  entry_points:
+    - pythran = pythran.run:run
+    - pythran-config = pythran.config:run
+
+requirements:
+  build:
+    - sel(build_platform != target_platform): python
+    - sel(build_platform != target_platform): cross-python_{{ target_platform }}
+    - sel(build_platform != target_platform): numpy
+    - "{{ compiler('cxx') }}"
+    # - clang                  # [win]
+    # - clangxx                # [win]
+  host:
+    - python
+    - pip
+    - numpy
+  run:
+    # To ensure ABI compatibility, we install the same version of the C++
+    # compiler that was used when building. This is probably not necessary and
+    # could be replaced with something like
+    # {{ cxx_compiler }}_{{ target_platform }}
+    # - "{{ compiler('cxx') }}"  # [not win]
+    # - clang                  # [win]
+    # - clangxx                # [win]
+    - python
+    - numpy
+    # - "{{ pin_compatible('numpy') }}"
+    - decorator
+    - gast 0.5.*
+    - ply >=3.4
+    - beniget 0.4.*
+    # - xsimd >=8.0.5,<8.1
+
+# test:
+#   files:
+#     - dprod.py
+#     - simple_numexpr.py
+#   commands:
+#     - set "SRC_DIR="  # [win]
+#     - pythran -v dprod.py
+#     - python -c "import dprod"
+#     - pythran -v simple_numexpr.py -DUSE_XSIMD -march=native  # [not (ppc64le or (osx and arm64))]
+#     - pythran -v simple_numexpr.py -DUSE_XSIMD                # [osx and arm64]
+#     - pythran -v simple_numexpr.py                            # [ppc64le]
+#     - python -c "import simple_numexpr"
+#   imports:
+#     - omp  # [not win]
+#     - pythran
+#     - pythran.analyses
+#     - pythran.optimizations
+#     - pythran.transformations
+#     - pythran.types
+
+about:
+  home: http://github.com/serge-sans-paille/pythran
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: a claimless python to c++ converter
+
+  description: |
+    Pythran is an ahead of time compiler for a subset of the Python language,
+    with a focus on scientific computing. It takes a Python module annotated
+    with a few interface description and turns it into a native Python module
+    with the same interface, but (hopefully) faster.
+  doc_url: https://pythran.readthedocs.io/
+  dev_url: https://github.com/serge-sans-paille/pythran
