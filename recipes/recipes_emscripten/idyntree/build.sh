@@ -3,8 +3,10 @@
 mkdir build
 cd build
 
-export CMAKE_PREFIX_PATH=$PREFIX
-export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
+# See https://github.com/microsoft/vcpkg/pull/11753
+export CMAKE_PREFIX_PATH=$PREFIX:/
+export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX:/
+export CMAKE_FIND_ROOT_PATH$PREFIX
 
 echo "=====> CMAKE_ARGS: ${CMAKE_ARGS}"
 
