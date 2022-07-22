@@ -37,6 +37,8 @@ echo "void ilaenv(int *ispec, char *name, char *opts, int *n1, int *n2, int *n3,
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 
+sed -i 's/ \|\| defined(__EMSCRIPTEN__)//g' scipy/_lib/boost/boost/math/tools/config.hpp
+
 # TODO this should be part of the clapack package!
 wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
 
