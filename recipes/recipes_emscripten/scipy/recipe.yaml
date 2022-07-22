@@ -30,20 +30,18 @@ source:
       - patches/0012-Disable-lapack-detection.patch
       - patches/0013-Add-extra-END-to-prini.f.patch
       - patches/0014-BUG-Fix-signature-of-D_IIR_forback-1-2.patch
-    # patches:
-    #   # backport scipy/scipy#15532 to fix timeout of a long-running test
-    #   - patches/0001-parametrize-test_ldl_type_size_combinations.patch
+
   # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/_lib
-  # - git_url: https://github.com/scipy/boost-headers-only.git
-  #   git_rev: 2110ce20e59917b85b12059b3ddd8b133549f662
-  #   folder: scipy/_lib/boost
-  # - git_url: https://github.com/scipy/unuran.git
-  #   git_rev: a63d39160e5ecc4402e7ed0e8417f4c3ff9634cb
-  #   folder: scipy/_lib/unuran
-  # # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/sparse/linalg/_propack
-  # - git_url: https://github.com/scipy/PROPACK.git
-  #   git_rev: 92f466393256df649fc8542c39dd647816dded25
-  #   folder: scipy/sparse/linalg/_propack/PROPACK
+  - git_url: https://github.com/scipy/boost-headers-only.git
+    git_rev: 2110ce20e59917b85b12059b3ddd8b133549f662
+    folder: scipy/_lib/boost
+  - git_url: https://github.com/scipy/unuran.git
+    git_rev: a63d39160e5ecc4402e7ed0e8417f4c3ff9634cb
+    folder: scipy/_lib/unuran
+  # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/sparse/linalg/_propack
+  - git_url: https://github.com/scipy/PROPACK.git
+    git_rev: 92f466393256df649fc8542c39dd647816dded25
+    folder: scipy/sparse/linalg/_propack/PROPACK
 
 build:
   number: 0
@@ -53,13 +51,14 @@ requirements:
     - sel(build_platform != target_platform): python
     - sel(build_platform != target_platform): cross-python_{{ target_platform }}
     - sel(build_platform != target_platform): cython
-    # - tempita
+    - f2c
     - pip
     - sel(build_platform != target_platform): numpy
     - sel(build_platform != target_platform): pybind11
     - sel(build_platform != target_platform): setuptools <60
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"
+    - 
     # # pythran code needs clang-cl on windows
     # - clang                                  # [win]
     # - {{ compiler('fortran') }}              # [unix]

@@ -37,4 +37,14 @@ echo "void ilaenv(int *ispec, char *name, char *opts, int *n1, int *n2, int *n3,
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 
+# TODO this should be part of the clapack package!
+wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
+
+# install f2c / emcc wrapper script
+cp $RECIPE_DIR/FORTRAN.py $BUILD_PREFIX/bin/gfortran
+chmod u+x $BUILD_PREFIX/bin/gfortran
+
+# add BUILD_PREFIX/include for f2c.h file
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include"
+
 python -m pip install . --no-deps -vv
