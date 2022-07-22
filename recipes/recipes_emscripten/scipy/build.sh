@@ -45,6 +45,9 @@ cp $RECIPE_DIR/FORTRAN.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
 # add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include"
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type"
+
+# todo get rid of this
+export SCIPY_USE_PYTHRAN=0
 
 python -m pip install . --no-deps -vv
