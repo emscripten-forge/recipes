@@ -1,0 +1,31 @@
+diff --git a/scipy/stats/_boost/include/code_gen.py b/scipy/stats/_boost/include/code_gen.py
+index 3d1faa2ba..548a2f4db 100644
+--- a/scipy/stats/_boost/include/code_gen.py
++++ b/scipy/stats/_boost/include/code_gen.py
+@@ -52,7 +52,7 @@ def _ufunc_gen(scipy_dist: str, types: list, ctor_args: tuple,
+     boost_hdr_name = boost_dist.split('_distribution')[0]
+     unique_num_inputs = set({m.num_inputs for m in methods})
+     has_NPY_FLOAT16 = 'NPY_FLOAT16' in types
+-    has_NPY_LONGDOUBLE = 'NPY_LONGDOUBLE' in types
++    has_NPY_LONGDOUBLE = False #'NPY_LONGDOUBLE' in types
+     line_joiner = ',\n    ' + ' '*12
+     num_types = len(types)
+     loop_fun = 'PyUFunc_T'
+@@ -112,7 +112,7 @@ def _ufunc_gen(scipy_dist: str, types: list, ctor_args: tuple,
+ 
+             for jj, T in enumerate(types):
+                 ctype = {
+-                    'NPY_LONGDOUBLE': 'longdouble',
++                    # 'NPY_LONGDOUBLE': 'longdouble',
+                     'NPY_DOUBLE': 'double',
+                     'NPY_FLOAT': 'float',
+                     'NPY_FLOAT16': 'npy_half',
+@@ -168,7 +168,7 @@ if __name__ == '__main__':
+     for b, s in _klass_mapper.items():
+         _ufunc_gen(
+             scipy_dist=s.scipy_name,
+-            types=['NPY_FLOAT', 'NPY_DOUBLE', 'NPY_LONGDOUBLE'],
++            types=['NPY_FLOAT', 'NPY_DOUBLE'],
+             ctor_args=s.ctor_args,
+             filename=f'{src_dir}/{s.scipy_name}_ufunc.pyx',
+             boost_dist=f'{b}_distribution',
