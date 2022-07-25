@@ -9,5 +9,5 @@ do
 done
 
 mkdir -p ${PREFIX}/bin
-cp ${RECIPE_DIR}/activate.sh  ${PREFIX}/bin/activate_emscripten.sh
+cp "${PREFIX}/etc/conda/${CHANGE}.d/${PKG_NAME}_${CHANGE}.sh" ${PREFIX}/bin/activate_emscripten.sh
 
