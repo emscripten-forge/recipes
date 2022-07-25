@@ -1,34 +1,46 @@
 context:
   name: emscripten_emscripten-32
-  version: 3.1.2
+  version: 3.1.16
 
 package:
   name: '{{ name|lower }}'
   version: '{{ version }}'
 
 build:
-  number: 1
+  number: 0
   ignore_run_exports:
     - python
-requirements:
-  run:
-    - python 3.10
-    - emsdk
 
-#   run:
-#     - emscripten
-#     - llvm 12.*
 
+outputs:
+  # TODO make run_exports work with boa
+  # - package:
+  #     name: emscripten-mutex
+  #     version: '{{ version }}'
+  #   build:
+  #     script:
+  #       - echo "emscripten mutex is built."
+
+  - package:
+      name: '{{ name | lower }}'
+      version: '{{ version }}'
+    build:
+      script: build_compiler_package.sh
+      # run_exports:
+      #   - "{{ pin_subpackage('emscripten-mutex', max_pin='x.x') }}"
+
+    requirements:
+      run:
+        - python 3.10
+        - emsdk
 
 about:
-  home: emscripten
+  home: https://emscripten.org/
   license: BSD-3-Clause
-  license_family: BSD
   license_file: LICENSE
   summary: emscripten
-  description: emscripten
-  doc_url: emscripten
-  dev_url: emscripten
+  description: Emscripten is a complete compiler toolchain to WebAssembly, using LLVM, with a special focus on speed, size, and the Web platform.
+  doc_url: https://emscripten.org/
 
 extra:
   recipe-maintainers:

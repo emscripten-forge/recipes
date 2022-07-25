@@ -5,8 +5,8 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
     export PYTHON=${BUILD_PREFIX}/bin/python3
 
-    emsdk install  3.1.2
-    emsdk activate 3.1.2
+    emsdk install  ${PKG_VERSION}
+    emsdk activate ${PKG_VERSION}
     export CONDA_EMSDK_DIR=$BUILD_PREFIX/lib/python$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")/site-packages/emsdk
     source $CONDA_EMSDK_DIR/emsdk_env.sh
 
