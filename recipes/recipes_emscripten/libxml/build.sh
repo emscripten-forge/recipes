@@ -1,22 +1,23 @@
 #!/bin/bash
 
-# emconfigure ./configure \
-#     CFLAGS="-fPIC" \
-#     --disable-dependency-tracking \
-#     --disable-shared \
-#     --without-python \
-#     --with-iconv="$PYODIDE_ROOT/packages/libiconv/build/libiconv-1.16/lib/.libs" \
-#     --with-zlib="$PYODIDE_ROOT/packages/zlib/build/zlib-1.2.11/"
-# emmake make -j ${CPU_COUNT:-3}
+# Get an updated config.sub and config.guess
+cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
 
+./autogen.sh
 
-emconfigure ./configure \
-    CFLAGS="-fPIC" \
-    --prefix="$PREFIX" \
-    --disable-dependency-tracking \
-    --disable-shared \
-    --without-python \
-    --with-iconv="$PREFIX/lib" \
-    --with-zlib="$PREFIX/lib"
-emmake make -j ${CPU_COUNT:-3}
+# Define TRUE/FALSE via preprocessor flags for now (until upstream fixes it).
+# (Some (non-header) source files use them but not define them or include <stdbool.h> .)
+export CPPFLAGS="${CPPFLAGS} -DFALSE=0 -DTRUE=1"
+
+emconfigure ./configure --prefix="${PREFIX}" \
+            CFLAGS="-fPIC" \
+            --disable-dependency-tracking \
+            --disable-shared \
+            --without-python \
+            --with-iconv="${PREFIX}" \
+            --with-zlib="${PREFIX}" \
+            --without-icu \
+            --with-lzma="${PREFIX}" \
+
+emmake make -j${CPU_COUNT:-3}
 emmake make install
