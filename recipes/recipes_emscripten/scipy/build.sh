@@ -47,7 +47,7 @@ chmod u+x $BUILD_PREFIX/bin/gfortran
 export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
 
 mv $EMBIN/emcc $EMBIN/emcc-orig
-mv $EMBIN/emc++ $EMBIN/emc++-orig
+mv $EMBIN/em++ $EMBIN/em++-orig
 
 cp $RECIPE_DIR/CC.py $EMBIN/emcc
 cp $RECIPE_DIR/CC.py $EMBIN/em++

@@ -46,7 +46,7 @@ def compiler_wrapper(args: list[str]):
 
 	pp = Path(__file__).parent()
 
-	if __file__.endswith('emc++'):
+	if __file__.endswith('em++'):
 	    subprocess.check_call([str(pp / "em++-orig")] + args)
 	else:
 	    subprocess.check_call([str(pp / "emcc-orig")] + args)
