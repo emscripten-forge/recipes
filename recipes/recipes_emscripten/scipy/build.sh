@@ -44,13 +44,15 @@ wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
 cp $RECIPE_DIR/FORTRAN.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
-mv $BUILD_PREFIX/bin/emcc $BUILD_PREFIX/bin/emcc-orig
-mv $BUILD_PREFIX/bin/emc++ $BUILD_PREFIX/bin/emc++-orig
+export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
 
-cp $RECIPE_DIR/CC.py $BUILD_PREFIX/bin/emcc
-cp $RECIPE_DIR/CC.py $BUILD_PREFIX/bin/emc++
-chmod u+x $BUILD_PREFIX/bin/emcc
-chmod u+x $BUILD_PREFIX/bin/emc++
+mv $EMBIN/emcc $EMBIN/emcc-orig
+mv $EMBIN/emc++ $EMBIN/emc++-orig
+
+cp $RECIPE_DIR/CC.py $EMBIN/emcc
+cp $RECIPE_DIR/CC.py $EMBIN/em++
+chmod u+x $EMBIN/emcc
+chmod u+x $EMBIN/em++
 
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"

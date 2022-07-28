@@ -43,10 +43,13 @@ def scipy_fixes(args: list[str]) -> None:
 
 def compiler_wrapper(args: list[str]):
 	scipy_fixes(args)
+
+	pp = Path(__file__).parent()
+
 	if __file__.endswith('emc++'):
-	    subprocess.check_call(["emc++-orig"] + args)
+	    subprocess.check_call([str(pp / "em++-orig")] + args)
 	else:
-	    subprocess.check_call(["emcc-orig"] + args)
+	    subprocess.check_call([str(pp / "emcc-orig")] + args)
 
 if __name__ == "__main__":
     compiler_wrapper(sys.argv[1:])
