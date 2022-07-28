@@ -44,15 +44,9 @@ wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
 cp $RECIPE_DIR/FORTRAN.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
+# Add pyodide scipy C file fixes to emcc
 export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
-
-mv $EMBIN/emcc $EMBIN/emcc-orig
-mv $EMBIN/em++ $EMBIN/em++-orig
-
-cp $RECIPE_DIR/CC.py $EMBIN/emcc
-cp $RECIPE_DIR/CC.py $EMBIN/em++
-chmod u+x $EMBIN/emcc
-chmod u+x $EMBIN/em++
+python $RECIPE_DIR/fixup_emcc.py $EMBIN/emcc.py
 
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"

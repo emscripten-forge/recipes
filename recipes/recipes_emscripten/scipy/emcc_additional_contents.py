@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-
 import sys
+import re
 from pathlib import Path
 
 def scipy_fix_cfile(path: str) -> None:
@@ -40,17 +39,3 @@ def scipy_fixes(args: list[str]) -> None:
     for arg in args:
         if arg.endswith(".c"):
             scipy_fix_cfile(arg)
-
-def compiler_wrapper(args: list[str]):
-	scipy_fixes(args)
-
-	pp = Path(__file__).parent()
-
-	if __file__.endswith('em++'):
-	    subprocess.check_call([str(pp / "em++-orig")] + args)
-	else:
-	    subprocess.check_call([str(pp / "emcc-orig")] + args)
-
-if __name__ == "__main__":
-    compiler_wrapper(sys.argv[1:])
-
