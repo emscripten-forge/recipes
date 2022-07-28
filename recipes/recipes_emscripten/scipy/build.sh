@@ -44,10 +44,18 @@ wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
 cp $RECIPE_DIR/FORTRAN.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
+mv $BUILD_PREFIX/bin/emcc $BUILD_PREFIX/bin/emcc-orig
+mv $BUILD_PREFIX/bin/emc++ $BUILD_PREFIX/bin/emc++-orig
+
+cp $RECIPE_DIR/CC.py $BUILD_PREFIX/bin/emcc
+cp $RECIPE_DIR/CC.py $BUILD_PREFIX/bin/emc++
+chmod u+x $BUILD_PREFIX/bin/emcc
+chmod u+x $BUILD_PREFIX/bin/emc++
+
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"
 
 # todo get rid of this
 export SCIPY_USE_PYTHRAN=0
 
-python -m pip install . --no-deps -vv
+python -m pip install . --no-deps -vvv
