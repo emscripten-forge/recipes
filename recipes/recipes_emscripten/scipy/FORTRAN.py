@@ -254,7 +254,7 @@ def fix_f2c_output(f2c_output_path: Path) -> str | None:
     if "PROPACK" in str(f2c_output):
 
         def fix_line(line: str) -> str:
-            if f2c_output.name != "cgemm_ovwr.c":
+            if f2c_output.name != "zgemm_ovwr.c":
                 line = line.replace("struct", "extern struct")
             if "12300" in line:
                 return line.replace("static", "").replace("123001", "(*n)")
