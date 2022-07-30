@@ -51,7 +51,4 @@ python $RECIPE_DIR/fixup_emcc.py $EMBIN/emcc.py
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"
 
-# todo get rid of this
-export SCIPY_USE_PYTHRAN=0
-
 python -m pip install . --no-deps -vvv
