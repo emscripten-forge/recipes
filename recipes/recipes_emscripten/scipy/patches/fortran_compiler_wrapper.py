@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# This file was adjusted from pyodide "_f2c_fixes.py"
+# https://github.com/pyodide/pyodide/blob/main/pyodide-build/pyodide_build/_f2c_fixes.py
+
 import re
 from pathlib import Path
 from textwrap import dedent  # for doctests

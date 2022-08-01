@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 
 
-fix_text_lines = (Path(__file__).parent / "emcc_additional_contents.py").read_text().splitlines()
+fix_text_lines = (Path(__file__).parent / "patches" / "c_compiler_wrapper.py").read_text().splitlines()
 
 
 def patch_emcc(fn):

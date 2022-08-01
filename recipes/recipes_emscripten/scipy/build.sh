@@ -41,12 +41,12 @@ echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
 
 # install f2c / emcc wrapper script
-cp $RECIPE_DIR/FORTRAN.py $BUILD_PREFIX/bin/gfortran
+cp $RECIPE_DIR/patches/fortran_compiler_wrapper.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
 # Add pyodide scipy C file fixes to emcc
 export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
-python $RECIPE_DIR/fixup_emcc.py $EMBIN/emcc.py
+python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"
