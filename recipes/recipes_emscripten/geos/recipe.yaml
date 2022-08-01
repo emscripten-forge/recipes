@@ -1,0 +1,45 @@
+context:
+  version: "3.11.0"
+
+package:
+  name: geos
+  version: "{{ version }}"
+
+source:
+  url: https://download.osgeo.org/geos/geos-{{ version }}.tar.bz2
+  sha256: 79ab8cabf4aa8604d161557b52e3e4d84575acdc0d08cb09ab3f7aaefa4d858a
+
+build:
+  number: 0
+  run_exports:
+    # pretty poor backcompat.  SO name changes each release.
+    # https://abi-laboratory.pro/tracker/timeline/geos/
+    - "{{ pin_subpackage('geos', max_pin='x.x.x') }}"
+
+requirements:
+  build:
+    - cmake
+    - ninja
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+
+# test:
+#   commands:
+#     - geos-config --version  # [not win]
+
+about:
+  home: https://libgeos.org/
+  license: LGPL-2.1-only
+  license_file: COPYING
+  summary: Geometry Engine, Open Source
+  description: |
+    GEOS is a C++ library for performing operations on two-dimensional vector
+    geometries. It is primarily a port of the JTS Topology Suite Java library.
+    It provides many of the algorithms used by PostGIS, the Shapely package
+    for Python, the sf package for R, and others.
+  doc_url: https://libgeos.org/
+  dev_url: https://github.com/libgeos/geos
+
+extra:
+  recipe-maintainers:
+    - wolfv

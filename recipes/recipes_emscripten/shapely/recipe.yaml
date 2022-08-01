@@ -1,0 +1,54 @@
+context:
+  version: "1.8.2"
+
+package:
+  name: shapely
+  version: "{{ version.split('.post')[0] }}"
+
+source:
+  url: https://pypi.io/packages/source/S/Shapely/Shapely-{{ version }}.tar.gz
+  sha256: 572af9d5006fd5e3213e37ee548912b0341fb26724d6dc8a4e3950c10197ebb6
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - sel(build_platform != target_platform): python
+    - sel(build_platform != target_platform): cross-python_{{ target_platform }}
+    - sel(build_platform != target_platform): cython
+    - sel(build_platform != target_platform): numpy
+    - sel(build_platform != target_platform): geos
+    - "{{ compiler('c') }}"
+  host:
+    - python
+    - pip
+    # - cython
+    - numpy
+    - geos
+  run:
+    - python
+    - numpy
+    # - "{{ pin_compatible('numpy') }}"
+
+# test:
+#   source_files:
+#     - tests
+#   requires:
+#     - pytest
+#   imports:
+#     - shapely
+#     - shapely.geometry
+#     - shapely.algorithms
+#     - shapely.examples
+#     - shapely.geos
+
+about:
+  home: https://github.com/shapely/shapely
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python package for manipulation and analysis of geometric objects in the Cartesian plane
+
+extra:
+  recipe-maintainers:
+    - wolfv
