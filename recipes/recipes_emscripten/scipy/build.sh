@@ -1,3 +1,6 @@
+# Wisdom from pyodide!
+# License is in patches/LICENSE
+
 # We get linker errors because the following 36 functions are missing
 # Copying them from a more recent LAPACK seems to work fine.
 
@@ -10,9 +13,11 @@ cat \
     sgemqrt.f sgeqrfp.f sgeqrt.f slahqr.f ssyconv.f ssyconvf.f ssyconvf_rook.f stpmqrt.f stpqrt.f sorcsd.f \
     zgemqrt.f zgeqrfp.f zgeqrt.f zlahqr.f zsyconv.f zsyconvf.f zsyconvf_rook.f ztpmqrt.f ztpqrt.f zuncsd.f \
 >>  ../../scipy/linalg/lapack_extras.f
+
 sed -i 's/CHARACTER/INTEGER/g' ../../scipy/linalg/lapack_extras.f
 sed -i 's/RECURSIVE//g' ../../scipy/linalg/lapack_extras.f
 cd ../..
+
 # Change many functions that return void into functions that return int
 find scipy -name "*.c*" | xargs sed -i 's/extern void F_FUNC/extern int F_FUNC/g'
 sed -i 's/void F_FUNC/int F_FUNC/g' scipy/odr/__odrpack.c
@@ -30,15 +35,14 @@ sed -i 's/, 1)/)/g' scipy/optimize/_trlib/trlib_private.h
 sed -i 's/^void/int/g' scipy/spatial/qhull_misc.h
 sed -i 's/, size_t)/)/g' scipy/spatial/qhull_misc.h
 sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
+
 # Missing declaration from cython_lapack_signatures.txt
 echo "void ilaenv(int *ispec, char *name, char *opts, int *n1, int *n2, int *n3, int *n4)" \
     >>  scipy/linalg/cython_lapack_signatures.txt
 # sed -i 's/^void/int/g' scipy/linalg/cython_lapack_signatures.txt
+
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
-
-# TODO this should be part of the clapack package!
-wget https://netlib.org/clapack/clapack.h -O $PREFIX/include/clapack.h
 
 # install f2c / emcc wrapper script
 cp $RECIPE_DIR/patches/fortran_compiler_wrapper.py $BUILD_PREFIX/bin/gfortran
