@@ -12,6 +12,10 @@ sed -i 's/^	-ranlib /^	$(RANLIB)/' **/Makefile
 sed -i 's/^	ar /^	$(ARCH)/' **/Makefile
 sed -i 's/^	ld /^	$(LD)/' **/Makefile
 
-emmake make -j ${CPU_COUNT:-3} blaslib lapacklib
+emmake make -j ${CPU_COUNT} blaslib lapacklib
+
 mkdir -p ${PREFIX}/lib
 emcc blas_WA.a lapack_WA.a F2CLIBS/libf2c.a -sSIDE_MODULE -o ${PREFIX}/lib/clapack_all.so
+
+mkdir -p ${PREFIX}/include
+cp INCLUDE/clapack.h ${PREFIX}/include
