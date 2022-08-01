@@ -60,6 +60,7 @@ let res = (async function() {
     }
   }
 )
+
 """
 
 
@@ -127,23 +128,10 @@ def run_node_tests(work_dir):
         file.write(NODE_TEST_FILE_STR)
 
     os.chdir(work_dir)
-    cmd = [f"$CONDA_PREFIX/bin/node   --trace-uncaught test.js"]
+    cmd = [f"$CONDA_PREFIX/bin/node  --no-experimental-fetch --trace-uncaught test.js"]
     ret = subprocess.run(cmd, shell=True)
     if ret.returncode != 0:
         raise RuntimeError("Tests Failed")
-
-
-@contextmanager
-def test_dir_context(pkg_name, debug, debug_dir):
-    if debug:
-        try:
-            os.stat(debug_dir)
-        except:
-            os.mkdir(debug_dir)
-        yield debug_dir
-    else:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            yield temp_dir
 
 
 def test_package(recipe, debug=False, debug_dir=None):
@@ -157,9 +145,8 @@ def test_package(recipe, debug=False, debug_dir=None):
 
     if has_tests:
         pkg_name = recipe["package"]["name"]
-        with test_dir_context(
-            pkg_name=pkg_name, debug=debug, debug_dir=debug_dir
-        ) as test_dir:
+
+        with tempfile.TemporaryDirectory() as test_dir:
             prefix = os.path.join(test_dir, "prefix")
             work_dir = os.path.join(test_dir, "work")
             os.mkdir(work_dir)
@@ -173,20 +160,37 @@ def test_package(recipe, debug=False, debug_dir=None):
     os.chdir(old_cwd)
 
 
-# if __name__ == "__main__":
+def manual_test_package(test_dir, pkg_name, test_path):
 
-#     import argparse
+    old_cwd = os.getcwd()
 
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("pkg_spec")
-#     parser.add_argument("--debug", action=argparse.BooleanOptionalAction)
-#     parser.add_argument("--debug-dir", type=str)
-#     args = parser.parse_args()
-#     print(args.debug_dir)
-#     if args.debug and args.debug_dir is None:
-#         raise RuntimeError("missing arg: --debug-dir")
-#     test_package(args.pkg_spec, debug=args.debug, debug_dir=args.debug_dir)
+    # with tempfile.TemporaryDirectory() as test_dir:
 
-#     import sys
+    prefix = os.path.join(test_dir, "prefix")
+    work_dir = os.path.join(test_dir, "work")
+    os.mkdir(work_dir)
+    os.chdir(work_dir)
+    create_test_env(pkg_name=pkg_name, prefix=prefix)
+    pack(prefix=prefix, pytest_files=[test_path])
+    copy_from_prefix(prefix=prefix, work_dir=work_dir)
+    patch(work_dir=work_dir)
+    run_node_tests(work_dir=work_dir)
 
-#     sys.exit(0)
+    os.chdir(old_cwd)
+
+
+if __name__ == "__main__":
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("test_dir")
+    parser.add_argument("pkg_name")
+    parser.add_argument("test_path")
+    args = parser.parse_args()
+
+    manual_test_package(args.test_dir, args.pkg_name, args.test_path)
+
+    import sys
+
+    sys.exit(0)
