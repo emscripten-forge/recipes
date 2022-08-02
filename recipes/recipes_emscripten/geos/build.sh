@@ -3,7 +3,7 @@
 mkdir -p build && cd build
 
 # Force support for shared libraries
-echo "set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)" > SupportSharedLib.cmake
+echo "set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)" > ${SRC_DIR}/SupportSharedLib.cmake
 
 emcmake cmake ${CMAKE_ARGS} -GNinja \
       -D CMAKE_BUILD_TYPE=Release \
