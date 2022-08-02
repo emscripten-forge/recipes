@@ -1,9 +1,9 @@
 #!/bin/bash
 
-mkdir build
-cd build
+mkdir bld
+cd bld
 
-emcmake cmake .. -GNinja \
+cmake .. -GNinja \
   -DCMAKE_INSTALL_PREFIX=${PREFIX} \
   -DWEBP_BUILD_CWEBP=OFF \
   -DWEBP_BUILD_DWEBP=OFF \
