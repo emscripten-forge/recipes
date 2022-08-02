@@ -25,3 +25,7 @@ if [[ "${CONDA_BUILD_CROSS_COMPILATION}" != "1" ]]; then
 fi
 
 ninja install -j${CPU_COUNT}
+
+# remove links
+cp $PREFIX/lib/libgeos_c.so $PREFIX/lib/libgeos_c.so
+cp $PREFIX/lib/libgeos.so $PREFIX/lib/libgeos.so
