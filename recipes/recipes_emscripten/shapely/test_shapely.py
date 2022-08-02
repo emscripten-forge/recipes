@@ -1,5 +1,3 @@
-import pytest
-
 def test_shapely():
     from shapely.geometry import MultiLineString
 
