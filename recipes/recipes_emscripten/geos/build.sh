@@ -27,5 +27,5 @@ fi
 ninja install -j${CPU_COUNT}
 
 # remove links
-cp $PREFIX/lib/libgeos_c.so $PREFIX/lib/libgeos_c.so
-cp $PREFIX/lib/libgeos.so $PREFIX/lib/libgeos.so
+cp $(readlink $PREFIX/lib/libgeos_c.so) $PREFIX/lib/libgeos_c.so
+cp $(readlink $PREFIX/lib/libgeos.so) $PREFIX/lib/libgeos.so
