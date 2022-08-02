@@ -1,7 +1,7 @@
 #!/bin/bash
 
-mkdir build
-cd build
+mkdir bld
+cd bld
 
 emcmake cmake .. -GNinja \
       -DCMAKE_INSTALL_PREFIX=$PREFIX \
