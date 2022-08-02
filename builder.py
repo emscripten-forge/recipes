@@ -80,6 +80,7 @@ class BuildArgs:
     target_platform: str = ""
     skip_existing: str = "default"
     post_build_callback: object = None
+    output_folder: object = None
 
 
 def test_package(recipe):
@@ -96,18 +97,18 @@ def emscripten_pack_package(recipe):
 
 
 def cleanup():
-    prefix = os.environ['CONDA_PREFIX']
+    prefix = os.environ["CONDA_PREFIX"]
     conda_bld_dir = os.path.join(prefix, "conda-bld")
 
-    do_not_delete = ["noarch","linux-64","emscripten-32"]
-    do_not_delete = [os.path.join(conda_bld_dir,d) for d in do_not_delete]
+    do_not_delete = ["noarch", "linux-64", "emscripten-32"]
+    do_not_delete = [os.path.join(conda_bld_dir, d) for d in do_not_delete]
 
-    for dirname in glob.iglob(os.path.join(conda_bld_dir,"**"), recursive=False):
+    for dirname in glob.iglob(os.path.join(conda_bld_dir, "**"), recursive=False):
         if os.path.isdir(dirname):
             if dirname not in do_not_delete:
                 print(f"DELETING {dirname}")
                 shutil.rmtree(dirname)
- 
+
 
 def post_build_callback(
     recipe,
@@ -128,7 +129,7 @@ def post_build_callback(
             "target_platform": target_platform,
             "recipe": recipe,
             "sorted_outputs": sorted_outputs[0],
-            "final_names" : final_names[0]
+            "final_names": final_names[0],
         }
     )
     if target_platform == "emscripten-32" and (not skip_tests):
@@ -138,11 +139,13 @@ def post_build_callback(
     if target_platform == "emscripten-32":
         with restore_cwd():
             empack.file_packager.pack_conda_pkg(
-                recipe=recipe, pack_prefix=pack_prefix, pack_outdir=pack_outdir, outname=final_names[0]
+                recipe=recipe,
+                pack_prefix=pack_prefix,
+                pack_outdir=pack_outdir,
+                outname=final_names[0],
             )
 
     cleanup()
-
 
 
 def boa_build(
@@ -283,7 +286,9 @@ def changed(
                 # diff can shown deleted recipe as changed
                 if os.path.isdir(recipe_dir):
 
-                    tmp_recipe_dir = os.path.join(tmp_recipes_root_str, recipe_with_change)
+                    tmp_recipe_dir = os.path.join(
+                        tmp_recipes_root_str, recipe_with_change
+                    )
                     # os.mkdir(tmp_recipe_dir)
                     shutil.copytree(recipe_dir, tmp_recipe_dir)
 
