@@ -1,10 +1,10 @@
 
 def test_basic_function():
-	from qutip import *
+	from qutip import Qobj
 	print(Qobj())
 
 def test_more_functions():
-	from qutip import *
+	from qutip import coherent, destroy, sigmax
 	import numpy as np
 
 	coherent(5,0.5-0.5j)
