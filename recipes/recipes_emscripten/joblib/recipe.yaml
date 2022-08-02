@@ -1,0 +1,39 @@
+context:
+  version: "1.1.0"
+
+package:
+  name: joblib
+  version: '{{ version }}'
+
+source:
+  - url: https://github.com/joblib/joblib/archive/{{ version }}.tar.gz
+    sha256: 4cda464ca712a4814849c9477d7551b696ce215dc05d79fc516460814ef48f4f
+    patches:
+      - patches/0001-No-multiprocessing-1256.patch
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - setuptools
+
+about:
+  home: https://pypi.org/project/joblib/
+  summary: 'Lightweight pipelining: using Python functions as pipeline jobs.'
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  license_family: BSD
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_joblib.py
+  recipe-maintainers:
+    - martinRenou
