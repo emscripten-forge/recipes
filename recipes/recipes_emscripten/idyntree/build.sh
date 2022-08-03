@@ -10,6 +10,8 @@ export CMAKE_FIND_ROOT_PATH=$PREFIX
 
 echo "=====> CMAKE_ARGS: ${CMAKE_ARGS}"
 
+sudo rm -rf /bin/swig*
+
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_TESTING:BOOL=${BUILD_TESTING} \
