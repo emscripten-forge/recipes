@@ -1,4 +1,4 @@
-def test_skimage():
+def test_basic():
     import numpy as np
     from skimage import color, data
     from skimage.util import view_as_blocks
