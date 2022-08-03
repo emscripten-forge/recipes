@@ -3,7 +3,7 @@ import os
 import yaml
 import subprocess
 import shutil
-
+from empack.file_packager import pack_environment, pack_file
 import http
 from socket import *
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -65,15 +65,29 @@ def create_test_env(pkg_name, prefix):
     assert returncode == 0
 
 
-def pack(prefix, pytest_files):
+def pack(prefix, pytest_files, pkg_file_filter):
     print("pytest_files", pytest_files)
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
     cmd = [f"empack pack python core {prefix} --version=3.10 "]
     ret = subprocess.run(cmd, shell=True)
 
-    cmd = [f"empack pack file  {pytest_files[0]}  '/tests'  testdata"]
-    ret = subprocess.run(cmd, shell=True)
+    pack_environment(
+        env_prefix=prefix,
+        outname="python_data",
+        export_name="globalThis.Module",
+        pkg_file_filter=pkg_file_filter,
+    )
+
+    # cmd = [f"empack pack file  {pytest_files[0]}  '/tests'  testdata"]
+    # ret = subprocess.run(cmd, shell=True)
+
+    pack_file(
+        file=pytest_files[0],
+        mount_path="/tests",
+        outname="testdata",
+        export_name="globalThis.Module",
+    )
 
 
 def copy_from_prefix(prefix, work_dir):
@@ -203,7 +217,7 @@ def run_playwright_tests(work_dir, port):
     asyncio.run(playwright_main(page_url=page_url))
 
 
-def test_package(recipe):
+def test_package(recipe, pkg_file_filter):
     recipe_dir, _ = os.path.split(recipe["recipe_file"])
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
@@ -222,7 +236,11 @@ def test_package(recipe):
             os.mkdir(work_dir)
             os.chdir(work_dir)
             create_test_env(pkg_name=pkg_name, prefix=prefix)
-            pack(prefix=prefix, pytest_files=pytest_files)
+            pack(
+                prefix=prefix,
+                pytest_files=pytest_files,
+                pkg_file_filter=pkg_file_filter,
+            )
             port = find_free_port()
             create_html(work_dir=work_dir)
 
