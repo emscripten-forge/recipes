@@ -4,6 +4,7 @@ import yaml
 import subprocess
 import shutil
 from empack.file_packager import pack_environment, pack_file
+from empack.file_patterns import pkg_file_filter_from_yaml
 import http
 from socket import *
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -18,11 +19,14 @@ import functools
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import ssl
 
-
+from pathlib import Path
 import os
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 TESTPAGE_DIR = os.path.join(THIS_DIR, "testpage")
+PARENT_DIR = Path(THIS_DIR).parent
+CONFIG_PATH = os.path.join(PARENT_DIR, "empack_config.yaml")
+PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 
 def find_free_port():
@@ -249,3 +253,51 @@ def test_package(recipe, pkg_file_filter):
                 server.shutdown()
                 thread.join()
     os.chdir(old_cwd)
+
+
+def manual_test_package(test_dir, pkg_name, test_path):
+
+    old_cwd = os.getcwd()
+
+    # with tempfile.TemporaryDirectory() as test_dir:
+
+    prefix = os.path.join(test_dir, "prefix")
+    work_dir = os.path.join(test_dir, "work")
+    os.mkdir(work_dir)
+    os.chdir(work_dir)
+    create_test_env(pkg_name=pkg_name, prefix=prefix)
+
+    pack(
+        prefix=prefix,
+        pytest_files=[test_path],
+        pkg_file_filter=PKG_FILE_FILTER,
+    )
+    port = find_free_port()
+    create_html(work_dir=work_dir)
+
+    thread, server = start_server(work_dir=work_dir, port=port)
+    try:
+        copy_from_prefix(prefix=prefix, work_dir=work_dir)
+        run_playwright_tests(work_dir=work_dir, port=port)
+    finally:
+        server.shutdown()
+        thread.join()
+
+    os.chdir(old_cwd)
+
+
+if __name__ == "__main__":
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("test_dir")
+    parser.add_argument("pkg_name")
+    parser.add_argument("test_path")
+    args = parser.parse_args()
+
+    manual_test_package(args.test_dir, args.pkg_name, args.test_path)
+
+    import sys
+
+    sys.exit(0)
