@@ -1,0 +1,49 @@
+context:
+  version: "1.2.1"
+
+package:
+  name: mpc
+  version: "{{ version }}"
+
+source:
+  url: https://ftp.gnu.org/gnu/mpc/mpc-{{ version }}.tar.gz
+  sha256: 17503d2c395dfcf106b622dc142683c1199431d095367c6aacba6eec30340459
+
+build:
+  number: 0
+  # run_exports:
+  #   - {{ pin_subpackage("mpc") }}
+
+requirements:
+  build:
+    - gnuconfig
+    - "{{ compiler('c') }}"
+    # - autotools_clang_conda  # [win]
+    - make
+  host:
+    # - gmp             # [unix]
+    # - mpir            # [win]
+    - mpfr
+  run:
+    # - gmp             # [unix]
+    # - mpir            # [win]
+    - mpfr
+
+# test:
+#   commands:
+#     - if not exist %LIBRARY_INC%\\mpc.h exit 1                  # [win]
+#     - if not exist %LIBRARY_LIB%\\mpc.lib exit 1                # [win]
+#     - if not exist %LIBRARY_BIN%\\mpc.dll exit 1                # [win]
+#     - test -f ${PREFIX}/include/mpc.h                           # [unix]
+#     - test -f ${PREFIX}/lib/libmpc.dylib                        # [osx]
+#     - test -f ${PREFIX}/lib/libmpc.so                           # [linux]
+
+about:
+  home: http://www.multiprecision.org/
+  license: LGPL-3.0-or-later
+  license_file: COPYING.LESSER
+  summary: A C library for the arithmetic of complex numbers with arbitrarily high precision.
+
+extra:
+  recipe-maintainers:
+    - wolfv
