@@ -1,4 +1,5 @@
 emconfigure ./configure \
+    CFLAGS="$CFLAGS -fPIC" \
     --prefix=${PREFIX}  \
     --host=none         \
     --enable-cxx
