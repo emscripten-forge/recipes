@@ -120,15 +120,16 @@ def post_build_callback(
 
     # cleanup
 
-    assert len(sorted_outputs) == 1, "only one output per pkg atm"
-    rich.pretty.pprint(
-        {
-            "target_platform": target_platform,
-            "recipe": recipe,
-            "sorted_outputs": sorted_outputs[0],
-            "final_names": final_names[0],
-        }
-    )
+    # assert len(sorted_outputs) == 1, "only one output per pkg atm"
+    for output in sorted_outputs:
+        rich.pretty.pprint(
+            {
+                "target_platform": target_platform,
+                "recipe": recipe,
+                "sorted_outputs": output,
+                "final_names": final_names[0],
+            }
+        )
     if target_platform == "emscripten-32" and (not skip_tests):
         with restore_cwd():
             test_package(recipe)
