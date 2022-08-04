@@ -1,5 +1,10 @@
 context:
+  name: matplotlib
   version: '3.5.2'
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
 
 source:
   - url: https://github.com/matplotlib/matplotlib/archive/v{{ version }}.tar.gz
@@ -14,10 +19,11 @@ source:
 build:
   number: 0
 
-outputs:
+steps:
   - package:
       name: matplotlib-base
-    script: build.sh
+    build:
+      script: build.sh
     requirements:
       build:
         - python
@@ -49,6 +55,8 @@ outputs:
 
   - package:
       name: matplotlib
+    build:
+      noarch: generic
     requirements:
       host:
         - python
