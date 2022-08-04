@@ -89,8 +89,8 @@ class BuildArgs:
 def test_package(recipe):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe}")
-    browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
     node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
+    browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
 
 
 def cleanup():
