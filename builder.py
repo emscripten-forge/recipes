@@ -15,13 +15,16 @@ import empack
 import glob
 from testing.browser_test_package import test_package as browser_test_package
 from testing.node_test_package import test_package as node_test_package
+from empack.file_patterns import pkg_file_filter_from_yaml
+from contextlib import contextmanager
 
 RECIPES_SUBDIR_MAPPING = OrderedDict(
     [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
 )
 
-
-from contextlib import contextmanager
+THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+CONFIG_PATH = os.path.join(THIS_DIR, "empack_config.yaml")
+PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 
 @contextmanager
@@ -86,14 +89,8 @@ class BuildArgs:
 def test_package(recipe):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe}")
-    node_test_package(recipe)
-    browser_test_package(recipe)
-
-
-def emscripten_pack_package(recipe):
-    pack_conda_pkg(
-        recipe=recipe,
-    )
+    node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
+    browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
 
 
 def cleanup():
@@ -143,6 +140,7 @@ def post_build_callback(
                 pack_prefix=pack_prefix,
                 pack_outdir=pack_outdir,
                 outname=final_names[0],
+                pkg_file_filter=PKG_FILE_FILTER,
             )
 
     cleanup()
