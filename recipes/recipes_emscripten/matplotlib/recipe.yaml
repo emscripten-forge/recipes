@@ -2,47 +2,12 @@ package:
   name: matplotlib
   version: 3.5.1
 
-source:
-  - url: https://files.pythonhosted.org/packages/8a/46/425a44ab9a71afd2f2c8a78b039c1af8ec21e370047f0ad6e43ca819788e/matplotlib-3.5.1.tar.gz
-    sha256: b2e9810e09c3a47b73ce9cab5a72243a1258f61e7900969097a817232246ce1c
-    patches:
-    - patches/disable_macosx_backend.patch
-    - patches/hardcoded-font-cache.patch
-    - patches/fix-threading.patch
-  - path: mplsetup.cfg
-  - path: setupext.py
-
 build:
-  number: 1
+  number: 2
 
 requirements:
-  build:
-    - python
-    - numpy
-    - cross-python_emscripten-32
-
-    - "{{ compiler('c') }}"
-    - "{{ compiler('cxx') }}"
-    - sel(not win): pkg-config
-
-    # TODO add certifi package to emscripten-32 and depend in host on this
-    - certifi
-
-  host:
-    - python
-    - pip
-    - numpy
-    - setuptools_scm_git_archive
   run:
-    - cycler
-    - fonttools
-    - kiwisolver
-    - numpy
-    - packaging
-    - pillow
-    - pyparsing
-    - python-dateutil
-    - pytz
+    - {{ pin_subpackage('matplotlib-base', max_pin="x.x.x") }}
 
 extra:
   emscripten_tests:
