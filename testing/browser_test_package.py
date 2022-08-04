@@ -69,8 +69,8 @@ def pack(prefix, pytest_files, pkg_file_filter):
     print("pytest_files", pytest_files)
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
-    cmd = [f"empack pack python core {prefix} --version=3.10 "]
-    ret = subprocess.run(cmd, shell=True)
+    # cmd = [f"empack pack python core {prefix} --version=3.10 "]
+    # ret = subprocess.run(cmd, shell=True)
 
     pack_environment(
         env_prefix=prefix,
