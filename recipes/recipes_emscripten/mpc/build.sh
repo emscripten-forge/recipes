@@ -1,5 +1,5 @@
 emconfigure ./configure \
-    CFLAGS="-fPIC" \
+    CFLAGS="$CFLAGS -fPIC" \
     --with-gmp="${PREFIX}" \
     --with-mpfr="${PREFIX}" \
     --prefix=${PREFIX}
