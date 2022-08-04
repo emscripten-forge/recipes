@@ -4,6 +4,16 @@ import yaml
 import subprocess
 import shutil
 from contextlib import contextmanager
+from empack.file_packager import pack_environment, pack_file
+from empack.file_patterns import pkg_file_filter_from_yaml
+
+from pathlib import Path
+
+
+THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+PARENT_DIR = Path(THIS_DIR).parent
+CONFIG_PATH = os.path.join(PARENT_DIR, "empack_config.yaml")
+PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 
 NODE_TEST_FILE_STR = """
@@ -86,18 +96,31 @@ def create_test_env(pkg_name, prefix):
     assert returncode == 0
 
 
-def pack(prefix, pytest_files):
+def pack(prefix, pytest_files, pkg_file_filter):
     assert len(pytest_files) <= 1, "atm only one file is allowed"
 
-    cmd = [
-        f"empack pack python core {prefix} --version=3.10 --export-name='global.Module'"
-    ]
-    ret = subprocess.run(cmd, shell=True)
+    # cmd = [
+    #     f"empack pack python core {prefix} --version=3.10 --export-name='global.Module'"
+    # ]
+    # ret = subprocess.run(cmd, shell=True)
 
-    cmd = [
-        f"empack pack file  {pytest_files[0]}  '/tests'  testdata --export-name='global.Module'"
-    ]
-    ret = subprocess.run(cmd, shell=True)
+    pack_environment(
+        env_prefix=prefix,
+        outname="python_data",
+        export_name="global.Module",
+        pkg_file_filter=pkg_file_filter,
+    )
+
+    # cmd = [
+    #     f"empack pack file  {pytest_files[0]}  '/tests'  testdata --export-name='global.Module'"
+    # ]
+    # ret = subprocess.run(cmd, shell=True)
+    pack_file(
+        file=pytest_files[0],
+        mount_path="/tests",
+        outname="testdata",
+        export_name="global.Module",
+    )
 
 
 def copy_from_prefix(prefix, work_dir):
@@ -134,7 +157,7 @@ def run_node_tests(work_dir):
         raise RuntimeError("Tests Failed")
 
 
-def test_package(recipe, debug=False, debug_dir=None):
+def test_package(recipe, pkg_file_filter):
 
     old_cwd = os.getcwd()
 
@@ -152,7 +175,11 @@ def test_package(recipe, debug=False, debug_dir=None):
             os.mkdir(work_dir)
             os.chdir(work_dir)
             create_test_env(pkg_name=pkg_name, prefix=prefix)
-            pack(prefix=prefix, pytest_files=pytest_files)
+            pack(
+                prefix=prefix,
+                pytest_files=pytest_files,
+                pkg_file_filter=pkg_file_filter,
+            )
             copy_from_prefix(prefix=prefix, work_dir=work_dir)
             patch(work_dir=work_dir)
             run_node_tests(work_dir=work_dir)
@@ -171,7 +198,7 @@ def manual_test_package(test_dir, pkg_name, test_path):
     os.mkdir(work_dir)
     os.chdir(work_dir)
     create_test_env(pkg_name=pkg_name, prefix=prefix)
-    pack(prefix=prefix, pytest_files=[test_path])
+    pack(prefix=prefix, pytest_files=[test_path], pkg_file_filter=PKG_FILE_FILTER)
     copy_from_prefix(prefix=prefix, work_dir=work_dir)
     patch(work_dir=work_dir)
     run_node_tests(work_dir=work_dir)
