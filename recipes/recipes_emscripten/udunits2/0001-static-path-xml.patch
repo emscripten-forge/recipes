@@ -1,0 +1,68 @@
+diff --git a/lib/xml.c b/lib/xml.c
+index 3ee1a2d..b6a571a 100644
+--- a/lib/xml.c
++++ b/lib/xml.c
+@@ -2132,62 +2132,7 @@ static const char*
+ default_udunits2_xml_path()
+ {
+     // Returned absolute pathname of XML database
+-    static char absXmlPathname[PATH_MAX];
+-
+-    if (absXmlPathname[0] == 0) {
+-        const char* prefix = NULL; // Installation directory
+-
+-#       if defined(__APPLE__) || defined(__linux__)
+-            Dl_info     info;
+-            const char  sep = '/'; // Pathname component separator
+-            char        buf[PATH_MAX];
+-            const char  relXmlPathname[] = "share/udunits/udunits2.xml";
+-
+-            // The following should get pathname of shared-library
+-            if (!dladdr(default_udunits2_xml_path, &info)) {
+-                prefix = NULL;
+-            }
+-            else {
+-                strncpy(buf, info.dli_fname, sizeof(buf))[sizeof(buf)-1] = 0;
+-                memmove(buf, dirname(buf), sizeof(buf)); // "lib"
+-                memmove(buf, dirname(buf), sizeof(buf)); // "lib/.."
+-                prefix = buf;
+-            }
+-#       elif defined(_WIN32)
+-            const char sep = '\\'; // Pathname component separator
+-            char       buf[MAX_PATH * 4];
+-            const char relXmlPathname[] = "share\\udunits\\udunits2.xml";
+-            HMODULE    hModule = NULL;
+-
+-            GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+-                    (LPCTSTR)default_udunits2_xml_path, &hModule);
+-
+-            GetModuleFileName(hModule, buf, sizeof(buf)); // Library pathname
+-            *strrchr(buf, sep) = 0; // "lib"
+-            *strrchr(buf, sep) = 0; // "lib/.."
+-
+-            prefix = buf;
+-#       endif
+-
+-        if (prefix == NULL) {
+-            strncpy(absXmlPathname, DEFAULT_UDUNITS2_XML_PATH,
+-                    sizeof(absXmlPathname));
+-        } // Use default pathname
+-        else {
+-            int prefixLen = strlen(prefix);
+-            if (prefix[prefixLen-1] == sep) {
+-                --prefixLen;
+-                if (prefix[prefixLen-1] == sep)
+-                    --prefixLen;
+-            }
+-
+-            snprintf(absXmlPathname, sizeof(absXmlPathname), "%.*s%c%s",
+-                    prefixLen, prefix, sep, relXmlPathname);
+-        } // Use computed pathname
+-
+-        absXmlPathname[sizeof(absXmlPathname)-1] = 0; // Ensure NUL terminated
+-    } // `absXmlPathname` not set
+-
++    static const char* absXmlPathname = "INSERT_UDUNITS_XML_PATH_HERE";
+     return absXmlPathname;
+ }
+ 
