@@ -5,6 +5,11 @@ autoreconf -vfi
 export LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
 export CFLAGS="${CFLAGS} -I${PREFIX}/include"
 
+export UDUNITS2_XML_PATH=$PREFIX/share/udunits/udunits2.xml
+sed -i "s/INSERT_UDUNITS_XML_PATH_HERE/$UDUNITS2_XML_PATH/g" lib/xml.c
+
+cat lib/xml.c
+
 # if [[ $(uname) == Darwin ]]; then
 #   export LDFLAGS="${LDFLAGS} -Wl,-rpath,${PREFIX}/lib"
 # fi
