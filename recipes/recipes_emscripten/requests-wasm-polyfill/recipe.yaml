@@ -1,0 +1,55 @@
+context:
+  name: requests-wasm-polyfill
+  version: '0.2.0'
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/emscripten-forge/{{name}}/archive/refs/tags/{{version}}.tar.gz
+  sha256: 14c3a98e0dc6a13fc02132e5b6234398cf0ce6d961cee53336b99c25e9503a4f
+
+build:
+  number: 0
+
+steps:
+  - package:
+      name: requests-wasm-polyfill
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - python
+        - cross-python_emscripten-32
+      host:
+        - python
+        - pip
+        - pytest_driver >=0.5.1
+        - pytest_driver_node >=0.5.1
+      run:
+        - numpy
+  - package:
+      name: requests
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - "{{ pin_subpackage('requests-wasm-polyfill', exact=True) }}"
+
+about:
+  home:  https://github.com/emscripten-forge/requests-wasm-polyfill
+  license: MIT
+  license_file: LICENSE
+  summary: requests Python module polyfill for wasm
+  doc_url:  https://github.com/emscripten-forge/requests-wasm-polyfill
+  dev_url: https://github.com/emscripten-forge/requests-wasm-polyfill
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_wasm_requests.py

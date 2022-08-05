@@ -1,6 +1,6 @@
 import pytest
 import os
-import wasm_requests
+import requests
 
 
 skip_node = pytest.mark.skipif(
@@ -10,9 +10,8 @@ skip_node = pytest.mark.skipif(
 
 @skip_node
 def test_wasm_requests():
-
     # get with query params
-    r = wasm_requests.get("https://httpbin.org/get", params=dict(foo="bar", fobar=1))
+    r = requests.get("https://httpbin.org/get", params=dict(foo="bar", fobar=1))
     result = r.json()
     headers = r.headers
 
