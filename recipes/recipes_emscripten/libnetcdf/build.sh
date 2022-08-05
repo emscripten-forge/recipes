@@ -13,6 +13,13 @@ CMAKE_BUILD_TYPE=Release
 # https://github.com/Unidata/netcdf-c/issues/2188#issuecomment-1015927961
 # -DENABLE_DAP_REMOTE_TESTS=OFF
 # Build static.
+
+# Set these manually
+# * HDF5_C_LIBRARY
+# * HDF5_HL_LIBRARY
+# * HDF5_LIBRARIES
+# * HDF5_INCLUDE_DIR
+
 cmake ${CMAKE_ARGS} -GNinja -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DCMAKE_INSTALL_LIBDIR="lib" \
       -DCMAKE_PREFIX_PATH=${PREFIX} \
@@ -26,6 +33,9 @@ cmake ${CMAKE_ARGS} -GNinja -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DBUILD_UTILITIES=OFF \
       -DENABLE_DOXYGEN=OFF \
       -DENABLE_CDF5=ON \
+      -DHDF5_C_LIBRARY=$PREFIX/lib/libhdf5.a \
+      -DHDF5_HL_LIBRARY=$PREFIX/lib/libhdf5_hl.a \
+      -DHDF5_INCLUDE_DIR=$PREFIX/include/ \
       -DENABLE_BYTERANGE=ON \
       ${PARALLEL} \
       -DENABLE_NCZARR=on \
