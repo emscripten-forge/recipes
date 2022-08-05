@@ -36,6 +36,7 @@ cmake ${CMAKE_ARGS} -GNinja -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DHDF5_C_LIBRARY=$PREFIX/lib/libhdf5.a \
       -DHDF5_HL_LIBRARY=$PREFIX/lib/libhdf5_hl.a \
       -DHDF5_INCLUDE_DIR=$PREFIX/include/ \
+      -DHDF5_VERSION="1.12.2" \
       -DENABLE_BYTERANGE=ON \
       ${PARALLEL} \
       -DENABLE_NCZARR=on \
