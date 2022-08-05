@@ -1,0 +1,73 @@
+context:
+  version: "4.8.1"
+
+package:
+  name: libnetcdf
+  version: "{{ version }}"
+
+source:
+  url: https://github.com/Unidata/netcdf-c/archive/v{{ version }}.tar.gz
+  sha256: bc018cc30d5da402622bf76462480664c6668b55eb16ba205a0dfb8647161dd0
+  # patches:
+    # - patches/0004-Prefer-getenv-TOPSRCDIR-over-STRINGIFY-TOPSRCDIR.patch
+    # - patches/0006-Fix-tests-for-Windows-VS2008-define-__func__-as-__FU.patch
+    # - patches/0008-Finish-the-missing-code-to-handle-VS-in-test_common..patch
+    # - patches/0009-topsrcdir.patch
+    # - patches/prevent_MS_runtime_libs_being_installed_again.patch  # [win]
+    # - patches/strdup.patch
+    # - patches/do_not_use_16_processes_in_tests.patch  # [ppc64le]
+    # # Revert upstream change in 4.8.1--maybe unnecessary in 4.8.2
+    # - patches/fix_cmake.patch  # [win]
+    # # Fix renaming file with multiple builds--will be in 4.8.2
+    # - patches/fix-rename.patch
+
+build:
+  number: 0
+  # run_exports:
+  #   #   https://abi-laboratory.pro/tracker/timeline/netcdf/
+  #   - {{ pin_subpackage('libnetcdf', max_pin='x.x.x.x') }} {{ build_pin }}
+
+requirements:
+  build:
+    - cmake
+    - ninja
+    - pkg-config  # [not win]
+    - gnuconfig  # [unix]
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    - unzip  # [not win]
+  host:
+    - bzip2
+    # - curl
+    - zlib
+    # - hdf4
+    # without this repeat reference, conda-smithy doesn't pin correctly
+    - hdf5
+    # - jpeg
+    # - libzip
+  run:
+    - bzip2
+    # - curl
+    - zlib
+    # - hdf4
+    - hdf5
+    # - jpeg
+    # - libzip
+    # Curl should be pulling this... Investigate it later.
+    # - libssh2  # [win]
+
+# test:
+#   commands:
+#     - test -f ${PREFIX}/lib/libnetcdf.a  # [not win]
+#     - test -f ${PREFIX}/lib/libnetcdf${SHLIB_EXT}  # [not win]
+#     - nc-config --all  # [not win]
+
+about:
+  home: http://www.unidata.ucar.edu/software/netcdf/
+  license: MIT
+  license_file: COPYRIGHT
+  summary: Libraries and data formats that support array-oriented scientific data
+
+extra:
+  recipe-maintainers:
+    - wolfv
