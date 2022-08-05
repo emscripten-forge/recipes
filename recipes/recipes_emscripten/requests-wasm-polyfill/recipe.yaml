@@ -1,9 +1,9 @@
 context:
-  version: 0.2.0
   name: requests-wasm-polyfill
+  version: '0.2.0'
 
 package:
-  name: '{{name}}'
+  name: '{{ name|lower }}'
   version: '{{ version }}'
 
 source:
@@ -13,17 +13,30 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-    - python
-    - cross-python_emscripten-32
-  host:
-    - python
-    - pip
-    - pytest_driver >=0.5.1
-    - pytest_driver_node >=0.5.1
-  run:
-    - numpy
+steps:
+  - package:
+      name: requests-wasm-polyfill
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - python
+        - cross-python_emscripten-32
+      host:
+        - python
+        - pip
+        - pytest_driver >=0.5.1
+        - pytest_driver_node >=0.5.1
+      run:
+        - numpy
+  - package:
+      name: requests
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - "{{ pin_subpackage('requests-wasm-polyfill', exact=True) }}"
 
 about:
   home:  https://github.com/emscripten-forge/requests-wasm-polyfill
