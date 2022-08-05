@@ -1,48 +1,66 @@
-package:
+context:
   name: matplotlib
-  version: 3.5.1
+  version: '3.5.2'
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
 
 source:
-  - url: https://files.pythonhosted.org/packages/8a/46/425a44ab9a71afd2f2c8a78b039c1af8ec21e370047f0ad6e43ca819788e/matplotlib-3.5.1.tar.gz
-    sha256: b2e9810e09c3a47b73ce9cab5a72243a1258f61e7900969097a817232246ce1c
+  - url: https://github.com/matplotlib/matplotlib/archive/v{{ version }}.tar.gz
+    sha256: c81325d1b0d822ef75fd71d243f98478cdca1f800a838a2a1bc8e4e17b8df93c
     patches:
-    - patches/disable_macosx_backend.patch
-    - patches/hardcoded-font-cache.patch
-    - patches/fix-threading.patch
+      - patches/disable_macosx_backend.patch
+      - patches/hardcoded-font-cache.patch
+      - patches/fix-threading.patch
   - path: mplsetup.cfg
   - path: setupext.py
 
 build:
-  number: 1
+  number: 0
 
-requirements:
-  build:
-    - python
-    - numpy
-    - cross-python_emscripten-32
+steps:
+  - package:
+      name: matplotlib-base
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - python
+        - numpy
+        - cross-python_emscripten-32
 
-    - "{{ compiler('c') }}"
-    - "{{ compiler('cxx') }}"
-    - sel(not win): pkg-config
+        - "{{ compiler('c') }}"
+        - "{{ compiler('cxx') }}"
+        - sel(not win): pkg-config
 
-    # TODO add certifi package to emscripten-32 and depend in host on this
-    - certifi
+        # TODO add certifi package to emscripten-32 and depend in host on this
+        - certifi
 
-  host:
-    - python
-    - pip
-    - numpy
-    - setuptools_scm_git_archive
-  run:
-    - cycler
-    - fonttools
-    - kiwisolver
-    - numpy
-    - packaging
-    - pillow
-    - pyparsing
-    - python-dateutil
-    - pytz
+      host:
+        - python
+        - pip
+        - numpy
+        - setuptools_scm_git_archive
+      run:
+        - cycler
+        - fonttools
+        - kiwisolver
+        - numpy
+        - packaging
+        - pillow
+        - pyparsing
+        - python-dateutil
+        - pytz
+
+  - package:
+      name: matplotlib
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - "{{ pin_subpackage('matplotlib-base', exact=True) }}"
 
 extra:
   emscripten_tests:
