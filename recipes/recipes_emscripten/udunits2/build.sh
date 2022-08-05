@@ -15,9 +15,9 @@ emconfigure ./configure --prefix=${PREFIX}  \
 
 make -j${CPU_COUNT} ${VERBOSE_AT}
 
-if [[ "${CONDA_BUILD_CROSS_COMPILATION:-0}" != "1" ]]; then
-    make check
-fi
+# if [[ "${CONDA_BUILD_CROSS_COMPILATION:-0}" != "1" ]]; then
+#     make check
+# fi
 
 make install
 
