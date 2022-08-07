@@ -18,28 +18,29 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-    - "{{ compiler('cxx') }}"
-    - cmake
-    - ninja
-    - python >=3
-    - libcxx {{ cxx_compiler_version }}  # [osx]
-  host:
-    - libcxx {{ cxx_compiler_version }}  # [osx]
-    - zlib
-    - libxml2                            # [win]
-
 outputs:
+# requirements:
+#   build:
+#     - "{{ compiler('cxx') }}"
+#     - cmake
+#     - ninja
+#     - python >=3
+#     - libcxx {{ cxx_compiler_version }}  # [osx]
+#   host:
+#     - libcxx {{ cxx_compiler_version }}  # [osx]
+#     - zlib
+#     - libxml2                            # [win]
+
   # Contains everything
-  - name: llvmdev
+  - package:
+      name: llvmdev
     build:
       script: install_llvm.sh  # [not win]
       activate_in_script: true
     requirements:
       build:
         - "{{ compiler('cxx') }}"
-        - cmake
+        - cmake <3.24
         - ninja
         - python >=3
       host:
@@ -61,9 +62,10 @@ outputs:
 
   # Contains the shared libraries. To make different LLVM libraries co-installable
   # soversion is appended to the package name.
-  - name: libllvm{{ major_ver }}
+  - package:
+      name: libllvm{{ major_ver }}
     build:
-      skip: true  # [win and vc<14]
+      # skip: true  # [win and vc<14]
       script: install_llvm.sh  # [not win]
       activate_in_script: true
       # run_exports:   # [not win]
@@ -72,7 +74,7 @@ outputs:
       build:
         - "{{ compiler('cxx') }}"
         - ninja                    # [not win]
-        - cmake                    # [not win]
+        - cmake <3.24                    # [not win]
         - python >=3               # [not win]
       host:
         # - libcxx >={{ cxx_compiler_version }}  # [osx]
@@ -85,8 +87,9 @@ outputs:
 
   # This is a meta package so that people can use the latest libllvm and also
   # for run_exports
-  - name: llvm
-    build:
+  - package:
+      name: llvm
+    # build:
       # skip: true  # [(win and vc<14)]
       # run_exports:   # [not win]
         # - '{{ pin_subpackage("libllvm" + major_ver, max_pin="x.x") }}'  # [not win]
@@ -103,7 +106,8 @@ outputs:
     #     - echo "Hello World!"
 
   # # Contains LLVM tools
-  - name: llvm-tools
+  - package:
+      name: llvm-tools
     # script: install_llvm.bat  # [win]
     build:
       script: install_llvm.sh
@@ -111,7 +115,7 @@ outputs:
     requirements:
       build:
         - "{{ compiler('cxx') }}"
-        - cmake
+        - cmake <3.24
         - ninja
         - python >=3
       host:
