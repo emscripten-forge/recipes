@@ -24,10 +24,18 @@ cd build
 #   CFLAGS="$(echo $CFLAGS | sed 's/-fno-plt //g')"
 #   CXXFLAGS="$(echo $CXXFLAGS | sed 's/-fno-plt //g')"
 # fi
-export EMCC_FORCE_STDLIBS=1
 
-# set initial memory to 200 Megabyte
-export LDFLAGS="$LDFLAGS -sEMCC_FORCE_STDLIBS=1 -sTOTAL_MEMORY=200000000"
+export CC=emcc
+export CXX=em++
+export AR=emar
+
+export EMCC_FORCE_STDLIBS=1
+# set initial memory to 130 Mb
+export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS -sTOTAL_MEMORY=131072000"
+export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
+
+# export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS -s EMCC_FORCE_STDLIBS=1 -s TOTAL_MEMORY=200000000"
+# export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
 
 cmake -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
       -DCMAKE_BUILD_TYPE=Release \
