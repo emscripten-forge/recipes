@@ -1,3 +1,6 @@
+#!/bin/bash
+set -x
+
 # set -x
 
 # Make osx work like linux.
@@ -21,10 +24,15 @@ cd build
 #   CFLAGS="$(echo $CFLAGS | sed 's/-fno-plt //g')"
 #   CXXFLAGS="$(echo $CXXFLAGS | sed 's/-fno-plt //g')"
 # fi
+export EMCC_FORCE_STDLIBS=1
+
+# set initial memory to 200 Megabyte
+export LDFLAGS="$LDFLAGS -sEMCC_FORCE_STDLIBS=1 -sTOTAL_MEMORY=200000000"
 
 cmake -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
       -DCMAKE_BUILD_TYPE=Release \
       -DHAVE_LIBEDIT=OFF \
+      -DBUILD_SHARED_LIBS=OFF \
       -DLLVM_HAVE_LIBXAR=OFF \
       -DLLVM_ENABLE_LIBXML2=OFF \
       -DLLVM_ENABLE_RTTI=ON \
@@ -34,13 +42,15 @@ cmake -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
       -DLLVM_INCLUDE_DOCS=OFF \
       -DLLVM_INCLUDE_EXAMPLES=OFF \
       -DLLVM_INCLUDE_GO_TESTS=OFF \
-      -DLLVM_INCLUDE_TESTS=ON \
-      -DLLVM_INCLUDE_UTILS=ON \
-      -DLLVM_INSTALL_UTILS=ON \
+      -DLLVM_INCLUDE_TESTS=OFF \
+      -DLLVM_INCLUDE_UTILS=OFF \
+      -DLLVM_INSTALL_UTILS=OFF \
       -DLLVM_UTILS_INSTALL_DIR=libexec/llvm \
-      -DLLVM_BUILD_LLVM_DYLIB=yes \
-      -DLLVM_LINK_LLVM_DYLIB=yes \
+      -DLLVM_BUILD_LLVM_DYLIB=OFF \
+      -DLLVM_LINK_LLVM_DYLIB=OFF \
+      -DLLVM_BUILD_TOOLS=OFF \
       -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly \
+      -DLLVM_TABLEGEN=${BUILD_PREFIX}/bin/llvm-tblgen \
       ${CMAKE_ARGS} \
       -GNinja \
       ../llvm
@@ -64,4 +74,27 @@ ninja -j${CPU_COUNT}
 
 #   cd ../llvm/test
 #   ../../build/bin/llvm-lit -vv Transforms ExecutionEngine Analysis CodeGen/X86
+# fi
+
+# cd build
+ninja install
+
+IFS='.' read -ra VER_ARR <<< "$PKG_VERSION"
+
+# if [[ "${PKG_NAME}" == libllvm* ]]; then
+#     rm -rf $PREFIX/bin
+#     rm -rf $PREFIX/include
+#     rm -rf $PREFIX/share
+#     rm -rf $PREFIX/libexec
+#     mv $PREFIX/lib $PREFIX/lib2
+#     mkdir -p $PREFIX/lib
+#     mv $PREFIX/lib2/libLLVM-${VER_ARR[0]}${SHLIB_EXT} $PREFIX/lib
+#     mv $PREFIX/lib2/lib*.so.${VER_ARR[0]} $PREFIX/lib || true
+#     mv $PREFIX/lib2/lib*.${VER_ARR[0]}.dylib $PREFIX/lib || true
+#     rm -rf $PREFIX/lib2
+# elif [[ "${PKG_NAME}" == "llvm-tools" ]]; then
+#     rm -rf $PREFIX/lib
+#     rm -rf $PREFIX/include
+#     rm $PREFIX/bin/llvm-config
+#     rm -rf $PREFIX/libexec
 # fi
