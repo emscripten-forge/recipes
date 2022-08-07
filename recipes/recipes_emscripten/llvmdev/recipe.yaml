@@ -1,0 +1,161 @@
+context:
+  version: "14.0.6"
+  major_ver: "{{ version.split('.')[0] }}"
+
+package:
+  name: llvm-package
+  version: "{{ version }}"
+
+source:
+  url: https://github.com/llvm/llvm-project/releases/download/llvmorg-{{ version.replace(".rc", "-rc") }}/llvm-project-{{ version.replace(".rc", "rc") }}.src.tar.xz
+  sha256: 8b3cfd7bc695bd6cea0f37f53f0981f34f87496e79e2529874fd03a2f9dd3a8a
+  # patches:
+  #   # - patches/intel-D47188-svml-VF.patch    # Fixes vectorizer and extends SVML support
+  #   # - patches/expect-fastmath-entrypoints-in-add-TLI-mappings.ll.patch # adjusts test added in 10.0.0 for intel-D47188-svml-VF.patch effects
+  #   # - patches/amd-roc-2.7.0.diff
+  #   - patches/0001-pass-through-QEMU_LD_PREFIX-SDKROOT.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - "{{ compiler('cxx') }}"
+    - cmake
+    - ninja
+    - python >=3
+    - libcxx {{ cxx_compiler_version }}  # [osx]
+  host:
+    - libcxx {{ cxx_compiler_version }}  # [osx]
+    - zlib
+    - libxml2                            # [win]
+
+outputs:
+  # Contains everything
+  - name: llvmdev
+    build:
+      script: install_llvm.sh  # [not win]
+      activate_in_script: true
+    requirements:
+      build:
+        - "{{ compiler('cxx') }}"
+        - cmake
+        - ninja
+        - python >=3
+      host:
+        - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
+        # - '{{ pin_subpackage("llvm-tools", exact=True) }}'
+        - zlib
+      run:
+        - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
+        # - {{ pin_subpackage("llvm-tools", exact=True) }}
+        - libcxx >={{ cxx_compiler_version }}                           # [osx]
+    # test:
+    #   commands:
+    #     - $PREFIX/bin/llvm-config --libs                                # [not win]
+    #     - test -f $PREFIX/include/llvm/Pass.h                           # [not win]
+    #     - test -f $PREFIX/lib/libLLVMCore.a                             # [not win]
+    #     - $PREFIX/libexec/llvm/not false                                # [not win]
+    #     - if not exist %LIBRARY_INC%\\llvm\\Pass.h exit 1               # [win]
+    #     - if not exist "%LIBRARY_PREFIX%"\\libexec\llvm\not.exe exit 1  # [win]
+
+  # Contains the shared libraries. To make different LLVM libraries co-installable
+  # soversion is appended to the package name.
+  - name: libllvm{{ major_ver }}
+    build:
+      skip: true  # [win and vc<14]
+      script: install_llvm.sh  # [not win]
+      activate_in_script: true
+      # run_exports:   # [not win]
+      #   - {{ pin_subpackage("libllvm" + major_ver, max_pin="x.x") }}  # [not win]
+    requirements:
+      build:
+        - "{{ compiler('cxx') }}"
+        - ninja                    # [not win]
+        - cmake                    # [not win]
+        - python >=3               # [not win]
+      host:
+        # - libcxx >={{ cxx_compiler_version }}  # [osx]
+        - zlib
+      # run:
+        # - libcxx >={{ cxx_compiler_version }}  # [osx]
+    # test:
+    #   commands:
+    #     - test -f $PREFIX/lib/libLLVM-{{ major_ver }}${SHLIB_EXT}     # [not win]
+
+  # This is a meta package so that people can use the latest libllvm and also
+  # for run_exports
+  - name: llvm
+    build:
+      # skip: true  # [(win and vc<14)]
+      # run_exports:   # [not win]
+        # - '{{ pin_subpackage("libllvm" + major_ver, max_pin="x.x") }}'  # [not win]
+    requirements:
+      host:
+        - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'     # [not win]
+        - zlib
+      run:   # [not win]
+        - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'     # [not win]
+      run_constrained:   # [not win]
+        - llvmdev   {{ version }}                                     # [not win]
+    # test:
+    #   commands:
+    #     - echo "Hello World!"
+
+  # # Contains LLVM tools
+  - name: llvm-tools
+    # script: install_llvm.bat  # [win]
+    build:
+      script: install_llvm.sh
+      activate_in_script: true
+    requirements:
+      build:
+        - "{{ compiler('cxx') }}"
+        - cmake
+        - ninja
+        - python >=3
+      host:
+        - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
+        - libxml2   # [win]
+        - zlib
+      run:
+        - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
+      run_constrained:
+        - llvmdev   {{ version }}
+    # test:
+    #   commands:
+    #     - $PREFIX/bin/llc -version                               # [not win]
+    #     - if not exist "%LIBRARY_BIN%"\\llc.exe exit 1           # [win]
+    #     - llc -version                                           # [win]
+
+  # - name: lit
+  #   build:
+  #     noarch: python
+  #     script: python -m pip install llvm/utils/lit --no-deps -vv
+  #     activate_in_script: true
+  #     skip: true  # [not linux64]
+  #     entry_points:
+  #       - lit = lit.main:main
+  #   requirements:
+  #     host:
+  #       - python >=3
+  #       - pip
+  #     run:
+  #       - python
+  #   test:
+  #     imports:
+  #       - lit
+  #     commands:
+        # - lit -h
+
+about:
+  home: http://llvm.org/
+  dev_url: https://github.com/llvm/llvm-project
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: llvm/LICENSE.TXT
+  license_family: Apache
+  summary: Development headers and libraries for LLVM
+
+extra:
+  recipe-maintainers:
+    - wolfv
