@@ -1,14 +1,50 @@
 context:
-  name: setuptools
-  version: "3.10"
+  name: "setuptools"
+  version: "63.4.2"
 
 package:
-  name: '{{ name|lower }}'
-  version: '{{ version }}'
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: abcb76aa4decd7a17cbe0e4b31bdf549d106ba7f668e87e0860f5f7b84b9b3fe
 
 build:
   number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}
+  host:
+    - python
+    - pip
+    - pyparsing
+  run:
+    - python
+    - pyparsing
+
+about:
+  home: https://github.com/pypa/setuptools
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Download, build, install, upgrade, and uninstall Python packages
+  description: |
+    Setuptools is a fully-featured, actively-maintained, and stable library
+    designed to facilitate packaging Python projects.
+  doc_url: http://pythonhosted.org/setuptools/
+  dev_url: https://github.com/pypa/setuptools
+  doc_source_url: https://github.com/pypa/setuptools/tree/master/docs
 
 extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_setuptools.py
+
   recipe-maintainers:
     - DerThorsten
+    - martinRenou
