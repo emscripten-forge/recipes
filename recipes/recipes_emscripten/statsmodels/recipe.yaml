@@ -1,0 +1,55 @@
+context:
+  name: "statsmodels"
+  version: "0.13.2"
+
+package:
+  name: "{{ name }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 77dc292c9939c036a476f1770f9d08976b05437daa229928da73231147cde7d4
+
+build:
+  script: "{{ PYTHON }} -m pip install . -vv"
+  number: 0
+
+requirements:
+  build:
+    - "{{ compiler('c') }}"
+    - cython
+    - cross-python_emscripten-32
+    - python
+    - numpy
+  host:
+    - python
+    - pip
+    # Do not add any constraint on numpy here to use global pinning
+    - numpy
+    - scipy >=1.3
+    - pandas >=1.0
+    - patsy >=0.5.2
+  run:
+    - python
+    - numpy
+    - scipy >=1.3
+    - pandas >=1.0
+    - patsy >=0.5.2
+    - packaging
+
+about:
+  home: https://www.statsmodels.org
+  license: BSD-3-Clause
+  license_file: INSTALL.txt
+  summary: Statistical computations and models for use with SciPy
+  dev_url: https://github.com/statsmodels/statsmodels
+  doc_url: https://www.statsmodels.org/stable/
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_statsmodels.py
+
+  recipe-maintainers:
+    - martinRenou
