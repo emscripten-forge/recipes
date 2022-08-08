@@ -3,7 +3,7 @@ context:
   major_ver: "{{ version.split('.')[0] }}"
 
 package:
-  name: llvm-package
+  name: llvmdev
   version: "{{ version }}"
 
 source:
@@ -18,24 +18,40 @@ source:
 build:
   number: 0
 
-outputs:
-  # Contains everything
-  - package:
-      name: llvmdev
-    build:
-      script: build.sh
-      activate_in_script: true
-    requirements:
-      build:
-        - "{{ compiler('cxx') }}"
-        - cmake <3.24
-        - ninja
-        - python >=3
-        - sel(build_platform != target_platform): llvm-tools {{ version }}
-      host:
-        # - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
-        # - '{{ pin_subpackage("llvm-tools", exact=True) }}'
-        - zlib
+build:
+  script: build.sh
+  activate_in_script: true
+
+requirements:
+  build:
+    - "{{ compiler('cxx') }}"
+    - cmake <3.24
+    - ninja
+    - python >=3
+    - sel(build_platform != target_platform): llvm-tools {{ version }}
+  host:
+    # - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
+    # - '{{ pin_subpackage("llvm-tools", exact=True) }}'
+    - zlib
+
+# outputs:
+#   # Contains everything
+#   - package:
+#       name: llvmdev
+#     build:
+#       script: build.sh
+#       activate_in_script: true
+#     requirements:
+#       build:
+#         - "{{ compiler('cxx') }}"
+#         - cmake <3.24
+#         - ninja
+#         - python >=3
+#         - sel(build_platform != target_platform): llvm-tools {{ version }}
+#       host:
+#         # - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
+#         # - '{{ pin_subpackage("llvm-tools", exact=True) }}'
+#         - zlib
       # run:
         # - '{{ pin_subpackage("libllvm" + major_ver, exact=True) }}'
         # - {{ pin_subpackage("llvm-tools", exact=True) }}
