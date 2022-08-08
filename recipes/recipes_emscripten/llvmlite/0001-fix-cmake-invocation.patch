@@ -1,0 +1,46 @@
+diff --git a/ffi/CMakeLists.txt b/ffi/CMakeLists.txt
+index 5d5781c..94f2f3c 100755
+--- a/ffi/CMakeLists.txt
++++ b/ffi/CMakeLists.txt
+@@ -1,4 +1,3 @@
+-
+ cmake_minimum_required(VERSION 2.8.8)
+ 
+ # This will define the name of the solution file in the build directory
+@@ -49,7 +48,7 @@ add_library(llvmlite SHARED assembly.cpp bitcode.cpp core.cpp initfini.cpp
+ # Bug reported upstream at: https://bugs.llvm.org/show_bug.cgi?id=47003
+ # BROKEN: llvm_map_components_to_libnames(llvm_libs all)
+ if ($ENV{LLVMLITE_SHARED})
+-    set(llvm_libs LLVM)
++    set(llvm_libs ${LLVM_LIBRARIES})
+ else()
+     set(llvm_libs ${LLVM_AVAILABLE_LIBS})
+ endif()
+diff --git a/ffi/build.py b/ffi/build.py
+index 6408bf5..b44adce 100755
+--- a/ffi/build.py
++++ b/ffi/build.py
+@@ -19,11 +19,12 @@ build_dir = os.path.join(here_dir, 'build')
+ target_dir = os.path.join(os.path.dirname(here_dir), 'llvmlite', 'binding')
+ 
+ is_64bit = sys.maxsize >= 2**32
+-
++buildenv = os.environ["BUILD_PREFIX"]
++CMAKE = os.path.join(buildenv, 'bin', 'cmake')
+ 
+ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
+     old_dir = os.getcwd()
+-    args = ['cmake', '-G', generator]
++    args = ['emcmake', CMAKE, '-G', generator, f"-DLLVM_DIR={os.environ['PREFIX']}/lib/cmake/llvm", f"-DCMAKE_PROJECT_INCLUDE={os.environ['RECIPE_DIR']}/extra_cmake.cmake"]
+     if arch is not None:
+         args += ['-A', arch]
+     if toolkit is not None:
+@@ -108,7 +109,7 @@ def main_posix_cmake(kind, library_ext):
+     if not os.path.exists(build_dir):
+         os.mkdir(build_dir)
+     try_cmake(here_dir, build_dir, generator)
+-    subprocess.check_call(['cmake', '--build', build_dir, '--config', config])
++    subprocess.check_call([CMAKE, '--build', build_dir, '--config', config])
+     shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext), target_dir)
+ 
+ def main_posix(kind, library_ext):

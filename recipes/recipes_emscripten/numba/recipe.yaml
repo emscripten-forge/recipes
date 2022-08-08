@@ -1,0 +1,132 @@
+context:
+  name: numba
+  version: "0.55.2"
+
+package:
+  name: numba
+  version: "{{ version }}"
+
+source:
+  # url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://github.com/numba/{{ name }}/archive/{{ version }}.tar.gz
+  sha256: 1b44f7c193e838eb14a16ab8423df7b60a5ddad5b250e779fd5ab1c7c42e9355
+  # patches:
+  #   - patch-parfor.patch
+
+build:
+  number: 0
+  entry_points:
+    - pycc = numba.pycc:main
+    - numba = numba.misc.numba_entry:main
+  script:
+    - export NUMBA_DISABLE_OPENMP=1
+    - export CC="emcc -pthread"
+    - export CXX="em++ -pthread"
+    - python -m pip install . --no-deps --ignore-installed -vvv
+  # ignore_run_exports:
+  #   # tbb-devel triggers hard dependency on tbb, this is not the case.
+  #   - tbb
+
+requirements:
+  build:
+    - sel(build_platform != target_platform): python
+    - sel(build_platform != target_platform): cross-python_{{ target_platform }}
+    - sel(build_platform != target_platform): numpy
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    # llvm is needed for the headers
+    # - llvm-openmp              # [osx]
+
+  host:
+    - python
+    - pip
+    - setuptools
+    - llvmlite 0.38.*
+    - numpy
+    # - tbb-devel 2021.*
+
+  run:
+    - python
+    # - {{ pin_compatible('llvmlite', max_pin='x.x') }}
+    # - {{ pin_compatible('numpy') }}
+    - llvmlite
+    - numpy
+    # needed for pkg_resources
+    - setuptools
+
+  run_constrained:
+    # - tbb  2021.*  # [not (armv6l or armv7l or aarch64 or linux32 or ppc64le)]
+    # avoid confusion from openblas bugs
+    # - libopenblas !=0.3.6  # [x86_64]
+    # - libopenblas >=0.3.18, !=0.3.20  # [arm64]
+    # # CUDA 9.2 or later is required for CUDA support
+    # - cudatoolkit >=9.2
+    # scipy 1.0 or later
+    - scipy >=1.0
+    # numpy has a hard upper limit
+    - numpy >=1.18,<1.23
+    # # CUDA Python 11.6 or later
+    # - cuda-python >=11.6
+
+# test:
+#   requires:
+#     - pip
+#     # Required to test optional Numba features
+#     - jinja2
+#     - cffi
+#     - scipy
+#     - ipython
+#     - setuptools
+#     - tbb >=2021.0
+#     - llvm-openmp              # [osx]
+#     # Need these for AOT. Do not init msvc as it may not be present
+#     - {{ compiler('c') }}      # [not win]
+#     - {{ compiler('cxx') }}    # [not win]
+
+#   imports:
+#     - numba
+#     - numba.core.annotations
+#     - numba.core.datamodel
+#     - numba.core.rewrites
+#     - numba.core.runtime
+#     - numba.core.typeconv
+#     - numba.core.typing
+#     - numba.core.unsafe
+#     - numba.cuda
+#     - numba.cuda.cudadrv
+#     - numba.cuda.kernels
+#     - numba.cuda.simulator
+#     - numba.cuda.simulator.cudadrv
+#     - numba.cuda.tests
+#     - numba.cuda.tests.cudadrv
+#     - numba.cuda.tests.cudadrv.data
+#     - numba.cuda.tests.cudapy
+#     - numba.cuda.tests.cudasim
+#     - numba.cuda.tests.nocuda
+#     - numba.experimental.jitclass
+#     - numba.np.ufunc
+#     - numba.pycc
+#     - numba.scripts
+#     - numba.testing
+#     - numba.tests
+#     - numba.tests.npyufunc
+    
+#   commands:
+#     - pip check
+
+about:
+  home: http://numba.pydata.org
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: NumPy aware dynamic Python compiler using LLVM
+  description: |
+    Numba is an Open Source NumPy-aware optimizing compiler for Python 
+    sponsored by Anaconda, Inc. It uses the remarkable LLVM compiler 
+    infrastructure to compile Python syntax to machine code."
+  doc_url: http://numba.pydata.org/
+  dev_url: https://github.com/numba/numba
+
+extra:
+  recipe-maintainers:
+    - wolfv

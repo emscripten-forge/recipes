@@ -1,0 +1,55 @@
+context:
+  name: llvmlite
+  version: "0.38.1"
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  # don't use github generated tar-ball as the sha256 value may not be stable
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0622a86301fcf81cc50d7ed5b4bebe992c030580d413a8443b328ed4f4d82561
+  patches:
+    - 0001-fix-cmake-invocation.patch
+  # patches:
+  #   - 0001-Add-add_dll_directory-for-LIBRARY_BIN-for-Py38-on-Windows.patch  # [win and py>=38]
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - sel(build_platform != target_platform): python
+    - sel(build_platform != target_platform): cross-python_{{ target_platform }}
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    - cmake
+    - make
+  host:
+    - python
+    - llvmdev 11.1.*
+    # - llvm 11.1.*
+    - zlib
+  run:
+    - python
+    - zlib
+
+# test:
+#   imports:
+#     - llvmlite
+#     - llvmlite.binding
+#   commands:
+#     - python -m llvmlite.tests
+
+about:
+  home: http://llvmlite.pydata.org
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A lightweight LLVM python binding for writing JIT compilers.
+  doc_url: http://llvmlite.pydata.org/
+  dev_url: https://github.com/numba/llvmlite
+
+extra:
+  recipe-maintainers:
+    - wolfv
