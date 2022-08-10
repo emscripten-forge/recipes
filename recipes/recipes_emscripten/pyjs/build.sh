@@ -11,7 +11,7 @@ cmake ${CMAKE_ARGS} ..              \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
     -DBUILD_RUNTIME_BROWSER=ON \
     -DBUILD_RUNTIME_NODE=ON \
-    -DWITH_NODE_TEST=OFF
+    -DWITH_NODE_TESTS=OFF
 
 
 # Build step
