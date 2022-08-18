@@ -103,9 +103,9 @@ class h5py_build_ext(build_ext):
             import mpi4py
             settings['include_dirs'] += [mpi4py.get_include()]
 
-        # TODO: should this only be done on UNIX?
-        if os.name != 'nt':
-            settings['runtime_library_dirs'] = settings['library_dirs']
+        # # TODO: should this only be done on UNIX?
+        # if os.name != 'nt':
+        #     settings['runtime_library_dirs'] = settings['library_dirs']
 
         def make_extension(module):
             sources = [localpath('h5py', module + '.pyx')] + EXTRA_SRC.get(module, [])
