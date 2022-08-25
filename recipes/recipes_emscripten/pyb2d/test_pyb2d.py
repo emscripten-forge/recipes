@@ -1,6 +1,8 @@
+
 def test_pyb2d():
 
     import b2d
+    assert b2d.BuildConfiguration.LIQUID_FUN
     import numpy as np
 
     world = b2d.world(gravity=(-9, 0))
