@@ -26,8 +26,11 @@ if(BUILD_PYTHON)
 endif()
 
 if(PYB2D_LIQUID_FUN)
+
     add_compile_definitions(PYB2D_LIQUID_FUN)
-    # add_compile_definitions(PYB2D_OLD_BOX2D)
+    message(STATUS "\n\nWITH liquidfun\n\n")
+else()
+    message(STATUS "\n\nNO liquidfun\n\n")
 endif()
 
 # Installation
