@@ -1,3 +1,6 @@
+import pytest
+import pyjs
+
 def test_scikit_learn():
     import numpy as np
     import sklearn
@@ -20,3 +23,12 @@ def test_logistic_regression():
     print(clf.predict_proba(X[:2, :]))
     print(clf.score(X, y))
 
+
+has_xml = pyjs.js.Function("""
+    return XMLHttpRequest !== undefined
+""")()
+
+@pytest.mark.skipif(not has_xml, reason="requires browser")
+def test_dl():
+    from sklearn import datasets
+    iris = datasets.fetch_california_housing()
