@@ -24,4 +24,4 @@ def test_logistic_regression():
 
 def test_dl():
     from sklearn import datasets
-    iris = datasets.load_iris()
+    iris = datasets.fetch_california_housing()
