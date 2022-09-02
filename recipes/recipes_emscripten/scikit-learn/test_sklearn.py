@@ -1,3 +1,6 @@
+import pytest
+import pyjs
+
 def test_scikit_learn():
     import numpy as np
     import sklearn
@@ -22,6 +25,7 @@ def test_logistic_regression():
 
 
 
+@pytest.mark.skipif(pyjs.js.Module._IS_NODE, reason="does only work in browser")
 def test_dl():
     from sklearn import datasets
     iris = datasets.fetch_california_housing()
