@@ -1,0 +1,26 @@
+diff --git a/sklearn/datasets/_base.py b/sklearn/datasets/_base.py
+index a9a5f3b39..782a39179 100644
+--- a/sklearn/datasets/_base.py
++++ b/sklearn/datasets/_base.py
+@@ -25,7 +25,8 @@ from ..utils.deprecation import deprecated
+ 
+ import numpy as np
+ 
+-from urllib.request import urlretrieve
++import requests
++
+ 
+ DATA_MODULE = "sklearn.datasets.data"
+ DESCR_MODULE = "sklearn.datasets.descr"
+@@ -1508,7 +1509,10 @@ def _fetch_remote(remote, dirname=None):
+     """
+ 
+     file_path = remote.filename if dirname is None else join(dirname, remote.filename)
+-    urlretrieve(remote.url, file_path)
++    response = requets.get(remote.url)
++    txt = response.text()
++    with open(file_path, "w") as f:
++        f.write(txt)
+     checksum = _sha256(file_path)
+     if remote.checksum != checksum:
+         raise IOError(
