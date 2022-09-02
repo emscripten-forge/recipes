@@ -24,8 +24,11 @@ def test_logistic_regression():
     print(clf.score(X, y))
 
 
+has_xml = pyjs.js.Function("""
+    return XMLHttpRequest !== undefined
+""")()
 
-@pytest.mark.skipif(pyjs.js.Module._IS_NODE, reason="does only work in browser")
+@pytest.mark.skipif(not has_xml, reason="requires browser")
 def test_dl():
     from sklearn import datasets
     iris = datasets.fetch_california_housing()
