@@ -20,3 +20,8 @@ def test_logistic_regression():
     print(clf.predict_proba(X[:2, :]))
     print(clf.score(X, y))
 
+
+
+def test_dl():
+    from sklearn import datasets
+    iris = datasets.load_iris()
