@@ -89,7 +89,7 @@ class BuildArgs:
 def test_package(recipe):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe}")
-    node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
+    # node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
     browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
 
 
@@ -131,8 +131,9 @@ def post_build_callback(
 
     if target_platform == "emscripten-32":
         with restore_cwd():
+            print(recipe)
             empack.file_packager.pack_conda_pkg(
-                recipe=recipe,
+                pkg_specs=f"{recipe['package']['name']}={recipe['package']['version']}",
                 pack_prefix=pack_prefix,
                 pack_outdir=pack_outdir,
                 outname=final_names[0],
