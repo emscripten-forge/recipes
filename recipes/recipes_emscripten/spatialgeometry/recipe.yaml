@@ -1,0 +1,41 @@
+context:
+  name: "spatialgeometry"
+  version: "1.0.1"
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/spatialgeometry-{{ version }}.tar.gz
+  sha256: 6f0dfaf4865aa21ed172c7353968350d7d8ab36f1034dbbed491c1e7a924ff8d
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  build:
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    - python                                 # [build_platform != target_platform]
+    - "cross-python_{{ target_platform }}"   # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+  host:
+    - numpy
+    - pip
+    - python
+  run:
+    - python
+    - spatialmath-python >=1.0.0
+    - numpy
+
+about:
+  home: https://github.com/jhavl/spatialgeometry
+  summary: A Shape and Geometry Package
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ihuicatl
