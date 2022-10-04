@@ -1,0 +1,53 @@
+context:
+  name: "swift-sim"
+  version: "1.0.0"
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://github.com/jhavl/swift/archive/v{{ version }}.tar.gz
+  sha256: fb1d10ab09e807b320ae4870b010dc5d82af202842d6018f9094d4bdd271f49c
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  build:
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+    - python                                 # [build_platform != target_platform]
+    - "cross-python_{{ target_platform }}"   # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+  host:
+    - pip
+    - python
+    - numpy
+  run:
+    - python
+    - websockets
+    - numpy
+    - spatialmath-python
+    - spatialgeometry>=1.0.0
+
+test:
+  imports:
+    - swift
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jhavl/swift
+  summary: A Python/Javascript Visualiser
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ihuicatl
+    
