@@ -1,4 +1,4 @@
-def test_train_predict(selenium):
+def test_train_predict():
     import lightgbm as lgb
     import numpy as np
 
