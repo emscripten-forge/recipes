@@ -1,0 +1,28 @@
+diff --git a/python-package/setup.py b/python-package/setup.py
+index 61dd423a..2b5bd0b4 100644
+--- a/python-package/setup.py
++++ b/python-package/setup.py
+@@ -126,7 +126,7 @@ def compile_cpp(
+ 
+     logger.info("Starting to compile the library.")
+ 
+-    cmake_cmd = ["cmake", str(CURRENT_DIR / "compile")]
++    cmake_cmd = ["emcmake", "cmake", str(CURRENT_DIR / "compile")]
+     if integrated_opencl:
+         use_gpu = False
+         cmake_cmd.append("-D__INTEGRATE_OPENCL=ON")
+@@ -200,12 +200,12 @@ def compile_cpp(
+                 if status != 0:
+                     raise Exception("\n".join(('Please install Visual Studio or MS Build and all required dependencies first',
+                                     LOG_NOTICE)))
+-                silent_call(["cmake", "--build", str(build_dir), "--target", "_lightgbm", "--config", "Release"], raise_error=True,
++                silent_call(["emcmake", "cmake", "--build", str(build_dir), "--target", "_lightgbm", "--config", "Release"], raise_error=True,
+                             error_msg='Please install CMake first')
+     else:  # Linux, Darwin (macOS), etc.
+         logger.info("Starting to compile with CMake.")
+         silent_call(cmake_cmd, raise_error=True, error_msg='Please install CMake and all required dependencies first')
+-        silent_call(["make", "_lightgbm", f"-I{build_dir}", "-j4"], raise_error=True,
++        silent_call(["emmake", "make", "_lightgbm", f"-I{build_dir}", "-j4"], raise_error=True,
+                     error_msg='An error has occurred while building lightgbm library file')
+     chdir(original_dir)
+ 
