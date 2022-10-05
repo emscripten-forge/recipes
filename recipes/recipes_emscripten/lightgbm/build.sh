@@ -1,3 +1,3 @@
 cmake ./compile -DUSE_OPENMP=OFF
 
-make -j4
+make -j${CPU_COUNT}
