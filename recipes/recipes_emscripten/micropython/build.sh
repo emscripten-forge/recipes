@@ -29,4 +29,5 @@ cd $SRC_DIR/ports/javascript
 make -j${CPU_COUNT}
 
 mkdir -p $PREFIX/bin
-mv build/* $PREFIX/bin
+cp build/micropython.js $PREFIX/bin/
+cp build/firmware.* $PREFIX/bin/
