@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export LDFLAGS="${LDFLAGS} -Wl,--whole-archive"
+
 cmake ./compile ${CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib \
     -DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/overwriteProp.cmake \
