@@ -28,4 +28,5 @@ set -ex
 cd $SRC_DIR/ports/javascript
 make -j${CPU_COUNT}
 
+mkdir -p $PREFIX/bin
 mv build/* $PREFIX/bin
