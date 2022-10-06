@@ -1,8 +1,9 @@
-printenv > ~/Robots/repos/MasterThesis/emscripten-forge-recipes/recipes/recipes_emscripten/ffmpeg/env.sh
+#!/bin/bash
 
 emconfigure ./configure \
     --extra-cflags="-fPIC" \
     --disable-x86asm \
+    --disable-asm \
     --disable-inline-asm \
     --disable-doc \
     --disable-stripping \
