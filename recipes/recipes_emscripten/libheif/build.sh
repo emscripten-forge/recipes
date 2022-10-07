@@ -3,6 +3,14 @@
 # Build options are adapted from https://github.com/pyodide/pyodide/blob/main/packages/libheif/meta.yaml
 # heif_emscripten.h is for building js APIs, but we don't want them.
 sed -i 's@#include "heif_emscripten.h"@@' libheif/heif.cc
+
+emconfigure ./configure \
+    --disable-gdk-pixbuf \
+    --disable-aom \
+    --disable-x256 \
+    --disable-rav1e \
+    --disable-dav1e
+
 emcmake cmake \
     -DCMAKE_CXX_FLAGS="-fPIC" \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
