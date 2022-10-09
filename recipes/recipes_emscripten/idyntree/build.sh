@@ -8,9 +8,9 @@ export CMAKE_PREFIX_PATH=$PREFIX:/
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX:/
 export CMAKE_FIND_ROOT_PATH=$PREFIX
 
-echo "=====> CMAKE_ARGS: ${CMAKE_ARGS}"
-
 sudo rm -rf /bin/swig*
+
+echo "Setting Python3_INCLUDE_DIRS to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
@@ -26,7 +26,8 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DIDYNTREE_COMPILES_YARP_TOOLS:BOOL=OFF \
       -DPython3_EXECUTABLE:PATH=$PYTHON \
       -DIDYNTREE_DETECT_ACTIVE_PYTHON_SITEPACKAGES:BOOL=ON \
-      -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda
+      -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda \
+      -DPython3_INCLUDE_DIRS:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
 
 cmake --build . --config Release 
 cmake --build . --config Release --target install
