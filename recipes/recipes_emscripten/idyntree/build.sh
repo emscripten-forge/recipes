@@ -28,7 +28,7 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DPython3_EXECUTABLE:PATH=$PYTHON \
       -DIDYNTREE_DETECT_ACTIVE_PYTHON_SITEPACKAGES:BOOL=ON \
       -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda \
-      -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
+      -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` \
       -DPython_NumPy_INCLUDE_DIRS:PATH=$SP_DIR/numpy/core/include
 
 cmake --build . --config Release 
