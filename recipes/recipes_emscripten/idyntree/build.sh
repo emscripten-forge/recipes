@@ -10,10 +10,26 @@ export CMAKE_FIND_ROOT_PATH=$PREFIX
 
 sudo rm -rf /bin/swig*
 
-echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
-echo "Setting Python3_NumPy_INCLUDE_DIR to "$SP_DIR"/numpy/core/include"
+echo "Running env"
+env
+
+echo "Printing content of "$SP_DIR
+ls $SP_DIR
+
+echo "Printing content of "$SP_DIR"/numpy"
+ls $SP_DIR/numpy
+
+echo "Printing content of "$SP_DIR"/numpy"
+ls $SP_DIR/numpy
+
+echo "Printing content of "$SP_DIR"/numpy/core"
+ls $SP_DIR/numpy/core
+
+echo "Printing content of "$SP_DIR"/numpy/core/include"
 ls $SP_DIR/numpy/core/include
 
+echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
+echo "Setting Python3_NumPy_INCLUDE_DIR to "$SP_DIR"/numpy/core/include"
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
