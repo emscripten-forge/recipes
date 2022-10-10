@@ -13,6 +13,10 @@ sudo rm -rf /bin/swig*
 echo "Running env"
 env
 
+echo "Running ls -R"
+ls -R $PREFIX
+mamba list
+
 echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
 
 cmake ${CMAKE_ARGS} -GNinja .. \
