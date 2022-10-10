@@ -10,27 +10,6 @@ export CMAKE_FIND_ROOT_PATH=$PREFIX
 
 sudo rm -rf /bin/swig*
 
-echo "Running env"
-env
-
-ls ${PREFIX}/conda-meta
-
-echo "Running ls -R"
-ls -R $PREFIX
-
-echo "Check files installed by numpy"
-ls ${PREFIX}/conda-meta
-cat ${PREFIX}/conda-meta/numpy-*.json
-
-echo "Running mamba list for build env"
-mamba list -p $BUILD_PREFIX
-
-echo "Running mamba list for host env"
-mamba list -p $PREFIX
-
-
-
-echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
@@ -45,10 +24,9 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DIDYNTREE_USES_OCTAVE:BOOL=OFF \
       -DIDYNTREE_USES_LUA:BOOL=OFF \
       -DIDYNTREE_COMPILES_YARP_TOOLS:BOOL=OFF \
-      -DPython3_EXECUTABLE:PATH=$PYTHON \
+      -DPython3_EXECUTABLE:PATH=$BUILD_PREFIX/bin/python \
       -DIDYNTREE_DETECT_ACTIVE_PYTHON_SITEPACKAGES:BOOL=ON \
       -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda \
-      -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` 
 
 cmake --build . --config Release 
 cmake --build . --config Release --target install
