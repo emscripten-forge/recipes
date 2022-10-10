@@ -22,6 +22,9 @@ mamba list -p $BUILD_PREFIX
 echo "Running mamba list for host env"
 mamba list -p $PREFIX
 
+echo "Check files installed by numpy"
+cat ${PREFIX}/conda-meta/numpy-*.json
+
 echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
 
 cmake ${CMAKE_ARGS} -GNinja .. \
