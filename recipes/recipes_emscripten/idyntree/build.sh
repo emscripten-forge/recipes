@@ -33,6 +33,7 @@ echo "Setting Python3_NumPy_INCLUDE_DIR to "$SP_DIR"/numpy/core/include"
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_INSTALL_PREFIX=$PREFIX \
       -DBUILD_TESTING:BOOL=${BUILD_TESTING} \
       -DIDYNTREE_USES_IPOPT:BOOL=OFF \
       -DIDYNTREE_USES_OSQPEIGEN:BOOL=OFF \
