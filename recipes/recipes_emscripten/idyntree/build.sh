@@ -4,9 +4,7 @@ mkdir build
 cd build
 
 # See https://github.com/microsoft/vcpkg/pull/11753
-export CMAKE_PREFIX_PATH=$PREFIX:/
-export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX:/
-export CMAKE_FIND_ROOT_PATH=$PREFIX
+export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/
 
 sudo rm -rf /bin/swig*
 
