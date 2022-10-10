@@ -10,6 +10,7 @@ sudo rm -rf /bin/swig*
 
 
 cmake ${CMAKE_ARGS} -GNinja .. \
+      -DBUILD_SHARED_LIBS:BOOL=OFF \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=$PREFIX \
       -DBUILD_TESTING:BOOL=${BUILD_TESTING} \
