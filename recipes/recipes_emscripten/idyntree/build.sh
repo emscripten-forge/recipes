@@ -13,23 +13,7 @@ sudo rm -rf /bin/swig*
 echo "Running env"
 env
 
-echo "Printing content of "$SP_DIR
-ls $SP_DIR
-
-echo "Printing content of "$SP_DIR"/numpy"
-ls $SP_DIR/numpy
-
-echo "Printing content of "$SP_DIR"/numpy"
-ls $SP_DIR/numpy
-
-echo "Printing content of "$SP_DIR"/numpy/core"
-ls $SP_DIR/numpy/core
-
-echo "Printing content of "$SP_DIR"/numpy/core/include"
-ls $SP_DIR/numpy/core/include
-
 echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
-echo "Setting Python3_NumPy_INCLUDE_DIR to "$SP_DIR"/numpy/core/include"
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DCMAKE_BUILD_TYPE=Release \
@@ -47,8 +31,7 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DPython3_EXECUTABLE:PATH=$PYTHON \
       -DIDYNTREE_DETECT_ACTIVE_PYTHON_SITEPACKAGES:BOOL=ON \
       -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda \
-      -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` \
-      -DPython3_NumPy_INCLUDE_DIR:PATH=$SP_DIR/numpy/core/include
+      -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` 
 
 cmake --build . --config Release 
 cmake --build . --config Release --target install
