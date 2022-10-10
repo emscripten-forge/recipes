@@ -15,7 +15,12 @@ env
 
 echo "Running ls -R"
 ls -R $PREFIX
-mamba list
+
+echo "Running mamba list for build env"
+mamba list -p $BUILD_PREFIX
+
+echo "Running mamba list for host env"
+mamba list -p $PREFIX
 
 echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
 
