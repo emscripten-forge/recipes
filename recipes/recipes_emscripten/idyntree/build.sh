@@ -30,8 +30,8 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DLIBXML2_INCLUDE_DIR:PATH=$PREFIX/include/libxml2 \
       -DLIBXML2_LIBRARY=$PREFIX/lib/libxml2.a
 
-cmake --build . --config Release 
-cmake --build . --config Release --target install
+ninja
+ninja install
 if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" != "1" || "${CROSSCOMPILING_EMULATOR}" != "" ]]; then
   ctest --output-on-failure -C Release
 fi
