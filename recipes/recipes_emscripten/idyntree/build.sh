@@ -23,6 +23,7 @@ echo "Running mamba list for host env"
 mamba list -p $PREFIX
 
 echo "Check files installed by numpy"
+ls ${PREFIX}/conda-meta
 cat ${PREFIX}/conda-meta/numpy-*.json
 
 echo "Setting Python3_INCLUDE_DIR to "$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"`
