@@ -1,0 +1,52 @@
+context:
+  name: "cf-units"
+  version: "3.1.1"
+
+package:
+  name: "{{ name }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d402b5a54c46b8ad2fb4fd815a054520c36ee7b483e4c9555e4b45b62af7558b
+
+build:
+  script: "{{ PYTHON }} -m pip install . -vv"
+  number: 0
+
+requirements:
+  build:
+    - "{{ compiler('c') }}"
+    - python
+    - cross-python_emscripten-32
+    - cython
+    - numpy
+  host:
+    # overwrite the numpy version here so we don't get pinnings / run export
+    - numpy
+    - pip
+    - python
+    - udunits2
+    - setuptools-scm
+  run:
+    - python
+    - numpy
+    - cftime >=1.5.2
+    - udunits2
+    - jinja2
+
+about:
+  home: https://cf-units.readthedocs.io/en/latest/
+  summary: Units of measure as required by the Climate and Forecast (CF) Metadata Conventions.
+  license: LGPL-3.0-or-later
+  license_file: COPYING.LESSER
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_cf_units.py
+
+  recipe-maintainers:
+    - wolfv
+    - ocefpaf
