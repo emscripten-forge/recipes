@@ -124,7 +124,7 @@ jobs:
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           emsdk activate ${{matrix.emsdk_ver}}
-          export CONDA_EMSDK_DIR=$(dirname $(which emsdk))
+          export CONDA_EMSDK_DIR=$(python -c 'import site; print(site.getsitepackages()[0])')/emsdk
           export FILE_PACKAGER="$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py"
           source $CONDA_EMSDK_DIR/emsdk_env.sh
           python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main 
@@ -138,6 +138,8 @@ jobs:
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           emsdk activate ${{matrix.emsdk_ver}}
+          export CONDA_EMSDK_DIR=$(python -c 'import site; print(site.getsitepackages()[0])')/emsdk
+          export FILE_PACKAGER="$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py"
           source $CONDA_EMSDK_DIR/emsdk_env.sh
           python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes             --skip-tests   
           python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes_emscripten  --emscripten-32 --skip-tests
@@ -153,7 +155,7 @@ jobs:
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           emsdk activate ${{matrix.emsdk_ver}}
-          export CONDA_EMSDK_DIR=$(dirname $(which emsdk))
+          export CONDA_EMSDK_DIR=$(python -c 'import site; print(site.getsitepackages()[0])')/emsdk
           export FILE_PACKAGER="$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py"
           source $CONDA_EMSDK_DIR/emsdk_env.sh
           python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD  
