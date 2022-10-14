@@ -8,11 +8,21 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
     export PYTHON=${BUILD_PREFIX}/bin/python3
 
-    emsdk install  3.1.2
-    emsdk activate 3.1.2
+
+
+    if [ -n "$CONDA_EMSDK_DIR" ]; then
+      echo "You supplied CONDA_EMSDK_DIR" $CONDA_EMSDK_DIR
+    else
+        echo "You dif NOT supplied CONDA_EMSDK_DIR"
+
+
+        emsdk install  3.1.2
+        emsdk activate 3.1.2
+        export CONDA_EMSDK_DIR=$BUILD_PREFIX/lib/python$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")/site-packages/emsdk
+    fi
+
 
     echo "CONDA_EMSDK_DIR:" $CONDA_EMSDK_DIR
-    # export CONDA_EMSDK_DIR=$(dirname $(which emsdk))
     export FILE_PACKAGER="$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py"
 
 
