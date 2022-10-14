@@ -129,8 +129,17 @@ def post_build_callback(
         with restore_cwd():
             test_package(recipe)
 
-    if target_platform == "emscripten-32":
+    if False and target_platform == "emscripten-32":
         with restore_cwd():
+            print(
+                f"""
+{recipe=}
+{pack_prefix=}
+{pack_outdir=}
+{final_names[0]=}
+{PKG_FILE_FILTER=}
+            """
+            )
             empack.file_packager.pack_conda_pkg(
                 recipe=recipe,
                 pack_prefix=pack_prefix,
@@ -225,6 +234,7 @@ def explicit(
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
     platform = ""
     if emscripten_32:
+        print("WITH EM")
         platform = "emscripten-32"
     boa_build(
         target=recipe_dir,
