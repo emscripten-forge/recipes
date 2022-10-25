@@ -89,8 +89,8 @@ class BuildArgs:
 def test_package(recipe):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe}")
-    node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
     browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
+    node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
 
 
 def cleanup():
@@ -108,48 +108,20 @@ def cleanup():
 
 
 def post_build_callback(
-    recipe,
-    target_platform,
-    sorted_outputs,
-    final_names,
-    pack_prefix,
-    pack_outdir,
-    skip_tests,
-    skip_pack,
+    recipe, target_platform, sorted_outputs, final_names, skip_tests
 ):
-    rich.pretty.pprint(
-        {
-            "target_platform": target_platform,
-            "recipe": recipe,
-            "sorted_outputs": sorted_outputs,
-            "final_names": final_names,
-        }
-    )
+
     if target_platform == "emscripten-32" and (not skip_tests):
         with restore_cwd():
             test_package(recipe)
-
-    if target_platform == "emscripten-32":
-        with restore_cwd():
-            empack.file_packager.pack_conda_pkg(
-                recipe=recipe,
-                pack_prefix=pack_prefix,
-                pack_outdir=pack_outdir,
-                outname=final_names[0],
-                pkg_file_filter=PKG_FILE_FILTER,
-            )
-
     cleanup()
 
 
 def boa_build(
     platform,
-    pack_prefix,
-    pack_outdir,
     target=None,
     recipe_dir=None,
     skip_tests=False,
-    skip_pack=False,
     skip_existing=False,
 ):
 
@@ -164,11 +136,7 @@ def boa_build(
         build_args.recipe_dir = recipe_dir
 
     build_args.post_build_callback = functools.partial(
-        post_build_callback,
-        skip_tests=skip_tests,
-        skip_pack=skip_pack,
-        pack_prefix=pack_prefix,
-        pack_outdir=pack_outdir,
+        post_build_callback, skip_tests=skip_tests
     )
     if platform:
         build_args.target_platform = platform
@@ -189,11 +157,8 @@ app.add_typer(build_app, name="build")
 @build_app.command()
 def directory(
     recipes_dir,
-    pack_prefix: str,
-    pack_outdir: str,
     emscripten_32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_pack: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     # assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
@@ -205,35 +170,27 @@ def directory(
         recipe_dir=None,
         platform=platform,
         skip_tests=skip_tests,
-        skip_pack=skip_pack,
-        pack_prefix=pack_prefix,
         skip_existing=skip_existing,
-        pack_outdir=pack_outdir,
     )
 
 
 @build_app.command()
 def explicit(
     recipe_dir,
-    pack_prefix: str,
-    pack_outdir: str,
     emscripten_32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_pack: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
     platform = ""
     if emscripten_32:
+        print("WITH EM")
         platform = "emscripten-32"
     boa_build(
         target=recipe_dir,
         platform=platform,
         skip_tests=skip_tests,
-        skip_pack=skip_pack,
-        pack_prefix=pack_prefix,
         skip_existing=skip_existing,
-        pack_outdir=pack_outdir,
     )
 
 
@@ -242,11 +199,8 @@ def changed(
     root_dir,
     old,
     new,
-    pack_prefix: str,
-    pack_outdir: str,
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_pack: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     base_work_dir = os.getcwd()
@@ -293,10 +247,7 @@ def changed(
                 recipe_dir=None,
                 platform=RECIPES_SUBDIR_MAPPING[subdir],
                 skip_tests=skip_tests,
-                skip_pack=skip_pack,
-                pack_prefix=pack_prefix,
                 skip_existing=skip_existing,
-                pack_outdir=pack_outdir,
             )
 
 

@@ -8,11 +8,11 @@ package:
 source:
   url: https://github.com/scikit-learn/scikit-learn/archive/{{ version }}.tar.gz
   sha256: 568e621b9e1479b9ab952a9241db5af2ba3ab4f69d44b8aba3dd7648825e8e5a
-  # patches:
-  #  - patches/0001-ignore-errors-when-tearing-down-modules.patch
+  patches:
+   - patches/patch_away_urllib.patch
 
 build:
-  number: 0
+  number: 1
   script: 
     - export CFLAGS="$CFLAGS -Wno-implicit-function-declaration"
     - python -m pip install . -vv
@@ -47,6 +47,7 @@ requirements:
     - scipy
     - joblib >=1.0.0
     - threadpoolctl >=2.0.0
+    - requests-wasm-polyfill
 
 # {% set tests_to_skip = "_not_a_real_test" %}
 # {% set extra_pytest_args = "" %}

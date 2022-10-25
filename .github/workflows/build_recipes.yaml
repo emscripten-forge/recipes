@@ -79,16 +79,6 @@ jobs:
           micromamba activate ci-env
           playwright install
 
-
-      ################################################################
-      # Setup emsdk
-      ################################################################
-      - name: install emsdk
-        shell: bash -l {0}
-        run: |
-          micromamba activate ci-env
-          emsdk install ${{matrix.emsdk_ver}}
-
       ################################################################
       # install / clone custom non-master things
       # for pip, we use --no-deps --ignore-installed
@@ -123,10 +113,7 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_EMSDK_DIR/emsdk_env.sh
-          python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main ~/webenv ~/packed
-
+          python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main 
       ################################################################
       # build ALL recipes
       ################################################################
@@ -136,11 +123,8 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_EMSDK_DIR/emsdk_env.sh
-
-          python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes             /home/runner/webenv /home/runner/packed --skip-tests --skip-pack
-          python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes_emscripten  /home/runner/webenv /home/runner/packed --emscripten-32 --skip-tests
+          python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes             --skip-tests   
+          python builder.py build directory  $GITHUB_WORKSPACE/recipes/recipes_emscripten  --emscripten-32 --skip-tests
 
 
       ################################################################
@@ -152,11 +136,8 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          emsdk activate ${{matrix.emsdk_ver}}
-          source $CONDA_EMSDK_DIR/emsdk_env.sh
-          python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD  /home/runner/webenv /home/runner/packed
-
-
+          python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD
+          
       ################################################################
       # github upload emscripten packed pkgs
       ################################################################
