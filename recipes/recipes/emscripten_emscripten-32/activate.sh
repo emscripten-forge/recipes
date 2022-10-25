@@ -8,9 +8,15 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
 
 
-    if [ -n "$CONDA_EMSDK_DIR" ]; then
-        echo "CONDA_EMSDK_DIR IS given, using provided CONDA_EMSDK_DIR" $CONDA_EMSDK_DIR
+    EMSDK_DIR_CONFIG_FILE=$HOME/.emsdkdir
+
+    if test -f "$EMSDK_DIR_CONFIG_FILE"; then
+        echo "found config file $EMSDK_DIR_CONFIG_FILE"
+        CONDA_EMSDK_DIR=$(<$EMSDK_DIR_CONFIG_FILE)
+        echo "I READ $CONDA_EMSDK_DIR"
+        echo "CONDA_EMSDK_DIR from $EMSDK_DIR_CONFIG_FILE is: " $CONDA_EMSDK_DIR
     else
+        echo "did **NOT** foudn confi file $EMSDK_DIR_CONFIG_FILE"
         echo "CONDA_EMSDK_DIR IS NOT given:"
 
         emsdk install  3.1.2
