@@ -9,16 +9,12 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
 
     EMSDK_DIR_CONFIG_FILE=$HOME/.emsdkdir
-
     if test -f "$EMSDK_DIR_CONFIG_FILE"; then
-        echo "found config file $EMSDK_DIR_CONFIG_FILE"
+        echo "Found config file $EMSDK_DIR_CONFIG_FILE"
         CONDA_EMSDK_DIR=$(<$EMSDK_DIR_CONFIG_FILE)
-        echo "I READ $CONDA_EMSDK_DIR"
-        echo "CONDA_EMSDK_DIR from $EMSDK_DIR_CONFIG_FILE is: " $CONDA_EMSDK_DIR
+        echo "Using CONDA_EMSDK_DIR $EMSDK_DIR_CONFIG_FILE: " $CONDA_EMSDK_DIR
     else
-        echo "did **NOT** foudn confi file $EMSDK_DIR_CONFIG_FILE"
-        echo "CONDA_EMSDK_DIR IS NOT given:"
-
+        echo "Did **NOT** found config file at: $EMSDK_DIR_CONFIG_FILE"
         emsdk install  3.1.2
         emsdk activate 3.1.2
         export CONDA_EMSDK_DIR=$BUILD_PREFIX/lib/python$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")/site-packages/emsdk
