@@ -4,6 +4,9 @@
 # heif_emscripten.h is for building js APIs, but we don't want them.
 sed -i 's@#include "heif_emscripten.h"@@' libheif/heif.cc
 
+rm -rf /usr/include/gdk-pixbuf*
+rm -rf /usr/include/glib*
+
 emconfigure ./configure \
     --disable-gdk-pixbuf \
     --disable-aom \
