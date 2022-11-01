@@ -1,6 +1,4 @@
 #!/bin/bash
-rm -rf /usr/include/gdk-pixbuf*
-rm -rf /usr/include/glib*
 
 # Build options are adapted from https://github.com/pyodide/pyodide/blob/main/packages/libheif/meta.yaml
 # heif_emscripten.h is for building js APIs, but we don't want them.
