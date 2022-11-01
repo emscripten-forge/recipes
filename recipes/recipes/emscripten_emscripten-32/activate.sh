@@ -14,7 +14,7 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
         CONDA_EMSDK_DIR=$(<$EMSDK_DIR_CONFIG_FILE)
         echo "Using CONDA_EMSDK_DIR $EMSDK_DIR_CONFIG_FILE: " $CONDA_EMSDK_DIR
     else
-        echo "Did **NOT** found config file at: $EMSDK_DIR_CONFIG_FILE"
+        echo "Did **NOT** find config file at: $EMSDK_DIR_CONFIG_FILE"
         emsdk install  3.1.2
         emsdk activate 3.1.2
         export CONDA_EMSDK_DIR=$BUILD_PREFIX/lib/python$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")/site-packages/emsdk
