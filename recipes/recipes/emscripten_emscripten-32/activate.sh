@@ -6,21 +6,19 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
     export PYTHON=${BUILD_PREFIX}/bin/python3
 
-
-
-    EMSDK_DIR_CONFIG_FILE=$HOME/.emsdkdir
-    if test -f "$EMSDK_DIR_CONFIG_FILE"; then
-        echo "Found config file $EMSDK_DIR_CONFIG_FILE"
-        CONDA_EMSDK_DIR=$(<$EMSDK_DIR_CONFIG_FILE)
-        echo "Using CONDA_EMSDK_DIR $EMSDK_DIR_CONFIG_FILE: " $CONDA_EMSDK_DIR
+    CONDA_EMSDK_DIR_CONFIG_FILE=$HOME/.emsdkdir
+    if test -f "$CONDA_EMSDK_DIR_CONFIG_FILE"; then
+        echo "Found config file $CONDA_EMSDK_DIR_CONFIG_FILE"
     else
-        echo "Did **NOT** find config file at: $EMSDK_DIR_CONFIG_FILE"
-        emsdk install  3.1.2
-        emsdk activate 3.1.2
-        export CONDA_EMSDK_DIR=$BUILD_PREFIX/lib/python$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")/site-packages/emsdk
+        echo "Did **NOT** find config file at: $CONDA_EMSDK_DIR_CONFIG_FILE, trying to install emsdk with empack..."
+
+        $PYTHON -c "from empack.file_packager import download_and_setup_emsdk; download_and_setup_emsdk()"
+        echo $(python -c "from empack.file_packager import EMSDK_INSTALL_PATH; print(EMSDK_INSTALL_PATH / 'emsdk-3.1.2')") > $HOME/.emsdkdir
     fi
 
-    export FILE_PACKAGER="$CONDA_EMSDK_DIR/upstream/emscripten/tools/file_packager.py"
+    export CONDA_EMSDK_DIR=$(<$CONDA_EMSDK_DIR_CONFIG_FILE)
+    echo "Using CONDA_EMSDK_DIR $CONDA_EMSDK_DIR_CONFIG_FILE: " $CONDA_EMSDK_DIR
+
     source $CONDA_EMSDK_DIR/emsdk_env.sh
 
     export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
@@ -51,5 +49,3 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EM_FORGE_SIDE_MODULE_CFLAGS="${EM_FORGE_CFLAGS_BASE} -I${PREFIX}/include"
 
 fi
-
-
