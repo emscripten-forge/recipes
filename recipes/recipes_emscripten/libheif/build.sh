@@ -7,9 +7,10 @@ sed -i 's@#include "heif_emscripten.h"@@' libheif/heif.cc
 emconfigure ./configure \
     --disable-gdk-pixbuf \
     --disable-aom \
-    --disable-x256 \
+    --disable-x265 \
     --disable-rav1e \
-    --disable-dav1e
+    --disable-multithreading \
+    --disable-go
 
 emcmake cmake \
     -DCMAKE_CXX_FLAGS="-fPIC" \

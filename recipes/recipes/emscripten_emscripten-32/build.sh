@@ -10,4 +10,3 @@ done
 
 mkdir -p ${PREFIX}/bin
 cp ${RECIPE_DIR}/activate.sh  ${PREFIX}/bin/activate_emscripten.sh
-
