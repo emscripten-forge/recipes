@@ -1,0 +1,37 @@
+context:
+  name: "pyheif"
+  version: "0.7.0"
+
+package:
+  name: "{{ name }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f5b6e810d79c3a181d6d09dfc522ebcc300f3fc875c0de518d61cfeb00705353
+
+build:
+  number: 0
+  script: |
+    sed -i "s@include_dirs = \[@include_dirs = ['\\${CONDA_EMSDK_DIR}/include', @" libheif/libheif_build.py
+    sed -i "s@library_dirs = \[@library_dirs = ['\\${CONDA_EMSDK_DIR}/lib', @" libheif/libheif_build.py
+
+requirements:
+  run:
+    - cffi
+    - libheif
+  host:
+    - cffi
+    - libheif
+
+about:
+  home: https://github.com/carsales/pyheif
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: Apache
+  PyPI: https://pypi.org/project/pyheif
+  summary: Python 3.6+ interface to libheif library
+
+extra:
+  recipe-maintainers:
+    - ihuicatl
