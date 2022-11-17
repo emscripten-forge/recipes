@@ -92,7 +92,7 @@ class build_ext(_build_ext):
 
     def run(self):
         pyarrow_cpp_home = pjoin(os.getcwd(), "build", "dist")
-        self._run_cmake_pyarrow_cpp(pyarrow_cpp_home)
+        # self._run_cmake_pyarrow_cpp(pyarrow_cpp_home)
         self._run_cmake(pyarrow_cpp_home)
         _build_ext.run(self)
 
@@ -238,13 +238,20 @@ class build_ext(_build_ext):
         # Change to the build directory
         with changed_dir(build_dir):
             # cmake args
+            python_root_dir = sys.exec_prefix # os.path.dirname(sys.executable)
+            print("python_root_dir = ", python_root_dir)
+            python_include_dir = os.path.join(python_root_dir, "include", "python3.10")
+            # print("python_include_dir = ", python_include_dir)
             cmake_options = [
                 "-DCMAKE_BUILD_TYPE=" + str(self.build_type.lower()),
                 "-DCMAKE_INSTALL_LIBDIR=lib",
                 "-DCMAKE_INSTALL_PREFIX=" + str(pyarrow_cpp_home),
                 "-DPYTHON_EXECUTABLE=" + sys.executable,
                 "-DPython3_EXECUTABLE=" + sys.executable,
+                "-DPython3_INCLUDE_DIRS=" + python_include_dir,
+                # "-DPython3_ROOT_DIR=" + python_root_dir,
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
+                "-DArrow_DIR=/home/joel/micromamba/envs/boa-dev/pkgs/emscripten-32/arrow-11.0.0-h392ba7e_0/lib/cmake/Arrow/",
             ]
 
             # Check for specific options
@@ -342,9 +349,19 @@ class build_ext(_build_ext):
             cmake_options = [
                 "-DPYTHON_EXECUTABLE=" + sys.executable,
                 "-DPython3_EXECUTABLE=" + sys.executable,
-                "-DPYARROW_CPP_HOME=" + str(pyarrow_cpp_home),
-                "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
-                static_lib_option,
+                # "-DPython3_INCLUDE_DIRS=" + os.path.join(sys.exec_prefix, "include/python3.10"),
+                # "-DPython3_Interpreter_FOUND=ON",
+                # -
+                # "-DPYARROW_CPP_HOME=" + str(pyarrow_cpp_home),
+                # "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
+                # "-DPython3_ROOT_DIR=" + sys.exec_prefix,
+                "-DArrow_DIR=/home/joel/micromamba/envs/boa-dev/pkgs/emscripten-32/arrow-11.0.0-h392ba7e_0/lib/cmake/Arrow/",
+                "-DARROW_SIMD_LEVEL=NONE",
+                "-DARROW_RUNTIME_SIMD_LEVEL=NONE",
+                "-DARROW_BUILD_TESTS=OFF",
+                "-DARROW_ENABLE_TIMING_TESTS=OFF",
+
+                # static_lib_option,
             ]
 
             def append_cmake_bool(value, varname):
@@ -404,7 +421,7 @@ class build_ext(_build_ext):
 
             # Generate the build files
             print("-- Running cmake for PyArrow")
-            self.spawn(["cmake"] + extra_cmake_args + cmake_options + [source])
+            self.spawn(["emcmake", "cmake"] + extra_cmake_args + cmake_options + [source])
             print("-- Finished cmake for PyArrow")
 
             print("-- Running cmake --build for PyArrow")
