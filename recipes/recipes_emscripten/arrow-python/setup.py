@@ -49,6 +49,8 @@ setup_dir = os.path.abspath(os.path.dirname(__file__))
 
 ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
 
+env_prefix = os.environ["PREFIX"]
+
 
 @contextlib.contextmanager
 def changed_dir(dirname):
@@ -91,9 +93,8 @@ class build_ext(_build_ext):
         _build_ext.build_extensions(self)
 
     def run(self):
-        pyarrow_cpp_home = pjoin(os.getcwd(), "build", "dist")
-        self._run_cmake_pyarrow_cpp(pyarrow_cpp_home)
-        self._run_cmake(pyarrow_cpp_home)
+        self._run_cmake_pyarrow_cpp()
+        self._run_cmake()
         _build_ext.run(self)
 
     # adapted from cmake_build_ext in dynd-python
@@ -216,7 +217,7 @@ class build_ext(_build_ext):
         "gandiva",
     ]
 
-    def _run_cmake_pyarrow_cpp(self, pyarrow_cpp_home):
+    def _run_cmake_pyarrow_cpp(self):
         # check if build_type is correctly passed / set
         if self.build_type.lower() not in ("release", "debug", "relwithdebinfo"):
             raise ValueError(
@@ -241,10 +242,9 @@ class build_ext(_build_ext):
             cmake_options = [
                 "-DCMAKE_BUILD_TYPE=" + str(self.build_type.lower()),
                 "-DCMAKE_INSTALL_LIBDIR=lib",
-                "-DCMAKE_INSTALL_PREFIX=" + str(pyarrow_cpp_home),
-                "-DPYTHON_EXECUTABLE=" + sys.executable,
-                "-DPython3_EXECUTABLE=" + sys.executable,
+                "-DCMAKE_INSTALL_PREFIX=" + env_prefix,
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
+                "-DArrow_DIR=" + pjoin(env_prefix, "lib", "cmake", "Arrow"),
             ]
 
             # Check for specific options
@@ -279,7 +279,6 @@ class build_ext(_build_ext):
             print("-- Running CMake build and install for PyArrow C++")
             self.spawn(
                 [
-                    "emcmake",
                     "cmake",
                     "--build",
                     ".",
@@ -292,7 +291,7 @@ class build_ext(_build_ext):
             )
             print("-- Finished CMake build and install for PyArrow C++")
 
-    def _run_cmake(self, pyarrow_cpp_home):
+    def _run_cmake(self):
         # check if build_type is correctly passed / set
         if self.build_type.lower() not in ("release", "debug", "relwithdebinfo"):
             raise ValueError(
@@ -340,9 +339,8 @@ class build_ext(_build_ext):
             static_lib_option = ""
 
             cmake_options = [
-                "-DPYTHON_EXECUTABLE=" + sys.executable,
-                "-DPython3_EXECUTABLE=" + sys.executable,
-                "-DPYARROW_CPP_HOME=" + str(pyarrow_cpp_home),
+                "-DCMAKE_INSTALL_PREFIX=" + env_prefix,
+                "-DPYARROW_CPP_HOME=" + env_prefix,
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
                 static_lib_option,
             ]
@@ -404,7 +402,7 @@ class build_ext(_build_ext):
 
             # Generate the build files
             print("-- Running cmake for PyArrow")
-            self.spawn(["cmake"] + extra_cmake_args + cmake_options + [source])
+            self.spawn(["emcmake", "cmake"] + extra_cmake_args + cmake_options + [source])
             print("-- Finished cmake for PyArrow")
 
             print("-- Running cmake --build for PyArrow")
@@ -420,12 +418,12 @@ class build_ext(_build_ext):
                 pass
 
             def copy_libs(dir):
-                for path in os.listdir(pjoin(pyarrow_cpp_home, dir)):
-                    if "python" in path:
+                for path in os.listdir(pjoin(env_prefix, dir)):
+                    if "arrow" in path.lower():
                         pyarrow_path = pjoin(build_lib, "pyarrow", path)
                         if os.path.exists(pyarrow_path):
                             os.remove(pyarrow_path)
-                        pyarrow_cpp_path = pjoin(pyarrow_cpp_home, dir, path)
+                        pyarrow_cpp_path = pjoin(env_prefix, dir, path)
                         print(f"Copying {pyarrow_cpp_path} to {pyarrow_path}")
                         shutil.copy(pyarrow_cpp_path, pyarrow_path)
 
@@ -452,7 +450,7 @@ class build_ext(_build_ext):
 
                 # pyarrow/include file is first deleted in the previous step
                 # so we need to add the PyArrow C++ include folder again
-                pyarrow_cpp_include = pjoin(pyarrow_cpp_home, "include")
+                pyarrow_cpp_include = pjoin(env_prefix, "include")
                 shutil.move(
                     pjoin(pyarrow_cpp_include, "arrow", "python"),
                     pjoin(pyarrow_include, "arrow", "python"),
