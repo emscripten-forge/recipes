@@ -369,7 +369,9 @@ class build_ext(_build_ext):
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
                 f"-DArrow_DIR={env_prefix}/lib/cmake/Arrow/",
                 f"-DArrowPython_DIR={env_prefix}/lib/cmake/ArrowPython/",
-                # static_lib_option,
+                f"-Dre2_DIR={env_prefix}/lib/cmake/re2",
+                f"-Dutf8proc_LIB={env_prefix}/lib/libutf8proc.a",
+                f"-Dutf8proc_INCLUDE_DIR={env_prefix}/include",
             ]
 
             def append_cmake_bool(value, varname):
