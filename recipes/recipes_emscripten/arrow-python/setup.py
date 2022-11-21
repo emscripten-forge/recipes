@@ -372,6 +372,7 @@ class build_ext(_build_ext):
                 f"-Dre2_DIR={env_prefix}/lib/cmake/re2",
                 f"-Dutf8proc_LIB={env_prefix}/lib/libutf8proc.a",
                 f"-Dutf8proc_INCLUDE_DIR={env_prefix}/include",
+                f"-DCMAKE_PROJECT_INCLUDE={recipe_dir}/overwriteProp.cmake",
             ]
 
             def append_cmake_bool(value, varname):
