@@ -312,6 +312,7 @@ class build_ext(_build_ext):
             print("-- Finished CMake build and install for PyArrow C++")
 
     def _run_cmake(self):
+        print("PART 2\n\n")
         # check if build_type is correctly passed / set
         if self.build_type.lower() not in ("release", "debug", "relwithdebinfo"):
             raise ValueError(
@@ -362,6 +363,7 @@ class build_ext(_build_ext):
                 "-DCMAKE_INSTALL_PREFIX=" + env_prefix,
                 "-DPYARROW_CPP_HOME=" + env_prefix,
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
+                f"-DArrowPython_DIR={env_prefix}/lib/cmake/ArrowPython",
                 static_lib_option,
             ]
 
