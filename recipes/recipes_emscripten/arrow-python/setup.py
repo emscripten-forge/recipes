@@ -314,8 +314,8 @@ class build_ext(_build_ext):
     def _run_cmake(self):
         print("PART 2\n\n")
 
-        arrow_dir = f"{env_prefix}/lib/cmake/ArrowPython/"
-        print(*Path(arrow_dir).iterdir(), sep="\n")
+        # arrow_dir = f"{env_prefix}/lib/cmake/ArrowPython/"
+        # print(*Path(arrow_dir).iterdir(), sep="\n")
 
         # check if build_type is correctly passed / set
         if self.build_type.lower() not in ("release", "debug", "relwithdebinfo"):
