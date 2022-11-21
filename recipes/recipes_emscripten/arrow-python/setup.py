@@ -438,9 +438,7 @@ class build_ext(_build_ext):
 
             print("-- Running cmake --build for PyArrow")
             self.spawn(
-                ["cmake", "--build", ".", "--config", self.build_type]
-                + build_tool_args
-                + [" -- -j 12"]
+                ["cmake", "--build", ".", "--config", self.build_type] + build_tool_args
             )
             print("-- Finished cmake --build for PyArrow")
 
