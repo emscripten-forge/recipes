@@ -51,6 +51,7 @@ setup_dir = os.path.abspath(os.path.dirname(__file__))
 
 recipe_dir = os.environ["RECIPE_DIR"]
 ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
+ext_suffix = "so"
 
 env_prefix = os.environ["PREFIX"]
 
@@ -640,6 +641,7 @@ class build_ext(_build_ext):
             else:
                 return pjoin(head, tail + ext_suffix)
         else:
+            return f"release/{name}.so"
             return pjoin(self.build_type, name + ext_suffix)
 
     def get_names(self):
