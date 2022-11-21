@@ -382,28 +382,24 @@ class build_ext(_build_ext):
             if self.cmake_generator:
                 cmake_options += ["-G", self.cmake_generator]
 
-            # append_cmake_bool(self.with_cuda, "PYARROW_BUILD_CUDA")
-            # append_cmake_bool(self.with_substrait, "PYARROW_BUILD_SUBSTRAIT")
-            # append_cmake_bool(self.with_flight, "PYARROW_BUILD_FLIGHT")
-            # append_cmake_bool(self.with_gandiva, "PYARROW_BUILD_GANDIVA")
-            # append_cmake_bool(self.with_dataset, "PYARROW_BUILD_DATASET")
-            # append_cmake_bool(self.with_orc, "PYARROW_BUILD_ORC")
-            # append_cmake_bool(self.with_parquet, "PYARROW_BUILD_PARQUET")
-            # append_cmake_bool(
-            #     self.with_parquet_encryption, "PYARROW_BUILD_PARQUET_ENCRYPTION"
-            # )
-            # append_cmake_bool(self.with_plasma, "PYARROW_BUILD_PLASMA")
-            # append_cmake_bool(self.with_gcs, "PYARROW_BUILD_GCS")
-            # append_cmake_bool(self.with_s3, "PYARROW_BUILD_S3")
-            # append_cmake_bool(self.with_hdfs, "PYARROW_BUILD_HDFS")
-            # append_cmake_bool(self.with_tensorflow, "PYARROW_USE_TENSORFLOW")
-            # append_cmake_bool(self.bundle_arrow_cpp, "PYARROW_BUNDLE_ARROW_CPP")
-            # append_cmake_bool(self.bundle_boost, "PYARROW_BUNDLE_BOOST")
-            # append_cmake_bool(self.generate_coverage, "PYARROW_GENERATE_COVERAGE")
-            # append_cmake_bool(not self.with_static_boost, "PYARROW_BOOST_USE_SHARED")
-            # append_cmake_bool(
-            #     not self.with_static_parquet, "PYARROW_PARQUET_USE_SHARED"
-            # )
+            append_cmake_bool(False, "PYARROW_BUILD_CUDA")
+            append_cmake_bool(False, "PYARROW_BUILD_SUBSTRAIT")
+            append_cmake_bool(False, "PYARROW_BUILD_FLIGHT")
+            append_cmake_bool(False, "PYARROW_BUILD_GANDIVA")
+            append_cmake_bool(False, "PYARROW_BUILD_DATASET")
+            append_cmake_bool(False, "PYARROW_BUILD_ORC")
+            append_cmake_bool(False, "PYARROW_BUILD_PARQUET")
+            append_cmake_bool(False, "PYARROW_BUILD_PARQUET_ENCRYPTION")
+            append_cmake_bool(False, "PYARROW_BUILD_PLASMA")
+            append_cmake_bool(False, "PYARROW_BUILD_GCS")
+            append_cmake_bool(False, "PYARROW_BUILD_S3")
+            append_cmake_bool(False, "PYARROW_BUILD_HDFS")
+            append_cmake_bool(False, "PYARROW_USE_TENSORFLOW")
+            append_cmake_bool(False, "PYARROW_BUNDLE_ARROW_CPP")
+            append_cmake_bool(False, "PYARROW_BUNDLE_BOOST")
+            append_cmake_bool(False, "PYARROW_GENERATE_COVERAGE")
+            append_cmake_bool(False, "PYARROW_BOOST_USE_SHARED")
+            append_cmake_bool(False, "PYARROW_PARQUET_USE_SHARED")
 
             cmake_options.append(
                 "-DCMAKE_BUILD_TYPE={0}".format(self.build_type.lower())
