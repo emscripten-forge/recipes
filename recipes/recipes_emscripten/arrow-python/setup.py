@@ -21,6 +21,8 @@ import contextlib
 import glob
 import os
 import os.path
+from pathlib import Path
+
 from os.path import join as pjoin
 import re
 import shlex
@@ -50,6 +52,8 @@ setup_dir = os.path.abspath(os.path.dirname(__file__))
 ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
 
 env_prefix = os.environ["PREFIX"]
+
+build_env_prefix = os.environ["BUILD_PREFIX"]
 
 
 @contextlib.contextmanager
@@ -245,6 +249,11 @@ class build_ext(_build_ext):
                 "-DCMAKE_INSTALL_PREFIX=" + env_prefix,
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
                 "-DArrow_DIR=" + pjoin(env_prefix, "lib", "cmake", "Arrow"),
+                f"-Dre2_DIR={env_prefix}/lib/cmake/re2",
+                f"-Dutf8proc_LIB={env_prefix}/lib/libutf8proc.a",
+                f"-Dutf8proc_INCLUDE_DIR={env_prefix}/include",
+                "-DARROW_SIMD_LEVEL=NONE",
+                "-DARROW_RUNTIME_SIMD_LEVEL=NONE",
             ]
 
             # Check for specific options
@@ -402,7 +411,9 @@ class build_ext(_build_ext):
 
             # Generate the build files
             print("-- Running cmake for PyArrow")
-            self.spawn(["emcmake", "cmake"] + extra_cmake_args + cmake_options + [source])
+            self.spawn(
+                ["emcmake", "cmake"] + extra_cmake_args + cmake_options + [source]
+            )
             print("-- Finished cmake for PyArrow")
 
             print("-- Running cmake --build for PyArrow")
