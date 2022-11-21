@@ -260,7 +260,7 @@ class build_ext(_build_ext):
                 "-DARROW_RUNTIME_SIMD_LEVEL=NONE",
                 "-DARROW_BUILD_TESTS=OFF",
                 "-DARROW_ENABLE_TIMING_TESTS=OFF",
-                "-DARROW_BUILD_SHARED=OFF",
+                "-DARROW_BUILD_SHARED=ON",
                 "-DARROW_COMPUTE=ON",
             ]
 
