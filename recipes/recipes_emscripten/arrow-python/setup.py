@@ -49,6 +49,7 @@ if Cython.__version__ < "0.29.22":
 
 setup_dir = os.path.abspath(os.path.dirname(__file__))
 
+recipe_dir = os.environ["RECIPE_DIR"]
 ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
 
 env_prefix = os.environ["PREFIX"]
@@ -262,6 +263,7 @@ class build_ext(_build_ext):
                 "-DARROW_ENABLE_TIMING_TESTS=OFF",
                 "-DARROW_BUILD_SHARED=ON",
                 "-DARROW_COMPUTE=ON",
+                f"-DCMAKE_PROJECT_INCLUDE={recipe_dir}/overwriteProp.cmake",
             ]
 
             # Check for specific options
