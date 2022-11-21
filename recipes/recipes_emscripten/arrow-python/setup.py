@@ -253,8 +253,8 @@ class build_ext(_build_ext):
                 f"-Dre2_DIR={env_prefix}/lib/cmake/re2",
                 f"-Dutf8proc_LIB={env_prefix}/lib/libutf8proc.a",
                 f"-Dutf8proc_INCLUDE_DIR={env_prefix}/include",
-                f"-DCMAKE_PREFIX_PATH:PATH=${env_prefix}",
-                f"-DCMAKE_INSTALL_PREFIX:PATH=${env_prefix}",
+                f"-DCMAKE_PREFIX_PATH:PATH={env_prefix}",
+                f"-DCMAKE_INSTALL_PREFIX:PATH={env_prefix}",
                 "-DCMAKE_INSTALL_LIBDIR=lib",
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DARROW_SIMD_LEVEL=NONE",
@@ -313,6 +313,10 @@ class build_ext(_build_ext):
 
     def _run_cmake(self):
         print("PART 2\n\n")
+
+        arrow_dir = f"{env_prefix}/lib/cmake/ArrowPython/"
+        print(*Path(arrow_dir).iterdir(), sep="\n")
+
         # check if build_type is correctly passed / set
         if self.build_type.lower() not in ("release", "debug", "relwithdebinfo"):
             raise ValueError(
@@ -363,8 +367,9 @@ class build_ext(_build_ext):
                 "-DCMAKE_INSTALL_PREFIX=" + env_prefix,
                 "-DPYARROW_CPP_HOME=" + env_prefix,
                 "-DPYARROW_CXXFLAGS=" + str(self.cmake_cxxflags),
-                f"-DArrowPython_DIR={env_prefix}/lib/cmake/ArrowPython",
-                static_lib_option,
+                f"-DArrow_DIR={env_prefix}/lib/cmake/Arrow/",
+                f"-DArrowPython_DIR={env_prefix}/lib/cmake/ArrowPython/",
+                # static_lib_option,
             ]
 
             def append_cmake_bool(value, varname):
@@ -431,7 +436,9 @@ class build_ext(_build_ext):
 
             print("-- Running cmake --build for PyArrow")
             self.spawn(
-                ["cmake", "--build", ".", "--config", self.build_type] + build_tool_args
+                ["cmake", "--build", ".", "--config", self.build_type]
+                + build_tool_args
+                + [" -- -j 12"]
             )
             print("-- Finished cmake --build for PyArrow")
 
