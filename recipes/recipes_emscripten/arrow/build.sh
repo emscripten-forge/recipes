@@ -16,6 +16,7 @@ cmake ${CMAKE_ARGS} \
     -DARROW_BUILD_SHARED=OFF \
     -DARROW_COMPUTE=ON \
     -DARROW_CSV=ON \
+    -DARROW_JSON=ON \
     -Dutf8proc_LIB=${PREFIX}/lib/libutf8proc.a \
     -Dutf8proc_INCLUDE_DIR=${PREFIX}/include \
     -S ../cpp -B ./
