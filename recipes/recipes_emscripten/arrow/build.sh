@@ -15,6 +15,7 @@ cmake ${CMAKE_ARGS} \
     -DARROW_ENABLE_TIMING_TESTS=OFF \
     -DARROW_BUILD_SHARED=OFF \
     -DARROW_COMPUTE=ON \
+    -DARROW_CSV=ON \
     -Dutf8proc_LIB=${PREFIX}/lib/libutf8proc.a \
     -Dutf8proc_INCLUDE_DIR=${PREFIX}/include \
     -S ../cpp -B ./
