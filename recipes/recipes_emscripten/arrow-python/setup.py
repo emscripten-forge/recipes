@@ -264,6 +264,7 @@ class build_ext(_build_ext):
                 "-DARROW_BUILD_SHARED=ON",
                 "-DARROW_COMPUTE=ON",
                 f"-DCMAKE_PROJECT_INCLUDE={recipe_dir}/overwriteProp.cmake",
+                "-DARROW_CPU_FLAG=emscripten32",
             ]
 
             # Check for specific options

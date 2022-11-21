@@ -1,4 +1,3 @@
-
 cp wasm-driver.cpp cpp/
 
 mkdir build
