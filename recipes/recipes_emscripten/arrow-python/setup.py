@@ -252,8 +252,16 @@ class build_ext(_build_ext):
                 f"-Dre2_DIR={env_prefix}/lib/cmake/re2",
                 f"-Dutf8proc_LIB={env_prefix}/lib/libutf8proc.a",
                 f"-Dutf8proc_INCLUDE_DIR={env_prefix}/include",
+                f"-DCMAKE_PREFIX_PATH:PATH=${env_prefix}",
+                f"-DCMAKE_INSTALL_PREFIX:PATH=${env_prefix}",
+                "-DCMAKE_INSTALL_LIBDIR=lib",
+                "-DCMAKE_BUILD_TYPE=Release",
                 "-DARROW_SIMD_LEVEL=NONE",
                 "-DARROW_RUNTIME_SIMD_LEVEL=NONE",
+                "-DARROW_BUILD_TESTS=OFF",
+                "-DARROW_ENABLE_TIMING_TESTS=OFF",
+                "-DARROW_BUILD_SHARED=OFF",
+                "-DARROW_COMPUTE=ON",
             ]
 
             # Check for specific options
