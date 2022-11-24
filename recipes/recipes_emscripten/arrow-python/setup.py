@@ -51,7 +51,7 @@ setup_dir = os.path.abspath(os.path.dirname(__file__))
 
 recipe_dir = os.environ["RECIPE_DIR"]
 ext_suffix = sysconfig.get_config_var("EXT_SUFFIX")
-ext_suffix = "so"
+ext_suffix = ".so"
 
 env_prefix = os.environ["PREFIX"]
 
@@ -288,9 +288,9 @@ class build_ext(_build_ext):
             build_tool_args = []
             if os.environ.get("PYARROW_BUILD_VERBOSE", "0") == "1":
                 cmake_options.append("-DCMAKE_VERBOSE_MAKEFILE=ON")
-            if os.environ.get("PYARROW_PARALLEL"):
-                build_tool_args.append("--")
-                build_tool_args.append("-j{0}".format(os.environ["PYARROW_PARALLEL"]))
+            PYARROW_PARALLEL = 8
+            build_tool_args.append("--")
+            build_tool_args.append("-j{0}".format(PYARROW_PARALLEL))
 
             # run cmake
             print("-- Running CMake for PyArrow C++")
@@ -419,13 +419,19 @@ class build_ext(_build_ext):
                 if not is_64_bit:
                     raise RuntimeError("Not supported on 32-bit Windows")
             else:
-                build_tool_args.append("--")
+                
                 if os.environ.get("PYARROW_BUILD_VERBOSE", "0") == "1":
                     cmake_options.append("-DCMAKE_VERBOSE_MAKEFILE=ON")
-                if os.environ.get("PYARROW_PARALLEL"):
-                    build_tool_args.append(
-                        "-j{0}".format(os.environ["PYARROW_PARALLEL"])
-                    )
+                # if os.environ.get("PYARROW_PARALLEL"):
+                #     build_tool_args.append(
+                #         "-j{0}".format(os.environ["PYARROW_PARALLEL"])
+                #     )
+
+
+                PYARROW_PARALLEL = 8
+                build_tool_args.append("--")
+                build_tool_args.append("-j{0}".format(PYARROW_PARALLEL))
+
 
             # Generate the build files
             print("-- Running cmake for PyArrow")
