@@ -638,7 +638,9 @@ foreach(module ${CYTHON_EXTENSIONS})
                                                     "CYTHON_TRACE=1;CYTHON_TRACE_NOGIL=1")
   endif()
 
-  target_link_libraries(${module_name} PRIVATE ${LINK_LIBS})
+  target_link_libraries(${module_name} PRIVATE ${LINK_LIBS}
+    # $ENV{PREFIX}/lib/libre2.a
+  )
 
   # Generated files will be moved to the right directory by setup.py.
 endforeach(module)
