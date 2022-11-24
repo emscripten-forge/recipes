@@ -419,7 +419,7 @@ class build_ext(_build_ext):
                 if not is_64_bit:
                     raise RuntimeError("Not supported on 32-bit Windows")
             else:
-                
+
                 if os.environ.get("PYARROW_BUILD_VERBOSE", "0") == "1":
                     cmake_options.append("-DCMAKE_VERBOSE_MAKEFILE=ON")
                 # if os.environ.get("PYARROW_PARALLEL"):
@@ -427,11 +427,9 @@ class build_ext(_build_ext):
                 #         "-j{0}".format(os.environ["PYARROW_PARALLEL"])
                 #     )
 
-
                 PYARROW_PARALLEL = 8
                 build_tool_args.append("--")
                 build_tool_args.append("-j{0}".format(PYARROW_PARALLEL))
-
 
             # Generate the build files
             print("-- Running cmake for PyArrow")
