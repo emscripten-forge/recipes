@@ -5,7 +5,7 @@ index e6d0ed4e8..05844d68d 100644
 @@ -98,6 +98,20 @@ message(STATUS "Arrow SO version: ${ARROW_SO_VERSION} (full: ${ARROW_FULL_SO_VER
  set(ARROW_SOURCE_DIR ${PROJECT_SOURCE_DIR})
  set(ARROW_BINARY_DIR ${PROJECT_BINARY_DIR})
- 
+
 +
 +############# WIP WIP WIP
 +# message(STATUS "CMAKE_EXE_LINKER_FLAGS BEFORE: ${CMAKE_EXE_LINKER_FLAGS}")
@@ -24,9 +24,9 @@ index e6d0ed4e8..05844d68d 100644
  include(CMakeParseArguments)
  include(ExternalProject)
 @@ -897,7 +911,7 @@ endif()
- 
+
  set(ARROW_SYSTEM_LINK_LIBS)
- 
+
 -list(APPEND ARROW_SYSTEM_LINK_LIBS Threads::Threads)
 +# list(APPEND ARROW_SYSTEM_LINK_LIBS Threads::Threads)
  if(CMAKE_THREAD_LIBS_INIT)
@@ -39,7 +39,7 @@ index e6d0ed4e8..05844d68d 100644
 +
 +########
 +
-+add_executable(wasm-driver ${CMAKE_CURRENT_SOURCE_DIR}/wasm-driver.cpp )
++add_executable(wasm-driver ${CMAKE_CURRENT_SOURCE_DIR}/examples/minimal_build/minimal_build.cc)
 +target_link_libraries(wasm-driver PUBLIC arrow_static)
 +
 +target_compile_options(wasm-driver PUBLIC -fno-stack-protector)
@@ -74,7 +74,7 @@ index 0a0f24b47..7a9774387 100644
 +++ b/cpp/cmake_modules/DefineOptions.cmake
 @@ -349,7 +349,7 @@ takes precedence over ccache if a storage backend is configured" ON)
    define_option(ARROW_IPC "Build the Arrow IPC extensions" ON)
- 
+
    set(ARROW_JEMALLOC_DESCRIPTION "Build the Arrow jemalloc-based allocator")
 -  if(WIN32 OR "${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD")
 +  if(WIN32 OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD")
