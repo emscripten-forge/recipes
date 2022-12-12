@@ -5,9 +5,8 @@ MYPYTHON=${BUILD_PREFIX}/bin/python
 export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
 
 
-# this will activate emscripten in case it has not yet 
-# been activated
-source ${BUILD_PREFIX}/bin/activate_emscripten.sh
+# this will activate emscripten in case it has not yet been activated
+source $CONDA_PREFIX/etc/conda/activate.d/emscripten_emscripten-32_activate.sh
 
 
 if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
