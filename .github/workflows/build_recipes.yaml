@@ -17,6 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         emsdk_ver: ["3.1.2"]
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -89,7 +90,7 @@ jobs:
         shell: bash -l {0}
         run: |
           micromamba activate ci-env
-          python -m pip install git+https://github.com/DerThorsten/boa.git@postcb --no-deps --ignore-installed
+          python -m pip install git+https://github.com/DerThorsten/boa.git@newboa --no-deps --ignore-installed
           python -m pip install git+https://github.com/DerThorsten/bitfurnace.git@emscripten_new --no-deps --ignore-installed
 
       - name: "setup emsdk"
@@ -169,6 +170,6 @@ jobs:
         if: github.event_name == 'push'
         shell: bash -l {0}
         run: |
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge-testing ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge-testing ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge-testing ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
