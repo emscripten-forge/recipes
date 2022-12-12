@@ -147,7 +147,7 @@ def boa_build(
 from typing import List, Optional
 import typer
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_show_locals=False)
 
 
 build_app = typer.Typer()
