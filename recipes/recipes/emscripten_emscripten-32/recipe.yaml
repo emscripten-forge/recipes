@@ -7,7 +7,7 @@ package:
   version: '{{ version }}'
 
 build:
-  number: 0
+  number: 1
   ignore_run_exports:
     - python
 
@@ -18,16 +18,18 @@ outputs:
       name: emscripten-mutex
       version: '{{ version }}'
     build:
+      noarch: generic
       script:
         - echo "emscripten mutex is built."
 
   - package:
       name: '{{ name | lower }}'
       version: '{{ version }}'
+
     build:
       script: build_compiler_package.sh
-    run_exports:
-      - "{{ pin_subpackage('emscripten-mutex', max_pin='x.x') }}"
+      run_exports:
+        - "{{ pin_subpackage('emscripten-mutex', max_pin='x.x') }}"
 
     requirements:
       run:
