@@ -20,7 +20,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
       ./configure \
           CFLAGS="${PYTHON_CFLAGS}" \
           CPPFLAGS="-I${PREFIX}/include" \
-          LDFLAGS="-L${PREFIX}/lib -lffi -lz" \
+          LDFLAGS="-L${PREFIX}/lib -lffi -lz -sWASM_BIGINT" \
           --without-pymalloc \
           --disable-shared \
           --disable-ipv6 \
