@@ -21,3 +21,6 @@ cmake ${CMAKE_ARGS} ..              \
 
 # Build step
 ninja install
+
+
+cp $PREFIX/lib/libz_static.a  $PREFIX/lib/libz.a
