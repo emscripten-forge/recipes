@@ -49,10 +49,12 @@ cp $RECIPE_DIR/patches/fortran_compiler_wrapper.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
 # Add pyodide scipy C file fixes to emcc
-export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
+export EMBIN=$ACTUAL_CONDA_EMSDK_DIR/upstream/emscripten
+cp $EMBIN/emcc.py $EMBIN/old_emcc.py
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
 # add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -I$PREFIX/include  -Wno-return-type -DUNDERSCORE_G77"
 
 python -m pip install . --no-deps -vvv
+cp $EMBIN/old_emcc.py $EMBIN/emcc.py
