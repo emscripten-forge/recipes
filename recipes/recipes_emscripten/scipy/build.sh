@@ -1,11 +1,20 @@
 # Wisdom from pyodide!
 # License is in patches/LICENSE
 
+
+# quicker for hacking
+cp $RECIPE_DIR/patches/setup.py .
+
+
+
+# NOTE: We moved the downloading of the LAPACK src to the recipe
+#       itself st. the download is cached!
 # We get linker errors because the following 36 functions are missing
 # Copying them from a more recent LAPACK seems to work fine.
+# wget https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.0.tar.gz
+# tar xzf v3.10.0.tar.gz
 
-wget https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.0.tar.gz
-tar xzf v3.10.0.tar.gz
+
 cd lapack-3.10.0/SRC
 cat \
     cgemqrt.f cgeqrfp.f cgeqrt.f clahqr.f csyconv.f csyconvf.f csyconvf_rook.f ctpmqrt.f ctpqrt.f cuncsd.f \
@@ -53,8 +62,13 @@ export EMBIN=$ACTUAL_CONDA_EMSDK_DIR/upstream/emscripten
 cp $EMBIN/emcc.py $EMBIN/old_emcc.py
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
-# add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -I$PREFIX/include  -Wno-return-type -DUNDERSCORE_G77"
 
+# add BUILD_PREFIX/include for f2c.h file
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include   -Wno-return-type -DUNDERSCORE_G77"
+
+export NPY_CBLAS_LIBS=$PREFIX/lib/clapack_all.so
+export NPY_LAPACK_LIBS=$PREFIX/lib/clapack_all.so
 python -m pip install . --no-deps -vvv
 cp $EMBIN/old_emcc.py $EMBIN/emcc.py
+
+
