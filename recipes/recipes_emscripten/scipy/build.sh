@@ -2,11 +2,6 @@
 # License is in patches/LICENSE
 
 
-# quicker for hacking
-cp $RECIPE_DIR/patches/setup.py .
-
-
-
 # NOTE: We moved the downloading of the LAPACK src to the recipe
 #       itself st. the download is cached!
 # We get linker errors because the following 36 functions are missing
@@ -16,6 +11,7 @@ cp $RECIPE_DIR/patches/setup.py .
 
 
 cd lapack-3.10.0/SRC
+rm -f ../../scipy/linalg/lapack_extras.f
 cat \
     cgemqrt.f cgeqrfp.f cgeqrt.f clahqr.f csyconv.f csyconvf.f csyconvf_rook.f ctpmqrt.f ctpqrt.f cuncsd.f \
     dgemqrt.f dgeqrfp.f dgeqrt.f dlahqr.f dsyconv.f dsyconvf.f dsyconvf_rook.f dtpmqrt.f dtpqrt.f dorcsd.f \
@@ -30,8 +26,8 @@ cd ../..
 # Change many functions that return void into functions that return int
 find scipy -name "*.c*" | xargs sed -i 's/extern void F_FUNC/extern int F_FUNC/g'
 sed -i 's/void F_FUNC/int F_FUNC/g' scipy/odr/__odrpack.c
-sed -i 's/^void/int/g' scipy/odr/odrpack.h
-sed -i 's/^void/int/g' scipy/odr/__odrpack.c
+# sed -i 's/^void/int/g' scipy/odr/odrpack.h
+# sed -i 's/^void/int/g' scipy/odr/__odrpack.c
 sed -i 's/void BLAS_FUNC/int BLAS_FUNC/g' scipy/special/lapack_defs.h
 # sed -i 's/void F_FUNC/int F_FUNC/g' scipy/linalg/_lapack_subroutines.h
 sed -i 's/extern void/extern int/g' scipy/optimize/__minpack.h
@@ -41,6 +37,7 @@ sed -i 's/^void/int/g' scipy/optimize/_trlib/trlib_private.h
 sed -i 's/^void/int/g' scipy/optimize/_trlib/trlib/trlib_private.h
 sed -i 's/, int)/)/g' scipy/optimize/_trlib/trlib_private.h
 sed -i 's/, 1)/)/g' scipy/optimize/_trlib/trlib_private.h
+
 sed -i 's/^void/int/g' scipy/spatial/qhull_misc.h
 sed -i 's/, size_t)/)/g' scipy/spatial/qhull_misc.h
 sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
@@ -64,9 +61,13 @@ python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
 
 # add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include   -Wno-return-type -DUNDERSCORE_G77"
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include   -Wno-return-type -DUNDERSCORE_G77  -Wno-incompatible-function-pointer-types"
 
-export NPY_CBLAS_LIBS=$PREFIX/lib/clapack_all.so
+
+export CXXFLAGS="$CXXFLAGS -std=c++14 -Wno-incompatible-function-pointer-types"
+
+
+export NPY_BLAS_LIBS=
 export NPY_LAPACK_LIBS=$PREFIX/lib/clapack_all.so
 python -m pip install . --no-deps -vvv
 cp $EMBIN/old_emcc.py $EMBIN/emcc.py
