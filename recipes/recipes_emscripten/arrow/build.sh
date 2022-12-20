@@ -1,4 +1,3 @@
-cp wasm-driver.cpp cpp/
 
 mkdir build
 cd build
@@ -19,6 +18,8 @@ cmake ${CMAKE_ARGS} \
     -DARROW_JSON=ON \
     -DARROW_FILESYSTEM=ON \
     -DARROW_DATASET=ON \
+    -DARROW_WITH_UTF8PROC=ON \
+    -DARROW_WITH_RE2=ON \
     -Dutf8proc_LIB=${PREFIX}/lib/libutf8proc.a \
     -Dutf8proc_INCLUDE_DIR=${PREFIX}/include \
     -DRapidJSON_DIR=${PREFIX}/lib/cmake/RapidJSON/ \
@@ -26,4 +27,4 @@ cmake ${CMAKE_ARGS} \
 
 
 # Build step
-emmake make install -j12
+emmake make install -j8

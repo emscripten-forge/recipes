@@ -2,29 +2,42 @@ context:
   version: "11.0.0"
 
 package:
-  name: arrow-cpp
+  name: arrow-python
   version: '{{ version }}'
 
 source:
   - url: https://github.com/apache/arrow/archive/refs/tags/apache-arrow-{{version}}.dev.tar.gz
-    sha256: 5581107cb445a4f0b316d57c3073c034857d633eb33b73a63ca71a34c3ab4caf
     patches:
       - patches/wasm.patch
-      - patches/patch_libraries_search_prefix.patch
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
     - '{{ compiler("cxx") }}'
-    - cmake
-    - make
+    - cross-python_emscripten-32
+    - python
+    - cython
+    - setuptools
+    - setuptools_scm
+    - numpy
   host:
-    - bzip2
+    - python
+    - pip
+    - cffi
+    - arrow-cpp
     - re2
     - libutf8proc
-    - rapidjson
+  run:
+    - numpy
+    - python
+    - libffi
+    - pycparser
+    - cloudpickle
+    - hypothesis
+    - fsspec
+
 
 about:
   home: https://arrow.apache.org/
@@ -40,3 +53,10 @@ about:
 extra:
   recipe-maintainers:
     - Klaim
+    - martinRenou
+    - DerThorsten
+
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_py_arrow.py
