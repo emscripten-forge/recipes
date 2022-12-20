@@ -1,26 +1,19 @@
 mkdir build
 cd build
 
-
 export CMAKE_PREFIX_PATH=$PREFIX 
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
-
-if [[ $FEATURE_ENV_NODE == 1 ]]; then
-    echo "FEATURE_ENV_NODE ENABLED"
-else
-    echo "FEATURE_ENV_NODE DISABLED"
-fi
 
 # Configure step
 cmake ${CMAKE_ARGS} ..              \
     -GNinja                         \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PROJECT_INCLUDE=overwriteProp.cmake \
+    -DCMAKE_BUILD_TYPE=Release      \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
-    -DENV_NODE=$FEATURE_ENV_NODE \
+    -DBUILD_RUNTIME_BROWSER=ON \
+    -DBUILD_RUNTIME_NODE=ON \
+    -DWITH_NODE_TESTS=OFF
 
-#-DCMAKE_BUILD_TYPE=Release      \
 
 # Build step
 ninja install
