@@ -10,6 +10,16 @@ export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC"
 export PYTHON_CFLAGS=${CFLAGS_BASE}
 
 
+
+export PYVERSION=$PKG_VERSION
+export PLATFORM_TRIPLET=wasm32-emscripten
+# export SYSCONFIG_NAME=_sysconfigdata__emscripten_$(PLATFORM_TRIPLET)
+
+echo "PYVERSION" $PYVERSION
+echo "EMSCRIPTEN_VERSION" $EMSCRIPTEN_VERSION
+echo "PLATFORM_TRIPLET" $PLATFORM_TRIPLET
+
+
 LIB=libpython3.10.a
 SYSCONFIG_NAME=_sysconfigdata__emscripten_
 
@@ -21,7 +31,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
           CFLAGS="${PYTHON_CFLAGS}" \
           CPPFLAGS="-I${PREFIX}/include" \
           LDFLAGS="-L${PREFIX}/lib -lffi -lz -sWASM_BIGINT" \
-          --without-pymalloc \
+          PLATFORM_TRIPLET="$(PLATFORM_TRIPLET)" \          --without-pymalloc \
           --disable-shared \
           --disable-ipv6 \
           --enable-big-digits=30 \
@@ -49,6 +59,17 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     cp build/lib.emscripten-3.10/_sysconfigdata__emscripten_.py ${PREFIX}/lib/python3.10/ 
 
+
+
+
+    # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
+    sed -i "s/cpython-310/cpython-310-$PLATFORM_TRIPLET/g" ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
+    sed -i "s/-lffi -lz/ /g"                                ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
+
+
+    # install/copy sysconfig to a place where cross-python expects the sysconfig
+    mkdir -p ${PREFIX}/etc/conda
+    cp ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py ${PREFIX}/etc/conda/
 
     # cleanup
     pushd ${PREFIX}

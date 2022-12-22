@@ -16,6 +16,8 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
         echo $(python -c "from empack.file_packager import EMSDK_INSTALL_PATH; print(EMSDK_INSTALL_PATH / 'emsdk-${PKG_VERSION})") > $HOME/.emsdkdir
     fi
 
+    export EMSCRIPTEN_VERSION=$PKG_VERSION
+
     export CONDA_EMSDK_DIR=$(<$CONDA_EMSDK_DIR_CONFIG_FILE)
     export ACTUAL_CONDA_EMSDK_DIR=$CONDA_EMSDK_DIR
     echo "Using ACTUAL_CONDA_EMSDK_DIR $CONDA_EMSDK_DIR_CONFIG_FILE: " $ACTUAL_CONDA_EMSDK_DIR
