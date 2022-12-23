@@ -13,8 +13,7 @@ import tempfile
 import shutil
 import empack
 import glob
-from testing.browser_test_package import test_package as browser_test_package
-from testing.node_test_package import test_package as node_test_package
+from testing.package_testing import test_package as test_package_impl
 from empack.file_patterns import pkg_file_filter_from_yaml
 from contextlib import contextmanager
 
@@ -89,21 +88,19 @@ class BuildArgs:
 def test_package(recipe):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe}")
-    browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
-    node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
+    test_package_impl(recipe=recipe)
 
 
 def cleanup():
     prefix = os.environ["CONDA_PREFIX"]
     conda_bld_dir = os.path.join(prefix, "conda-bld")
 
-    do_not_delete = ["noarch", "linux-64", "emscripten-32"]
+    do_not_delete = ["noarch", "linux-64", "emscripten-32", "icons"]
     do_not_delete = [os.path.join(conda_bld_dir, d) for d in do_not_delete]
 
     for dirname in glob.iglob(os.path.join(conda_bld_dir, "**"), recursive=False):
         if os.path.isdir(dirname):
-            if dirname not in do_not_delete:
-                print(f"DELETING {dirname}")
+            if dirname not in do_not_delete and "_" in dirname:
                 shutil.rmtree(dirname)
 
 
