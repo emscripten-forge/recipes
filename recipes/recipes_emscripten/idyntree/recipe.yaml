@@ -1,0 +1,54 @@
+context:
+  version: 5.3.0
+
+package:
+  name: idyntree
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/robotology/idyntree/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 8013920350990f7720dabcf9f452b7beb4dad6bc3eed928ff2bbd6638d4ff120
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python
+    - cross-python_emscripten-32
+    - '{{ compiler("c") }}'
+    - '{{ compiler("cxx") }}'
+    - cmake
+    - ninja
+    - pkg-config
+    - swig
+
+  host:
+    - libxml
+    - eigen
+    - pip
+    - python
+    - numpy
+
+  run:
+    - python
+    - numpy
+
+test:
+  commands:
+    - sel(emscripten): test -d ${PREFIX}/include/iDynTree
+
+about:
+  home: https://github.com/robotology/idyntree
+  license: LGPL-2.1-or-later
+  license_file: LICENSE.LGPL2
+  summary: Multibody Dynamics Library designed for Free Floating Robots.
+
+extra:
+  recipe-maintainers:
+    - traversaro
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_import_idyntree.py
+
