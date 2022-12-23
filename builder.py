@@ -26,6 +26,14 @@ CONFIG_PATH = os.path.join(THIS_DIR, "empack_config.yaml")
 PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 
+from typing import List, Optional
+import typer
+
+app = typer.Typer(pretty_exceptions_show_locals=False)
+build_app = typer.Typer()
+app.add_typer(build_app, name="build")
+
+
 @contextmanager
 def restore_cwd():
     base_work_dir = os.getcwd()
@@ -139,16 +147,6 @@ def boa_build(
         build_args.target_platform = platform
     run_build(build_args)
     os.chdir(base_work_dir)
-
-
-from typing import List, Optional
-import typer
-
-app = typer.Typer(pretty_exceptions_show_locals=False)
-
-
-build_app = typer.Typer()
-app.add_typer(build_app, name="build")
 
 
 @build_app.command()
