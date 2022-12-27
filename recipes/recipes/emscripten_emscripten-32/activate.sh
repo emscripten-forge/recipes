@@ -12,7 +12,7 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     else
         echo "Did **NOT** find config file at: $CONDA_EMSDK_DIR_CONFIG_FILE, trying to install emsdk with empack..."
 
-        $PYTHON -c "from empack.file_packager import download_and_setup_emsdk; download_and_setup_emsdk()"
+        $PYTHON -c "from empack.file_packager import download_and_setup_emsdk; download_and_setup_emsdk(\"$PKG_VERSION\")"
         echo $(python -c "from empack.file_packager import EMSDK_INSTALL_PATH; print(EMSDK_INSTALL_PATH / 'emsdk-${PKG_VERSION})") > $HOME/.emsdkdir
     fi
 
