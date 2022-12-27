@@ -200,8 +200,6 @@ def changed(
 ):
     base_work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
-    pytest_driver_src_dir = os.path.join(base_work_dir, "testing", "pytest_driver")
-
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
     rich.pretty.pprint(recipes_with_changes_per_subdir)
 
@@ -209,19 +207,13 @@ def changed(
 
         # create a  temp dir and copy all changed recipes
         # to that dir (because Then we can let boa do the
-        # topological sorting
+        # topological sorting)
         with tempfile.TemporaryDirectory() as tmp_folder_root:
 
             tmp_recipes_root_str = os.path.join(
                 tmp_folder_root, "recipes", "recipes_per_platform"
             )
             os.makedirs(tmp_folder_root, exist_ok=True)
-
-            tmp_pytest_driver_src_dir = os.path.join(
-                tmp_folder_root, "testing", "pytest_driver"
-            )
-            os.makedirs(tmp_folder_root, exist_ok=True)
-            shutil.copytree(pytest_driver_src_dir, tmp_pytest_driver_src_dir)
 
             for recipe_with_change in recipe_with_changes:
                 recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
