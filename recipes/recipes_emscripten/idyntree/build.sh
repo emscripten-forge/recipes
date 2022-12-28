@@ -6,6 +6,8 @@ cd build
 # See https://github.com/microsoft/vcpkg/pull/11753
 export CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH:/
 
+env
+
 sudo rm -rf /bin/swig*
 
 
