@@ -18,9 +18,9 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
     sysconfigdata_fn=$(find "$PREFIX/lib/pypy$PY_VER/" -name "_sysconfigdata_*.py" -type f)
   else
     # find "$PREFIX/lib/" -name "_sysconfigdata*.py" -not -name ${_CONDA_PYTHON_SYSCONFIGDATA_NAME}.py -type f -exec rm -f {} +
-    sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_.py
-    envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_new.py
-    sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_new.py
+    sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+    envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
+    sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
   fi
   # decho "build_time_vars['LDFLAGS'] = build_time_vars['LDSHARED'] " >> $sysconfigdata_fn 
 

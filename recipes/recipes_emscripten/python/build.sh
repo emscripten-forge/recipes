@@ -1,19 +1,20 @@
 #!/bin/bash
 
+cp $RECIPE_DIR/patches/configure .
 
 PYTHON=${BUILD_PREFIX}/bin/python3.10
 
 export DBGFLAGS=-g0
 export OPTFLAGS=-O2
-export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC"
+export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC -Wno-implicit-function-declaration]"
 
 export PYTHON_CFLAGS=${CFLAGS_BASE}
 
 
-
+export MULTIARCH=wasm32-emscripten
 export PYVERSION=$PKG_VERSION
 export PLATFORM_TRIPLET=wasm32-emscripten
-# export SYSCONFIG_NAME=_sysconfigdata__emscripten_$(PLATFORM_TRIPLET)
+export SYSCONFIG_NAME=_sysconfigdata__emscripten_$PLATFORM_TRIPLET
 
 echo "PYVERSION" $PYVERSION
 echo "EMSCRIPTEN_VERSION" $EMSCRIPTEN_VERSION
@@ -21,7 +22,8 @@ echo "PLATFORM_TRIPLET" $PLATFORM_TRIPLET
 
 
 LIB=libpython3.10.a
-SYSCONFIG_NAME=_sysconfigdata__emscripten_
+ 
+
 
 if [[ $target_platform == "emscripten-32" ]]; then
     cp ${RECIPE_DIR}/config/config.site .
@@ -31,7 +33,9 @@ if [[ $target_platform == "emscripten-32" ]]; then
           CFLAGS="${PYTHON_CFLAGS}" \
           CPPFLAGS="-I${PREFIX}/include" \
           LDFLAGS="-L${PREFIX}/lib -lffi -lz -sWASM_BIGINT" \
-          PLATFORM_TRIPLET="$(PLATFORM_TRIPLET)" \          --without-pymalloc \
+          PLATFORM_TRIPLET=$PLATFORM_TRIPLET \
+          MULTIARCH=$MULTIARCH \
+          --without-pymalloc \
           --disable-shared \
           --disable-ipv6 \
           --enable-big-digits=30 \
@@ -57,19 +61,22 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     emmake make CROSS_COMPILE=yes -j8
 
-    cp build/lib.emscripten-3.10/_sysconfigdata__emscripten_.py ${PREFIX}/lib/python3.10/ 
+
+
+
+    cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
 
 
 
 
     # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
-    sed -i "s/cpython-310/cpython-310-$PLATFORM_TRIPLET/g" ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
-    sed -i "s/-lffi -lz/ /g"                                ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
+    sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
+    # sed -i "s/'SHLIB_SUFFIX': '.so',/'SHLIB_SUFFIX': '.cpython-310-wasm32-emscripten.so',/g"  ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
 
-
+ 
     # install/copy sysconfig to a place where cross-python expects the sysconfig
     mkdir -p ${PREFIX}/etc/conda
-    cp ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py ${PREFIX}/etc/conda/
+    cp ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py ${PREFIX}/etc/conda/
 
     # cleanup
     pushd ${PREFIX}

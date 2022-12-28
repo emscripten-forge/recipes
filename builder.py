@@ -16,6 +16,8 @@ import glob
 from testing.package_testing import test_package as test_package_impl
 from empack.file_patterns import pkg_file_filter_from_yaml
 from contextlib import contextmanager
+from mamba.utils import init_api_context
+import libmambapy as api
 
 RECIPES_SUBDIR_MAPPING = OrderedDict(
     [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
@@ -145,6 +147,11 @@ def boa_build(
     )
     if platform:
         build_args.target_platform = platform
+
+    init_api_context()
+    api_ctx = api.Context()
+    api_ctx.add_pip_as_python_dependency = False
+
     run_build(build_args)
     os.chdir(base_work_dir)
 
