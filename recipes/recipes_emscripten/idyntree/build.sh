@@ -33,6 +33,7 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` \
       -DLIBXML2_INCLUDE_DIR:PATH=$PREFIX/include/libxml2 \
       -DLIBXML2_LIBRARY=$PREFIX/lib/libxml2.a \
+      -DPython3_NumPy_INCLUDE_DIR:PATH=$PREFIX/lib/`ls $PREFIX/lib/ | grep "python\|pypy"`/site-packages/numpy/core/include
       -DIDYNTREE_COMPILES_TOOLS:BOOL=OFF
 
 ninja
