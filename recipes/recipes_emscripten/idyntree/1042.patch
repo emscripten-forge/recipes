@@ -1,0 +1,205 @@
+From 2e6f2ad84afefd1338865000afab7c31c2058284 Mon Sep 17 00:00:00 2001
+From: Silvio Traversaro <silvio@traversaro.it>
+Date: Thu, 29 Dec 2022 14:51:27 +0100
+Subject: [PATCH] Remove use of generate_export_header
+
+---
+ src/core/CMakeLists.txt                    | 16 -----------
+ src/core/include/iDynTree/Core/Utils.h     |  7 ++---
+ src/core/src/Utils.cpp                     |  4 ---
+ src/model/CMakeLists.txt                   | 18 -------------
+ src/model/include/iDynTree/Model/Indices.h | 25 +++++++----------
+ src/model/src/Indices.cpp                  | 31 ----------------------
+ 6 files changed, 11 insertions(+), 90 deletions(-)
+ delete mode 100644 src/model/src/Indices.cpp
+
+diff --git a/src/core/CMakeLists.txt b/src/core/CMakeLists.txt
+index fbe4f27d209..6c5dd97e450 100644
+--- a/src/core/CMakeLists.txt
++++ b/src/core/CMakeLists.txt
+@@ -101,22 +101,6 @@ target_include_directories(${libraryname} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURR
+                                                  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+ target_link_libraries(${libraryname} PRIVATE Eigen3::Eigen)
+ 
+-# On Windows we need to correctly export global constants that are not inlined with the use of GenerateExportHeader
+-# vtk 6.3 installs a GenerateExportHeader CMake module that shadows the official CMake module if find_package(VTK)
+-# is invoked, the issue has been solved in vtk >= 7.1, see https://gitlab.kitware.com/vtk/vtk/-/merge_requests/1593 .
+-# To ensure that the build works even if find_package(VTK) is invoked and VTK 6 is found, we manually include exactly the
+-# GenerateExportHeader that is shipped with CMake, extracting the CMake install prefix from the CMAKE_COMMAND variable
+-# This workaround can be removed once we will not support anymore platforms that ship with vtk 6.3 as main vtk version (Ubuntu 18.04).
+-get_filename_component(CMAKE_UPSTREAM_MODULE_LOCATION ${CMAKE_COMMAND} PATH)
+-get_filename_component(CMAKE_UPSTREAM_MODULE_LOCATION ${CMAKE_UPSTREAM_MODULE_LOCATION} PATH)
+-set(CMAKE_UPSTREAM_MODULE_LOCATION ${CMAKE_UPSTREAM_MODULE_LOCATION}/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules)
+-if(EXISTS ${CMAKE_UPSTREAM_MODULE_LOCATION}/GenerateExportHeader.cmake)
+-    include(${CMAKE_UPSTREAM_MODULE_LOCATION}/GenerateExportHeader.cmake)
+-else()
+-    include(GenerateExportHeader)
+-endif()
+-generate_export_header(${libraryname} EXPORT_FILE_NAME CoreExport.h)
+-list(APPEND IDYNTREE_CORE_EXP_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/CoreExport.h)
+ target_include_directories(${libraryname} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
+ 
+ set_property(TARGET ${libraryname} PROPERTY PUBLIC_HEADER ${IDYNTREE_CORE_EXP_HEADERS})
+diff --git a/src/core/include/iDynTree/Core/Utils.h b/src/core/include/iDynTree/Core/Utils.h
+index b95f0da51b6..efb3b0d35f9 100644
+--- a/src/core/include/iDynTree/Core/Utils.h
++++ b/src/core/include/iDynTree/Core/Utils.h
+@@ -32,21 +32,18 @@
+ #if defined(SWIG)
+ #define IDYNTREE_DEPRECATED
+ #define IDYNTREE_DEPRECATED_WITH_MSG(msg)
+-// Workaround for SWIG problems with GenerateExportHeader-generated code
+-#define IDYNTREE_CORE_EXPORT
+ #else
+ #define IDYNTREE_DEPRECATED [[deprecated]]
+ #define IDYNTREE_DEPRECATED_WITH_MSG(msg) [[deprecated(msg)]]
+-#include "CoreExport.h"
+ #endif
+ 
+ 
+ namespace iDynTree
+ {
+-    IDYNTREE_CORE_EXPORT extern int UNKNOWN;
++    constexpr int UNKNOWN = -1;
+ 
+     /// Default tolerance for methods with a tolerance, setted to 1e-10
+-    IDYNTREE_CORE_EXPORT extern double DEFAULT_TOL;
++    constexpr double DEFAULT_TOL = 1e-10;
+ 
+     /**
+      * Function embedding the semantic checks
+diff --git a/src/core/src/Utils.cpp b/src/core/src/Utils.cpp
+index cc3dcb3fd62..c1330847eed 100644
+--- a/src/core/src/Utils.cpp
++++ b/src/core/src/Utils.cpp
+@@ -17,10 +17,6 @@
+ 
+ namespace iDynTree
+ {
+-    int UNKNOWN = -1;
+-
+-    double DEFAULT_TOL = 1e-10;
+-
+     const double IDYNTREE_PI=M_PI;
+     const double IDYNTREE_RAD2DEG=180.0/IDYNTREE_PI;
+     const double IDYNTREE_DEG2RAD=IDYNTREE_PI/180.0;
+diff --git a/src/model/CMakeLists.txt b/src/model/CMakeLists.txt
+index 1ae19e42fe2..ef3ed4f18e1 100644
+--- a/src/model/CMakeLists.txt
++++ b/src/model/CMakeLists.txt
+@@ -38,7 +38,6 @@ set(IDYNTREE_MODEL_SOURCES src/ContactWrench.cpp
+                            src/ForwardKinematics.cpp
+                            src/FreeFloatingState.cpp
+                            src/FreeFloatingMatrices.cpp
+-                           src/Indices.cpp
+                            src/Dynamics.cpp
+                            src/DynamicsLinearization.cpp
+                            src/DynamicsLinearizationHelpers.cpp
+@@ -69,23 +68,6 @@ target_include_directories(${libraryname} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURR
+ target_link_libraries(${libraryname} PUBLIC idyntree-core
+                                      PRIVATE Eigen3::Eigen)
+ 
+-# On Windows we need to correctly export global constants that are not inlined with the use of GenerateExportHeader
+-# vtk 6.3 installs a GenerateExportHeader CMake module that shadows the official CMake module if find_package(VTK)
+-# is invoked, the issue has been solved in vtk >= 7.1, see https://gitlab.kitware.com/vtk/vtk/-/merge_requests/1593 .
+-# To ensure that the build works even if find_package(VTK) is invoked and VTK 6 is found, we manually include exactly the
+-# GenerateExportHeader that is shipped with CMake, extracting the CMake install prefix from the CMAKE_COMMAND variable
+-# This workaround can be removed once we will not support anymore platforms that ship with vtk 6.3 as main vtk version (Ubuntu 18.04).
+-get_filename_component(CMAKE_UPSTREAM_MODULE_LOCATION ${CMAKE_COMMAND} PATH)
+-get_filename_component(CMAKE_UPSTREAM_MODULE_LOCATION ${CMAKE_UPSTREAM_MODULE_LOCATION} PATH)
+-set(CMAKE_UPSTREAM_MODULE_LOCATION ${CMAKE_UPSTREAM_MODULE_LOCATION}/share/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules)
+-if(EXISTS ${CMAKE_UPSTREAM_MODULE_LOCATION}/GenerateExportHeader.cmake)
+-    include(${CMAKE_UPSTREAM_MODULE_LOCATION}/GenerateExportHeader.cmake)
+-else()
+-    include(GenerateExportHeader)
+-endif()
+-generate_export_header(${libraryname} EXPORT_FILE_NAME ModelExport.h)
+-list(APPEND IDYNTREE_MODEL_HEADERS ${CMAKE_CURRENT_BINARY_DIR}/ModelExport.h)
+-
+ target_include_directories(${libraryname} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
+ 
+ set_property(TARGET ${libraryname} PROPERTY PUBLIC_HEADER ${IDYNTREE_MODEL_HEADERS})
+diff --git a/src/model/include/iDynTree/Model/Indices.h b/src/model/include/iDynTree/Model/Indices.h
+index b9fb08a43a1..802584939a3 100644
+--- a/src/model/include/iDynTree/Model/Indices.h
++++ b/src/model/include/iDynTree/Model/Indices.h
+@@ -14,33 +14,26 @@
+ #include <cstddef>
+ #include <string>
+ 
+-// Workaround for SWIG problems with GenerateExportHeader-generated code
+-#if defined(SWIG)
+-#define IDYNTREE_MODEL_EXPORT
+-#else
+-#include "ModelExport.h"
+-#endif
+-
+ namespace iDynTree
+ {
+     typedef std::ptrdiff_t LinkIndex;
+-    IDYNTREE_MODEL_EXPORT extern LinkIndex LINK_INVALID_INDEX;
+-    IDYNTREE_MODEL_EXPORT extern std::string LINK_INVALID_NAME;
++    constexpr LinkIndex LINK_INVALID_INDEX = -1;
++    constexpr char[] LINK_INVALID_NAME = "";
+ 
+     typedef std::ptrdiff_t JointIndex;
+-    IDYNTREE_MODEL_EXPORT extern std::ptrdiff_t JOINT_INVALID_INDEX;
+-    IDYNTREE_MODEL_EXPORT extern std::string JOINT_INVALID_NAME;
++    constexpr std::ptrdiff_t JOINT_INVALID_INDEX = -1;
++    constexpr char[] JOINT_INVALID_NAME = "";
+ 
+     typedef std::ptrdiff_t DOFIndex;
+-    IDYNTREE_MODEL_EXPORT extern std::ptrdiff_t DOF_INVALID_INDEX;
+-    IDYNTREE_MODEL_EXPORT extern std::string DOF_INVALID_NAME;
++    constexpr std::ptrdiff_t DOF_INVALID_INDEX = -1;
++    constexpr char[] DOF_INVALID_NAME = "";
+ 
+     typedef std::ptrdiff_t FrameIndex;
+-    IDYNTREE_MODEL_EXPORT extern std::ptrdiff_t FRAME_INVALID_INDEX;
+-    IDYNTREE_MODEL_EXPORT extern std::string FRAME_INVALID_NAME;
++    constexpr std::ptrdiff_t FRAME_INVALID_INDEX = -1;
++    constexpr char[] FRAME_INVALID_NAME = "";
+ 
+     typedef std::ptrdiff_t TraversalIndex;
+-    IDYNTREE_MODEL_EXPORT extern TraversalIndex TRAVERSAL_INVALID_INDEX;
++    constexpr TraversalIndex TRAVERSAL_INVALID_INDEX = -1;
+ 
+ }
+ 
+diff --git a/src/model/src/Indices.cpp b/src/model/src/Indices.cpp
+deleted file mode 100644
+index 49798acacfb..00000000000
+--- a/src/model/src/Indices.cpp
++++ /dev/null
+@@ -1,31 +0,0 @@
+-/*
+- * Copyright (C) 2015 Fondazione Istituto Italiano di Tecnologia
+- *
+- * Licensed under either the GNU Lesser General Public License v3.0 :
+- * https://www.gnu.org/licenses/lgpl-3.0.html
+- * or the GNU Lesser General Public License v2.1 :
+- * https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+- * at your option.
+- */
+-
+-#include <iDynTree/Model/Indices.h>
+-
+-namespace iDynTree
+-{
+-
+-LinkIndex LINK_INVALID_INDEX  = -1;
+-std::string LINK_INVALID_NAME = "";
+-
+-JointIndex JOINT_INVALID_INDEX = -1;
+-std::string JOINT_INVALID_NAME = "";
+-
+-FrameIndex FRAME_INVALID_INDEX = -1;
+-std::string FRAME_INVALID_NAME = "";
+-
+-DOFIndex   DOF_INVALID_INDEX   = -1;
+-std::string DOF_INVALID_NAME   = "";
+-
+-TraversalIndex TRAVERSAL_INVALID_INDEX = -1;
+-
+-
+-}
