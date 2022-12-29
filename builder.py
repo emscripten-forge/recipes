@@ -1,5 +1,7 @@
 from boa.core.monkeypatch import *
 from boa.core.run_build import run_build
+from boa.pyapi import py_build
+
 import subprocess
 import os
 import json
@@ -132,27 +134,24 @@ def boa_build(
     skip_existing=False,
 ):
 
-    base_work_dir = os.getcwd()
-    build_args = BuildArgs()
-    if skip_existing:
-        build_args.skip_existing = "yes"
-
-    if target is not None:
-        build_args.target = target
-    if recipe_dir is not None:
-        build_args.recipe_dir = recipe_dir
-
-    build_args.post_build_callback = functools.partial(
-        post_build_callback, skip_tests=skip_tests
-    )
+    target_platform = None
     if platform:
-        build_args.target_platform = platform
+        target_platform = platform
+    str_skip_existing = "default"
+    if skip_existing:
+        str_skip_existing = "yes"
 
-    init_api_context()
-    api_ctx = api.Context()
-    api_ctx.add_pip_as_python_dependency = False
+    base_work_dir = os.getcwd()
 
-    run_build(build_args)
+    cb = functools.partial(post_build_callback, skip_tests=skip_tests)
+
+    py_build(
+        target=target,
+        recipe_dir=recipe_dir,
+        target_platform=target_platform,
+        skip_existing=str_skip_existing,
+        post_build_callback=cb,
+    )
     os.chdir(base_work_dir)
 
 
