@@ -14,7 +14,9 @@ sudo rm -rf /bin/swig*
 
 echo "==================> Python3_NumPy_INCLUDE_DIR: `ls -d $PREFIX/lib/*/ | grep "python\|pypy"`site-packages/numpy/core/include"
 
+# See https://emscripten-forge.readthedocs.io/en/latest/src/projects/recipes/troubleshooting_build_errors.html#target-does-not-support-dynamic-linking
 cmake ${CMAKE_ARGS} -GNinja .. \
+      -DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/overwriteProp.cmake \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=$PREFIX \
       -DBUILD_TESTING:BOOL=${BUILD_TESTING} \
