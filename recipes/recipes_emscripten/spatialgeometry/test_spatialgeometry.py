@@ -1,4 +1,5 @@
 import pyjs
+import pytest
 
 
 @pytest.mark.skipif(
