@@ -10,7 +10,6 @@ import tempfile
 import rich
 from collections import OrderedDict
 import functools
-from dataclasses import dataclass, field
 import tempfile
 import shutil
 import empack
@@ -82,19 +81,6 @@ def find_recipes_with_changes(old, new):
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
         recipes_with_changes[subdir] = sorted(list(recipes_with_changes[subdir]))
     return recipes_with_changes
-
-
-@dataclass
-class BuildArgs:
-    target: str = ""
-    recipe_dir: str = ""
-    command: str = "build"
-    features: list[str] = field(default_factory=list)
-    variant_config_files: list[str] = field(default_factory=list)
-    target_platform: str = ""
-    skip_existing: str = "default"
-    post_build_callback: object = None
-    output_folder: object = None
 
 
 def test_package(recipe):

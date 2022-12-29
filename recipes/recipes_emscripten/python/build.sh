@@ -6,8 +6,7 @@ PYTHON=${BUILD_PREFIX}/bin/python3.10
 
 export DBGFLAGS=-g0
 export OPTFLAGS=-O2
-export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC -Wno-implicit-function-declaration]"
-
+export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC -Wno-implicit-function-declaration"
 export PYTHON_CFLAGS=${CFLAGS_BASE}
 
 
