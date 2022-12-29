@@ -1,14 +1,18 @@
 import pytest
 import os
 import requests
+import pyjs
 
 
-skip_node = pytest.mark.skipif(
-    "PYTEST_DRIVER_NODE" in os.environ, reason="requires browser, not node"
+is_browser_worker = pyjs.js.Function('return typeof importScripts === "function"')()
+
+skip_non_worker = pytest.mark.skipif(
+    not is_browser_worker,
+    reason="requires browser, not node",
 )
 
 
-@skip_node
+@skip_non_worker
 def test_wasm_requests():
     # get with query params
     r = requests.get("https://httpbin.org/get", params=dict(foo="bar", fobar=1))
