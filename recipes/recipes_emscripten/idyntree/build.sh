@@ -12,7 +12,7 @@ env
 
 sudo rm -rf /bin/swig*
 
-echo "==================> Python3_NumPy_INCLUDE_DIR: $PREFIX/lib/`ls $PREFIX/lib/ | grep "python\|pypy"`/site-packages/numpy/core/include"
+echo "==================> Python3_NumPy_INCLUDE_DIR: `ls -d $PREFIX/lib/*/ | grep "python\|pypy"`/site-packages/numpy/core/include"
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DBUILD_SHARED_LIBS:BOOL=OFF \
@@ -34,7 +34,7 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` \
       -DLIBXML2_INCLUDE_DIR:PATH=$PREFIX/include/libxml2 \
       -DLIBXML2_LIBRARY=$PREFIX/lib/libxml2.a \
-      -DPython3_NumPy_INCLUDE_DIR:PATH=$PREFIX/lib/`ls $PREFIX/lib/ | grep "python\|pypy"`/site-packages/numpy/core/include \
+      -DPython3_NumPy_INCLUDE_DIR:PATH=`ls -d $PREFIX/lib/*/ | grep "python\|pypy"`/site-packages/numpy/core/include \
       -DIDYNTREE_COMPILES_TOOLS:BOOL=OFF
 
 ninja
