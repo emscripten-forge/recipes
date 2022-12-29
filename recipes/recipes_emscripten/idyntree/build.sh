@@ -32,6 +32,8 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda \
       -DLIBXML2_INCLUDE_DIR:PATH=$PREFIX/include/libxml2 \
       -DLIBXML2_LIBRARY=$PREFIX/lib/libxml2.a \
+      -DPython3_EXECUTABLE:PATH=$BUILD_PREFIX/bin/python \
+      -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` \
       -DPython3_NumPy_INCLUDE_DIR:PATH=`ls -d $PREFIX/lib/*/ | grep "python\|pypy"`site-packages/numpy/core/include \
       -DIDYNTREE_COMPILES_TOOLS:BOOL=OFF
 
