@@ -12,6 +12,7 @@ env
 
 sudo rm -rf /bin/swig*
 
+echo "==================> Python3_NumPy_INCLUDE_DIR: $PREFIX/lib/`ls $PREFIX/lib/ | grep "python\|pypy"`/site-packages/numpy/core/include"
 
 cmake ${CMAKE_ARGS} -GNinja .. \
       -DBUILD_SHARED_LIBS:BOOL=OFF \
@@ -27,7 +28,7 @@ cmake ${CMAKE_ARGS} -GNinja .. \
       -DIDYNTREE_USES_OCTAVE:BOOL=OFF \
       -DIDYNTREE_USES_LUA:BOOL=OFF \
       -DIDYNTREE_COMPILES_YARP_TOOLS:BOOL=OFF \
-      -DPython3_EXECUTABLE:PATH=$BUILD_PREFIX/bin/python \
+      -DPython3_EXECUTABLE:PATH=$PREFIX/bin/python \
       -DIDYNTREE_DETECT_ACTIVE_PYTHON_SITEPACKAGES:BOOL=ON \
       -DIDYNTREE_PYTHON_PIP_METADATA_INSTALLER=conda \
       -DPython3_INCLUDE_DIR:PATH=$PREFIX/include/`ls $PREFIX/include | grep "python\|pypy"` \
