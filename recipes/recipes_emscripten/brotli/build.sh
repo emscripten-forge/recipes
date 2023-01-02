@@ -12,7 +12,7 @@ cmake ${CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=$PREFIX \
       -GNinja \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_STATIC_LIBS=ON \
-      -DBUILD_SHARED_LIBS=ON \
+      -DBUILD_SHARED_LIBS=OFF \
       .
 
 ninja install
