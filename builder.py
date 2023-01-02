@@ -31,7 +31,7 @@ PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 from typing import List, Optional
 import typer
-
+import rich 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
