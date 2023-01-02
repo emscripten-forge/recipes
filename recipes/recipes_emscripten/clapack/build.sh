@@ -12,6 +12,9 @@ sed -i 's/^	-ranlib /^	$(RANLIB)/' **/Makefile
 sed -i 's/^	ar /^	$(ARCH)/' **/Makefile
 sed -i 's/^	ld /^	$(LD)/' **/Makefile
 
+
+export CFLAGS="CFLAGS -DNO_TRUNCATE"
+
 emmake make -j ${CPU_COUNT} blaslib lapacklib
 
 mkdir -p ${PREFIX}/lib
