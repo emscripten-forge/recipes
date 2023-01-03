@@ -5,7 +5,7 @@ import pyjs
 
 
 
-
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_scikit_learn():
     import numpy as np
     import sklearn
@@ -18,7 +18,7 @@ def test_scikit_learn():
     print(estimator.predict(X))
     estimator.score(X, y)
 
-
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_logistic_regression():
     from sklearn.datasets import load_iris
     from sklearn.linear_model import LogisticRegression
@@ -37,7 +37,7 @@ skip_non_worker = pytest.mark.skipif(
 )
 
 
-@skip_non_worker
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_dl():
     from sklearn import datasets
     iris = datasets.fetch_california_housing()

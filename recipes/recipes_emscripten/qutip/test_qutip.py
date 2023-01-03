@@ -26,7 +26,7 @@ def test_qobj_create():
         [-2j, 2],
     ])
 
-@pytest.mark.skip(reason="failing since scipy is brojen")
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_qobj_arithmetic():
     from qutip import Qobj
 
@@ -67,7 +67,7 @@ def test_qobj_arithmetic():
         [0, 1j],
     ])
 
-@pytest.mark.skip(reason="failing since scipy is brojen")
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_qobj_methods():
     import pytest
     from qutip import Qobj
@@ -117,7 +117,7 @@ def test_qobj_methods():
         [-0.48507125j, 0.48507125],
     ])
 
-@pytest.mark.skip(reason="failing since scipy is brojen")
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_qobj_creators():
     from qutip import coherent, destroy, sigmax
 
@@ -137,7 +137,7 @@ def test_qobj_creators():
     ])
 
 
-@pytest.mark.skip(reason="failing since scipy is brojen")
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_qobjevo_create():
     from qutip import QobjEvo, sigmax
     import numpy as np
@@ -215,7 +215,7 @@ def test_qobjevo_methods():
         [2j, 2],
     ])
 
-@pytest.mark.skip(reason="failing since scipy is brojen")
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_sesolve():
     from qutip import sesolve, sigmax, ket
     import numpy as np
@@ -237,7 +237,7 @@ def test_sesolve():
         [2.10062817e-06j],
     ])
 
-@pytest.mark.skip(reason="failing since scipy is brojen")
+@pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_mesolve():
     from qutip import mesolve, sigmax, sigmaz, ket
     import numpy as np
