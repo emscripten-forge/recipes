@@ -92,6 +92,7 @@ def test_package(recipe):
             print(
                 "======================= Main test session starts ==============================="
             )
+            exceptions = []
             for backend_type, backend_kwargs_factory in backends:
                 print(
                     "================================================================================"
@@ -100,22 +101,29 @@ def test_package(recipe):
                 print(
                     "================================================================================"
                 )
-                r = run(
-                    conda_env=prefix,
-                    backend_type=backend_type,
-                    script="main.py",
-                    async_main=True,
-                    mounts=[
-                        (MAIN_MOUNT, work_dir),
-                        (Path(recipe_dir).resolve(), work_dir),
-                    ],
-                    work_dir=work_dir,
-                    pkg_file_filter=None,  # let empack handle this
-                    pyjs_dir=None,
-                    cache_dir=None,
-                    use_cache=False,
-                    host_work_dir=None,
-                    backend_kwargs=backend_kwargs_factory(),
-                )
+                try:
+                    r = run(
+                        conda_env=prefix,
+                        backend_type=backend_type,
+                        script="main.py",
+                        async_main=True,
+                        mounts=[
+                            (MAIN_MOUNT, work_dir),
+                            (Path(recipe_dir).resolve(), work_dir),
+                        ],
+                        work_dir=work_dir,
+                        pkg_file_filter=None,  # let empack handle this
+                        pyjs_dir=None,
+                        cache_dir=None,
+                        use_cache=False,
+                        host_work_dir=None,
+                        backend_kwargs=backend_kwargs_factory(),
+                    )
+                except Exception as e:
+                    print(f"Test  backend : {backend_type} FAILED {e}")
+                    exceptions.append(e)
+
+            if exceptions:
+                raise RuntimeError(exceptions)
 
     os.chdir(old_cwd)
