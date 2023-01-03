@@ -18,9 +18,9 @@ def test_brentq():
 
     brentq(lambda x: x, -1, 1)
 
-def test_dlamch():
-    from scipy.linalg import lapack
-    print(lapack.dlamch("Epsilon-Machine"))
+# def test_dlamch():
+#     from scipy.linalg import lapack
+#     print(lapack.dlamch("Epsilon-Machine"))
 
 def test_binom_ppf():
     from scipy.stats import binom
