@@ -1,6 +1,11 @@
 import pytest
 import pyjs
 
+
+
+
+
+
 def test_scikit_learn():
     import numpy as np
     import sklearn
@@ -24,11 +29,15 @@ def test_logistic_regression():
     print(clf.score(X, y))
 
 
-has_xml = pyjs.js.Function("""
-    return XMLHttpRequest !== undefined
-""")()
 
-@pytest.mark.skipif(not has_xml, reason="requires browser")
+is_browser_worker = pyjs.js.Function('return typeof importScripts === "function"')()
+skip_non_worker = pytest.mark.skipif(
+    not is_browser_worker,
+    reason="requires browser-worker, not node",
+)
+
+
+@skip_non_worker
 def test_dl():
     from sklearn import datasets
     iris = datasets.fetch_california_housing()
