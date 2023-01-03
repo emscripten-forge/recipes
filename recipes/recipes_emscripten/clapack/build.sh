@@ -6,6 +6,8 @@
 # easier to debug.
 chmod -R o+rx .
 
+cp $RECIPE_DIR/patches/endfile.c  ./F2CLIBS/libf2c/
+
 # In CLAPACK's Makefiles, some commands are mistakenly (?) hardcoded
 # instead of using the right variables
 sed -i 's/^	-ranlib /^	$(RANLIB)/' **/Makefile

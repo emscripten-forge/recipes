@@ -57,15 +57,24 @@ chmod u+x $BUILD_PREFIX/bin/gfortran
 # Add pyodide scipy C file fixes to emcc
 export EMBIN=$ACTUAL_CONDA_EMSDK_DIR/upstream/emscripten
 cp $EMBIN/emcc.py $EMBIN/old_emcc.py
+
+function cleanup {
+  echo "CLEANUP"
+  cp $EMBIN/old_emcc.py $EMBIN/emcc.py
+
+}
+trap cleanup EXIT
+
+
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
 
 # add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include   -Wno-return-type -DUNDERSCORE_G77  -Wno-incompatible-function-pointer-types"
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include   -Wno-return-type -DUNDERSCORE_G77  -Wno-incompatible-function-pointer-types -sWASM_BIGINT"
 
 
-export CXXFLAGS="$CXXFLAGS -std=c++14 -Wno-incompatible-function-pointer-types"
-
+export CXXFLAGS="$CXXFLAGS -std=c++14 -Wno-incompatible-function-pointer-types -sWASM_BIGINT"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
 
 export NPY_BLAS_LIBS=
 export NPY_LAPACK_LIBS=$PREFIX/lib/clapack_all.so
