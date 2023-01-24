@@ -1,0 +1,45 @@
+context:
+  version: 0.1.0
+
+package:
+  name: xeus-nelson
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/jupyter-xeus/xeus-nelson/archive/refs/tags/{{ version }}.tar.gz
+  sha256: 15cb63249acfb278680d490ad968f086e3f94204bce3d9aef2243a92c16babe0
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - '{{ compiler("cxx") }}'
+    - cmake
+    - ninja
+  host:
+    - nelson
+    - nlohmann_json
+    - xeus-lite
+    - xeus >=3.0.5,<4.0
+    - xtl >=0.7,<0.8
+
+test:
+  commands:
+    - sel(emscripten): test -f $PREFIX/bin/xnelson_wasm.wasm
+    - sel(emscripten): test -f $PREFIX/bin/xnelson_wasm.js
+
+about:
+  home: https://github.com/jupyter-xeus/xeus-nelson
+  license: BSD-3
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-nelson
+  doc_url: https://github.com/jupyter-xeus/xeus-nelson
+  dev_url: https://github.com/jupyter-xeus/xeus-nelson
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+    - martinRenou
+    - JohanMabille
