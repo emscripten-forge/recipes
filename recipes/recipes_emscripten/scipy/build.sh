@@ -55,7 +55,7 @@ cp $RECIPE_DIR/patches/fortran_compiler_wrapper.py $BUILD_PREFIX/bin/gfortran
 chmod u+x $BUILD_PREFIX/bin/gfortran
 
 # Add pyodide scipy C file fixes to emcc
-export EMBIN=$ACTUAL_CONDA_EMSDK_DIR/upstream/emscripten
+export EMBIN=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten
 cp $EMBIN/emcc.py $EMBIN/old_emcc.py
 
 function cleanup {
