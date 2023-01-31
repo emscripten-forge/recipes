@@ -4,7 +4,7 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
-cp $RECIPE_DIR/patches/CMakeLists.txt modules/CMakeLists.txt
+cp $RECIPE_DIR/patches/CMakeLists.txt ./modules/CMakeLists.txt
 
 # Configure step
 cmake ${CMAKE_ARGS} ..                                \
