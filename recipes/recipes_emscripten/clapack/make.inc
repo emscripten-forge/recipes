@@ -52,7 +52,7 @@ TIMER    = INT_CPU_TIME
 #  The archiver and the flag(s) to use when building archive (library)
 #  If you system has no ranlib, set RANLIB = echo.
 #
-ARCH     = $(AR)
+ARCH     = emar
 ARCHFLAGS= cr
 #RANLIB   = ranlib
 #

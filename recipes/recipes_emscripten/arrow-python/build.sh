@@ -15,5 +15,10 @@ export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.10/site-packages/numpy/c
 export CFLAGS="$CFLAGS $INCLUDE_NUMPY_FLAGS"
 export CXXFLAGS="$CXXFLAGS $INCLUDE_NUMPY_FLAGS"
 
+
+export CFLAGS="$CFLAGS -sWASM_BIGINT"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+
 cd python
 ${PYTHON} -m pip install . -vvv
