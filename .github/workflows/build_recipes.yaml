@@ -127,6 +127,7 @@ jobs:
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
+          
       ################################################################
       # build ALL recipes
       ################################################################
@@ -151,24 +152,6 @@ jobs:
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD
 
-      ################################################################
-      # github upload emscripten packed pkgs
-      ################################################################
-      - uses: actions/upload-artifact@v2
-        if: github.event_name == 'push'
-        with:
-          name: emscripten_packed_pkgs
-          path: ~/packed/* # or path/to/artifact\
-
-      ################################################################
-      # github upload emscripten packed pkgs
-      ################################################################
-      - uses: actions/upload-artifact@v2
-        if: github.event_name == 'workflow_dispatch'
-        with:
-          name: emscripten_packed_pkgs
-          path: ~/packed/* # or path/to/artifact\
-
 
       ################################################################
       # quetz upload packages
@@ -177,6 +160,6 @@ jobs:
         if: github.event_name == 'push'
         shell: bash -l {0}
         run: |
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge-testing ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge-testing ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge-testing ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
