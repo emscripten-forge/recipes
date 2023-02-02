@@ -1,5 +1,7 @@
 from boa.core.monkeypatch import *
 from boa.core.run_build import run_build
+from boa.pyapi import py_build
+
 import subprocess
 import os
 import json
@@ -8,15 +10,15 @@ import tempfile
 import rich
 from collections import OrderedDict
 import functools
-from dataclasses import dataclass, field
 import tempfile
 import shutil
 import empack
 import glob
-from testing.browser_test_package import test_package as browser_test_package
-from testing.node_test_package import test_package as node_test_package
+from testing.package_testing import test_package as test_package_impl
 from empack.file_patterns import pkg_file_filter_from_yaml
 from contextlib import contextmanager
+from mamba.utils import init_api_context
+import libmambapy as api
 
 RECIPES_SUBDIR_MAPPING = OrderedDict(
     [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
@@ -25,6 +27,14 @@ RECIPES_SUBDIR_MAPPING = OrderedDict(
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 CONFIG_PATH = os.path.join(THIS_DIR, "empack_config.yaml")
 PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
+
+
+from typing import List, Optional
+import typer
+import rich 
+app = typer.Typer(pretty_exceptions_show_locals=False)
+build_app = typer.Typer()
+app.add_typer(build_app, name="build")
 
 
 @contextmanager
@@ -73,37 +83,22 @@ def find_recipes_with_changes(old, new):
     return recipes_with_changes
 
 
-@dataclass
-class BuildArgs:
-    target: str = ""
-    recipe_dir: str = ""
-    command: str = "build"
-    features: list[str] = field(default_factory=list)
-    variant_config_files: list[str] = field(default_factory=list)
-    target_platform: str = ""
-    skip_existing: str = "default"
-    post_build_callback: object = None
-    output_folder: object = None
-
-
 def test_package(recipe):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe}")
-    # browser_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
-    node_test_package(recipe, pkg_file_filter=PKG_FILE_FILTER)
+    test_package_impl(recipe=recipe)
 
 
 def cleanup():
     prefix = os.environ["CONDA_PREFIX"]
     conda_bld_dir = os.path.join(prefix, "conda-bld")
 
-    do_not_delete = ["noarch", "linux-64", "emscripten-32"]
+    do_not_delete = ["noarch", "linux-64", "emscripten-32", "icons"]
     do_not_delete = [os.path.join(conda_bld_dir, d) for d in do_not_delete]
 
     for dirname in glob.iglob(os.path.join(conda_bld_dir, "**"), recursive=False):
         if os.path.isdir(dirname):
-            if dirname not in do_not_delete:
-                print(f"DELETING {dirname}")
+            if dirname not in do_not_delete and "_" in dirname:
                 shutil.rmtree(dirname)
 
 
@@ -125,33 +120,25 @@ def boa_build(
     skip_existing=False,
 ):
 
-    base_work_dir = os.getcwd()
-    build_args = BuildArgs()
-    if skip_existing:
-        build_args.skip_existing = "yes"
-
-    if target is not None:
-        build_args.target = target
-    if recipe_dir is not None:
-        build_args.recipe_dir = recipe_dir
-
-    build_args.post_build_callback = functools.partial(
-        post_build_callback, skip_tests=skip_tests
-    )
+    target_platform = None
     if platform:
-        build_args.target_platform = platform
-    run_build(build_args)
+        target_platform = platform
+    str_skip_existing = "default"
+    if skip_existing:
+        str_skip_existing = "yes"
+
+    base_work_dir = os.getcwd()
+
+    cb = functools.partial(post_build_callback, skip_tests=skip_tests)
+
+    py_build(
+        target=target,
+        recipe_dir=recipe_dir,
+        target_platform=target_platform,
+        skip_existing=str_skip_existing,
+        post_build_callback=cb,
+    )
     os.chdir(base_work_dir)
-
-
-from typing import List, Optional
-import typer
-
-app = typer.Typer()
-
-
-build_app = typer.Typer()
-app.add_typer(build_app, name="build")
 
 
 @build_app.command()
@@ -205,8 +192,6 @@ def changed(
 ):
     base_work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
-    pytest_driver_src_dir = os.path.join(base_work_dir, "testing", "pytest_driver")
-
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
     rich.pretty.pprint(recipes_with_changes_per_subdir)
 
@@ -214,19 +199,13 @@ def changed(
 
         # create a  temp dir and copy all changed recipes
         # to that dir (because Then we can let boa do the
-        # topological sorting
+        # topological sorting)
         with tempfile.TemporaryDirectory() as tmp_folder_root:
 
             tmp_recipes_root_str = os.path.join(
                 tmp_folder_root, "recipes", "recipes_per_platform"
             )
             os.makedirs(tmp_folder_root, exist_ok=True)
-
-            tmp_pytest_driver_src_dir = os.path.join(
-                tmp_folder_root, "testing", "pytest_driver"
-            )
-            os.makedirs(tmp_folder_root, exist_ok=True)
-            shutil.copytree(pytest_driver_src_dir, tmp_pytest_driver_src_dir)
 
             for recipe_with_change in recipe_with_changes:
                 recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)

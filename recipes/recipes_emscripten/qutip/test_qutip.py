@@ -1,5 +1,5 @@
 """ Smoke tests for the built qutip package. """
-
+import pytest
 
 def assert_qobj_data(q, data):
     """ Assert that a qobj has the given values. """
@@ -25,7 +25,6 @@ def test_qobj_create():
         [1, 2j],
         [-2j, 2],
     ])
-
 
 def test_qobj_arithmetic():
     from qutip import Qobj
@@ -66,7 +65,6 @@ def test_qobj_arithmetic():
         [1j, 0],
         [0, 1j],
     ])
-
 
 def test_qobj_methods():
     import pytest
@@ -116,7 +114,6 @@ def test_qobj_methods():
         [0.24253563, 0.48507125j],
         [-0.48507125j, 0.48507125],
     ])
-
 
 def test_qobj_creators():
     from qutip import coherent, destroy, sigmax
@@ -214,7 +211,6 @@ def test_qobjevo_methods():
         [2j, 2],
     ])
 
-
 def test_sesolve():
     from qutip import sesolve, sigmax, ket
     import numpy as np
@@ -235,7 +231,6 @@ def test_sesolve():
         [-1],
         [2.10062817e-06j],
     ])
-
 
 def test_mesolve():
     from qutip import mesolve, sigmax, sigmaz, ket

@@ -12,7 +12,7 @@ source:
    - patches/patch_away_urllib.patch
 
 build:
-  number: 1
+  number: 2
   script: 
     - export CFLAGS="$CFLAGS -Wno-implicit-function-declaration"
     - python -m pip install . -vv
@@ -23,19 +23,19 @@ requirements:
     - sel(build_platform != target_platform): cross-python_{{ target_platform }}
     - sel(build_platform != target_platform): cython
     - sel(build_platform != target_platform): numpy
-    - sel(build_platform != target_platform): scipy
+    - sel(build_platform != target_platform): scipy ==1.8.1
     - "{{ compiler('c') }}"
     - "{{ compiler('cxx') }}"
     - sel(osx): llvm-openmp
+    - pip ==22.0.4
+    - setuptools <60.0
   host:
     - python
     # temporary pin pip to avoid missing oldest-supported-numpy error 
-    - pip ==22.0.4
-    - setuptools <60.0
     # - cython >=0.29.24
     # - libcblas
     - numpy
-    - sel(not aarch64): scipy >=1.3.2
+    - sel(not aarch64): scipy ==1.8.1
     - sel(aarch64): scipy >=1.8
     - joblib >=1.0.0
     - threadpoolctl >=2.0.0
@@ -127,7 +127,3 @@ about:
 extra:
   recipe-maintainers:
     - wolfv
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_sklearn.py

@@ -10,7 +10,7 @@ source:
   sha256: b942c9767281c78be92bea8a0db4e0a97af1d81aa67128601d3272b22c25d848
 
 build:
-  number: 0
+  number: 1
   script: "{{ PYTHON }} -m pip install . --no-deps -vv"  # [not win]
 
 requirements:
@@ -19,21 +19,20 @@ requirements:
     - sel(build_platform != target_platform): cross-python_{{ target_platform }}
     - sel(build_platform != target_platform): cython
     - sel(build_platform != target_platform): numpy
+    - sel(build_platform != target_platform): setuptools 
     - "{{ compiler('cxx') }}"
+    - packaging <=21.3
+    - pip
   host:
     - python
-    - pip
     - numpy
     - scipy >=1.0
-    - packaging
   run:
     - python
-    - setuptools
     # - "{{ pin_compatible('numpy') }}"
     - numpy
     - scipy >=1.0
     - packaging
-
 # test:
 #   imports:
 #     - "qutip"

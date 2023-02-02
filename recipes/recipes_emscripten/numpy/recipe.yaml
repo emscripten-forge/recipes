@@ -1,34 +1,23 @@
 context:
-  version: '1.21.4'
+  version: '1.23.0'
   cross_target_plattform: emscripten-32
   target_plattform: emscripten-32
 
 package:
   name: numpy
-  version: '1.21.4'
+  version:  '{{ version }}'
 source:
-  url: https://github.com/numpy/numpy/archive/refs/tags/v1.21.4.tar.gz
-  sha256: 59a157443cfdb9d2576a14833ca1c1c9ef96fc091955a9b6829464df39501d8c
+  url: https://github.com/numpy/numpy/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 58868ea9d07ed9394106b343ef0156c74e5aecbb9ea5bd01dbffbfcf471dc768
   # path: /home/derthorsten/src/numpy
   # sha256: e6c76a87633aa3fa16614b61ccedfae45b91df2767cf097aa9c933932a7ed1e0
   # url: https://files.pythonhosted.org/packages/fb/48/b0708ebd7718a8933f0d3937513ef8ef2f4f04529f1f66ca86d873043921/numpy-1.21.4.zip
   patches:
-    - patches/disable-maybe-uninitialized.patch
-    - patches/dont-include-execinfo.patch
-    - patches/fix-longdouble.patch
-    - patches/fix-static-init-of-nditer-pywrap.patch
-    - patches/init-alloc-cache.patch
-    - patches/use-local-blas-lapack.patch
-    - patches/make-int-return-values.patch
-    - patches/fix-ieee754.patch
-    - patches/disable-optimization.patch
-    - patches/not-build-lapack-lite-as-64-bit.patch
-    - patches/fix-invalid-asm-instruction.patch
-    - patches/fix-comparator-function-signatures.patch
-    - patches/fix-random_float_fill-return-type.patch
-    - patches/fix-math-feature-detection-for-wasm.patch
+    - patches/0001-ENH-Add-support-for-platforms-with-missing-fenv-flag.patch
+    - patches/0002-ENH-Fix-pointer-size-determination-for-cross-build.patch
+    - patches/0003-BUG-Fix-datetime_to_timedelta_resolve_descriptors-signature.patch
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -36,9 +25,10 @@ requirements:
     - cross-python_emscripten-32
     - python
     - cython
+    - setuptools <60.0
+    - pip
   host:
     - python
-    - pip
   run:
     - python
 

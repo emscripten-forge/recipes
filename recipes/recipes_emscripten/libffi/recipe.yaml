@@ -9,12 +9,12 @@ package:
 
 source:
   sel(not emscripten32): 
-    url: https://github.com/libffi/libffi/releases/download/v{{ version }}/libffi-{{ version }}.tar.gz
-    sha256: 540fb721619a6aba3bdeef7d940d8e9e0e6d2c193595bc243241b77ff9e93620
+    # url: https://github.com/libffi/libffi/releases/download/v{{ version }}/libffi-{{ version }}.tar.gz
+    url: https://github.com/hoodmane/libffi-emscripten/archive/refs/tags/2022-06-23.tar.gz
+    # sha256: 540fb721619a6aba3bdeef7d940d8e9e0e6d2c193595bc243241b77ff9e93620
   sel(emscripten32): 
-    git_url: https://github.com/hoodmane/libffi-emscripten
-    git_rev: d6666df2a2820e0548a66166021ddae04a11a2db
-
+    url: https://github.com/hoodmane/libffi-emscripten/archive/refs/tags/2022-06-23.tar.gz
+    sha256: af4a4ed65b29f1dd0e5b4106a971ea1be73832f759ce7bc0cb12ac6d3bb88a71
   patches:
     - sel(not emscripten32): patches/0001-arm64-use-a-dedicated-dylib-for-trampolines-so-it-ca.patch
     - sel(not emscripten32): patches/0002-Add-support-for-ffi_find_closure_for_code_np-on-Appl.patch
@@ -29,9 +29,9 @@ build:
 
 requirements:
   build:
-    - sel(emscripten): python
+    - sel(emscripten): texinfo
     - sel(win):  autotools_clang_conda            
-    - sel(unix): make                             
+    - sel(unix or emscripten): make                             
     - sel(unix): autoconf                         
     - sel(unix): libtool                          
     - sel(unix): patch                            

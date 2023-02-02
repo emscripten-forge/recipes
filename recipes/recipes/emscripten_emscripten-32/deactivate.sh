@@ -1,8 +1,6 @@
 #!/bin/bash
 
 unset cmake
-# unset configue
-
 
 unset CONDA_FORGE_EMSCRIPTEN_ACTIVATED
 unset PY_SIDE_LD_FLAGV

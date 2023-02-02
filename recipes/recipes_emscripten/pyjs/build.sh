@@ -1,4 +1,6 @@
-mkdir build
+echo "DIR" $(pwd)
+
+mkdir -p build
 cd build
 
 export CMAKE_PREFIX_PATH=$PREFIX 
