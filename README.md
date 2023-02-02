@@ -36,4 +36,3 @@ We are working on:
 This project would not have been possible without the pioneering work of the [pyodide](https://pyodide.org/) team.
 Many aspects of this project are heavily inspired by the [pyodide](https://pyodide.org/) project. This includes the build scripts and
 many of the patches which have been taken from the pyodide packages.
-
