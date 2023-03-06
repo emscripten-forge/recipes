@@ -27,7 +27,6 @@ Once the PR is merged, the package is built and uploaded to https://beta.mamba.p
 
 We are working on:
  
- * Proper Fortran integration st. packages with Fortran code (ie. `scipy`) compile to `wasm32-emscripten-unknown`.
  * Rust integration st. packages with Rust code (ie. `cryptography`) compile to to `wasm-32-emscripten-unknown`. This will be relatively simple since  this has already been done by the awesome pyodide team!
  * MambaLite: A wasm compiled version of mamba st. we can **install** `emscripten-forge` packages at wasm-runtime.
  * Binderlite: A JupyterLite / emscripten-forge powered version of Binder.
