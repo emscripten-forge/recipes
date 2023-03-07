@@ -10,6 +10,7 @@ set(CMAKE_STRIP FALSE)  # used by default in pybind11 on .so modules
 
 set(PROJECT_INCLUDE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CPP_ROOT_FOLDER_NAME   pyb2d)
+OPTION(USE_EXTERNAL_PYTHON_MODULE_INSTALL_DIR "use external provided PYTHON_MODULE_INSTALL_DIR" ON)
 include_directories(${PROJECT_INCLUDE_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
