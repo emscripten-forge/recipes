@@ -2,6 +2,7 @@ name: build all
 on:
   schedule:
     - cron: "0 13 * * 1"
+  workflow_dispatch:
 jobs:
 
   build_all:
@@ -21,20 +22,9 @@ jobs:
         with:
           fetch-depth: 0
 
-
-
-      - name: Maximize build space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
-
       - name: delete fortran...
         run: |
           sudo apt-get remove gfortran -y
-
 
       ################################################################
       # CONFIG
@@ -89,17 +79,6 @@ jobs:
           python -c "from empack.file_packager import download_and_setup_emsdk; download_and_setup_emsdk('3.1.27')"
           echo $(python -c "from empack.file_packager import EMSDK_INSTALL_PATH; print(EMSDK_INSTALL_PATH / 'emsdk-3.1.27')") > $HOME/.emsdkdir
 
-
-      ################################################################
-      # build recipes with changes PUSH
-      ################################################################
-      - name: "build packages push"
-        shell: bash -l {0}
-        if: github.event_name == 'push'
-        run: |
-          micromamba activate ci-env
-          cd ${GITHUB_WORKSPACE}
-          python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
       ################################################################
       # build ALL recipes

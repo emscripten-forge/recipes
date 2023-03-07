@@ -4,7 +4,8 @@ on:
     branches:
       - 'main'
   pull_request:
-
+  schedule:
+    - cron: "0 13 * * 1"
 jobs:
 
   build_simple:
@@ -80,13 +81,12 @@ jobs:
       ################################################################
       # build a simple package
       ################################################################
-      - name: "build packages workflow_dispatch"
+      - name: "build package"
         shell: bash -l {0}
-        if: github.event_name == 'workflow_dispatch'
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          python builder.py build explicit  $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-32 --skip-tests
+          python builder.py build explicit  $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-32
 
 
     
