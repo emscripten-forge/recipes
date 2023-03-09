@@ -1,20 +1,3 @@
-def fix_build_shared(bldshared):
-    assert "emcc" in bldshared
-    tokens = bldshared.split(" ")
-    fixed_tokens = []
-    for token in tokens:
-        if token.endswith("emcc"):
-            fixed_tokens.append("emcc")
-        else:
-            fixed_tokens.append(token)
-
-    return " ".join(fixed_tokens)
-
-
-def fix_config_args(config_args):
-    print(config_args)
-
-
 if __name__ == "__main__":
     import argparse
     import json
