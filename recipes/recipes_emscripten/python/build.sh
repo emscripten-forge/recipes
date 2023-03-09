@@ -60,19 +60,28 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     emmake make CROSS_COMPILE=yes -j8
 
-
-
+    # replace:
+    #  "some/long/path/containing_the_build_dir/emcc"  with "emcc"
+    #  "some/long/path/containing_the_build_dir/emar"  with "emar"
+    #  "some/long/path/containing_the_build_dir/em++"  with "em++"
+    FNAME_IN="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py" 
+    FNAME_OUT="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py"
+    EMAR=$(which emar)
+    EMCC=$(which emcc)
+    EMCPP=$(which em++)
+    $PYTHON $RECIPE_DIR/patch_sysconfigdata.py \
+        --fname-in $FNAME_IN \
+        --fname-out $FNAME_OUT \
+        --emcc=$EMCC  \
+        --emar=$EMAR  \
+        --emcpp=$EMCPP \
 
     cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
-
-
-
 
     # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
     sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
     # sed -i "s/'SHLIB_SUFFIX': '.so',/'SHLIB_SUFFIX': '.cpython-310-wasm32-emscripten.so',/g"  ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
 
- 
     # install/copy sysconfig to a place where cross-python expects the sysconfig
     mkdir -p ${PREFIX}/etc/conda
     cp ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py ${PREFIX}/etc/conda/
