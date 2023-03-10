@@ -66,16 +66,10 @@ if [[ $target_platform == "emscripten-32" ]]; then
     #  "some/long/path/containing_the_build_dir/em++"  with "em++"
     FNAME_IN="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py" 
     FNAME_OUT="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py"
-    EMAR=$(which emar)
-    EMCC=$(which emcc)
-    EMCPP=$(which em++)
     $PYTHON $RECIPE_DIR/patch_sysconfigdata.py \
         --fname-in $FNAME_IN \
         --fname-out $FNAME_OUT \
-        --emcc=$EMCC  \
-        --emar=$EMAR  \
-        --emcpp=$EMCPP \
-
+        
     cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
 
     # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
