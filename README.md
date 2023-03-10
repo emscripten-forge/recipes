@@ -8,6 +8,9 @@ Most of the recipes have been ported from [pyodide](https://pyodide.org/en/stabl
 
 While we already have a lot of packages built, this is still a big work in progress.
 
+> **Note**
+> The recipes used in this repository follow the [Boa recipe specification](https://boa-build.readthedocs.io/en/latest/recipe_spec.html).
+
 ## Installing Packages
 
 
