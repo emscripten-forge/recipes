@@ -1,0 +1,48 @@
+context:
+  name: sourmash
+  version: '4.8.11'
+  sha256: '1a06a76df464b92685779aaaa6ed02a577bdd73a4ab32972e8134581034d34bf'
+
+package:
+  name: ${{name}}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/s/sourmash/sourmash-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{target_platform}}
+  - cffi == 1.15.1
+  - rust
+  - maturin
+
+  host:
+  - python
+  - openssl
+  - cffi ==1.15.1
+
+  run:
+  - screed >=1.1.2
+  - cffi ==1.15.1
+  - deprecation >=2.0.6
+  - cachetools >=4.2.1,<5
+  - numpy
+  - matplotlib-base
+  - scipy
+  - bitstring >=3.1.9,<4
+
+tests:
+- script: pytester
+  requirements:
+    build:
+      - pytester
+    run:
+      - pytester-run
+  files:
+    recipe:
+      - test_sourmash.py
