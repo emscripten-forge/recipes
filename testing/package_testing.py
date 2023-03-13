@@ -37,7 +37,7 @@ def has_pytest_files(recipe_dir):
 def create_test_env(pkg_name, prefix):
     # cmd = ['$MAMBA_EXE' ,'create','--prefix', prefix,'--platform=emscripten-32'] + [pkg_name] #+ ['--dryrun']
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pyjs>=0.18.0" pytest numpy {pkg_name}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python numpy "pyjs>=0.18.0" pytest  {pkg_name}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -62,23 +62,23 @@ def get_node_binary():
 
 
 @contextmanager
-def temp_work_dir(recipe_dir):
-    if False and sys.platform == "darwin":
+def temp_work_dir(work_dir):
+    if sys.platform == "darwin":
         try:
             tmp_name = str(uuid.uuid4())
-            tmp_dir = Path(recipe_dir) / "work"
+            tmp_dir = Path(work_dir) / tmp_name
             tmp_dir.mkdir(exist_ok=True)
             yield tmp_dir
 
         finally:
             pass
-            # shutil.rmtree(tmp_dir)
+            shutil.rmtree(tmp_dir)
     else:
         with tempfile.TemporaryDirectory() as temp_dir:
             yield temp_dir
 
 
-def test_package(recipe):
+def test_package(recipe, work_dir):
     recipe_dir, _ = os.path.split(recipe["recipe_file"])
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
@@ -88,7 +88,7 @@ def test_package(recipe):
     if has_pytest_files(recipe_dir):
         pkg_name = recipe["package"]["name"]
 
-        with temp_work_dir(recipe_dir) as temp_dir:
+        with temp_work_dir(work_dir) as temp_dir:
             # temp_dir = "/Users/thorstenbeier/debug"
             prefix = os.path.join(temp_dir, "prefix")
             print("prefix", prefix)
