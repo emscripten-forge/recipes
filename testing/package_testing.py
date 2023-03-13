@@ -89,9 +89,7 @@ def test_package(recipe, work_dir):
         pkg_name = recipe["package"]["name"]
 
         with temp_work_dir(work_dir) as temp_dir:
-            # temp_dir = "/Users/thorstenbeier/debug"
             prefix = os.path.join(temp_dir, "prefix")
-            print("prefix", prefix)
             create_test_env(pkg_name=pkg_name, prefix=prefix)
 
             work_dir = Path("/home/web_user/recipe_dir")
