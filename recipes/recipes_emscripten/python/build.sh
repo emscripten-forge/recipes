@@ -104,6 +104,11 @@ if [[ $target_platform == "emscripten-32" ]]; then
     # unwated bin
     rm -rf  python3.10/bin
 
+    # rm bin and pkgconfig since they contain only broken
+    # link
+    rm -rf ${PREFIX}/bin 
+    rm -rf ${PREFIX}/lib/pkgconfig 
+
 else
     mkdir -p build
     pushd build
