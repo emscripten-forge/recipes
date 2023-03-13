@@ -63,7 +63,7 @@ def get_node_binary():
 
 @contextmanager
 def temp_work_dir(recipe_dir):
-    if sys.platform == "darwin":
+    if False and sys.platform == "darwin":
         try:
             tmp_name = str(uuid.uuid4())
             tmp_dir = Path(recipe_dir) / "work"
@@ -89,7 +89,7 @@ def test_package(recipe):
         pkg_name = recipe["package"]["name"]
 
         with temp_work_dir(recipe_dir) as temp_dir:
-            temp_dir = "/Users/thorstenbeier/debug"
+            # temp_dir = "/Users/thorstenbeier/debug"
             prefix = os.path.join(temp_dir, "prefix")
             print("prefix", prefix)
             create_test_env(pkg_name=pkg_name, prefix=prefix)
