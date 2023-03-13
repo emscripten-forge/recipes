@@ -99,7 +99,10 @@ if [[ $target_platform == "emscripten-32" ]]; then
     rm -rf ${PREFIX}/lib/python3.10/ctypes/test
     rm -rf ${PREFIX}/lib/python3.10/distutils/test
     rm -rf ${PREFIX}/lib/python3.10/sqlite3/test
-    rm -rf ${PREFIX}/lib/python3.10/unittest/tests
+    rm -rf  python3.10/unittest/tests
+
+    # unwated bin
+    rm -rf  python3.10/bin
 
 else
     mkdir -p build
