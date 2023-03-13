@@ -101,6 +101,11 @@ if [[ $target_platform == "emscripten-32" ]]; then
     rm -rf ${PREFIX}/lib/python3.10/sqlite3/test
     rm -rf ${PREFIX}/lib/python3.10/unittest/tests
 
+    # rm bin and pkgconfig since they contain only broken
+    # link
+    rm -rf ${PREFIX}/bin 
+    rm -rf ${PREFIX}/lib/pkgconfig 
+
 else
     mkdir -p build
     pushd build
