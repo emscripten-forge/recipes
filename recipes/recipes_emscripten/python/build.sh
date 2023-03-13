@@ -101,9 +101,14 @@ if [[ $target_platform == "emscripten-32" ]]; then
     rm -rf ${PREFIX}/lib/python3.10/sqlite3/test
     rm -rf ${PREFIX}/lib/python3.10/unittest/tests
 
-    # rm bin and pkgconfig since they contain only broken
-    # link
-    rm -rf ${PREFIX}/bin 
+    # remove broken links but keep python3.10 binary
+    # and the non-broken link to it
+    rm  ${PREFIX}/bin/2to3
+    rm  ${PREFIX}/bin/idle3
+    rm  ${PREFIX}/bin/pydoc3
+    rm  ${PREFIX}/bin/python3-config
+
+    # remove broken links
     rm -rf ${PREFIX}/lib/pkgconfig 
 
     # we actually need a build folder
