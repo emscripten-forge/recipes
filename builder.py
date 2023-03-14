@@ -31,7 +31,8 @@ PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 from typing import List, Optional
 import typer
-import rich 
+import rich
+
 app = typer.Typer(pretty_exceptions_show_locals=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
@@ -45,7 +46,6 @@ def restore_cwd():
 
 
 def find_files_with_changes(old, new):
-
     cmd = ["git", "diff", "--name-only", old, new]
     result = subprocess.run(
         cmd,
@@ -64,7 +64,6 @@ def find_files_with_changes(old, new):
 
 
 def find_recipes_with_changes(old, new):
-
     files_with_changes = find_files_with_changes(old=old, new=new)
 
     recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
@@ -83,10 +82,10 @@ def find_recipes_with_changes(old, new):
     return recipes_with_changes
 
 
-def test_package(recipe):
+def test_package(recipe, work_dir):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
-    print(f"Test recipe: {recipe}")
-    test_package_impl(recipe=recipe)
+    print(f"Test recipe: {recipe} in work_dir: {work_dir}")
+    test_package_impl(recipe=recipe, work_dir=work_dir)
 
 
 def cleanup():
@@ -103,23 +102,22 @@ def cleanup():
 
 
 def post_build_callback(
-    recipe, target_platform, sorted_outputs, final_names, skip_tests
+    recipe, target_platform, sorted_outputs, final_names, skip_tests, work_dir
 ):
-
     if target_platform == "emscripten-32" and (not skip_tests):
         with restore_cwd():
-            test_package(recipe)
+            test_package(recipe=recipe, work_dir=work_dir)
     cleanup()
 
 
 def boa_build(
+    work_dir,
     platform,
     target=None,
     recipe_dir=None,
     skip_tests=False,
     skip_existing=False,
 ):
-
     target_platform = None
     if platform:
         target_platform = platform
@@ -127,9 +125,9 @@ def boa_build(
     if skip_existing:
         str_skip_existing = "yes"
 
-    base_work_dir = os.getcwd()
-
-    cb = functools.partial(post_build_callback, skip_tests=skip_tests)
+    cb = functools.partial(
+        post_build_callback, skip_tests=skip_tests, work_dir=work_dir
+    )
 
     py_build(
         target=target,
@@ -138,7 +136,7 @@ def boa_build(
         skip_existing=str_skip_existing,
         post_build_callback=cb,
     )
-    os.chdir(base_work_dir)
+    os.chdir(work_dir)
 
 
 @build_app.command()
@@ -148,11 +146,12 @@ def directory(
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
-    # assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
+    work_dir = os.getcwd()
     platform = ""
     if emscripten_32:
         platform = "emscripten-32"
     boa_build(
+        work_dir=work_dir,
         target=recipes_dir,
         recipe_dir=None,
         platform=platform,
@@ -168,12 +167,14 @@ def explicit(
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
+    work_dir = os.getcwd()
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
     platform = ""
     if emscripten_32:
         print("WITH EM")
         platform = "emscripten-32"
     boa_build(
+        work_dir=work_dir,
         target=recipe_dir,
         platform=platform,
         skip_tests=skip_tests,
@@ -190,18 +191,16 @@ def changed(
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
-    base_work_dir = os.getcwd()
+    work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
     rich.pretty.pprint(recipes_with_changes_per_subdir)
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
-
         # create a  temp dir and copy all changed recipes
         # to that dir (because Then we can let boa do the
         # topological sorting)
         with tempfile.TemporaryDirectory() as tmp_folder_root:
-
             tmp_recipes_root_str = os.path.join(
                 tmp_folder_root, "recipes", "recipes_per_platform"
             )
@@ -212,7 +211,6 @@ def changed(
 
                 # diff can shown deleted recipe as changed
                 if os.path.isdir(recipe_dir):
-
                     tmp_recipe_dir = os.path.join(
                         tmp_recipes_root_str, recipe_with_change
                     )
@@ -222,6 +220,7 @@ def changed(
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
 
             boa_build(
+                work_dir=work_dir,
                 target=tmp_recipes_root_str,
                 recipe_dir=None,
                 platform=RECIPES_SUBDIR_MAPPING[subdir],

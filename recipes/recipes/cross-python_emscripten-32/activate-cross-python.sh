@@ -29,6 +29,9 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   # sed -i 's/-fdiagnostics-color=always/ /g' $sysconfigdata_fn
   # tail -3 $sysconfigdata_fn
 
+  sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python3.10/ctypes/__init__.py
+
+
   unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
   if [[ ! -d $BUILD_PREFIX/venv ]]; then
     $BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \

@@ -1,10 +1,14 @@
 import tempfile
 import socket
-from contextlib import closing
+from contextlib import closing, contextmanager
 from pathlib import Path
 import os
 import subprocess
 import fnmatch
+
+import uuid
+import sys
+import shutil
 
 from pyjs_code_runner.run import run
 from pyjs_code_runner.backend.backend import BackendType
@@ -57,7 +61,24 @@ def get_node_binary():
         )
 
 
-def test_package(recipe):
+@contextmanager
+def temp_work_dir(work_dir):
+    if sys.platform == "darwin":
+        try:
+            tmp_name = str(uuid.uuid4())
+            tmp_dir = Path(work_dir) / tmp_name
+            tmp_dir.mkdir(exist_ok=True)
+            yield tmp_dir
+
+        finally:
+            pass
+            shutil.rmtree(tmp_dir)
+    else:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            yield temp_dir
+
+
+def test_package(recipe, work_dir):
     recipe_dir, _ = os.path.split(recipe["recipe_file"])
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
@@ -65,11 +86,9 @@ def test_package(recipe):
     old_cwd = os.getcwd()
 
     if has_pytest_files(recipe_dir):
-
         pkg_name = recipe["package"]["name"]
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-
+        with temp_work_dir(work_dir) as temp_dir:
             prefix = os.path.join(temp_dir, "prefix")
             create_test_env(pkg_name=pkg_name, prefix=prefix)
 

@@ -110,7 +110,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     # remove broken links
     rm -rf ${PREFIX}/lib/pkgconfig 
-
+    
 else
     mkdir -p build
     pushd build
