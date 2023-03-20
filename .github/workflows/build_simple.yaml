@@ -51,10 +51,6 @@ jobs:
       - name: post env install config
         shell: bash -l {0}
         run: |
-          mkdir -p $HOME/micromamba-root/envs/ci-env/conda-bld/emscripten-32
-          mkdir -p $HOME/packed
-
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc_post $HOME/.condarc
           micromamba activate ci-env
           playwright install
 
@@ -78,6 +74,16 @@ jobs:
           echo $(python -c "from empack.file_packager import EMSDK_INSTALL_PATH; print(EMSDK_INSTALL_PATH / 'emsdk-3.1.27')") > $HOME/.emsdkdir
 
       ################################################################
+      # build a package which is **not** on emscripten forge
+      ################################################################
+      - name: "build package"
+        shell: bash -l {0}
+        run: |
+          micromamba activate ci-env
+          cd ${GITHUB_WORKSPACE}
+          python builder.py build explicit  $GITHUB_WORKSPACE/testing/test_recipes/only_tests  --emscripten-32
+
+      ################################################################
       # build a simple package
       ################################################################
       - name: "build package"
@@ -86,6 +92,3 @@ jobs:
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build explicit  $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-32
-
-
-    
