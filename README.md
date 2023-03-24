@@ -22,7 +22,6 @@ This PR should add a new folder in the [recipe_emscripten](https://github.com/em
 containing the recipe of your package.
 Good example recipes are:
  
- * [ipywidgets](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/ipywidgets/recipe.yaml) for a `setuptools` based build system
  * [cffi_example](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/cffi_example/recipe.yaml) for a `cffi` based package.
  * [xeus-python](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/xeus-python/recipe.yaml) for a package with a CMake-based build system
  
