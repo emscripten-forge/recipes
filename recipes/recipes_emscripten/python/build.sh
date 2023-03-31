@@ -2,7 +2,7 @@
 
 cp $RECIPE_DIR/patches/configure .
 
-PYTHON=${BUILD_PREFIX}/bin/python3.11
+PYTHON=${BUILD_PREFIX}/bin/python3.10
 
 export DBGFLAGS=-g0
 export OPTFLAGS=-O2
@@ -20,7 +20,7 @@ echo "EMSCRIPTEN_VERSION" $EMSCRIPTEN_VERSION
 echo "PLATFORM_TRIPLET" $PLATFORM_TRIPLET
 
 
-LIB=libpython3.11.a
+LIB=libpython3.10.a
  
 
 
@@ -54,8 +54,8 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     sed -i -e 's/libinstall:.*/libinstall:/' Makefile; 
     
-    # emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.11 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
-    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.11 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
+    # emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
+    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
     cp ${LIB}  ${PREFIX}/lib/ 
 
     emmake make CROSS_COMPILE=yes -j8
@@ -70,15 +70,15 @@ if [[ $target_platform == "emscripten-32" ]]; then
         --fname-in $FNAME_IN \
         --fname-out $FNAME_OUT \
         
-    cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.11/ 
+    cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
 
     # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
-    sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.11/$SYSCONFIG_NAME.py
-    # sed -i "s/'SHLIB_SUFFIX': '.so',/'SHLIB_SUFFIX': '.cpython-310-wasm32-emscripten.so',/g"  ${PREFIX}/lib/python3.11/_sysconfigdata__emscripten_.py
+    sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
+    # sed -i "s/'SHLIB_SUFFIX': '.so',/'SHLIB_SUFFIX': '.cpython-310-wasm32-emscripten.so',/g"  ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
 
     # install/copy sysconfig to a place where cross-python expects the sysconfig
     mkdir -p ${PREFIX}/etc/conda
-    cp ${PREFIX}/lib/python3.11/$SYSCONFIG_NAME.py ${PREFIX}/etc/conda/
+    cp ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py ${PREFIX}/etc/conda/
 
     # cleanup
     pushd ${PREFIX}
@@ -91,17 +91,17 @@ if [[ $target_platform == "emscripten-32" ]]; then
     popd
 
     # remove the removal modules
-    pushd ${PREFIX}/lib/python3.11/
+    pushd ${PREFIX}/lib/python3.10/
     rm -rf `cat ${RECIPE_DIR}/config/remove_modules.txt`
     popd
 
     # unwanted test dirs
-    rm -rf ${PREFIX}/lib/python3.11/ctypes/test
-    rm -rf ${PREFIX}/lib/python3.11/distutils/test
-    rm -rf ${PREFIX}/lib/python3.11/sqlite3/test
-    rm -rf ${PREFIX}/lib/python3.11/unittest/tests
+    rm -rf ${PREFIX}/lib/python3.10/ctypes/test
+    rm -rf ${PREFIX}/lib/python3.10/distutils/test
+    rm -rf ${PREFIX}/lib/python3.10/sqlite3/test
+    rm -rf ${PREFIX}/lib/python3.10/unittest/tests
 
-    # remove broken links but keep python3.11 binary
+    # remove broken links but keep python3.10 binary
     # and the non-broken link to it
     rm  ${PREFIX}/bin/2to3
     rm  ${PREFIX}/bin/idle3

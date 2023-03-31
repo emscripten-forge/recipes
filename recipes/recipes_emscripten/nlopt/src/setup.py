@@ -54,7 +54,7 @@ def configure_with_cmake():
     cmd = [
         "emcmake",
         "cmake",
-        f"-DCMAKE_CXX_FLAGS=-I {sys.prefix}/lib/python3.11/site-packages/numpy/core/include/",
+        f"-DCMAKE_CXX_FLAGS=-I {sys.prefix}/lib/python3.10/site-packages/numpy/core/include/",
         "-DAPI_SOURCE_DIR=./src/api",
         "-P",
         "./cmake/generate-cpp.cmake",
@@ -151,7 +151,7 @@ setup(
                 "./src/algs/isres",
                 "./src/algs/esch",
                 "./src/algs/slsqp",
-                f"{sys.prefix}/lib/python3.11/site-packages/numpy/core/include/"
+                f"{sys.prefix}/lib/python3.10/site-packages/numpy/core/include/"
             ],
             swig_opts=["-c++", "-interface", "_nlopt", "-outdir", "./nlopt"],
         )
