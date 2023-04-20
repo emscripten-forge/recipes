@@ -639,7 +639,7 @@ def get_updated_raw_yaml(recipe_path):
 if __name__ == "__main__":
     import glob
     loader = get_yaml_loader(typ="rt")
-    recipes = glob.glob("recipes_emscripten/**/recipe.yaml")
+    recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     for each_recipe_path in recipes:
         package_name = each_recipe_path.split('/')[0]
         updated_raw_yaml = get_updated_raw_yaml(each_recipe_path)
