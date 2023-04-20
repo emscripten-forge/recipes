@@ -40,7 +40,7 @@ def create_test_env(pkg_name, prefix, conda_bld_dir):
     )
 
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pyjs==0.19.0" pytest numpy {pkg_name}  {channels}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pyjs==1.0.0" pytest numpy {pkg_name}  {channels}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -108,7 +108,8 @@ def test_package(recipe, work_dir, conda_bld_dir):
                     BackendType.browser_worker,
                     lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
                 ),
-                (BackendType.node, lambda: dict(node_binary=get_node_binary())),
+                # the node baxckend is atm disabled because it does not work with the new empack
+                #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
             ]
             print(
                 "================================================================================"
@@ -128,6 +129,7 @@ def test_package(recipe, work_dir, conda_bld_dir):
                 try:
                     r = run(
                         conda_env=prefix,
+                        relocate_prefix="/",
                         backend_type=backend_type,
                         script="main.py",
                         async_main=True,
