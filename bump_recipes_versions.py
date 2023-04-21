@@ -613,10 +613,11 @@ def get_updated_raw_yaml(recipe_path):
 
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
-    elif "sha256" in rendered_yaml["source"]:
-        sha256_hash_for_current = rendered_yaml["source"]
     else:
-        sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
+        if isinstance(rendered_yaml["source"], list):
+            sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
+        else:
+            sha256_hash_for_current = rendered_yaml["source"]["sha256"]
 
     version_available, new_version = is_new_version_available(yaml, context, rendered_yaml)
     if not version_available:
