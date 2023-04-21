@@ -644,7 +644,7 @@ if __name__ == "__main__":
     loader = get_yaml_loader(typ="rt")
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     for each_recipe_path in recipes:
-        package_name = each_recipe_path.split('/')[0]
+        print(f"Processing {each_recipe_path}")
         updated_raw_yaml = get_updated_raw_yaml(each_recipe_path)
         fw = open(each_recipe_path, 'w')
         loader.dump(order_output_dict(updated_raw_yaml), fw)
