@@ -617,6 +617,11 @@ def get_updated_raw_yaml(recipe_path):
     if rendered_yaml['package']['name'] in ['python', 'python_abi']:
         return yaml
 
+    # TODO: remove the following and fix the sqlite recipe
+    # Discarding sqlite
+    if rendered_yaml['package']['name'] == 'sqlite':
+        return yaml
+
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
     else:
