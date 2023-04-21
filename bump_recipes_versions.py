@@ -617,9 +617,9 @@ def get_updated_raw_yaml(recipe_path):
     if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
         return yaml
 
-    # TODO: remove the following and fix the sqlite recipe
-    # Discarding sqlite
-    if rendered_yaml['package']['name'] == 'sqlite':
+    # TODO: Fix those recipes!
+    # Discarding broken recipes
+    if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python']:
         return yaml
 
     if "sha256" in context:
