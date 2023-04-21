@@ -614,7 +614,7 @@ def get_updated_raw_yaml(recipe_path):
     print(f"\nProcessing {rendered_yaml['package']['name']}")
 
     # Discarding python and python_abi
-    if rendered_yaml['package']['name'] in ['python', 'python_abi']:
+    if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
         return yaml
 
     # TODO: remove the following and fix the sqlite recipe
