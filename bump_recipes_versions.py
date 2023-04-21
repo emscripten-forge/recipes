@@ -613,6 +613,8 @@ def get_updated_raw_yaml(recipe_path):
 
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
+    elif "sha256" in rendered_yaml["source"]:
+        sha256_hash_for_current = rendered_yaml["source"]
     else:
         sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
 
