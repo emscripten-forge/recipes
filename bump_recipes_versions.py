@@ -611,6 +611,12 @@ def get_updated_raw_yaml(recipe_path):
     context = copy.deepcopy(context_dict)
     rendered_yaml = get_rendered_yaml(yaml, context)
 
+    print(f"\nProcessing {rendered_yaml['package']['name']}")
+
+    # Discarding python and python_abi
+    if rendered_yaml['package']['name'] in ['python', 'python_abi']:
+        return yaml
+
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
     else:
@@ -644,7 +650,6 @@ if __name__ == "__main__":
     loader = get_yaml_loader(typ="rt")
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     for each_recipe_path in recipes:
-        print(f"Processing {each_recipe_path}")
         updated_raw_yaml = get_updated_raw_yaml(each_recipe_path)
         fw = open(each_recipe_path, 'w')
         loader.dump(order_output_dict(updated_raw_yaml), fw)
