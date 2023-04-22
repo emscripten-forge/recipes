@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e73fc62..0093e8c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -269,6 +269,25 @@ if (XEUS_NELSON_EMSCRIPTEN_WASM_BUILD)
+     xeus_nelson_set_kernel_options(xnelson_wasm)
+     xeus_wasm_compile_options(xnelson_wasm)
+     xeus_wasm_link_options(xnelson_wasm "web,worker")
++    set(web_environment "web,worker")
++    target_link_options(xnelson_wasm
++        PUBLIC --bind
++        PUBLIC -Wno-unused-command-line-argument
++        PUBLIC "SHELL: -fwasm-exceptions"
++        PUBLIC "SHELL: -s MODULARIZE=1"
++        PUBLIC "SHELL: -s EXPORT_NAME=\"createXeusModule\""
++        PUBLIC "SHELL: -s EXPORT_ES6=0"
++        PUBLIC "SHELL: -s USE_ES6_IMPORT_META=0"
++        PUBLIC "SHELL: -s DEMANGLE_SUPPORT=0"
++        PUBLIC "SHELL: -s ASSERTIONS=0"
++        PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
++        PUBLIC "SHELL: -s EXIT_RUNTIME=1"
++        PUBLIC "SHELL: -s WASM=1"
++        PUBLIC "SHELL: -s USE_PTHREADS=0"
++        PUBLIC "SHELL: -s ENVIRONMENT=${web_environment}"
++        PUBLIC "SHELL: -s TOTAL_STACK=32mb"
++        PUBLIC "SHELL: -s INITIAL_MEMORY=128mb"
++    )
+ endif ()
+ 
+ # Installation

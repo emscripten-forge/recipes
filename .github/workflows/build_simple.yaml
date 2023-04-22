@@ -32,7 +32,7 @@ jobs:
         shell: bash -l {0}
         run: |
           git config --global advice.detachedHead false
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
           cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
 
       ################################################################
@@ -51,12 +51,24 @@ jobs:
       - name: post env install config
         shell: bash -l {0}
         run: |
-          mkdir -p $HOME/micromamba-root/envs/ci-env/conda-bld/emscripten-32
-          mkdir -p $HOME/packed
-
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc_post $HOME/.condarc
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
           micromamba activate ci-env
           playwright install
+
+      ################################################################
+      # setup emsdk
+      ################################################################
+      - name: "setup emsdk"
+        shell: bash -l {0}
+        run: |
+          micromamba activate ci-env
+
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk 
+          ./emsdk install  ${{ matrix.emsdk_ver }}
+          ./emsdk activate  ${{ matrix.emsdk_ver }}
+          echo $(pwd)/emsdk-${{ matrix.emsdk_ver }}
+          echo $(pwd) > $HOME/.emsdkdir
 
       ################################################################
       # install / clone custom non-master things
@@ -69,14 +81,17 @@ jobs:
         run: |
           micromamba activate ci-env
           python -m pip install git+https://github.com/DerThorsten/boa.git@python_api             --no-deps --ignore-installed
-          python -m pip install git+https://github.com/emscripten-forge/pyjs-code-runner.git     --no-deps --ignore-installed
 
-      - name: "setup emsdk"
+
+      ################################################################
+      # build a package which is **not** on emscripten forge
+      ################################################################
+      - name: "build package"
         shell: bash -l {0}
         run: |
           micromamba activate ci-env
-          python -c "from empack.file_packager import download_and_setup_emsdk; download_and_setup_emsdk('3.1.27')"
-          echo $(python -c "from empack.file_packager import EMSDK_INSTALL_PATH; print(EMSDK_INSTALL_PATH / 'emsdk-3.1.27')") > $HOME/.emsdkdir
+          cd ${GITHUB_WORKSPACE}
+          python builder.py build explicit $GITHUB_WORKSPACE/testing/test_recipes/only_py_tests  --emscripten-32
 
       ################################################################
       # build a simple package
@@ -86,7 +101,4 @@ jobs:
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
-          python builder.py build explicit  $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-32
-
-
-    
+          python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-32

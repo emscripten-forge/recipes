@@ -1,0 +1,24 @@
+name: Version Ticker Bot
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 8 * * *'
+
+jobs:
+  build_libraries:
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: install mamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: tickbot.yml
+      - name: determine new versions
+        shell: bash -l -eo pipefail {0}
+        run: |
+          python bump_recipes_versions.py
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}

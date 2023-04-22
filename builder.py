@@ -20,6 +20,8 @@ from contextlib import contextmanager
 from mamba.utils import init_api_context
 import libmambapy as api
 
+from pathlib import Path
+
 RECIPES_SUBDIR_MAPPING = OrderedDict(
     [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
 )
@@ -28,6 +30,14 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 CONFIG_PATH = os.path.join(THIS_DIR, "empack_config.yaml")
 PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
+
+CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
+if CONDA_PREFIX is None:
+    raise RuntimeError(
+        "environment varialbe `CONDA_PREFIX` is not set but needed to run this script"
+    )
+CONDA_BLD_DIR = os.path.join(CONDA_PREFIX, "conda-bld")
+Path(CONDA_BLD_DIR).mkdir(exist_ok=True)
 
 from typing import List, Optional
 import typer
@@ -85,17 +95,14 @@ def find_recipes_with_changes(old, new):
 def test_package(recipe, work_dir):
     # recipe_dir = os.path.join(recipes_dir, recipe_name)
     print(f"Test recipe: {recipe} in work_dir: {work_dir}")
-    test_package_impl(recipe=recipe, work_dir=work_dir)
+    test_package_impl(recipe=recipe, work_dir=work_dir, conda_bld_dir=CONDA_BLD_DIR)
 
 
 def cleanup():
-    prefix = os.environ["CONDA_PREFIX"]
-    conda_bld_dir = os.path.join(prefix, "conda-bld")
-
     do_not_delete = ["noarch", "linux-64", "emscripten-32", "icons"]
-    do_not_delete = [os.path.join(conda_bld_dir, d) for d in do_not_delete]
+    do_not_delete = [os.path.join(CONDA_BLD_DIR, d) for d in do_not_delete]
 
-    for dirname in glob.iglob(os.path.join(conda_bld_dir, "**"), recursive=False):
+    for dirname in glob.iglob(os.path.join(CONDA_BLD_DIR, "**"), recursive=False):
         if os.path.isdir(dirname):
             if dirname not in do_not_delete and "_" in dirname:
                 shutil.rmtree(dirname)

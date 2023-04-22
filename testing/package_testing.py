@@ -34,10 +34,13 @@ def has_pytest_files(recipe_dir):
     return False
 
 
-def create_test_env(pkg_name, prefix):
-    # cmd = ['$MAMBA_EXE' ,'create','--prefix', prefix,'--platform=emscripten-32'] + [pkg_name] #+ ['--dryrun']
+def create_test_env(pkg_name, prefix, conda_bld_dir):
+    channels = (
+        f"-c {conda_bld_dir} -c https://repo.mamba.pm/emscripten-forge -c conda-forge"
+    )
+
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pyjs>=0.18.0" pytest numpy {pkg_name}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32   python "pyjs==1.0.0" pytest numpy {pkg_name}  {channels}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -78,7 +81,7 @@ def temp_work_dir(work_dir):
             yield temp_dir
 
 
-def test_package(recipe, work_dir):
+def test_package(recipe, work_dir, conda_bld_dir):
     recipe_dir, _ = os.path.split(recipe["recipe_file"])
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
@@ -90,7 +93,9 @@ def test_package(recipe, work_dir):
 
         with temp_work_dir(work_dir) as temp_dir:
             prefix = os.path.join(temp_dir, "prefix")
-            create_test_env(pkg_name=pkg_name, prefix=prefix)
+            create_test_env(
+                pkg_name=pkg_name, prefix=prefix, conda_bld_dir=conda_bld_dir
+            )
 
             work_dir = Path("/home/web_user/recipe_dir")
 
@@ -103,7 +108,8 @@ def test_package(recipe, work_dir):
                     BackendType.browser_worker,
                     lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
                 ),
-                (BackendType.node, lambda: dict(node_binary=get_node_binary())),
+                # the node baxckend is atm disabled because it does not work with the new empack
+                #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
             ]
             print(
                 "================================================================================"
@@ -123,6 +129,7 @@ def test_package(recipe, work_dir):
                 try:
                     r = run(
                         conda_env=prefix,
+                        relocate_prefix="/",
                         backend_type=backend_type,
                         script="main.py",
                         async_main=True,

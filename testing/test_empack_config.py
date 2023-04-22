@@ -1,5 +1,4 @@
 import os
-from empack.file_packager import pack_environment, pack_file
 from empack.file_patterns import pkg_file_filter_from_yaml
 
 from pathlib import Path
