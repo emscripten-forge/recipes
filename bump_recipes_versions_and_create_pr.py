@@ -700,52 +700,48 @@ if __name__ == "__main__":
     import glob
     loader = get_yaml_loader(typ="rt")
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
+    old_branch_name = get_current_branch_name()
 
-    updated_recipes = []
+
     for each_recipe_path in recipes:
         updated_raw_yaml, is_updated, rendered_yaml = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
-            updated_recipes.append({
+            recipe_info = {
                 "path": each_recipe_path,
-                "yaml": updated_raw_yaml,
-                "rendered_yaml": rendered_yaml
-            })
-        
-        # quicker debugging
-        if len(updated_recipes) >= 3:
-            break
-    
-    old_branch_name = get_current_branch_name()
-    print("old_branch_name", old_branch_name)
+                "yaml": updated_raw_yaml
+            }
 
-    for recipe_info in updated_recipes:
+            name = rendered_yaml["package"]["name"]
+            version = rendered_yaml["package"]["version"]
 
-        rendered_yaml = recipe_info["rendered_yaml"]
-        name = rendered_yaml["package"]["name"]
-        version = rendered_yaml["package"]["version"]
+            branch_name = f"update_{name}_{version}"
+            # replace all non-alphanumeric characters with _
+            branch_name = re.sub(r'[^a-zA-Z0-9]', '_', branch_name)
+            branch_name = branch_name.lower()
 
-        branch_name = f"update_{name}_{version}"
-        # replace all non-alphanumeric characters with _
-        branch_name = re.sub(r'[^a-zA-Z0-9]', '_', branch_name)
-        branch_name = branch_name.lower()
+            # check if there is already a PR with this title
+            prs = subprocess.check_output(['gh', 'pr', 'list', '--search', f'Update {name} to {version}']).decode('utf-8').strip()
+            if prs:
+                print(f"PR already exists for {name} {version}")
+                continue
 
-        with git_branch_ctx(old_branch_name, branch_name):
-            with updated_recipe_ctx(loader, recipe_info):
-                
-                print("branch_name", branch_name)
+            with git_branch_ctx(old_branch_name, branch_name):
+                with updated_recipe_ctx(loader, recipe_info):
+                    
+                    print("branch_name", branch_name)
 
-                print("cwd", os.getcwd())
+                    print("cwd", os.getcwd())
 
-                # git commit
-                subprocess.check_output(['git', 'add', recipe_info["path"]])
-                subprocess.check_output(['git', 'commit', '-m', f'Update {name} to {version}'])
-                subprocess.check_output(['git', 'push', '-u', 'origin', branch_name, "--force"])
+                    # git commit
+                    subprocess.check_output(['git', 'add', recipe_info["path"]])
+                    subprocess.check_output(['git', 'commit', '-m', f'Update {name} to {version}'])
+                    subprocess.check_output(['git', 'push', '-u', 'origin', branch_name, "--force"])
 
-                # gh set default repo
-                subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
-                
+                    # gh set default repo
+                    subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
+                    
 
-                # call gh to create a PR
-                subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', f'Update {name} to {version}', '--body', f'Created by Github action'], cwd=os.getcwd())
+                    # call gh to create a PR
+                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', f'Update {name} to {version}', '--body', f'Created by Github action'], cwd=os.getcwd())
 
 
