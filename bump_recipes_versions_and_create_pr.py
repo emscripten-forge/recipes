@@ -612,17 +612,17 @@ def get_updated_raw_yaml(recipe_path):
     yaml    = copy.deepcopy(raw_yaml)
     context = copy.deepcopy(context_dict)
     rendered_yaml = get_rendered_yaml(yaml, context)
-
-    print(f"\nProcessing {rendered_yaml['package']['name']}")
+    package_name = rendered_yaml["package"]["name"]
+    print(f"\nProcessing {package_name}")
 
     # Discarding python and python_abi
     if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
-        return yaml ,False, rendered_yaml
+        return yaml ,False, rendered_yaml,None
 
     # TODO: Fix those recipes!
     # Discarding broken recipes
     if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python']:
-        return yaml, False, rendered_yaml
+        return yaml, False, rendered_yaml,None
 
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
@@ -634,7 +634,7 @@ def get_updated_raw_yaml(recipe_path):
 
     version_available, new_version = is_new_version_available(yaml, context, rendered_yaml)
     if not version_available:
-        return raw_yaml, False,rendered_yaml
+        return raw_yaml, False,rendered_yaml,None
 
     url_for_version = get_new_url_for_new_version(yaml, context, new_version)
     sha256_hash_for_version = get_sha256(url_for_version)
@@ -652,7 +652,7 @@ def get_updated_raw_yaml(recipe_path):
                 raw_yaml["source"]["sha256"] = sha256_hash_for_version
         raw_yaml["build"]["number"] = 0
         is_new = True
-    return raw_yaml, is_new,rendered_yaml, new_version
+    return raw_yaml, is_new,rendered_yaml, new_version,None
 
 
 #  gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
