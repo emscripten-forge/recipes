@@ -747,7 +747,7 @@ if __name__ == "__main__":
                     subprocess.check_output(['git', 'push', '-u', 'origin', branch_name, "--force"])
 
                     # gh set default repo
-                    subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
+                    subprocess.check_call(['gh', 'repo', 'set-default', 'DerThorsten/recipes'], cwd=os.getcwd())
                     
 
                     # call gh to create a PR
