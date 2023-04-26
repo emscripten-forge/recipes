@@ -580,7 +580,7 @@ def is_new_version_available(raw_yaml, context_dict, rendered_yaml):
     github_url = Github().get_url(rendered_yaml)
     if github_url is not None:
         github_version = Github().get_version(github_url)
-        if VersionOrder(github_version) > VersionOrder(current_version):
+        if github_version is not None and VersionOrder(github_version) > VersionOrder(current_version):
             return True, github_version
     else:
         download_version = RawURL().get_url(raw_yaml, context_dict, rendered_yaml)
@@ -611,12 +611,24 @@ def get_updated_raw_yaml(recipe_path):
     context = copy.deepcopy(context_dict)
     rendered_yaml = get_rendered_yaml(yaml, context)
 
+    print(f"\nProcessing {rendered_yaml['package']['name']}")
+
+    # Discarding python and python_abi
+    if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
+        return yaml
+
+    # TODO: Fix those recipes!
+    # Discarding broken recipes
+    if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python']:
+        return yaml
+
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
-    elif "sha256" in rendered_yaml["source"]:
-        sha256_hash_for_current = rendered_yaml["source"]
     else:
-        sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
+        if isinstance(rendered_yaml["source"], list):
+            sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
+        else:
+            sha256_hash_for_current = rendered_yaml["source"]["sha256"]
 
     version_available, new_version = is_new_version_available(yaml, context, rendered_yaml)
     if not version_available:
@@ -643,7 +655,6 @@ if __name__ == "__main__":
     loader = get_yaml_loader(typ="rt")
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     for each_recipe_path in recipes:
-        package_name = each_recipe_path.split('/')[0]
         updated_raw_yaml = get_updated_raw_yaml(each_recipe_path)
         fw = open(each_recipe_path, 'w')
         loader.dump(order_output_dict(updated_raw_yaml), fw)
