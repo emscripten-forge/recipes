@@ -702,6 +702,13 @@ if __name__ == "__main__":
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     old_branch_name = get_current_branch_name()
 
+    GITHUB_ACTOR = os.environ.get('GITHUB_ACTOR')
+
+    email = f"{ GITHUB_ACTOR}@users.noreply.github.com"
+
+    # set github user
+    subprocess.check_output(['git', 'config', '--global', 'user.email', email])
+    subprocess.check_output(['git', 'config', '--global', 'user.name', GITHUB_ACTOR])
 
     for each_recipe_path in recipes:
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
