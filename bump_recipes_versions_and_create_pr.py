@@ -727,7 +727,7 @@ if __name__ == "__main__":
         branch_name = f"update_{name}_{version}"
         # replace all non-alphanumeric characters with _
         branch_name = re.sub(r'[^a-zA-Z0-9]', '_', branch_name)
-        branch_name = branch_name.lower()"
+        branch_name = branch_name.lower()
 
         with git_branch_ctx(old_branch_name, branch_name):
             with updated_recipe_ctx(loader, recipe_info):
@@ -739,7 +739,7 @@ if __name__ == "__main__":
                 # git commit
                 subprocess.check_output(['git', 'add', recipe_info["path"]])
                 subprocess.check_output(['git', 'commit', '-m', f'Update {name} to {version}'])
-                subprocess.check_output(['git', 'push', '-u', 'origin', branch_name])
+                subprocess.check_output(['git', 'push', '-u', 'origin', branch_name, "--force"])
 
                 # gh set default repo
                 subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
