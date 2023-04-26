@@ -652,7 +652,7 @@ def get_updated_raw_yaml(recipe_path):
                 raw_yaml["source"]["sha256"] = sha256_hash_for_version
         raw_yaml["build"]["number"] = 0
         is_new = True
-    return raw_yaml, is_new,rendered_yaml
+    return raw_yaml, is_new,rendered_yaml, new_version
 
 
 #  gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
@@ -704,7 +704,7 @@ if __name__ == "__main__":
 
 
     for each_recipe_path in recipes:
-        updated_raw_yaml, is_updated, rendered_yaml = get_updated_raw_yaml(each_recipe_path)
+        updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
             recipe_info = {
                 "path": each_recipe_path,
@@ -712,17 +712,19 @@ if __name__ == "__main__":
             }
 
             name = rendered_yaml["package"]["name"]
-            version = rendered_yaml["package"]["version"]
+            old_version = rendered_yaml["package"]["version"]
 
-            branch_name = f"update_{name}_{version}"
+            branch_name = f"update_{name}_{old_version}_to_{new_version}"
             # replace all non-alphanumeric characters with _
             branch_name = re.sub(r'[^a-zA-Z0-9]', '_', branch_name)
             branch_name = branch_name.lower()
 
+            pr_title = f"Update {name} from {old_version} to {new_version}"
+
             # check if there is already a PR with this title
-            prs = subprocess.check_output(['gh', 'pr', 'list', '--search', f'Update {name} to {version}']).decode('utf-8').strip()
+            prs = subprocess.check_output(['gh', 'pr', 'list', '--search', pr_title]).decode('utf-8').strip()
             if prs:
-                print(f"PR already exists for {name} {version}")
+                print(f"PR '{pr_title}' already exists")
                 continue
 
             with git_branch_ctx(old_branch_name, branch_name):
@@ -734,7 +736,7 @@ if __name__ == "__main__":
 
                     # git commit
                     subprocess.check_output(['git', 'add', recipe_info["path"]])
-                    subprocess.check_output(['git', 'commit', '-m', f'Update {name} to {version}'])
+                    subprocess.check_output(['git', 'commit', '-m', pr_title])
                     subprocess.check_output(['git', 'push', '-u', 'origin', branch_name, "--force"])
 
                     # gh set default repo
@@ -742,6 +744,6 @@ if __name__ == "__main__":
                     
 
                     # call gh to create a PR
-                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', f'Update {name} to {version}', '--body', f'Created by Github action'], cwd=os.getcwd())
+                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', f'Created by Github action'], cwd=os.getcwd())
 
 
