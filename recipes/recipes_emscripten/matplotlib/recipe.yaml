@@ -1,6 +1,6 @@
 context:
   name: matplotlib
-  version: '3.5.2'
+  version: '3.7.1'
 
 package:
   name: '{{ name|lower }}'
@@ -8,7 +8,7 @@ package:
 
 source:
   - url: https://github.com/matplotlib/matplotlib/archive/v{{ version }}.tar.gz
-    sha256: c81325d1b0d822ef75fd71d243f98478cdca1f800a838a2a1bc8e4e17b8df93c
+    sha256: 3bea99442a7ef038bed34acb6d5adedfb787abce8b43f4817586089ff8887098
     # sha256: 5ac5ca25e6ecd1e7711e1f859b4b6f74f290ef517387d1502bf8012bf2b1647e
     patches:
       - patches/disable_macosx_backend.patch
@@ -21,6 +21,11 @@ source:
 build:
   number: 0
 
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_import_matplotlib.py
 steps:
   - package:
       name: matplotlib-base
@@ -64,8 +69,3 @@ steps:
         - python
         - "{{ pin_subpackage('matplotlib-base', exact=True) }}"
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_matplotlib.py
