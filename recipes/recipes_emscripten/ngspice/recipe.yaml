@@ -1,0 +1,61 @@
+context:
+  version: "40"
+
+package:
+  name: ngspice-suite
+  version: '{{ version }}'
+
+source:
+  url: 'https://downloads.sourceforge.net/project/ngspice/ng-spice-rework/{{ version }}/ngspice-{{ version }}.tar.gz'
+  sha256: 'e303ca7bc0f594e2d6aa84f68785423e6bf0c8dad009bb20be4d5742588e890d'
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - autoconf
+    - automake
+    - libtool
+    - make
+    - bison
+    - "{{ compiler('c') }}"
+    - "{{ compiler('cxx') }}"
+
+test:
+  commands:
+    - test -f $PREFIX/bin/ngspice
+    - test -f $PREFIX/lib/libngspice{{ SHLIB_EXT }}
+
+about:
+  home: http://ngspice.sourceforge.net
+  doc_url: http://ngspice.sourceforge.net/docs.html
+  dev_url: http://ngspice.sourceforge.net/devel.html
+
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: COPYING
+
+  summary: The open source spice simulator for electric and electronic circuits
+  description: |
+    ngspice is the open source spice simulator for electric and electronic circuits.
+
+    Such a circuit may comprise of JFETs, bipolar and MOS transistors, passive elements
+    like R, L, or C, diodes, transmission lines and other devices, all interconnected
+    in a netlist. Digital circuits are simulated as well, event driven and fast, from
+    single gates to complex circuits. And you may enter the combination of both analog
+    and digital as a mixed-signal circuit.
+
+    ngspice offers a wealth of device models for active, passive, analog, and digital
+    elements. Model parameters are provided by the semiconductor manufacturers.
+    The user add her circuits as a netlist, and the output is one or more graphs of
+    currents, voltages and other electrical quantities or is saved in a data file.
+
+    Note:
+      This build was configured with `--enable-xspice --enable-cider --enable=openmp`
+      See the [build script](https://git.io/JfVZX) for more specifics.
+
+extra:
+  recipe-maintainers:
+    - proppy
+    - stuarteberg
