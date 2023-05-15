@@ -112,7 +112,6 @@ def test_binary_format():
 import numpy as np
 import string
 import io
-import unittest
 import itertools
 import pickle
 
