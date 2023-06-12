@@ -708,7 +708,7 @@ def main():
     # Check for opened PRs and merge them if the CI passed
     print("Checking opened PRs and merge them if green!")
     prs = subprocess.check_output(
-        ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot"'],
+        ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
     ).decode('utf-8').split('\n')
 
     prs_id = [line.split()[0] for line in prs if line]
