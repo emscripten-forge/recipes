@@ -693,11 +693,10 @@ def git_branch_ctx(old_branch_name, new_branch_name):
         subprocess.check_output(['git', 'checkout', old_branch_name, "--force"])
         subprocess.check_output(['git', 'branch', '-D', new_branch_name])
 
-if __name__ == "__main__":
 
-
-
+def main():
     import glob
+
     loader = get_yaml_loader(typ="rt")
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     old_branch_name = get_current_branch_name()
@@ -751,3 +750,7 @@ if __name__ == "__main__":
 
         # Just updating one recipe for testing
         return
+
+
+if __name__ == "__main__":
+    main()
