@@ -705,6 +705,25 @@ def main():
     subprocess.check_output(['git', 'config', '--global', 'user.email', 'emscripten-forge-bot@users.noreply.github.com'])
     subprocess.check_output(['git', 'config', '--global', 'user.name', 'emscripten-forge-bot'])
 
+    # Check for opened PRs and merge them if the CI passed
+    prs = subprocess.check_output(
+        ['gh', 'pr', 'list', '--author', '"@me"'],
+    ).decode('utf-8').split('\n')
+
+    prs_id = [line.split()[0] for line in prs if line]
+
+    for pr in prs_id:
+        passed = subprocess.run(
+            ['gh', 'pr', 'checks', str(pr)],
+            stdout=subprocess.DEVNULL,
+        )
+
+        if passed.returncode == 0:
+            # PR passed, let's merge it
+            subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
+            subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--admin'])
+
+    # Open new PRs for updating repos
     for each_recipe_path in recipes:
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
@@ -732,7 +751,6 @@ def main():
             with git_branch_ctx(old_branch_name, branch_name):
                 with updated_recipe_ctx(loader, recipe_info):
                     print(f"Making a PR for {name}")
-
 
                     # git commit
                     subprocess.check_output(['git', 'add', recipe_info["path"]])
