@@ -727,7 +727,12 @@ def main():
 
     # Open new PRs for updating repos
     print("Open PRs for updating packages!")
+    prs_opened = 0
     for each_recipe_path in recipes:
+        if prs_opened > 5:
+            # Not opening more than 5 PRs per day. Otherwise we're abusing the API rate limit and CI capability.
+            return
+
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
             recipe_info = {
@@ -765,6 +770,8 @@ def main():
 
                     # call gh to create a PR
                     subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'], cwd=os.getcwd())
+
+                    prs_opened = prs_opened + 1
 
 
 if __name__ == "__main__":
