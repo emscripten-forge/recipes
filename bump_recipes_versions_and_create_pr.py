@@ -662,7 +662,7 @@ def get_updated_raw_yaml(recipe_path):
 def updated_recipe_ctx(loader, recipe_info):
     recipe_path = recipe_info["path"]
     new_recipe = recipe_info["yaml"]
-    
+
     # load the old recipe from disk
     old_recipe = loader.load(open(recipe_path, 'r'))
 
@@ -702,13 +702,9 @@ if __name__ == "__main__":
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
     old_branch_name = get_current_branch_name()
 
-    GITHUB_ACTOR = os.environ.get('GITHUB_ACTOR')
-
-    email = f"{ GITHUB_ACTOR}@users.noreply.github.com"
-
     # set github user
-    subprocess.check_output(['git', 'config', '--global', 'user.email', email])
-    subprocess.check_output(['git', 'config', '--global', 'user.name', GITHUB_ACTOR])
+    subprocess.check_output(['git', 'config', '--global', 'user.email', 'emscripten-forge-bot@users.noreply.github.com'])
+    subprocess.check_output(['git', 'config', '--global', 'user.name', 'emscripten-forge-bot'])
 
     for each_recipe_path in recipes:
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
@@ -736,7 +732,7 @@ if __name__ == "__main__":
 
             with git_branch_ctx(old_branch_name, branch_name):
                 with updated_recipe_ctx(loader, recipe_info):
-                    
+
                     print("branch_name", branch_name)
 
                     print("cwd", os.getcwd())
@@ -748,9 +744,10 @@ if __name__ == "__main__":
 
                     # gh set default repo
                     subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
-                    
+
 
                     # call gh to create a PR
                     subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', f'Created by Github action'], cwd=os.getcwd())
 
-
+        # Just updating one recipe for testing
+        return
