@@ -706,12 +706,14 @@ def main():
     subprocess.check_output(['git', 'config', '--global', 'user.name', 'emscripten-forge-bot'])
 
     # Check for opened PRs and merge them if the CI passed
+    print("Checking opened PRs and merge them if green!")
     prs = subprocess.check_output(
         ['gh', 'pr', 'list', '--author', '"@me"'],
     ).decode('utf-8').split('\n')
 
     prs_id = [line.split()[0] for line in prs if line]
 
+    print(f'PRs opened by the bot: {prs_id}')
     for pr in prs_id:
         passed = subprocess.run(
             ['gh', 'pr', 'checks', str(pr)],
@@ -724,6 +726,7 @@ def main():
             subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--admin'])
 
     # Open new PRs for updating repos
+    print("Open PRs for updating packages!")
     for each_recipe_path in recipes:
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
