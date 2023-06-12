@@ -731,10 +731,8 @@ def main():
 
             with git_branch_ctx(old_branch_name, branch_name):
                 with updated_recipe_ctx(loader, recipe_info):
+                    print(f"Making a PR for {name}")
 
-                    print("branch_name", branch_name)
-
-                    print("cwd", os.getcwd())
 
                     # git commit
                     subprocess.check_output(['git', 'add', recipe_info["path"]])
@@ -744,12 +742,11 @@ def main():
                     # gh set default repo
                     subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
 
-
                     # call gh to create a PR
-                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', f'Created by Github action'], cwd=os.getcwd())
+                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title], cwd=os.getcwd())
 
-        # Just updating one recipe for testing
-        return
+                    # Just updating one recipe for testing
+                    return
 
 
 if __name__ == "__main__":
