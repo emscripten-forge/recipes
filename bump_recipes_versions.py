@@ -766,9 +766,6 @@ def main():
                     # call gh to create a PR
                     subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'], cwd=os.getcwd())
 
-                    # Just updating one recipe for testing
-                    return
-
 
 if __name__ == "__main__":
     main()
