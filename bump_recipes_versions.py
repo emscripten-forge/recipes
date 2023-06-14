@@ -724,6 +724,9 @@ def main():
             # PR passed, let's merge it
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
             subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--rebase', '--delete-branch', '--admin'])
+        else:
+            # Pin recipe maintainer?
+            subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human', '--edit-last'])
 
     # Open new PRs for updating repos
     print("Open PRs for updating packages!")
