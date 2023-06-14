@@ -712,6 +712,7 @@ def main():
     ).decode('utf-8').split('\n')
 
     prs_id = [line.split()[0] for line in prs if line]
+    prs_packages = [line.split()[2] for line in prs if line]
 
     print(f'PRs opened by the bot: {prs_id}')
     for pr in prs_id:
@@ -750,6 +751,10 @@ def main():
 
             name = rendered_yaml["package"]["name"]
             old_version = rendered_yaml["package"]["version"]
+
+            # Not opening a PR for a package we already have a PR for
+            if name in prs_packages:
+                continue
 
             branch_name = f"update_{name}_{old_version}_to_{new_version}"
             # replace all non-alphanumeric characters with _
