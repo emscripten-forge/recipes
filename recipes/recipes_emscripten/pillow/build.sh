@@ -1,8 +1,8 @@
 echo "EMSCRIPTEN_FORGE_EMSDK_DIR $EMSCRIPTEN_FORGE_EMSDK_DIR: " $EMSCRIPTEN_FORGE_EMSDK_DIR
 
 # pushd $CONDA_EMSDK_DIR
-$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder build freetype --pic
-$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder build libjpeg --pic
+${PYTHON} $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder.py build freetype --pic
+${PYTHON} $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder.py build libjpeg --pic
 # popd
 
 export LDFLAGS="${LDFLAGS} -s USE_LIBJPEG"
