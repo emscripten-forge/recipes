@@ -57,6 +57,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
+from contextlib import contextmanager
 import abc, re, copy
 import feedparser, subprocess
 import collections.abc
@@ -610,17 +612,17 @@ def get_updated_raw_yaml(recipe_path):
     yaml    = copy.deepcopy(raw_yaml)
     context = copy.deepcopy(context_dict)
     rendered_yaml = get_rendered_yaml(yaml, context)
-
-    print(f"\nProcessing {rendered_yaml['package']['name']}")
+    package_name = rendered_yaml["package"]["name"]
+    print(f"\nProcessing {package_name}")
 
     # Discarding python and python_abi
     if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
-        return yaml
+        return yaml ,False, rendered_yaml,None
 
     # TODO: Fix those recipes!
     # Discarding broken recipes
     if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python']:
-        return yaml
+        return yaml, False, rendered_yaml,None
 
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
@@ -632,11 +634,12 @@ def get_updated_raw_yaml(recipe_path):
 
     version_available, new_version = is_new_version_available(yaml, context, rendered_yaml)
     if not version_available:
-        return raw_yaml
+        return raw_yaml, False,rendered_yaml,None
 
     url_for_version = get_new_url_for_new_version(yaml, context, new_version)
     sha256_hash_for_version = get_sha256(url_for_version)
 
+    is_new = False
     if version_available and sha256_hash_for_version is not None and sha256_hash_for_version != sha256_hash_for_current:
         raw_yaml["context"]["version"] = new_version
         context["version"] = new_version
@@ -648,14 +651,141 @@ def get_updated_raw_yaml(recipe_path):
             else:
                 raw_yaml["source"]["sha256"] = sha256_hash_for_version
         raw_yaml["build"]["number"] = 0
-    return raw_yaml
+        is_new = True
+    return raw_yaml, is_new,rendered_yaml, new_version
 
-if __name__ == "__main__":
+
+#  gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
+
+
+@contextmanager
+def updated_recipe_ctx(loader, recipe_info):
+    recipe_path = recipe_info["path"]
+    new_recipe = recipe_info["yaml"]
+
+    # load the old recipe from disk
+    old_recipe = loader.load(open(recipe_path, 'r'))
+
+    # write new recipe
+    with open(recipe_path, 'w') as f:
+        loader.dump(order_output_dict(new_recipe), f)
+    try:
+        yield
+
+    finally:
+        # write old recipe
+        with open(recipe_path, 'w') as f:
+            loader.dump(order_output_dict(old_recipe), f)
+
+def get_current_branch_name():
+    return subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8').strip()
+
+
+
+@contextmanager
+def git_branch_ctx(old_branch_name, new_branch_name):
+    subprocess.check_output(['git', 'checkout', '-b', new_branch_name])
+
+
+    try:
+        yield
+    finally:
+        subprocess.check_output(['git', 'checkout', old_branch_name, "--force"])
+        subprocess.check_output(['git', 'branch', '-D', new_branch_name])
+
+
+def main():
     import glob
+
     loader = get_yaml_loader(typ="rt")
     recipes = glob.glob("recipes/recipes_emscripten/**/recipe.yaml")
+    old_branch_name = get_current_branch_name()
+
+    # set github user
+    subprocess.check_output(['git', 'config', '--global', 'user.email', 'emscripten-forge-bot@users.noreply.github.com'])
+    subprocess.check_output(['git', 'config', '--global', 'user.name', 'emscripten-forge-bot'])
+
+    # Check for opened PRs and merge them if the CI passed
+    print("Checking opened PRs and merge them if green!")
+    prs = subprocess.check_output(
+        ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
+    ).decode('utf-8').split('\n')
+
+    prs_id = [line.split()[0] for line in prs if line]
+    prs_packages = [line.split()[2] for line in prs if line]
+
+    print(f'PRs opened by the bot: {prs_id}')
+    for pr in prs_id:
+        passed = subprocess.run(
+            ['gh', 'pr', 'checks', str(pr)],
+            stdout=subprocess.DEVNULL,
+        )
+
+        if passed.returncode == 0:
+            # PR passed, let's merge it
+            subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
+            subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--rebase', '--delete-branch', '--admin'])
+        else:
+            # Pin recipe maintainer? Or add assignee?
+            subprocess.check_output(['gh', 'pr', 'edit', str(pr), '--add-label', 'Needs Human Review'])
+            try:
+                # Running edit-last in case there was already a comment, we don't want to spam with comments
+                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human', '--edit-last'])
+            except:
+                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human'])
+
+    # Open new PRs for updating repos
+    print("Open PRs for updating packages!")
+    prs_opened = 0
     for each_recipe_path in recipes:
-        updated_raw_yaml = get_updated_raw_yaml(each_recipe_path)
-        fw = open(each_recipe_path, 'w')
-        loader.dump(order_output_dict(updated_raw_yaml), fw)
-        print(f"Done for {each_recipe_path}")
+        if prs_opened > 5:
+            # Not opening more than 5 PRs per day. Otherwise we're abusing the API rate limit and CI capability.
+            return
+
+        updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
+        if is_updated:
+            recipe_info = {
+                "path": each_recipe_path,
+                "yaml": updated_raw_yaml
+            }
+
+            name = rendered_yaml["package"]["name"]
+            old_version = rendered_yaml["package"]["version"]
+
+            # Not opening a PR for a package we already have a PR for
+            if name in prs_packages:
+                continue
+
+            branch_name = f"update_{name}_{old_version}_to_{new_version}"
+            # replace all non-alphanumeric characters with _
+            branch_name = re.sub(r'[^a-zA-Z0-9]', '_', branch_name)
+            branch_name = branch_name.lower()
+
+            pr_title = f"Update {name} from {old_version} to {new_version}"
+
+            # check if there is already a PR with this title
+            prs = subprocess.check_output(['gh', 'pr', 'list', '--search', pr_title]).decode('utf-8').strip()
+            if prs:
+                print(f"PR '{pr_title}' already exists")
+                continue
+
+            with git_branch_ctx(old_branch_name, branch_name):
+                with updated_recipe_ctx(loader, recipe_info):
+                    print(f"Making a PR for {name}")
+
+                    # git commit
+                    subprocess.check_output(['git', 'add', recipe_info["path"]])
+                    subprocess.check_output(['git', 'commit', '-m', pr_title])
+                    subprocess.check_output(['git', 'push', '-u', 'origin', branch_name, "--force"])
+
+                    # gh set default repo
+                    subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
+
+                    # call gh to create a PR
+                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'], cwd=os.getcwd())
+
+                    prs_opened = prs_opened + 1
+
+
+if __name__ == "__main__":
+    main()

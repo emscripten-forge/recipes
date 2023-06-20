@@ -1,0 +1,51 @@
+context:
+  name: "lxml"
+  version: "4.9.2"
+
+package:
+  name: "{{ name }}"
+  version: '{{ version }}'
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2455cfaeb7ac70338b3257f41e21f0724f4b5b0c0e7702da67ee6c3640835b67
+
+build:
+  number: 0
+  script: python -m pip install . -vvv
+
+requirements:
+  build:
+    - '{{ compiler("c") }}'
+    - cross-python_emscripten-32
+    - python
+    - setuptools <60
+    - pip
+    - sel(build_platform != target_platform): cython
+  host:
+    - python
+    - libxml2
+    - libxslt
+    - zlib
+    - libiconv
+  run:
+    - python
+
+about:
+  home: https://github.com/lxml/lxml
+  license: BSD License
+  license_file: LICENSE
+  license_family: BSD
+  summary: Pythonic binding for the C libraries libxml2 and libxslt.
+  description: lxml is the most feature-rich and easy-to-use library for processing XML and HTML in the Python language.
+  dev_url: https://github.com/lxml/lxml
+  doc_url: https://lxml.de/
+  doc_source_url: https://github.com/lxml/lxml/blob/master/doc/main.txt
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_import_lxml.py
+  recipe-maintainers:
+    - michaelweinold
