@@ -63,7 +63,7 @@ jobs:
       - name: post env install config
         shell: bash -l {0}
         run: |
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc  
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
           micromamba activate ci-env
           playwright install
 
@@ -76,7 +76,7 @@ jobs:
           micromamba activate ci-env
 
           git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk 
+          cd emsdk
           ./emsdk install  ${{ matrix.emsdk_ver }}
           ./emsdk activate  ${{ matrix.emsdk_ver }}
           echo $(pwd)/emsdk-${{ matrix.emsdk_ver }}
@@ -137,6 +137,6 @@ jobs:
         if: github.event_name == 'push'
         shell: bash -l {0}
         run: |
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} find ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 -exec quetz-client https://beta.mamba.pm/channels/emscripten-forge {} \;
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} find ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2 -exec quetz-client https://beta.mamba.pm/channels/emscripten-forge {} \;
+          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} find ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2 -exec quetz-client https://beta.mamba.pm/channels/emscripten-forge {} \;
