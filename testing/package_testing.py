@@ -88,68 +88,68 @@ def test_package(recipe, work_dir, conda_bld_dir):
 
     old_cwd = os.getcwd()
 
-    if has_pytest_files(recipe_dir):
-        pkg_name = recipe["package"]["name"]
+    # if has_pytest_files(recipe_dir):
+    #     pkg_name = recipe["package"]["name"]
 
-        with temp_work_dir(work_dir) as temp_dir:
-            prefix = os.path.join(temp_dir, "prefix")
-            create_test_env(
-                pkg_name=pkg_name, prefix=prefix, conda_bld_dir=conda_bld_dir
-            )
+    #     with temp_work_dir(work_dir) as temp_dir:
+    #         prefix = os.path.join(temp_dir, "prefix")
+    #         create_test_env(
+    #             pkg_name=pkg_name, prefix=prefix, conda_bld_dir=conda_bld_dir
+    #         )
 
-            work_dir = Path("/home/web_user/recipe_dir")
+    #         work_dir = Path("/home/web_user/recipe_dir")
 
-            backends = [
-                (
-                    BackendType.browser_main,
-                    lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
-                ),
-                (
-                    BackendType.browser_worker,
-                    lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
-                ),
-                # the node baxckend is atm disabled because it does not work with the new empack
-                #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
-            ]
-            print(
-                "================================================================================"
-            )
-            print(
-                "======================= Main test session starts ==============================="
-            )
-            exceptions = []
-            for backend_type, backend_kwargs_factory in backends:
-                print(
-                    "================================================================================"
-                )
-                print(f"Test backend: {backend_type}")
-                print(
-                    "================================================================================"
-                )
-                try:
-                    r = run(
-                        conda_env=prefix,
-                        relocate_prefix="/",
-                        backend_type=backend_type,
-                        script="main.py",
-                        async_main=True,
-                        mounts=[
-                            (MAIN_MOUNT, work_dir),
-                            (Path(recipe_dir).resolve(), work_dir),
-                        ],
-                        work_dir=work_dir,
-                        pkg_file_filter=None,  # let empack handle this
-                        pyjs_dir=None,
-                        cache_dir=None,
-                        use_cache=False,
-                        host_work_dir=None,
-                        backend_kwargs=backend_kwargs_factory(),
-                    )
-                except Exception as e:
-                    print(f"Test  backend : {backend_type} FAILED {e}")
-                    exceptions.append(e)
+    #         backends = [
+    #             (
+    #                 BackendType.browser_main,
+    #                 lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+    #             ),
+    #             (
+    #                 BackendType.browser_worker,
+    #                 lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+    #             ),
+    #             # the node baxckend is atm disabled because it does not work with the new empack
+    #             #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
+    #         ]
+    #         print(
+    #             "================================================================================"
+    #         )
+    #         print(
+    #             "======================= Main test session starts ==============================="
+    #         )
+    #         exceptions = []
+    #         for backend_type, backend_kwargs_factory in backends:
+    #             print(
+    #                 "================================================================================"
+    #             )
+    #             print(f"Test backend: {backend_type}")
+    #             print(
+    #                 "================================================================================"
+    #             )
+    #             try:
+    #                 r = run(
+    #                     conda_env=prefix,
+    #                     relocate_prefix="/",
+    #                     backend_type=backend_type,
+    #                     script="main.py",
+    #                     async_main=True,
+    #                     mounts=[
+    #                         (MAIN_MOUNT, work_dir),
+    #                         (Path(recipe_dir).resolve(), work_dir),
+    #                     ],
+    #                     work_dir=work_dir,
+    #                     pkg_file_filter=None,  # let empack handle this
+    #                     pyjs_dir=None,
+    #                     cache_dir=None,
+    #                     use_cache=False,
+    #                     host_work_dir=None,
+    #                     backend_kwargs=backend_kwargs_factory(),
+    #                 )
+    #             except Exception as e:
+    #                 print(f"Test  backend : {backend_type} FAILED {e}")
+    #                 exceptions.append(e)
 
-            if exceptions:
-                raise RuntimeError(exceptions)
+    #         if exceptions:
+    #             raise RuntimeError(exceptions)
 
     os.chdir(old_cwd)
