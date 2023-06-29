@@ -739,11 +739,14 @@ def main():
         else:
             # Pin recipe maintainer? Or add assignee?
             subprocess.check_output(['gh', 'pr', 'edit', str(pr), '--add-label', 'Needs Human Review'])
+
+            message = 'Either the CI is failing, or the recipe is not tested. I need help from a human.'
+
             try:
                 # Running edit-last in case there was already a comment, we don't want to spam with comments
-                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human', '--edit-last'])
+                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message, '--edit-last'])
             except:
-                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human'])
+                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message])
 
     # Open new PRs for updating repos
     print("Open PRs for updating packages!")
