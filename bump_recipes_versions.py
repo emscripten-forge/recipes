@@ -58,6 +58,7 @@
 # SOFTWARE.
 
 import os
+import json
 from contextlib import contextmanager
 import abc, re, copy
 import feedparser, subprocess
@@ -721,7 +722,13 @@ def main():
             stdout=subprocess.DEVNULL,
         )
 
+        # Debug: print labels
+        labels = json.loads(subprocess.check_output(['gh', 'pr', 'view', str(pr), '--json', 'labels']).decode('utf-8'))
+        print(f'Labels for PR {pr}: {labels}')
+
         if passed.returncode == 0:
+            # TODO Check that the automerge label is there
+
             # PR passed, let's merge it
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
             subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--rebase', '--delete-branch', '--admin'])
@@ -751,6 +758,10 @@ def main():
 
             name = rendered_yaml["package"]["name"]
             old_version = rendered_yaml["package"]["version"]
+
+            recipe_is_tested = False
+            if "emscripten_tests" in rendered_yaml.get("extra", {}):
+                recipe_is_tested = True
 
             # Not opening a PR for a package we already have a PR for
             if name in prs_packages:
@@ -782,7 +793,13 @@ def main():
                     subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
 
                     # call gh to create a PR
-                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'], cwd=os.getcwd())
+                    subprocess.check_call([
+                        'gh', 'pr', 'create',
+                        '-B', 'main',
+                        '--title', pr_title,
+                        '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
+                        '--label', 'Automerge' if recipe_is_tested else 'Needs Tests'
+                    ], cwd=os.getcwd())
 
                     prs_opened = prs_opened + 1
 
