@@ -695,6 +695,12 @@ def git_branch_ctx(old_branch_name, new_branch_name):
         subprocess.check_output(['git', 'branch', '-D', new_branch_name])
 
 
+def automerge_is_enabled(pr):
+    """Check if automerge is enabled for a specific PR."""
+    labels = json.loads(subprocess.check_output(['gh', 'pr', 'view', str(pr), '--json', 'labels']).decode('utf-8'))['labels']
+
+    return 'Automerge' in [label['name'] for label in labels]
+
 def main():
     import glob
 
@@ -726,10 +732,8 @@ def main():
         labels = json.loads(subprocess.check_output(['gh', 'pr', 'view', str(pr), '--json', 'labels']).decode('utf-8'))
         print(f'Labels for PR {pr}: {labels}')
 
-        if passed.returncode == 0:
-            # TODO Check that the automerge label is there
-
-            # PR passed, let's merge it
+        if passed.returncode == 0 and automerge_is_enabled(pr):
+            # PR passed and automerge is enabled, let's merge it
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
             subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--rebase', '--delete-branch', '--admin'])
         else:
