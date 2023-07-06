@@ -1,17 +1,26 @@
+From 51b4706bb96de569bb151a712f5677dbe1bec2d1 Mon Sep 17 00:00:00 2001
+From: martinRenou <martin.renou@gmail.com>
+Date: Thu, 6 Jul 2023 11:19:23 +0200
+Subject: [PATCH 1/1] no bitsize check
 
-  
---- tools/FindPythonLibsNew.cmake   2022-02-02 23:34:15.000000000 +0100
-+++ "tools/FindPythonLibsNew (copy).cmake"  2022-02-24 15:10:30.278832387 +0100
-@@ -156,7 +156,7 @@
- 
+---
+ tools/FindPythonLibsNew.cmake | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/FindPythonLibsNew.cmake b/tools/FindPythonLibsNew.cmake
+index ce558d4e..74d59d21 100644
+--- a/tools/FindPythonLibsNew.cmake
++++ b/tools/FindPythonLibsNew.cmake
+@@ -182,7 +182,8 @@ _pybind11_get_if_undef(_PYTHON_VALUES 9 PYTHON_MULTIARCH)
  # Make sure the Python has the same pointer-size as the chosen compiler
  # Skip if CMAKE_SIZEOF_VOID_P is not defined
--if(CMAKE_SIZEOF_VOID_P AND (NOT "${PYTHON_SIZEOF_VOID_P}" STREQUAL "${CMAKE_SIZEOF_VOID_P}"))
-+if(NOT EMSCRIPTEN AND CMAKE_SIZEOF_VOID_P AND (NOT "${PYTHON_SIZEOF_VOID_P}" STREQUAL "${CMAKE_SIZEOF_VOID_P}"))
+ # This should be skipped for (non-Apple) cross-compiles (like EMSCRIPTEN)
+-if(NOT CMAKE_CROSSCOMPILING
++if(NOT EMSCRIPTEN
++   AND NOT CMAKE_CROSSCOMPILING
+    AND CMAKE_SIZEOF_VOID_P
+    AND (NOT "${PYTHON_SIZEOF_VOID_P}" STREQUAL "${CMAKE_SIZEOF_VOID_P}"))
    if(PythonLibsNew_FIND_REQUIRED)
-     math(EXPR _PYTHON_BITS "${PYTHON_SIZEOF_VOID_P} * 8")
-     math(EXPR _CMAKE_BITS "${CMAKE_SIZEOF_VOID_P} * 8")
-© 2022 GitHub, Inc.
-Terms
-Privacy
-Security
+-- 
+2.41.0
+
