@@ -1,4 +1,5 @@
 import pytest
+import pyjs
 
 
 def test_import_ipython():
