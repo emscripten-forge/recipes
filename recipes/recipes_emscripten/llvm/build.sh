@@ -4,6 +4,11 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
+# clear LDFLAGS flags because they contain sWASM_BIGINT
+export LDFLAGS=""
+
+
+
 # Configure step
 emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
     -GNinja                                         \
