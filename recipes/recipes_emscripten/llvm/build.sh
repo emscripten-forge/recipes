@@ -10,7 +10,7 @@ export LDFLAGS=""
 
 
 # Configure step
-emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
+emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -GNinja                                         \
     -DCMAKE_BUILD_TYPE=MinSizeRel                   \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
@@ -20,6 +20,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
     -DLLVM_INCLUDE_BENCHMARKS=OFF                   \
     -DLLVM_INCLUDE_EXAMPLES=OFF                     \
     -DLLVM_INCLUDE_TESTS=OFF                        \
+    -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
