@@ -1,17 +1,19 @@
 #!/bin/bash
 
-mkdir build
+mkdir -p build
 cd build
 
-LDFLAGS="${SIDE_MODULE_LDFLAGS}" emcmake cmake \
-    -DDISABLE_GEOS_INLINE=ON \
-    -DBUILD_TESTING=OFF \
-    -DBUILD_BENCHMARKS=OFF \
-    -DBUILD_DOCUMENTATION=OFF \
-    -DBUILD_GEOSOP=OFF \
-    -DCMAKE_C_FLAGS="-fPIC" \
-    -DCMAKE_CXX_FLAGS="-fPIC" \
-    -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+export LDFLAGS="$LDFLAGS -s SIDE_MODULE=1"
+
+emcmake cmake \
+    -D DISABLE_GEOS_INLINE=ON \
+    -D BUILD_TESTING=OFF \
+    -D BUILD_BENCHMARKS=OFF \
+    -D BUILD_DOCUMENTATION=OFF \
+    -D BUILD_GEOSOP=OFF \
+    -D CMAKE_C_FLAGS="-fPIC" \
+    -D CMAKE_CXX_FLAGS="-fPIC" \
+    -D CMAKE_INSTALL_PREFIX=${PREFIX} \
     ./
 
 emmake make -j ${CPU_COUNT:-3} ${VERBOSE_AT}
