@@ -1,3 +1,2 @@
 def test_import():
-    import kiwisolver
-    kiwisolver.__version__
+    from kiwisolver import Solver
