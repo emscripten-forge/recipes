@@ -14,7 +14,7 @@ emcmake cmake \
     -D CMAKE_C_FLAGS="-fPIC" \
     -D CMAKE_CXX_FLAGS="-fPIC" \
     -D CMAKE_INSTALL_PREFIX=${PREFIX} \
-    ./
+    ..
 
 emmake make -j ${CPU_COUNT:-3} ${VERBOSE_AT}
 emmake make install
