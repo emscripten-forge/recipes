@@ -10,11 +10,23 @@ import uuid
 import sys
 import shutil
 
+import ruamel
+from ruamel.yaml import YAML
+from ruamel.yaml.representer import RoundTripRepresenter
+
 from pyjs_code_runner.run import run
 from pyjs_code_runner.backend.backend import BackendType
 
 THIS_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 MAIN_MOUNT = THIS_DIR / "main_mount"
+
+
+class MyRepresenter(RoundTripRepresenter):
+    pass
+
+ruamel.yaml.add_representer(
+    OrderedDict, MyRepresenter.represent_dict, representer=MyRepresenter
+)
 
 
 def find_free_port():
@@ -34,14 +46,15 @@ def has_pytest_files(recipe_dir):
     return False
 
 
-def create_test_env(pkg_name, prefix, conda_bld_dir):
+def create_test_env(pkg_name, requires, prefix, conda_bld_dir):
     channels = (
         f"-c {conda_bld_dir} -c https://repo.mamba.pm/emscripten-forge -c conda-forge"
     )
 
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" numpy {pkg_name} {channels}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" numpy {" ".join(requires)} {pkg_name} {channels}"""
     ]
+
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     returncode = ret.returncode
@@ -81,21 +94,41 @@ def temp_work_dir(work_dir):
             yield temp_dir
 
 
+def get_yaml_loader(typ):
+    if typ == "rt":
+        loader = YAML(typ=typ)
+        loader.preserve_quotes = True
+        loader.default_flow_style = False
+        loader.indent(sequence=4, offset=2)
+        loader.width = 1000
+        loader.Representer = MyRepresenter
+        loader.Loader = ruamel.yaml.RoundTripLoader
+    elif typ == "safe":
+        loader = YAML(typ=typ)
+    return loader
+
+
 def test_package(recipe, work_dir, conda_bld_dir):
     recipe_dir, _ = os.path.split(recipe["recipe_file"])
     assert os.path.isdir(recipe_dir), f"recipe_dir: {recipe_dir} does not exist"
     recipe_file = os.path.join(recipe_dir, "recipe.yaml")
 
+    loader = get_yaml_loader(typ="rt")
+    with open(recipe_file, 'r') as fobj:
+        recipe_yaml = loader.load(fobj)
+
+    extra = recipe_yaml.get("extra", {})
+
     old_cwd = os.getcwd()
 
-    if has_pytest_files(recipe_dir):
+    if "emscripten_tests" in extra and has_pytest_files(recipe_dir):
         pkg_name = recipe["package"]["name"]
+
+        requires = extra["emscripten_tests"].get("requires", [])
 
         with temp_work_dir(work_dir) as temp_dir:
             prefix = os.path.join(temp_dir, "prefix")
-            create_test_env(
-                pkg_name=pkg_name, prefix=prefix, conda_bld_dir=conda_bld_dir
-            )
+            create_test_env(pkg_name, requires, prefix, conda_bld_dir)
 
             work_dir = Path("/home/web_user/recipe_dir")
 

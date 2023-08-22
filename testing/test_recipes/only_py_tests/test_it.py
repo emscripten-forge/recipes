@@ -1,3 +1,7 @@
-# a test that always passes on purpose
-def test_it():
-    assert True
+def test_imports():
+    import matplotlib.pyplot as plt
+
+    import pandas
+    from pandas import read_csv, DataFrame
+
+    import sklearn
