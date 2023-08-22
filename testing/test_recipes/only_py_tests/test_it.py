@@ -3,5 +3,3 @@ def test_imports():
 
     import pandas
     from pandas import read_csv, DataFrame
-
-    import sklearn
