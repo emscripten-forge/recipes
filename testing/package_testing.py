@@ -53,7 +53,7 @@ def create_test_env(pkg_name, requires, prefix, conda_bld_dir):
     )
 
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" numpy {" ".join(requires)} {pkg_name} {channels}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" "numpy<1.25" {" ".join(requires)} {pkg_name} {channels}"""
     ]
 
     ret = subprocess.run(cmd, shell=True)
