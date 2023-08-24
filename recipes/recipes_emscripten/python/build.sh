@@ -31,7 +31,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
       ./configure \
           CFLAGS="${PYTHON_CFLAGS}" \
           CPPFLAGS="-I${PREFIX}/include" \
-          LDFLAGS="-L${PREFIX}/lib -lffi -lz -sWASM_BIGINT" \
+          LDFLAGS="-L${PREFIX}/lib -lffi -lz -luuid -lssl -lcrypto -sWASM_BIGINT" \
           PLATFORM_TRIPLET=$PLATFORM_TRIPLET \
           MULTIARCH=$MULTIARCH \
           --without-pymalloc \
@@ -73,7 +73,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
     cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
 
     # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
-    sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
+    sed -i  -e "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
     # sed -i "s/'SHLIB_SUFFIX': '.so',/'SHLIB_SUFFIX': '.cpython-310-wasm32-emscripten.so',/g"  ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
 
     # install/copy sysconfig to a place where cross-python expects the sysconfig
@@ -82,12 +82,15 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     # cleanup
     pushd ${PREFIX}
-    find . grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
+    #find . grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
+    find . \( -name "*__pycache__" -o -name "*.pyc" -o -name "*.pyo" \) -delete
+
     popd
 
     # cleanup
     pushd ${PREFIX}
-    find . grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
+   #find . grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
+    find . \( -name "*__pycache__" -o -name "*.pyc" -o -name "*.pyo" \) -delete
     popd
 
     # remove the removal modules
@@ -103,10 +106,10 @@ if [[ $target_platform == "emscripten-32" ]]; then
 
     # remove broken links but keep python3.10 binary
     # and the non-broken link to it
-    rm  ${PREFIX}/bin/2to3
-    rm  ${PREFIX}/bin/idle3
-    rm  ${PREFIX}/bin/pydoc3
-    rm  ${PREFIX}/bin/python3-config
+    rm -f ${PREFIX}/bin/2to3
+    rm -f ${PREFIX}/bin/idle3
+    rm -f ${PREFIX}/bin/pydoc3
+    rm -f ${PREFIX}/bin/python3-config
 
     # remove broken links
     rm -rf ${PREFIX}/lib/pkgconfig 
