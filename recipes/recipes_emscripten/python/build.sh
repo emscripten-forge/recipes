@@ -111,9 +111,6 @@ if [[ $target_platform == "emscripten-32" ]]; then
     # remove broken links
     rm -rf ${PREFIX}/lib/pkgconfig
 
-    # brand Python and patch platform.py
-    $PYTHON ${RECIPE_DIR}/brand_python.py
-
 else
     mkdir -p build
     pushd build

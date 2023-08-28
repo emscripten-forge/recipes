@@ -1,0 +1,39 @@
+From cbb3a36b1360ae3e1b37e573a404b526ebc9bc11 Mon Sep 17 00:00:00 2001
+From: martinRenou <martin.renou@gmail.com>
+Date: Mon, 28 Aug 2023 15:04:04 -0400
+Subject: [PATCH 1/1] Brand Python
+
+---
+ Lib/platform.py     | 1 +
+ Python/getversion.c | 3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/Lib/platform.py b/Lib/platform.py
+index 7bb222088d..3fc191bf66 100755
+--- a/Lib/platform.py
++++ b/Lib/platform.py
+@@ -1089,6 +1089,7 @@ def _sys_version(sys_version=None):
+     elif "PyPy" in sys_version:
+         # PyPy
+         pypy_sys_version_parser = re.compile(
++            r'([\w.+]+)\s*(?:\\ \\|\\ packaged\\ by\\ conda\\-forge\\ \\|)?\s*'
+             r'([\w.+]+)\s*'
+             r'\(#?([^,]+),\s*([\w ]+),\s*([\w :]+)\)\s*'
+             r'\[PyPy [^\]]+\]?')
+diff --git a/Python/getversion.c b/Python/getversion.c
+index 5db836ab4b..9b627a9d13 100644
+--- a/Python/getversion.c
++++ b/Python/getversion.c
+@@ -14,7 +14,8 @@ void _Py_InitVersion(void)
+         return;
+     }
+     initialized = 1;
+-    PyOS_snprintf(version, sizeof(version), "%.80s (%.80s) %.80s",
++    PyOS_snprintf(version, sizeof(version),
++        "%.80s | packaged by conda-forge | (%.80s) %.80s",
+                   PY_VERSION, Py_GetBuildInfo(), Py_GetCompiler());
+ }
+ 
+-- 
+2.41.0
+
