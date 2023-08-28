@@ -1,39 +1,39 @@
-From cbb3a36b1360ae3e1b37e573a404b526ebc9bc11 Mon Sep 17 00:00:00 2001
+From 1f2a206e561df8a26f5f7233b8e98fcf7eefbfbc Mon Sep 17 00:00:00 2001
 From: martinRenou <martin.renou@gmail.com>
-Date: Mon, 28 Aug 2023 15:04:04 -0400
+Date: Mon, 28 Aug 2023 15:12:13 -0400
 Subject: [PATCH 1/1] Brand Python
 
 ---
- Lib/platform.py     | 1 +
+ Lib/platform.py     | 2 +-
  Python/getversion.c | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/Lib/platform.py b/Lib/platform.py
-index 7bb222088d..3fc191bf66 100755
+index e32f9c11cd..e7cb133944 100755
 --- a/Lib/platform.py
 +++ b/Lib/platform.py
-@@ -1089,6 +1089,7 @@ def _sys_version(sys_version=None):
-     elif "PyPy" in sys_version:
-         # PyPy
-         pypy_sys_version_parser = re.compile(
-+            r'([\w.+]+)\s*(?:\\ \\|\\ packaged\\ by\\ conda\\-forge\\ \\|)?\s*'
-             r'([\w.+]+)\s*'
-             r'\(#?([^,]+),\s*([\w ]+),\s*([\w :]+)\)\s*'
-             r'\[PyPy [^\]]+\]?')
+@@ -959,7 +959,7 @@ def processor():
+ ### Various APIs for extracting information from sys.version
+
+ _sys_version_parser = re.compile(
+-    r'([\w.+]+)\s*'  # "version<space>"
++    r'([\w.+]+)\s*(?:\ \|\ packaged\ by\ conda\-forge\ \|)?\s*'
+     r'\(#?([^,]+)'  # "(#buildno"
+     r'(?:,\s*([\w ]*)'  # ", builddate"
+     r'(?:,\s*([\w :]*))?)?\)\s*'  # ", buildtime)<space>"
 diff --git a/Python/getversion.c b/Python/getversion.c
-index 5db836ab4b..9b627a9d13 100644
+index c32b6f9d60..ef432e8b74 100644
 --- a/Python/getversion.c
 +++ b/Python/getversion.c
-@@ -14,7 +14,8 @@ void _Py_InitVersion(void)
-         return;
-     }
-     initialized = 1;
+@@ -9,7 +9,8 @@ const char *
+ Py_GetVersion(void)
+ {
+     static char version[250];
 -    PyOS_snprintf(version, sizeof(version), "%.80s (%.80s) %.80s",
 +    PyOS_snprintf(version, sizeof(version),
 +        "%.80s | packaged by conda-forge | (%.80s) %.80s",
                    PY_VERSION, Py_GetBuildInfo(), Py_GetCompiler());
+     return version;
  }
- 
--- 
+--
 2.41.0
-
