@@ -21,7 +21,7 @@ echo "PLATFORM_TRIPLET" $PLATFORM_TRIPLET
 
 
 LIB=libpython3.10.a
- 
+
 
 
 if [[ $target_platform == "emscripten-32" ]]; then
@@ -42,7 +42,7 @@ if [[ $target_platform == "emscripten-32" ]]; then
           --host=wasm32-unknown-emscripten\
           --build=$(./config.guess) \
           --prefix=${PREFIX}  \
-    
+
 
     cp ${RECIPE_DIR}/config/Setup.local ./Modules/
 
@@ -52,11 +52,11 @@ if [[ $target_platform == "emscripten-32" ]]; then
     emmake make CROSS_COMPILE=yes ${LIB} -j8
 
 
-    sed -i -e 's/libinstall:.*/libinstall:/' Makefile; 
-    
-    # emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
-    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
-    cp ${LIB}  ${PREFIX}/lib/ 
+    sed -i -e 's/libinstall:.*/libinstall:/' Makefile;
+
+    # emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB}
+    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB}
+    cp ${LIB}  ${PREFIX}/lib/
 
     emmake make CROSS_COMPILE=yes -j8
 
@@ -64,13 +64,13 @@ if [[ $target_platform == "emscripten-32" ]]; then
     #  "some/long/path/containing_the_build_dir/emcc"  with "emcc"
     #  "some/long/path/containing_the_build_dir/emar"  with "emar"
     #  "some/long/path/containing_the_build_dir/em++"  with "em++"
-    FNAME_IN="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py" 
+    FNAME_IN="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py"
     FNAME_OUT="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py"
     $PYTHON $RECIPE_DIR/patch_sysconfigdata.py \
         --fname-in $FNAME_IN \
         --fname-out $FNAME_OUT \
-        
-    cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
+
+    cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/
 
     # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
     sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
@@ -109,8 +109,11 @@ if [[ $target_platform == "emscripten-32" ]]; then
     rm  ${PREFIX}/bin/python3-config
 
     # remove broken links
-    rm -rf ${PREFIX}/lib/pkgconfig 
-    
+    rm -rf ${PREFIX}/lib/pkgconfig
+
+    # brand Python and patch platform.py
+    $PYTHON ${RECIPE_DIR}/brand_python.py
+
 else
     mkdir -p build
     pushd build
