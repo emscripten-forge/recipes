@@ -1,62 +1,37 @@
-#!/usr/bin/env bash
 
-set -e -x
-shopt -s extglob
+# make some directories
+mkdir -p $PREFIX/include
+mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/bin
+mkdir -p $PREFIX/etc/conda
+mkdir -p cpython/build
 
 
-if [[ "$target_platform" != emscripten-* ]]; then
+# overwrite $RECIPEDIR/pyodide_env.sh with am empty file
+# since we do not want to use the pyodide_env.sh from pyodide
+echo "" > $RECIPE_DIR/pyodide_env.sh
 
-  export CFLAGS="${CFLAGS//-fvisibility=+([! ])/}"
-  export CXXFLAGS="${CXXFLAGS//-fvisibility=+([! ])/}"
 
-  configure_args=(
-      --disable-debug
-      --disable-dependency-tracking
-      --prefix="${PREFIX}"
-      --includedir="${PREFIX}/include"
-      --disable-exec-static-tramp
-  )
+# create a symlink from $BUILD_PREFIX/emsdk directory to this dir emsdk.
+# This allows us to overwrite the emsdk from pyodide
+rm -rf emsdk
+mkdir -p emsdk
+cd emsdk
+ln -s $CONDA_EMSDK_DIR emsdk
+cd ..
 
-  if [[ "$target_platform" != win-* ]]; then
-    configure_args+=(--build=$BUILD --host=$HOST)
-  else
-    configure_args+=(--disable-static)
-    export CPPFLAGS="$CPPFLAGS -DFFI_BUILDING_DLL"
-  fi
 
-  autoreconf -vfi
+mkdir -p cpython/build/Python-3.11.3/Include
 
-  if [[ "$target_platform" == linux* ]]; then
-    # this changes the install dir from ${PREFIX}/lib64 to ${PREFIX}/lib
-    sed -i 's:@toolexeclibdir@:$(libdir):g' Makefile.in */Makefile.in
-    sed -i 's:@toolexeclibdir@:${libdir}:g' libffi.pc.in
-  fi
+#replace "all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a" with "$(INSTALL)/lib/libffi.a"
 
-  ./configure "${configure_args[@]}" || { cat config.log; exit 1;}
-  if [[ "$target_platform" == win-64 ]]; then
-    pushd x86_64-pc-mingw64
-      patch_libtool
-      sed -i.bak 's/|-fuse-ld/|-Xclang|-fuse-ld/g' libtool
-    popd
-  fi
+sed -i 's/all: $(INSTALL)\/lib\/$(LIB) $(INSTALL)\/lib\/libffi.a/all: $(INSTALL)\/lib\/libffi.a/g' cpython/Makefile
 
-  make -j${CPU_COUNT} ${VERBOSE_AT}
-  make check
-  make install
+#################################################################
+#  THE ACTUAL BUILD
+make -C cpython
+################################################################
 
-  # This overlaps with libgcc-ng:
-  rm -rf ${PREFIX}/share/info/dir
 
-  if [[ "$target_platform" == win-64 ]]; then
-    mv $PREFIX/lib/ffi.dll.lib $PREFIX/lib/libffi.dll.lib
-  fi
-else
-  echo "emscripten build"
-  ./build.sh 
-  make install
-  mkdir -p ${PREFIX}/lib
-  mkdir -p ${PREFIX}/include
-  cp target/include/*.h ${PREFIX}/include/
-  cp target/lib/libffi.a ${PREFIX}/lib/
-
-fi
+# install libffi
+cp -r cpython/build/libffi/target/ $PREFIX/

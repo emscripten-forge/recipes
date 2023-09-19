@@ -23,7 +23,7 @@ import libmambapy as api
 from pathlib import Path
 
 RECIPES_SUBDIR_MAPPING = OrderedDict(
-    [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
+    [("recipes", ""), ("recipes_emscripten", "emscripten-wasm32")]
 )
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -99,7 +99,7 @@ def test_package(recipe, work_dir):
 
 
 def cleanup():
-    do_not_delete = ["noarch", "linux-64", "emscripten-32", "icons"]
+    do_not_delete = ["noarch", "linux-64", "emscripten-wasm32", "icons"]
     do_not_delete = [os.path.join(CONDA_BLD_DIR, d) for d in do_not_delete]
 
     for dirname in glob.iglob(os.path.join(CONDA_BLD_DIR, "**"), recursive=False):
@@ -111,7 +111,7 @@ def cleanup():
 def post_build_callback(
     recipe, target_platform, sorted_outputs, final_names, skip_tests, work_dir
 ):
-    if target_platform == "emscripten-32" and (not skip_tests):
+    if target_platform == "emscripten-wasm32" and (not skip_tests):
         with restore_cwd():
             test_package(recipe=recipe, work_dir=work_dir)
     cleanup()
@@ -149,14 +149,14 @@ def boa_build(
 @build_app.command()
 def directory(
     recipes_dir,
-    emscripten_32: Optional[bool] = typer.Option(False),
+    emscripten_wasm32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     work_dir = os.getcwd()
     platform = ""
-    if emscripten_32:
-        platform = "emscripten-32"
+    if emscripten_wasm32:
+        platform = "emscripten-wasm32"
     boa_build(
         work_dir=work_dir,
         target=recipes_dir,
@@ -170,16 +170,16 @@ def directory(
 @build_app.command()
 def explicit(
     recipe_dir,
-    emscripten_32: Optional[bool] = typer.Option(False),
+    emscripten_wasm32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     work_dir = os.getcwd()
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
     platform = ""
-    if emscripten_32:
+    if emscripten_wasm32:
         print("WITH EM")
-        platform = "emscripten-32"
+        platform = "emscripten-wasm32"
     boa_build(
         work_dir=work_dir,
         target=recipe_dir,

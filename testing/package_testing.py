@@ -40,7 +40,7 @@ def create_test_env(pkg_name, prefix, conda_bld_dir):
     )
 
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" numpy {pkg_name} {channels}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-wasm32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" numpy {pkg_name} {channels}"""
     ]
     ret = subprocess.run(cmd, shell=True)
     #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -74,7 +74,7 @@ def temp_work_dir(work_dir):
             yield tmp_dir
 
         finally:
-            pass
+            #pass
             shutil.rmtree(tmp_dir)
     else:
         with tempfile.TemporaryDirectory() as temp_dir:

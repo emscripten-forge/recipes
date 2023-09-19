@@ -1,25 +1,41 @@
 context:
   version: 3.4.2
   am_version: 1.15
-
-package:
   name: libffi
+package:
+  name: '{{name}}'
   version: '{{ version }}'
 
 source:
-  url: https://github.com/hoodmane/libffi-emscripten/archive/refs/tags/2022-06-23.tar.gz
-  sha256: af4a4ed65b29f1dd0e5b4106a971ea1be73832f759ce7bc0cb12ac6d3bb88a71
-
+  #- url: https://github.com/emscripten-forge/{{name}}/archive/refs/tags/{{version}}.tar.gz
+  #  sha256: 21211596df09778de7ebfc34267b6759da5ef5bfb0ce7c8436b098e9bc83b2f3
+  - path: /Users/thorstenbeier/src/pyodide_clean
 build:
-  number: 2
+  number: 3
+  ignore_run_exports:
+    - nodejs
 
 requirements:
   build:
-    - texinfo
+    - '{{ compiler("cxx") }}'
+    - '{{ compiler("c") }}'
+    - python=3.11
+    - nodejs
+    - ccache
+    - f2c
+    - pkg-config
+    - swig
     - make
+    - cmake
+    - pkg-config
+    - texinfo
+    - autoconf
     - automake
     - libtool
-    - '{{ compiler("cxx") }}'
+    - patch # only needed on MacOS
+    - sed # only needed on MacOS
+    - wget
+
 
 about:
   home: https://sourceware.org/libffi/
@@ -37,3 +53,4 @@ about:
 extra:
   recipe-maintainers:
     - DerThorsten
+

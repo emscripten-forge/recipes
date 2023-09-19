@@ -1,8 +1,17 @@
 #!/bin/bash
 OLD_PYTHON=$PYTHON
 unset PYTHON
-MYPYTHON=${BUILD_PREFIX}/bin/python
-export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
+MYPYTHON=$BUILD_PREFIX/bin/python
+PY_VER_MAJOR_MINOR=$($MYPYTHON -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))')
+
+export EMSDK_PYTHON=$BUILD_PREFIX/bin/python3
+
+# create fake python3 wasm binary
+mkdir -p $PREFIX/bin
+cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
+
+
+
 
 
 # this will activate emscripten in case it has not yet been activated
@@ -29,7 +38,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   # sed -i 's/-fdiagnostics-color=always/ /g' $sysconfigdata_fn
   # tail -3 $sysconfigdata_fn
 
-  sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python3.10/ctypes/__init__.py
+  sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER_MAJOR_MINOR}/ctypes/__init__.py
 
 
   unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
@@ -54,8 +63,8 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
 
     # don't set LIBRARY_PATH
     # See https://github.com/conda-forge/matplotlib-feedstock/pull/309#issuecomment-972213735
-    sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python        || true
-    sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python$PY_VER || true
+    # sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python        || true
+    # sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python$PY_VER || true
 
     # undo symlink
     rm $BUILD_PREFIX/venv/build/bin/python
