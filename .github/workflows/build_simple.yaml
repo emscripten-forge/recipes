@@ -29,7 +29,7 @@ jobs:
       # CONFIG
       ################################################################
       - name: global config
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           git config --global advice.detachedHead false
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
@@ -38,18 +38,20 @@ jobs:
       ################################################################
       # MAMBA
       ################################################################
-      - name: install mamba
-        uses: mamba-org/provision-with-micromamba@main
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci_env.yml
-          environment-name: ci-env
-          micromamba-version: '0.23.2'
+          environment-name: ci
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
 
       ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
       - name: post env install config
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
           micromamba activate ci-env
@@ -59,7 +61,7 @@ jobs:
       # setup emsdk
       ################################################################
       - name: "setup emsdk"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
@@ -71,7 +73,7 @@ jobs:
       # in the conda env named "ci-env"
       ################################################################
       - name: "install custom non-master dependencies"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
@@ -81,7 +83,7 @@ jobs:
       # build a package which is **not** on emscripten forge
       ################################################################
       - name: "build package"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
@@ -91,7 +93,7 @@ jobs:
       # build a simple package
       ################################################################
       - name: "build package"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}

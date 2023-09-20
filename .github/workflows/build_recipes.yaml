@@ -41,7 +41,7 @@ jobs:
       # CONFIG
       ################################################################
       - name: global config
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           git config --global advice.detachedHead false
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
@@ -57,11 +57,21 @@ jobs:
           environment-name: ci-env
           micromamba-version: '0.23.2'
 
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: ci_env.yml
+          environment-name: ci
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
+
       ################################################################
       # setup emsdk
       ################################################################
       - name: "setup emsdk"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
@@ -70,7 +80,7 @@ jobs:
       # POST ENV INSTALL CONFIG
       ################################################################
       - name: post env install config
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
           micromamba activate ci-env
@@ -85,7 +95,7 @@ jobs:
       # in the conda env named "ci-env"
       ################################################################
       - name: "install custom non-master dependencies"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
@@ -94,7 +104,7 @@ jobs:
       # run pytests
       ################################################################
       - name: "test config files"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           micromamba activate ci-env
           cd testing
@@ -104,7 +114,7 @@ jobs:
       # build recipes with changes PUSH
       ################################################################
       - name: "build packages push"
-        shell: bash -l {0}
+        shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
           micromamba activate ci-env
@@ -116,7 +126,7 @@ jobs:
       # build recipes with changes PULL_REQUEST
       ################################################################
       - name: "build packages pull_request"
-        shell: bash -l {0}
+        shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
           micromamba activate ci-env
@@ -129,7 +139,7 @@ jobs:
       ################################################################
       - name: "quetz upload packages"
         if: github.event_name == 'push'
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
 
           mkdir -p ${CONDA_PREFIX}/conda-bld/emscripten-wasm32
