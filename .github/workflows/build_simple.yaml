@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        emsdk_ver: ["3.1.27"]
+        emsdk_ver: ["3.1.45"]
 
     steps:
 
@@ -61,14 +61,7 @@ jobs:
       - name: "setup emsdk"
         shell: bash -l {0}
         run: |
-          micromamba activate ci-env
-
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk 
-          ./emsdk install  ${{ matrix.emsdk_ver }}
-          ./emsdk activate  ${{ matrix.emsdk_ver }}
-          echo $(pwd)/emsdk-${{ matrix.emsdk_ver }}
-          echo $(pwd) > $HOME/.emsdkdir
+          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
 
       ################################################################
       # install / clone custom non-master things
@@ -80,7 +73,7 @@ jobs:
         shell: bash -l {0}
         run: |
           micromamba activate ci-env
-          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api             --no-deps --ignore-installed
+          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
 
 
       ################################################################
