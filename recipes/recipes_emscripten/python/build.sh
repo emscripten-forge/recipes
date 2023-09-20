@@ -72,4 +72,3 @@ ln -s $PREFIX/bin/python3.11 $PREFIX/bin/python3
 
 # copy sysconfigdata
 cp $PREFIX/sysconfigdata/_sysconfigdata__emscripten_wasm32-emscripten.py  $PREFIX/etc/conda/
-
