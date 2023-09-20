@@ -54,7 +54,6 @@ jobs:
         shell: bash -el {0}
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
-          micromamba activate ci-env
           playwright install
 
       ################################################################
@@ -63,7 +62,6 @@ jobs:
       - name: "setup emsdk"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
 
       ################################################################
@@ -75,7 +73,6 @@ jobs:
       - name: "install custom non-master dependencies"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
 
 
@@ -85,7 +82,6 @@ jobs:
       - name: "build package"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build explicit $GITHUB_WORKSPACE/testing/test_recipes/only_py_tests  --emscripten-wasm32
 
@@ -95,6 +91,5 @@ jobs:
       - name: "build package"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-wasm32

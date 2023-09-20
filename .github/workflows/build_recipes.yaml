@@ -65,7 +65,6 @@ jobs:
       - name: "setup emsdk"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
           
       ################################################################
@@ -75,7 +74,6 @@ jobs:
         shell: bash -el {0}
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
-          micromamba activate ci-env
           playwright install
 
 
@@ -89,7 +87,6 @@ jobs:
       - name: "install custom non-master dependencies"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
 
       ################################################################
@@ -98,7 +95,6 @@ jobs:
       - name: "test config files"
         shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           cd testing
           pytest test_empack_config.py
 
@@ -109,7 +105,6 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
@@ -121,7 +116,6 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD
 
