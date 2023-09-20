@@ -58,6 +58,15 @@ jobs:
           micromamba-version: '0.23.2'
 
       ################################################################
+      # setup emsdk
+      ################################################################
+      - name: "setup emsdk"
+        shell: bash -l {0}
+        run: |
+          micromamba activate ci-env
+          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
+          
+      ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
       - name: post env install config
@@ -67,13 +76,6 @@ jobs:
           micromamba activate ci-env
           playwright install
 
-      ################################################################
-      # setup emsdk
-      ################################################################
-      - name: "setup emsdk"
-        shell: bash -l {0}
-        run: |
-          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk  
 
 
       ################################################################
