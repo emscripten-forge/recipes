@@ -46,7 +46,7 @@ popd
 echo "...done"
 
 echo "emsdk building ..."
-./emsdk install --build=Release $EMSCRIPTEN_VERSION ccache-git-emscripten-64bit
+./emsdk install --build=Release $EMSCRIPTEN_VERSION
 echo "...done"
 
 echo "emsdk activating ..."

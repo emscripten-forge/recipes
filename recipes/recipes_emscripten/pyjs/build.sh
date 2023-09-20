@@ -6,18 +6,27 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX 
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
 
+echo "CXX" $CXX
+echo "CC" $CC
+
+export CC=emcc
+export CXX=em++
+
+
+# cp $BUILD_PREFIX/share/gnuconfig/config.* .
+
 # Configure step
-cmake ${CMAKE_ARGS} ..              \
-    -GNinja                         \
+emmake cmake ${CMAKE_ARGS} ..  \
     -DCMAKE_BUILD_TYPE=Release      \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
     -DBUILD_RUNTIME_BROWSER=ON \
-    -DBUILD_RUNTIME_NODE=ON \
-    -DLINK_LIBMPDEC=ON \
-    -DLINK_LIBEXPAT=ON \
-    -DWITH_NODE_TESTS=OFF
+    -DBUILD_RUNTIME_NODE=OFF \
+    -DLINK_LIBMPDEC=OFF \
+    -DLINK_LIBEXPAT=OFF \
+    -DWITH_NODE_TESTS=OFF \
+    -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 
 # Build step
-ninja install
+emmake make

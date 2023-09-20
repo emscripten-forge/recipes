@@ -18,12 +18,15 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
         return 1
     fi
 
+
     export EMSCRIPTEN_VERSION=$PKG_VERSION
 
     export CONDA_EMSDK_DIR=$(<$CONDA_EMSDK_DIR_CONFIG_FILE)
     export EMSCRIPTEN_FORGE_EMSDK_DIR=$CONDA_EMSDK_DIR
     echo "Using EMSCRIPTEN_FORGE_EMSDK_DIR $CONDA_EMSDK_DIR_CONFIG_FILE: " $EMSCRIPTEN_FORGE_EMSDK_DIR
 
+    $CONDA_EMSDK_DIR/emsdk activate  $EMSCRIPTEN_VERSION
+    
     source $CONDA_EMSDK_DIR/emsdk_env.sh
 
     export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
