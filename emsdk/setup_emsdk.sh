@@ -27,7 +27,7 @@ set -e
 
 echo "------------------------------------"
 echo "Installing emsdk"
-echo "------------------------------------"
+echo "------------------------------------" 
 
 
 echo "...cloning emsdk"
@@ -41,12 +41,12 @@ echo "...done"
 
 echo "emsdk patching"
 pushd upstream/emscripten
-cat $PATCH_DIR/*.patch | patch -p1 --verbose
+cat $PATCH_DIR/*.patch | patch -p1 --verbose 
 popd    
 echo "...done"
 
-echo "emsdk building ..."
-./emsdk install --build=Release $EMSCRIPTEN_VERSION
+echo "emsdk building ..."   
+./emsdk install --build=Release $EMSCRIPTEN_VERSION ccache-git-emscripten-64bit
 echo "...done"
 
 echo "emsdk activating ..."

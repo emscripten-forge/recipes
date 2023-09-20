@@ -30,3 +30,5 @@ emmake cmake ${CMAKE_ARGS} ..  \
 
 # Build step
 emmake make
+
+emmake make install
