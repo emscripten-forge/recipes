@@ -189,7 +189,7 @@ def explicit(
     recipe_dir,
     emscripten_wasm32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(True),
 ):
     work_dir = os.getcwd()
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
