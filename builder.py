@@ -47,6 +47,23 @@ app = typer.Typer(pretty_exceptions_show_locals=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
 
+# check if a pkg exists 
+def is_existing_pkg(pkg_name):
+    channels = (
+        f" -c https://repo.mamba.pm/emscripten-forge -c conda-forge "
+    )
+
+    cmd = [
+        f"""$MAMBA_EXE  create -n name_does_not_matter_here {channels} {pkg_name} --dry-run --no-deps --platform=emscripten-wasm32"""
+    ]
+
+    ret = subprocess.run(cmd, shell=True)
+    #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    returncode = ret.returncode
+    return returncode == 0
+
+
+
 
 @contextmanager
 def restore_cwd():
@@ -214,6 +231,15 @@ def changed(
             os.makedirs(tmp_folder_root, exist_ok=True)
 
             for recipe_with_change in recipe_with_changes:
+
+                if True and RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32":
+                    pkg_name = recipe_with_change
+                    print(f"Check if pkg exists: {pkg_name}")
+                    if is_existing_pkg(pkg_name):
+                        print(f"Skip existing pkg: {pkg_name}")
+                        continue
+                    else:
+                        print(f"Build pkg: {pkg_name}")
                 recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
 
                 # diff can shown deleted recipe as changed
@@ -225,7 +251,7 @@ def changed(
                     shutil.copytree(recipe_dir, tmp_recipe_dir)
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
-
+            
             boa_build(
                 work_dir=work_dir,
                 target=tmp_recipes_root_str,
