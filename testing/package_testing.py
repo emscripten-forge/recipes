@@ -122,10 +122,10 @@ def test_package(recipe, work_dir, conda_bld_dir):
 
     old_cwd = os.getcwd()
 
-    if "emscripten_tests" in extra and has_pytest_files(recipe_dir):
+    if has_pytest_files(recipe_dir):
         pkg_name = recipe["package"]["name"]
 
-        requires = extra["emscripten_tests"].get("requires", [])
+        requires = []#extra["emscripten_tests"].get("requires", [])
 
         with temp_work_dir(work_dir) as temp_dir:
             prefix = os.path.join(temp_dir, "prefix")
