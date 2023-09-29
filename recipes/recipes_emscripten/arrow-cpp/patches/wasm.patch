@@ -1,0 +1,83 @@
+diff --git a/cpp/CMakeLists.txt b/cpp/CMakeLists.txt
+index e6d0ed4e8..05844d68d 100644
+--- a/cpp/CMakeLists.txt
++++ b/cpp/CMakeLists.txt
+@@ -98,6 +98,20 @@ message(STATUS "Arrow SO version: ${ARROW_SO_VERSION} (full: ${ARROW_FULL_SO_VER
+ set(ARROW_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+ set(ARROW_BINARY_DIR ${PROJECT_BINARY_DIR})
+
++
++############# WIP WIP WIP
++# message(STATUS "CMAKE_EXE_LINKER_FLAGS BEFORE: ${CMAKE_EXE_LINKER_FLAGS}")
++# string(REPLACE "-Wl,--sort-common" "" CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
++# string(REPLACE "-Wl,--as-needed" "" CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
++# string(REPLACE "-Wl,--disable-new-dtags" "" CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
++# message(STATUS "CMAKE_EXE_LINKER_FLAGS AFTER: ${CMAKE_EXE_LINKER_FLAGS}")
++
++# message(STATUS "CMAKE_CXX_FLAGS BEFORE: ${CMAKE_CXX_FLAGS}")
++# string(REPLACE "-fstack-protector-strong" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
++# message(STATUS "CMAKE_CXX_FLAGS AFTER: ${CMAKE_CXX_FLAGS}")
++
++############# WIP WIP WIP - END
++
+ include(CMakePackageConfigHelpers)
+ include(CMakeParseArguments)
+ include(ExternalProject)
+@@ -897,7 +911,7 @@ endif()
+
+ set(ARROW_SYSTEM_LINK_LIBS)
+
+-list(APPEND ARROW_SYSTEM_LINK_LIBS Threads::Threads)
++# list(APPEND ARROW_SYSTEM_LINK_LIBS Threads::Threads)
+ if(CMAKE_THREAD_LIBS_INIT)
+   string(APPEND ARROW_PC_LIBS_PRIVATE " ${CMAKE_THREAD_LIBS_INIT}")
+ endif()
+@@ -962,3 +976,34 @@ config_summary_message()
+ if(${ARROW_BUILD_CONFIG_SUMMARY_JSON})
+   config_summary_json()
+ endif()
++
++########
++
++add_executable(wasm-driver ${CMAKE_CURRENT_SOURCE_DIR}/examples/minimal_build/example.cc )
++target_link_libraries(wasm-driver PUBLIC arrow_static)
++
++target_compile_options(wasm-driver PUBLIC -fno-stack-protector)
++
++target_link_options(wasm-driver
++  #PUBLIC -Wno-unused-command-line-argument
++  PUBLIC "SHELL: -s MODULARIZE=1"
++  PUBLIC "SHELL: -s EXPORT_NAME=\"createModule\""
++  PUBLIC "SHELL: -s EXPORT_ES6=0"
++  PUBLIC "SHELL: -s USE_ES6_IMPORT_META=0"
++  PUBLIC "SHELL: -s DEMANGLE_SUPPORT=0"
++  PUBLIC "SHELL: -s ASSERTIONS=0"
++  PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
++  PUBLIC "SHELL: -s EXIT_RUNTIME=1"
++  PUBLIC "SHELL: -s WASM=1"
++  PUBLIC "SHELL: -s USE_PTHREADS=0"
++  PUBLIC "SHELL: -fwasm-exceptions"
++  # PUBLIC "SHELL: -s MAIN_MODULE=1"
++  PUBLIC "SHELL: -s ENVIRONMENT=web"
++  PUBLIC "SHELL: -s TOTAL_STACK=16mb"
++  PUBLIC "SHELL: -s INITIAL_MEMORY=64mb"
++  PUBLIC "SHELL: -s FORCE_FILESYSTEM"
++  PUBLIC "SHELL: -s LZ4=1"
++  PUBLIC "SHELL: -flto"
++  PUBLIC "SHELL: -s LLD_REPORT_UNDEFINED"
++  # PUBLIC "SHELL: -s WASM_BIGINT"
++)
+\ No newline at end of file
+diff --git a/cpp/cmake_modules/DefineOptions.cmake b/cpp/cmake_modules/DefineOptions.cmake
+index 0a0f24b47..7a9774387 100644
+--- a/cpp/cmake_modules/DefineOptions.cmake
++++ b/cpp/cmake_modules/DefineOptions.cmake
+@@ -349,7 +349,7 @@ takes precedence over ccache if a storage backend is configured" ON)
+   define_option(ARROW_IPC "Build the Arrow IPC extensions" ON)
+
+   set(ARROW_JEMALLOC_DESCRIPTION "Build the Arrow jemalloc-based allocator")
+-  if(WIN32 OR "${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD")
++  if(WIN32 OR EMSCRIPTEN OR "${CMAKE_SYSTEM_NAME}" STREQUAL "FreeBSD")
+     # jemalloc is not supported on Windows.
+     #
+     # jemalloc is the default malloc implementation on FreeBSD and can't
