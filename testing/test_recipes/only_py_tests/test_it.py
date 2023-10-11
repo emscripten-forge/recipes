@@ -1,4 +1,11 @@
 def test_imports():
+    from debugpy.server import api  # noqa
+    from _pydevd_bundle import pydevd_frame_utils
+    from _pydevd_bundle.pydevd_suspended_frames import (
+        SuspendedFramesManager,
+        _FramesTracker,
+    )
+
     import matplotlib.pyplot as plt
 
     import pandas
