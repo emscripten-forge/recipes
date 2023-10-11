@@ -11,3 +11,7 @@ def test_imports():
 
     for submodule in pkgutil.iter_modules(scipy.__path__):
         __import__(f"scipy.{submodule.name}")
+
+    import IPython
+    from IPython.core.displayhook import DisplayHook
+    from IPython.core.displaypub import DisplayPublisher
