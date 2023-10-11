@@ -1,11 +1,4 @@
 def test_imports():
-    from debugpy.server import api  # noqa
-    from _pydevd_bundle import pydevd_frame_utils
-    from _pydevd_bundle.pydevd_suspended_frames import (
-        SuspendedFramesManager,
-        _FramesTracker,
-    )
-
     import matplotlib.pyplot as plt
 
     import pandas
@@ -14,6 +7,7 @@ def test_imports():
     import pyarrow as pa
 
     import pkgutil
+    import scipy.interpolate
     import scipy
 
     for submodule in pkgutil.iter_modules(scipy.__path__):
