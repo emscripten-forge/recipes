@@ -1,6 +1,10 @@
 mkdir build
 cd build
 
+# remove all the fake pythons
+rm -f $PREFIX/bin/python*
+
+
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 

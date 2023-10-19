@@ -6,6 +6,8 @@ mkdir -p $PREFIX/bin
 mkdir -p $PREFIX/etc/conda
 mkdir -p cpython/build
 
+# the following line can re-enable the _sqlite3 module (but atm we keep it disabled)
+cp $RECIPE_DIR/Setup.local  ./cpython/Setup.local
 
 # this only overwrite the install path
 cp $RECIPE_DIR/Makefile.envs  .
@@ -53,17 +55,22 @@ cp cpython/build/Python-3.11.3/Modules/expat/libexpat.a     $PREFIX/lib
 
 # a fake wheel command
 touch $PREFIX/bin/wheel
-echo "wheel is not a supported wheel on this platform." > $PREFIX/bin/wheel
+# append #!/bin/bash
+
+echo "#!/bin/bash" >> $PREFIX/bin/wheel
+echo "echo \"wheel is not a supported on this platform.\"" >> $PREFIX/bin/wheel
 chmod +x $PREFIX/bin/wheel
 
 # a fake pip command
 touch $PREFIX/bin/pip
-echo "pip is not a supported pip on this platform." > $PREFIX/bin/pip
+echo "#!/bin/bash" >> $PREFIX/bin/pip
+echo "echo \"pip is not a supported on this platform.\"" >> $PREFIX/bin/pip
 chmod +x $PREFIX/bin/pip
 
 # a fake python3 command
 touch $PREFIX/bin/python3.11
-echo "python3 is not a supported python3 on this platform." > $PREFIX/bin/python3.11
+echo "#!/bin/bash" >> $PREFIX/bin/python3.11
+echo "echo \"python3 is not a supported on this platform.\"" >> $PREFIX/bin/python3.11
 chmod +x $PREFIX/bin/python3.11
 
 # create symlink st. all possible python3.11 commands are available
