@@ -195,7 +195,6 @@ def explicit(
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
     platform = ""
     if emscripten_wasm32:
-        print("WITH EM")
         platform = "emscripten-wasm32"
     boa_build(
         work_dir=work_dir,
@@ -232,14 +231,6 @@ def changed(
 
             for recipe_with_change in recipe_with_changes:
 
-                if skip_existing and RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32":
-                    pkg_name = recipe_with_change
-                    print(f"Check if pkg exists: {pkg_name}")
-                    if is_existing_pkg(pkg_name):
-                        print(f"Skip existing pkg: {pkg_name}")
-                        continue
-                    else:
-                        print(f"Build pkg: {pkg_name}")
                 recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
 
                 # diff can shown deleted recipe as changed

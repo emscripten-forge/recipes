@@ -10,7 +10,7 @@ fi
 
 
 
-export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.10/site-packages/numpy/core/include   -I$PREFIX/lib/python3.10/site-packages/numpy/core/include" 
+export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.11/site-packages/numpy/core/include   -I$PREFIX/lib/python3.11/site-packages/numpy/core/include" 
 
 export CFLAGS="$CFLAGS $INCLUDE_NUMPY_FLAGS"
 export CXXFLAGS="$CXXFLAGS $INCLUDE_NUMPY_FLAGS"
@@ -22,3 +22,7 @@ export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
 
 cd python
 ${PYTHON} -m pip install . -vvv 
+
+INIT_PATH=$PREFIX/lib/python3.11/site-packages/pyarrow/__init__.py
+
+sed -i "s/__version__ = None/__version__ = \"$PKG_VERSION\"/g" $INIT_PATH
