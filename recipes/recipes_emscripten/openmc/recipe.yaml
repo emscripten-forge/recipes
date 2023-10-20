@@ -1,0 +1,63 @@
+context:
+  version: 0.13.3
+
+package:
+  name: openmc
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/openmc-dev/openmc/archive/v{{ version }}.tar.gz
+  sha256: dbdd0f9ee1cbfccfeefcdb7b50e9b9c9d57ffdb76fa0e2bf4144508c2b7f482e
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - cmake
+    - make
+    - pkg-config
+  host:
+    - hdf5
+    - libpng
+    - git
+    - setuptools
+    - pip
+    - numpy
+    - cython
+    - matplotlib-base
+    - python
+  run:
+    - hdf5
+    - libpng
+    - python
+    - numpy
+    - scipy
+    - pandas
+    - matplotlib-base
+    - lxml
+    - uncertainties
+    - setuptools
+    - openssh
+    - ipython
+    - njoy2016
+
+test:
+  commands:
+    - sel(emscripten): test -f "${PREFIX}/bin/openmc.wasm"
+    - sel(emscripten): pip check
+
+about:
+  home: https://openmc.org
+  license: MIT
+  license_file: LICENSE
+  summary: OpenMC Monte Carlo Code
+  doc_url: https://docs.openmc.org
+  dev_url: https://github.com/openmc-dev/openmc
+
+extra:
+  recipe-maintainers:
+    - paulromano
+    - shimwell
