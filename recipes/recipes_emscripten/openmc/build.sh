@@ -11,12 +11,11 @@ else
 fi
 
 # Configure step
-cmake ${CMAKE_ARGS} ..                                \
-    -GNinja                                           \
-    -DCMAKE_BUILD_TYPE=Release                        \
-    -DCMAKE_PREFIX_PATH=$PREFIX                       \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM
+cmake -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DHDF5_ROOT="${PREFIX}" \
+      ..
 
 # Build step
 make -j "${CPU_COUNT}"
