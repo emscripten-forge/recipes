@@ -17,3 +17,12 @@ cp $RECIPE_DIR/src/Humor-Sans-1.0.ttf $MATPLOTLIB_LOCATION/mpl-data/fonts/ttf/Hu
 rm -rf $MATPLOTLIB_LOCATION/backends/qt_editor
 rm -rf $MATPLOTLIB_LOCATION/backends/web_backend
 rm -rf $MATPLOTLIB_LOCATION/sphinxext
+
+
+# rename import _qhull to import _qhull_matplotlib in file F
+F=$MATPLOTLIB_LOCATION/tri/triangulation.py
+sed -i 's/_qhull/_qhull_matplotlib/g' $F
+
+# rename file $MATPLOTLIB_LOCATION/_qhull.* to $MATPLOTLIB_LOCATION/_qhull_matplotlib.*
+mv $MATPLOTLIB_LOCATION/_qhull.cpython-311-wasm32-emscripten.so $MATPLOTLIB_LOCATION/_qhull_matplotlib.cpython-311-wasm32-emscripten.so
+

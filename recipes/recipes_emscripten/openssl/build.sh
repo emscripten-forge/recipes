@@ -1,7 +1,7 @@
 #!/bin/bash
 
 emconfigure ./Configure gcc -no-ui-console -DHAVE_FORK=0 -DOPENSSL_NO_SECURE_MEMORY -DNO_SYSLOG -fPIC
-sed -i 's!^CROSS_COMPILE=.*!!g' Makefile
+sed -i '' -e 's!^CROSS_COMPILE=.*!!g' Makefile
 make build_generated
 make -j ${CPU_COUNT:-3} libcrypto.a
 make -j ${CPU_COUNT:-3} libssl.a

@@ -1,106 +1,22 @@
 context:
-  version: "1.8.1"
+  version:  1.11.1
+  name: scipy
 
 package:
-  name: scipy
-  version: "{{ version }}"
+  name: '{{ name }}'
+  version: '{{ version }}'
 
-# use 'python_impl' in meta.yaml so it gets picked up by rendering
-# [python_impl == "pypy"]
-
-source:
-  # The sdist distributed by scipy contains pre-compiled pythran sources,
-  # as well as the relevant submodules; by taking the tarball from github
-  # we can compile pythran ourselves (or not), but manually need to include
-  # the submodules (not in tarball due to dear-github/dear-github#214)
-  - url: https://github.com/scipy/scipy/archive/refs/tags/v{{ version }}.tar.gz
-    sha256: fb6936f0c4a4f94bd2af7922cd1a94577ec472d4626a29aa95d8c228cdb45b94
-    patches:
-      - patches/0001-Fix-dstevr-in-special-lapack_defs.h.patch
-      # - patches/0002-loadDynamicLibrary-flapack.patch
-      - patches/0003-Add-lapack_extras-to-linalg-setup.py.patch
-      - patches/0004-int-to-string.patch
-      - patches/0005-disable-blas-detection.patch
-      - patches/0006-fix-fotran-files-minpack.patch
-      - patches/0007-gemm_-no-const.patch
-      - patches/0008-make-int-return-values.patch
-      - patches/0009-Rename-_page_trend_test.py-to-prevent-test-unvendori.patch
-      - patches/0010-sasum-returns-double-not-float.patch
-      - patches/0011-skip-fortran-fails-to-link.patch
-      - patches/0012-Disable-lapack-detection.patch
-      - patches/0013-Add-extra-END-to-prini.f.patch
-      - patches/0014-BUG-Fix-signature-of-D_IIR_forback-1-2.patch
-      - patches/0015-disable-longdouble.patch
-      - patches/0016-disable-pthread-pypocketfft.patch
-      - patches/0017-load-clapack-shared-lib.patch
-
-  # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/_lib
-  - git_url: https://github.com/scipy/boost-headers-only.git
-    git_rev: 2110ce20e59917b85b12059b3ddd8b133549f662
-    folder: scipy/_lib/boost
-  - git_url: https://github.com/scipy/unuran.git
-    git_rev: a63d39160e5ecc4402e7ed0e8417f4c3ff9634cb
-    folder: scipy/_lib/unuran
-  # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/sparse/linalg/_propack
-  - git_url: https://github.com/scipy/PROPACK.git
-    git_rev: 92f466393256df649fc8542c39dd647816dded25
-    folder: scipy/sparse/linalg/_propack/PROPACK
-
-  - url: https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.10.0.tar.gz
-    sha256: 328c1bea493a32cac5257d84157dc686cc3ab0b004e2bea22044e0a59f6f8a19
-    folder: lapack-3.10.0
-    
 build:
-  number: 4
+  number: 1
 
 requirements:
   build:
-    - sel(build_platform != target_platform): python
-    - sel(build_platform != target_platform): cross-python_{{ target_platform }}
-    - sel(build_platform != target_platform): cython 0.29.30
-    # we need gcc and gfortran for the preprocessor!
-    - gcc_impl_linux-64
-    - gfortran_impl_linux-64
-    # f2c to compile fortran
-    - f2c
-    - pip
-    - sel(build_platform != target_platform): numpy
-    - sel(build_platform != target_platform): pybind11
-    - sel(build_platform != target_platform): setuptools <60
     - "{{ compiler('c') }}"
-    - "{{ compiler('cxx') }}"
-    - 
-    # # pythran code needs clang-cl on windows
-    # - clang                                  # [win]
-    # - {{ compiler('fortran') }}              # [unix]
-    - pip
-    - setuptools <60
-  host:
-    - clapack
-    # - libblas
-    # - libcblas
-    # - liblapack
-    - python
-    # - cython
-    - pybind11
-    - pythran
-    - numpy
+  
   run:
-    - python
+    - openblas
     - numpy
-    - clapack
 
-    # - "{{ pin_compatible('numpy') }}"
-
-
-about:
-  home: http://www.scipy.org/
-  license: BSD-3-Clause
-  license_file: LICENSE.txt
-  summary: Scientific Library for Python
-  description: |
-    SciPy is a Python-based ecosystem of open-source software for mathematics,
-    science, and engineering.
-  doc_url: http://www.scipy.org/docs.html
-  dev_url: https://github.com/scipy/scipy
-
+extra:
+  recipe-maintainers:
+    - DerThorsten
