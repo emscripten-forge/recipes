@@ -4,7 +4,7 @@ mkdir build
 cd build
 
 
-if [[ $target_platform == "emscripten-32" ]]; then
+if [[ $target_platform == "emscripten-wasm32" ]]; then
     cp ${RECIPE_DIR}/"FindPythonLibsNew.cmake" ${SRC_DIR}/tools/
 fi
 

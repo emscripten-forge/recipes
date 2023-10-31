@@ -6,6 +6,10 @@
 # easier to debug.
 chmod -R o+rx .
 
+export AR=emar
+export ARCH=emar
+export RANLIB=emranlib
+
 cp $RECIPE_DIR/patches/endfile.c  ./F2CLIBS/libf2c/
 
 # In CLAPACK's Makefiles, some commands are mistakenly (?) hardcoded
@@ -14,6 +18,8 @@ sed -i 's/^	-ranlib /^	$(RANLIB)/' **/Makefile
 sed -i 's/^	ar /^	$(ARCH)/' **/Makefile
 sed -i 's/^	ld /^	$(LD)/' **/Makefile
 
+sed -i 's/-ranlib/-emranlib/g' F2CLIBS/libf2c/Makefile
+sed -i 's/\bar\b/emar/g' F2CLIBS/libf2c/Makefile
 
 export CFLAGS="CFLAGS -DNO_TRUNCATE"
 

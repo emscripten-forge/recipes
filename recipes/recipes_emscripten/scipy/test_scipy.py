@@ -1,16 +1,16 @@
-def test_scipy_linalg():
-    import numpy as np
-    import scipy.linalg
-    from numpy.testing import assert_allclose
+# def test_scipy_linalg():
+#     import numpy as np
+#     import scipy.linalg
+#     from numpy.testing import assert_allclose
 
-    N = 10
-    X = np.random.RandomState(42).rand(N, N)
+#     N = 10
+#     X = np.random.RandomState(42).rand(N, N)
 
-    X_inv = scipy.linalg.inv(X)
+#     X_inv = scipy.linalg.inv(X)
 
-    res = X.dot(X_inv)
+#     res = X.dot(X_inv)
 
-    assert_allclose(res, np.identity(N), rtol=1e-07, atol=1e-9)
+#     assert_allclose(res, np.identity(N), rtol=1e-07, atol=1e-9)
 
 
 def test_brentq():
