@@ -10,12 +10,12 @@ jobs:
   build_recipes:
     runs-on: ubuntu-latest
     env:
-      TARGET_PLATFORM: emscripten-32
+      TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
     strategy:
       fail-fast: false
       matrix:
-        emsdk_ver: ["3.1.27"]
+        emsdk_ver: ["3.1.45"]
 
     steps:
       - name: Checkout repo
@@ -41,7 +41,7 @@ jobs:
       # CONFIG
       ################################################################
       - name: global config
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
           git config --global advice.detachedHead false
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
@@ -50,37 +50,31 @@ jobs:
       ################################################################
       # MAMBA
       ################################################################
-      - name: install mamba
-        uses: mamba-org/provision-with-micromamba@main
+      - uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci_env.yml
-          environment-name: ci-env
-          micromamba-version: '0.23.2'
-
-      ################################################################
-      # POST ENV INSTALL CONFIG
-      ################################################################
-      - name: post env install config
-        shell: bash -l {0}
-        run: |
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc  
-          micromamba activate ci-env
-          playwright install
+          environment-name: ci
+          init-shell: >-
+            bash
+          cache-environment: true
+          post-cleanup: 'all'
 
       ################################################################
       # setup emsdk
       ################################################################
       - name: "setup emsdk"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
-          micromamba activate ci-env
-
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk 
-          ./emsdk install  ${{ matrix.emsdk_ver }}
-          ./emsdk activate  ${{ matrix.emsdk_ver }}
-          echo $(pwd)/emsdk-${{ matrix.emsdk_ver }}
-          echo $(pwd) > $HOME/.emsdkdir
+          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install  
+          
+      ################################################################
+      # POST ENV INSTALL CONFIG
+      ################################################################
+      - name: post env install config
+        shell: bash -el {0}
+        run: |
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
+          playwright install
 
 
 
@@ -91,29 +85,37 @@ jobs:
       # in the conda env named "ci-env"
       ################################################################
       - name: "install custom non-master dependencies"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
-          micromamba activate ci-env
-          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api             --no-deps --ignore-installed
+          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
 
       ################################################################
       # run pytests
       ################################################################
       - name: "test config files"
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
-          micromamba activate ci-env
           cd testing
-          pytest
+          pytest test_empack_config.py
 
+      # ################################################################
+      # # build pyjs
+      # ################################################################
+      # - name: "build package"
+      #   shell: bash -el {0}
+      #   run: |
+      #     cd ${GITHUB_WORKSPACE}
+      #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
+      #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/pyjs  --emscripten-wasm32
+    
+          
       ################################################################
       # build recipes with changes PUSH
       ################################################################
       - name: "build packages push"
-        shell: bash -l {0}
+        shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
@@ -122,10 +124,9 @@ jobs:
       # build recipes with changes PULL_REQUEST
       ################################################################
       - name: "build packages pull_request"
-        shell: bash -l {0}
+        shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          micromamba activate ci-env
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD
 
@@ -135,8 +136,22 @@ jobs:
       ################################################################
       - name: "quetz upload packages"
         if: github.event_name == 'push'
-        shell: bash -l {0}
+        shell: bash -el {0}
         run: |
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2      || true
-          QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2        || true
+
+          mkdir -p ${CONDA_PREFIX}/conda-bld/emscripten-wasm32
+          mkdir -p ${CONDA_PREFIX}/conda-bld/linux-64
+          mkdir -p ${CONDA_PREFIX}/conda-bld/noarch
+          
+          
+          if [ $(ls ${CONDA_PREFIX}/conda-bld/emscripten-32/*.tar.bz2 | wc -l) -ne 0 ]; then
+            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2
+          fi
+
+          if [ $(ls ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2 | wc -l) -ne 0 ]; then
+            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge  ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2
+          fi
+
+          if [ $(ls ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2 | wc -l) -ne 0 ]; then
+            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2
+          fi

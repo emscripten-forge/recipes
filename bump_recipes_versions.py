@@ -58,6 +58,7 @@
 # SOFTWARE.
 
 import os
+import json
 from contextlib import contextmanager
 import abc, re, copy
 import feedparser, subprocess
@@ -694,6 +695,12 @@ def git_branch_ctx(old_branch_name, new_branch_name):
         subprocess.check_output(['git', 'branch', '-D', new_branch_name])
 
 
+def automerge_is_enabled(pr):
+    """Check if automerge is enabled for a specific PR."""
+    labels = json.loads(subprocess.check_output(['gh', 'pr', 'view', str(pr), '--json', 'labels']).decode('utf-8'))['labels']
+
+    return 'Automerge' in [label['name'] for label in labels]
+
 def main():
     import glob
 
@@ -721,18 +728,25 @@ def main():
             stdout=subprocess.DEVNULL,
         )
 
-        if passed.returncode == 0:
-            # PR passed, let's merge it
+        # Debug: print labels
+        labels = json.loads(subprocess.check_output(['gh', 'pr', 'view', str(pr), '--json', 'labels']).decode('utf-8'))
+        print(f'Labels for PR {pr}: {labels}')
+
+        if passed.returncode == 0 and automerge_is_enabled(pr):
+            # PR passed and automerge is enabled, let's merge it
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
             subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--rebase', '--delete-branch', '--admin'])
         else:
             # Pin recipe maintainer? Or add assignee?
             subprocess.check_output(['gh', 'pr', 'edit', str(pr), '--add-label', 'Needs Human Review'])
+
+            message = 'Either the CI is failing, or the recipe is not tested. I need help from a human.'
+
             try:
                 # Running edit-last in case there was already a comment, we don't want to spam with comments
-                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human', '--edit-last'])
+                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message, '--edit-last'])
             except:
-                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI is failing, I need help from a human'])
+                subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message])
 
     # Open new PRs for updating repos
     print("Open PRs for updating packages!")
@@ -751,6 +765,10 @@ def main():
 
             name = rendered_yaml["package"]["name"]
             old_version = rendered_yaml["package"]["version"]
+
+            recipe_is_tested = False
+            if "emscripten_tests" in rendered_yaml.get("extra", {}):
+                recipe_is_tested = True
 
             # Not opening a PR for a package we already have a PR for
             if name in prs_packages:
@@ -782,7 +800,13 @@ def main():
                     subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
 
                     # call gh to create a PR
-                    subprocess.check_call(['gh', 'pr', 'create', '-B', 'main', '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'], cwd=os.getcwd())
+                    subprocess.check_call([
+                        'gh', 'pr', 'create',
+                        '-B', 'main',
+                        '--title', pr_title,
+                        '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
+                        '--label', 'Automerge' if recipe_is_tested else 'Needs Tests'
+                    ], cwd=os.getcwd())
 
                     prs_opened = prs_opened + 1
 

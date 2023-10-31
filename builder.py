@@ -23,7 +23,7 @@ import libmambapy as api
 from pathlib import Path
 
 RECIPES_SUBDIR_MAPPING = OrderedDict(
-    [("recipes", ""), ("recipes_emscripten", "emscripten-32")]
+    [("recipes", ""), ("recipes_emscripten", "emscripten-wasm32")]
 )
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -46,6 +46,23 @@ import rich
 app = typer.Typer(pretty_exceptions_show_locals=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
+
+# check if a pkg exists 
+def is_existing_pkg(pkg_name):
+    channels = (
+        f" -c https://repo.mamba.pm/emscripten-forge -c conda-forge "
+    )
+
+    cmd = [
+        f"""$MAMBA_EXE  create -n name_does_not_matter_here {channels} {pkg_name} --dry-run --no-deps --platform=emscripten-wasm32"""
+    ]
+
+    ret = subprocess.run(cmd, shell=True)
+    #  stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    returncode = ret.returncode
+    return returncode == 0
+
+
 
 
 @contextmanager
@@ -99,7 +116,7 @@ def test_package(recipe, work_dir):
 
 
 def cleanup():
-    do_not_delete = ["noarch", "linux-64", "emscripten-32", "icons"]
+    do_not_delete = ["noarch", "linux-64", "emscripten-wasm32", "icons"]
     do_not_delete = [os.path.join(CONDA_BLD_DIR, d) for d in do_not_delete]
 
     for dirname in glob.iglob(os.path.join(CONDA_BLD_DIR, "**"), recursive=False):
@@ -111,7 +128,7 @@ def cleanup():
 def post_build_callback(
     recipe, target_platform, sorted_outputs, final_names, skip_tests, work_dir
 ):
-    if target_platform == "emscripten-32" and (not skip_tests):
+    if target_platform == "emscripten-wasm32" and (not skip_tests):
         with restore_cwd():
             test_package(recipe=recipe, work_dir=work_dir)
     cleanup()
@@ -149,14 +166,14 @@ def boa_build(
 @build_app.command()
 def directory(
     recipes_dir,
-    emscripten_32: Optional[bool] = typer.Option(False),
+    emscripten_wasm32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(False),
 ):
     work_dir = os.getcwd()
     platform = ""
-    if emscripten_32:
-        platform = "emscripten-32"
+    if emscripten_wasm32:
+        platform = "emscripten-wasm32"
     boa_build(
         work_dir=work_dir,
         target=recipes_dir,
@@ -170,16 +187,15 @@ def directory(
 @build_app.command()
 def explicit(
     recipe_dir,
-    emscripten_32: Optional[bool] = typer.Option(False),
+    emscripten_wasm32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(True),
 ):
     work_dir = os.getcwd()
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
     platform = ""
-    if emscripten_32:
-        print("WITH EM")
-        platform = "emscripten-32"
+    if emscripten_wasm32:
+        platform = "emscripten-wasm32"
     boa_build(
         work_dir=work_dir,
         target=recipe_dir,
@@ -196,7 +212,7 @@ def changed(
     new,
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(True),
 ):
     work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
@@ -214,6 +230,7 @@ def changed(
             os.makedirs(tmp_folder_root, exist_ok=True)
 
             for recipe_with_change in recipe_with_changes:
+
                 recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
 
                 # diff can shown deleted recipe as changed
@@ -225,7 +242,7 @@ def changed(
                     shutil.copytree(recipe_dir, tmp_recipe_dir)
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
-
+            
             boa_build(
                 work_dir=work_dir,
                 target=tmp_recipes_root_str,
@@ -235,6 +252,64 @@ def changed(
                 skip_existing=skip_existing,
             )
 
+
+
+
+@build_app.command()
+def missing(
+    root_dir,
+    skip_tests: Optional[bool] = typer.Option(False),
+    skip_existing: Optional[bool] = typer.Option(True),
+):
+    work_dir = os.getcwd()
+    recipes_dir = os.path.join(root_dir, "recipes")
+    subdir = "recipes_emscripten"
+
+
+    # create a  temp dir and copy all changed recipes
+    # to that dir (because Then we can let boa do the
+    # topological sorting)
+    with tempfile.TemporaryDirectory() as tmp_folder_root:
+        tmp_recipes_root_str = os.path.join(
+            tmp_folder_root, "recipes", "recipes_per_platform"
+        )
+        os.makedirs(tmp_folder_root, exist_ok=True)
+        
+        # iterate all dirs in root_dir/recipes_emscripten
+
+        for recipe_with_change in os.listdir(os.path.join(recipes_dir, subdir)):
+            print(recipe_with_change)
+            # get last dir in path
+            recipe_with_change = os.path.basename(recipe_with_change)
+            
+            if skip_existing :
+                pkg_name = recipe_with_change
+                print(f"Check if pkg exists: {pkg_name}")
+                if is_existing_pkg(pkg_name):
+                    print(f"Skip existing pkg: {pkg_name}")
+                    continue
+                else:
+                    print(f"Build pkg: {pkg_name}")
+            recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
+
+            # diff can shown deleted recipe as changed
+            if os.path.isdir(recipe_dir):
+                tmp_recipe_dir = os.path.join(
+                    tmp_recipes_root_str, recipe_with_change
+                )
+                # os.mkdir(tmp_recipe_dir)
+                shutil.copytree(recipe_dir, tmp_recipe_dir)
+
+        print([x[0] for x in os.walk(tmp_recipes_root_str)])
+        
+        boa_build(
+            work_dir=work_dir,
+            target=tmp_recipes_root_str,
+            recipe_dir=None,
+            platform=RECIPES_SUBDIR_MAPPING[subdir],
+            skip_tests=skip_tests,
+            skip_existing=skip_existing,
+        )
 
 if __name__ == "__main__":
     app()
