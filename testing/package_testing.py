@@ -53,7 +53,7 @@ def create_test_env(pkg_name, requires, prefix, conda_bld_dir):
     )
 
     cmd = [
-        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1" numpy {" ".join(requires)} {pkg_name} {channels}"""
+        f"""$MAMBA_EXE create --yes --prefix {prefix} --platform=emscripten-wasm32 python "pyjs>=1.0.0,<2.0.0" "pytest==7.1.1"  {" ".join(requires)} {pkg_name} {channels}"""
     ]
 
     ret = subprocess.run(cmd, shell=True)
@@ -88,7 +88,7 @@ def temp_work_dir(work_dir):
             yield tmp_dir
 
         finally:
-            pass
+            #pass
             shutil.rmtree(tmp_dir)
     else:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -122,10 +122,10 @@ def test_package(recipe, work_dir, conda_bld_dir):
 
     old_cwd = os.getcwd()
 
-    if "emscripten_tests" in extra and has_pytest_files(recipe_dir):
+    if has_pytest_files(recipe_dir):
         pkg_name = recipe["package"]["name"]
 
-        requires = extra["emscripten_tests"].get("requires", [])
+        requires = []#extra["emscripten_tests"].get("requires", [])
 
         with temp_work_dir(work_dir) as temp_dir:
             prefix = os.path.join(temp_dir, "prefix")
