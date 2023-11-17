@@ -1,123 +1,81 @@
-#!/bin/bash
 
-cp $RECIPE_DIR/patches/configure .
+# make some directories
+mkdir -p $PREFIX/include
+mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/bin
+mkdir -p $PREFIX/etc/conda
+mkdir -p cpython/build
 
-PYTHON=${BUILD_PREFIX}/bin/python3.10
+# the following line can re-enable the _sqlite3 module (but atm we keep it disabled)
+cp $RECIPE_DIR/Setup.local  ./cpython/Setup.local
 
-export DBGFLAGS=-g0
-export OPTFLAGS=-O2
-export CFLAGS_BASE="${DBGFLAGS} ${DBGFLAGS} -fPIC -Wno-implicit-function-declaration"
-export PYTHON_CFLAGS=${CFLAGS_BASE}
+# this only overwrite the install path
+cp $RECIPE_DIR/Makefile.envs  .
 
-
-export MULTIARCH=wasm32-emscripten
-export PYVERSION=$PKG_VERSION
-export PLATFORM_TRIPLET=wasm32-emscripten
-export SYSCONFIG_NAME=_sysconfigdata__emscripten_$PLATFORM_TRIPLET
-
-echo "PYVERSION" $PYVERSION
-echo "EMSCRIPTEN_VERSION" $EMSCRIPTEN_VERSION
-echo "PLATFORM_TRIPLET" $PLATFORM_TRIPLET
+# pyodide uses cc instead of emcc so we need to overwrite this
+cp $RECIPE_DIR/adjust_sysconfig.py  ./cpython/adjust_sysconfig.py
 
 
-LIB=libpython3.10.a
- 
+# overwrite $RECIPEDIR/pyodide_env.sh with am empty file
+# since we do not want to use the pyodide_env.sh from pyodide
+echo "" > $RECIPE_DIR/pyodide_env.sh
 
 
-if [[ $target_platform == "emscripten-32" ]]; then
-    cp ${RECIPE_DIR}/config/config.site .
+# create a symlink from  $BUILD_PREFIX/bin/python3.11 to $BUILD_PREFIX/bin/python.js
+# since the python build script overwrites the env variable PYTHON to python.js
+# as it assumes this is the correct name for the python binary when building for emscripten.
+# But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python3.11
+ln -s $BUILD_PREFIX/bin/python3.11 $BUILD_PREFIX/bin/python.js
 
-    CONFIG_SITE=./config.site READELF=true emconfigure \
-      ./configure \
-          CFLAGS="${PYTHON_CFLAGS}" \
-          CPPFLAGS="-I${PREFIX}/include" \
-          LDFLAGS="-L${PREFIX}/lib -lffi -lz -sWASM_BIGINT" \
-          PLATFORM_TRIPLET=$PLATFORM_TRIPLET \
-          MULTIARCH=$MULTIARCH \
-          --without-pymalloc \
-          --disable-shared \
-          --disable-ipv6 \
-          --enable-big-digits=30 \
-          --enable-optimizations \
-          --host=wasm32-unknown-emscripten\
-          --build=$(./config.guess) \
-          --prefix=${PREFIX}  \
-    
-
-    cp ${RECIPE_DIR}/config/Setup.local ./Modules/
-
-    cat ${RECIPE_DIR}/config/pyconfig.undefs.h >> ./pyconfig.h
+# create a symlink from $BUILD_PREFIX/emsdk directory to this dir emsdk.
+# This allows us to overwrite the emsdk from pyodide
+rm -rf emsdk
+mkdir -p emsdk
+cd emsdk
+ln -s $CONDA_EMSDK_DIR emsdk
+cd ..
 
 
-    emmake make CROSS_COMPILE=yes ${LIB} -j8
+# when only building libffi we need to uncomment the following line
+# mkdir -p cpython/build/Python-3.11.3/Include
+
+#################################################################
+#  THE ACTUAL BUILD
+make -C cpython 
+################################################################
 
 
-    sed -i -e 's/libinstall:.*/libinstall:/' Makefile; 
-    
-    # emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall ${LIB} 
-    emmake make PYTHON_FOR_BUILD=${BUILD_PREFIX}/bin/python3.10 CROSS_COMPILE=yes inclinstall libinstall bininstall ${LIB} 
-    cp ${LIB}  ${PREFIX}/lib/ 
+# install libffi (we do this in libffi_pyodide)
+#cp -r cpython/build/libffi/target/ $PREFIX/
 
-    emmake make CROSS_COMPILE=yes -j8
+# (TODO move in recipe) install libmpdec and libexpat
+cp cpython/build/Python-3.11.3/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
+cp cpython/build/Python-3.11.3/Modules/expat/libexpat.a     $PREFIX/lib
 
-    # replace:
-    #  "some/long/path/containing_the_build_dir/emcc"  with "emcc"
-    #  "some/long/path/containing_the_build_dir/emar"  with "emar"
-    #  "some/long/path/containing_the_build_dir/em++"  with "em++"
-    FNAME_IN="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py" 
-    FNAME_OUT="build/lib.emscripten-3.10/$SYSCONFIG_NAME.py"
-    $PYTHON $RECIPE_DIR/patch_sysconfigdata.py \
-        --fname-in $FNAME_IN \
-        --fname-out $FNAME_OUT \
-        
-    cp build/lib.emscripten-3.10/$SYSCONFIG_NAME.py ${PREFIX}/lib/python3.10/ 
 
-    # CHANGE PLATTFORM TRIPLET IN SYSCONFIG
-    sed -i "s/-lffi -lz/ /g"    ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py
-    # sed -i "s/'SHLIB_SUFFIX': '.so',/'SHLIB_SUFFIX': '.cpython-310-wasm32-emscripten.so',/g"  ${PREFIX}/lib/python3.10/_sysconfigdata__emscripten_.py
+# a fake wheel command
+touch $PREFIX/bin/wheel
+# append #!/bin/bash
 
-    # install/copy sysconfig to a place where cross-python expects the sysconfig
-    mkdir -p ${PREFIX}/etc/conda
-    cp ${PREFIX}/lib/python3.10/$SYSCONFIG_NAME.py ${PREFIX}/etc/conda/
+echo "#!/bin/bash" >> $PREFIX/bin/wheel
+echo "echo \"wheel is not a supported on this platform.\"" >> $PREFIX/bin/wheel
+chmod +x $PREFIX/bin/wheel
 
-    # cleanup
-    pushd ${PREFIX}
-    find . grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
-    popd
+# a fake pip command
+touch $PREFIX/bin/pip
+echo "#!/bin/bash" >> $PREFIX/bin/pip
+echo "echo \"pip is not a supported on this platform.\"" >> $PREFIX/bin/pip
+chmod +x $PREFIX/bin/pip
 
-    # cleanup
-    pushd ${PREFIX}
-    find . grep -E "(/__pycache__$|\.pyc$|\.pyo$)" | xargs rm -rf
-    popd
+# a fake python3 command
+touch $PREFIX/bin/python3.11
+echo "#!/bin/bash" >> $PREFIX/bin/python3.11
+echo "echo \"python3 is not a supported on this platform.\"" >> $PREFIX/bin/python3.11
+chmod +x $PREFIX/bin/python3.11
 
-    # remove the removal modules
-    pushd ${PREFIX}/lib/python3.10/
-    rm -rf `cat ${RECIPE_DIR}/config/remove_modules.txt`
-    popd
+# create symlink st. all possible python3.11 commands are available
+ln -s $PREFIX/bin/python3.11 $PREFIX/bin/python
+ln -s $PREFIX/bin/python3.11 $PREFIX/bin/python3
 
-    # unwanted test dirs
-    rm -rf ${PREFIX}/lib/python3.10/ctypes/test
-    rm -rf ${PREFIX}/lib/python3.10/distutils/test
-    rm -rf ${PREFIX}/lib/python3.10/sqlite3/test
-    rm -rf ${PREFIX}/lib/python3.10/unittest/tests
-
-    # remove broken links but keep python3.10 binary
-    # and the non-broken link to it
-    rm  ${PREFIX}/bin/2to3
-    rm  ${PREFIX}/bin/idle3
-    rm  ${PREFIX}/bin/pydoc3
-    rm  ${PREFIX}/bin/python3-config
-
-    # remove broken links
-    rm -rf ${PREFIX}/lib/pkgconfig 
-    
-else
-    mkdir -p build
-    pushd build
-    ../configure -C \
-        --prefix=$PREFIX
-
-    make -j$(nproc)
-    make install
-    popd
-fi
+# copy sysconfigdata
+cp $PREFIX/sysconfigdata/_sysconfigdata__emscripten_wasm32-emscripten.py  $PREFIX/etc/conda/

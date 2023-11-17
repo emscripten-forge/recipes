@@ -12,7 +12,15 @@ While we already have a lot of packages built, this is still a big work in progr
 > The recipes used in this repository follow the [Boa recipe specification](https://boa-build.readthedocs.io/en/latest/recipe_spec.html).
 
 ## Installing Packages
-
+We recommend using micromamba to install packages from this channel.
+```bash
+micromamba create -n my-channel-name \
+    --platform=emscripten-wasm32 \
+    -c https://repo.mamba.pm/emscripten-forge \
+    -c https://repo.mamba.pm/conda-forge \
+    --yes \
+    python numpy scipy matplotlib
+```
 
 
 ## Adding Packages
@@ -26,6 +34,75 @@ Good example recipes are:
  * [xeus-python](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/xeus-python/recipe.yaml) for a package with a CMake-based build system
  
 Once the PR is merged, the package is built and uploaded to https://beta.mamba.pm/channels/emscripten-forge
+
+## Local Builds
+Local builds are useful for testing new recipes or debugging build issues, but the setup is a bit more involved and will only work for Linux and MacOS. Local builds on Windows are not yet supported.
+
+ **1** Create a new conda environment from `ci_env.yaml` and install playwright in this environment:
+ On a Linux system this can be done with:
+```bash
+micromamba create -n emscripten-forge -f ci_env.yaml --yes
+micromamba activate emscripten-forge
+playwright install
+``` 
+On a MacOS system, this can be done with:
+```bash
+micromamba create -n emscripten-forge -f ci_env_macos.yaml --yes
+micromamba activate emscripten-forge
+python pip install playwright
+playwright install
+```
+
+**All further steps should be executed in this environment.**
+Ie if you open a new terminal, you have to activate the environment again with `micromamba activate emscripten-forge`.
+
+**2** Setup emsdk:
+ We currently need a patched version of emsdk. This is because emscripten had some regressions in the `3.1.45` release wrt. dynamic loading of shared libraries. We use the `./emsdk/setup_emsdk.sh` which takes
+ two arguments: the emsdk version and the path where emsdk should be installed.
+ In this example we choose `~/emsdk` as the installation path. You have to use version `3.1.45`.
+ ```bash
+./emsdk/setup_emsdk.sh 3.1.45 ~/emsdk
+```
+
+**3**  Install a custom version of `boa`
+```bash
+python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2   --no-deps --ignore-installed
+```
+
+**4** Add emscripten-forge channel to `.condarc`.
+Create a `.condarc` file in your home directory with the following content:
+```bash
+channels:
+  - "https://repo.mamba.pm/emscripten-forge"
+  - conda-forge
+```
+
+**5a** Build a package (simple version):
+To build a package, run this from the root of the repository (replace `regex` with the package you want to build)
+```bash
+boa boa build --target=emscripten-wasm32 recipes/recipes_emscripten/regex
+```
+This should work in principle, but will not run the python tests of the package.
+
+**5b** Build a python package and run tests:
+For web assembly packages, we need to run the tests in a browser. This is done via playwright.
+We have a custom hacky script which builds the packages via boa and then runs the playwright tests.
+To build a package and run the tests, run this from the root of the repository (replace `regex` with the package you want to build) 
+
+```bash
+python builder.py build explicit recipes/recipes_emscripten/regex --emscripten-wasm32
+```
+
+**6** Building multiple local packages which depend on each other:
+
+If you want to build multiple packages which depend on each other, you have to add the `local-channel` to your `.condarc` file. Since we are building from the `emscripten-forge` environment, we need to modify the `.condarc` file in the `emscripten-forge` environment. You have to add the the `conda-bld` dir
+of the `emscripten-forge` environment to the `.condarc` file. This is usually located in `~/micromamba/envs/emscripten-forge/conda-bld` on unix systems.
+```bash
+channels:
+  - /home/your-user-name/micromanba/envs/emscripten-forge/conda-bld
+  - "https://repo.mamba.pm/emscripten-forge"
+  - conda-forge
+```
 
 ## Outlook
 
