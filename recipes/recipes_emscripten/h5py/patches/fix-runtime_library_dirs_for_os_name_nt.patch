@@ -1,0 +1,54 @@
+diff --git a/recipes/recipes_emscripten/h5py/patches/configure.patch b/recipes/recipes_emscripten/h5py/patches/configure.patch
+index 29bcada..382f800 100644
+--- a/recipes/recipes_emscripten/h5py/patches/configure.patch
++++ b/recipes/recipes_emscripten/h5py/patches/configure.patch
+@@ -60,6 +60,27 @@ index c16ddeef..1180d3fa 100644
+  
+      def has_direct_vfd_support(self):
+          return self.has_functions("H5Pget_fapl_direct", "H5Pset_fapl_direct")
++diff --git a/setup_build.py b/setup_build.py
++index 966fdc97..ecdb6738 100644
++--- a/setup_build.py
+++++ b/setup_build.py
++@@ -12,6 +12,7 @@ except ImportError:
++ from distutils.command.build_ext import build_ext
++ import sys
++ import os
+++import platform
++ import os.path as op
++ from pathlib import Path
++ 
++@@ -112,7 +113,7 @@ class h5py_build_ext(build_ext):
++             settings['include_dirs'] += [mpi4py.get_include()]
++ 
++         # TODO: should this only be done on UNIX?
++-        if os.name != 'nt':
+++        if platform.system() == 'Linux':
++             settings['runtime_library_dirs'] = settings['library_dirs']
++ 
++         def make_extension(module):
+ -- 
+ 2.35.1
+ 
+diff --git a/recipes/recipes_emscripten/h5py/recipe.yaml b/recipes/recipes_emscripten/h5py/recipe.yaml
+index c31af93..cda0586 100644
+--- a/recipes/recipes_emscripten/h5py/recipe.yaml
++++ b/recipes/recipes_emscripten/h5py/recipe.yaml
+@@ -10,6 +10,8 @@ source:
+   - url: https://github.com/h5py/h5py/archive/{{ version }}.tar.gz
+     sha256: 9cac7838ab139ec71adf721a1305b954e18efa4f80c82fcfe34e1eb9639ded29
+   - path: setup.py
++  - patches:
++    - patches/configure.patch
+ 
+ build:
+   number: 0
+@@ -38,7 +40,7 @@ about:
+   home: https://www.h5py.org/
+   license: BSD 3-Clause
+   license_family: BSD 3-Clause
+-  license_file: LICENSE.txt
++  license_file: LICENSE
+   summary: Read and write HDF5 files from Python
+   description: |
+     The h5py package is a Pythonic interface to the HDF5 binary data format
