@@ -29,4 +29,8 @@ cd ..
 ${PYTHON} wasm_patches/patch_it.py
 cd build
 
-ninja install
+ninja install   
+
+#copy to the old places
+cp $PREFIX/share/jupyter/kernels/xpython/xpython_wasm.wasm $PREFIX/bin/
+cp $PREFIX/share/jupyter/kernels/xpython/xpython_wasm.js $PREFIX/bin/
