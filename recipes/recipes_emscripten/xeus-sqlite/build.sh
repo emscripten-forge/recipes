@@ -19,7 +19,8 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_BUILD_TYPE=Release                        \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DXEUS_NELSON_EMSCRIPTEN_WASM_BUILD=$USE_WASM     
+    -Dtabulate_DIR=$PREFIX/lib/cmake/tabulate         \
+    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON 
 
 # Build step
 ninja
