@@ -20,6 +20,7 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
     -Dtabulate_DIR=$PREFIX/lib/cmake/tabulate         \
+    -DXSQL_BUILD_XSQLITE_EXECUTABLE=OFF               \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON 
 
 # Build step
