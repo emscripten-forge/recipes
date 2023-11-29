@@ -8,10 +8,8 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 export LDFLAGS=""
 
 
-
 # Configure step
 emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
-    -GNinja                                         \
     -DCMAKE_BUILD_TYPE=MinSizeRel                   \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
@@ -25,7 +23,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
-ninja
+make VERBOSE=1 -j${CPU_COUNT}
 
 # Install step
-ninja install
+make install
