@@ -302,7 +302,7 @@ if(EMSCRIPTEN)
         PUBLIC "SHELL: -s 'ASYNCIFY_IMPORTS=[\"async_ems_init_idbfs\", \"async_ems_sync_db\"]'"
         PUBLIC "SHELL: -s FORCE_FILESYSTEM=1"
     )
-    # target_link_libraries(xsqlite idbfs.js)
+    target_link_libraries(xsqlite nlohmann_json::nlohmann_json)
 endif()
 
 # Installation
