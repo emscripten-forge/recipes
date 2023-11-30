@@ -80,6 +80,7 @@ find_package(Threads REQUIRED)
 find_package(xvega REQUIRED)
 find_package(xvega-bindings ${xvega_bindings_REQUIRED_VERSION} REQUIRED)
 find_package(tabulate ${tabulate_REQUIRED_VERSION} REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 add_definitions(-DSQLITE_ENABLE_EXPLAIN_COMMENTS=1 -DSQLITE_DEBUG=1 -DSQLITE_MEMDEBUG=1)
 
@@ -219,6 +220,7 @@ macro(xsql_create_target target_name linkage output_name)
       ${XSQL_XEUS_TARGET}
       ${XVEGA_STATIC_LIBRARY}
       SQLiteCpp
+      nlohmann_json::nlohmann_json
     )
 
     if(NOT EMSCRIPTEN)
