@@ -23,7 +23,7 @@ cmake ${CMAKE_ARGS} ..                                \
     -DXSQL_BUILD_XSQLITE_EXECUTABLE=OFF               \
     -XSQL_BUILD_SHARED=OFF                            \
     -DXSQL_BUILD_STATIC=ON                            \
-    -XSQL_USE_SHARED_XEUS=OFF                         \
+    -DXSQL_USE_SHARED_XEUS=OFF                        \
     -DXSQL_USE_SHARED_XEUS_SQLITE=OFF                 \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON 
 
