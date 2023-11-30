@@ -21,7 +21,7 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
     -Dtabulate_DIR=$PREFIX/lib/cmake/tabulate         \
     -DXSQL_BUILD_XSQLITE_EXECUTABLE=OFF               \
-    -XSQL_BUILD_SHARED=OFF                            \
+    -DXSQL_BUILD_SHARED=OFF                           \
     -DXSQL_BUILD_STATIC=ON                            \
     -DXSQL_USE_SHARED_XEUS=OFF                        \
     -DXSQL_USE_SHARED_XEUS_SQLITE=OFF                 \
