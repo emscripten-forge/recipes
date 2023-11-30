@@ -290,7 +290,7 @@ if(EMSCRIPTEN)
     find_package(xeus-lite REQUIRED)
     include(WasmBuildOptions)
     add_executable(xsqlite src/main_emscripten_kernel.cpp )
-    target_link_libraries(xsqlite PRIVATE xeus-sqlite-static xeus-lite)
+    target_link_libraries(xsqlite PRIVATE xeus-sqlite-static xeus-lite  nlohmann_json::nlohmann_json)
     target_compile_features(xsqlite PRIVATE cxx_std_17)
 
     xeus_wasm_compile_options(xsqlite)
@@ -302,7 +302,6 @@ if(EMSCRIPTEN)
         PUBLIC "SHELL: -s 'ASYNCIFY_IMPORTS=[\"async_ems_init_idbfs\", \"async_ems_sync_db\"]'"
         PUBLIC "SHELL: -s FORCE_FILESYSTEM=1"
     )
-    target_link_libraries(xsqlite nlohmann_json::nlohmann_json)
 endif()
 
 # Installation
