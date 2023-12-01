@@ -34,3 +34,6 @@ ninja install
 #copy to the old places
 cp $PREFIX/share/jupyter/kernels/xpython/xpython_wasm.wasm $PREFIX/bin/
 cp $PREFIX/share/jupyter/kernels/xpython/xpython_wasm.js $PREFIX/bin/
+
+# remove raw-kernel
+rm -rf $PREFIX/share/jupyter/kernels/xpython-raw/
