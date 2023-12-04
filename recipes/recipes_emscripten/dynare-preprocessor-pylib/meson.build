@@ -13,6 +13,8 @@ python3 = py3_inst.dependency()
 #pybind11_inc = include_directories('/home/pablo/.local/opt/micromamba/envs/emscripten-forge/conda-bld/dynare-preprocessor-pylib-0_1701688424528/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_/include/pybind11')
 #pybind11 = declare_dependency(include_directories : pybind11_inc)
 
+# boost_dep = dependency('pybind11')
+
 boost_dep = dependency('boost')
 
 ## Flex stuff
