@@ -12,3 +12,5 @@ meson setup --prefix=$PREFIX --bindir=$PREFIX/bin --libdir=$PREFIX/lib --include
 
 meson compile -C build_preproc
 meson install -C build_preproc #--destdir="../
+
+rm $PREFIX/bin/python
