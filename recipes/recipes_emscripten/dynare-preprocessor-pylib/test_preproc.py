@@ -1,4 +1,4 @@
-import dynare_preprocessor_pylib
+import dynare_preprocessor
 
 txt = """
 /*
@@ -71,4 +71,4 @@ end;
 stoch_simul;
 """
 
-res = dynare_preprocessor_pylib.preprocess(txt)
+res = dynare_preprocessor.preprocess(txt)
