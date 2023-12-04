@@ -1,7 +1,5 @@
 #!/bin/bash
 
-export PATH=$PREFIX/bin:$PATH
-
 export BOOST_ROOT=$PREFIX
 
 cp $RECIPE_DIR/meson.build src/meson.build
