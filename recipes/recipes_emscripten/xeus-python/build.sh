@@ -25,5 +25,8 @@ cmake ${CMAKE_ARGS} ..                                \
 # Build step
 ninja
 
-
 ninja install   
+
+# remove raw-kernel
+rm -rf $PREFIX/share/jupyter/kernels/xpython-raw/
+
