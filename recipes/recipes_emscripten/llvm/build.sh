@@ -24,7 +24,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_VERBOSE_MAKEFILE=ON
 
 # Build step
-make VERBOSE=1 -j${CPU_COUNT}
+emmake make VERBOSE=1 -j${CPU_COUNT}
 
 # Install step
-make install
+emmake make install
