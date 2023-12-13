@@ -19,16 +19,10 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_INCLUDE_EXAMPLES=OFF                     \
     -DLLVM_INCLUDE_TESTS=OFF                        \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
-    -DLLVM_ENABLE_PROJECTS="clang;" \
-    -DLLVM_ENABLE_RUNTIMES="libcxx" \
+    -DLLVM_ENABLE_PROJECTS="clang;lld"              \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"     \
-    -DCMAKE_CXX_FLAGS="-isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include" \
-    -DLIBCXXABI_USE_COMPILER_RT=ON \
-    -DLIBCXXABI_USE_LLVM_UNWINDER=ON \
-    -DLIBCXX_USE_COMPILER_RT=ON \
-    -DLIBCXX_HAS_ATOMIC_LIB=OFF \
-    -DHAVE_CXX_ATOMICS64_WITHOUT_LIB=True \
-    -DHAVE_CXX_ATOMICS_WITHOUT_LIB=True
+    -DCMAKE_VERBOSE_MAKEFILE=ON                     \
+    -DCMAKE_CXX_FLAGS="-isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
 
 # Build step
 emmake make VERBOSE=1 -j${CPU_COUNT}
