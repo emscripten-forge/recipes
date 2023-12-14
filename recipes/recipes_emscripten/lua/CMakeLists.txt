@@ -39,6 +39,10 @@ set(LUA_LIB_SRCS
     src/linit.c)
 
 add_library(liblua ${LUA_LIB_SRCS})
+
+# fpic
+set_target_properties(liblua PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 set_target_properties(liblua PROPERTIES OUTPUT_NAME "lua")
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(liblua PRIVATE LUA_BUILD_AS_DLL)
