@@ -8,10 +8,8 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 export LDFLAGS=""
 
 
-
 # Configure step
 emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
-    -GNinja                                         \
     -DCMAKE_BUILD_TYPE=MinSizeRel                   \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
@@ -22,10 +20,12 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_INCLUDE_TESTS=OFF                        \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
+    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"     \
+    -DCMAKE_VERBOSE_MAKEFILE=ON                     \
+    -DCMAKE_CXX_FLAGS="-isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
 
 # Build step
-ninja
+EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j${CPU_COUNT}
 
 # Install step
-ninja install
+emmake make install
