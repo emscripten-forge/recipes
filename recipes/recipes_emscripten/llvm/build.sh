@@ -29,3 +29,6 @@ EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j${CPU_COUNT}
 
 # Install step
 emmake make install
+
+# Copy clang binaries to $PREFIX/bin
+cp $SRC_DIR/build/bin/clang* $PREFIX/bin
