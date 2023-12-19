@@ -25,7 +25,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
 
 # Build step
-EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j${CPU_COUNT}
+EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j1
 
 # Install step
 emmake make install
