@@ -22,6 +22,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"     \
     -DCMAKE_VERBOSE_MAKEFILE=ON                     \
+    -DLLVM_ENABLE_THREADS=OFF                       \
     -DCMAKE_CXX_FLAGS="-isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
 
 # Build step
