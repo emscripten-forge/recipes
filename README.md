@@ -80,7 +80,7 @@ channels:
 **5a** Build a package (simple version):
 To build a package, run this from the root of the repository (replace `regex` with the package you want to build)
 ```bash
-boa boa build --target=emscripten-wasm32 recipes/recipes_emscripten/regex
+boa build --target=emscripten-wasm32 recipes/recipes_emscripten/regex
 ```
 This should work in principle, but will not run the python tests of the package.
 
