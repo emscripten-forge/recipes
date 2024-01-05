@@ -21,8 +21,6 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
     -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi"       \
-    -DLLVM_ENABLE_LIBCXX=ON                         \
-    -DLLVM_ENABLE_LIBCXXABI=ON                      \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"     \
     -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DLLVM_ENABLE_THREADS=OFF                       \
