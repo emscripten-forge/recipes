@@ -1,0 +1,49 @@
+context:
+  version: 0.3.0
+
+package:
+  name: xeus-cpp
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/compiler-research/xeus-cpp/archive/refs/tags/{{ version }}.tar.gz
+  sha256: 217d7870014327130902071c6e3027c62c0d97f356e0fca59a95376b1a6699e9
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - '{{ compiler("cxx") }}'
+    - cmake
+    - make  # [unix]
+  host:
+    - nlohmann_json
+    - xeus-lite
+    - xeus >=3.0.5,<4.0
+    - xtl >=0.7,<0.8
+    - llvm =16.0.6
+    - cpp-argparse
+    - pugixml
+
+test:
+  commands:
+    - sel(emscripten): test -f $PREFIX/bin/xcpp.wasm
+    - sel(emscripten): test -f $PREFIX/bin/xcpp.js
+    - sel(emscripten): test -f $PREFIX/share/jupyter/kernels/xcpp/kernel.json
+    - sel(emscripten): test -f $PREFIX/share/jupyter/kernels/xcpp/logo-32x32.png
+    - sel(emscripten): test -f $PREFIX/share/jupyter/kernels/xcpp/logo-64x64.png
+
+about:
+  home: https://github.com/compiler-research/xeus-cpp
+  license: BSD-3
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-cpp
+  doc_url: https://github.com/compiler-research/xeus-cpp
+  dev_url: https://github.com/compiler-research/xeus-cpp
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+    - anutosh491
