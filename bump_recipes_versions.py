@@ -616,7 +616,7 @@ def get_updated_raw_yaml(recipe_path):
     context = copy.deepcopy(context_dict)
     rendered_yaml = get_rendered_yaml(yaml, context)
     package_name = rendered_yaml["package"]["name"]
-    print(f"\nProcessing {package_name}")
+    print(f"\nProcessing {package_name}\nRecipe:\n{rendered_yaml}\n")
 
     # Discarding python and python_abi
     if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
