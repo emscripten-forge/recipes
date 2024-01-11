@@ -583,10 +583,12 @@ def is_new_version_available(raw_yaml, context_dict, rendered_yaml):
     github_url = Github().get_url(rendered_yaml)
     if github_url is not None:
         github_version = Github().get_version(github_url)
+        print(f"Version on Github {github_version}")
         if github_version is not None and VersionOrder(github_version) > VersionOrder(current_version):
             return True, github_version
     else:
         download_version = RawURL().get_url(raw_yaml, context_dict, rendered_yaml)
+        print(f"Version available {download_version}")
         if download_version is not None:
             if VersionOrder(download_version) > VersionOrder(current_version):
                 return True, download_version
