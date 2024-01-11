@@ -760,6 +760,8 @@ def main():
 
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
+            print(f"Needs update to {new_version}")
+
             recipe_info = {
                 "path": each_recipe_path,
                 "yaml": updated_raw_yaml
@@ -811,6 +813,8 @@ def main():
                     ], cwd=os.getcwd())
 
                     prs_opened = prs_opened + 1
+        else:
+            print("Package does not need updating")
 
 
 if __name__ == "__main__":
