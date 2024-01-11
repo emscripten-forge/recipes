@@ -329,12 +329,21 @@ class Github(VersionFromFeed):
     name = "github"
 
     def get_url(self, meta_yaml) -> Optional[str]:
-        if "github.com" not in meta_yaml["source"][0]["url"]:
+        source = meta_yaml.get("source", None)
+
+        if source is None:
             return None
-        split_url = meta_yaml["source"][0]["url"].lower().split("/")
-        package_owner = split_url[split_url.index("github.com") + 1]
-        gh_package_name = split_url[split_url.index("github.com") + 2]
-        return f"https://github.com/{package_owner}/{gh_package_name}/releases.atom"
+
+        if "git_url" in source and "github.com" in source["git_url"]:
+            return f"{source["git_url"]}/releases.atom"
+
+        if "github.com" in meta_yaml["source"][0]["url"]:
+            split_url = meta_yaml["source"][0]["url"].lower().split("/")
+            package_owner = split_url[split_url.index("github.com") + 1]
+            gh_package_name = split_url[split_url.index("github.com") + 2]
+            return f"https://github.com/{package_owner}/{gh_package_name}/releases.atom"
+
+        return None
 
 def ensure_list(x):
     if not isinstance(x, list):
