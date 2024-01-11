@@ -628,10 +628,12 @@ def get_updated_raw_yaml(recipe_path):
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
     else:
-        if isinstance(rendered_yaml["source"], list):
-            sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
-        else:
-            sha256_hash_for_current = rendered_yaml["source"]["sha256"]
+        source = rendered_yaml.get("source")
+        if isinstance(source, list):
+            sha256_hash_for_current = source[0]["sha256"]
+        elif isinstance(source, dict):
+            sha256_hash_for_current = source["sha256"]
+        return {}, False, {}, None
 
     version_available, new_version = is_new_version_available(yaml, context, rendered_yaml)
     if not version_available:
@@ -653,7 +655,7 @@ def get_updated_raw_yaml(recipe_path):
                 raw_yaml["source"]["sha256"] = sha256_hash_for_version
         raw_yaml["build"]["number"] = 0
         is_new = True
-    return raw_yaml, is_new,rendered_yaml, new_version
+    return raw_yaml, is_new, rendered_yaml, new_version
 
 
 #  gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
