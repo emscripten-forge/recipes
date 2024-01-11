@@ -633,7 +633,7 @@ def get_updated_raw_yaml(recipe_path):
 
     # TODO: Fix those recipes!
     # Discarding broken recipes
-    if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python', 'xvega']:
+    if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python', 'xvega', 'xvega-bindings']:
         return yaml, False, rendered_yaml,None
 
     if "sha256" in context:
