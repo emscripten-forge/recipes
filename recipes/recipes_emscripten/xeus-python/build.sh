@@ -27,6 +27,8 @@ ninja
 
 ninja install
 
+less $PREFIX/share/jupyter/kernels/xpython/kernel.json
+
 # remove raw-kernel
 rm -rf $PREFIX/share/jupyter/kernels/xpython-raw/
 
