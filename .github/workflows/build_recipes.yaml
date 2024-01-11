@@ -65,8 +65,8 @@ jobs:
       - name: "setup emsdk"
         shell: bash -el {0}
         run: |
-          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install  
-          
+          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install
+
       ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
@@ -107,8 +107,8 @@ jobs:
       #     cd ${GITHUB_WORKSPACE}
       #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
       #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/pyjs  --emscripten-wasm32
-    
-          
+
+
       ################################################################
       # build recipes with changes PUSH
       ################################################################
@@ -130,6 +130,11 @@ jobs:
           cd ${GITHUB_WORKSPACE}
           python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD
 
+      - name: Upload builds
+        uses: actions/upload-artifact@v2
+        with:
+          name: packages
+          path: ${CONDA_PREFIX}/conda-bld/emscripten-wasm32
 
       ################################################################
       # quetz upload packages
@@ -142,8 +147,8 @@ jobs:
           mkdir -p ${CONDA_PREFIX}/conda-bld/emscripten-wasm32
           mkdir -p ${CONDA_PREFIX}/conda-bld/linux-64
           mkdir -p ${CONDA_PREFIX}/conda-bld/noarch
-          
-          
+
+
           if [ $(ls ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2 | wc -l) -ne 0 ]; then
             QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2
           fi
