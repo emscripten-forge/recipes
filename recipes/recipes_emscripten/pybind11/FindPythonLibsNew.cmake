@@ -22,6 +22,11 @@ set(PYTHON_SITE_PACKAGES    "$ENV{PREFIX}/lib/python3.11/site-packages")
 set(PYTHON_IS_DEBUG         "FALSE")
 mark_as_advanced(PYTHON_LIBRARY PYTHON_INCLUDE_DIR)
 
+set(PYTHON_VERSION_MAJOR 3)
+set(PYTHON_VERSION_MINOR 11)
+set(PYTHON_VERSION_PATCH 3)
+set(PYTHON_VERSION "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}.${PYTHON_VERSION_PATCH}")
+
 # We use PYTHON_INCLUDE_DIR, PYTHON_LIBRARY and PYTHON_DEBUG_LIBRARY for the
 # cache entries because they are meant to specify the location of a single
 # library. We now set the variables listed by the documentation for this
