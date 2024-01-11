@@ -335,7 +335,7 @@ class Github(VersionFromFeed):
             return None
 
         if "git_url" in source and "github.com" in source["git_url"]:
-            return f"{source["git_url"]}/releases.atom"
+            return f"{source['git_url']}/releases.atom"
 
         if "github.com" in meta_yaml["source"][0]["url"]:
             split_url = meta_yaml["source"][0]["url"].lower().split("/")
