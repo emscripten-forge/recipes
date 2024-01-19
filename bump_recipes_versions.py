@@ -329,12 +329,21 @@ class Github(VersionFromFeed):
     name = "github"
 
     def get_url(self, meta_yaml) -> Optional[str]:
-        if "github.com" not in meta_yaml["source"][0]["url"]:
+        source = meta_yaml.get("source", None)
+
+        if source is None:
             return None
-        split_url = meta_yaml["source"][0]["url"].lower().split("/")
-        package_owner = split_url[split_url.index("github.com") + 1]
-        gh_package_name = split_url[split_url.index("github.com") + 2]
-        return f"https://github.com/{package_owner}/{gh_package_name}/releases.atom"
+
+        if "git_url" in source and "github.com" in source["git_url"]:
+            return f"{source['git_url']}/releases.atom"
+
+        if "github.com" in meta_yaml["source"][0]["url"]:
+            split_url = meta_yaml["source"][0]["url"].lower().split("/")
+            package_owner = split_url[split_url.index("github.com") + 1]
+            gh_package_name = split_url[split_url.index("github.com") + 2]
+            return f"https://github.com/{package_owner}/{gh_package_name}/releases.atom"
+
+        return None
 
 def ensure_list(x):
     if not isinstance(x, list):
@@ -583,10 +592,12 @@ def is_new_version_available(raw_yaml, context_dict, rendered_yaml):
     github_url = Github().get_url(rendered_yaml)
     if github_url is not None:
         github_version = Github().get_version(github_url)
+        print(f"Version on Github {github_version}")
         if github_version is not None and VersionOrder(github_version) > VersionOrder(current_version):
             return True, github_version
     else:
         download_version = RawURL().get_url(raw_yaml, context_dict, rendered_yaml)
+        print(f"Version available {download_version}")
         if download_version is not None:
             if VersionOrder(download_version) > VersionOrder(current_version):
                 return True, download_version
@@ -614,7 +625,7 @@ def get_updated_raw_yaml(recipe_path):
     context = copy.deepcopy(context_dict)
     rendered_yaml = get_rendered_yaml(yaml, context)
     package_name = rendered_yaml["package"]["name"]
-    print(f"\nProcessing {package_name}")
+    print(f"\nProcessing {package_name}\nRecipe:\n{rendered_yaml}\n")
 
     # Discarding python and python_abi
     if rendered_yaml['package']['name'] in ['python', 'python_abi', 'libpython']:
@@ -622,16 +633,19 @@ def get_updated_raw_yaml(recipe_path):
 
     # TODO: Fix those recipes!
     # Discarding broken recipes
-    if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python']:
+    if rendered_yaml['package']['name'] in ['sqlite', 'robotics-toolbox-python', 'xvega', 'xvega-bindings']:
         return yaml, False, rendered_yaml,None
 
     if "sha256" in context:
         sha256_hash_for_current = context["sha256"]
     else:
-        if isinstance(rendered_yaml["source"], list):
-            sha256_hash_for_current = rendered_yaml["source"][0]["sha256"]
+        source = rendered_yaml.get("source")
+        if isinstance(source, list):
+            sha256_hash_for_current = source[0].get("sha256")
+        elif isinstance(source, dict):
+            sha256_hash_for_current = source.get("sha256")
         else:
-            sha256_hash_for_current = rendered_yaml["source"]["sha256"]
+            return {}, False, {}, None
 
     version_available, new_version = is_new_version_available(yaml, context, rendered_yaml)
     if not version_available:
@@ -653,7 +667,7 @@ def get_updated_raw_yaml(recipe_path):
                 raw_yaml["source"]["sha256"] = sha256_hash_for_version
         raw_yaml["build"]["number"] = 0
         is_new = True
-    return raw_yaml, is_new,rendered_yaml, new_version
+    return raw_yaml, is_new, rendered_yaml, new_version
 
 
 #  gh pr create -B base_branch -H branch_to_merge --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
@@ -758,6 +772,8 @@ def main():
 
         updated_raw_yaml, is_updated, rendered_yaml, new_version = get_updated_raw_yaml(each_recipe_path)
         if is_updated:
+            print(f"Needs update to {new_version}")
+
             recipe_info = {
                 "path": each_recipe_path,
                 "yaml": updated_raw_yaml
@@ -809,6 +825,8 @@ def main():
                     ], cwd=os.getcwd())
 
                     prs_opened = prs_opened + 1
+        else:
+            print("Package does not need updating")
 
 
 if __name__ == "__main__":
