@@ -1,0 +1,42 @@
+context:
+  version: 0.1.0
+
+package:
+  name: xeus-javascript
+  version: '{{ version }}'
+
+source:
+  url: https://github.com/DerThorsten/xeus-javascript/archive/refs/tags/{{ version }}.tar.gz
+  sha256: 5d3779ea0c8b854c1227d13721190573888357d1e38e8598176be4a07e8069b2
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - '{{ compiler("cxx") }}'
+    - cmake
+    - ninja
+  host:
+    - nlohmann_json
+    - xeus-lite
+    - xeus >=3.0.5,<4.0
+    - xtl >=0.7
+
+test:
+  commands:
+    - sel(emscripten): test -f $PREFIX/bin/xjavascript.wasm
+    - sel(emscripten): test -f $PREFIX/bin/xjavascript.js
+
+about:
+  home: https://github.com/DerThorsten/xeus-javascript
+  license: BSD-3
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-javascript
+  doc_url: https://github.com/DerThorsten/xeus-javascript
+  dev_url: https://github.com/DerThorsten/xeus-javascript
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
