@@ -19,7 +19,9 @@ jobs:
         emsdk_ver: ["3.1.45"]
 
     steps:
-
+      ################################################################
+      # SETUP
+      ################################################################
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -28,68 +30,62 @@ jobs:
       ################################################################
       # CONFIG
       ################################################################
-      - name: global config
+      - name: Global config
         shell: bash -el {0}
-        run: |
-          git config --global advice.detachedHead false
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
-          cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
+        run: git config --global advice.detachedHead false
 
       ################################################################
       # MAMBA
       ################################################################
-      - uses: mamba-org/setup-micromamba@v1
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci_env.yml
-          environment-name: ci
-          init-shell: >-
-            bash
+          init-shell: bash
           cache-environment: true
           post-cleanup: 'all'
 
       ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
-      - name: post env install config
+      - name: Post env install config
         shell: bash -el {0}
         run: |
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
+          cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
           playwright install
 
       ################################################################
-      # setup emsdk
+      # EMSDK
       ################################################################
-      - name: "setup emsdk"
+      - name: Setup emsdk
         shell: bash -el {0}
         run: |
-          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install  
+          ./emsdk/setup_emsdk.sh ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install
 
       ################################################################
-      # install / clone custom non-master things
+      # Install / clone custom non-master things
       # for pip, we use --no-deps --ignore-installed
       # and make sure that all dependencies are already contained
       # in the conda env named "ci-env"
       ################################################################
-      - name: "install custom non-master dependencies"
+      - name: Install custom boa
         shell: bash -el {0}
         run: |
-          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
-
+          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2 --no-deps --ignore-installed
 
       ################################################################
-      # build a package which is **not** on emscripten forge
+      # Build a package which is **not** on emscripten forge
       ################################################################
-      - name: "build package"
+      - name: Build package not on emscripten-forge
         shell: bash -el {0}
         run: |
-          cd ${GITHUB_WORKSPACE}
-          python builder.py build explicit $GITHUB_WORKSPACE/testing/test_recipes/only_py_tests  --emscripten-wasm32
+          python builder.py build explicit $GITHUB_WORKSPACE/testing/test_recipes/only_py_tests --emscripten-wasm32
 
       ################################################################
-      # build a simple package
+      # Build a simple package
       ################################################################
-      - name: "build package"
+      - name: Build regex
         shell: bash -el {0}
         run: |
-          cd ${GITHUB_WORKSPACE}
-          python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex  --emscripten-wasm32
+          python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
