@@ -80,7 +80,7 @@ channels:
 **5a** Build a package (simple version):
 To build a package, run this from the root of the repository (replace `regex` with the package you want to build)
 ```bash
-boa build --target=emscripten-wasm32 recipes/recipes_emscripten/regex
+boa build --target-platform=emscripten-wasm32 recipes/recipes_emscripten/regex -m conda_build_config.yaml
 ```
 This should work in principle, but will not run the python tests of the package.
 
