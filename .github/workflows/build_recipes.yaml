@@ -18,12 +18,13 @@ jobs:
         emsdk_ver: ["3.1.45"]
 
     steps:
+      ################################################################
+      # SETUP
+      ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-
 
       - name: Maximize build space
         run: |
@@ -32,118 +33,103 @@ jobs:
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-
-      - name: delete fortran...
-        run: |
-          sudo apt-get remove gfortran -y
+      - name: Delete fortran
+        run: sudo apt-get remove gfortran -y
 
       ################################################################
       # CONFIG
       ################################################################
-      - name: global config
+      - name: Global config
         shell: bash -el {0}
-        run: |
-          git config --global advice.detachedHead false
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
-          cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
+        run: git config --global advice.detachedHead false
 
       ################################################################
       # MAMBA
       ################################################################
-      - uses: mamba-org/setup-micromamba@v1
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: ci_env.yml
           environment-name: ci
-          init-shell: >-
-            bash
+          init-shell: bash
           cache-environment: true
           post-cleanup: 'all'
 
       ################################################################
-      # setup emsdk
+      # EMSDK
       ################################################################
-      - name: "setup emsdk"
+      - name: Setup emsdk
         shell: bash -el {0}
         run: |
-          ./emsdk/setup_emsdk.sh   ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install  
-          
+          ./emsdk/setup_emsdk.sh ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install
+
       ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
-      - name: post env install config
+      - name: Post env install config
         shell: bash -el {0}
         run: |
-          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME/.condarc
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
+          cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
           playwright install
 
-
-
       ################################################################
-      # install / clone custom non-master things
+      # Install / clone custom non-master things
       # for pip, we use --no-deps --ignore-installed
       # and make sure that all dependencies are already contained
       # in the conda env named "ci-env"
       ################################################################
-      - name: "install custom non-master dependencies"
+      - name: Install custom boa
         shell: bash -el {0}
         run: |
-          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2             --no-deps --ignore-installed
+          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2 --no-deps --ignore-installed
 
       ################################################################
-      # run pytests
+      # PYTESTS
       ################################################################
-      - name: "test config files"
+      - name: Test config files
         shell: bash -el {0}
-        run: |
-          cd testing
-          pytest test_empack_config.py
+        run: pytest test_empack_config.py
+        working-directory: testing
 
       # ################################################################
-      # # build pyjs
+      # # PYJS
       # ################################################################
-      # - name: "build package"
+      # - name: Build pyjs
       #   shell: bash -el {0}
       #   run: |
-      #     cd ${GITHUB_WORKSPACE}
       #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
-      #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/pyjs  --emscripten-wasm32
-    
-          
+      #     python builder.py build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/pyjs --emscripten-wasm32
+
       ################################################################
-      # build recipes with changes PUSH
+      # PUSH
       ################################################################
-      - name: "build packages push"
+      - name: Build recipes with changes PUSH
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          cd ${GITHUB_WORKSPACE}
           python builder.py build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
-
       ################################################################
-      # build recipes with changes PULL_REQUEST
+      # PULL_REQUEST
       ################################################################
-      - name: "build packages pull_request"
+      - name: Build recipes with changes PULL_REQUEST
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          cd ${GITHUB_WORKSPACE}
-          python builder.py build changed  $GITHUB_WORKSPACE/ origin/main HEAD
-
+          python builder.py build changed $GITHUB_WORKSPACE/ origin/main HEAD
 
       ################################################################
-      # quetz upload packages
+      # UPLOAD
       ################################################################
-      - name: "quetz upload packages"
+      - name: Upload packages to Quetz
         if: github.event_name == 'push'
         shell: bash -el {0}
         run: |
-
           mkdir -p ${CONDA_PREFIX}/conda-bld/emscripten-wasm32
           mkdir -p ${CONDA_PREFIX}/conda-bld/linux-64
           mkdir -p ${CONDA_PREFIX}/conda-bld/noarch
-          
-          
+
           if [ $(ls ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2 | wc -l) -ne 0 ]; then
             QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2
           fi
