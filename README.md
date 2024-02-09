@@ -38,10 +38,10 @@ Once the PR is merged, the package is built and uploaded to https://beta.mamba.p
 ## Local Builds
 Local builds are useful for testing new recipes or debugging build issues, but the setup is a bit more involved and will only work for Linux and MacOS. Local builds on Windows are not yet supported.
 
- **1** Create a new conda environment from `ci_env.yaml` and install playwright in this environment:
+ **1** Create a new conda environment from `ci_env.yml` and install playwright in this environment:
  On a Linux system this can be done with:
 ```bash
-micromamba create -n emscripten-forge -f ci_env.yaml --yes
+micromamba create -n emscripten-forge -f ci_env.yml --yes
 micromamba activate emscripten-forge
 playwright install
 ``` 
@@ -99,7 +99,7 @@ If you want to build multiple packages which depend on each other, you have to a
 of the `emscripten-forge` environment to the `.condarc` file. This is usually located in `~/micromamba/envs/emscripten-forge/conda-bld` on unix systems.
 ```bash
 channels:
-  - /home/your-user-name/micromanba/envs/emscripten-forge/conda-bld
+  - /home/your-user-name/micromamba/envs/emscripten-forge/conda-bld
   - "https://repo.mamba.pm/emscripten-forge"
   - conda-forge
 ```
