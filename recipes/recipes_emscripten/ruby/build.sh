@@ -3,7 +3,7 @@
 RUBY_PACKED=$RECIPE_DIR/ruby-3.2-wasm32-unknown-emscripten-full.tar.gz
 
 tar -xzf $RUBY_PACKED
-RUBY_SOURCE_DIR=./ruby-3.2-wasm32-unknown-emscripten-full/user/local
+RUBY_SOURCE_DIR=ruby-3.2-wasm32-unknown-emscripten-full/usr/local
 
 # Copy files to the right place
 cp -r ${RUBY_SOURCE_DIR}/bin $PREFIX/bin
