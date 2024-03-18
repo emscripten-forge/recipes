@@ -1,0 +1,194 @@
+From a6f001da8e833b384e00dbfad7246d47ac37f498 Mon Sep 17 00:00:00 2001
+From: Vassil Vassilev <v.g.vassilev@gmail.com>
+Date: Fri, 15 Mar 2024 20:18:02 +0000
+Subject: [PATCH] Implement detection of resource and include dirs.
+
+This is useful when deployed CppInterOp needs to create an interpreter. Often
+the interpreter itself cannot use the clang toolchain logic to discover both
+the resource-dir and the include paths. This is because CppInterOp is a library
+and usually put in the `lib` folder whereas the toolchain logic expects things
+to be relative to the `bin` folder.
+
+In such setups, we can ask CppInterOp to detect the resource directory by asking
+clang about it. In the same vain, of finding C and C++ headers we can ask the
+system compiler about the include paths.
+---
+ include/clang/Interpreter/CppInterOp.h   | 15 ++++++
+ lib/Interpreter/CppInterOp.cpp           | 62 ++++++++++++++++++++++++
+ unittests/CppInterOp/CMakeLists.txt      |  3 ++
+ unittests/CppInterOp/InterpreterTest.cpp | 25 +++++++++-
+ 4 files changed, 104 insertions(+), 1 deletion(-)
+
+diff --git a/include/clang/Interpreter/CppInterOp.h b/include/clang/Interpreter/CppInterOp.h
+index 8e5521f3..96345ffb 100644
+--- a/include/clang/Interpreter/CppInterOp.h
++++ b/include/clang/Interpreter/CppInterOp.h
+@@ -444,6 +444,21 @@ namespace Cpp {
+   /// Returns the resource-dir path (for headers).
+   const char* GetResourceDir();
+ 
++  /// Uses the underlying clang compiler to detect the resource directory.
++  /// In essence calling clang -print-resource-dir and checks if it ends with
++  /// a compatible to CppInterOp version.
++  ///\param[in] ClangBinaryName - the name (or the full path) of the compiler
++  ///                             to ask.
++  std::string DetectResourceDir(const char* ClangBinaryName = "clang");
++
++  /// Asks the system compiler for its default include paths.
++  ///\param[out] Paths - the list of include paths returned by eg.
++  ///                     `c++ -xc++ -E -v /dev/null 2>&1`
++  ///\param[in] CompilerName - the name (or the full path) of the compiler
++  ///                          binary file.
++  void DetectSystemCompilerIncludePaths(std::vector<std::string>& Paths,
++                                        const char* CompilerName = "c++");
++
+   /// Secondary search path for headers, if not found using the
+   /// GetResourceDir() function.
+   void AddIncludePath(const char *dir);
+diff --git a/lib/Interpreter/CppInterOp.cpp b/lib/Interpreter/CppInterOp.cpp
+index 1bc9a2ff..0b93bc8d 100644
+--- a/lib/Interpreter/CppInterOp.cpp
++++ b/lib/Interpreter/CppInterOp.cpp
+@@ -38,6 +38,10 @@
+ #include <io.h>
+ #ifndef STDOUT_FILENO
+ #define STDOUT_FILENO 1
++// For exec().
++#include <stdio.h>
++#define popen(x, y) (_popen(x, y))
++#define pclose (_pclose)
+ #endif
+ #else
+ #include <dlfcn.h>
+@@ -2534,6 +2538,64 @@ namespace Cpp {
+     return getInterp().getCI()->getHeaderSearchOpts().ResourceDir.c_str();
+   }
+ 
++  ///\returns 0 on success.
++  static bool exec(const char* cmd, std::vector<std::string>& outputs) {
++#define DEBUG_TYPE "exec"
++
++    std::array<char, 256> buffer;
++    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
++    LLVM_DEBUG(dbgs() << "Executing command '" << cmd << "'\n");
++
++    if (!pipe) {
++      LLVM_DEBUG(dbgs() << "Execute failed!\n");
++      perror("exec: ");
++      return false;
++    }
++
++    LLVM_DEBUG(dbgs() << "Execute returned:\n");
++    while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get())) {
++      LLVM_DEBUG(dbgs() << buffer.data());
++      llvm::StringRef trimmed = buffer.data();
++      outputs.push_back(trimmed.trim().str());
++    }
++
++#undef DEBUG_TYPE
++
++    return true;
++  }
++
++  std::string DetectResourceDir(const char* ClangBinaryName /* = clang */) {
++    std::string cmd = std::string(ClangBinaryName) + " -print-resource-dir";
++    std::vector<std::string> outs;
++    exec(cmd.c_str(), outs);
++    if (outs.empty() || outs.size() > 1)
++      return "";
++
++    std::string detected_resource_dir = outs.back();
++
++    std::string version =
++#if CLANG_VERSION_MAJOR < 16
++        CLANG_VERSION_STRING;
++#else
++        CLANG_VERSION_MAJOR_STRING;
++#endif
++    // We need to check if the detected resource directory is compatible.
++    if (llvm::sys::path::filename(detected_resource_dir) != version)
++      return "";
++
++    return detected_resource_dir;
++  }
++
++  void DetectSystemCompilerIncludePaths(std::vector<std::string>& Paths,
++                                        const char* CompilerName /*= "c++"*/) {
++    std::string cmd = "LC_ALL=C ";
++    cmd += CompilerName;
++    cmd += " -xc++ -E -v /dev/null 2>&1 | sed -n -e '/^.include/,${' -e '/^ "
++           "\\/.*/p' -e '}'";
++    std::vector<std::string> outs;
++    exec(cmd.c_str(), Paths);
++  }
++
+   void AddIncludePath(const char *dir) {
+     getInterp().AddIncludePath(dir);
+   }
+diff --git a/unittests/CppInterOp/CMakeLists.txt b/unittests/CppInterOp/CMakeLists.txt
+index 75dccf55..00e45560 100644
+--- a/unittests/CppInterOp/CMakeLists.txt
++++ b/unittests/CppInterOp/CMakeLists.txt
+@@ -18,6 +18,9 @@ target_link_libraries(CppInterOpTests
+   clangCppInterOp
+   )
+ 
++set_source_files_properties(InterpreterTest.cpp PROPERTIES COMPILE_DEFINITIONS
++  "LLVM_BINARY_DIR=\"${LLVM_BINARY_DIR}\""
++  )
+ export_executable_symbols(CppInterOpTests)
+ 
+ unset(LLVM_LINK_COMPONENTS)
+diff --git a/unittests/CppInterOp/InterpreterTest.cpp b/unittests/CppInterOp/InterpreterTest.cpp
+index 5c30108b..19cc1bf1 100644
+--- a/unittests/CppInterOp/InterpreterTest.cpp
++++ b/unittests/CppInterOp/InterpreterTest.cpp
+@@ -1,5 +1,8 @@
+ #include "clang/Interpreter/CppInterOp.h"
+ 
++#include "llvm/ADT/SmallString.h"
++#include "llvm/Support/Path.h"
++
+ #include <gmock/gmock.h>
+ #include "gtest/gtest.h"
+ 
+@@ -14,6 +17,7 @@ TEST(InterpreterTest, DISABLED_DebugFlag) {
+ #else
+ TEST(InterpreterTest, DebugFlag) {
+ #endif // NDEBUG
++  Cpp::CreateInterpreter();
+   EXPECT_FALSE(Cpp::IsDebugOutputEnabled());
+   std::string cerrs;
+   testing::internal::CaptureStderr();
+@@ -49,7 +53,7 @@ TEST(InterpreterTest, Evaluate) {
+   EXPECT_FALSE(HadError) ;
+ }
+ 
+-TEST(InterpreterTest, Process) {  
++TEST(InterpreterTest, Process) {
+   Cpp::CreateInterpreter();
+   EXPECT_TRUE(Cpp::Process("") == 0);
+   EXPECT_TRUE(Cpp::Process("int a = 12;") == 0);
+@@ -80,3 +84,22 @@ TEST(InterpreterTest, CreateInterpreter) {
+   EXPECT_TRUE(Cpp::GetNamed("cpp17"));
+   EXPECT_FALSE(Cpp::GetNamed("cppUnknown"));
+ }
++
++#ifdef LLVM_BINARY_DIR
++TEST(InterpreterTest, DetectResourceDir) {
++#else
++TEST(InterpreterTest, DISABLED_DetectResourceDir) {
++#endif // LLVM_BINARY_DIR
++  Cpp::CreateInterpreter();
++  EXPECT_STRNE(Cpp::DetectResourceDir().c_str(), Cpp::GetResourceDir());
++  llvm::SmallString<256> Clang(LLVM_BINARY_DIR);
++  llvm::sys::path::append(Clang, "bin", "clang");
++  std::string DetectedPath = Cpp::DetectResourceDir(Clang.str().str().c_str());
++  EXPECT_STREQ(DetectedPath.c_str(), Cpp::GetResourceDir());
++}
++
++TEST(InterpreterTest, DetectSystemCompilerIncludePaths) {
++  std::vector<std::string> includes;
++  Cpp::DetectSystemCompilerIncludePaths(includes);
++  EXPECT_FALSE(includes.empty());
++}
