@@ -9,10 +9,10 @@ emcmake  cmake -DCMAKE_BUILD_TYPE=Release               \
     -DUSE_CLING=OFF                                     \
     -DUSE_REPL=ON                                       \
     -DCMAKE_PREFIX_PATH=$PREFIX                         \
-    -DLLVM_DIR=$PREFIX       			                \
-    -DClang_DIR=$PREFIX				                    \
-    -DBUILD_SHARED_LIBS=OFF                              \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX        	            \
+    -DLLVM_DIR=$PREFIX                                  \
+    -DClang_DIR=$PREFIX                                 \
+    -DBUILD_SHARED_LIBS=OFF                             \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX                      \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON              \
     ../
 
