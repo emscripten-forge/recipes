@@ -3,6 +3,11 @@ mkdir build
 cd build
 
 
+# sdl2
+if true; then
+    $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder build sdl2 --pic
+fi
+
 # Configure step
 emcmake cmake  ${CMAKE_ARGS} .. \
     -GNinja \
