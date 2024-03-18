@@ -21,6 +21,7 @@ emcmake cmake  ${CMAKE_ARGS} .. \
     -DVTK_MODULE_ENABLE_VTK_RenderingLICOpenGL2:STRING=DONT_WANT \
     -DVTK_MODULE_ENABLE_VTK_RenderingCellGrid:STRING=NO \
     -DVTK_MODULE_ENABLE_VTK_sqlite:STRING=NO \
+    -DVTK_MODULE_ENABLE_VTK_RenderingWebGPU=NO \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  
 
 # Build step
