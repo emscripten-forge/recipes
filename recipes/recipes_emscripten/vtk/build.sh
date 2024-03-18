@@ -5,8 +5,6 @@ cd build
 
 # Configure step
 emcmake cmake  ${CMAKE_ARGS} .. \
-    -S $VTK_DIR \
-    -B $VTK_DIR/build-wasm \
     -GNinja \
     -DBUILD_SHARED_LIBS:BOOL=OFF \
     -DCMAKE_BUILD_TYPE:STRING=Release \
