@@ -134,7 +134,7 @@ def post_build_callback(
     cleanup()
 
 
-def boa_build(
+def build_package_with_boa(
     work_dir,
     platform,
     target=None,
@@ -163,26 +163,6 @@ def boa_build(
     os.chdir(work_dir)
 
 
-@build_app.command()
-def directory(
-    recipes_dir,
-    emscripten_wasm32: Optional[bool] = typer.Option(False),
-    skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(False),
-):
-    work_dir = os.getcwd()
-    platform = ""
-    if emscripten_wasm32:
-        platform = "emscripten-wasm32"
-    boa_build(
-        work_dir=work_dir,
-        target=recipes_dir,
-        recipe_dir=None,
-        platform=platform,
-        skip_tests=skip_tests,
-        skip_existing=skip_existing,
-    )
-
 
 @build_app.command()
 def explicit(
@@ -196,7 +176,9 @@ def explicit(
     platform = ""
     if emscripten_wasm32:
         platform = "emscripten-wasm32"
-    boa_build(
+
+    
+    build_package_with_boa(
         work_dir=work_dir,
         target=recipe_dir,
         platform=platform,
@@ -243,7 +225,7 @@ def changed(
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
             
-            boa_build(
+            build_package_with_boa(
                 work_dir=work_dir,
                 target=tmp_recipes_root_str,
                 recipe_dir=None,
@@ -302,7 +284,7 @@ def missing(
 
         print([x[0] for x in os.walk(tmp_recipes_root_str)])
         
-        boa_build(
+        build_package_with_boa(
             work_dir=work_dir,
             target=tmp_recipes_root_str,
             recipe_dir=None,
