@@ -93,8 +93,8 @@ def test_qobj_methods():
         [-0.61541221j],
     ])
     assert_qobj_data(ev1, [
-        [-0.61541221],
-        [0.78820544j],
+        [0.61541221],
+        [-0.78820544j],
     ])
     assert_qobj_data(op.expm(), [
         [13.6924533, 16.80651518j],
@@ -138,10 +138,10 @@ def test_qobjevo_create():
     from qutip import QobjEvo, sigmax
     import numpy as np
 
-    q = QobjEvo([(sigmax(), "sin(w * t)")], args={"w": 0.5})
+    q = QobjEvo([[sigmax(), "sin(w * t)"]], args={"w": 0.5})
 
-    assert q.type == "string"
-    assert q.const is False
+    assert q.type == "oper"
+    assert q.isconstant is False
 
     assert_qobj_data(q(0), [
         [0, 0],
@@ -157,7 +157,7 @@ def test_qobjevo_arithmetic():
     from qutip import Qobj, QobjEvo, sigmax
     import numpy as np
 
-    op1 = QobjEvo([(sigmax(), "sin(w * t)")], args={"w": 0.5})
+    op1 = QobjEvo([[sigmax(), "sin(w * t)"]], args={"w": 0.5})
     op2 = Qobj([[1j, 0], [0, 1j]])
     psi = Qobj([[1], [2]])
 
@@ -192,7 +192,7 @@ def test_qobjevo_methods():
     import numpy as np
 
     q = Qobj([[1, 2j], [-2j, 2]])
-    op = QobjEvo([(q, "sin(w * t)")], args={"w": 0.5})
+    op = QobjEvo([[q, "sin(w * t)"]], args={"w": 0.5})
 
     assert_qobj_data(op.conj()(np.pi), [
         [1, -2j],
