@@ -1,13 +1,14 @@
-from boa.core.monkeypatch import *
+import boa.core.monkeypatch # noqa
 from boa.core.run_build import run_build
 from boa.pyapi import py_build
 
+import sys
 import subprocess
 import os
 import json
 import warnings
 import tempfile
-import rich
+
 from collections import OrderedDict
 import functools
 import tempfile
@@ -31,6 +32,12 @@ CONFIG_PATH = os.path.join(THIS_DIR, "empack_config.yaml")
 PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 
+# rattler build related
+VARIANT_CONFIG_PATH = os.path.join(THIS_DIR, "variant_config.yaml")
+
+
+
+
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
 if CONDA_PREFIX is None:
     raise RuntimeError(
@@ -41,9 +48,9 @@ Path(CONDA_BLD_DIR).mkdir(exist_ok=True)
 
 from typing import List, Optional
 import typer
-import rich
 
-app = typer.Typer(pretty_exceptions_show_locals=False)
+
+app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
 
@@ -142,6 +149,11 @@ def build_package_with_boa(
     skip_tests=False,
     skip_existing=False,
 ):
+
+
+
+
+
     target_platform = None
     if platform:
         target_platform = platform
@@ -177,14 +189,61 @@ def explicit(
     if emscripten_wasm32:
         platform = "emscripten-wasm32"
 
+    # check if package dir containers a rattler_recipe.yaml
+    # if so, we need to build the package with rattler
+    # otherwise we can use boa
+        
+    rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "rattler_recipe.yaml")
+    if os.path.isfile(rattler_recipe_file):
+        print("Building with rattler")
+
+        rattler_recipe = Path(recipe_dir) / "rattler_recipe.yaml"
+
+        # hack 
+        ratter_build_bin = "~/src/rattler-build/target/debug/rattler-build"
+
+        cmd = [ratter_build_bin, "build", "--recipe", str(rattler_recipe), "-c", "https://repo.mamba.pm/emscripten-forge", "-c", "conda-forge"]
+        if emscripten_wasm32:
+            cmd.extend(["--target-platform=emscripten-wasm32",  "--variant-config", VARIANT_CONFIG_PATH])
+
+        print(f"Running: {' '.join(cmd)}")
+        # pass existing env vars to subprocess
+        ret = subprocess.run(' ' .join(cmd), check=False, shell=True, env=os.environ)
+        print(f"ret.returncode: {ret.returncode}")
+        if ret.returncode != 0:
+            sys.exit(ret.returncode)
+        
     
-    build_package_with_boa(
-        work_dir=work_dir,
-        target=recipe_dir,
-        platform=platform,
-        skip_tests=skip_tests,
-        skip_existing=skip_existing,
-    )
+    else:
+        # show deprecated warning
+        warnings.warn("Building with boa is deprecated. Please use rattler instead.")
+
+        build_package_with_boa(
+            work_dir=work_dir,
+            target=recipe_dir,
+            platform=platform,
+            skip_tests=skip_tests,
+            skip_existing=skip_existing,
+        )
+
+
+
+
+def check_recipes_format(recipes_dir):
+    all_rattler = True
+    all_boa = True
+    for recipe in recipes_dir:
+        # check if there is a rattler_recipe.yaml file
+        rattler_recipe_file = os.path.join(Path(recipe).resolve(), "rattler_recipe.yaml")
+        print(f"rattler_recipe_file: {rattler_recipe_file}")
+        if not os.path.isfile(rattler_recipe_file):
+            all_rattler = False
+        
+        boa_recipe_file = os.path.join(Path(recipe).resolve(), "recipe.yaml")
+        if not os.path.isfile(boa_recipe_file):
+            all_boa = False
+            
+    return all_rattler, all_boa
 
 
 @build_app.command()
@@ -199,7 +258,6 @@ def changed(
     work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
-    rich.pretty.pprint(recipes_with_changes_per_subdir)
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         # create a  temp dir and copy all changed recipes
@@ -210,6 +268,15 @@ def changed(
                 tmp_folder_root, "recipes", "recipes_per_platform"
             )
             os.makedirs(tmp_folder_root, exist_ok=True)
+
+
+            changed_recipes_dirs = [os.path.join(recipes_dir, subdir, recipe_with_change) for recipe_with_change in recipe_with_changes]
+            print(f"recipes_dirs: {changed_recipes_dirs}")
+            all_rattler, all_boa = check_recipes_format(changed_recipes_dirs)
+            print(f"all_rattler: {all_rattler}, all_boa: {all_boa}")
+            if not all_rattler and not all_boa:
+                raise RuntimeError("All recipes must be in the same format (rattler or boa)")
+
 
             for recipe_with_change in recipe_with_changes:
 
@@ -225,73 +292,47 @@ def changed(
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
             
-            build_package_with_boa(
-                work_dir=work_dir,
-                target=tmp_recipes_root_str,
-                recipe_dir=None,
-                platform=RECIPES_SUBDIR_MAPPING[subdir],
-                skip_tests=skip_tests,
-                skip_existing=skip_existing,
-            )
+            if all_boa and not all_rattler:
+                # delete all potential "rattler_recipe.yaml" files
+                for root, dirs, files in os.walk(tmp_recipes_root_str):
+                    for file in files:
+                        if file == "rattler_recipe.yaml":
+                            os.remove(os.path.join(root, file))
 
-
-
-
-@build_app.command()
-def missing(
-    root_dir,
-    skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(True),
-):
-    work_dir = os.getcwd()
-    recipes_dir = os.path.join(root_dir, "recipes")
-    subdir = "recipes_emscripten"
-
-
-    # create a  temp dir and copy all changed recipes
-    # to that dir (because Then we can let boa do the
-    # topological sorting)
-    with tempfile.TemporaryDirectory() as tmp_folder_root:
-        tmp_recipes_root_str = os.path.join(
-            tmp_folder_root, "recipes", "recipes_per_platform"
-        )
-        os.makedirs(tmp_folder_root, exist_ok=True)
-        
-        # iterate all dirs in root_dir/recipes_emscripten
-
-        for recipe_with_change in os.listdir(os.path.join(recipes_dir, subdir)):
-            print(recipe_with_change)
-            # get last dir in path
-            recipe_with_change = os.path.basename(recipe_with_change)
-            
-            if skip_existing :
-                pkg_name = recipe_with_change
-                print(f"Check if pkg exists: {pkg_name}")
-                if is_existing_pkg(pkg_name):
-                    print(f"Skip existing pkg: {pkg_name}")
-                    continue
-                else:
-                    print(f"Build pkg: {pkg_name}")
-            recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
-
-            # diff can shown deleted recipe as changed
-            if os.path.isdir(recipe_dir):
-                tmp_recipe_dir = os.path.join(
-                    tmp_recipes_root_str, recipe_with_change
+                build_package_with_boa(
+                    work_dir=work_dir,
+                    target=tmp_recipes_root_str,
+                    recipe_dir=None,
+                    platform=RECIPES_SUBDIR_MAPPING[subdir],
+                    skip_tests=skip_tests,
+                    skip_existing=skip_existing,
                 )
-                # os.mkdir(tmp_recipe_dir)
-                shutil.copytree(recipe_dir, tmp_recipe_dir)
+            elif all_rattler:
+                # delete all potential "recipe.yaml" files
+                for root, dirs, files in os.walk(tmp_recipes_root_str):
+                    for file in files:
+                        if file == "recipe.yaml":
+                            os.remove(os.path.join(root, file))
+                # rename all rattler_recipe.yaml files to recipe.yaml
+                for root, dirs, files in os.walk(tmp_recipes_root_str):
+                    for file in files:
+                        if file == "rattler_recipe.yaml":
+                            os.rename(os.path.join(root, file), os.path.join(root, "recipe.yaml"))
 
-        print([x[0] for x in os.walk(tmp_recipes_root_str)])
-        
-        build_package_with_boa(
-            work_dir=work_dir,
-            target=tmp_recipes_root_str,
-            recipe_dir=None,
-            platform=RECIPES_SUBDIR_MAPPING[subdir],
-            skip_tests=skip_tests,
-            skip_existing=skip_existing,
-        )
+                rattler_build_bin = "~/src/rattler-build/target/debug/rattler-build"
+                cmd = [rattler_build_bin, "build", "--recipe-dir", str(tmp_recipes_root_str), "-c", "https://repo.mamba.pm/emscripten-forge", "-c", "conda-forge"]
+                if RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32":
+                    cmd.extend(["--target-platform=emscripten-wasm32",  "--variant-config", VARIANT_CONFIG_PATH])
+
+                print(f"Running: {' '.join(cmd)}")
+                # pass existing env vars to subprocess
+                ret = subprocess.run(' ' .join(cmd), check=False, shell=True, env=os.environ)
+                print(f"ret.returncode: {ret.returncode}")
+                if ret.returncode != 0:
+                    sys.exit(ret.returncode)
+            else:
+                raise RuntimeError("All recipes must be in the same format (rattler or boa)")
+
 
 if __name__ == "__main__":
     app()

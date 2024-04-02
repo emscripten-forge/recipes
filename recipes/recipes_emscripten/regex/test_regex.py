@@ -10,7 +10,3 @@ import pytest
 def test_regex(test_input,expected):
     import regex
     assert regex.search(*test_input).end() == expected
-
-
-def test_failure():
-    assert False
