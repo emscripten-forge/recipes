@@ -202,7 +202,6 @@ def explicit(
         
     rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "rattler_recipe.yaml")
     if os.path.isfile(rattler_recipe_file) and not FORCE_BOA:
-        print("Building with rattler")
 
         rattler_recipe = Path(recipe_dir) / "rattler_recipe.yaml"
 
@@ -214,17 +213,17 @@ def explicit(
             "build", 
             "--recipe", 
             str(rattler_recipe), 
-            "-c", "https://repo.mamba.pm/emscripten-forge", "-c", 
-            "conda-forge",
+            "-c", "https://repo.mamba.pm/emscripten-forge", 
+            "-c", "conda-forge",
+            "-c", "microsoft", 
+            "-c", "tobiasrobotics",
             "--package-format", "tar-bz2",
         ]
         if emscripten_wasm32:
             cmd.extend(["--target-platform=emscripten-wasm32",  "--variant-config", VARIANT_CONFIG_PATH])
 
-        print(f"Running: {' '.join(cmd)}")
         # pass existing env vars to subprocess
         ret = subprocess.run(' ' .join(cmd), check=False, shell=True, env=os.environ)
-        print(f"ret.returncode: {ret.returncode}")
         if ret.returncode != 0:
             sys.exit(ret.returncode)
         
@@ -250,7 +249,6 @@ def check_recipes_format(recipes_dir):
     for recipe in recipes_dir:
         # check if there is a rattler_recipe.yaml file
         rattler_recipe_file = os.path.join(Path(recipe).resolve(), "rattler_recipe.yaml")
-        print(f"rattler_recipe_file: {rattler_recipe_file}")
         if not os.path.isfile(rattler_recipe_file):
             all_rattler = False
         
@@ -341,6 +339,8 @@ def changed(
                     "--recipe-dir", str(tmp_recipes_root_str), 
                     "-c", "https://repo.mamba.pm/emscripten-forge",
                     "-c", "conda-forge",
+                    "-c", "microsoft", 
+                    "-c", "tobiasrobotics",
                     "--package-format", "tar-bz2",
                 ]
                 if RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32":
