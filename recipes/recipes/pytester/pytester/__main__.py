@@ -92,7 +92,7 @@ def main():
                 relocate_prefix="/",
                 backend_type=backend_type,
                 script="main.py",
-                async_main=False,
+                async_main=True,
                 mounts=[
                     (MAIN_MOUNT_DIR, virtual_work_dir),
                     (Path(tests_dir).resolve(), virtual_work_dir),
