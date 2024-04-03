@@ -1,7 +1,7 @@
 import pytest
 import sys
 
-async def main()
+async def main():
 
 
     retcode = pytest.main()
