@@ -130,6 +130,7 @@ jobs:
           mkdir -p ${CONDA_PREFIX}/conda-bld/linux-64
           mkdir -p ${CONDA_PREFIX}/conda-bld/noarch
 
+          # packages build with boa
           if [ $(ls ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2 | wc -l) -ne 0 ]; then
             QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2
           fi
@@ -140,4 +141,17 @@ jobs:
 
           if [ $(ls ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2 | wc -l) -ne 0 ]; then
             QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2
+          fi
+
+          # packages build with rattler-build
+          if [ $(ls ${GITHUB_WORKSPACE}/output/emscripten-wasm32/*.tar.bz2 | wc -l) -ne 0 ]; then
+            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${GITHUB_WORKSPACE}/output/emscripten-wasm32/*.tar.bz2
+          fi
+
+          if [ $(ls ${GITHUB_WORKSPACE}/output/linux-64/*.tar.bz2 | wc -l) -ne 0 ]; then
+            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge  ${GITHUB_WORKSPACE}/output/linux-64/*.tar.bz2
+          fi
+
+          if [ $(ls ${GITHUB_WORKSPACE}/output/noarch/*.tar.bz2 | wc -l) -ne 0 ]; then
+            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client https://beta.mamba.pm/channels/emscripten-forge ${GITHUB_WORKSPACE}/output/noarch/*.tar.bz2
           fi
