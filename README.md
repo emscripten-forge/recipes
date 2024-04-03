@@ -1,4 +1,4 @@
-#  Emscripten forge
+#  Emscripten forge 
 
 [![build all](https://github.com/emscripten-forge/recipes/actions/workflows/build_all.yaml/badge.svg?branch=main)](https://github.com/emscripten-forge/recipes/actions/workflows/build_all.yaml)
 
