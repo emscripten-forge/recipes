@@ -1,9 +1,12 @@
 """ Smoke tests for the built qutip package. """
 import pytest
 
-def assert_qobj_data(q, data):
+def assert_qobj_data(q, data, normalize_sign=False):
     """ Assert that a qobj has the given values. """
     import numpy as np
+    if normalize_sign:
+        sign = np.sign(q.full()[0, 0])
+        q = sign * q
     np.testing.assert_allclose(q.full(), data)
 
 
@@ -89,13 +92,13 @@ def test_qobj_methods():
     evals, [ev0, ev1] = op.eigenstates()
     assert_array_data(evals, [-0.56155281,  3.56155281])
     assert_qobj_data(ev0, [
-        [-0.78820544],
-        [-0.61541221j],
-    ])
+        [0.78820544],
+        [0.61541221j],
+    ], normalize_sign=True)
     assert_qobj_data(ev1, [
-        [-0.61541221],
-        [0.78820544j],
-    ])
+        [0.61541221],
+        [-0.78820544j],
+    ], normalize_sign=True  )
     assert_qobj_data(op.expm(), [
         [13.6924533, 16.80651518j],
         [-16.80651518j, 22.09571089],
@@ -138,10 +141,10 @@ def test_qobjevo_create():
     from qutip import QobjEvo, sigmax
     import numpy as np
 
-    q = QobjEvo([(sigmax(), "sin(w * t)")], args={"w": 0.5})
+    q = QobjEvo([[sigmax(), "sin(w * t)"]], args={"w": 0.5})
 
-    assert q.type == "string"
-    assert q.const is False
+    assert q.type == "oper"
+    assert q.isconstant is False
 
     assert_qobj_data(q(0), [
         [0, 0],
@@ -157,7 +160,7 @@ def test_qobjevo_arithmetic():
     from qutip import Qobj, QobjEvo, sigmax
     import numpy as np
 
-    op1 = QobjEvo([(sigmax(), "sin(w * t)")], args={"w": 0.5})
+    op1 = QobjEvo([[sigmax(), "sin(w * t)"]], args={"w": 0.5})
     op2 = Qobj([[1j, 0], [0, 1j]])
     psi = Qobj([[1], [2]])
 
@@ -192,7 +195,7 @@ def test_qobjevo_methods():
     import numpy as np
 
     q = Qobj([[1, 2j], [-2j, 2]])
-    op = QobjEvo([(q, "sin(w * t)")], args={"w": 0.5})
+    op = QobjEvo([[q, "sin(w * t)"]], args={"w": 0.5})
 
     assert_qobj_data(op.conj()(np.pi), [
         [1, -2j],
