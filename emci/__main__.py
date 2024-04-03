@@ -33,10 +33,6 @@ CONFIG_PATH = os.path.join(REPO_ROOT, "empack_config.yaml")
 PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 
-# Print the list of user's 
-print("User's Environment variable:") 
-pprint.pprint(dict(os.environ), width = 1)
-
 # rattler build related
 VARIANT_CONFIG_PATH = os.path.join(REPO_ROOT, "variant_config.yaml")
 # env var to force the use of boa instead of rattler for  testing the legacy build system
