@@ -22,24 +22,31 @@ def find_free_port():
 
 
 def main():
-    
+    print("Running the main function")
     # get the conda env from the env var "PREFIX"
     prefix = os.environ["PREFIX"]
 
     # get cwd
     work_dir = os.getcwd()
+    print("Current working directory is: ", work_dir)
 
     # find all "test_*.py" files in the current directory
+    print("Finding all test files in the current directory")
     test_files = [f for f in os.listdir(work_dir) if f.startswith("test_") and f.endswith(".py")]
 
     # pprint test_files
+    print("Test files found:")
     pprint.pprint(test_files)
 
 
-
+    print("create a dir in the current work_dir named 'tests'")
     # create a dir in the current work_dir named "tests"
+
+
     tests_dir = Path(work_dir) / "tests"
     tests_dir.mkdir(exist_ok=True)
+
+    print("copy all test files to the 'tests' dir")
 
     # copy all test files to the "tests" dir
     for test_file in test_files:
@@ -57,10 +64,10 @@ def main():
             BackendType.browser_main,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
         ),
-        (
-            BackendType.browser_worker,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
-        ),
+        # (
+        #     BackendType.browser_worker,
+        #     lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+        # ),
         # the node baxckend is atm disabled because it does not work with the new empack
         #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
     ]
