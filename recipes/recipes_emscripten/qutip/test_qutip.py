@@ -1,9 +1,12 @@
 """ Smoke tests for the built qutip package. """
 import pytest
 
-def assert_qobj_data(q, data):
+def assert_qobj_data(q, data, normalize_sign=False):
     """ Assert that a qobj has the given values. """
     import numpy as np
+    if normalize_sign:
+        sign = np.sign(q.full()[0, 0])
+        q = sign * q
     np.testing.assert_allclose(q.full(), data)
 
 
@@ -89,13 +92,13 @@ def test_qobj_methods():
     evals, [ev0, ev1] = op.eigenstates()
     assert_array_data(evals, [-0.56155281,  3.56155281])
     assert_qobj_data(ev0, [
-        [-0.78820544],
-        [-0.61541221j],
-    ])
+        [0.78820544],
+        [0.61541221j],
+    ], normalize_sign=True)
     assert_qobj_data(ev1, [
         [0.61541221],
         [-0.78820544j],
-    ])
+    ], normalize_sign=True  )
     assert_qobj_data(op.expm(), [
         [13.6924533, 16.80651518j],
         [-16.80651518j, 22.09571089],
