@@ -35,7 +35,55 @@ Good example recipes are:
  
 Once the PR is merged, the package is built and uploaded to https://beta.mamba.pm/channels/emscripten-forge
 
+
 ## Local Builds
+We are currently phasing out the use of `boa` in favor of `rattler-build`. Yet we still support `boa` builds
+as not all recipes have been ported to `rattler-build` yet.
+For each recipe there can be a `rattler_recipe.yaml` and a `recipe.yaml` file. The `rattler_recipe.yaml` file is used for rattler-build and the `recipe.yaml` file is used for boa builds.
+Once all recipes have been ported to `rattler-build`, we will remove the `recipe.yaml` files and rename the `rattler_recipe.yaml` files to `recipe.yaml`.
+
+
+
+### Local Builds with rattler-build
+Only recipes with a `rattler_recipe.yaml` file can be built with `rattler-build`.
+
+
+ **1** Create a new conda environment from `ci_env.yml` and install playwright in this environment:
+ On a Linux / MacOS this can be done with:
+```bash
+micromamba create -n emscripten-forge -f ci_env.yml --yes
+micromamba activate emscripten-forge
+``` 
+
+
+**All further steps should be executed in this environment.**
+Ie if you open a new terminal, you have to activate the environment again with `micromamba activate emscripten-forge`.
+
+**2** Setup emsdk:
+ We currently need a patched version of emsdk. This is because emscripten had some regressions in the `3.1.45` release wrt. dynamic loading of shared libraries. We use the `./emsdk/setup_emsdk.sh` which takes
+ two arguments: the emsdk version and the path where emsdk should be installed.
+ In this example we choose `~/emsdk` as the installation path. You have to use version `3.1.45`.
+ ```bash
+./emsdk/setup_emsdk.sh 3.1.45 ~/emsdk
+```
+
+**2b** Build compiler packages / meta packages with for MacOS:
+
+This is only needed for MacOS. On Linux, the compiler packages are already built and available in the `emscripten-forge` channel.
+```bash
+rattler-build build --recipe recipes/recipes/emscripten_emscripten-wasm32/rattler_recipe.yaml   -c https://repo.mamba.pm/emscripten-forge -c conda-forge 
+rattler-build build --recipe recipes/recipes/cross-python_emscripten-wasm32/rattler_recipe.yaml -c https://repo.mamba.pm/emscripten-forge -c conda-forge
+rattler-build build --recipe recipes/recipes/pytester/rattler_recipe.yaml                       -c https://repo.mamba.pm/emscripten-forge -c conda-forge
+```
+
+**3**  Build packages with `rattler-build`:
+
+```bash
+rattler-build build  --recipe recipes/recipes_emscripten/regex/rattler_recipe.yaml  --target-platform=emscripten-wasm32 --variant-config=variant_config.yaml -c https://repo.mamba.pm/emscripten-forge -c conda-forge 
+```
+
+
+### Local Builds with boa (this is deprecated)
 Local builds are useful for testing new recipes or debugging build issues, but the setup is a bit more involved and will only work for Linux and MacOS. Local builds on Windows are not yet supported.
 
  **1** Create a new conda environment from `ci_env.yml` and install playwright in this environment:
@@ -90,7 +138,7 @@ We have a custom hacky script which builds the packages via boa and then runs th
 To build a package and run the tests, run this from the root of the repository (replace `regex` with the package you want to build) 
 
 ```bash
-python builder.py build explicit recipes/recipes_emscripten/regex --emscripten-wasm32
+python emci build explicit recipes/recipes_emscripten/regex --emscripten-wasm32
 ```
 
 **6** Building multiple local packages which depend on each other:
