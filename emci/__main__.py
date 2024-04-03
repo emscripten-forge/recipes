@@ -210,12 +210,15 @@ def explicit(
             "build", 
             "--recipe", 
             str(rattler_recipe), 
-            "-c", "https://repo.mamba.pm/emscripten-forge", 
             "--package-format", "tar-bz2",
         ]
         if platform_info.system() == "Darwin":
             cmd.extend(["-c", "tobiasrobotics"])
-        cmd.extend(["-c", "conda-forge","-c", "microsoft"])
+        cmd.extend([
+            "-c", "conda-forge",
+            "-c", "microsoft",
+            "-c", "https://repo.mamba.pm/emscripten-forge"
+        ])
 
 
         if emscripten_wasm32 == True:
@@ -340,7 +343,11 @@ def changed(
                 ]
                 if platform_info.system() == "Darwin":
                     cmd.extend(["-c", "tobiasrobotics"])
-                cmd.extend(["-c", "conda-forge","-c", "microsoft"])
+                cmd.extend([
+                    "-c", "conda-forge",
+                    "-c", "microsoft",
+                    "-c", "https://repo.mamba.pm/emscripten-forge"
+                ])
 
 
                 if RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32":
