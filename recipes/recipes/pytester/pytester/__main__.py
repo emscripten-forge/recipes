@@ -64,10 +64,10 @@ def main():
         #     BackendType.browser_main,
         #     lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
         # ),
-        # (
-        #     BackendType.browser_worker,
-        #     lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
-        # ),
+        (
+            BackendType.browser_worker,
+            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+        ),
         # the node baxckend is atm disabled because it does not work with the new empack
         #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
     ]
