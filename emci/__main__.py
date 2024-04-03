@@ -22,6 +22,7 @@ from mamba.utils import init_api_context
 import libmambapy as api
 import pprint 
 from pathlib import Path
+import platform
 
 RECIPES_SUBDIR_MAPPING = OrderedDict(
     [("recipes", ""), ("recipes_emscripten", "emscripten-wasm32")]
@@ -210,11 +211,15 @@ def explicit(
             "--recipe", 
             str(rattler_recipe), 
             "-c", "https://repo.mamba.pm/emscripten-forge", 
-            "-c", "conda-forge",
-            "-c", "microsoft", 
-            "-c", "tobiasrobotics",
             "--package-format", "tar-bz2",
         ]
+        if platform.system() == "Darin":
+            cmd.extend(["-c", "tobiasrobotics"])
+        cmd.extend(["-c", "conda-forge","-c", "microsoft"]
+
+
+ 
+
         if emscripten_wasm32:
             cmd.extend(["--target-platform=emscripten-wasm32",  "--variant-config", VARIANT_CONFIG_PATH])
 
@@ -334,11 +339,13 @@ def changed(
                     "build", 
                     "--recipe-dir", str(tmp_recipes_root_str), 
                     "-c", "https://repo.mamba.pm/emscripten-forge",
-                    "-c", "conda-forge",
-                    "-c", "microsoft", 
                     "-c", "tobiasrobotics",
                     "--package-format", "tar-bz2",
                 ]
+                if platform.system() == "Darin":
+                    cmd.extend(["-c", "tobiasrobotics"])
+                cmd.extend(["-c", "conda-forge","-c", "microsoft"]
+
                 if RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32":
                     cmd.extend(["--target-platform=emscripten-wasm32",  "--variant-config", VARIANT_CONFIG_PATH])
 
