@@ -138,7 +138,7 @@ We have a custom hacky script which builds the packages via boa and then runs th
 To build a package and run the tests, run this from the root of the repository (replace `regex` with the package you want to build) 
 
 ```bash
-python emci build explicit recipes/recipes_emscripten/regex --emscripten-wasm32
+python -m emci build explicit recipes/recipes_emscripten/regex --emscripten-wasm32
 ```
 
 **6** Building multiple local packages which depend on each other:
