@@ -124,7 +124,7 @@ def changed(
                     for file in files:
                         if file == "rattler_recipe.yaml":
                             os.remove(os.path.join(root, file))
-
+                warnings.warn("Building with boa is deprecated. Please use rattler instead.")
                 build_package_with_boa(
                     work_dir=work_dir,
                     target=tmp_recipes_root_str,
