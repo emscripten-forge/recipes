@@ -1,0 +1,128 @@
+name: build simple new
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+  schedule:
+    - cron: "0 13 * * 1"
+jobs:
+
+  build_simple:
+    if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
+    runs-on: ubuntu-latest
+    env:
+      TARGET_PLATFORM: emscripten-wasm32
+      GITHUB_OWNER: "emscripten-forge"
+    strategy:
+      fail-fast: false
+      matrix:
+        emsdk_ver: ["3.1.45"]
+
+    steps:
+      ################################################################
+      # SETUP
+      ################################################################
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      ################################################################
+      # CONFIG
+      ################################################################
+      - name: Global config
+        shell: bash -el {0}
+        run: git config --global advice.detachedHead false
+
+      ################################################################
+      # MAMBA
+      ################################################################
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: ci_env.yml
+          environment-name: ci
+          init-shell: bash
+          cache-environment: true
+          post-cleanup: 'all'
+
+      ################################################################
+      # POST ENV INSTALL CONFIG
+      ################################################################
+      - name: Post env install config
+        shell: bash -el {0}
+        run: |
+          cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
+          cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
+          playwright install
+
+      ################################################################
+      # EMSDK
+      ################################################################
+      - name: Setup emsdk
+        shell: bash -el {0}
+        run: |
+          ./emsdk/setup_emsdk.sh ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install
+
+      ################################################################
+      # Install / clone custom non-master things
+      # for pip, we use --no-deps --ignore-installed
+      # and make sure that all dependencies are already contained
+      # in the conda env named "ci-env"
+      ################################################################
+      - name: Install custom boa
+        shell: bash -el {0}
+        run: |
+          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2 --no-deps --ignore-installed
+      
+      ################################################################
+      # Build pytester
+      ################################################################
+      - name: Build pytester
+        shell: bash -el {0}
+        run: |
+          python emci build explicit $GITHUB_WORKSPACE/recipes/recipes/pytester
+      
+
+      ################################################################
+      # deprecated builder
+      ################################################################
+      - name: Build package **with builder** not on emscripten-forge (simple)
+        shell: bash -el {0}
+        run: |
+          python builder.py build explicit $GITHUB_WORKSPACE/testing/test_recipes/only_py_tests --emscripten-wasm32
+
+      ################################################################
+      # Build a package which is **not** on emscripten forge
+      ################################################################
+      - name: Build package not on emscripten-forge (simple)
+        shell: bash -el {0}
+        run: |
+          python emci build explicit $GITHUB_WORKSPACE/emci/testing/test_recipes/only_py_tests_simple --emscripten-wasm32
+      
+      ################################################################
+      # Build a package which is **not** on emscripten forge
+      ################################################################
+      - name: Build package not on emscripten-forge (advanced)
+        shell: bash -el {0}
+        run: |
+          python emci build explicit $GITHUB_WORKSPACE/emci/testing/test_recipes/only_py_tests --emscripten-wasm32
+        
+
+      ################################################################
+      # Build a simple package
+      ################################################################
+      - name: Build regex
+        shell: bash -el {0}
+        run: |
+          python emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
+
+      # ################################################################
+      # # Build a simple package
+      # ################################################################
+      # - name: Build regex with legacy boa
+      #   shell: bash -el {0}
+      #   run: |
+      #     FORCE_BOA=1 python emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
+
