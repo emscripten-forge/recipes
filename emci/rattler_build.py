@@ -23,11 +23,10 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
         cmd.extend(["--variant-config", str(VARIANT_CONFIG_PATH)]) 
     
     # add channel for playwright
-    if not emscripten_wasm32:
-        if platform.system() == "Darwin" :
-            cmd.extend(["-c", "tobiasrobotics"])
-        else:
-            cmd.extend(["-c", "microsoft"])
+    if platform.system() == "Darwin" :
+        cmd.extend(["-c", "tobiasrobotics"])
+    else:
+        cmd.extend(["-c", "microsoft"])
     
     # add conda forge and emscripten-forge channels
     cmd.extend([
