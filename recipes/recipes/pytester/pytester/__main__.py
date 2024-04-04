@@ -60,16 +60,14 @@ def main():
 
 
     backends = [
-        # (
-        #     BackendType.browser_main,
-        #     lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
-        # ),
+        (
+            BackendType.browser_main,
+            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+        ),
         (
             BackendType.browser_worker,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
-        ),
-        # the node baxckend is atm disabled because it does not work with the new empack
-        #(BackendType.node, lambda: dict(node_binary=get_node_binary())),
+        )
     ]
     print(
         "================================================================================"
@@ -92,7 +90,7 @@ def main():
                 relocate_prefix="/",
                 backend_type=backend_type,
                 script="main.py",
-                async_main=True,
+                async_main=False,
                 mounts=[
                     (MAIN_MOUNT_DIR, virtual_work_dir),
                     (Path(tests_dir).resolve(), virtual_work_dir),

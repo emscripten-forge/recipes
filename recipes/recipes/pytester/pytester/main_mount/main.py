@@ -1,7 +1,7 @@
 import pytest
 import sys
 
-async def main():
+if __name__ == "__main__":
 
 
     retcode = pytest.main()
