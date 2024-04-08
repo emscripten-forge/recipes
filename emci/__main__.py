@@ -2,7 +2,7 @@
 from .deprecated.boa_build import build_package_with_boa
 from .rattler_build import build_with_rattler
 
-from .constants import RECIPES_SUBDIR_MAPPING, VARIANT_CONFIG_PATH, FORCE_BOA
+from .constants import RECIPES_SUBDIR_MAPPING, VARIANT_CONFIG_PATH, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 
 
@@ -150,6 +150,17 @@ def changed(
             else:
                 raise RuntimeError("All recipes must be in the same format (rattler or boa)")
 
+
+
+bot_app = typer.Typer()
+app.add_typer(bot_app, name="bot")
+
+
+@bot_app.command()
+def bump_recipes_versions():
+    from .bot.bump_recipes_versions import bump_recipe_versions
+
+    bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR)
 
 if __name__ == "__main__":
     app()
