@@ -171,10 +171,13 @@ def bump_recipe_versions(recipe_dir, use_bot=False):
     
     total_bumped = 0
     for recipe in all_recipes:
-        bumped_version, old_version, new_version  = bump_recipe_version(recipe, use_bot=use_bot)
-        if bumped_version:
-            print(f"Bumped {recipe} from {old_version} to {new_version}")
-        total_bumped += int(bumped_version)
+        try:
+            bumped_version, old_version, new_version  = bump_recipe_version(recipe, use_bot=use_bot)
+            if bumped_version:
+                print(f"Bumped {recipe} from {old_version} to {new_version}")
+            total_bumped += int(bumped_version)
+        except CannotHandleRecipeException as e:
+            print(f"Cannot handle recipe in {e.recipe_dir}: {e.msg}")
         
     
 
