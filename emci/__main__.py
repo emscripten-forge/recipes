@@ -16,7 +16,6 @@ from typing import Optional
 import typer
 import warnings
 
-
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
@@ -88,6 +87,8 @@ def changed(
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
 
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
+        if len(recipe_with_changes) == 0:
+            continue
         # create a  temp dir and copy all changed recipes
         # to that dir (because Then we can let boa do the
         # topological sorting)
