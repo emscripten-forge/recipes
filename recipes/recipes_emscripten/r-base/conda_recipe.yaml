@@ -1,0 +1,196 @@
+# {% set native = 'm2w64-' if win else '' %}
+# {% set posix = 'm2-' if win else '' %}
+# {% set version = "4.3.3" %}
+
+package:
+  name: r-base-split
+  version: {{ version }}
+
+source:
+  url: https://cran.r-project.org/src/base/R-4/R-{{ version }}.tar.gz
+  sha256: 80851231393b85bf3877ee9e39b282e750ed864c5ec60cbd68e6e139f0520330
+  patches:
+    - 0001-Darwin-Remove-unicode-elipsis-character-from-grDevic.patch
+    - 0002-Fix-trio-config.h-include-depth-issue.patch
+    - 0003-Win32-Do-not-link-static-libgcc.patch
+    - 0004-Win32-Extend-sqrt-NA_real_-hack-to-all-GCC-versions.patch
+    - 0005-Win32-Prevent-conversion-of-R_ARCH-to-abs-Windows-pa.patch
+    - 0006-Darwin-Avoid-setting-DYLD_FALLBACK_LIBRARY_PATH.patch
+    - 0007-Linux-Do-not-modify-LD_LIBRARY_PATH.patch
+    - 0008-javareconf-Do-not-fail-on-compile-fail.patch
+    - 0009-Revert-part-of-9b818c6dc00143ff18775a4015a3f43b5196f.patch
+    - 0010-javareconf-macOS-Continue-to-allow-system-Java-lt-9-.patch
+    # - 0011-Allow-rpath-in-tcltk-dylib-LC_LOAD_DYLIB-command.patch
+    - 0012-Check-for-changes-then-forcibly-mv-in-javareconf.in.patch
+    - 0013-Use-LAPACK_LDFLAGS-in-Rlapack_la_LIBADD.patch
+    - 0014-Try-forcing-.dylib.patch
+
+build:
+  skip: true  # [win]
+  number: 0
+  no_link:
+    - lib/R/doc/html/packages.html
+
+outputs:
+  - name: r-base
+    script: build-r-base.sh  # [not win]
+    script: bld-r-base.bat  # [win]
+    build:
+      merge_build_host: true  # [win]
+      rpaths:
+        - lib/R/lib/
+        - lib/
+      no_link:
+        # These files are modified by R CMD javareconf and can
+        # point to different Java implementations in each env.
+        - lib/R/etc/Makeconf
+        - lib/R/etc/ldpaths
+        - lib/R/etc/javaconf
+        - lib/R/etc/x64/Makeconf
+        - lib/R/etc/x64/ldpaths
+        - lib/R/etc/x64/javaconf
+      detect_binary_files_with_prefix: true
+
+
+    requirements:
+      build:
+        - gnuconfig  # [unix]
+        - {{ compiler('c') }}                # [not win]
+        - {{ compiler('cxx') }}              # [not win]
+        - {{ compiler('fortran') }}          # [not win]
+        - gfortran_impl_{{ build_platform }} {{ fortran_compiler_version }}  # [(build_platform != target_platform) and linux]
+        - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
+        - {{ cdt('libxrender') }}            # [linux]
+        - {{ cdt('libxext') }}               # [linux]
+        - {{ cdt('libsm-devel') }}           # [linux]
+        - {{ cdt('libice-devel') }}          # [linux]
+        - {{ cdt('libx11-devel') }}          # [linux]
+        - {{ cdt('libxt') }}                 # [linux]
+        - {{ cdt('libxt-devel') }}           # [linux]
+        - {{ cdt('libxcb') }}                # [linux]
+        - {{ cdt('libxau') }}                # [linux]
+        - {{ cdt('java-1.7.0-openjdk') }}    # [linux]
+        - {{ posix }}pkg-config
+        - texinfo                            # [unix]
+        - openjdk
+        - {{ posix }}autoconf
+        - {{ posix }}automake                # [not win]
+        - make                               # [not win]
+        - libcurl                            # [not win]
+        - readline                            # [build_platform != target_platform]
+        - libcurl                             # [build_platform != target_platform]
+        - xz                                  # [build_platform != target_platform]
+        - libpng                              # [build_platform != target_platform]
+        - bzip2                               # [build_platform != target_platform]
+        - cairo                               # [build_platform != target_platform]
+        - libjpeg-turbo                       # [build_platform != target_platform]
+        - libiconv                            # [unix and (build_platform != target_platform)]
+        - glib                                # [unix and (build_platform != target_platform)]
+        - bwidget                             # [build_platform != target_platform]
+        - tktable                             # [build_platform != target_platform]
+        - pango                               # [build_platform != target_platform]
+        - icu                                 # [build_platform != target_platform]
+        - pcre2                               # [build_platform != target_platform]
+        - tk                                  # [build_platform != target_platform]
+        - zlib                                # [build_platform != target_platform]
+        - libtiff                             # [build_platform != target_platform]
+        - libblas                             # [build_platform != target_platform]
+        - liblapack                           # [build_platform != target_platform]
+        - libgomp                             # [linux]
+      host:
+        - readline                           # [not win]
+        - libcurl                            # [not win]
+        - xz                                 # [not win]
+        - libpng                             # [not win]
+        - bzip2                              # [not win]
+        - cairo                              # [not win]
+        - libjpeg-turbo                      # [not win]
+        - libiconv                           # [unix]
+        - glib                               # [unix]
+        - {{ native }}bwidget
+        - {{ native }}tktable
+        - pango                              # [not win]
+        - icu                                # [not win]
+        - pcre2                              # [not win]
+        - tk                                 # [not win]
+        - zlib                               # [not win]
+        - libtiff                            # [not win]
+        - libblas
+        - liblapack
+        # sed is in host env because its path is recorded in R's shell wrapper
+        - sed                                # [linux]
+      run:
+        - _r-mutex 1.* anacondar_1
+        # Needed by R CMD javareconf
+        - make                               # [not win]
+        - gcc_impl_{{ target_platform }}  >={{ c_compiler_version|default("0") }}    # [linux]
+        - gxx_impl_{{ target_platform }}  >={{ cxx_compiler_version|default("0") }}  # [linux]
+        - gfortran_impl_{{ target_platform }}  # [linux]
+        - curl                                 # [not win]
+        - xorg-libxt                           # [linux]
+        - {{ native }}bwidget
+        - {{ native }}tktable
+        - sed                                # [linux]
+
+    test:
+      commands:
+        - R -h
+        - R --version
+        - R -e "print(.Platform\$dynlib.ext)"
+        - R -e "library('tcltk')"            # [linux or osx]
+        - Rscript --version
+        - Rscript -e  'cat("ok\\n")'
+        # Report on the optional features compiled into this build of R.
+        - R -e "capabilities()"              # [not win]
+        - R -e \"capabilities()\""           # [win]
+        # Show third-party graphics software available
+        - R -e "grSoftVersion()"             # [not win]
+        - R -e \"grSoftVersion()\""          # [win]
+        # TODO does not work on windows, because winCairo.dll is missing
+        - Rscript test-svg.R                 # [not win]
+        - open                               # [win]
+         # There doesn't seem to be a way to test this one
+         # - RSetReg                         # [win]
+        - Rfe --help                         # [win]
+        - Rterm --help                       # [win]
+        - Rterm --version                    # [win]
+        # Prevent regression mentioned in https://github.com/conda-forge/r-base-feedstock/issues/50
+        - Rscript -e "stopifnot(capabilities('jpeg'), TRUE)"
+        - Rscript -e "stopifnot(capabilities('png'), TRUE)"
+        - if not exist %PREFIX%\\Lib\\R\\bin\\x64\\R.lib exit 1  # [win]
+        # Verify internal-tzcode works without warnings
+        # See https://stat.ethz.ch/pipermail/r-devel/2014-April/068745.html
+        - R -e "options(warn=2);Sys.time()"
+      files:
+        - test-svg.R
+
+
+  - name: cross-r-base
+    build:
+      skip: true  # [win]
+    script: install-cross-activate.sh
+    requirements:
+      run:
+        - {{ pin_subpackage("r-base", exact=True) }}
+        - rsync
+    test:
+      commands:
+        - test -f $PREFIX/etc/conda/activate.d/activate-cross-r-base.sh
+
+about:
+  home: http://www.r-project.org/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: COPYING
+  summary: R is a free software environment for statistical computing and graphics.
+
+extra:
+  feedstock-name: r-base
+  recipe-maintainers:
+    - conda-forge/r
+    - isuruf
+    - mbargull
+    - mingwandroid
+    - ocefpaf
+    - sodre
+    - xhochy
