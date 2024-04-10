@@ -5,32 +5,52 @@
 #    code on win-64 miniconda.
 cross_compiler_target_platform:  # [win]
   - win-64                     # [win]
+
+
 c_compiler:
-  - gcc                        # [linux]
-  - clang                      # [osx]
-  - vs2017                     # [win]
-  - emscripten                 # [emscripten]
-c_compiler_version:            # [unix]
-  # - 3                        # [emscripten]
-  - 11                         # [osx]
-  - 9                          # [linux]
-  - 7                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
-  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
-  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
-  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
+  - if: emscripten
+    then:
+      - emscripten
+  - if: linux
+    then:
+      - gcc
+  - if: osx
+    then:
+      - clang
+
+c_compiler_version:
+  - if: emscripten
+    then:
+      - 3
+  - if: linux
+    then:
+      - 9
+  - if: osx
+    then:
+      - 11
+
 cxx_compiler:
-  - gxx                        # [linux]
-  - clangxx                    # [osx]
-  - vs2017                     # [win]
-  - emscripten                 # [emscripten]
-cxx_compiler_version:          # [unix]
-  # - 3                          # [emscripten]
-  - 11                         # [osx]
-  - 9                          # [linux]
-  - 7                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
-  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
-  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
-  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
+  - if: emscripten
+    then:
+      - emscripten
+  - if: linux
+    then:
+      - gxx
+  - if: osx
+    then:
+      - clangxx
+      
+cxx_compiler_version:
+  - if: emscripten
+    then:
+      - 3
+  - if: linux
+    then:
+      - 9
+  - if: osx
+    then:
+      - 11
+
 llvm_openmp:                   # [osx]
   - 11                         # [osx]
 m2w64_c_compiler:              # [win]
