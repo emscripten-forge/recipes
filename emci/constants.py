@@ -9,7 +9,6 @@ RECIPES_SUBDIR_MAPPING = OrderedDict(
 )
 
 
-
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_ROOT = Path(THIS_DIR).parents[0].resolve()
 RECIPES_ROOT = REPO_ROOT / "recipes"
@@ -22,8 +21,6 @@ PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 VARIANT_CONFIG_PATH = os.path.join(REPO_ROOT, "variant_config.yaml")
 # env var to force the use of boa instead of rattler for  testing the legacy build system
 FORCE_BOA = bool(int(os.environ.get("FORCE_BOA", False)))
-
-
 
 
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")

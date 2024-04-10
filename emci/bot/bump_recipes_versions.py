@@ -23,16 +23,6 @@ class CannotHandleRecipeException(Exception):
         super().__init__(f"Cannot handle recipe in {recipe_dir}: {msg}")
 
 
-
-
-
-def bump_boa_recipe_version(boa_recipe_file):
-    pass
-
-
-
-
-
 def get_new_version(recipe_file, is_ratler):
     # read the file
     with open(recipe_file) as file:
@@ -130,10 +120,7 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_ratler):
 def make_pr_title(name, old_version, new_version):
     return f"Update {name} from {old_version} to {new_version} -- TESTPR"
 
-
 def bump_recipe_version(recipe_dir):
-
-
 
     recipe_locations = [("recipe.yaml", False), ("rattler_recipe.yaml", True)]
 
@@ -179,12 +166,9 @@ def bump_recipe_version(recipe_dir):
         print(f"Making PR for {name} with title: {pr_title}")
         make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name, automerge=automerge)
             
-            
-
     return True , current_version, new_version
 
            
-
 def try_to_merge_pr(pr):
 
     passed = subprocess.run(
@@ -211,8 +195,6 @@ def try_to_merge_pr(pr):
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message, '--edit-last'])
         except:
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message])
-
-
 
 
 def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=5):
