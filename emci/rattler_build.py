@@ -1,7 +1,7 @@
 import platform 
 import os
 import subprocess
-from .constants import VARIANT_CONFIG_PATH
+from .constants import CONDA_BUILD_CONFIG_PATH
 
 def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
 
@@ -20,7 +20,9 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
     # build for emscripten-wasm32?
     if emscripten_wasm32:
         cmd.extend(["--target-platform", "emscripten-wasm32"])
-        cmd.extend(["--variant-config", str(VARIANT_CONFIG_PATH)]) 
+        # cmd.extend(["--variant-config", str(VARIANT_CONFIG_PATH)]) 
+
+    cmd.extend(["-m", CONDA_BUILD_CONFIG_PATH])
     
     # add channel for playwright
     if platform.system() == "Darwin" :

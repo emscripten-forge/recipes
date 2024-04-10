@@ -19,6 +19,7 @@ PKG_FILE_FILTER = pkg_file_filter_from_yaml(CONFIG_PATH)
 
 # rattler build related
 VARIANT_CONFIG_PATH = os.path.join(REPO_ROOT, "variant_config.yaml")
+CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "conda_build_config.yaml")
 # env var to force the use of boa instead of rattler for  testing the legacy build system
 FORCE_BOA = bool(int(os.environ.get("FORCE_BOA", False)))
 
