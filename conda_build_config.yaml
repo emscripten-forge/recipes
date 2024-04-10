@@ -33,6 +33,19 @@ cxx_compiler_version:          # [unix]
   - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
 llvm_openmp:                   # [osx]
   - 11                         # [osx]
+fortran_compiler:              # [unix or win64]
+  - gfortran                   # [linux64 or (osx and x86_64)]
+  - gfortran                   # [aarch64 or ppc64le or armv7l or s390x]
+  - flang                      # [win64]
+fortran_compiler_version:      # [unix or win64]
+  - 11                         # [osx and arm64]
+  - 9                          # [osx and x86_64]
+  - 9                          # [linux]
+  - 5                          # [win64]
+  - 7                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
+  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
+  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
+  - 9                          # [os.environ.get("CF_CUDA_ENABLED", "False") == "True" and linux64]
 m2w64_c_compiler:              # [win]
   - m2w64-toolchain            # [win]
 m2w64_cxx_compiler:            # [win]
@@ -141,24 +154,34 @@ docker_image:                                   # [os.environ.get("BUILD_PLATFOR
   - quay.io/condaforge/linux-anvil-cuda:11.1       # [linux64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True" and os.environ.get("BUILD_PLATFORM") == "linux-64"]
   - quay.io/condaforge/linux-anvil-cuda:11.2       # [linux64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True" and os.environ.get("BUILD_PLATFORM") == "linux-64"]
 
-# zip_keys:
-#   -                             # [unix]
-#     - c_compiler_version        # [unix]
-#     - cxx_compiler_version      # [unix]
-#     - fortran_compiler_version  # [unix]
-#     - cudnn                     # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
-#     - cuda_compiler_version     # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
-#     - cdt_name                  # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
-#     - docker_image              # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True" and os.environ.get("BUILD_PLATFORM", "").startswith("linux-")]
-#   -                             # [win64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
-#     - cudnn                     # [win64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
-#     - cuda_compiler_version     # [win64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
-#   -
-#     - python
-#     - numpy
-#     - python_impl
+zip_keys:
+  -                             # [unix]
+    - c_compiler_version        # [unix]
+    - cxx_compiler_version      # [unix]
+    - fortran_compiler_version  # [unix]
+    - cudnn                     # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
+    - cuda_compiler_version     # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
+    - cdt_name                  # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
+    - docker_image              # [linux and os.environ.get("CF_CUDA_ENABLED", "False") == "True" and os.environ.get("BUILD_PLATFORM", "").startswith("linux-")]
+  -                             # [win64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
+    - cudnn                     # [win64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
+    - cuda_compiler_version     # [win64 and os.environ.get("CF_CUDA_ENABLED", "False") == "True"]
+  -
+    - python
+    - numpy
+    - python_impl
 
+# aarch64 specifics because conda-build sets many things to centos 6
+# this can probably be removed when conda-build gets updated defaults
+# for aarch64
+cdt_arch: aarch64                       # [aarch64]
+BUILD: aarch64-conda_cos7-linux-gnu     # [aarch64]
 
+# armv7l specifics because conda-build sets many things to centos 6
+# this can probably be removed when conda-build gets updated defaults
+# for aarch64
+cdt_arch: armv7l                          # [armv7l]
+BUILD: armv7-conda_cos7-linux-gnueabihf   # [armv7l]
 
 # TODO: remove these when run_exports are added to the packages.
 pin_run_as_build:
@@ -291,6 +314,7 @@ pin_run_as_build:
     max_pin: x.x
   zeromq:
     max_pin: x.x  # [not win]
+    max_pin: x.x.x  # [win]
 
 # Pinning packages
 
