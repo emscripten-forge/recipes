@@ -2,7 +2,7 @@
 from .deprecated.boa_build import build_package_with_boa
 from .rattler_build import build_with_rattler
 
-from .constants import RECIPES_SUBDIR_MAPPING, VARIANT_CONFIG_PATH, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
+from .constants import RECIPES_SUBDIR_MAPPING, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 
 
