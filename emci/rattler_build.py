@@ -24,14 +24,9 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
 
     cmd.extend(["-m", RATTLER_CONDA_BUILD_CONFIG_PATH])
     
-    # add channel for playwright
-    if platform.system() == "Darwin" :
-        cmd.extend(["-c", "tobiasrobotics"])
-    else:
-        cmd.extend(["-c", "microsoft"])
-    
     # add conda forge and emscripten-forge channels
     cmd.extend([
+        "-c", "microsoft",
         "-c", "conda-forge",
         "-c", "https://repo.mamba.pm/emscripten-forge"
     ])
