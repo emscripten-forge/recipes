@@ -10,7 +10,7 @@ except ImportError:
 
 from .rattler_build import build_with_rattler
 
- 
+
 from .constants import RECIPES_SUBDIR_MAPPING, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 
