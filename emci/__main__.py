@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Optional
 import typer
 
+
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
