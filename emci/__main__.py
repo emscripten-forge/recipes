@@ -1,5 +1,6 @@
 # this contains monkey patches for boa and needs to be imported early
 has_boa = False
+import warnings
 try:
     from .deprecated.boa_build import build_package_with_boa
     has_boa = True
@@ -9,7 +10,7 @@ except ImportError:
 
 from .rattler_build import build_with_rattler
 
-
+ 
 from .constants import RECIPES_SUBDIR_MAPPING, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 
@@ -22,7 +23,7 @@ from pathlib import Path
 
 from typing import Optional
 import typer
-import warnings
+
 
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()

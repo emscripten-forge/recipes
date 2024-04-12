@@ -57,9 +57,13 @@ def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
     old_branch_name = get_current_branch_name()
 
 
-    #  stash current changes
+    #  stash current changes and check return code
     if stash_current:
-        subprocess.check_output(['git', 'stash'])
+
+        out = subprocess.run(['git', 'stash'], check=False)
+        if out.returncode == 0:
+            stashed_successfully = True
+
 
     
     subprocess.check_output(['git', 'checkout', '-b', new_branch_name])
@@ -71,7 +75,7 @@ def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
         subprocess.check_output(['git', 'checkout', old_branch_name, "--force"])
 
         # unstash changes
-        if stash_current:
+        if stash_current and stashed_successfully:
             subprocess.check_output(['git', 'stash', 'pop'])
 
         if auto_delete:
