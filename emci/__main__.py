@@ -1,6 +1,14 @@
 # this contains monkey patches for boa and needs to be imported early
-from .deprecated.boa_build import build_package_with_boa
+has_boa = False
+try:
+    from .deprecated.boa_build import build_package_with_boa
+    has_boa = True
+except ImportError:
+    warnings.warn("boa_build module not found. This is fine if you only build with rattler-build")
+
+
 from .rattler_build import build_with_rattler
+
 
 from .constants import RECIPES_SUBDIR_MAPPING, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
@@ -46,6 +54,8 @@ def explicit(
         build_with_rattler(recipe=rattler_recipe, emscripten_wasm32=emscripten_wasm32)
         
     else:
+        if not has_boa:
+            raise RuntimeError("boa_build module not found. This is required to build boa recipes")
         # show deprecated warning
         warnings.warn("Building with boa is deprecated. Please use rattler instead.")
 
@@ -120,6 +130,8 @@ def changed(
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
             
             if all_boa and (not all_rattler or FORCE_BOA):
+                if not has_boa:
+                    raise RuntimeError("boa_build module not found. This is required to build boa recipes")
                 # delete all potential "rattler_recipe.yaml" files
                 for root, dirs, files in os.walk(tmp_recipes_root_str):
                     for file in files:
