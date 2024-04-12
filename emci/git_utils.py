@@ -19,16 +19,22 @@ def find_files_with_changes(old, new):
     files_with_changes = output_str.splitlines()
     return files_with_changes
 
+def set_git_user(user, email):
+    subprocess.check_output(['git', 'config', '--global', 'user.email', email])
+    subprocess.check_output(['git', 'config', '--global', 'user.name', user])
+
+
+
 @contextmanager
 def github_user_ctx(user, email, bypass=False):
 
     if not bypass:
+
         current_user_email = subprocess.check_output(['git', 'config', '--get', 'user.email']).decode('utf-8').strip()
         current_user_name = subprocess.check_output(['git', 'config', '--get', 'user.name']).decode('utf-8').strip()
 
         # set  new user
-        subprocess.check_output(['git', 'config', '--global', 'user.email', email])
-        subprocess.check_output(['git', 'config', '--global', 'user.name', user])
+        set_git_user(user, email)
 
     try:
         yield
@@ -43,6 +49,9 @@ def github_user_ctx(user, email, bypass=False):
 def bot_github_user_ctx(bypass=False):
     with github_user_ctx('emscripten-forge-bot', 'emscripten-forge-bot@users.noreply.github.com', bypass=bypass):
         yield
+
+def set_bot_user():
+    set_git_user('emscripten-forge-bot', 'emscripten-forge-bot@users.noreply.github.com')
 
 
 def get_current_branch_name():

@@ -9,7 +9,7 @@ import copy
 from .next_version import next_version
 from .url_exists import url_exists
 from .hash_url import hash_url
-from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled
+from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user
 import sys
 import json
 
@@ -197,10 +197,43 @@ def try_to_merge_pr(pr):
             subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', message])
 
 
+ON_GITHUB_ACTIONS = os.environ.get('GITHUB_ACTIONS') == 'true'
+
+@contextlib.contextmanager
+def user_ctx(user, email, bypass=False):
+    if ON_GITHUB_ACTIONS and not bypass:
+        yield
+    else:
+        subprocess.check_output(['git', 'config', 'user.name', user])
+        subprocess.check_output(['git', 'config', 'user.email', email])
+        yield
+        subprocess.check_output(['git', 'config', '--unset', 'user.name'])
+        subprocess.check_output(['git', 'config', '--unset', 'user.email'])
+    
+
 def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=5):
 
+   # empty context manager
+    @contextlib.contextmanager
+    def empty_context_manager():
+        yield
+
+    
+    if ON_GITHUB_ACTIONS:
+        # We are on GitHub Actions, we **cannot** **restore** the user account
+        # therefore we just set the bot user and use an empty context manager
+        set_bot_user()
+        user_ctx = empty_context_manager
+    else:
+        if use_bot:
+            user_ctx = bot_github_user_ctx
+        else:
+            user_ctx = empty_context_manager
+    
+
+
     # get all opened PRs
-    with bot_github_user_ctx(bypass=not use_bot):
+    with user_ctx():
 
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
