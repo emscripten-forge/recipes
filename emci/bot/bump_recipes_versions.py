@@ -118,7 +118,7 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_ratler):
         YAML().dump(recipe, file)
 
 def make_pr_title(name, old_version, new_version):
-    return f"Update {name} from {old_version} to {new_version} -- TESTPR"
+    return f"Update {name} from {old_version} to {new_version}"
 
 def bump_recipe_version(recipe_dir):
 
