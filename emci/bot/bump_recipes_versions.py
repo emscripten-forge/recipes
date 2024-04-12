@@ -153,7 +153,7 @@ def bump_recipe_version(recipe_dir):
     branch_name = f"bump-{name}_{current_version}_to_{new_version}"
 
 
-    with git_branch_ctx(branch_name):
+    with git_branch_ctx(branch_name, stash_current=False):
 
         # update the recipe
         for recipe_fname, is_rattler in recipe_locations:

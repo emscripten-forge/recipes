@@ -21,30 +21,28 @@ def find_files_with_changes(old, new):
 
 @contextmanager
 def github_user_ctx(user, email, bypass=False):
-    current_user_email = subprocess.check_output(['git', 'config', '--get', 'user.email']).decode('utf-8').strip()
-    current_user_name = subprocess.check_output(['git', 'config', '--get', 'user.name']).decode('utf-8').strip()
 
-    # set  new user
-    subprocess.check_output(['git', 'config', '--global', 'user.email', email])
-    subprocess.check_output(['git', 'config', '--global', 'user.name', user])
+    if not bypass:
+        current_user_email = subprocess.check_output(['git', 'config', '--get', 'user.email']).decode('utf-8').strip()
+        current_user_name = subprocess.check_output(['git', 'config', '--get', 'user.name']).decode('utf-8').strip()
+
+        # set  new user
+        subprocess.check_output(['git', 'config', '--global', 'user.email', email])
+        subprocess.check_output(['git', 'config', '--global', 'user.name', user])
 
     try:
         yield
     finally:
-        # restore user
-        subprocess.check_output(['git', 'config', '--global', 'user.email', current_user_email])
-        subprocess.check_output(['git', 'config', '--global', 'user.name', current_user_name])
+        if not bypass:
+            # restore user
+            subprocess.check_output(['git', 'config', '--global', 'user.email', current_user_email])
+            subprocess.check_output(['git', 'config', '--global', 'user.name', current_user_name])
 
 
 @contextmanager
 def bot_github_user_ctx(bypass=False):
-
-    if bypass:
-        with github_user_ctx('emscripten-forge-bot', 'emscripten-forge-bot@users.noreply.github.com', bypass=bypass):
-            yield
-    else:
+    with github_user_ctx('emscripten-forge-bot', 'emscripten-forge-bot@users.noreply.github.com', bypass=bypass):
         yield
-
 
 
 def get_current_branch_name():
