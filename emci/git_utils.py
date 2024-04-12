@@ -58,6 +58,7 @@ def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
 
 
     #  stash current changes and check return code
+    stashed_successfully = False
     if stash_current:
 
         out = subprocess.run(['git', 'stash'], check=False)
