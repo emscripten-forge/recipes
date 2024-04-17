@@ -34,10 +34,8 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
     # pass existing env vars to subprocess
     print(f"Running rattler-build with command: {cmd}")
 
-    # hack_cmd = "rattler-build build  --recipe recipes/recipes_emscripten/highs/rattler_recipe.yaml  --target-platform=emscripten-wasm32  -c microsoft  -c https://repo.mamba.pm/emscripten-forge -c conda-forge -m rattler_conda_build_config.yaml --package-format tar-bz2"
-    # ret = subprocess.run(hack_cmd, check=False, shell=True)#, env=os.environ)
+
     ret = subprocess.run(' '.join(cmd), check=False, shell=True)#, env=os.environ)
-    # ret = subprocess.run(cmd, check=False, shell=False)#, env=os.environ)
     if ret.returncode != 0:
         raise RuntimeError(f"rattler-build failed with return code {ret.returncode}")
     
