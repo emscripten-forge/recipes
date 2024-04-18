@@ -11,7 +11,7 @@ except ImportError:
 from .rattler_build import build_with_rattler
 
 
-from .constants import RECIPES_SUBDIR_MAPPING, FORCE_BOA, RECIPES_EMSCRIPTEN_DIR
+from .constants import RECIPES_SUBDIR_MAPPING, FORCE_BOA,FORCE_RATTLER, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 
 
@@ -49,16 +49,12 @@ def explicit(
     # otherwise we can use boa
         
     rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "rattler_recipe.yaml")
-    if os.path.isfile(rattler_recipe_file) and not FORCE_BOA:
+    boa_recipe_file = os.path.join(Path(recipe_dir).resolve(), "recipe.yaml")
 
-        rattler_recipe = Path(recipe_dir) / "rattler_recipe.yaml"
-        build_with_rattler(recipe=rattler_recipe, emscripten_wasm32=emscripten_wasm32)
-        
-    else:
+    if os.path.isfile(boa_recipe_file) and not FORCE_RATTLER:
         if not has_boa:
             raise RuntimeError("boa_build module not found. This is required to build boa recipes")
-        # show deprecated warning
-        warnings.warn("Building with boa is deprecated. Please use rattler instead.")
+
 
         build_package_with_boa(
             work_dir=work_dir,
@@ -67,6 +63,13 @@ def explicit(
             skip_tests=skip_tests,
             skip_existing=skip_existing,
         )
+
+    elif os.path.isfile(rattler_recipe_file) and not FORCE_BOA:
+
+        rattler_recipe = Path(recipe_dir) / "rattler_recipe.yaml"
+        build_with_rattler(recipe=rattler_recipe, emscripten_wasm32=emscripten_wasm32)
+        
+
 
 def check_recipes_format(recipes_dir):
     all_rattler = True
@@ -130,7 +133,7 @@ def changed(
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
             
-            if all_boa and (not all_rattler or FORCE_BOA):
+            if all_boa and not FORCE_RATTLER:
                 if not has_boa:
                     raise RuntimeError("boa_build module not found. This is required to build boa recipes")
                 # delete all potential "rattler_recipe.yaml" files

@@ -32,7 +32,10 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
     ])
 
     # pass existing env vars to subprocess
-    ret = subprocess.run(' '.join(cmd), check=False, shell=True, env=os.environ)
+    print(f"Running rattler-build with command: {cmd}")
+
+
+    ret = subprocess.run(' '.join(cmd), check=False, shell=True)#, env=os.environ)
     if ret.returncode != 0:
         raise RuntimeError(f"rattler-build failed with return code {ret.returncode}")
     
