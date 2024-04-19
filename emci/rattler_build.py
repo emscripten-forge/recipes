@@ -26,9 +26,9 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False):
     
     # add conda forge and emscripten-forge channels
     cmd.extend([
-        "-c", "microsoft",
+        "-c", "https://repo.mamba.pm/emscripten-forge",
         "-c", "conda-forge",
-        "-c", "https://repo.mamba.pm/emscripten-forge"
+        "-c", "microsoft",
     ])
 
     # pass existing env vars to subprocess
