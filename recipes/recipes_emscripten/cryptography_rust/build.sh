@@ -1,10 +1,10 @@
 #!/bin/bash
 export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
 
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
-rustup toolchain add stable --y
-rustup target add wasm32-unknown-emscripten --toolchain stable -y
+rustup toolchain add stable
+rustup target add wasm32-unknown-emscripten --toolchain stable 
 
 
 # add rust to path
