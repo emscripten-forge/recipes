@@ -39,5 +39,9 @@ export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
 # export RUST_BACKTRACE=1
 # export CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_DEBUG=true    
 
+
+echo "show default rust version"
+rustup default
+rustc --version
 ${PYTHON} -m pip  install . -vvv
 
