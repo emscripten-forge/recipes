@@ -2,9 +2,9 @@
 
 echo "Activating Rust"
 
-export RUSTUP_HOME=$BUILD_PREFIX/.rustup
-export CARGO_HOME=$BUILD_PREFIX/.cargo
-export PATH=$CARGO_HOME/bin:$PATH
+# export RUSTUP_HOME=$BUILD_PREFIX/.rustup
+# export CARGO_HOME=$BUILD_PREFIX/.cargo
+# export PATH=$CARGO_HOME/bin:$PATH
 
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

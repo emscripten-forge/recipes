@@ -5,4 +5,4 @@ echo "Deactivating Rust"
 unset CARGO_HOME
 unset RUSTUP_HOME
 
-rustup self uninstall -y
+# rustup self uninstall -y
