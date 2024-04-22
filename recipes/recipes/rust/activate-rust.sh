@@ -2,7 +2,7 @@
 
 echo "Activating Rust"
 
-
+export RUSTUP_HOME=$BUILD_PREFIX/.rustup
 export CARGO_HOME=$BUILD_PREFIX/.cargo
 export PATH=$CARGO_HOME/bin:$PATH
 
