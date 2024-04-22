@@ -8,8 +8,8 @@ echo "Activating Rust"
 
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-rustup toolchain add 1.77.2
-rustup target add wasm32-unknown-emscripten --toolchain 1.77.2 
+rustup toolchain add stable
+rustup target add wasm32-unknown-emscripten --toolchain stable
 
 
 
