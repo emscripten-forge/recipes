@@ -30,3 +30,4 @@ export PYO3_CROSS_INCLUDE_DIR=$PREFIX/include
 export PYO3_PYTHON=python
 
 export CARGO_BUILD_TARGET="wasm32-unknown-emscripten"
+export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
