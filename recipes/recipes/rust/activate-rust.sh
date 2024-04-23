@@ -12,8 +12,8 @@ echo "Activating Rust"
 # load the rust version from the .rust_version file
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y #--default-toolchain=1.78.0
-rustup install nightly-2024-04-222
-rustup default nightly
+rustup install nightly-2024-04-22
+rustup default nightly-2024-04-22
 rustup target add wasm32-unknown-emscripten
 
 
