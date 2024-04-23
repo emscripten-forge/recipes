@@ -7,8 +7,13 @@ echo "Activating Rust"
 # export PATH=$CARGO_HOME/bin:$PATH
 
 
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.77.2
-rustup default 1.77.2
+#echo $PKG_VERSION > ${PREFIX}/.rust_version
+
+# load the rust version from the .rust_version file
+
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y #--default-toolchain=1.78.0
+rustup install nightly-2024-04-222
+rustup default nightly
 rustup target add wasm32-unknown-emscripten
 
 
