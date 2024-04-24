@@ -9,6 +9,13 @@ export PATH=$CARGO_HOME/bin:$PATH
 
 #echo $PKG_VERSION > ${PREFIX}/.rust_version
 
+# is there a .bashenv file?
+if [ -f ${PREFIX}/.bashenv ]; then
+    # create a backup of the .bashenv file
+    cp ${PREFIX}/.bashenv ${PREFIX}/.bashenv.bak
+fi
+
+
 # load the rust version from the .rust_version file
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y #--default-toolchain=1.78.0
