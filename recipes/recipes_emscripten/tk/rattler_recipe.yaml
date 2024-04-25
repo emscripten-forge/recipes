@@ -1,0 +1,49 @@
+context:
+  name: "tk"
+  version: "8.6.13"
+
+package:
+  name: tk
+  version: {{ version }}
+
+source:
+  - url: https://downloads.sourceforge.net/tcl/tcl{{ version }}-src.tar.gz
+    folder: tcl{{ version }}
+    sha256: 43a1fae7412f61ff11de2cfd05d28cfc3a73762f354a417c62370a54e2caf066
+  - url: https://downloads.sourceforge.net/tcl/tk{{ version }}-src.tar.gz
+    folder: tk{{ version }}
+    sha256: 2e65fa069a23365440a3c56c556b8673b5e32a283800d8d9b257e3f584ce0675
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ cdt('xorg-x11-proto-devel') }}  # [linux]
+    - ${{ cdt('libx11-devel') }}          # [linux]
+    - ${{ cdt('libxcb') }}                # [linux]
+    - ${{ cdt('libxau') }}                # [linux]
+    - make                               # [linux]
+    - ${{ cdt('freetype-devel') }}        # [linux and tk_variant == 'xft']
+    - ${{ cdt('fontconfig-devel') }}      # [linux and tk_variant == 'xft']
+    - ${{ cdt('libXrender-devel') }}      # [linux and tk_variant == 'xft']
+    - ${{ cdt('libXft-devel') }}          # [linux and tk_variant == 'xft']
+    - pkg-config                         # [linux and tk_variant == 'xft']
+  host:
+    - zlib
+
+test:
+
+
+about:
+  home: http://www.tcl.tk/
+  license: TCL
+  license_family: BSD
+  license_file: tcl{{ version }}/license.terms
+  summary: A dynamic programming language with GUI support.  Bundles Tcl and Tk.
+  dev_url: https://github.com/tcltk/tk
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
