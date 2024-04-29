@@ -1,0 +1,39 @@
+name: run with pixi
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+jobs:
+
+  build_simple_with_pixi:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_PLATFORM: emscripten-wasm32
+      GITHUB_OWNER: "emscripten-forge"
+    strategy:
+      fail-fast: false
+      matrix:
+        emsdk_ver: ["3.1.45"]
+
+    steps:
+      ################################################################
+      # SETUP
+      ################################################################
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      ################################################################
+      # CONFIG
+      ################################################################
+      - uses: prefix-dev/setup-pixi@v0.6.0
+        with:
+          pixi-version: v0.20.1
+          cache: true
+          auth-host: prefix.dev
+          auth-token: ${{ secrets.PREFIX_DEV_TOKEN }}
+      - run: |
+          pixi run setup
+          pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/regex
