@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "Deactivating Rust"
+
+unset CARGO_HOME
+unset RUSTUP_HOME
+
+
+
+# is there a .bashenv.bak file?
+if [ -f ${PREFIX}/.bashenv.bak ]; then
+    # restore the .bashenv file
+    mv ${PREFIX}/.bashenv.bak ${PREFIX}/.bashenv
+fi
