@@ -12,10 +12,18 @@ export PATH=$CARGO_HOME/bin:$PATH
 #echo $PKG_VERSION > ${PREFIX}/.rust_version
 
 # is there a .bashenv file?
-if [ -f ${PREFIX}/.bashenv ]; then
+if [ -f ${HOME}/.bashenv ]; then
     # create a backup of the .bashenv file
-    cp ${PREFIX}/.bashenv ${PREFIX}/.bashenv.bak
+    echo "Creating a backup of the .bashenv file"
+    cp ${HOME}/.bashenv ${HOME}/.bashenv.bak
 fi
+# is there a .bash_profile:
+if [ -f ${HOME}/.bash_profile ]; then
+    # create a backup of the .bash_profile file
+    echo "Creating a backup of the .bash_profile file"
+    cp ${HOME}/.bash_profile ${HOME}/.bash_profile.bak
+fi
+
 
 
 # load the rust version from the .rust_version file
