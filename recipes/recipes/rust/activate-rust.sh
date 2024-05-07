@@ -4,7 +4,7 @@ echo "Activating Rust"
 
 
 
-export RUSTUP_HOME=$HOME/.cargo_emscripten_forge
+export RUSTUP_HOME=$HOME/.rustup_emscripten_forge
 export CARGO_HOME=$HOME/.cargo_emscripten_forge
 export PATH=$CARGO_HOME/bin:$PATH
 
