@@ -110,36 +110,22 @@ jobs:
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -el {0}
         run: |
-          mkdir -p ${CONDA_PREFIX}/conda-bld/emscripten-wasm32
-          mkdir -p ${CONDA_PREFIX}/conda-bld/linux-64
-          mkdir -p ${CONDA_PREFIX}/conda-bld/noarch
 
-          mkdir -p ${GITHUB_WORKSPACE}/output/emscripten-wasm32
-          mkdir -p ${GITHUB_WORKSPACE}/output/linux-64
-          mkdir -p ${GITHUB_WORKSPACE}/output/noarch
+          # loop over {emscripten-wasm32, linux-64, noarch}
+          for platform in emscripten-wasm32 linux-64 noarch; do
+            # loop over all packages
+            mkdir -p ${CONDA_PREFIX}/conda-bld/${platform}
+            for package in $(ls ${CONDA_PREFIX}/conda-bld/${platform}/*.tar.bz2); do
+              echo "Uploading ${package} for  ${platform} (build with boa)"
+              QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${package}
+            done
+          done
 
-          # packages build with boa
-          if [ $(ls ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2 | wc -l) -ne 0 ]; then
-            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${CONDA_PREFIX}/conda-bld/emscripten-wasm32/*.tar.bz2
-          fi
-
-          if [ $(ls ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2 | wc -l) -ne 0 ]; then
-            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge  ${CONDA_PREFIX}/conda-bld/linux-64/*.tar.bz2
-          fi
-
-          if [ $(ls ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2 | wc -l) -ne 0 ]; then
-            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${CONDA_PREFIX}/conda-bld/noarch/*.tar.bz2
-          fi
-
-          # packages build with rattler-build
-          if [ $(ls ${GITHUB_WORKSPACE}/output/emscripten-wasm32/*.tar.bz2 | wc -l) -ne 0 ]; then
-            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${GITHUB_WORKSPACE}/output/emscripten-wasm32/*.tar.bz2
-          fi
-
-          if [ $(ls ${GITHUB_WORKSPACE}/output/linux-64/*.tar.bz2 | wc -l) -ne 0 ]; then
-            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge  ${GITHUB_WORKSPACE}/output/linux-64/*.tar.bz2
-          fi
-
-          if [ $(ls ${GITHUB_WORKSPACE}/output/noarch/*.tar.bz2 | wc -l) -ne 0 ]; then
-            QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${GITHUB_WORKSPACE}/output/noarch/*.tar.bz2
-          fi
+          # loop over {emscripten-wasm32, linux-64, noarch}
+          for platform in emscripten-wasm32 linux-64 noarch; do
+            mkdir -p ${GITHUB_WORKSPACE}/output/${platform}
+            for package in $(ls ${GITHUB_WORKSPACE}/output/${platform}/*.tar.bz2); do
+              echo "Uploading ${package} for  ${platform} (build with rattler)"
+              QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${package}
+            done
+          done

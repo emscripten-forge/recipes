@@ -51,7 +51,12 @@ def explicit(
     rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "rattler_recipe.yaml")
     boa_recipe_file = os.path.join(Path(recipe_dir).resolve(), "recipe.yaml")
 
-    if os.path.isfile(boa_recipe_file) and not FORCE_RATTLER:
+    if os.path.isfile(rattler_recipe_file) and not FORCE_BOA:
+
+        rattler_recipe = Path(recipe_dir) / "rattler_recipe.yaml"
+        build_with_rattler(recipe=rattler_recipe, emscripten_wasm32=emscripten_wasm32)
+        
+    elif os.path.isfile(boa_recipe_file) and not FORCE_RATTLER:
         if not has_boa:
             raise RuntimeError("boa_build module not found. This is required to build boa recipes")
 
@@ -64,11 +69,6 @@ def explicit(
             skip_existing=skip_existing,
         )
 
-    elif os.path.isfile(rattler_recipe_file) and not FORCE_BOA:
-
-        rattler_recipe = Path(recipe_dir) / "rattler_recipe.yaml"
-        build_with_rattler(recipe=rattler_recipe, emscripten_wasm32=emscripten_wasm32)
-        
 
 
 def check_recipes_format(recipes_dir):
@@ -132,8 +132,21 @@ def changed(
                     shutil.copytree(recipe_dir, tmp_recipe_dir)
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
-            
-            if all_boa and not FORCE_RATTLER:
+            if all_rattler and not FORCE_BOA:
+                # delete all potential "recipe.yaml" files
+                for root, dirs, files in os.walk(tmp_recipes_root_str):
+                    for file in files:
+                        if file == "recipe.yaml":
+                            os.remove(os.path.join(root, file))
+                # rename all rattler_recipe.yaml files to recipe.yaml
+                for root, dirs, files in os.walk(tmp_recipes_root_str):
+                    for file in files:
+                        if file == "rattler_recipe.yaml":
+                            os.rename(os.path.join(root, file), os.path.join(root, "recipe.yaml"))
+
+                build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32")
+
+            elif all_boa and not FORCE_RATTLER:
                 if not has_boa:
                     raise RuntimeError("boa_build module not found. This is required to build boa recipes")
                 # delete all potential "rattler_recipe.yaml" files
@@ -150,20 +163,7 @@ def changed(
                     skip_tests=skip_tests,
                     skip_existing=skip_existing,
                 )
-            elif all_rattler:
-                # delete all potential "recipe.yaml" files
-                for root, dirs, files in os.walk(tmp_recipes_root_str):
-                    for file in files:
-                        if file == "recipe.yaml":
-                            os.remove(os.path.join(root, file))
-                # rename all rattler_recipe.yaml files to recipe.yaml
-                for root, dirs, files in os.walk(tmp_recipes_root_str):
-                    for file in files:
-                        if file == "rattler_recipe.yaml":
-                            os.rename(os.path.join(root, file), os.path.join(root, "recipe.yaml"))
-
-                build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32")
-
+            
             else:
                 raise RuntimeError("All recipes must be in the same format (rattler or boa)")
 

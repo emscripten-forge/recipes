@@ -77,6 +77,22 @@ jobs:
           python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2 --no-deps --ignore-installed
       
       ################################################################
+      # Build compiler pkg
+      ################################################################
+      - name: Build emscripten compiler
+        shell: bash -el {0}
+        run: |
+          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
+      
+      ################################################################
+      # Build compiler pkg with legacy boa
+      ################################################################
+      - name: Build emscripten compiler
+        shell: bash -el {0}
+        run: |
+          FORCE_BOA=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
+
+      ################################################################
       # Build pytester
       ################################################################
       - name: Build pytester
@@ -84,7 +100,14 @@ jobs:
         run: |
           FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/pytester
       
-
+      ################################################################
+      # Build a simple package
+      ################################################################
+      - name: Build regex
+        shell: bash -el {0}
+        run: |
+          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
+      
 
       ################################################################
       # Build a package which is **not** on emscripten forge
@@ -95,13 +118,6 @@ jobs:
           FORCE_RATTLER=1  python -m emci build explicit $GITHUB_WORKSPACE/test_recipes/only_py_tests --emscripten-wasm32
         
 
-      ################################################################
-      # Build a simple package
-      ################################################################
-      - name: Build regex
-        shell: bash -el {0}
-        run: |
-          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
       
       ################################################################
       # Build a simple package

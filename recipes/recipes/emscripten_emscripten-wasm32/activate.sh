@@ -32,10 +32,11 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
 
     # clear all prexisting cmake args / CC / CXX / AR / RANLIB
-    export CC=""
-    export CXX=""
-    export AR=""
-    export RANLIB=""
+    export CC="emcc"
+    export CXX="em++"
+    export AR="emar"
+    export RANLIB="emranlib"
+    
     export CMAKE_ARGS=""
 
 
