@@ -41,6 +41,16 @@ as not all recipes have been ported to `rattler-build` yet.
 For each recipe there can be a `rattler_recipe.yaml` and a `recipe.yaml` file. The `rattler_recipe.yaml` file is used for rattler-build and the `recipe.yaml` file is used for boa builds.
 Once all recipes have been ported to `rattler-build`, we will remove the `recipe.yaml` files and rename the `rattler_recipe.yaml` files to `recipe.yaml`.
 
+### Local Builds with pixi rattler-build
+
+To build a package locally, the easiest way is to use `pixi`
+
+```bash
+# this only needs to be done once
+pixi run setup 
+# this builds the package
+pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/regex
+```
 
 
 ### Local Builds with rattler-build
@@ -155,9 +165,7 @@ channels:
 
 We are working on:
  
- * Rust integration st. packages with Rust code (ie. `cryptography`) compile to to `wasm32-unknown-emscripten`. This will be relatively simple since  this has already been done by the awesome pyodide team!
  * MambaLite: A wasm compiled version of mamba st. we can **install** `emscripten-forge` packages at wasm-runtime.
- * Binderlite: A JupyterLite / emscripten-forge powered version of Binder.
 
 ## Credits
 This project would not have been possible without the pioneering work of the [pyodide](https://pyodide.org/) team.
