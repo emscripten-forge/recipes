@@ -4,35 +4,9 @@ echo "Activating Rust"
 
 
 
-export RUSTUP_HOME=$BUILD_PREFIX/.rustup
-export CARGO_HOME=$BUILD_PREFIX/.cargo
+export RUSTUP_HOME=$HOME/.rustup_emscripten_forge
+export CARGO_HOME=$HOME/.cargo_emscripten_forge
 export PATH=$CARGO_HOME/bin:$PATH
-
-
-#echo $PKG_VERSION > ${PREFIX}/.rust_version
-
-# is there a .bashenv file?
-if [ -f ${HOME}/.bashenv ]; then
-    # create a backup of the .bashenv file
-    echo "Creating a backup of the .bashenv file"
-    cp ${HOME}/.bashenv ${HOME}/.bashenv.bak
-fi
-# is there a .bash_profile:
-if [ -f ${HOME}/.bash_profile ]; then
-    # create a backup of the .bash_profile file
-    echo "Creating a backup of the .bash_profile file"
-    cp ${HOME}/.bash_profile ${HOME}/.bash_profile.bak
-fi
-
-
-
-# load the rust version from the .rust_version file
-
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y #--default-toolchain=1.78.0
-rustup install nightly-2024-04-22
-rustup default nightly-2024-04-22
-rustup target add wasm32-unknown-emscripten
-
 
 
 
