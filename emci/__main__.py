@@ -33,7 +33,7 @@ def explicit(
     # if so, we need to build the package with rattler
     # otherwise we can use boa
         
-    rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "rattler.yaml")
+    rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "recipe.yaml")
     build_with_rattler(recipe=rattler_recipe_file, emscripten_wasm32=emscripten_wasm32)
 
 @build_app.command()
