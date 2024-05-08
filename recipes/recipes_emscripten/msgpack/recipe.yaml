@@ -1,0 +1,33 @@
+context:
+  version: 1.0.6
+
+package:
+  name: msgpack
+  version: ${{ version }}
+
+source:
+- sha256: 0dc84bbf0a97fb1f9f277de8a97ade38b5323ece5728dcee4ed4410c9df976b1
+  url: https://github.com/msgpack/msgpack-python/archive/refs/tags/v${{ version }}.tar.gz
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_msgpack.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

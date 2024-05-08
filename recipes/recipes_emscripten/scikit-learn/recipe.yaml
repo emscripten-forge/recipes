@@ -1,0 +1,64 @@
+context:
+  version: 1.1.1
+
+package:
+  name: scikit-learn
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scikit-learn/scikit-learn/archive/${{ version }}.tar.gz
+  sha256: 568e621b9e1479b9ab952a9241db5af2ba3ab4f69d44b8aba3dd7648825e8e5a
+  patches:
+  - patches/patch_away_urllib.patch
+
+build:
+  number: 3
+  script:
+  - export CFLAGS="$CFLAGS -Wno-implicit-function-declaration"
+  - python -m pip install . -vv
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython <= 2
+  - numpy
+  - scipy
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+
+  - pip
+  - setuptools
+  host:
+  - python
+  - numpy
+  - scipy
+  - joblib >=1.0.0
+  - threadpoolctl >=2.0.0
+  run:
+  - python
+  - numpy
+  - scipy
+  - joblib >=1.0.0
+  - threadpoolctl >=2.0.0
+
+
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_sklearn.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: A set of python modules for machine learning and data mining
+  homepage: http://scikit-learn.org/
+extra:
+  recipe-maintainers:
+  - wolfv

@@ -1,0 +1,43 @@
+context:
+  version: 5.4.6
+
+package:
+  name: lua
+  version: ${{ version }}
+
+
+source:
+- url: http://www.lua.org/ftp/lua-${{ version }}.tar.gz
+  sha256: 7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88
+  patches:
+      # Enables Lua to look for packages on a relative path
+  - luaconf.patch
+      # Build as a shared library
+  - liblua.so.patch
+      # Enables readline on linux
+  - Makefile.patch
+- path: CMakeLists.txt
+
+build:
+  number: 5
+
+
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ninja
+  - cmake
+  - make
+
+
+about:
+  summary: Lua is a powerful, fast, lightweight, embeddable scripting language
+  license: MIT
+  license_file: doc/readme.html
+
+  homepage: http://www.lua.org/
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - JohanMabille

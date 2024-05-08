@@ -1,0 +1,55 @@
+context:
+  version: 1.15.1
+
+package:
+  name: cffi
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/c/cffi/cffi-${{ version }}.tar.gz
+  sha256: d400bfb9a37b1351253cb402671cea7e89bdecc294e8016a707f6d1d8ac934f9
+  patches:
+  - patches/libffi-config.patch
+- path: setup.py
+
+build:
+  number: 2
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - python
+  - ${{ compiler('c') }}
+  - pkg-config
+  - pip
+  host:
+  - python
+  - libffi
+  - pycparser
+  - pip
+  # run:
+  #   - python
+  #   - libffi
+  #   - pycparser
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cffi.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Foreign Function Interface for Python calling C code.
+  description: |
+    Cffi aims to allow users to call C code from Python without having to
+    learn a 3rd language. It provides a convenient and reliable way to call
+    compiled C code from Python using interface declarations written in C.
+  documentation: https://bitbucket.org/cffi/cffi/src/default/doc/?at=default
+
+  homepage: https://bitbucket.org/cffi/cffi

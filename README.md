@@ -75,15 +75,15 @@ Ie if you open a new terminal, you have to activate the environment again with `
 
 This is only needed for MacOS. On Linux, the compiler packages are already built and available in the `emscripten-forge` channel.
 ```bash
-rattler-build build --recipe recipes/recipes/emscripten_emscripten-wasm32/rattler_recipe.yaml   -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m rattler_conda_build_config.yaml
-rattler-build build --recipe recipes/recipes/cross-python_emscripten-wasm32/rattler_recipe.yaml -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m rattler_conda_build_config.yaml
-rattler-build build --recipe recipes/recipes/pytester/rattler_recipe.yaml                       -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m rattler_conda_build_config.yaml
+rattler-build build --recipe recipes/recipes/emscripten_emscripten-wasm32/rattler_recipe.yaml   -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m conda_build_config.yaml
+rattler-build build --recipe recipes/recipes/cross-python_emscripten-wasm32/rattler_recipe.yaml -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m conda_build_config.yaml
+rattler-build build --recipe recipes/recipes/pytester/rattler_recipe.yaml                       -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m conda_build_config.yaml
 ```
 
 **3**  Build packages with `rattler-build`:
 
 ```bash
-rattler-build build  --recipe recipes/recipes_emscripten/regex/rattler_recipe.yaml  --target-platform=emscripten-wasm32 -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m rattler_conda_build_config.yaml
+rattler-build build  --recipe recipes/recipes_emscripten/regex/rattler_recipe.yaml  --target-platform=emscripten-wasm32 -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m conda_build_config.yaml
 ```
 
 

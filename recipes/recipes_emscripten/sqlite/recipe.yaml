@@ -1,0 +1,55 @@
+context:
+  version: 3.37.2
+
+package:
+  name: sqlite
+  version: ${{ version }}
+
+
+source:
+  url: https://www.sqlite.org/2022/sqlite-autoconf-3370200.tar.gz
+  sha256: 4089a8d9b467537b3f246f217b84cd76e00b1d1a971fe5aca1e30e230e46b2d8
+
+
+build:
+  number: 3
+  # run_exports:
+  #   # sometimes adds new symbols.  Default behavior is OK.
+  #   #    https://abi-laboratory.pro/tracker/timeline/sqlite/
+  #   - "{{ pin_subpackage('sqlite') }}"
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - make
+  - libtool
+  host:
+  -  zlib 
+
+
+tests:
+- script:
+  - sqlite3 --version
+  - if not exist %PREFIX%\\Library\bin\sqlite3.dll exit 1
+  - if not exist %PREFIX%\\Library\lib\sqlite3.lib exit 1
+  - test -f $PREFIX/lib/libsqlite3${SHLIB_EXT}
+  - test ! -f $PREFIX/lib/libsqlite3.a
+  - test -f $PREFIX/lib/libsqlite3.a
+  - if not exist %PREFIX%\\Library\include\sqlite3.h exit 1
+  - if not exist %PREFIX%\\Library\include\sqlite3ext.h exit 1
+  - test -f $PREFIX/include/sqlite3.h
+  - test -f $PREFIX/include/sqlite3ext.h
+about:
+  license: Unlicense
+  license_url: http://www.sqlite.org/copyright.html
+  summary: Implements a self-contained, zero-configuration, SQL database engine
+  description: |
+    SQLite is a self-contained, high-reliability, embedded, full-featured,
+    public-domain, SQL database engine.It is the most used database engine
+    in the world.
+  documentation: https://github.com/mackyle/sqlite/tree/master/doc
+  homepage: http://www.sqlite.org/
+extra:
+  recipe-maintainers:
+  - DerThorsten
+

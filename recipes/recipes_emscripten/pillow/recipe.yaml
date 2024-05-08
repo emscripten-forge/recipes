@@ -1,0 +1,36 @@
+context:
+  version: 10.3.0
+
+package:
+  name: pillow
+  version: ${{ version }}
+
+source:
+- url: https://github.com/python-pillow/Pillow/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 5a2f1a812237bf9bd57f283422f46ca97a1c3d43d5f67b9bf8a0d499c4b97c85
+  patches:
+  - patches/setitup.patch
+- path: src/setup.cfg
+- path: setup.py
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - pip
+  host:
+  - python
+  - zlib
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_Pillow.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

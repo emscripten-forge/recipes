@@ -1,0 +1,55 @@
+context:
+  name: PyWavelets
+  version: 1.4.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: 6437af3ddf083118c26d8f97ab43b0724b956c9f958e9ea788659f6a2834ba93
+  patches:
+  - 0001-prevent-double-definition-linking.patch
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython
+  - numpy
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python
+    # - cython
+  - numpy
+  run:
+  - python
+  - numpy
+
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pywavelets.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Discrete Wavelet Transforms in Python
+
+  homepage: https://github.com/PyWavelets/pywt
+extra:
+  recipe-maintainers:
+  - wolfv

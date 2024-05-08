@@ -1,0 +1,50 @@
+context:
+  version: 0.16.0
+
+package:
+  name: xeus-python
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
+  sha256: a9936219650dce05b05eeff5c57472004c098b1fd7145fc2c14c95dbea8e9a3b
+
+
+build:
+  number: 4
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - libpython
+  - nlohmann_json
+  - xeus
+  - xeus-lite
+  - pybind11
+  - pybind11_json
+  - xtl
+  - pyjs >=2,<3
+  run:
+  - python
+  - ipython
+  - jedi
+  - xeus-python-shell >=0.6.0,<0.7
+  - pyjs >=2,<3
+
+tests:
+- script:
+  - test -f $PREFIX/bin/xpython.wasm
+  - test -f $PREFIX/bin/xpython.js
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-python
+  homepage: https://github.com/jupyter-xeus/xeus-python
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - martinRenou

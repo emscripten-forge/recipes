@@ -1,0 +1,52 @@
+context:
+  name: peewee
+  version: 3.17.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: e009ac4227c4fdc0058a56e822ad5987684f0a1fbb20fed577200785102581c3
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - pip
+  host:
+  - python >=3.7
+  - cffi
+  run:
+  - python >=3.7
+  - cffi
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_peewee.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Python Object-Relational Mapping (ORM) library
+  description: Peewee is a simple and small ORM. It has few (but expressive) concepts,
+    making it easy to learn and intuitive to use.
+  documentation: https://github.com/coleifer/peewee/blob/master/docs/index.rst
+
+
+  homepage: https://github.com/coleifer/peewee/
+extra:
+  recipe-maintainers:
+  - michaelweinold

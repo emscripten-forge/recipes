@@ -1,0 +1,41 @@
+context:
+  version: 2.0.10
+
+package:
+  name: sqlalchemy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/S/SQLAlchemy/SQLAlchemy-${{ version }}.tar.gz
+  sha256: a4cdac392547dec07d69c5e8b05374b0357359ebc58ab2bbcb9fa0370ecb715f
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python                                   # [build_platform != target_platform]
+  - cross-python_${{ target_platform }}      # [build_platform != target_platform]
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python
+  run:
+  - python
+  - typing-extensions
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_sqlalchemy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  summary: Database Abstraction Library
+  license: MIT
+
+  homepage: https://www.sqlalchemy.org

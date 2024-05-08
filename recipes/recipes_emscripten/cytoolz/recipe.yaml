@@ -1,0 +1,40 @@
+context:
+  name: cytoolz
+  version: 0.12.3
+
+package:
+  name: cytoolz
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/cytoolz-${{ version
+    }}.tar.gz
+  sha256: 4503dc59f4ced53a54643272c61dc305d1dbbfbd7d6bdf296948de9f34c3a282
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python                                   # [build_platform != target_platform]
+  - cross-python_${{ target_platform }}      # [build_platform != target_platform]
+  - cython                                   # [build_platform != target_platform]
+  - ${{ compiler('c') }}
+  - pip
+  host:
+    # - cython
+  - python
+  run:
+  - nose
+  - toolz >=0.10.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_cytoolz.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

@@ -1,0 +1,52 @@
+context:
+  version: 0.7.5
+  name: pyb2d
+
+package:
+  name: pyb2d
+  version: ${{ version }}
+
+source:
+- url: https://github.com/pyb2d/pyb2d/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 99c773c85adc5ce2fa8e87ca65187c84297a7d563080fd07c404795bfeb748fd
+
+- path: CMakeLists.txt
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  - numpy
+  host:
+  - python
+  - pybind11
+  - numpy
+
+  run:
+  - numpy
+  - python
+  - pydantic
+
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pyb2d.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  summary: pyb2d
+  homepage: https://github.com/pyb2d/pyb2d
+extra:
+  recipe-maintainers:
+  - DerThorsten

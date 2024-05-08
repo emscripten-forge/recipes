@@ -1,0 +1,42 @@
+context:
+  name: zarr
+  version: 2.11.0
+
+package:
+  name: zarr
+  version: 2.10.3
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: b0873be27af5690738fa158ea7a802eae454904c33995056185acc5a7425b451
+  patches:
+  - patches/fix-zarrsync.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - python
+    # - setuptools >=38.6.0
+    # - setuptools_scm >1.5.4
+  run:
+  - numpy
+  - asciitree
+  - numcodecs
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_zarr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

@@ -1,0 +1,36 @@
+context:
+  version: 6.4.3
+
+package:
+  name: traits
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/t/traits/traits-${{ version }}.tar.gz
+  sha256: a9bbfd9e0c08b7de07e86ef64e69cb96a29c2105a43bf832cd8b162fa1e22f44
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - python
+  - ${{ compiler("c") }}
+  - pip
+  host:
+  - python
+    # - setuptools
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_traits.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

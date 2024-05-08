@@ -1,0 +1,34 @@
+context:
+  version: 5.0.3
+
+package:
+  name: swiglpk
+  version: ${{ version }}
+
+source:
+- url: https://github.com/biosustain/swiglpk/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 32f9fa0a082d80e32234f060704b6d7f07843a7aefffa5008b315b0970bab199
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - python
+  - swig
+  - pip
+  host:
+  - python
+  - glpk
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_swiglpk.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
