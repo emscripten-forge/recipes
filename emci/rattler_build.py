@@ -6,7 +6,7 @@ from retry import retry
 
 
 
-def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, n_retry=0):
+def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, n_retry=0, skip_existing="local"):
 
 
     @retry(tries=n_retry)
@@ -22,6 +22,8 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, n
             cmd.extend(["--recipe", str(recipe)])
         elif recipes_dir is not None:
             cmd.extend(["--recipe-dir", str(recipes_dir)])
+        
+        cmd.extend(["--skip-existing", skip_existing])
 
         # build for emscripten-wasm32?
         if emscripten_wasm32:
