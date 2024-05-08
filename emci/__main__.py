@@ -34,7 +34,7 @@ def explicit(
     # otherwise we can use boa
         
     rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "rattler.yaml")
-    build_with_rattler(recipe=rattler_recipe, emscripten_wasm32=emscripten_wasm32)
+    build_with_rattler(recipe=rattler_recipe_file, emscripten_wasm32=emscripten_wasm32)
 
 @build_app.command()
 def changed(
