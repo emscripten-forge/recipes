@@ -16,11 +16,7 @@ CONFIG_PATH = os.path.join(REPO_ROOT, "empack_config.yaml")
 
 
 # rattler build related
-RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "rattler_conda_build_config.yaml")
-
-# env var to force the use of boa instead of rattler for  testing the legacy build system
-FORCE_BOA = bool(int(os.environ.get("FORCE_BOA", False)))
-FORCE_RATTLER = bool(int(os.environ.get("FORCE_RATTLER", False)))
+RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "conda_build_config.yaml")
 
 if FORCE_BOA and FORCE_RATTLER:
     raise ValueError("FORCE_BOA and FORCE_RATTLER cannot be both set")

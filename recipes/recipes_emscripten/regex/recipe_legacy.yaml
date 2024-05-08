@@ -3,11 +3,11 @@ context:
   name: "regex"
 
 package:
-  name: ${{ name }}
-  version: ${{ version }}
+  name: "{{ name }}"
+  version: "{{ version }}"
 
 source:
-  url: https://pypi.io/packages/source/r/${{name}}/${{name}}-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/r/{{name}}/{{name}}-{{ version }}.tar.gz
   sha256: 97f32dc03a8054a4c4a5ab5d761ed4861e828b2c200febd4e46857069a483916
 
 build:
@@ -17,33 +17,28 @@ requirements:
   build:
     - python
     - cross-python_emscripten-wasm32
-    - ${{ compiler("c") }}
+    - '{{ compiler("c") }}'
     - pip
   host:
     - python
   run:
     - python
-  
-tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester >= 0.9.0
-      run:
-        - pytester-run >= 0.9.0
-    files:
-      recipe:
-        - test_regex.py
-
 
 about:
-  homepage: https://bitbucket.org/mrabarnett/mrab-regex
+  home: https://bitbucket.org/mrabarnett/mrab-regex
+  # https://bitbucket.org/mrabarnett/mrab-regex/issues/124/please-add-a-license-file-to-the-package
   license: Python-2.0
   license_file: LICENSE.txt
   license_family: PSF
   summary: Alternative regular expression module, to replace re
 
 extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+        - test_regex.py
+        - test_fail.py
+
   recipe-maintainers:
     - DerThorsten
 
