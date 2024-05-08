@@ -18,9 +18,6 @@ CONFIG_PATH = os.path.join(REPO_ROOT, "empack_config.yaml")
 # rattler build related
 RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "conda_build_config.yaml")
 
-if FORCE_BOA and FORCE_RATTLER:
-    raise ValueError("FORCE_BOA and FORCE_RATTLER cannot be both set")
-
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
 if CONDA_PREFIX is None:
     raise RuntimeError(
