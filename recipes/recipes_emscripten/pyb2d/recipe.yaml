@@ -4,47 +4,49 @@ context:
 
 package:
   name: pyb2d
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://github.com/pyb2d/pyb2d/archive/refs/tags/{{ version }}.tar.gz
-    sha256: 99c773c85adc5ce2fa8e87ca65187c84297a7d563080fd07c404795bfeb748fd
+- url: https://github.com/pyb2d/pyb2d/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 99c773c85adc5ce2fa8e87ca65187c84297a7d563080fd07c404795bfeb748fd
 
-  - path: CMakeLists.txt
+- path: CMakeLists.txt
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
-    - numpy
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  - numpy
   host:
-    - python
-    - pybind11
-    - numpy
+  - python
+  - pybind11
+  - numpy
 
   run:
-    - numpy
-    - python
-    - pydantic
+  - numpy
+  - python
+  - pydantic
 
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pyb2d.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/pyb2d/pyb2d
-  license: BSD-3
+  license: BSD-3-Clause
   license_family: BSD-3
   summary: pyb2d
-  doc_url: https://github.com/pyb2d/pyb2d
-  dev_url: https://github.com/pyb2d/pyb2d
-
+  homepage: https://github.com/pyb2d/pyb2d
 extra:
   recipe-maintainers:
-    - DerThorsten
-
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_pyb2d.py
+  - DerThorsten

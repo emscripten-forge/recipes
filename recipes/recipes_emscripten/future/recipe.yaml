@@ -1,27 +1,32 @@
 context:
-  version: '1.0.0'
+  version: 1.0.0
 
 package:
   name: future
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/f/future/future-{{ version }}.tar.gz
-    sha256: bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05
+- url: https://pypi.io/packages/source/f/future/future-${{ version }}.tar.gz
+  sha256: bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05
 
 build:
   number: 0
 
 requirements:
   build:
-    - python
-    - pip
-    - '{{ compiler("cxx") }}'
+  - python
+  - pip
+  - ${{ compiler("cxx") }}
   host:
-    - python
+  - python
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_future.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_future.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

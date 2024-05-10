@@ -122,7 +122,7 @@ def make_pr_title(name, old_version, new_version):
 
 def bump_recipe_version(recipe_dir):
 
-    recipe_locations = [("recipe.yaml", False), ("rattler_recipe.yaml", True)]
+    recipe_locations = [ ("recipe.yaml", True)]
 
     current_version = None
     new_version = None

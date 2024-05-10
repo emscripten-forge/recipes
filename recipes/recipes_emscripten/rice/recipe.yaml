@@ -3,11 +3,11 @@ context:
   version: 4.3.1
 
 package:
-  name: "{{ name }}"
-  version: "{{ version }}"
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  url: https://github.com/jasonroelofs/{{ name }}/archive/refs/tags/{{ version }}.tar.gz
+  url: https://github.com/jasonroelofs/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
   sha256: fb34402bf0f79a900fa02bd7396a35d661165f0975a93aee902e89e59adf045c
 
 build:
@@ -15,16 +15,14 @@ build:
 
 requirements:
   build:
-    - "{{ compiler('cxx') }}"
+  - ${{ compiler('cxx') }}
 
-test:
-  commands:
-    - sel(emscripten): test -f $PREFIX/include/rice/rice.hpp
-    - sel(emscripten): test -f $PREFIX/include/rice/stl.hpp
-
+tests:
+- script:
+  - test -f $PREFIX/include/rice/rice.hpp
+  - test -f $PREFIX/include/rice/stl.hpp
 about:
-  home: https://github.com/jasonroelofs/rice
-  summary: 'Ruby Interface for C++ Extensions'
+  summary: Ruby Interface for C++ Extensions
   description: |
     Rice is a C++ header-only library that serves dual purposes. First, it makes
     it much easier to create Ruby bindings for existing C++ libraries. Second,
@@ -32,8 +30,7 @@ about:
     to embed Ruby and write Ruby extensions in C++.
   license: BSD-2-Clause
   license_file: COPYING
-  doc_url: http://jasonroelofs.github.io/rice
-
+  homepage: https://github.com/jasonroelofs/rice
 extra:
   recipe-maintainers:
-    - IsabelParedes
+  - IsabelParedes

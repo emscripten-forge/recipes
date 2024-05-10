@@ -7,8 +7,8 @@ package:
   version: 2.10.3
 
 source:
-- url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version
-    }}.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
   sha256: b0873be27af5690738fa158ea7a802eae454904c33995056185acc5a7425b451
   patches:
   - patches/fix-zarrsync.patch
@@ -30,8 +30,13 @@ requirements:
   - asciitree
   - numcodecs
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_zarr.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_zarr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

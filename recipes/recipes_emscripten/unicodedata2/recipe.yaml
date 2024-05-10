@@ -1,13 +1,14 @@
 context:
-  version: "15.1.0"
+  version: 15.1.0
   name: unicodedata2
 
 package:
   name: unicodedata2
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
   sha256: cb30f189ad66482f8529a45da71b2a8841e9bd2bb376cc2933003a4a55a07648
 
 build:
@@ -15,26 +16,28 @@ build:
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - cross-python_emscripten-wasm32
-    - python
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
   host:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_unicodedata2.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/pybind/pybind11
   license: Apache-2.0
   license_family: Apache
   license_file: LICENSE
   summary: unicodedata backport/updates to python 3 and python 2.
-  dev_url: https://github.com/mikekap/unicodedata2
-
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_unicodedata2.py
-
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

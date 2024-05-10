@@ -3,10 +3,10 @@ context:
 
 package:
   name: xeus-python
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/{{ version }}.tar.gz
+  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
   sha256: a9936219650dce05b05eeff5c57472004c098b1fd7145fc2c14c95dbea8e9a3b
 
 
@@ -15,40 +15,36 @@ build:
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
   host:
-    - libpython
-    - nlohmann_json
-    - xeus
-    - xeus-lite
-    - pybind11
-    - pybind11_json
-    - xtl
-    - pyjs >=2,<3
+  - libpython
+  - nlohmann_json
+  - xeus
+  - xeus-lite
+  - pybind11
+  - pybind11_json
+  - xtl
+  - pyjs >=2,<3
   run:
-    - python
-    - ipython
-    - jedi
-    - xeus-python-shell >=0.6.0,<0.7
-    - pyjs >=2,<3
+  - python
+  - ipython
+  - jedi
+  - xeus-python-shell >=0.6.0,<0.7
+  - pyjs >=2,<3
 
-test:
-  commands:
-    - sel(emscripten): test -f $PREFIX/bin/xpython.wasm
-    - sel(emscripten): test -f $PREFIX/bin/xpython.js
-
+tests:
+- script:
+  - test -f $PREFIX/bin/xpython.wasm
+  - test -f $PREFIX/bin/xpython.js
 about:
-  home: https://github.com/jupyter-xeus/xeus-python
-  license: BSD-3
+  license: BSD-3-Clause
   license_family: BSD-3
   license_file: LICENSE
   summary: xeus-python
-  doc_url: https://github.com/jupyter-xeus/xeus-python
-  dev_url: https://github.com/jupyter-xeus/xeus-python
-
+  homepage: https://github.com/jupyter-xeus/xeus-python
 extra:
   recipe-maintainers:
-    - DerThorsten
-    - martinRenou
+  - DerThorsten
+  - martinRenou

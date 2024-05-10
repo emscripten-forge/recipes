@@ -71,19 +71,6 @@ jobs:
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
           cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
-          playwright install
-
-      ################################################################
-      # Install / clone custom non-master things
-      # for pip, we use --no-deps --ignore-installed
-      # and make sure that all dependencies are already contained
-      # in the conda env named "ci-env"
-      ################################################################
-      - name: Install custom boa
-        shell: bash -el {0}
-        run: |
-          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2 --no-deps --ignore-installed
-
 
       ################################################################
       # PUSH
@@ -92,7 +79,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main --n-retry=3
 
       ################################################################
       # PULL_REQUEST
@@ -101,7 +88,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD --n-retry=3
 
       ################################################################
       # UPLOAD
@@ -110,17 +97,6 @@ jobs:
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -el {0}
         run: |
-
-          # loop over {emscripten-wasm32, linux-64, noarch}
-          for platform in emscripten-wasm32 linux-64 noarch; do
-            # loop over all packages
-            mkdir -p ${CONDA_PREFIX}/conda-bld/${platform}
-            for package in $(ls ${CONDA_PREFIX}/conda-bld/${platform}/*.tar.bz2); do
-              echo "Uploading ${package} for  ${platform} (build with boa)"
-              QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${package}
-            done
-          done
-
           # loop over {emscripten-wasm32, linux-64, noarch}
           for platform in emscripten-wasm32 linux-64 noarch; do
             mkdir -p ${GITHUB_WORKSPACE}/output/${platform}

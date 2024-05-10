@@ -1,13 +1,14 @@
 context:
-  version: '1.4.1'
+  version: 1.4.1
 
 package:
   name: boost-histogram
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/b/boost_histogram/boost_histogram-{{ version }}.tar.gz
-    sha256: 97146f735f467d506976a047f3f237ce59840a952fd231f5f431f897fb006cdd
+- url: https://pypi.io/packages/source/b/boost_histogram/boost_histogram-${{ version
+    }}.tar.gz
+  sha256: 97146f735f467d506976a047f3f237ce59840a952fd231f5f431f897fb006cdd
 
 build:
   number: 0
@@ -16,25 +17,29 @@ build:
 
 requirements:
   build:
-    - python
-    - cross-python_emscripten-wasm32
-    - "{{ compiler('cxx') }}"
-    - pip
-    - setuptools_scm
+  - python
+  - cross-python_emscripten-wasm32
+  - ${{ compiler('cxx') }}
+  - pip
+  - setuptools_scm
   host:
-    - python
+  - python
   run:
-    - python
-    - numpy
+  - python
+  - numpy
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_boost_histogram.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/scikit-hep/boost-histogram
-  PyPI: https://pypi.org/project/boost-histogram
   summary: The Boost::Histogram Python wrapper.
   license: BSD-3-Clause
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_boost_histogram.py
+  homepage: https://github.com/scikit-hep/boost-histogram

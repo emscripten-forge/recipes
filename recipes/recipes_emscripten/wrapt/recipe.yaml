@@ -1,36 +1,41 @@
 context:
-  version: "1.16.0"
+  version: 1.16.0
 
 package:
   name: wrapt
-  version: "{{ version }}"
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/w/wrapt/wrapt-{{ version }}.tar.gz
-    sha256: 5f370f952971e7d17c7d1ead40e49f32345a7f7a5373571ef44d800d06b1899d
+- url: https://pypi.io/packages/source/w/wrapt/wrapt-${{ version }}.tar.gz
+  sha256: 5f370f952971e7d17c7d1ead40e49f32345a7f7a5373571ef44d800d06b1899d
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - cross-python_emscripten-wasm32
-    - python
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_wrapt.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/GrahamDumpleton/wrapt
   license: BSD-2-Clause
   license_file: LICENSE
   summary: Module for decorators, wrappers and monkey patching
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_wrapt.py
+  homepage: https://github.com/GrahamDumpleton/wrapt

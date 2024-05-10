@@ -55,7 +55,6 @@ jobs:
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
           cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
-          playwright install
 
       ################################################################
       # EMSDK
@@ -66,72 +65,33 @@ jobs:
           ./emsdk/setup_emsdk.sh ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install
 
       ################################################################
-      # Install / clone custom non-master things
-      # for pip, we use --no-deps --ignore-installed
-      # and make sure that all dependencies are already contained
-      # in the conda env named "ci-env"
-      ################################################################
-      - name: Install custom boa
-        shell: bash -el {0}
-        run: |
-          python -m pip install git+https://github.com/DerThorsten/boa.git@python_api_v2 --no-deps --ignore-installed
-      
-      ################################################################
       # Build compiler pkg
       ################################################################
       - name: Build emscripten compiler
         shell: bash -el {0}
         run: |
-          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
+          python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32  --n-retry=3 
       
-      ################################################################
-      # Build compiler pkg with legacy boa
-      ################################################################
-      - name: Build emscripten compiler
-        shell: bash -el {0}
-        run: |
-          FORCE_BOA=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/emscripten_emscripten-wasm32
-
       ################################################################
       # Build pytester
       ################################################################
       - name: Build pytester
         shell: bash -el {0}
         run: |
-          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/pytester
+          python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes/pytester
       
       ################################################################
-      # Build a simple package
+      # Build a regex package
       ################################################################
       - name: Build regex
         shell: bash -el {0}
         run: |
-          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
+          python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32 --n-retry=3
       
-
       ################################################################
       # Build a package which is **not** on emscripten forge
       ################################################################
       - name: Build package not on emscripten-forge (advanced)
         shell: bash -el {0}
         run: |
-          FORCE_RATTLER=1  python -m emci build explicit $GITHUB_WORKSPACE/test_recipes/only_py_tests --emscripten-wasm32
-        
-
-      
-      ################################################################
-      # Build a simple package
-      ################################################################
-      - name: Build regex
-        shell: bash -el {0}
-        run: |
-          FORCE_RATTLER=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/highs --emscripten-wasm32
-
-      ################################################################
-      # Build a simple package with legacy boa
-      ################################################################
-      - name: Build regex with legacy boa
-        shell: bash -el {0}
-        run: |
-          FORCE_BOA=1 python -m emci build explicit $GITHUB_WORKSPACE/recipes/recipes_emscripten/regex --emscripten-wasm32
-
+          python -m emci build explicit $GITHUB_WORKSPACE/test_recipes/only_py_tests --emscripten-wasm32 --n-retry=3
