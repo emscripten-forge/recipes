@@ -6,9 +6,7 @@ This repository consists of recipes for conda packages for emscripten.
 
 
 > **Note**
-> We removed boa support from this repository. We are now using [rattler-build](https://github.com/prefix-dev/rattler-build)
-
-> **Note**
+> We removed boa support from this repository. We are now using [rattler-build](https://github.com/prefix-dev/rattler-build).
 > The recipes used in this repository follow the [rattler-build recipe format](https://github.com/prefix-dev/rattler-build?tab=readme-ov-file#the-recipe-format).
 
 ## Installing Packages
