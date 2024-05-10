@@ -18,7 +18,7 @@ This means there was no sane way to install the "emulators" to run the wasm code
 Also the error messages were not very helpful and the code was hard to understand.
 
 But then there came [rattler-build](https://github.com/prefix-dev/rattler-build)
-which is a complete rewrite of `boa` / `conda-build` in rust which is faster, hast barley any dependencies and has easy to understand error messages.
+which is a complete rewrite of `boa` / `conda-build` in rust which is faster, has barely any dependencies, and has easy to understand error messages.
 And to make it even better, test dependencies can be specified for the host platform and the target platform!
 This means we can now install the [pyjs-code-runner](https://github.com/emscripten-forge/pyjs-code-runner) which can be used
 to run wasm in a headless browser.
