@@ -1,5 +1,4 @@
 #  Emscripten forge
-
  
 Build wasm/emscripten packages with conda/mamba/boa.
 This repository consists of recipes for conda packages for emscripten.
