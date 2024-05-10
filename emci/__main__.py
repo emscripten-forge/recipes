@@ -22,7 +22,7 @@ def explicit(
     emscripten_wasm32: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(True),
-    n_retry: Optional[int] = typer.Option(0),
+    n_retry: Optional[int] = typer.Option(1),
 ):
     work_dir = os.getcwd()
     assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
@@ -45,7 +45,7 @@ def changed(
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(True),
-    n_retry: Optional[int] = typer.Option(0),
+    n_retry: Optional[int] = typer.Option(1),
 ):
     work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")

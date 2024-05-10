@@ -6,7 +6,7 @@ from retry import retry
 
 
 
-def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, n_retry=0, skip_existing="local"):
+def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, n_retry=1, skip_existing="local"):
 
 
     @retry(tries=n_retry)
