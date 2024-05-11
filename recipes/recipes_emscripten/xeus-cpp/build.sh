@@ -21,7 +21,7 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                \
     -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=$USE_WASM        \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON            \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"       \
-    -DCMAKE_VERBOSE_MAKEFILE=ON --trace-expand
+    -DCMAKE_VERBOSE_MAKEFILE=ON
 
 # Build step
 EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j1
