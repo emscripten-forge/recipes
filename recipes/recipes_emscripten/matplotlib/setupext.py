@@ -392,13 +392,6 @@ class Matplotlib(SetupPackage):
                 "win32": ["ole32", "shell32", "user32"],
             }.get(sys.platform, [])))
         yield ext
-        # contour
-        ext = Extension(
-            "matplotlib._contour", [
-                "src/_contour.cpp",
-                "src/_contour_wrapper.cpp",
-                "src/py_converters.cpp",
-            ])
         add_numpy_flags(ext)
         add_libagg_flags(ext)
         yield ext
@@ -433,7 +426,7 @@ class Matplotlib(SetupPackage):
         yield ext
         # qhull
         ext = Extension(
-            "matplotlib._qhull", ["src/qhull_wrap.cpp"],
+            "matplotlib._qhull", ["src/_qhull_wrapper.cpp"],
             define_macros=[("MPL_DEVNULL", os.devnull)])
         add_numpy_flags(ext)
         Qhull.add_flags(ext)

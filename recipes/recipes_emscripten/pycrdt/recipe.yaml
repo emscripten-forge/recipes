@@ -1,0 +1,41 @@
+context:
+  name: pycrdt
+  version: 0.8.21
+
+package:
+  name: ${{name}}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/jupyter-server/pycrdt/archive/refs/tags/v${{version}}.tar.gz
+  sha256: 1ffaa7c4f7dceae5da333f0ec54bd4be82e74819178013fd8896ba6e245ee2eb
+
+build:
+  number: 3
+
+requirements:
+  build:
+  - cross-python_${{target_platform}}
+  - cffi == 1.15.1
+  - setuptools-rust
+  - rust
+  - maturin
+
+  host:
+  - python
+  - openssl
+  - cffi == 1.15.1
+  run:
+  - cffi == 1.15.1
+  - typing_extensions
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pycrdt.py

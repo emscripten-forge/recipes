@@ -1,104 +1,37 @@
 context:
   version: "1.80.0"
-  filename: "boost_{{ version.replace('.', '_') }}.tar.bz2"
+  filename: boost_${{ version | replace('.', '_') }}.tar.bz2
 
 package:
   name: boost-cpp
-  version: "{{ version }}"
+  version: ${{ version }}
 
 source:
-  url: https://boostorg.jfrog.io/artifactory/main/release/{{ version }}/source/{{ filename }}
+  url: https://boostorg.jfrog.io/artifactory/main/release/${{ version }}/source/${{
+    filename }}
   sha256: 1e19565d82e43bc59209a168f5ac899d3ba471d55c7610c677d4ccf2c9c500c0
   patches:
-    - 0001-config-libcpp15.patch
+  - 0001-config-libcpp15.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    - "{{ compiler('cxx') }}"
-
+  - ${{ compiler('cxx') }}
   host:
-    # - icu               # [unix]
-    # - xz                # [unix]
-    - bzip2
-    - zlib
-    # - zstd
+  - bzip2
+  - zlib
 
   run:
-    # - icu               # [unix]
-    # - xz                # [unix]
-    - bzip2
-    # - zstd
-
-  run_constrained:
-    - libboost <0
-
-# test:
-#   files:
-#     - test
-#   requires:
-#     - {{ compiler('cxx') }}    # [build_platform == target_platform]
-#   commands:
-#     # Verify Python headers are removed.
-#     - '! test -f $PREFIX/include/boost/python.hpp'                      # [unix]
-#     - '! test -d $PREFIX/include/boost/python'                          # [unix]
-#     - if exist %PREFIX%\\Library\\include\\boost\\python.hpp exit 1     # [win]
-#     - if exist %PREFIX%\\Library\\include\\boost\\python exit 1         # [win]
-
-#     # Verify static-only libraries.
-#     - test -f $PREFIX/lib/libboost_exception.a                   # [unix]
-#     - test -f $PREFIX/lib/libboost_test_exec_monitor.a           # [unix]
-
-#     # Verify libraries.
-#     {% set boost_libs = [
-#             "atomic",
-#             "chrono",
-#             "container",
-#             "context",
-#             "contract",
-#             "coroutine",
-#             "date_time",
-#             "filesystem",
-#             "graph",
-#             "iostreams",
-#             "locale",
-#             "log",
-#             "log_setup",
-#             "math_c99",
-#             "math_c99f",
-#             "math_tr1",
-#             "math_tr1f",
-#             "prg_exec_monitor",
-#             "program_options",
-#             "random",
-#             "regex",
-#             "serialization",
-#             "system",
-#             "thread",
-#             "timer",
-#             "type_erasure",
-#             "unit_test_framework",
-#             "wave",
-#             "wserialization"
-#     ] %}
-#     {% set boost_libs = boost_libs + ["math_c99l", "math_tr1l"] %}  # [not ppc64le]
-#     {% for each_boost_lib in boost_libs %}
-#     - test ! -f $PREFIX/lib/libboost_{{ each_boost_lib }}.a                                                 # [unix]
-#     - test -f $PREFIX/lib/libboost_{{ each_boost_lib }}.dylib                                             # [osx]
-#     - test -f $PREFIX/lib/libboost_{{ each_boost_lib }}.so                                                # [linux]
-#     - if not exist %PREFIX%\\Library\\bin\\boost_{{ each_boost_lib }}.dll exit 1                          # [win]
-#     - if not exist %PREFIX%\\Library\\lib\\boost_{{ each_boost_lib }}.lib exit 1                          # [win]
-#     - if exist %PREFIX%\\Library\\lib\\libboost_{{ each_boost_lib }}.lib exit 1                       # [win]
-#     {% endfor %}
+  - bzip2
 
 about:
-  home: http://www.boost.org/
   license: BSL-1.0
   license_file: LICENSE_1_0.txt
   summary: Free peer-reviewed portable C++ source libraries.
 
+  homepage: http://www.boost.org/
 extra:
   recipe-maintainers:
-    - wolfv
+  - wolfv

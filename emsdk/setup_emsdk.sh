@@ -29,6 +29,11 @@ echo "------------------------------------"
 echo "Installing emsdk"
 echo "------------------------------------" 
 
+# if $EMSDK_PATH exists, exit
+if [ -d "$EMSDK_PATH" ]; then
+    echo "emsdk already exists at $EMSDK_PATH"
+    exit 0
+fi
 
 echo "...cloning emsdk"
 git clone --depth 1 https://github.com/emscripten-core/emsdk.git $EMSDK_PATH

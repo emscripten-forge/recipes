@@ -1,13 +1,14 @@
 context:
-  name: "lxml"
-  version: "4.9.3"
+  name: lxml
+  version: 4.9.3
 
 package:
-  name: "{{ name }}"
-  version: '{{ version }}'
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
   sha256: 48628bd53a426c9eb9bc066a923acaa0878d1e86129fd5359aee99285f4eed9c
 
 build:
@@ -16,36 +17,40 @@ build:
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - cross-python_emscripten-wasm32
-    - python
-    - setuptools <60
-    - pip
-    - sel(build_platform != target_platform): cython
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - setuptools <60
+  - pip
+  - cython
   host:
-    - python
-    - libxml2
-    - libxslt
-    - zlib
-    - libiconv
+  - python
+  - libxml2
+  - libxslt
+  - zlib
+  - libiconv
   run:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_lxml.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/lxml/lxml
-  license: BSD License
-  license_file: LICENSE
+  license: BSD-3-Clause
   license_family: BSD
   summary: Pythonic binding for the C libraries libxml2 and libxslt.
-  description: lxml is the most feature-rich and easy-to-use library for processing XML and HTML in the Python language.
-  dev_url: https://github.com/lxml/lxml
-  doc_url: https://lxml.de/
-  doc_source_url: https://github.com/lxml/lxml/blob/master/doc/main.txt
+  description: lxml is the most feature-rich and easy-to-use library for processing
+    XML and HTML in the Python language.
+  documentation: https://github.com/lxml/lxml/blob/master/doc/main.txt
 
+  homepage: https://github.com/lxml/lxml
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_lxml.py
   recipe-maintainers:
-    - michaelweinold
+  - michaelweinold

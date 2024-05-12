@@ -3,53 +3,41 @@ context:
 
 package:
   name: lua
-  version: '{{ version }}'
+  version: ${{ version }}
 
 
 source:
-  - url: http://www.lua.org/ftp/lua-{{ version }}.tar.gz
-    sha256: 7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88
-    patches:
+- url: http://www.lua.org/ftp/lua-${{ version }}.tar.gz
+  sha256: 7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88
+  patches:
       # Enables Lua to look for packages on a relative path
-      - luaconf.patch
+  - luaconf.patch
       # Build as a shared library
-      - liblua.so.patch
+  - liblua.so.patch
       # Enables readline on linux
-      - Makefile.patch
-  - path: CMakeLists.txt
+  - Makefile.patch
+- path: CMakeLists.txt
 
 build:
-  number: 1
-  detect_binary_files_with_prefix: true
-  run_exports:
-    # http://www.lua.org/versions.html#numbering
-    - "{{ pin_subpackage('lua', max_pin='x.x') }}"
+  number: 5
+
 
 
 requirements:
   build:
-    - sel(not win): "{{ compiler('c') }}"
-    - sel(win64): vs2017_win-64
-    - sel(win32): vs2017_win-32
-    - sel(win or emscripten): ninja
-    - sel(win or emscripten): cmake
-    - sel(unix and not emscripten): sed
-    - sel(unix and not emscripten): make
-  host:
-    - sel(not win and not emscripten): readline
-    - sel(not win and not emscripten): ncurses
-  run:
-    - sel(not win and not emscripten): readline
-    - sel(not win and not emscripten): ncurses
+  - ${{ compiler('c') }}
+  - ninja
+  - cmake
+  - make
 
 
 about:
-  home: http://www.lua.org/
   summary: Lua is a powerful, fast, lightweight, embeddable scripting language
   license: MIT
   license_file: doc/readme.html
 
+  homepage: http://www.lua.org/
 extra:
   recipe-maintainers:
-    - DerThorsten
-    - JohanMabille
+  - DerThorsten
+  - JohanMabille

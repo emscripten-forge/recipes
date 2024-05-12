@@ -1,30 +1,39 @@
 context:
-  version: '2.1.3'
+  version: 2.1.5
 
 package:
   name: markupsafe
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/pallets/markupsafe/archive/refs/tags/{{ version }}.tar.gz
-  sha256: b209e55e953eabf4bc31e0c9f3182af03b40e5bf5afed652f72b9b7ac02c0b30
+  url: https://github.com/pallets/markupsafe/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 307f63295d17f178b7d3af5968fb828e34086d5d66fec505b630a1e5f5b3328b
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - python
-    - cross-python_emscripten-wasm32
-    - pip
+  - ${{ compiler("c") }}
+  - python
+  - cross-python_emscripten-wasm32
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_markupsafe.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://www.palletsprojects.com/p/markupsafe
   license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE.rst
@@ -35,14 +44,8 @@ about:
     replaced so that they display as the actual characters. This mitigates
     injection attacks, meaning untrusted user input can safely be displayed
     on a page.
-  dev_url: https://github.com/pallets/markupsafe
-  doc_url: https://markupsafe.palletsprojects.com/
-
+  homepage: https://www.palletsprojects.com/p/markupsafe
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_markupsafe.py
 
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

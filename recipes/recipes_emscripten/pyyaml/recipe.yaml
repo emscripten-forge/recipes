@@ -3,10 +3,10 @@ context:
 
 package:
   name: pyyaml
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/P/PyYAML/PyYAML-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/P/PyYAML/PyYAML-${{ version }}.tar.gz
   sha256: 68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2
 
 build:
@@ -14,16 +14,21 @@ build:
 
 requirements:
   build:
-    - cross-python_emscripten-wasm32
-    - python
-    - pip
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
   host:
-    - python
+  - python
   run:
-    - libyaml
+  - libyaml
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_pyyaml.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyyaml.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

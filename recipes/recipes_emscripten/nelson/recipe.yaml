@@ -3,40 +3,37 @@ context:
 
 package:
   name: nelson
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/Nelson-numerical-software/nelson-minimalist-core/archive/refs/tags/v{{ version }}.tar.gz
+  url: 
+    https://github.com/Nelson-numerical-software/nelson-minimalist-core/archive/refs/tags/v${{
+    version }}.tar.gz
   sha256: d9212109b54c677423ff1e3998c30d3dd9f165734b8fc40cc279dce961e0edd2
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
-    - pkg-config
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  - pkg-config
   host:
-    - eigen
+  - eigen
   run:
-    - eigen
-
-test:
-  commands:
-    - sel(emscripten): test -f $PREFIX/include/nelson/core/EvaluateCommand.hpp
-    - sel(emscripten): test -f $PREFIX/lib/libnlsCore.a
+  - eigen
 
 about:
-  home: https://github.com/Nelson-numerical-software/nelson-minimalist-core
-  license: LGPL-3
-  license_family: LGPL-3
+  license: LGPL-3.0-only
   license_file: LICENSE
   summary: xeus-nelson
-  doc_url: https://github.com/Nelson-numerical-software/nelson-minimalist-core
-  dev_url: https://github.com/Nelson-numerical-software/nelson-minimalist-core
-
+  homepage: https://github.com/Nelson-numerical-software/nelson-minimalist-core
 extra:
   recipe-maintainers:
-    - JohanMabille
+  - JohanMabille
+tests:
+- script:
+  - test -f $PREFIX/include/nelson/core/EvaluateCommand.hpp
+  - test -f $PREFIX/lib/libnlsCore.a
