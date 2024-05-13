@@ -32,3 +32,6 @@ and packages from emscripten-forge in a jupyterlite environment.
 
 [pixi](https://pixi.sh/latest/)  is a package management tool for developers. It allows the developer to install libraries and applications in a reproducible way. 
 Emscripten-forge uses pixi to setup the environment for building the packages.
+
+## Quetz
+Quetz is a [open source ](https://beta.mamba.pm/channels/emscripten-forge)conda package server. It is used to host the[ emscripten-forge](https://beta.mamba.pm/channels/emscripten-forge) packages.
