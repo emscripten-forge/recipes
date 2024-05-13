@@ -83,7 +83,7 @@ rattler-build build --recipe recipes/recipes/pytester/rattler_recipe.yaml       
 **3**  Build packages with `rattler-build`:
 
 ```bash
-rattler-build build  --recipe recipes/recipes_emscripten/regex/rattler_recipe.yaml  --target-platform=emscripten-wasm32 -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m conda_build_config.yaml
+rattler-build build --recipe recipes/recipes_emscripten/regex/rattler_recipe.yaml  --target-platform=emscripten-wasm32 -c https://repo.mamba.pm/emscripten-forge -c conda-forge -c microsoft -m conda_build_config.yaml
 ```
 
 
