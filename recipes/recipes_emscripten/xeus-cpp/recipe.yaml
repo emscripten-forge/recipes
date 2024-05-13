@@ -1,0 +1,56 @@
+context:
+  version: 0.4.0
+
+package:
+  name: xeus-cpp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/compiler-research/xeus-cpp/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 28b07534ff322ebe17fab1997cdf60d0fb811ee1d7fd518742a5d0d157e70e25
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make  # [unix]
+  host:
+    - nlohmann_json
+    - xeus-lite <2.0
+    - xeus >=3.0.5,<4.0
+    - xtl >=0.7,<0.8
+    - cpp-argparse
+    - pugixml
+    - CppInterOp
+
+
+tests:
+  - script:
+    - test -f $PREFIX/bin/xcpp.wasm
+    - test -f $PREFIX/bin/xcpp.js
+    - test -f $PREFIX/share/jupyter/kernels/xcpp/kernel.json
+    - test -f $PREFIX/share/jupyter/kernels/xcpp/logo-32x32.png
+    - test -f $PREFIX/share/jupyter/kernels/xcpp/logo-64x64.png
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  license_file: LICENSE.TXT
+  homepage: https://github.com/compiler-research/xeus-cpp
+  repository: https://github.com/compiler-research/xeus-cpp
+  documentation: https://github.com/compiler-research/xeus-cpp
+  summary: |
+    xeus-cpp is a Jupyter kernel for C++
+  description: |
+    xeus-cpp is a Jupyter kernel for cpp based on the native implementation
+    of the Jupyter protocol xeus.
+
+extra:
+  recipe-maintainers:
+    - alexander-penev
+    - vgvassilev
+    - DerThorsten
+    - anutosh491
