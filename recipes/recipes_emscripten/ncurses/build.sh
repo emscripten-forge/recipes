@@ -32,3 +32,6 @@ emconfigure ./configure \
 
 make sources
 make install
+
+# Install .wasm files as well
+cp ./progs/*.wasm ${PREFIX}/bin
