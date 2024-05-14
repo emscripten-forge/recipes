@@ -4,25 +4,9 @@ echo "PYTHON"
 
 rm -r -f branding
 
+export CFLAGS="$CFLAGS -Wno-return-type -Wno-implicit-function-declaration"
+export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross
 
-cp $RECIPE_DIR/config/site.cfg .
-
-# export EMCC_DEBUG=1
-#export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1  -s WASM=1  -std=c++14  -s LZ4=1 -s SIDE_MODULE=1 -sWASM_BIGINT"
-
-
-
-#redefine the ar command to use emar
-#export AR=emar
-#export RANLIB=emranlib
-
-export NPY_DISABLE_SVML=1
-export LDFLAGS="$LDFLAGS" 
-export CFLAGS="-fno-asm -Wno-error=unknown-attributes -I$PREFIX"
-export _PYTHON_HOST_PLATFORM="unknown" 
-export CC=gcc
-export CXX=g++
-
-python -m pip  install . --global-option  " --cpu-dispatch=NONE --cpu-baseline=min"
-
-rm -rf $PREFIX/bin
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="-Dallow-noblas=true" \
+    -Csetup-args="--cross-file=$MESON_CROSS_FILE"
