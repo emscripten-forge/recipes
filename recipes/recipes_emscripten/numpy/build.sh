@@ -19,7 +19,10 @@ export RANLIB=emranlib
 export NPY_DISABLE_SVML=1
 export LDFLAGS="$LDFLAGS" 
 export CFLAGS="-fno-asm -Wno-error=unknown-attributes -I$PREFIX"
-export _PYTHON_HOST_PLATFORM="unkown" 
+export _PYTHON_HOST_PLATFORM="unknown" 
+export CC=gcc
+export CXX=g++
+
 python -m pip  install . --global-option  " --cpu-dispatch=NONE --cpu-baseline=min"
 
 rm -rf $PREFIX/bin
