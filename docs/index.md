@@ -16,8 +16,8 @@ with github actions to the `emscripten-forge` channel on [quetz](https://beta.ma
   
 **Usage**:
 
-  * [Adding_packages](development/adding_packages)
-  * [Adding_packages](development/local_builds)
+  * [Installing packages](usage/installing_packages)
+  * [Jupyterlite](usage/jupyterlite)
 
 **Project**:
 
