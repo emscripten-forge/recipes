@@ -17,35 +17,13 @@ app.add_typer(build_app, name="build")
 
 
 @build_app.command()
-def explicit(
-    recipe_dir,
-    emscripten_wasm32: Optional[bool] = typer.Option(False),
-    skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(True),
-    n_retry: Optional[int] = typer.Option(1),
-):
-    work_dir = os.getcwd()
-    assert os.path.isdir(recipe_dir), f"{recipe_dir} is not a dir"
-    platform = ""
-    if emscripten_wasm32:
-        platform = "emscripten-wasm32"
-
-    # check if package dir containers a rattler_recipe.yaml
-    # if so, we need to build the package with rattler
-    # otherwise we can use boa
-        
-    rattler_recipe_file = os.path.join(Path(recipe_dir).resolve(), "recipe.yaml")
-    build_with_rattler(recipe=rattler_recipe_file, emscripten_wasm32=emscripten_wasm32, n_retry=n_retry)
-
-@build_app.command()
 def changed(
     root_dir,
     old,
     new,
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
-    skip_existing: Optional[bool] = typer.Option(True),
-    n_retry: Optional[int] = typer.Option(1),
+    skip_existing: Optional[bool] = typer.Option(True)
 ):
     work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
@@ -82,7 +60,7 @@ def changed(
                 for file in files:
                     if file == "recipe_legacy.yaml":
                         os.remove(os.path.join(root, file))
-            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32",n_retry=n_retry)
+            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32")
 
 
 bot_app = typer.Typer()
