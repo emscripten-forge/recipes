@@ -3,7 +3,11 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - 'recipes/**'
   pull_request:
+    paths:
+      - 'recipes/**'
 
 jobs:
 
@@ -79,7 +83,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main --n-retry=3
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
       ################################################################
       # PULL_REQUEST
@@ -88,7 +92,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD --n-retry=3
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
 
       ################################################################
       # UPLOAD
