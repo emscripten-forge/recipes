@@ -1,5 +1,5 @@
 #!/bin/bash
-ls $BUILD_PREFIX/venv/bin/
+
 echo "PYTHON"
 
 rm -r -f branding
@@ -13,8 +13,8 @@ cp $RECIPE_DIR/config/site.cfg .
 
 
 #redefine the ar command to use emar
-export AR=emar
-export RANLIB=emranlib
+#export AR=emar
+#export RANLIB=emranlib
 
 export NPY_DISABLE_SVML=1
 export LDFLAGS="$LDFLAGS" 
