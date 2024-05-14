@@ -257,7 +257,8 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=5):
         
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python', 'xvega', 'xvega-bindings'
+            'sqlite', 'robotics-toolbox-python', 
+            'xvega', 'xvega-bindings', 'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 
