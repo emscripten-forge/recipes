@@ -2,7 +2,7 @@ import platform
 import os
 import subprocess
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
-from retry import retry
+
 
 def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, skip_existing="local"):
 
