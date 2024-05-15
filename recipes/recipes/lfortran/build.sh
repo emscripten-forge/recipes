@@ -21,6 +21,14 @@ fi
 
 export EMSDK_DIR=$(<$CONDA_EMSDK_DIR_CONFIG_FILE)
 
+# run build0.sh
+sh ./build0.sh
+
+
+
+
+# run **what build1.sh does**
+
 cmake \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=yes \
@@ -29,7 +37,6 @@ cmake \
     -DWITH_RUNTIME_STACKTRACE=yes \
     -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$PREFIX;$BUILD_PREFIX" \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
-    -DWITH_TARGET_WASM=yes \
     -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
     .
-cmake --build . -j8 --target install
+cmake --build . -j2 --target install
