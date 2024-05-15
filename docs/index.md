@@ -6,19 +6,25 @@ Conda-forge does not (yet) support the `emscripten-wasm32` platform. `emscripten
 The recipe repository not only stores the recipe, but also builds and upload the recipe 
 with github actions to the `emscripten-forge` channel on [quetz](https://beta.mamba.pm/channels/emscripten-forge)
 
+## 
 
-# Table of Contents
-**Development**:
+### Development
 
   * [Adding_packages](development/adding_packages)
   * [Recipe format](development/recipe_format)
   * [Local Builds](development/local_builds)
+  * [Conda build config](development/conda_build_config)
+  * [Troubleshooting](development/troubleshooting)
   
-**Usage**:
+### Usage
 
   * [Installing packages](usage/installing_packages)
   * [Jupyterlite](usage/jupyterlite)
+  * [Package server](usage/package_server)
 
-**Project**:
+### Project 
 
+  * [Blog](blog)
   * [Related Projects](project/related_projects)
+  * [FAQ](project/faq)
+  * [Credits](project/credits)
