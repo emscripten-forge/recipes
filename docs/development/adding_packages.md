@@ -46,6 +46,60 @@ requirements:
 * [regex](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/regex)
 
 
+### menson
+
+For a meson package, the following requirements are usually needed.
+```yaml
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{target_platform}}
+  - meson-python
+  - pip >=24
+  host:
+  - python
+```
+Furthermore a `emscripten.meson.cross` file is necessary to set the correct compiler and flags for the cross compilation.
+
+```toml
+# binaries section is at the end as may want to append python binary.
+
+[properties]
+needs_exe_wrapper = true
+skip_sanity_check = true
+longdouble_format = 'IEEE_QUAD_LE' # for numpy
+
+[host_machine]
+system = 'emscripten'
+cpu_family = 'wasm32'
+cpu = 'wasm'
+endian = 'little'
+
+[binaries]
+exe_wrapper = 'node'
+pkgconfig = 'pkg-config'
+
+```
+
+in the build script we append the python binary to the cross file and
+pass the cross file to the pip command.
+
+```bash
+#!/bin/bash
+
+cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
+echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
+
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"
+```
+
+
+**Example recipes**:
+
+* [contourpy](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/contourpy)
+* [numpy](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/numpy)
+
 ### rust 
 Building rust package with PyO3 / maturin works usually out of the box.
 
