@@ -19,7 +19,7 @@ else
     return 1
 fi
 
-export EMSDK_DIR=$(<$CONDA_EMSDK_DIR_CONFIG_FILE)
+export EMSDK_PATH=$(<$CONDA_EMSDK_DIR_CONFIG_FILE)
 
 # run build0.sh
 sh ./build0.sh
