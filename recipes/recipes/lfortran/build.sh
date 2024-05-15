@@ -3,7 +3,10 @@
 set -e
 set -x
 
-cp "${RECIPE_DIR}"/activate-lfortran.sh ${PREFIX}/etc/conda/activate.d/activate_z-${PKG_NAME}.sh
+mkdir -p ${PREFIX}/etc/conda/activate.d
+mkdir -p ${PREFIX}/etc/conda/deactivate.d
+
+cp "${RECIPE_DIR}"/activate-lfortran.sh   ${PREFIX}/etc/conda/activate.d/activate_z-${PKG_NAME}.sh
 cp "${RECIPE_DIR}"/deactivate-lfortran.sh ${PREFIX}/etc/conda/deactivate.d/deactivate_z-${PKG_NAME}.sh
 
 
