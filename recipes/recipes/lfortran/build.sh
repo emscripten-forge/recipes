@@ -37,6 +37,7 @@ cmake \
     -DWITH_RUNTIME_STACKTRACE=yes \
     -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH_LFORTRAN;$PREFIX;$BUILD_PREFIX" \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DWITH_TARGET_WASM=yes \
     -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
     .
 cmake --build . -j2 --target install
