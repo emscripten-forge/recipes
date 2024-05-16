@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Removing this warning will not be needed after the next pybind11 release
-export CPPFLAGS="-Wno-deprecated-literal-operator"
+cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
+echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
 
-${PYTHON} -m pip install . -vvv --no-deps
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"
