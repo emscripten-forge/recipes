@@ -9,6 +9,7 @@ mkdir -p ${PREFIX}/etc/conda/deactivate.d
 cp "${RECIPE_DIR}"/activate-lfortran.sh   ${PREFIX}/etc/conda/activate.d/activate_z-${PKG_NAME}.sh
 cp "${RECIPE_DIR}"/deactivate-lfortran.sh ${PREFIX}/etc/conda/deactivate.d/deactivate_z-${PKG_NAME}.sh
 
+export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS -D_LIBCPP_DISABLE_AVAILABILITY"
 
 CONDA_EMSDK_DIR_CONFIG_FILE=$HOME/.emsdkdir
 if test -f "$CONDA_EMSDK_DIR_CONFIG_FILE"; then
@@ -30,7 +31,7 @@ sh ./build0.sh
 # run **what build1.sh does**
 
 cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DWITH_LLVM=yes \
     -DLFORTRAN_BUILD_ALL=yes \
     -DWITH_STACKTRACE=yes \
