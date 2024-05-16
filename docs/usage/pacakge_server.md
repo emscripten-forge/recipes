@@ -1,4 +1,4 @@
-# Quetz Server
+# Packagve Server
 
 Emscripten forge packages are hosted as 
 as a the [emscripten-forge](https://beta.mamba.pm/channels/emscripten-forge) channel on a [Quetz](https://quetz.io/) server. 
