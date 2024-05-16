@@ -39,5 +39,6 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DWITH_TARGET_WASM=yes \
     -DCMAKE_INSTALL_LIBDIR=share/lfortran/lib \
+    -DCOMPILE_DEFINITIONS="__STDC_FORMAT_MACROS" \
     .
 cmake --build . -j2 --target install
