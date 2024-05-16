@@ -1,52 +1,48 @@
 context:
-  name: lfortran
-  version: 0.35.0
+  name: lfortan
+  version: "0.35.0"
 
 package:
-  name: ${{ name }}
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/lfortran/lfortran/releases/download/v${{ version }}/${{
-    name }}-${{ version }}.tar.gz
-  sha256: 5ecc1ae03067b985943c45f6ec05e9f6e72efd6ad004b052e7a98ba552ff79b0
+# - url: https://github.com/lfortran/lfortran/archive/refs/tags/v${{ version }}.tar.gz
+#   sha256: 2e54c5cfe9a94fc572bfc39c51496203636f78fb04e8bc0809577c4e1713a2ac
+  - git: https://github.com/lfortran/lfortran.git
+    rev: with_stdc_format_macros
 
 build:
-  number: 2
+  number: 1
 
 requirements:
   build:
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
-  - cmake
-  - make     # [unix]
-  - zlib=1.2.13
-  - lfortran=${{ version }}
-    # - xeus =3.0.5       # [build_platform != target_platform]
-    # - xeus-zmq =1.0.2   # [build_platform != target_platform]
-    # - llvmdev =16.0.6   # [build_platform != target_platform]
-    # - xtl               # [build_platform != target_platform]
-    # - nlohmann_json =3.11.2     # [build_platform != target_platform]
-    # - cppzmq            # [build_platform != target_platform]
-    # - zlib              # [build_platform != target_platform]
-    # - zstd-static =1.5.5  # [build_platform != target_platform]
+  - python
+  - re2c
+  - bison ==3.4
+  - llvmdev =15
+  - python
+  - cmake =3.21.1 
+  - make 
+  - toml
+  - binutils
   host:
+  - python     
+  - xeus =3.0.5
+  - xeus-zmq =1.0.2
+  - llvmdev =15
+  - xtl
+  - nlohmann_json =3.11.2
+  - cppzmq
   - zlib
+  - zstd-static =1.5.5
+
 
 about:
-  license: BSD-3-Clause
-  license_family: BSD
-  license_file: LICENSE
-  summary: Modern interactive LLVM-based Fortran compiler
-  description: |
-    LFortran is a modern open-source (BSD licensed) interactive Fortran
-    compiler built on top of LLVM. It can execute user's code interactively to
-    allow exploratory work (much like Python, MATLAB or Julia) as well as
-    compile to binaries with the goal to run user’s code on modern
-    architectures such as multi-core CPUs and GPUs.
-  homepage: https://lfortran.org
+  summary: lfortan
+
 extra:
   recipe-maintainers:
-  - certik
-  - anutosh491
-  - Shaikh-Ubaid
+    - DerThorsten
