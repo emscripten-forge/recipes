@@ -1,8 +1,6 @@
 set -e
 set -x
 
-export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS -D_LIBCPP_DISABLE_AVAILABILITY"
-
 mkdir -p src/bin/asset_dir
 cp -v $BUILD_PREFIX/share/lfortran/lib/*.mod src/bin/asset_dir
 
