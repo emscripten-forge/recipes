@@ -1,4 +1,8 @@
 #!/bin/bash
+
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+
+
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
 
