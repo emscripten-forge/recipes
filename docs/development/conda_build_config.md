@@ -1,8 +1,9 @@
 
 # Conda build config
 
-Simmilar to conda-forge we globally pin packages.
-This is essentialy a list of packages and versions like 
+Similar to conda-forge, we globally pin packages.
+This is essentially a list of packages and versions such as
+
 ```yaml
 # ...
 numpy:
@@ -28,7 +29,7 @@ orc:
 
 This list is used to pin the versions of the dependencies in the `recipe.yaml` of recipes.
 
-Therefore instead of writing 
+Therefore, instead of writing
 
 ```yaml
 requirements:
@@ -48,14 +49,14 @@ requirements:
     - numpy
 
 ```
-Furthermore this build-config contains the information which compiler to use for which platform.
-While conda forge can be found [here](https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/main/recipe/conda_build_config.yaml),
-we **need** to maintain our on [conda-build-config](https://github.com/emscripten-forge/recipes/blob/main/conda_build_config.yaml). In particular we need to setup the emscripten compiler.
+Furthermore, this build-config specifies which compiler to use for each platform.
+While conda-forge build configuration can be found [here](https://github.com/conda-forge/conda-forge-pinning-feedstock/blob/main/recipe/conda_build_config.yaml),
+we **need** to maintain our own [conda-build-config](https://github.com/emscripten-forge/recipes/blob/main/conda_build_config.yaml). In particular, we need to set up the emscripten compiler.
 
 !!! note
-    The conda-build-config of emscripten-forge uses the [rattler-recipies format](https://github.com/prefix-dev/rattler-build?tab=readme-ov-file#the-recipe-format)
-    
-    
+    The conda-build-config of emscripten-forge uses the [rattler-recipes format](https://github.com/prefix-dev/rattler-build?tab=readme-ov-file#the-recipe-format)
+
+
 ```yaml
 cxx_compiler:
   - if: emscripten

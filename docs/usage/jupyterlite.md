@@ -3,16 +3,16 @@
 
 ## Installation
 
-To consume emscripten-forge packages in JupyterLite environment, the `jupyterlite_xeus` package needs
-to be installed. This can be done with `pip` 
+To consume emscripten-forge packages in a JupyterLite environment, the `jupyterlite_xeus` package needs
+to be installed. This can be done with `pip`
 
-```bash 
-pip install jupyterlite_xeus 
+```bash
+pip install jupyterlite_xeus
 ```
-or `conda`/`mamba`/`micromamba` 
+or `conda`/`mamba`/`micromamba`
 
 ```
-mamba install jupyterlite_xeus
+mamba install jupyterlite-xeus
 ```
 
 ## Usage
@@ -21,7 +21,7 @@ mamba install jupyterlite_xeus
 
     Emscripten-forge provides xeus kernels for multiple languages, this document focuses on the Python kernel, namely `xeus-python`.
     While the other kernels can also be installed as described below, adding custom packages is only supported for the `xeus-python` kernel
-    at the moment. 
+    at the moment.
 
 ### From environment file
 
@@ -46,7 +46,7 @@ jupyter lite build --XeusAddon.environment_file=some_path/to/environment.yaml
 Create a environment with the desired packages. Here is an example with numpy as a additional dependency
 
 ```bash
-micromamba create 
+micromamba create
     -n myenv \
     --platform=emscripten-wasm32 \
     -c https://repo.mamba.pm/emscripten-forge \
@@ -55,4 +55,8 @@ micromamba create
     "python>=3.11"  numpy pandas xeus-python
 ```
 
+Use the following command to build JupyterLite.
+
+```sh
 jupyter lite build --XeusAddon.prefix=$MAMBA_ROOT_PREFIX/envs/myenv
+```
