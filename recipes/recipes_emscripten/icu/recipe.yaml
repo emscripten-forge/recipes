@@ -1,0 +1,69 @@
+context:
+  name: "icu"
+  version: 73.2
+  version_under: "73_2"
+  version_hyphen: "73-2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/unicode-org/icu/releases/download/release-${{ version_hyphen }}/icu4c-${{ version_under }}-src.tgz
+    sha256: 818a80712ed3caacd9b652305e01afc7fa167e6f2e94996da44b90c2ab604ce1
+
+  - url: https://github.com/unicode-org/icu/releases/download/release-${{ version_hyphen }}/icu4c-${{ version_under }}-data.zip
+    sha256: ca1ee076163b438461e484421a7679fc33a64cd0a54f9d4b401893fa1eb42701
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - libtool
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+
+# tests:
+#   files:
+#     # From http://source.icu-project.org/repos/icu/data/trunk/charset/data/ucm/gb-18030-2000.ucm
+#     - gb-18030-2000.ucm
+#     # From ICU's data folder.
+#     - de.txt
+#   commands:
+#     # Libraries
+#     {% set libs = [
+#        "libicudata",
+#        "libicui18n",
+#        "libicuio",
+#        "libicutest",
+#        "libicutu",
+#        "libicuuc"
+#      ] %}
+#     {% for each_lib in libs %}
+#     # https://github.com/conda-forge/icu-feedstock/issues/40
+#     - test ! -f $PREFIX/lib/{{ each_lib }}.a  # [not win]
+#     - test -f $PREFIX/lib/{{ each_lib }}.{{ version }}.dylib   # [osx]
+#     - test -f $PREFIX/lib/{{ each_lib }}.so.{{ version }}  # [linux]
+#     {% endfor %}
+
+#     # CLI tests
+#     - genbrk --help
+#     - gencfu --help
+#     - gencnval --help
+#     - gendict --help
+#     - icuinfo --help
+#     - icu-config --help  # [not win]
+#     - makeconv gb-18030-2000.ucm
+
+about:
+  homepage: https://icu.unicode.org
+  license: MIT
+  license_file: LICENSE
+  summary: International Components for Unicode.
+  documentation: https://unicode-org.github.io/icu-docs/apidoc/released/icu4c/
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
