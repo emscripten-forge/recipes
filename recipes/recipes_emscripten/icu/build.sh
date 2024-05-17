@@ -17,7 +17,7 @@ EXTRA_OPTS=""
 
 mkdir cross_build
 pushd cross_build
-CC=$(which gcc) CXX=$(which gxx) AR= AS= LD= CFLAGS= CXXFLAGS= LDFLAGS= CPPFLAGS= ../configure \
+CC=$(which gcc) CXX=$(which g++) AR= AS= LD= CFLAGS= CXXFLAGS= LDFLAGS= CPPFLAGS= ../configure \
     --build=${BUILD} \
     --host=${BUILD} \
     --disable-samples \
