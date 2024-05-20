@@ -1,0 +1,106 @@
+context:
+  version: 3.11.0
+  blas_major: 2
+  blas_minor: 200
+
+# TODO: verify version numbers
+
+source:
+  url: https://github.com/Reference-LAPACK/lapack/archive/v${{ version }}.tar.gz
+  sha256: 4b9ba79bfd4921ca820e83979db76ab3363155709444a787979e81c22285ffa9
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: libblas
+      version: ${{ blas_major }}.${{ blas_minor }}
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - lfortran
+
+# TODO: saving for later
+  # - package:
+  #     name: libtmglib
+  #     version: ${{ version }}
+  #   requirements:
+  #     build:
+  #       - ${{ compiler("c") }}
+  #       - lfortran
+
+# TODO: saving for later
+  # - package:
+  #     name: libcblas
+  #     version: ${{ blas_major }}.${{ blas_minor }}
+  #   requirements:
+  #     build:
+  #       - ${{ compiler("c") }}
+  #       - lfortran
+  #     run:
+  #       - libblas
+
+  - package:
+      name: liblapack
+      version: ${{ version }}
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - lfortran
+      run:
+        - libblas
+
+# TODO: saving for later
+  # - package:
+  #     name: liblapacke
+  #     version: ${{ version }}
+  #   requirements:
+  #     build:
+  #       - ${{ compiler("c") }}
+  #       - lfortran
+  #     run:
+  #       - libblas
+  #       - libcblas
+  #       - liblapack
+
+# TODO: saving for later
+  # - package:
+  #     name: blas-devel
+  #     version: ${{ blas_major }}.${{ blas_minor }}
+  #   requirements:
+  #     run:
+  #       - libblas
+  #       - libcblas
+  #       - liblapack
+  #       - liblapacke
+
+  - package:
+      name: blas
+      version: ${{ blas_major }}.${{ blas_minor }}
+    requirements:
+      run:
+        - liblapack
+        - liblapacke
+        - libcblas
+        - blas-devel
+        - libtmglib
+
+  - package:
+      name: lapack
+      version: ${{ version }}
+    requirements:
+      run:
+        - liblapack
+
+# TODO: add tests
+
+about:
+  homepage: http://www.netlib.org/lapack
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Linear Algebra PACKage
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
