@@ -15,6 +15,7 @@ export LDFLAGS="$LDFLAGS -fno-optimize-sibling-calls"
 # See https://github.com/Shaikh-Ubaid/lapack/blob/lf_01/LF_README.md
 emcmake cmake .. \
     -DCMAKE_Fortran_COMPILER=lfortran \
+    -DTEST_FORTRAN_COMPILER=OFF \
     -DCBLAS=no \
     -DLAPACKE=no \
     -DBUILD_TESTING=no \
