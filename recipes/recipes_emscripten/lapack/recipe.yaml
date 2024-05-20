@@ -2,6 +2,7 @@ context:
   version: 3.12.0
   blas_major: 2
   blas_minor: 200
+  lfortran_version: 0.36
 
 # TODO: verify version numbers
 
@@ -11,6 +12,9 @@ source:
   sha256: eac9570f8e0ad6f30ce4b963f4f033f0f643e7c3912fc9ee6cd99120675ad48b # v3.12.0
   patches:
     - patches/00_disable_fortran_compiler_check.patch
+    - patches/01_disable_fortran_c_interface_check.patch
+    - patches/02_fix_unexpected_argument_pp.patch
+    - patches/03_skip_error_files.patch
 
 build:
   number: 0
@@ -22,7 +26,7 @@ outputs:
     requirements:
       build:
         - ${{ compiler("c") }}
-        - lfortran
+        - lfortran>=${{ lfortran_version }}
 
 # TODO: saving for later
   # - package:
@@ -50,7 +54,7 @@ outputs:
     requirements:
       build:
         - ${{ compiler("c") }}
-        - lfortran
+        - lfortran>=${{ lfortran_version }}
       run:
         - libblas
 
