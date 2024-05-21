@@ -12,7 +12,6 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_ROOT = Path(THIS_DIR).parents[0].resolve()
 RECIPES_ROOT = REPO_ROOT / "recipes"
 RECIPES_EMSCRIPTEN_DIR = RECIPES_ROOT / "recipes_emscripten"
-CONFIG_PATH = os.path.join(REPO_ROOT, "empack_config.yaml")
 
 
 # rattler build related
