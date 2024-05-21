@@ -1,5 +1,6 @@
 emconfigure ./configure \
     --enable-shared=no \
     --enable-static=yes \
-    --prefix=$PREFIX && \
+    --prefix=$PREFIX
+
 emmake make install
