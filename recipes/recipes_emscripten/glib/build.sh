@@ -5,5 +5,6 @@ emconfigure ./configure \
     --with-pcre=internal \
     --disable-libmount \
     --host=wasm32-unknown-linux \
-    --prefix=${PREFIX} && \
+    --prefix=${PREFIX}
+
 emmake make install
