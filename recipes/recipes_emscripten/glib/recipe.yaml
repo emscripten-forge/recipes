@@ -1,0 +1,37 @@
+context:
+  version: "2.56.4"
+  major_minor: "2.56"
+
+
+package:
+  name: glib
+  version: ${{ version }}
+
+source:
+  url: https://download.gnome.org/sources/glib/${{ major_minor }}/glib-${{ version }}.tar.xz
+  sha256: 27f703d125efb07f8a743666b580df0b4095c59fc8750e8890132c91d437504c
+  patches:
+    # patches taken from webR
+    # License: MIT
+    - patches/emscripten-configure.diff
+    - patches/emscripten-function-ptr.diff
+    - patches/emscripten-wasm.diff
+    - patches/emscripten-disable-pcre.diff
+    - patches/fix-python12.diff
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - zlib
+    - libffi
+
+about:
+  homepage: https://developer.gnome.org/glib/
+  license: LGPL-2.1-or-later
+  summary: Provides core application building blocks for libraries and applications written in C.
