@@ -1,0 +1,41 @@
+context:
+  version: "2.12.5"
+
+package:
+  name: fontconfig
+  version: ${{ version }}
+
+source:
+  url: http://www.freedesktop.org/software/fontconfig/release/fontconfig-${{ version }}.tar.gz
+  sha256: 1160dc4da64ef06c42ad7634343d0866f4ec25ccc70f1c805f9deffa805cef04
+  patches:
+    - patches/syscache-always-valid.diff
+    - patches/fix-double-sysroot.diff
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - pkg-config
+    - gperf
+  host:
+    - freetype
+    - expat
+      # - xml2 (TODO - or just use expat)
+    # - freetype
+    # - libiconv  # [win]
+    # - libuuid   # [linux]
+    # - zlib
+
+about:
+  homepage: http://www.freedesktop.org/wiki/Software/fontconfig/
+  license: MIT
+  license_file: COPYING
+  summary: A library for configuring and customizing font access
+  description: |
+    Fontconfig is a library designed to provide system-wide font configuration,
+    customization and application access.
+  documentation: https://www.freedesktop.org/software/fontconfig/fontconfig-user.html
+  repository: https://cgit.freedesktop.org/fontconfig/
