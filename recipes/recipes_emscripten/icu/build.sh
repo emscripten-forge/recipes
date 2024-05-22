@@ -48,3 +48,4 @@ make install
 
 # Copy .wasm files as well
 cp ./bin/*.wasm $PREFIX/bin/
+cp ./tools/icuinfo/icuinfo.wasm $PREFIX/bin
