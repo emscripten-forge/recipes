@@ -11,7 +11,7 @@ emcmake cmake ${CMAKE_ARGS} \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DBUILD_SHARED_LIBS=OFF \
   ..
-make -j$CPU_COUNT VERBOSE=1
+make -j$CPU_COUNT
 make install
 
 # Copy the .wasm file also
