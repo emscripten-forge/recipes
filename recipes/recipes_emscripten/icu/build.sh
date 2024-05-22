@@ -29,6 +29,7 @@ make -j${CPU_COUNT}
 EXTRA_OPTS="$EXTRA_OPTS --with-cross-build=$PWD"
 popd
 
+# --with-data-packaging="static" fails, "files" and "archive" ok
 emconfigure ./configure   \
     --prefix=${PREFIX}    \
     --build=${BUILD}      \
@@ -39,12 +40,11 @@ emconfigure ./configure   \
     --disable-tests       \
     --disable-shared      \
     --enable-static       \
-    --with-data-packaging=static \
+    --with-data-packaging="archive" \
     ${EXTRA_OPTS}
 
 make -j${CPU_COUNT}
-make check
-
 make install
 
-# rm -rf ${PREFIX}/sbin
+# Copy .wasm files as well
+cp ./bin/*.wasm $PREFIX/bin/
