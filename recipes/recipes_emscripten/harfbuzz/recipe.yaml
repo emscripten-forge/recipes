@@ -20,45 +20,22 @@ requirements:
     - meson
     - ninja
     - pkg-config
-    - cairo      # [build_platform != target_platform]
-    - glib       # [build_platform != target_platform]
-    - freetype   # [build_platform != target_platform]
-    - icu        # [build_platform != target_platform]
-    - graphite2  # [build_platform != target_platform]
+    - glib
   host:
-    # - cairo
+    # - cairo TODO: add once available
     - glib
     - freetype
     - icu
     - graphite2
-  run:
-    # - cairo
-    - freetype
-    - icu
-    - graphite2
 
-# test:
-#   requires:
-#     - pygobject
-#   commands:
-#     # Libraries/headers.
-#     {% set libs = [
-#         "harfbuzz-cairo",
-#         "harfbuzz-gobject",
-#         "harfbuzz-icu",
-#         "harfbuzz-subset",
-#         "harfbuzz"
-#         ] %}
-#     {% for lib in libs %}
-#     - test -f $PREFIX/lib/lib{{ lib }}${SHLIB_EXT}    # [unix]
-#     - if not exist %PREFIX%\Library\bin\{{ lib }}.dll exit 1       # [win]
-#     {% endfor %}
-#     - test -f $PREFIX/include/harfbuzz/hb-ft.h    # [not win]
-#     - if not exist %PREFIX%\Library\include\harfbuzz\hb-ft.h exit 1         # [win]
-#     - test -f $PREFIX/lib/girepository-1.0/HarfBuzz-0.0.typelib    # [unix]
-#     - if not exist %PREFIX%\Library\lib\girepository-1.0\HarfBuzz-0.0.typelib exit 1         # [win]
-#     # CLI tests.
-#     - hb-view --version  # [linux]
+tests:
+- script:
+  - test -f $PREFIX/lib/libharfbuzz-gobject.a
+  - test -f $PREFIX/lib/libharfbuzz-icu.a
+  - test -f $PREFIX/lib/libharfbuzz-subset.a
+  - test -f $PREFIX/lib/libharfbuzz.a
+  - test -f $PREFIX/include/harfbuzz/hb.h
+# TODO: test hb-view, hb-shape, and hb-subset with cairo or chafa enabled
 
 about:
   homepage: https://harfbuzz.github.io/
