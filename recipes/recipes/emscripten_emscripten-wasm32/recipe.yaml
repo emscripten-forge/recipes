@@ -3,23 +3,30 @@ context:
   version: 3.1.45
 
 build:
-  number: 25
+  number: 26
 
 outputs:
   - package:
       name: ${{ name|lower }}
       version: ${{ version }}
+    
+    source:
+      git: https://github.com/emscripten-core/emsdk.git
 
     build:
       script: build_compiler_package.sh
 
     requirements:
       build:
-        - gettext
-      run:
         - python
+      run:
+        - python 3.9.*
+        - nodejs 16.*
       run_exports:
-          - ${{ pin_subpackage('emscripten-abi', min_pin='x.x.x', max_pin='x.x.x') }}
+        - ${{ pin_subpackage('emscripten-abi', min_pin='x.x.x', max_pin='x.x.x') }}
+    
+    dynamic_linking:
+      binary_relocation: false
 
   - package:
       name: emscripten-abi
@@ -41,3 +48,4 @@ about:
 extra:
   recipe-maintainers:
     - DerThorsten
+    - wolfv
