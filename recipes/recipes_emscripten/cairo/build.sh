@@ -16,21 +16,12 @@ meson_config_args=(
     -Dtests=disabled
 )
 
-# if test $(uname) == Darwin ; then
-#     meson_config_args+=(
-#         -Dxlib=disabled
-#         -Dxlib-xcb=disabled
-#         -Dxcb=disabled
-#     )
-# elif test $(uname) == Linux ; then
-#     meson_config_args+=(-Dxlib-xcb=enabled)
-# fi
-
 meson setup builddir \
     ${MESON_ARGS} \
     "${meson_config_args[@]}" \
     --buildtype=release \
     --default-library=static \
+    --prefer-static \
     --prefix=$PREFIX \
     -Dlibdir=lib \
     --wrap-mode=nofallback \
