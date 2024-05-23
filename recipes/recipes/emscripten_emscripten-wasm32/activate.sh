@@ -1,4 +1,3 @@
-
 if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     export CONDA_FORGE_EMSCRIPTEN_ACTIVATED=1
@@ -11,17 +10,6 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EMSCRIPTEN_VERSION=$PKG_VERSION
     export EMSCRIPTEN_FORGE_EMSDK_DIR=$CONDA_EMSDK_DIR
 
-    mkdir -p $CONDA_EMSDK_DIR/node/16.20.0_64bit
-    ln -s $CONDA_PREFIX $CONDA_EMSDK_DIR/node/16.20.0_64bit
-
-
-
-    $CONDA_EMSDK_DIR/emsdk activate --embedded --build=Release $EMSCRIPTEN_VERSION
-    
-    source $CONDA_EMSDK_DIR/emsdk_env.sh
-
-    export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
-
     # clear all prexisting cmake args / CC / CXX / AR / RANLIB
     export CC="emcc"
     export CXX="em++"
@@ -29,8 +17,6 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export RANLIB="emranlib"
     
     export CMAKE_ARGS=""
-
-
 
     # set the emscripten toolchain
     export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=$CONDA_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
@@ -72,6 +58,5 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     # wasm bigint
     export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
-
 
 fi
