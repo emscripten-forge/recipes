@@ -11,12 +11,10 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EMSCRIPTEN_VERSION=$PKG_VERSION
     export EMSCRIPTEN_FORGE_EMSDK_DIR=$CONDA_EMSDK_DIR
 
-    mkdir -p $CONDA_EMSDK_DIR/node
-    
-    ln -s $PREFIX/bin/node $CONDA_EMSDK_DIR/node/16.20.0_64bit
 
-    echo "LS $CONDA_EMSDK_DIR/node"
-    ls $CONDA_EMSDK_DIR/node
+    ln -s $PREFIX $CONDA_EMSDK_DIR/node/16.20.0_64bit
+
+
 
     $CONDA_EMSDK_DIR/emsdk activate --embedded --build=Release $EMSCRIPTEN_VERSION
     
