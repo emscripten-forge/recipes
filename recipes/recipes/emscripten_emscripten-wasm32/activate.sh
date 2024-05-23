@@ -14,7 +14,7 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     # copy link from $PREFIX/bin/node to $CONDA_EMSDK_DIR/node/node
     mkdir -p $CONDA_EMSDK_DIR/node
     
-    ln -s $PREFIX/bin/node $CONDA_EMSDK_DIR/node/node
+    ln -s $PREFIX/bin/node $CONDA_EMSDK_DIR/node/node-16.20.0-64bit
 
     $CONDA_EMSDK_DIR/emsdk activate --embedded --build=Release $EMSCRIPTEN_VERSION
     
