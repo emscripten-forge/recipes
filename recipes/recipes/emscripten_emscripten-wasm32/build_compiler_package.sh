@@ -11,6 +11,8 @@ done
 mkdir -p ${PREFIX}/bin
 cp "${PREFIX}/etc/conda/${CHANGE}.d/${PKG_NAME}_${CHANGE}.sh" ${PREFIX}/bin/activate_emscripten.sh
 
+export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python
+
 ./emsdk install $PKG_VERSION
 
 # export EMSDK=/Users/wolfv/Programs/emscripten-forge/emscripten_forge_emsdk_install
@@ -24,5 +26,14 @@ mkdir -p $PREFIX/bin
 
 for file in $PREFIX/opt/emsdk/upstream/bin/*; do
     echo "Linking $file"
-    ln -s $file $PREFIX/bin/
+    ln -sf $file $PREFIX/bin/
+done
+
+for file in $PREFIX/opt/emsdk/upstream/emscripten/*; do
+  # Check if the file is executable
+  if [ -x "$file" ] && [ ! -d "$file" ]; then
+    # Create a symbolic link in the $PREFIX/bin directory
+    echo "Linking $file"
+    ln -sf $file $PREFIX/bin/
+  fi
 done
