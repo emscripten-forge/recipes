@@ -1,48 +1,52 @@
 context:
-  name: "peewee"
-  version: "3.17.0"
+  name: peewee
+  version: 3.17.3
 
 package:
-  name: "{{ name }}"
-  version: '{{ version }}'
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 3a56967f28a43ca7a4287f4803752aeeb1a57a08dee2e839b99868181dfb5df8
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: ef15f90b628e41a584be8306cdc3243c51f73ce88b06154d9572f6d0284a0169
 
 build:
   number: 0
-  ignore_run_exports:
-    - python_abi
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - cross-python_emscripten-wasm32
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - pip
   host:
-    - python >=3.7
-    - cffi
+  - python >=3.7
+  - cffi
   run:
-    - python >=3.7
-    - cffi
+  - python >=3.7
+  - cffi
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_peewee.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/coleifer/peewee/
-  license: MIT License
+  license: MIT
   license_file: LICENSE
   license_family: MIT
   summary: Python Object-Relational Mapping (ORM) library
-  description: Peewee is a simple and small ORM. It has few (but expressive) concepts, making it easy to learn and intuitive to use.
-  dev_url: https://github.com/coleifer/peewee/
-  doc_url: https://docs.peewee-orm.com/en/latest/
-  doc_source_url: https://github.com/coleifer/peewee/blob/master/docs/index.rst
+  description: Peewee is a simple and small ORM. It has few (but expressive) concepts,
+    making it easy to learn and intuitive to use.
+  documentation: https://github.com/coleifer/peewee/blob/master/docs/index.rst
 
 
+  homepage: https://github.com/coleifer/peewee/
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_peewee.py
   recipe-maintainers:
-    - michaelweinold
+  - michaelweinold

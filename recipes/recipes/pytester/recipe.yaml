@@ -1,0 +1,49 @@
+context:
+  version: '1.0.11'
+
+source:
+  - path: bin
+    target_directory: bin
+  - path: pytester
+    target_directory: pytester
+
+outputs:
+  - package:
+      name: pytester
+      version: ${{ version }}
+
+    build:
+      number: 6
+
+      noarch: python
+
+    requirements:
+      host:
+        - python
+      run:
+        - pyjs_code_runner
+        - if: linux
+          then:
+          - playwright < 1.42
+        - if: osx
+          then: 
+          - playwright
+
+
+  - package:
+      name: pytester-run
+      version: ${{ version }}
+    build:
+      number: 6
+      noarch: generic
+    requirements:
+      run:
+        - pyjs
+        - pytest
+ 
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: test meta pkg
+

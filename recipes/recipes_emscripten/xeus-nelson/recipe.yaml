@@ -3,10 +3,10 @@ context:
 
 package:
   name: xeus-nelson
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/jupyter-xeus/xeus-nelson/archive/refs/tags/{{ version }}.tar.gz
+  url: https://github.com/jupyter-xeus/xeus-nelson/archive/refs/tags/${{ version }}.tar.gz
   sha256: 3d0383aad07afe7c4e17ea4be9929de7bb944c7d68939d41aa435f2fc6a7a510
 
 build:
@@ -14,32 +14,28 @@ build:
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
   host:
-    - nelson >=0.3,<0.4
-    - nlohmann_json
-    - xeus-lite
-    - xeus >=3.0.5,<4.0
-    - xtl >=0.7,<0.8
-
-test:
-  commands:
-    - sel(emscripten): test -f $PREFIX/bin/xnelson_wasm.wasm
-    - sel(emscripten): test -f $PREFIX/bin/xnelson_wasm.js
+  - nelson >=0.3,<0.4
+  - nlohmann_json
+  - xeus-lite
+  - xeus >=3.0.5,<4.0
+  - xtl >=0.7,<0.8
 
 about:
-  home: https://github.com/jupyter-xeus/xeus-nelson
-  license: BSD-3
+  license: BSD-3-Clause
   license_family: BSD-3
   license_file: LICENSE
   summary: xeus-nelson
-  doc_url: https://github.com/jupyter-xeus/xeus-nelson
-  dev_url: https://github.com/jupyter-xeus/xeus-nelson
-
+  homepage: https://github.com/jupyter-xeus/xeus-nelson
 extra:
   recipe-maintainers:
-    - DerThorsten
-    - martinRenou
-    - JohanMabille
+  - DerThorsten
+  - martinRenou
+  - JohanMabille
+tests:
+- script:
+  - test -f $PREFIX/bin/xnelson_wasm.wasm
+  - test -f $PREFIX/bin/xnelson_wasm.js

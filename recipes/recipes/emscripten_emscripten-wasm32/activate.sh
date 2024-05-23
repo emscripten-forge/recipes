@@ -31,7 +31,30 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     export PATH="$CONDA_EMSDK_DIR/upstream/emscripten/":$PATH
 
-    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true"
+    # clear all prexisting cmake args / CC / CXX / AR / RANLIB
+    export CC="emcc"
+    export CXX="em++"
+    export AR="emar"
+    export RANLIB="emranlib"
+    
+    export CMAKE_ARGS=""
+
+
+
+    # set the emscripten toolchain
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=$CONDA_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+
+    # conda prefix path
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_PREFIX_PATH=$PREFIX"
+
+    # install prefix
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=$PREFIX"
+
+    # find root path mode package
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON"
+
+    # fpic
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true"
 
     cmake () {
         emcmake cmake "$@"
@@ -59,9 +82,5 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     # wasm bigint
     export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
 
-    export AR=emar
-    export RANLIB=emranlib
-    export CC=emcc
-    export CXX=em++
 
 fi

@@ -1,18 +1,18 @@
 context:
-  version: '3.37.2'
+  version: 3.37.2
 
 package:
   name: sqlite
-  version: '{{ version }}'
+  version: ${{ version }}
 
 
 source:
   url: https://www.sqlite.org/2022/sqlite-autoconf-3370200.tar.gz
-  patches:
-    - sel(win): patches/expose_symbols.patch  # [win]
+  sha256: 4089a8d9b467537b3f246f217b84cd76e00b1d1a971fe5aca1e30e230e46b2d8
+
 
 build:
-  number: 2
+  number: 3
   # run_exports:
   #   # sometimes adds new symbols.  Default behavior is OK.
   #   #    https://abi-laboratory.pro/tracker/timeline/sqlite/
@@ -20,33 +20,26 @@ build:
 
 requirements:
   build:
-    - "{{ compiler('c') }}"
-    - sel(not win): make  # [not win]
-    - sel(not win): libtool  # [not win]
+  - ${{ compiler('c') }}
+  - make
+  - libtool
   host:
-    - sel(not win and not emscripten): ncurses  # [not win]
-    - sel(not win and not emscripten): readline  # [not win]
-    - sel(not win): zlib  # [not win]
-  run:
-    - sel(not win and not emscripten): ncurses  # [not win]
-    - sel(not win and not emscripten): readline  # [not win]
-    - sel(not win and not emscripten): zlib  # [not win]
+  -  zlib 
 
-test:
-  commands:
-    - sel(not emscripten): sqlite3 --version
-    - sel(win): if not exist %PREFIX%\\Library\bin\sqlite3.dll exit 1  # [win]
-    - sel(win): if not exist %PREFIX%\\Library\lib\sqlite3.lib exit 1  # [win]
-    - sel(not win and not emscripten): test -f $PREFIX/lib/libsqlite3${SHLIB_EXT}  # [not win]
-    - sel(not win and not emscripten): test ! -f $PREFIX/lib/libsqlite3.a  # [not win]
-    - sel(emscripten): test -f $PREFIX/lib/libsqlite3.a  # [not win]
-    - sel(win): if not exist %PREFIX%\\Library\include\sqlite3.h exit 1  # [win]
-    - sel(win): if not exist %PREFIX%\\Library\include\sqlite3ext.h exit 1  # [win]
-    - sel(not win): test -f $PREFIX/include/sqlite3.h  # [not win]
-    - sel(not win): test -f $PREFIX/include/sqlite3ext.h  # [not win]
 
+tests:
+- script:
+  - sqlite3 --version
+  - if not exist %PREFIX%\\Library\bin\sqlite3.dll exit 1
+  - if not exist %PREFIX%\\Library\lib\sqlite3.lib exit 1
+  - test -f $PREFIX/lib/libsqlite3${SHLIB_EXT}
+  - test ! -f $PREFIX/lib/libsqlite3.a
+  - test -f $PREFIX/lib/libsqlite3.a
+  - if not exist %PREFIX%\\Library\include\sqlite3.h exit 1
+  - if not exist %PREFIX%\\Library\include\sqlite3ext.h exit 1
+  - test -f $PREFIX/include/sqlite3.h
+  - test -f $PREFIX/include/sqlite3ext.h
 about:
-  home: http://www.sqlite.org/
   license: Unlicense
   license_url: http://www.sqlite.org/copyright.html
   summary: Implements a self-contained, zero-configuration, SQL database engine
@@ -54,11 +47,9 @@ about:
     SQLite is a self-contained, high-reliability, embedded, full-featured,
     public-domain, SQL database engine.It is the most used database engine
     in the world.
-  doc_url: http://www.sqlite.org/docs.html
-  doc_source_url: https://github.com/mackyle/sqlite/tree/master/doc
-  dev_url: https://github.com/mackyle/sqlite
-
+  documentation: https://github.com/mackyle/sqlite/tree/master/doc
+  homepage: http://www.sqlite.org/
 extra:
   recipe-maintainers:
-    - DerThorsten
-    
+  - DerThorsten
+
