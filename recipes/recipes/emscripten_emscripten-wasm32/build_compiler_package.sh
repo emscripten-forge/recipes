@@ -18,7 +18,7 @@ rm -rf $PREFIX/opt/emsdk/.git/
 rm -rf $PREFIX/opt/emsdk/upstream/emscripten/test/
 rm -rf $PREFIX/opt/emsdk/downloads
 rm -rf $PREFIX/opt/emsdk/python
-rm -rf $PREFIX/opt/emsdk/node
+# rm -rf $PREFIX/opt/emsdk/node
 rm -rf $PREFIX/opt/emsdk/bazel
 
 mkdir -p $PREFIX/bin
