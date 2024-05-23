@@ -1,0 +1,52 @@
+context:
+  name: "harfbuzz"
+  version: 8.5.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ name }}/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: 7ad8e4e23ce776efb6a322f653978b3eb763128fd56a90252775edb9fd327956
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - meson
+    - ninja
+    - pkg-config
+    - glib
+  host:
+    # - cairo TODO: add once available
+    - glib
+    - freetype
+    - icu
+    - graphite2
+
+tests:
+- script:
+  - test -f $PREFIX/lib/libharfbuzz-gobject.a
+  - test -f $PREFIX/lib/libharfbuzz-icu.a
+  - test -f $PREFIX/lib/libharfbuzz-subset.a
+  - test -f $PREFIX/lib/libharfbuzz.a
+  - test -f $PREFIX/include/harfbuzz/hb.h
+# TODO: test hb-view, hb-shape, and hb-subset with cairo or chafa enabled
+
+about:
+  homepage: https://harfbuzz.github.io/
+  license: MIT
+  license_file: COPYING
+  summary: An OpenType text shaping engine.
+  description: |
+    HarfBuzz is a text shaping library. New Harbuzz targets various font
+    technologies while Old HarfBuzz targets only OpenType fonts.
+  documentation: https://harfbuzz.github.io/
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
