@@ -12,7 +12,8 @@ emconfigure ../configure \
     --enable-shared=no \
     --enable-static=yes \
     --enable-expat \
-    --prefix=$PREFIX
+    --prefix=$PREFIX \
+    UUID_LIBS=$BUILD_PREFIX/lib/libuuid.a
 
 emmake make RUN_FC_CACHE_TEST=false install
 
