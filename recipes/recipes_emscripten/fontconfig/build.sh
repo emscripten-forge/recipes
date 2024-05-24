@@ -1,6 +1,8 @@
 export LDFLAGS="${LDFLAGS} -sUSE_FREETYPE=1 -sUSE_PTHREADS=0"
 export PTHREAD_CFLAGS=" "
 
+export UUID_LIBS=$BUILD_PREFIX/lib/libuuid.a
+
 # delete this file (is excluded in webr)
 rm ./src/fcobjshash.h
 
@@ -12,8 +14,7 @@ emconfigure ../configure \
     --enable-shared=no \
     --enable-static=yes \
     --enable-expat \
-    --prefix=$PREFIX \
-    UUID_LIBS=$BUILD_PREFIX/lib/libuuid.a
+    --prefix=$PREFIX
 
 emmake make RUN_FC_CACHE_TEST=false install
 
