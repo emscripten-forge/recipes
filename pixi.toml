@@ -6,16 +6,6 @@ authors = ["DerThorsten <derthorstenbeier@gmail.com>"]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
-############################################
-# setup-emsdk feature / tasks
-############################################
-[feature.feature_setup_emsdk]
-[feature.feature_setup_emsdk.dependencies]
-cxx-compiler = "1.5.2.*"
-[feature.feature_setup_emsdk.tasks.setup-emsdk]
-cmd = ["./emsdk/setup_emsdk.sh", "3.1.45", "$(pwd)/emscripten_forge_emsdk_install"]
-outputs = ["emscripten_forge_emsdk_install/emsdk_env.sh"]
-
 
 ############################################
 # rattler-build feature / tasks
@@ -40,7 +30,6 @@ cmd = [
     "--recipe",
     "recipes/recipes/emscripten_emscripten-wasm32"
 ]
-depends_on = ["setup-emsdk"] 
 
 [feature.feature_rattler_build.tasks.build-cross-python-pkg]
 cmd = [
@@ -56,7 +45,6 @@ cmd = [
     "--recipe",
     "recipes/recipes/cross-python_emscripten-wasm32"
 ]
-depends_on = ["setup-emsdk"] 
 
 [feature.feature_rattler_build.tasks.build-pytester-pkg]
 cmd = [
@@ -72,7 +60,6 @@ cmd = [
     "--recipe",
     "recipes/recipes/pytester"
 ]
-depends_on = ["setup-emsdk"] 
 
 
 [feature.feature_rattler_build.tasks.setup]
@@ -118,6 +105,5 @@ cmd = ["mkdocs", "build"]
 ############################################
 
 [environments]
-setup-emsdk-env = ["feature_setup_emsdk"]
 rattler-build-env = ["feature_rattler_build"]
 documentation-env = ["feature_documentation"]
