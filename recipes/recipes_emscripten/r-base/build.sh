@@ -11,6 +11,7 @@ export FFLAGS="$FFLAGS \
     --generate-object-code \
     --fixed-form-infer \
     --implicit-interface"
+export FPICFLAGS="-fPIC"
 
 emconfigure ./configure \
     --prefix=$PREFIX    \
