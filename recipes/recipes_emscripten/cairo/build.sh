@@ -2,9 +2,6 @@
 
 set -ex
 
-# export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$BUILD_PREFIX/lib/pkgconfig
-# export PKG_CONFIG=$BUILD_PREFIX/bin/pkg-config
-
 meson_config_args=(
     -Dfontconfig=enabled
     -Dfreetype=enabled
@@ -13,6 +10,7 @@ meson_config_args=(
     -Dxlib-xcb=disabled
     -Dxcb=disabled
     -Dspectre=disabled
+    -Dzlib=disabled
     -Dtests=disabled
 )
 
