@@ -1,17 +1,14 @@
 context:
-  version: 2.0.0
+  version: 2.0.1
   name: pyjs
 package:
   name: ${{name}}
   version: ${{ version }}
 
 source:
-- url: 
-    https://github.com/emscripten-forge/${{name}}/archive/refs/tags/${{version}}.tar.gz
-  sha256: 668f36da03ab81d35850205c47e96e1c08afc20559d72dc3c734bba2c678b826
-
+- path: /Users/thorstenbeier/src/pyjs
 build:
-  number: 1
+  number: 3
 
 requirements:
   build:
@@ -26,6 +23,40 @@ requirements:
   - bzip2
   - libffi
   - pybind11
+
+
+tests:
+  - script: |
+      echo "install playwright"
+      $BUILD_PREFIX/bin/playwright install
+      echo "test in browser (main thread)
+      pyjs_code_runner run script \
+          browser-main \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --pyjs-dir      $(pwd)/build \
+          --headless \
+          --async-main \
+          --no-cache
+
+    requirements:
+      build:
+        - pyjs_code_runner
+        - if: linux
+          then:
+          - playwright < 1.42
+        - if: osx
+          then: 
+          - playwright
+      run:
+        - pytest
+        - numpy
+    files:
+      recipe:
+        - test_regex.py
+
 
 about:
   license: BSD-3-Clause
