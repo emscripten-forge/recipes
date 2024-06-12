@@ -3,23 +3,31 @@ context:
   version: 3.1.45
 
 build:
-  number: 25
+  number: 27
 
 outputs:
   - package:
       name: ${{ name|lower }}
       version: ${{ version }}
+    
+    source:
+      git: https://github.com/emscripten-core/emsdk.git
 
     build:
       script: build_compiler_package.sh
+          
+      dynamic_linking:
+        binary_relocation: false
 
     requirements:
       build:
-        - gettext
+        - curl
+        - python
       run:
         - python
+        - nodejs 16.*
       run_exports:
-          - ${{ pin_subpackage('emscripten-abi', min_pin='x.x.x', max_pin='x.x.x') }}
+        - ${{ pin_subpackage('emscripten-abi', min_pin='x.x.x', max_pin='x.x.x') }}
 
   - package:
       name: emscripten-abi
@@ -33,7 +41,7 @@ outputs:
 about:
   homepage: https://emscripten.org
   license: MIT
-  license_file: LICENSE
+  license_file: LICENSE.txt
   summary: emscripten
   description: Emscripten is a complete compiler toolchain to WebAssembly, using LLVM, with a special focus on speed, size, and the Web platform.
   documentation: https://emscripten.org/
@@ -41,3 +49,4 @@ about:
 extra:
   recipe-maintainers:
     - DerThorsten
+    - wolfv

@@ -60,14 +60,6 @@ jobs:
           post-cleanup: 'all'
 
       ################################################################
-      # EMSDK
-      ################################################################
-      - name: Setup emsdk
-        shell: bash -el {0}
-        run: |
-          ./emsdk/setup_emsdk.sh ${{ matrix.emsdk_ver }} $(pwd)/emsdk_install
-
-      ################################################################
       # POST ENV INSTALL CONFIG
       ################################################################
       - name: Post env install config
@@ -106,6 +98,6 @@ jobs:
             mkdir -p ${GITHUB_WORKSPACE}/output/${platform}
             for package in $(ls ${GITHUB_WORKSPACE}/output/${platform}/*.tar.bz2); do
               echo "Uploading ${package} for  ${platform} (build with rattler)"
-              QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${package}
+              QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${package} || true
             done
           done
