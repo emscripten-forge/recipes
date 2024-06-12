@@ -7,3 +7,6 @@ emconfigure ../configure \
     --prefix=$PREFIX
 
 emmake make install
+
+# Copy .wasm file also
+cp src/xz/xz.wasm $PREFIX/bin/
