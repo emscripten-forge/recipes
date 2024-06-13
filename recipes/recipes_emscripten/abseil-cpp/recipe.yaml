@@ -57,16 +57,19 @@ outputs:
     #  - __osx >=${{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
 
     #leave out tests for now
-    #tests:
-    #  requires:
-    #    - ${{ compiler('cxx') }}
-    #    - cmake
-    #    - ninja
-    #    - pkg-config
-    #  files:
-    #    - cmake_test/
-    #  commands:
-
+  tests:
+    - script:
+        - test -f $PREFIX/lib/libabsl_base.a
+        - test -f $PREFIX/lib/libabsl_civil_time.a
+        - test -f $PREFIX/lib/libabsl_cord.a
+        - test -f $PREFIX/lib/libabsl_cordz_functions.a
+    #- requires:
+    #  - ${{ compiler('cxx') }}
+    #  - cmake
+    #  - ninja
+    #  - pkg-config
+    #- files:
+    #  - cmake_test/
         # absl_* libraries
     #  {% for each_lib in absl_libs %}
         # presence of shared libs
@@ -99,6 +102,25 @@ outputs:
       #  - cmake --build .
       #  - ./flags_example    # [unix]
       #  - flags_example.exe  # [win]
+
+# tests & test-helpers
+#- package:
+#    name: libabseil-tests
+#  build:
+#    script: build.sh
+#    string: cxx${{ cxx_standard }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+#  requirements:
+#    build:
+#      - ${{ compiler('c') }}
+#      - ${{ compiler('cxx') }}
+#      - cmake
+#      - ninja
+#    host:
+#      - gtest
+#      - ${{ pin_subpackage("libabseil", exact=True) }}
+#    run:
+#      - gtest
+#      - ${{ pin_subpackage("libabseil", exact=True) }}
 
 about:
   homepage: https://github.com/abseil/abseil-cpp
