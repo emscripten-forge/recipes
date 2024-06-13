@@ -28,21 +28,11 @@ build:
   number: 0
 
 outputs:
-  # default behaviour is shared; however note that upstream does not support
-  # fully shared builds on windows, and some static libs will remain, see above
 - package:
     name: libabseil
   build:
     script: build.sh  # [unix]
     string: cxx${{ cxx_standard }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
-    #run_exports:
-    #  - ${{ pin_subpackage("libabseil", max_pin="x") }}
-      # also pin on ABI variant
-    #  - libabseil =*=cxx${{ cxx_standard }}*
-      # abseil needs the 10.13 headers even just to be `# include`d;
-      # ensure that all dependent packages reflect that to
-      # avoid the solver getting stuck in no-man's-land.
-    #  - __osx >=${{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
 
   requirements:
     build:
@@ -50,13 +40,7 @@ outputs:
       - ${{ compiler('cxx') }}
       - cmake
       - ninja
-    #run_constrained:
-    #  - libabseil-static =${{ version }}=cxx${{ cxx_standard }}*
-      # make sure we don't co-install with old version of old package name
-    #  - abseil-cpp =${{ version }}
-    #  - __osx >=${{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
 
-    #leave out tests for now
   tests:
     - script:
         - test -f $PREFIX/lib/libabsl_base.a
