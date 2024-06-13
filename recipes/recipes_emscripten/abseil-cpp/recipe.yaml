@@ -1,0 +1,78 @@
+context:
+  version: 20240116.2
+  name: abseil-split
+
+# shared builds for flags_* libraries are not supported on windows, see
+# https://github.com/abseil/abseil-cpp/pull/1115
+#{% set absl_libs_always_static_on_win = [
+#    "log_flags", "flags_commandlineflag", "flags_config", "flags_marshalling", "flags_parse",
+#    "flags_private_handle_accessor", "flags_program_name", "flags_reflection", "flags_usage"
+#] %}
+
+#{% set absl_libs = absl_libs_always_static_on_win + [
+#    "base", "civil_time", "cord", "cordz_functions", "cordz_handle", "cordz_info",
+#    "cordz_sample_token", "examine_stack", "exponential_biased", "failure_signal_handler",
+#    "hash", "hashtablez_sampler", "int128", "log_severity", "low_level_hash", "periodic_sampler",
+#    "random_distributions", "random_seed_gen_exception", "random_seed_sequences", "raw_hash_set",
+#    "scoped_set_env", "spinlock_wait", "stacktrace", "status", "statusor", "strerror", "strings",
+#    "symbolize", "synchronization", "time", "time_zone"
+#] %}
+# test helper targets (but used e.g. by protobuf)
+#{% set absl_test_libs = ["scoped_mock_log"] %}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/abseil/abseil-cpp/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 733726b8c3a6d39a4120d7e45ea8b41a434cdacde401cba500f14236c49b39dc
+
+build:
+  number: 0
+
+outputs:
+  # default behaviour is shared; however note that upstream does not support
+  # fully shared builds on windows, and some static libs will remain, see above
+  - name: libabseil
+    script: build-abseil.sh  # [unix]
+#    script: build-abseil.bat  # [win]
+    build:
+      string: cxx{{ cxx_standard }}_h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
+      run_exports:
+        - {{ pin_subpackage("libabseil", max_pin="x") }}
+#        # also pin on ABI variant
+        - libabseil =*=cxx{{ cxx_standard }}*
+#        # abseil needs the 10.13 headers even just to be `# include`d;
+#        # ensure that all dependent packages reflect that to
+#        # avoid the solver getting stuck in no-man's-land.
+#        - __osx >={{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+#      run_constrained:
+#        - libabseil-static ={{ version }}=cxx{{ cxx_standard }}*
+#        # make sure we don't co-install with old version of old package name
+#        - abseil-cpp ={{ version }}
+#        - __osx >={{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
+
+about:
+  homepage: https://github.com/abseil/abseil-cpp
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Abseil Common Libraries (C++)
+  description: |
+    Abseil is an open-source collection of C++ code (compliant to C++11)
+    designed to augment the C++ standard library.
+  documentation: https://github.com/abseil/abseil-cpp
+  repository: https://github.com/abseil/abseil-cpp
+
+extra:
+  recipe-maintainers:
+    - KGB9
+
