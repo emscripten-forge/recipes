@@ -4,10 +4,6 @@ context:
 
 # shared builds for flags_* libraries are not supported on windows, see
 # https://github.com/abseil/abseil-cpp/pull/1115
-#{% set absl_libs_always_static_on_win = [
-#    "log_flags", "flags_commandlineflag", "flags_config", "flags_marshalling", "flags_parse",
-#    "flags_private_handle_accessor", "flags_program_name", "flags_reflection", "flags_usage"
-#] %}
 
 #{% set absl_libs = absl_libs_always_static_on_win + [
 #    "base", "civil_time", "cord", "cordz_functions", "cordz_handle", "cordz_info",
@@ -20,7 +16,7 @@ context:
 # test helper targets (but used e.g. by protobuf)
 #{% set absl_test_libs = ["scoped_mock_log"] %}
 
-package:
+recipe:
   name: ${{ name }}
   version: ${{ version }}
 
@@ -31,34 +27,78 @@ source:
 build:
   number: 0
 
-#outputs:
+outputs:
   # default behaviour is shared; however note that upstream does not support
   # fully shared builds on windows, and some static libs will remain, see above
-#  - name: libabseil
-#    script: build-abseil.sh  # [unix]
-#    script: build-abseil.bat  # [win]
-#    build:
-#      string: cxx{{ cxx_standard }}_h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
-#      run_exports:
-#        - {{ pin_subpackage("libabseil", max_pin="x") }}
-#        # also pin on ABI variant
-#        - libabseil =*=cxx{{ cxx_standard }}*
-#        # abseil needs the 10.13 headers even just to be `# include`d;
-#        # ensure that all dependent packages reflect that to
-#        # avoid the solver getting stuck in no-man's-land.
-#        - __osx >={{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
-
-requirements:
+- package:
+    name: libabseil
   build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - cmake
-    - ninja
-#      run_constrained:
-#        - libabseil-static ={{ version }}=cxx{{ cxx_standard }}*
-#        # make sure we don't co-install with old version of old package name
-#        - abseil-cpp ={{ version }}
-#        - __osx >={{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
+    script: build.sh  # [unix]
+    string: cxx${{ cxx_standard }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+    #run_exports:
+    #  - ${{ pin_subpackage("libabseil", max_pin="x") }}
+      # also pin on ABI variant
+    #  - libabseil =*=cxx${{ cxx_standard }}*
+      # abseil needs the 10.13 headers even just to be `# include`d;
+      # ensure that all dependent packages reflect that to
+      # avoid the solver getting stuck in no-man's-land.
+    #  - __osx >=${{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
+
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - cmake
+      - ninja
+    #run_constrained:
+    #  - libabseil-static =${{ version }}=cxx${{ cxx_standard }}*
+      # make sure we don't co-install with old version of old package name
+    #  - abseil-cpp =${{ version }}
+    #  - __osx >=${{ MACOSX_DEPLOYMENT_TARGET }}  # [osx and x86_64]
+
+    #leave out tests for now
+    #tests:
+    #  requires:
+    #    - ${{ compiler('cxx') }}
+    #    - cmake
+    #    - ninja
+    #    - pkg-config
+    #  files:
+    #    - cmake_test/
+    #  commands:
+
+        # absl_* libraries
+    #  {% for each_lib in absl_libs %}
+        # presence of shared libs
+    #    - test -f $PREFIX/lib/libabsl_${{ each_lib }}${SHLIB_EXT}      # [unix]
+        # absence of static libs
+    #    - test ! -f $PREFIX/lib/libabsl_${{ each_lib }}.a              # [unix]
+
+
+        # pkg-config (should point to abseil_dll on shared windows builds)
+      #  - pkg-config --print-errors --exact-version "{{ v_major }}" absl_{{ each_lib }}
+      #{% endfor %}
+
+        # absence of test targets in regular abseil output
+      #{% for each_lib in absl_test_libs %}
+        # absence of all libs
+      #  - test ! -f $PREFIX/lib/libabsl_{{ each_lib }}${SHLIB_EXT}    # [unix]
+      #  - test ! -f $PREFIX/lib/libabsl_{{ each_lib }}.a              # [unix]
+      #  - if exist %LIBRARY_LIB%\\absl_{{ each_lib }}.lib exit 1      # [win]
+      #{% endfor %}
+
+        # pkg-config (abseil_dll)
+      #  - pkg-config --print-errors --exact-version "{{ v_major }}" abseil_dll  # [win]
+
+        # CMake integration
+      #  - cd cmake_test
+      #  - export CMAKE_ARGS="$CMAKE_ARGS -GNinja -DCMAKE_BUILD_TYPE=Release"  # [unix]
+      #  - set "CMAKE_ARGS=%CMAKE_ARGS% -GNinja -DCMAKE_BUILD_TYPE=Release"    # [win]
+      #  - cmake $CMAKE_ARGS  -DCMAKE_CXX_STANDARD={{ cxx_standard }} .        # [unix]
+      #  - cmake %CMAKE_ARGS% -DCMAKE_CXX_STANDARD={{ cxx_standard }} .        # [win]
+      #  - cmake --build .
+      #  - ./flags_example    # [unix]
+      #  - flags_example.exe  # [win]
 
 about:
   homepage: https://github.com/abseil/abseil-cpp
@@ -75,4 +115,5 @@ about:
 extra:
   recipe-maintainers:
     - KGB9
+
 
