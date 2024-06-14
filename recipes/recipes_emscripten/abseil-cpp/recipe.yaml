@@ -2,20 +2,6 @@ context:
   version: 20240116.2
   name: abseil-split
 
-# shared builds for flags_* libraries are not supported on windows, see
-# https://github.com/abseil/abseil-cpp/pull/1115
-
-#{% set absl_libs = absl_libs_always_static_on_win + [
-#    "base", "civil_time", "cord", "cordz_functions", "cordz_handle", "cordz_info",
-#    "cordz_sample_token", "examine_stack", "exponential_biased", "failure_signal_handler",
-#    "hash", "hashtablez_sampler", "int128", "log_severity", "low_level_hash", "periodic_sampler",
-#    "random_distributions", "random_seed_gen_exception", "random_seed_sequences", "raw_hash_set",
-#    "scoped_set_env", "spinlock_wait", "stacktrace", "status", "statusor", "strerror", "strings",
-#    "symbolize", "synchronization", "time", "time_zone"
-#] %}
-# test helper targets (but used e.g. by protobuf)
-#{% set absl_test_libs = ["scoped_mock_log"] %}
-
 recipe:
   name: ${{ name }}
   version: ${{ version }}
@@ -49,45 +35,6 @@ outputs:
         - test -f $PREFIX/lib/libabsl_cordz_functions.a
         - test -f $PREFIX/include/absl/synchronization/mutex.h
         - test -f $PREFIX/include/absl/base/thread_annotations.h
-    #- requires:
-    #  - ${{ compiler('cxx') }}
-    #  - cmake
-    #  - ninja
-    #  - pkg-config
-    #- files:
-    #  - cmake_test/
-        # absl_* libraries
-    #  {% for each_lib in absl_libs %}
-        # presence of shared libs
-    #    - test -f $PREFIX/lib/libabsl_${{ each_lib }}${SHLIB_EXT}      # [unix]
-        # absence of static libs
-    #    - test ! -f $PREFIX/lib/libabsl_${{ each_lib }}.a              # [unix]
-
-
-        # pkg-config (should point to abseil_dll on shared windows builds)
-      #  - pkg-config --print-errors --exact-version "{{ v_major }}" absl_{{ each_lib }}
-      #{% endfor %}
-
-        # absence of test targets in regular abseil output
-      #{% for each_lib in absl_test_libs %}
-        # absence of all libs
-      #  - test ! -f $PREFIX/lib/libabsl_{{ each_lib }}${SHLIB_EXT}    # [unix]
-      #  - test ! -f $PREFIX/lib/libabsl_{{ each_lib }}.a              # [unix]
-      #  - if exist %LIBRARY_LIB%\\absl_{{ each_lib }}.lib exit 1      # [win]
-      #{% endfor %}
-
-        # pkg-config (abseil_dll)
-      #  - pkg-config --print-errors --exact-version "{{ v_major }}" abseil_dll  # [win]
-
-        # CMake integration
-      #  - cd cmake_test
-      #  - export CMAKE_ARGS="$CMAKE_ARGS -GNinja -DCMAKE_BUILD_TYPE=Release"  # [unix]
-      #  - set "CMAKE_ARGS=%CMAKE_ARGS% -GNinja -DCMAKE_BUILD_TYPE=Release"    # [win]
-      #  - cmake $CMAKE_ARGS  -DCMAKE_CXX_STANDARD={{ cxx_standard }} .        # [unix]
-      #  - cmake %CMAKE_ARGS% -DCMAKE_CXX_STANDARD={{ cxx_standard }} .        # [win]
-      #  - cmake --build .
-      #  - ./flags_example    # [unix]
-      #  - flags_example.exe  # [win]
 
 # tests & test-helpers
 - package:
