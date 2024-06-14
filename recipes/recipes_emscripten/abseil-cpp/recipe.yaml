@@ -2,7 +2,7 @@ context:
   version: 20240116.2
   name: abseil-split
 
-recipe:
+package:
   name: ${{ name }}
   version: ${{ version }}
 
@@ -13,47 +13,21 @@ source:
 build:
   number: 0
 
-outputs:
-- package:
-    name: libabseil
+requirements:
   build:
-    script: build.sh  # [unix]
-    string: cxx${{ cxx_standard }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
 
-  requirements:
-    build:
-      - ${{ compiler('c') }}
-      - ${{ compiler('cxx') }}
-      - cmake
-      - ninja
-
-  tests:
-    - script:
-        - test -f $PREFIX/lib/libabsl_base.a
-        - test -f $PREFIX/lib/libabsl_civil_time.a
-        - test -f $PREFIX/lib/libabsl_cord.a
-        - test -f $PREFIX/lib/libabsl_cordz_functions.a
-        - test -f $PREFIX/include/absl/synchronization/mutex.h
-        - test -f $PREFIX/include/absl/base/thread_annotations.h
-
-# tests & test-helpers
-- package:
-    name: libabseil-tests
-  build:
-    script: build.sh
-    string: cxx${{ cxx_standard }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
-  requirements:
-    build:
-      - ${{ compiler('c') }}
-      - ${{ compiler('cxx') }}
-      - cmake
-      - ninja
-    host:
-      - gtest
-      - ${{ pin_subpackage("libabseil", exact=True) }}
-    run:
-      - gtest
-      - ${{ pin_subpackage("libabseil", exact=True) }}
+tests:
+  - script:
+      - test -f $PREFIX/lib/libabsl_base.a
+      - test -f $PREFIX/lib/libabsl_civil_time.a
+      - test -f $PREFIX/lib/libabsl_cord.a
+      - test -f $PREFIX/lib/libabsl_cordz_functions.a
+      - test -f $PREFIX/include/absl/synchronization/mutex.h
+      - test -f $PREFIX/include/absl/base/thread_annotations.h
 
 about:
   homepage: https://github.com/abseil/abseil-cpp
@@ -70,5 +44,3 @@ about:
 extra:
   recipe-maintainers:
     - KGB9
-
-
