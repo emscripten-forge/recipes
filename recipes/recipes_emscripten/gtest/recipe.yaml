@@ -1,8 +1,8 @@
 context:
   version: 1.14.0
-  name: gtest-split
+  name: gtest
   
-recipe:
+package:
   name: ${{ name }}
   version: ${{ version }}
 
@@ -13,40 +13,21 @@ source:
 build:
   number: 0
 
-outputs:
-- package:
-    name: gtest
+requirements:
   build:
-    script: build.sh
-  requirements:
-    build:
-      - ${{ compiler('cxx') }}
-      - cmake
-      - ninja
-    run_constraints:
-      - gmock ${{ version }}
-    run_exports:
-      - ${{ pin_subpackage('gtest', max_pin='x.x.x') }}
-  tests:
-    - script:
-      - test -f $PREFIX/lib/libgtest.a
-      - test -f $PREFIX/lib/libgmock.a
-      - test -f $PREFIX/include/gtest/gtest.h
-      - test -f $PREFIX/include/gmock/gmock.h 
-
-# empty wrapper for compatibility with previous output naming/separation
-#- package:
-#    name: gmock
-#    version: ${{ version }}
-#  requirements:
-#    build:
-#      - ${{ compiler('cxx') }}
-#      - cmake
-#      - ninja
-#    host:
-#      - ${{ pin_subpackage('gtest', exact=True) }}
-#    run:
-#      - ${{ pin_subpackage('gtest', exact=True) }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  run_constraints:
+    - gmock ${{ version }}
+  run_exports:
+    - ${{ pin_subpackage('gtest', max_pin='x.x.x') }}
+tests:
+  - script:
+    - test -f $PREFIX/lib/libgtest.a
+    - test -f $PREFIX/lib/libgmock.a
+    - test -f $PREFIX/include/gtest/gtest.h
+    - test -f $PREFIX/include/gmock/gmock.h 
 
 about:
   homepage: https://github.com/google/googletest
