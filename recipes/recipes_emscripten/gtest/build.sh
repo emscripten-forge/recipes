@@ -2,16 +2,14 @@
 set -ex
 
 # Build and install dynamic library
-if [ ! -d "build" ]; then
-  mkdir build
-fi
+mkdir -p build
 cd build
 
-cmake ${CMAKE_ARGS} \
+emcmake cmake ${CMAKE_ARGS} \
   -GNinja \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DCMAKE_CXX_STANDARD=17 \
-  -DBUILD_SHARED_LIBS=ON \
+  -DBUILD_SHARED_LIBS=OFF \
   -DCMAKE_INSTALL_LIBDIR=lib \
   -DCMAKE_BUILD_TYPE=Release \
   ..
