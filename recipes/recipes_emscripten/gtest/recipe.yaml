@@ -1,0 +1,82 @@
+context:
+  version: 1.14.0
+  name: gtest-split
+  
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/googletest/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+
+outputs:
+- package
+  - name: gtest
+    script: build-gtest.sh 
+    build:
+      # Builds are linked against the x.x.x version SO.
+      run_exports:
+        - ${{ pin_subpackage('gtest', max_pin='x.x.x') }}
+    requirements:
+      build:
+        - {{ compiler('cxx') }}
+        - cmake
+        - ninja
+      run_constrained:
+        - gmock {{ version }}
+    test:
+      requires:
+        - pkg-config
+      commands:
+        # libraries
+        {% for each_lib in ["gtest", "gtest_main", "gmock", "gmock_main"] %}
+        # presence of shared libs
+        - test -f $PREFIX/lib/lib{{ each_lib }}${SHLIB_EXT}      # [unix]
+        - if not exist %LIBRARY_BIN%\\{{ each_lib }}.dll exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\{{ each_lib }}.lib exit 1  # [win]
+
+        # absence of static libs
+        - test ! -f $PREFIX/lib/lib{{ each_lib }}.a              # [unix]
+
+        # pkg-config
+        - pkg-config --print-errors --exact-version "{{ version }}" {{ each_lib }}
+        {% endfor %}
+
+        # headers (selection)
+        {% for each_header in ["gtest/gtest.h", "gmock/gmock.h"] %}
+        - test -f $PREFIX/include/{{ each_header }} || (echo "{{ each_header }} not found" && exit 1)  # [unix]
+        - if not exist %LIBRARY_INC%\{{ "\\".join(each_header.split("/")) }} exit 1                    # [win]
+        {% endfor %}
+
+  # empty wrapper for compatibility with previous output naming/separation
+  - name: gmock
+    version: {{ version }}
+    requirements:
+      host:
+        - {{ pin_subpackage('gtest', exact=True) }}
+      run:
+        - {{ pin_subpackage('gtest', exact=True) }}
+    test:
+      commands:
+        - echo "Tested above"
+
+about:
+  homepage: https://github.com/google/googletest
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Google's C++ test framework
+
+extra:
+  recipe-maintainers:
+    - KGB99
