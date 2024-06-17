@@ -18,6 +18,16 @@ export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python
 # export EMSDK=/Users/wolfv/Programs/emscripten-forge/emscripten_forge_emsdk_install
 export EMSDK=.
 
+
+echo "emsdk patching"
+pushd upstream/emscripten
+cat $RECIPE_DIR/patches/*.patch | patch -p1 --verbose 
+popd    
+echo "...done"
+
+
+
+
 mkdir -p $PREFIX/opt/emsdk/
 cp -r $EMSDK/upstream $PREFIX/opt/emsdk/upstream
 rm -rf $PREFIX/opt/emsdk/upstream/emscripten/test/
