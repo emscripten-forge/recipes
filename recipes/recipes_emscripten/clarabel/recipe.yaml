@@ -1,0 +1,65 @@
+context:
+  name: clarabel
+  version: 0.7.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.python.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a30ab135f475c5bc78329fd7df575291155e6055bcaf02124eb610b8ad176396
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python                                
+    - crossenv                              
+    - cross-python_${{ target_platform }}   
+    - ${{ compiler('c') }}
+    - cargo-bundle-licenses
+    - rust
+    - cffi == 1.15.1
+    - setuptools-rust
+    - maturin
+  host:
+    - python
+    - pip
+    - cffi == 1.15.1
+  run:
+    - python
+    - cffi == 1.15.1
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_clarabel.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - scipy
+  
+about:
+  homepage: https://oxfordcontrol.github.io/ClarabelDocs/
+  license: Apache-2.0
+  license_family: Apache
+  license_file:
+    - LICENSE.md
+    - THIRDPARTY.yml
+  summary: 'Python interface for Clarabel: Interior Point Conic Optimization Solver'
+  description: |
+    Clarabel is an interior point numerical solver for convex optimization problems implemented
+    in Rust.  It solves linear programs (LPs), quadratic programs (QPs), second-order cone programs 
+    (SOCPs) and semidefinite programs (SDPs). It also solves problems with exponential, power
+    cone and generalized power cone constraints.
+  documentation: https://oxfordcontrol.github.io/ClarabelDocs/
+  repository: https://github.com/oxfordcontrol/Clarabel.rs
+
+extra:
+  recipe-maintainers:
+    - KGB99
