@@ -9,13 +9,17 @@ package:
 source:
   url: https://download.osgeo.org/geos/geos-${{ version }}.tar.bz2
   sha256: 34c7770bf0090ee88488af98767d08e779f124fa33437e0aabec8abd4609fec6
+  patches:
+  # patch_tests.patch: Commented out all FE_* tests due to emscripten not supporting FE_* identifiers anymore:
+  # https://github.com/emscripten-core/emscripten/issues/22005
+  # https://github.com/emscripten-core/emscripten/pull/11087
+  # https://github.com/Keno/julia-wasm/issues/27
+  - patches/patch_tests.patch
+  # patch_json.patch: changed 'operator "" _json_pointer' to 'operator ""_json_pointer' due to deprecation warning
+  - patches/patch_json.patch
 
 build:
   number: 0
-  #run_exports:
-    # pretty poor backcompat.  SO name changes each release.
-    # https://abi-laboratory.pro/tracker/timeline/geos/
-  #  - {{ pin_subpackage('geos', max_pin='x.x.x') }}
 
 requirements:
   build:
@@ -24,10 +28,6 @@ requirements:
     - ninja
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-
-#test:
-#  commands:
-#    - geos-config --version  # [not win]
 
 about:
   homepage: https://libgeos.org/
