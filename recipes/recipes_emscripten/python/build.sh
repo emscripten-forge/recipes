@@ -27,12 +27,17 @@ echo "" > $RECIPE_DIR/pyodide_env.sh
 # But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python3.11
 ln -s $BUILD_PREFIX/bin/python3.11 $BUILD_PREFIX/bin/python.js
 
+# create an empty emsdk_env.sh in CONDA_EMSDK_DIR
+echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
+# make it executable
+chmod +x $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
+
 # create a symlink from $BUILD_PREFIX/emsdk directory to this dir emsdk.
 # This allows us to overwrite the emsdk from pyodide
 rm -rf emsdk
 mkdir -p emsdk
 cd emsdk
-ln -s $CONDA_EMSDK_DIR emsdk
+ln -s $EMSCRIPTEN_FORGE_EMSDK_DIR emsdk
 cd ..
 
 
