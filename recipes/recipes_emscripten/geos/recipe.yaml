@@ -1,0 +1,54 @@
+context:
+  name: geos
+  version: 3.12.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://download.osgeo.org/geos/geos-${{ version }}.tar.bz2
+  sha256: 34c7770bf0090ee88488af98767d08e779f124fa33437e0aabec8abd4609fec6
+  patches:
+  # patch_tests.patch: Commented out all FE_* tests due to emscripten not supporting FE_* identifiers anymore:
+  # https://github.com/emscripten-core/emscripten/issues/22005
+  # https://github.com/emscripten-core/emscripten/pull/11087
+  # https://github.com/Keno/julia-wasm/issues/27
+  - patches/patch_tests.patch
+  # patch_json.patch: changed 'operator "" _json_pointer' to 'operator ""_json_pointer' due to deprecation warning
+  - patches/patch_json.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cmake
+    - make  
+    - ninja
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+
+tests:
+  - script:
+      - test -f ${PREFIX}/bin/geosop.js
+      - test -f ${PREFIX}/include/geos.h
+      - test -f ${PREFIX}/include/geos/algorithm/Area.h
+      - test -f ${PREFIX}/lib/libgeos.a
+
+about:
+  homepage: https://libgeos.org/
+  license: LGPL-2.1-only
+  license_file: COPYING
+  summary: Geometry Engine, Open Source
+  description: |
+    GEOS is a C++ library for performing operations on two-dimensional vector
+    geometries. It is primarily a port of the JTS Topology Suite Java library.
+    It provides many of the algorithms used by PostGIS, the Shapely package
+    for Python, the sf package for R, and others.
+  documentation: https://libgeos.org/
+  repository: https://github.com/libgeos/geos
+
+extra:
+  recipe-maintainers:
+    - KGB99
