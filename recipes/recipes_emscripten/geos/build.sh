@@ -8,7 +8,6 @@ emcmake cmake ${CMAKE_ARGS} \
       -DCMAKE_INSTALL_LIBDIR=lib \
       -DBUILD_SHARED_LIBS=OFF \
       ..
-      #${SRC_DIR}
 
 emmake make -j${CPU_COUNT} #${VERBOSE_CM}
 
@@ -22,3 +21,4 @@ if [[ "${CONDA_BUILD_CROSS_COMPILATION}" != "1" ]]; then
 fi
 
 emmake make install -j${CPU_COUNT}
+#ctest
