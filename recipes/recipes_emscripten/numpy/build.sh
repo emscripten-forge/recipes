@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "PYTHON"
-
+echo "DEBUG"
 rm -r -f branding
 
 export CFLAGS="$CFLAGS -Wno-return-type -Wno-implicit-function-declaration"
