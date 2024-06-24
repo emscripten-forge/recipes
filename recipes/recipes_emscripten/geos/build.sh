@@ -9,6 +9,10 @@ emcmake cmake ${CMAKE_ARGS} \
       -DBUILD_SHARED_LIBS=ON \
       -DDISABLE_GEOS_INLINE=ON \
       -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
+      -DBUILD_TESTING=OFF \
+      -DBUILD_BENCHMARKS=OFF \
+      -DBUILD_DOCUMENTATION=OFF \
+      -DBUILD_GEOSOP=OFF \
       ..
 
 emmake make -j${CPU_COUNT}
