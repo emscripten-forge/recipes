@@ -1,6 +1,5 @@
 #!/bin/bash
-printenv
-exit
+
 mkdir -p build && cd build
 
 emcmake cmake ${CMAKE_ARGS} \
