@@ -1,0 +1,26 @@
+package:
+  name: symengine
+  version: 0.11.2
+source:
+  sha256: f6972acd6a65354f6414e69460d2e175729470632bdac05919bc2f7f32e48cbd
+  url: https://github.com/symengine/symengine/releases/download/v0.11.2/symengine-0.11.2.tar.gz
+build:
+  script: |
+      emcmake cmake \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_BENCHMARKS=OFF \
+        -DINTEGER_CLASS=boostmp \
+        -DCMAKE_PREFIX_PATH=$PREFIX \
+        -DCMAKE_INSTALL_PREFIX=$PREFIX \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DBUILD_FOR_DISTRIBUTION=yes \
+        -DBUILD_SHARED_LIBS=no \
+        -DBoost_INCLUDE_DIR=$BUILD_PREFIX/include \
+        .
+      emmake make install
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - boost-cpp
