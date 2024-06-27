@@ -245,9 +245,8 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
         prs_packages = [line.split()[2] for line in prs if line]
 
         # Merge PRs if possible
-        # ATM THIS IS DISABLED
-        #    for pr in prs_id:
-        #       try_to_merge_pr(pr)
+        for pr in prs_id:
+            try_to_merge_pr(pr)
 
         
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
