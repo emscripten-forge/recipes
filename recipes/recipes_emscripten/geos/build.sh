@@ -28,4 +28,4 @@ rm $PREFIX/lib/libgeos_c.so.1
 rm $PREFIX/lib/libgeos_c.so
 
 mv $PREFIX/lib/libgeos.so.3.12.2   $PREFIX/lib/libgeos.so
-mv $PREFIX/lib/libgeos_c.so.1.18.2 $REFIX/lib/libgeos_c.so
+mv $PREFIX/lib/libgeos_c.so.1.18.2 $PREFIX/lib/libgeos_c.so
