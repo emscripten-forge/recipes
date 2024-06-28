@@ -2,7 +2,6 @@
 def test_pydantic_core():
     from pydantic_core import SchemaValidator, ValidationError
 
-
     v = SchemaValidator(
         {
             'type': 'typed-dict',

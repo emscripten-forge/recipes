@@ -3,28 +3,27 @@
 
 Emscripten-forge is a GitHub [organization](https://github.com/emscripten-forge)/[repository](https://github.com/emscripten-forge/recipes) containing  [conda recipes](https://github.com/emscripten-forge/recipes) for the `emscripten-wasm32` platform.
 Conda-forge does not (yet) support the `emscripten-wasm32` platform. `emscripten-forge` fills this gap by providing a channel with conda packages for the `emscripten-wasm32` platform.
-The recipe repository not only stores the recipe, but also builds and upload the recipe 
-with github actions to the `emscripten-forge` channel on [quetz](https://beta.mamba.pm/channels/emscripten-forge)
+The recipes repository not only stores the recipe files for multiple packages, but it also builds and uploads these packages to the `emscripten-forge` channel on [Quetz](https://beta.mamba.pm/channels/emscripten-forge)
 
-## 
+##
 
 ### Development
 
-  * [Adding_packages](development/adding_packages)
+  * [Adding packages](development/adding_packages)
   * [Recipe format](development/recipe_format)
-  * [Local Builds](development/local_builds)
+  * [Local builds](development/local_builds)
   * [Conda build config](development/conda_build_config)
   * [Troubleshooting](development/troubleshooting)
-  
+
 ### Usage
 
   * [Installing packages](usage/installing_packages)
-  * [Jupyterlite](usage/jupyterlite)
+  * [JupyterLite](usage/jupyterlite)
   * [Package server](usage/package_server)
 
-### Project 
+### Project
 
   * [Blog](blog)
-  * [Related Projects](project/related_projects)
+  * [Related projects](project/related_projects)
   * [FAQ](project/faq)
   * [Credits](project/credits)

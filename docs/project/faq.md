@@ -8,4 +8,4 @@ Pyodide is a full python distribution for `emscripten-wasm32` running in the bro
 Therefore all packages are either python packages or shared libraries needed by python packages.
 Emscripten-forge on the other hand is a conda channel providing packages for the `emscripten-wasm32` platform.
 This means there is a great overlap in the provided python packages, but emscripten-forge also  provided non-python packages for the `emscripten-wasm32` platform.
-Furthermore pyodide lives in the `pip` ecosystem, while emscripten-forge lives in the `conda/mamamba/rattler` ecosystem.
+Furthermore pyodide lives in the `pip` ecosystem, while emscripten-forge lives in the `conda/mamba/rattler` ecosystem.
