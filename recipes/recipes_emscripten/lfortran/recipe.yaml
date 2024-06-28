@@ -1,6 +1,6 @@
 context:
   name: lfortran
-  version: 0.35.0
+  version: 0.36.0
 
 package:
   name: ${{ name }}
@@ -9,10 +9,10 @@ package:
 source:
   url: https://github.com/lfortran/lfortran/releases/download/v${{ version }}/${{
     name }}-${{ version }}.tar.gz
-  sha256: 5ecc1ae03067b985943c45f6ec05e9f6e72efd6ad004b052e7a98ba552ff79b0
+  sha256: 6b3b7cb1380e96a98a9fd3166a3e7e43c3339f736f76029c246436784ffc868f
 
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
@@ -32,6 +32,14 @@ requirements:
     # - zstd-static =1.5.5  # [build_platform != target_platform]
   host:
   - zlib
+
+tests:
+- script:
+    - test -f ${PREFIX}/lib/liblfortran_runtime.a
+    - node ${PREFIX}/bin/test_lfortran.js
+  requirements:
+    build:
+      - nodejs
 
 about:
   license: BSD-3-Clause

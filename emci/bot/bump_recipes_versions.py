@@ -211,7 +211,7 @@ def user_ctx(user, email, bypass=False):
         subprocess.check_output(['git', 'config', '--unset', 'user.email'])
     
 
-def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=5):
+def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
 
    # empty context manager
     @contextlib.contextmanager
@@ -257,7 +257,8 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=5):
         
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python', 'xvega', 'xvega-bindings'
+            'sqlite', 'robotics-toolbox-python', 
+            'xvega', 'xvega-bindings', 'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 

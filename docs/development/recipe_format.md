@@ -1,8 +1,6 @@
 # Recipe format
 
-
-Typically, a recipe is directory with a `recipe.yaml` file that contains the information needed to build a package
-and optionally an additonal `build.sh` script that is executed during the build process.
+Typically, a recipe is a directory with a `recipe.yaml` file that contains the information needed to build a package and optionally an additional `build.sh` script that is executed during the build process.
 
 ## recipe.yaml
 
@@ -18,7 +16,7 @@ package:
 
 source:
   # the url is formed from a "template" with the context variables
-  url: https://pypi.io/packages/source/r/${{name}}/${{name}}-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/r/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 97f32dc03a8054a4c4a5ab5d761ed4861e828b2c200febd4e46857069a483916
 
 build:
@@ -27,7 +25,7 @@ build:
 requirements:
   build:
     - python
-    - cross-python_${{target_platform}}
+    - cross-python_${{ target_platform }}
     - ${{ compiler("c") }}
     - pip
   host:
