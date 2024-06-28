@@ -89,13 +89,51 @@ jobs:
       ################################################################
       - name: Upload packages to Quetz
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
-        shell: bash -el {0}
+        shell: bash -l {0}
+        env:
+          QUETZ_API_KEY: ${{ secrets.QUETZ_API_KEY }}
         run: |
-          # loop over {emscripten-wasm32, linux-64, noarch}
+          overall_success=true
+
+          # Loop over {emscripten-wasm32, linux-64, noarch}
           for platform in emscripten-wasm32 linux-64 noarch; do
-            mkdir -p ${GITHUB_WORKSPACE}/output/${platform}
-            for package in $(ls ${GITHUB_WORKSPACE}/output/${platform}/*.tar.bz2); do
-              echo "Uploading ${package} for  ${platform} (build with rattler)"
-              QUETZ_API_KEY=${{ secrets.QUETZ_API_KEY}} quetz-client -u https://beta.mamba.pm post_file_to_channel emscripten-forge ${package} || true
-            done
+            if [ -d "${GITHUB_WORKSPACE}/output/${platform}" ]; then
+              cd "${GITHUB_WORKSPACE}/output/${platform}"
+              files=$(ls *.tar.bz2 2> /dev/null)
+              if [ -n "$files" ]; then
+                for package in $files; do
+                  echo "Uploading ${package} for ${platform}"
+
+                  FILE_SHA256=$(sha256sum "${package}" | awk '{ print $1 }')
+                  CURL_CMD=(
+                    curl -H "X-API-Key: ${QUETZ_API_KEY}" -X POST
+                    "https://beta.mamba.pm/api/channels/emscripten-forge/upload/${package}?sha256=${FILE_SHA256}&force=false"
+                    --data-binary "@${package}"
+                    -o response_body.txt
+                    -w "%{http_code}"
+                    -s
+                  )
+                  HTTP_STATUS=$( "${CURL_CMD[@]}" )
+                  RESPONSE=$(<response_body.txt)
+
+                  # Check the HTTP status code and log appropriate message
+                  if [[ "$HTTP_STATUS" -eq 201 ]]; then
+                    echo "Upload succeeded for ${package} on ${platform}"
+                  else
+                    echo "Error: Upload failed with HTTP status $HTTP_STATUS"
+                    echo "Response Body: $RESPONSE"
+                    overall_success=false
+                  fi
+                  rm -f response_body.txt
+                done
+              fi
+            fi
           done
+
+          # Check if all uploads were successful
+          if [ "$overall_success" = false ]; then
+            echo "One or more uploads failed"
+            exit 1
+          else
+            echo "All uploads completed successfully"
+          fi
