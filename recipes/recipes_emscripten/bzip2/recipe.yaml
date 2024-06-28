@@ -3,14 +3,14 @@ context:
 
 package:
   name: bzip2
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://sourceware.org/pub/bzip2/bzip2-{{ version }}.tar.gz
-  sha256: ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269
-  patches:
-    - sel(not win): patches/0001-cross.patch
-  path:  CMakeLists.txt
+  - url: https://sourceware.org/pub/bzip2/bzip2-${{ version }}.tar.gz
+    sha256: ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269
+    patches:
+    - patches/0001-cross.patch
+  - path: CMakeLists.txt
 
 build:
   number: 7
@@ -19,44 +19,11 @@ build:
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - sel(win or emscripten): cmake
-    - sel(win or emscripten): ninja
-    - sel(unix and not emscripten): make
-
-features:
-  - name: static
-    default: false
-
-# test:
-#   commands:
-#   #- sel(emscripten): node ${PREFIX}/bin/bzip2.js --help
-#   - sel(unix and not emscripten): bzip2 --help
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bunzip2
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzcat
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzcmp
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzdiff
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzegrep
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzfgrep
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzgrep
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzip2recover
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzip2
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzless
-#   - sel(unix and not emscripten): test -f ${PREFIX}/bin/bzmore
-#   - sel(unix): test -f ${PREFIX}/include/bzlib.h
-#   # - sel(unix): test -f ${PREFIX}/lib/libbz2.a
-#   # - sel(linux): test -f ${PREFIX}/lib/libbz2.so
-#   # - sel(osx): test -f ${PREFIX}/lib/libbz2.dylib
-#   - sel(win): if not exist %LIBRARY_INC%\\bzlib.h exit 1
-#   - sel(win): if not exist %LIBRARY_LIB%\\bzip2.lib exit 1
-#   - sel(win): if not exist %LIBRARY_BIN%\\bzip2.dll exit 1
-#   - sel(win): if not exist %LIBRARY_LIB%\\libbz2.lib exit 1
-#   - sel(win): if not exist %LIBRARY_BIN%\\libbz2.dll exit 1
-#   - sel(win): if not exist %LIBRARY_LIB%\\bzip2_static.lib exit 1
-#   - sel(win): if not exist %LIBRARY_LIB%\\libbz2_static.lib exit 1
+  - ${{ compiler("c") }}
+  - cmake
+  - ninja
 
 about:
-  home: http://www.bzip.org/
   license_family: BSD
   license_file: LICENSE
   license: bzip2-1.0.6
@@ -66,8 +33,8 @@ about:
     compresses files to within 10% to 15% of the best available techniques,
     whilst being around twice as fast at compression and six times faster
     at decompression.
-  doc_url: http://www.bzip.org/docs.html
-
+  homepage: http://www.bzip.org/
 extra:
   recipe-maintainers:
-    - DerThorten
+  - DerThorten
+

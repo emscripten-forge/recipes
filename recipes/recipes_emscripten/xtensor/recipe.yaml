@@ -1,34 +1,63 @@
 context:
+  name: xtensor
   version: 0.25.0
 
 package:
-  name: xtensor
-  version: '{{ version }}'
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
-  url: https://github.com/xtensor-stack/xtensor/archive/refs/tags/{{ version }}.tar.gz
+  url: https://github.com/xtensor-stack/xtensor/archive/${{ version }}.tar.gz
   sha256: 32d5d9fd23998c57e746c375a544edf544b74f0a18ad6bc3c38cbba968d5e6c7
 
 build:
-  number: 0
+  number: 1
+  script:
+  - if: win
+    then: |
+      cmake -G "Ninja" -D BUILD_TESTS=OFF -D CMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% %SRC_DIR%
+      ninja install/
+    else: |
+      cmake ${CMAKE_ARGS} -G "Ninja" -DBUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$PREFIX $SRC_DIR -DCMAKE_INSTALL_LIBDIR=lib
+      ninja install
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
   host:
-    - xtl
+  - xtl >=0.7,<0.8
+  run:
+  - xtl >=0.7,<0.8
+  run_constraints:
+  - xsimd >=8.0.3,<10
+
+tests:
+- script:
+  - if: unix or emscripten
+    then:
+    - test -d ${PREFIX}/include/xtensor
+    - test -f ${PREFIX}/include/xtensor/xarray.hpp
+    - test -f ${PREFIX}/share/cmake/xtensor/xtensorConfig.cmake
+    - test -f ${PREFIX}/share/cmake/xtensor/xtensorConfigVersion.cmake
+  - if: win
+    then:
+    - if not exist %LIBRARY_PREFIX%\include\xtensor\xarray.hpp (exit 1)
+    - if not exist %LIBRARY_PREFIX%\share\cmake\xtensor\xtensorConfig.cmake (exit
+      1)
+    - if not exist %LIBRARY_PREFIX%\share\cmake\xtensor\xtensorConfigVersion.cmake
+      (exit 1)
 
 about:
-  home: https://github.com/xtensor-stack/xtensor
-  license: BSD-3
-  license_family: BSD-3
+  homepage: https://github.com/xtensor-stack/xtensor
+  license: BSD-3-Clause
   license_file: LICENSE
-  summary: xtensor
-  doc_url: https://github.com/xtensor-stack/xtensor
-  dev_url: https://github.com/xtensor-stack/xtensor
+  summary: The C++ tensor algebra library
+  description: Multi dimensional arrays with broadcasting and lazy computing
+  documentation: https://xtensor.readthedocs.io
+  repository: https://github.com/xtensor-stack/xtensor
 
 extra:
   recipe-maintainers:
-    - DerThorsten
+  - some-maintainer

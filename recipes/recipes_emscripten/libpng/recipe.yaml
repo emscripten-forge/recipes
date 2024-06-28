@@ -1,27 +1,31 @@
 context:
-  name: "libpng"
-  version: "1.6.42"
+  name: libpng
+  version: 1.6.43
 
 package:
-  name: "{{ name }}"
-  version: '{{ version }}'
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  url: http://download.sourceforge.net/libpng/libpng-{{ version }}.tar.gz
-  sha256: eaa27b655f2cd37a3677372d7dfc646263401ef79d4f433345f24429ec60334a
+  url: http://download.sourceforge.net/libpng/libpng-${{ version }}.tar.gz
+  sha256: e804e465d4b109b5ad285a8fb71f0dd3f74f0068f91ce3cdfde618180c174925
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - libtool
+  - ${{ compiler("c") }}
+  - libtool
   host:
-    - zlib
+  - zlib
 
+tests:
+- script:
+  - test -f ${PREFIX}/lib/libpng.a
+  - test -f ${PREFIX}/include/png.h
+  - libpng-config --version
 about:
-  home: http://www.libpng.org/pub/png/libpng.html
   license: zlib-acknowledgement
   license_file: LICENSE
   license_url: http://www.libpng.org/pub/png/src/libpng-LICENSE.txt
@@ -29,9 +33,7 @@ about:
   description: |
     libpng is the official PNG reference library. It supports almost all PNG
     features, is extensible, and has been extensively tested for over 20 years.
-  dev_url: https://sourceforge.net/p/libpng/code/ci/libpng16/tree/
-  doc_url: http://www.libpng.org/pub/png/libpng.html
-
+  homepage: http://www.libpng.org/pub/png/libpng.html
 extra:
   recipe-maintainers:
-    - martinRenou
+  - martinRenou

@@ -1,41 +1,51 @@
 context:
-  version: '8.21.0'
+  version: 8.25.0
 
 package:
   name: ipython
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/i/ipython/ipython-{{ version }}.tar.gz
-    sha256: 48fbc236fbe0e138b88773fa0437751f14c3645fb483f1d4c5dee58b37e5ce73
-    patches:
-      - patches/0001-Patch-asyncio-tornado.patch
+- url: https://pypi.io/packages/source/i/ipython/ipython-${{ version }}.tar.gz
+  sha256: c6ed726a140b6e725b911528f80439c534fac915246af3efc39440a6b0f9d716
+  patches:
+  - patches/0001-Patch-asyncio-tornado.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
-    - python
-    - cross-python_emscripten-wasm32
-    - pip
+  - python
+  - cross-python_emscripten-wasm32
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
-    - backcall
-    - decorator
-    - jedi >=0.16
-    - matplotlib-inline
-    - pickleshare
-    - prompt-toolkit >=2.0.0,<3.1.0,!=3.0.0,!=3.0.1
-    - pygments >=2.4.0
-    - stack_data
-    - traitlets >=5
-    - pexpect
+  - python
+  - backcall
+  - decorator
+  - jedi >=0.16
+  - matplotlib-inline
+  - pickleshare
+  - prompt-toolkit >=2.0.0,<3.1.0,!=3.0.0,!=3.0.1
+  - pygments >=2.4.0
+  - stack_data
+  - traitlets >=5
+  - pexpect
+  - typing_extensions
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_ipython.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://ipython.org
   license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE
@@ -44,14 +54,7 @@ about:
     IPython provides a rich architecture for interactive computing with
     a powerful interactive shell, a kernel for Jupyter, high performance
     tools for parallel computing, and more.
-  doc_url: https://ipython.readthedocs.io
-  dev_url: https://github.com/ipython/ipython
-
+  homepage: https://ipython.org
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_ipython.py
-
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

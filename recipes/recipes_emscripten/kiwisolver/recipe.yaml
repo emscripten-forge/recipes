@@ -1,39 +1,45 @@
 context:
-  version: "1.4.5"
+  version: 1.4.5
 
 package:
   name: kiwisolver
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/k/kiwisolver/kiwisolver-{{ version }}.tar.gz
-    sha256: e57e563a57fb22a142da34f38acc2fc1a5c864bc29ca1517a88abc963e60d6ec
+- url: https://pypi.io/packages/source/k/kiwisolver/kiwisolver-${{ version }}.tar.gz
+  sha256: e57e563a57fb22a142da34f38acc2fc1a5c864bc29ca1517a88abc963e60d6ec
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cross-python_emscripten-wasm32
+  - ${{ compiler("cxx") }}
+  - cross-python_emscripten-wasm32
     #- python
-    - setuptools # <60
-    - pip
-    - cppy
+  - setuptools   # <60
+  - pip
+  - cppy
   host:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_kiwisolver.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/nucleic/kiwi
   license: BSD-3-Clause
   license_file: LICENSE
   license_family: BSD
   summary: A fast implementation of the Cassowary constraint solver
 
+  homepage: https://github.com/nucleic/kiwi
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_kiwisolver.py
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten
