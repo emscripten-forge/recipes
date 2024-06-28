@@ -1,0 +1,48 @@
+context:
+  name: proj
+  version: 9.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://download.osgeo.org/proj/proj-${{ version }}.tar.gz
+  sha256: ffe20170ee2b952207adf8a195e2141eab12cda181e49fdeb54425d98c7171d7
+  #patches:
+  #  - define_OLD_BUGGY_REMQUO.patch
+
+build:
+  number: 0
+  #run_exports:
+    # ABI has been stable across minor versions since 8.0.0
+    #    https://abi-laboratory.pro/tracker/timeline/proj/
+  #  - {{ pin_subpackage('proj', max_pin='x.x') }}
+
+requirements:
+  build:
+    - cmake
+    - make 
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - sqlite     
+  host:
+    - sqlite
+    - libtiff
+    - libcurl
+  run:
+    - sqlite
+    - libtiff
+    - libcurl
+  #run_constrained:
+  #  - proj4 ==999999999999
+
+about:
+  homepage: https://proj.org/
+  license: MIT
+  license_file: COPYING
+  summary: Cartographic Projections and Coordinate Transformations Library
+
+extra:
+  recipe-maintainers:
+    - KGB99
