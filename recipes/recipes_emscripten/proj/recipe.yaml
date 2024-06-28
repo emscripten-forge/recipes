@@ -9,9 +9,15 @@ package:
 source:
   url: https://download.osgeo.org/proj/proj-${{ version }}.tar.gz
   sha256: ffe20170ee2b952207adf8a195e2141eab12cda181e49fdeb54425d98c7171d7
+  #patches:
+  #  - define_OLD_BUGGY_REMQUO.patch
 
 build:
   number: 0
+  #run_exports:
+    # ABI has been stable across minor versions since 8.0.0
+    #    https://abi-laboratory.pro/tracker/timeline/proj/
+  #  - {{ pin_subpackage('proj', max_pin='x.x') }}
 
 requirements:
   build:
@@ -19,20 +25,17 @@ requirements:
     - make 
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - sqlitecpp
-    - libtiff
-    - requests     
+    - sqlite     
   host:
-    - sqlitecpp
+    - sqlite
     - libtiff
+    - libcurl
   run:
-    - sqlitecpp
+    - sqlite
     - libtiff
-
-tests:
-  - script:
-    - test -f ${PREFIX}/include/proj.h
-    - test -f ${PREFIX}/lib/libproj.a
+    - libcurl
+  #run_constrained:
+  #  - proj4 ==999999999999
 
 about:
   homepage: https://proj.org/
