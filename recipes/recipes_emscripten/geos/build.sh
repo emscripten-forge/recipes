@@ -18,8 +18,3 @@ emcmake cmake ${CMAKE_ARGS} \
 emmake make -j${CPU_COUNT}
 
 emmake make install -j${CPU_COUNT}
-
-
-rm $PREFIX/lib/libgeos.so
-rm $PREFIX/lib/libgeos_c.so.1
-rm $PREFIX/lib/libgeos_c.so
