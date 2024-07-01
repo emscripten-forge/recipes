@@ -9,7 +9,6 @@ export EXE_SQLITE3=${PREFIX}/bin/sqlite3
 emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=ON \
-      -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DCMAKE_INSTALL_LIBDIR=lib \
       -DEXE_SQLITE3=${EXE_SQLITE3} \
