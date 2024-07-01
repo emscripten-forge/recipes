@@ -4,13 +4,12 @@ mkdir -p build
 
 cd build
 
-#export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1 -s WASM=1 -std=c++14 -s SIDE_MODULE=1 -sWASM_BIGINT"
 export LIBS=${BUILD_PREFIX}/include
 
 # to build without curl we need to disable projsync too
 emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
-      -DBUILD_SHARED_LIBS=OFF \
+      -DBUILD_SHARED_LIBS=ON \
       -DBUILD_APPS=OFF \
       -DBUILD_TESTING=OFF \
       -DENABLE_CURL=OFF \
