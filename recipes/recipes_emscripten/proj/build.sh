@@ -2,27 +2,28 @@
 
 mkdir -p build && cd build
 
-if [[ "$CONDA_BUILD_CROSS_COMPILATION" != "1" ]]; then
-    EXE_SQLITE3=${PREFIX}/bin/sqlite3
-else
-    EXE_SQLITE3=${BUILD_PREFIX}/bin/sqlite3
-fi
+embuilder build sqlite3 --pic
+
+export PROJ_VERSION=9.3.1
+export PROJ_DIR=${WASM_LIBRARY_DIR}
+export PROJ_INCDIR=${WASM_LIBRARY_DIR}/include
+export PROJ_LIBDIR=${WASM_LIBRARY_DIR}/lib
+export PROJ_WHEEL=1
+mkdir -p pyproj/proj_dir/share
+cp -r ${WASM_LIBRARY_DIR}/share/proj pyproj/proj_dir/share
 
 # build without curl as stated in
 # https://github.com/OSGeo/PROJ/issues/1957
-emcmake cmake ${CMAKE_ARGS} \
+emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DCMAKE_INSTALL_LIBDIR=lib \
-      -DEXE_SQLITE3=${EXE_SQLITE3} \
       -DENABLE_CURL=OFF \
-      -DBUILD_PROJSYNC=OFF \
-      ${SRC_DIR}
 
-emmake make -j${CPU_COUNT} ${VERBOSE_CM}
+#emmake make -j${CPU_COUNT} ${VERBOSE_CM}
 
-emmake make install -j${CPU_COUNT}
+#emmake make install -j${CPU_COUNT}
 
 #ACTIVATE_DIR=${PREFIX}/etc/conda/activate.d
 #DEACTIVATE_DIR=${PREFIX}/etc/conda/deactivate.d
