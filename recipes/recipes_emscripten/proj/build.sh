@@ -8,6 +8,8 @@ else
     EXE_SQLITE3=${BUILD_PREFIX}/bin/sqlite3
 fi
 
+# build without curl as stated in
+# https://github.com/OSGeo/PROJ/issues/1957
 emcmake cmake ${CMAKE_ARGS} \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=ON \
