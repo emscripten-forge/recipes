@@ -14,6 +14,8 @@ emcmake cmake ${CMAKE_ARGS} \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DCMAKE_INSTALL_LIBDIR=lib \
       -DEXE_SQLITE3=${EXE_SQLITE3} \
+      -DENABLE_CURL=OFF \
+      -DBUILD_PROJSYNC=OFF \
       ${SRC_DIR}
 
 emmake make -j${CPU_COUNT} ${VERBOSE_CM}
