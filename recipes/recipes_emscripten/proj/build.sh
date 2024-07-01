@@ -1,8 +1,8 @@
 #!/bin/bash
 
-mkdir -p build && cd build
+mkdir -p build
 
-export EXE_SQLITE3=${PREFIX}/bin/sqlite3
+cd build
 
 # build without curl as stated in
 # https://github.com/OSGeo/PROJ/issues/1957
@@ -11,8 +11,9 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DCMAKE_INSTALL_LIBDIR=lib \
-      -DEXE_SQLITE3=${EXE_SQLITE3} \
       -DENABLE_CURL=OFF \
+      -DENABLE_TIFF=OFF \
+      -DBUILD_PROJSYNC=OFF \
 
 #emmake make -j${CPU_COUNT} ${VERBOSE_CM}
 
