@@ -23,7 +23,7 @@ emcmake cmake ${CMAKE_ARGS} .. \
 
 emmake make -j${CPU_COUNT} ${VERBOSE_CM}
 
-emmake make install -j${CPU_COUNT}
+#emmake make install -j${CPU_COUNT}
 
 #ACTIVATE_DIR=${PREFIX}/etc/conda/activate.d
 #DEACTIVATE_DIR=${PREFIX}/etc/conda/deactivate.d
