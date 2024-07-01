@@ -5,21 +5,20 @@ mkdir -p build
 cd build
 
 #export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1 -s WASM=1 -std=c++14 -s SIDE_MODULE=1 -sWASM_BIGINT"
-export SQLITE_DIR=${BUILD_PREFIX}/lib/sqlite3.40.0
-export SQLITE=${BUILD_PREFIX}/include
+export LIBS=${BUILD_PREFIX}/include
 
-# build without curl as stated in
-# https://github.com/OSGeo/PROJ/issues/1957
+# to build without curl we need to disable projsync too
 emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=OFF \
       -DBUILD_APPS=OFF \
       -DBUILD_TESTING=OFF \
       -DENABLE_CURL=OFF \
-      -DENABLE_TIFF=OFF \
       -DBUILD_PROJSYNC=OFF \
-      -DSQLite3_INCLUDE_DIR=${SQLITE} \
-      -DSQLite3_LIBRARY=${SQLITE} \
+      -DSQLite3_INCLUDE_DIR=${LIBS} \
+      -DSQLite3_LIBRARY=${LIBS} \
+      -DTIFF_INCLUDE_DIR=${LIBS} \
+      -DTIFF_LIBRARY=${LIBS} \
 
 emmake make -j${CPU_COUNT} #${VERBOSE_CM}
 
