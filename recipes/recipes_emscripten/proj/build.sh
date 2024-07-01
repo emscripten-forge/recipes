@@ -21,9 +21,9 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DSQLite3_INCLUDE_DIR=${SQLITE} \
       -DSQLite3_LIBRARY=${SQLITE} \
 
-#emmake make -j${CPU_COUNT} ${VERBOSE_CM}
+emmake make -j${CPU_COUNT} ${VERBOSE_CM}
 
-#emmake make install -j${CPU_COUNT}
+emmake make install -j${CPU_COUNT}
 
 #ACTIVATE_DIR=${PREFIX}/etc/conda/activate.d
 #DEACTIVATE_DIR=${PREFIX}/etc/conda/deactivate.d
