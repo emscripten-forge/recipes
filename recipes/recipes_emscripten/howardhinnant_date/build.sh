@@ -14,9 +14,5 @@ cmake ${CMAKE_ARGS} ..             \
     -DUSE_SYSTEM_TZ_DB=ON -DBUILD_TZ_LIB=ON -DCMAKE_CXX_FLAGS="-fPIC"
 
 
-
-
-
-
 # Build step
 ninja install
