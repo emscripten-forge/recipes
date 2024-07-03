@@ -1,6 +1,6 @@
 context:
-  name: "fontconfig"
-  version: 2.12.6
+  name: fontconfig
+  version: 2.14.0
 
 package:
   name: ${{ name }}
@@ -8,10 +8,9 @@ package:
 
 source:
   url: http://www.freedesktop.org/software/${{ name }}/release/${{ name }}-${{ version }}.tar.gz
-  sha256: 064b9ebf060c9e77011733ac9dc0e2ce92870b574cca2405e11f5353a683c334
+  sha256: b8f607d556e8257da2f3616b4d704be30fd73bd71e367355ca78963f9a7f0434
   patches:
-  - patches/syscache-always-valid.diff
-  - patches/fix-double-sysroot.diff
+  - patches/emscripten_preprocess.patch
 
 build:
   number: 0
@@ -21,30 +20,18 @@ requirements:
   - ${{ compiler('c') }}
   - pkg-config
   - gperf
+  - meson
   host:
   - freetype
   - expat
-      # - xml2 (TODO - or just use expat)
-    # - freetype
-    # - libiconv  # [win]
-    # - libuuid   # [linux]
-    # - zlib
 
 tests:
-- script:
-    - test -f $PREFIX/lib/libfontconfig.a
-    - test -f $PREFIX/include/fontconfig/fontconfig.h
-    - node $PREFIX/bin/fc-cache --version
-    - node $PREFIX/bin/fc-cat --version
-    - node $PREFIX/bin/fc-list --version
-    - node $PREFIX/bin/fc-match --version
-    - node $PREFIX/bin/fc-pattern --version
-    - node $PREFIX/bin/fc-query --version
-    - node $PREFIX/bin/fc-scan --version
-    - node $PREFIX/bin/fc-validate --version
-  requirements:
-    build:
-      - nodejs
+- package_contents:
+    lib:
+    - libfontconfig.a
+    include:
+    - fontconfig/fontconfig.h
+    - fontconfig/fcfreetype.h
 
 about:
   homepage: http://www.freedesktop.org/wiki/Software/fontconfig/
@@ -56,3 +43,7 @@ about:
     customization and application access.
   documentation: https://www.freedesktop.org/software/fontconfig/fontconfig-user.html
   repository: https://cgit.freedesktop.org/fontconfig/
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
