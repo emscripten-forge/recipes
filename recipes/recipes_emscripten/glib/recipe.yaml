@@ -1,6 +1,6 @@
 context:
-  version: "2.56.4"
-  major_minor: "2.56"
+  version: "2.80.0"
+  major_minor: "2.80"
 
 package:
   name: glib
@@ -8,15 +8,10 @@ package:
 
 source:
   url: https://download.gnome.org/sources/glib/${{ major_minor }}/glib-${{ version }}.tar.xz
-  sha256: 27f703d125efb07f8a743666b580df0b4095c59fc8750e8890132c91d437504c
+  sha256: 8228a92f92a412160b139ae68b6345bd28f24434a7b5af150ebe21ff587a561d
+  # Patch from https://gist.github.com/kleisauke/acfa1c09522705efa5eb0541d2d00887
   patches:
-    # patches taken from webR
-    # License: MIT
-    - patches/emscripten-configure.diff
-    - patches/emscripten-function-ptr.diff
-    - patches/emscripten-wasm.diff
-    - patches/emscripten-disable-pcre.diff
-    - patches/fix-python12.diff
+  - patches/glib.patch
 
 build:
   number: 0
@@ -26,11 +21,26 @@ requirements:
     - pkg-config
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - gettext
-    - make
+    - meson
+    - packaging
   host:
     - zlib
     - libffi
+    - pcre2>=10.43
+
+tests:
+- package_contents:
+    include:
+    - glib-2.0/glib.h
+    - glib-2.0/gio/gio.h
+    - glib-2.0/gobject/gobject.h
+    - glib-2.0/gmodule.h
+    lib:
+    - libglib-2.0.a
+    - libgio-2.0.a
+    - libgobject-2.0.a
+    - libgmodule-2.0.a
+    - libgthread-2.0.a
 
 about:
   homepage: https://developer.gnome.org/glib/
