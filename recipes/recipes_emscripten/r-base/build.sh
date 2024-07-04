@@ -26,6 +26,7 @@ export r_cv_have_bzlib=yes
 
 # TODO: may need to compile twice, 1. regular, 2. cross-compile
 
+chmod +x configure
 emconfigure ./configure \
     --prefix=$PREFIX    \
     --host=$ARCH \
@@ -33,7 +34,7 @@ emconfigure ./configure \
     --with-blas=no      \
     --with-readline=no  \
     --with-x=no         \
-    --with-internal-tzcode=yes \
-    --with-recommended-packages=no
+    --with-cairo=yes    \
+    --enable-static=yes
 
 emmake make -j${CPU_COUNT}
