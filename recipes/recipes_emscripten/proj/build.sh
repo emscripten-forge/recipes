@@ -9,7 +9,7 @@ export LIBS=${BUILD_PREFIX}/include
 # to build without curl we need to disable projsync too
 emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
-      -DBUILD_SHARED_LIBS=OFF \
+      -DBUILD_SHARED_LIBS=ON \
       -DBUILD_APPS=OFF \
       -DBUILD_TESTING=OFF \
       -DENABLE_CURL=OFF \
@@ -18,6 +18,7 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DSQLite3_LIBRARY=${LIBS} \
       -DTIFF_INCLUDE_DIR=${LIBS} \
       -DTIFF_LIBRARY=${LIBS} \
+      -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake
 
 emmake make -j${CPU_COUNT} #${VERBOSE_CM}
 
