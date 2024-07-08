@@ -23,4 +23,4 @@ for arg in "$@"; do
 done
 
 # Call the actual wasm-ld command with the filtered arguments
-wasm-ld "${filtered_args[@]}"
+./emcc "${filtered_args[@]}"

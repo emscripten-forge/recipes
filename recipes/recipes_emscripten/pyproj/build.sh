@@ -2,7 +2,7 @@
 
 # override the wasm-ld command to a wrapper 
 # otherwise -R gets passed as flag
-alias wasm-ld="./wasm-ld-wrapper.sh"
+alias ./emcc=$PWD"/wasm-ld-wrapper.sh"
 
 
 # # the binary is needed ....
