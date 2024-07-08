@@ -11,6 +11,7 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=ON \
       -DBUILD_APPS=OFF \
+      -DBUILD_GEOD=OFF \
       -DBUILD_TESTING=OFF \
       -DENABLE_CURL=OFF \
       -DBUILD_PROJSYNC=OFF \
