@@ -9,7 +9,7 @@ cd build
 # to build without curl we need to disable projsync too
 emcmake cmake ${CMAKE_ARGS} .. \
       -DCMAKE_BUILD_TYPE=Release \
-      -DBUILD_SHARED_LIBS=ON \
+      -DBUILD_SHARED_LIBS=OFF \
       -DBUILD_APPS=OFF \
       -DBUILD_TESTING=OFF \
       -DENABLE_CURL=OFF \
