@@ -18,6 +18,7 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DSQLite3_LIBRARY=${LIBS} \
       -DTIFF_INCLUDE_DIR=${LIBS} \
       -DTIFF_LIBRARY=${LIBS} \
+      #-DCMAKE_PROJECT_INCLUDE=overwriteProp.cmake \ 
 
 emmake make -j${CPU_COUNT} #${VERBOSE_CM}
 
