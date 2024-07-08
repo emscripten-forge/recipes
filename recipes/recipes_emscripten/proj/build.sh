@@ -18,7 +18,8 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DSQLite3_LIBRARY=$PREFIX/lib/libsqlite3.a \
       -DTIFF_INCLUDE_DIR=$PREFIX/include \
       -DTIFF_LIBRARY=$PREFIX/lib/libtiff.a \
-      -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake
+      -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 
 emmake make -j${CPU_COUNT} #${VERBOSE_CM}
 
