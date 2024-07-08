@@ -4,7 +4,7 @@ mkdir -p build
 
 cd build
 
-export LIBS=${BUILD_PREFIX}/include
+
 
 # to build without curl we need to disable projsync too
 emcmake cmake ${CMAKE_ARGS} .. \
@@ -14,10 +14,10 @@ emcmake cmake ${CMAKE_ARGS} .. \
       -DBUILD_TESTING=OFF \
       -DENABLE_CURL=OFF \
       -DBUILD_PROJSYNC=OFF \
-      -DSQLite3_INCLUDE_DIR=${LIBS} \
-      -DSQLite3_LIBRARY=${LIBS} \
-      -DTIFF_INCLUDE_DIR=${LIBS} \
-      -DTIFF_LIBRARY=${LIBS} \
+      -DSQLite3_INCLUDE_DIR=$PREFIX/include \
+      -DSQLite3_LIBRARY=$PREFIX/lib/libsqlite3.a \
+      -DTIFF_INCLUDE_DIR=$PREFIX/include \
+      -DTIFF_LIBRARY=$PREFIX/lib/libtiff.a \
       -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake
 
 emmake make -j${CPU_COUNT} #${VERBOSE_CM}
