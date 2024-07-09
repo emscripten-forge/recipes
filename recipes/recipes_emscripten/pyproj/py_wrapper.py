@@ -7,8 +7,8 @@ if __name__ == '__main__':
 
     filtered_args = []
     for arg in args:
-        print("arg:", arg)
-
+        print("arg:", arg,  "raw", r"{}".format(arg))
+        
 
         if ("-Wl,-R$PREFIX/lib" in arg )or ("-R" in arg):
             print("removed arg:", arg)
