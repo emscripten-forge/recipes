@@ -2,30 +2,23 @@
 
 echo "Using wasm-ld wrapper..."
 
-# Filter out the -R flags from the arguments
-filtered_args=()
-skip_next=false
+# Initialize an array to hold the modified arguments
+modified_args=()
 
+# Iterate over all the arguments passed to the script
 for arg in "$@"; do
-    if [ "$skip_next" = true ]; then
-        skip_next=false
-        continue
-    fi
-
-    case "$arg" in
-        -R)
-            skip_next=true
-            ;;
-        *)
-            filtered_args+=("$arg")
-            ;;
-    esac
+  # If the argument contains "-R$PREFIX/lib", remove that part
+  if [[ "$arg" == *'-R$PREFIX/lib'* ]]; then
+    arg="${arg//-R\$PREFIX\/lib/}"
+  fi
+  # Add the modified or unmodified argument to the array
+  modified_args+=("$arg")
 done
 
 # Call the actual wasm-ld command with the filtered arguments
-echo "call  $PREFIX/opt/emsdk/upstream/emscripten/emcc copy with args: ${filtered_args[@]}"
+echo "call  $BUILD_PREFIX/opt/emsdk/upstream/emscripten/emcc copy with args: ${modified_args[@]}"
 
 
-$BUILD_PREFIX/opt/emsdk/upstream/emscripten/emcc "${filtered_args[@]}"
+$BUILD_PREFIX/opt/emsdk/upstream/emscripten/emcc "${modified_args[@]}"
 
 exit $?
