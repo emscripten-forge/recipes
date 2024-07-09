@@ -26,6 +26,8 @@ export r_cv_have_bzlib=yes
 
 # TODO: may need to compile twice, 1. regular, 2. cross-compile
 
+export r_cv_working_mktime=yes
+
 chmod +x configure
 emconfigure ./configure \
     --prefix=$PREFIX    \
