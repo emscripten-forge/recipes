@@ -10,4 +10,3 @@ def test_cartopy():
 
     ax = plt.axes(projection=ccrs.Robinson())
     ax.coastlines()
-    #plt.savefig('working.png')
