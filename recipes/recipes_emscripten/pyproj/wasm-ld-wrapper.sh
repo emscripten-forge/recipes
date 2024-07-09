@@ -23,4 +23,6 @@ for arg in "$@"; do
 done
 
 # Call the actual wasm-ld command with the filtered arguments
-emcc "${filtered_args[@]}"
+ret=emcc_copy "${filtered_args[@]}"
+
+exit $ret
