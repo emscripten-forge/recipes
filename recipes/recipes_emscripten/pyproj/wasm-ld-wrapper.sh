@@ -23,9 +23,9 @@ for arg in "$@"; do
 done
 
 # Call the actual wasm-ld command with the filtered arguments
-echo "call copy with args: ${filtered_args[@]}"
+echo "call  $PREFIX/opt/emsdk/upstream/emscripten/emcc copy with args: ${filtered_args[@]}"
 
 
-ret=$PREFIX/opt/emsdk/upstream/emscripten/emcc "${filtered_args[@]}"
+$BUILD_PREFIX/opt/emsdk/upstream/emscripten/emcc "${filtered_args[@]}"
 
-exit $ret
+exit $?

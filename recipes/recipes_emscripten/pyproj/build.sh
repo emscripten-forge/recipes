@@ -3,6 +3,9 @@
 # remove the emcc symlink in the $BUILD_PREFIX/bin
 rm $BUILD_PREFIX/bin/emcc
 
+# make callable
+chmod +x $RECIPE_DIR/wasm-ld-wrapper.sh
+
 # create symlink to $RECIPE_DIR/wasm-ld-wrapper.sh 
 ln -s $RECIPE_DIR/wasm-ld-wrapper.sh $BUILD_PREFIX/bin/emcc
 
