@@ -16,7 +16,7 @@ if __name__ == '__main__':
             filtered_args.append(arg)
     
     # run the actual command in argv[1]
-    subprocess.run([sys.argv[1]] + filtered_argsm, check=True)
+    subprocess.run([sys.argv[1]] + filtered_args, check=True)
 
 
 
