@@ -1,21 +1,10 @@
 #!/bin/bash
 
-# # override the wasm-ld command to a wrapper 
-# # otherwise -R gets passed as flag
-# alias emcc=$PWD"/wasm-ld-wrapper.sh"
+# remove the emcc symlink in the $BUILD_PREFIX/bin
+rm $BUILD_PREFIX/bin/emcc
 
-orginal_emsdk=$(which emcc)
-
-# dir of the orginal emcc
-orginal_emsdk_dir=$(dirname $orginal_emsdk)
-
-
-# make a copy of the original emcc
-cp $orginal_emsdk $(orginal_emsdk_dir)/emcc_orginal
-
-# override the emcc command to a wrapper
-# otherwise -R gets passed as flag
-cp $RECIPE_DIR/wasm-ld-wrapper.sh  $orginal_emsdk_dir/emcc
+# create symlink to $RECIPE_DIR/wasm-ld-wrapper.sh 
+ln -s $RECIPE_DIR/wasm-ld-wrapper.sh $BUILD_PREFIX/bin/emcc
 
 
 # # the binary is needed ....

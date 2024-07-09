@@ -23,6 +23,9 @@ for arg in "$@"; do
 done
 
 # Call the actual wasm-ld command with the filtered arguments
-ret=emcc_copy "${filtered_args[@]}"
+echo "call copy with args: ${filtered_args[@]}"
+
+
+ret=$PREFIX/opt/emsdk/upstream/emscripten/emcc "${filtered_args[@]}"
 
 exit $ret
