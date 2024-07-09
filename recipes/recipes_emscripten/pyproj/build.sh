@@ -4,14 +4,12 @@
 rm $BUILD_PREFIX/bin/emcc
 
 # make callable
-chmod +x $RECIPE_DIR/wasm-ld-wrapper.sh
+chmod +x $RECIPE_DIR/emcc_wrapper.sh
 
-# create symlink to $RECIPE_DIR/wasm-ld-wrapper.sh 
-ln -s $RECIPE_DIR/wasm-ld-wrapper.sh $BUILD_PREFIX/bin/emcc
+# create symlink to $RECIPE_DIR/emcc_wrapper.sh 
+ln -s $RECIPE_DIR/emcc_wrapper.sh $BUILD_PREFIX/bin/emcc
 
 
-# # the binary is needed ....
-# cp $BUILD_PREFIX/bin/proj $PREFIX/bin/proj
 export PROJ_DIR=$PREFIX
 
 # if version is not set, the python build script
