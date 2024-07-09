@@ -20,6 +20,3 @@ export PROJ_VERSION="9.4.1"
 
 ${PYTHON} -m pip install -vv .
 
-
-# restore the original emcc
-mv $orginal_emsdk_dir/emcc_orginal $orginal_emsdk_dir/emcc
