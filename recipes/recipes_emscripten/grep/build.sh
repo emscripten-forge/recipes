@@ -17,8 +17,10 @@
 #       in an env var.  Need to tolerate all the warnings.
 # 9) File needed is src/grep.js
 
+git clone --depth 1 --branch v3.11 git://git.savannah.gnu.org/grep.git
+cd grep
 
-# ./bootstrap
+./bootstrap
 emconfigure ./configure \
       --disable-nls \
       --disable-threads \
