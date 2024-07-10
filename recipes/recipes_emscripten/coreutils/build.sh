@@ -2,7 +2,7 @@
 
 echo "lets go"
 ls 
-./bootstrap
+./bootstrap --skip-po
 emconfigure ./configure \
       --enable-single-binary \
       --disable-nls \
