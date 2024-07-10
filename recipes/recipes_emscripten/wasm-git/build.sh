@@ -22,10 +22,8 @@ cd emscriptenbuild
 ./build.sh Release
 ./build.sh Release-async
 
-ls 
-cd ..
-ls
-
-#install the package
 mkdir -p $PREFIX/bin
-cp emscriptenbuild/build/libgit2/libgit2.js $PREFIX/bin/libgit2.js
+cp libgit2/examples/lg2.js          $PREFIX/bin/lg2.js
+cp libgit2/examples/lg2.wasm        $PREFIX/bin/lg2.wasm
+cp libgit2/examples/lg2_async.js    $PREFIX/bin/lg2_async.js
+cp libgit2/examples/lg2_async.wasm  $PREFIX/bin/lg2_async.wasm
