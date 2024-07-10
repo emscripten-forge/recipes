@@ -52,6 +52,7 @@ export r_cv_have_pcre2utf=yes
 export r_cv_have_pcre832=yes
 export r_cv_have_curl_https=no
 
+export ac_cv_func_stpcpy=yes
 
 chmod +x configure
 emconfigure ./configure \
