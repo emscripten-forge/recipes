@@ -4,13 +4,17 @@ set -ex
 
 export
 
-export FC=lfortran
-export EMSDK_PATH=${EMSCRIPTEN_FORGE_EMSDK_DIR}
-export FFLAGS="$FFLAGS \
-    --target=wasm32-unknown-emscripten \
-    --generate-object-code \
-    --fixed-form-infer \
-    --implicit-interface"
+export FC=gfortran
+export F77=gfortran
+export F90=gfortran
+export F95=gfortran
+export GFORTRAN=gfortran
+# export EMSDK_PATH=${EMSCRIPTEN_FORGE_EMSDK_DIR}
+# export FFLAGS="$FFLAGS \
+#     --target=wasm32-unknown-emscripten \
+#     --generate-object-code \
+#     --fixed-form-infer \
+#     --implicit-interface"
 export FPICFLAGS="-fPIC"
 
 # export CC=emcc
