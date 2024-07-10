@@ -11,7 +11,8 @@ source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
   sha256: 80851231393b85bf3877ee9e39b282e750ed864c5ec60cbd68e6e139f0520330
   patches:
-  - patches/fix_Rshlibpath_var.patch
+  - patches/00_fix_Rshlibpath_var.patch
+  - patches/01_skip_libcurl.patch
 
 build:
   number: 0
@@ -20,6 +21,7 @@ requirements:
   build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
+    - pkg-config
     - lfortran>=0.36
     - cmake
     - make
@@ -30,16 +32,15 @@ requirements:
     - libdeflate
     - xz
     - tzdata
+    - pcre2
   host:
-    - zlib
+    - zlib>=1.2.13
     - bzip2
     - cairo>=0.18
-    - tzdata
+    - pcre2>=10.43
   run:
     - zlib
     - bzip2
-    - tzdata
-
 
 about:
   homepage: http://www.r-project.org/
