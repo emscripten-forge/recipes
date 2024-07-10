@@ -19,4 +19,13 @@ sed -i -e 's/GIT_OBJECT_FILE_MODE 0444/GIT_OBJECT_FILE_MODE 0644/g' libgit2/src/
 cd emscriptenbuild
 
 #  run the ./build.sh script
-./build.sh
+./build.sh Release
+./build.sh Release-async
+
+ls 
+cd ..
+ls
+
+#install the package
+mkdir -p $PREFIX/bin
+cp emscriptenbuild/build/libgit2/libgit2.js $PREFIX/bin/libgit2.js
