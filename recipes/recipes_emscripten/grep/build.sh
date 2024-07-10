@@ -20,7 +20,7 @@
 git clone --depth 1 --branch v3.11 git://git.savannah.gnu.org/grep.git
 cd grep
 
-./bootstrap
+./bootstrap --skip-po
 emconfigure ./configure \
       --disable-nls \
       --disable-threads \
