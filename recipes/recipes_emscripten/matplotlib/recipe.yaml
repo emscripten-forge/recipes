@@ -1,6 +1,6 @@
 context:
   name: matplotlib
-  version: 3.8.4
+  version: 3.9.0
 
 # package:
 #   name: ${{ name|lower }}
@@ -8,13 +8,12 @@ context:
 
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
-  sha256: 7c4f370b7550eec8342c102f9dd80da3bec2895d7f514f5f6378764db4cb0e35
-    # sha256: 5ac5ca25e6ecd1e7711e1f859b4b6f74f290ef517387d1502bf8012bf2b1647e
+#  sha256: e6d29ea6c19e34b30fb7d88b7081f869a03014f66fe06d62cc77d5a6ea88ed7a
+  sha256: 89877b314fe950b7abc118c1e518b0cc82fa9bb6e1228d26560e82be96ac009a
+
   patches:
-  - patches/disable_macosx_backend.patch
+  #- patches/disable_macosx_backend.patch
   - patches/fix-threading-and-font-cache.patch
-- path: mplsetup.cfg
-- path: setupext.py
 
 build:
   number: 0
@@ -30,7 +29,7 @@ outputs:
       build:
       - python
       - numpy
-      - cross-python_emscripten-wasm32
+      - cross-python_${{target_platform}}
       - pybind11
 
       - ${{ compiler('c') }}
@@ -39,9 +38,9 @@ outputs:
 
           # TODO add certifi package to emscripten-wasm32 and depend in host on this
       - certifi
-      - pip
+      - meson-python
+      - pip >=24
       - setuptools_scm_git_archive
-
       host:
       - python
       - numpy
@@ -61,6 +60,8 @@ outputs:
   - package:
       name: matplotlib
       version: ${{ version }}
+    build:
+      script: build2.sh
     requirements:
       host:
       - python
