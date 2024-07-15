@@ -35,4 +35,3 @@ def test_import_orjson():
     assert orjson.dumps([1, 2, 3], option=orjson.OPT_SERIALIZE_NUMPY) == b'[1,2,3]'
     assert orjson.loads(b'[1,2,3]') == [1, 2, 3]
 
-    assert orjson.dumps([1, 2, 3],
