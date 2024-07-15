@@ -5,6 +5,6 @@ export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emsc
 
 
 #  copy python interpreter from $BUILD_PREFIX to $PREFIX
-mkdir -p $PREFIX/bin
-cp $BUILD_PREFIX/bin/python $PREFIX/bin/python
+
+export PYTHON_SYS_EXECUTABLE=${BUILD_PREFIX}/bin/python
 ${PYTHON} -m pip  install . -vvv
