@@ -8,16 +8,12 @@ package:
 source:
   url: https://github.com/qhull/qhull/archive/${{ version }}.tar.gz
   sha256: 59356b229b768e6e2b09a701448bfa222c37b797a84f87f864f97462d8dbc7c5
-  # patches:
-  #   - fix-osx-rpath.patch
-  #   - windows.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    # - ${{ stdlib('c') }}
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
@@ -25,23 +21,25 @@ requirements:
   run_exports:
     - ${{ pin_subpackage('qhull', upper_bound='x.x') }}
 
-# test:
-#   commands:
-#     # Check non-existence of static libs
-#     {% set qhull_libs = ["qhullcpp", "qhullstatic", "qhullstatic_r"] %}
-#     {% for each_qhull_lib in qhull_libs %}
-#     - test ! -f $PREFIX/lib/lib{{ each_qhull_lib }}.a                         # [unix]
-#     {% endfor %}
-#     # Shared libs existence
-#     {% set qhull_dynlibs = ["qhull_r"] %}
-#     {% for each_qhull_lib in qhull_dynlibs %}
-#     - test -f $PREFIX/lib/lib{{ each_qhull_lib }}${SHLIB_EXT}                 # [unix]
-#     - if not exist %PREFIX%\\Library\\lib\\{{ each_qhull_lib }}.lib exit 1    # [win]
-#     - if not exist %PREFIX%\\Library\\bin\\{{ each_qhull_lib }}.dll exit 1    # [win]
-#     {% endfor %}
-#     - rbox c P0 D2 | qvoronoi s o
-#     - rbox c | qconvex FQ FV n | qhalf Fp
-#     - rbox 1000 D3 | qhull C-1e-4 FO Ts
+tests:
+  - package_contents:
+      lib:
+        - libqhull_r.a
+        - libqhullstatic.a
+      include:
+        - libqhull/libqhull.h
+        - libqhull_r/qhull_ra.h
+        - libqhullcpp/Qhull.h
+      bin:
+        - qhull.js
+        - qconvex.js
+
+  - script:
+    - node $PREFIX/bin/qvoronoi.js -
+    - node $PREFIX/bin/qhull.js -
+    requirements:
+      build:
+        - nodejs
 
 about:
   homepage: http://www.qhull.org/
