@@ -1,0 +1,66 @@
+context:
+  name: libevalhyd
+  version: 0.1.2
+  
+package:
+  name: libevalhyd
+  version: ${{ version }}
+
+source:
+  url: https://gitlab.irstea.fr/HYCAR-Hydro/evalhyd/evalhyd-cpp/-/archive/v${{ version }}/evalhyd-cpp-v${{ version }}.tar.gz
+  sha256: 637ba5a227d890fc559fecf41a2c90ffe45629fc756e2d34ec1906b6c2a21b26
+
+build:
+  number: 0
+  script:
+  - if: win
+    then: |
+      cmake -G "Ninja" -D EVALHYD_BUILD_TEST=OFF -D CMAKE_INSTALL_PREFIX=%LIBRARY_PREFIX% %SRC_DIR%
+      ninja install/
+    else: |
+      cmake ${CMAKE_ARGS} -G "Ninja" -DEVALHYD_BUILD_TEST=OFF -DCMAKE_INSTALL_PREFIX=$PREFIX $SRC_DIR -DCMAKE_INSTALL_LIBDIR=lib
+      ninja install
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake >=3.15
+    - ninja
+  host:
+    - xtl >=0.7.5
+    - xtensor >=0.24.6
+  run:
+    - xtl >=0.7.5
+    - xtensor >=0.24.6    
+
+test:
+- script:
+  - if: unix or emscripten
+    then:
+    - test -d ${PREFIX}/include/evalhyd                             
+    - test -f ${PREFIX}/include/evalhyd/evald.hpp                   
+    - test -f ${PREFIX}/include/evalhyd/evalp.hpp                   
+    - test -f ${PREFIX}/share/cmake/EvalHyd/EvalHydConfig.cmake       
+    - test -f ${PREFIX}/share/cmake/EvalHyd/EvalHydConfigVersion.cmake
+  - if: win
+    then:
+    - if not exist %LIBRARY_PREFIX%\include\evalhyd\evald.hpp (exit 1)                   
+    - if not exist %LIBRARY_PREFIX%\include\evalhyd\evalp.hpp (exit 1)                   
+    - if not exist %LIBRARY_PREFIX%\share\cmake\EvalHyd\EvalHydConfig.cmake (exit 1)       
+    - if not exist %LIBRARY_PREFIX%\share\cmake\EvalHyd\EvalHydConfigVersion.cmake (exit 1)
+
+about:
+  homepage: https://hydrogr.github.io/evalhyd
+  license: GPL-3.0-or-later
+  license_file: LICENCE.rst
+  summary: A C++ library to evaluate streamflow predictions
+  description: |
+    A header-only C++ library to evaluate deterministic and 
+    probabilistic streamflow predictions
+  documentation: https://hydrogr.github.io/evalhyd/cpp
+  repository: https://gitlab.irstea.fr/HYCAR-Hydro/evalhyd/evalhyd-cpp
+
+extra:
+  recipe-maintainers:
+  - fbourgin
+  - ThibHlln
