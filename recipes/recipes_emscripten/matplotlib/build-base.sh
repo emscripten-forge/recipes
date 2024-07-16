@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder build freetype --pic
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
 

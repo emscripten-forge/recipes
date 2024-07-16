@@ -2,16 +2,10 @@ context:
   name: matplotlib
   version: "3.9.1"
 
-# package:
-#   name: ${{ name|lower }}
-#   version: ${{ version }}
-
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
   sha256: 4fdf46dc325fdf4cbc61f7fa66de7b48287df0a71b3442b63ff0784041cae2e7
-    # sha256: 5ac5ca25e6ecd1e7711e1f859b4b6f74f290ef517387d1502bf8012bf2b1647e
   patches:
-  # - patches/disable_macosx_backend.patch
   - patches/fix-threading-and-font-cache.patch
 
 build:
@@ -26,19 +20,21 @@ outputs:
     requirements:
       build:
       - python
-      - numpy
-      - cross-python_emscripten-wasm32
-      - pybind11
+      - pip
+      - cross-python_${{ target_platform }}
 
       - ${{ compiler('c') }}
       - ${{ compiler('cxx') }}
       - pkg-config
       - meson-python
 
-      # TODO add certifi package to emscripten-wasm32 and depend in host on this
-      - certifi
-      - pip
       - setuptools_scm_git_archive
+
+      # We still need the `numpy` dep in build for cross-compilation
+      # We could in theory get around it in the future by using meson cross-file
+      # and setting `numpy-include-dir = ...` to the right path. However, we also need
+      # to use the right Python headers and that is easiest with `cross-python` right now.
+      - numpy
 
       host:
       - python
@@ -70,13 +66,13 @@ outputs:
       - python
       - ${{ pin_subpackage('matplotlib-base', exact=True) }}
 
-    # tests:
-    # - script: pytester
-    #   files:
-    #     recipe:
-    #     - test_import_matplotlib.py
-    #   requirements:
-    #     build:
-    #     - pytester
-    #     run:
-    #     - pytester-run
+    tests:
+    - script: pytester
+      files:
+        recipe:
+        - test_import_matplotlib.py
+      requirements:
+        build:
+        - pytester
+        run:
+        - pytester-run
