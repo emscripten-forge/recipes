@@ -5,21 +5,44 @@ set -ex
 mkdir -p build
 cd build
 
-mkdir -p $PREFIX/include
+# Copy flang
+export FLANG_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/_finstall
+cp -r $FLANG_DIR/bin/* $BUILD_PREFIX/bin/
+cp -r $FLANG_DIR/lib/* $BUILD_PREFIX/lib/
+cp -r $FLANG_DIR/include/* $BUILD_PREFIX/include/
+cp -r $FLANG_DIR/share/* $BUILD_PREFIX/share/
 
-export EMSDK_PATH=${EMSCRIPTEN_FORGE_EMSDK_DIR}
-export LDFLAGS="$LDFLAGS -fno-optimize-sibling-calls"
-export FFLAGS="$FFLAGS \
-    --target=wasm32-unknown-emscripten \
-    --generate-object-code \
-    --fixed-form-infer \
-    --implicit-interface"
+
+# Build flang runtime
+export FLANG_RUNTIME_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/flang/runtime
+
+emcmake cmake -S $FLANG_RUNTIME_DIR -B _fbuild_runtime -GNinja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DCMAKE_CXX_COMPILER=clang++
+
+# because alias cmake = emcmake cmake
+$(which cmake) --build _fbuild_runtime
+$(which cmake) --install _fbuild_runtime
+
+echo "EEEE DONE WITH RUNTIME"
+# mkdir -p $PREFIX/include
+
+# export EMSDK_PATH=${EMSCRIPTEN_FORGE_EMSDK_DIR}
+# export LDFLAGS="$LDFLAGS -fno-optimize-sibling-calls"
+# export FFLAGS="$FFLAGS \
+#     --target=wasm32-unknown-emscripten \
+#     --generate-object-code \
+#     --fixed-form-infer \
+#     --implicit-interface"
 
 # CMAKE_INSTALL_LIBDIR="lib" suppresses CentOS default of lib64 (conda expects lib)
+export FC=flang-new
 
-# See https://github.com/Shaikh-Ubaid/lapack/blob/lf_01/LF_README.md
+LDFLAGS=""
+
 emcmake cmake .. \
-    -DCMAKE_Fortran_COMPILER=lfortran \
+    -DCMAKE_Fortran_COMPILER=$FC \
     -DTEST_FORTRAN_COMPILER=OFF \
     -DCBLAS=no \
     -DLAPACKE=no \
@@ -29,7 +52,7 @@ emcmake cmake .. \
     -DBUILD_COMPLEX16=no \
     -DLAPACKE_WITH_TMG=no \
     -DCMAKE_Fortran_PREPROCESS=yes \
-    -DCMAKE_Fortran_FLAGS="$FFLAGS" \
+    -DCMAKE_Fortran_FLAGS=$FFLAGS \
     -DCMAKE_INSTALL_LIBDIR="lib" \
     -DCMAKE_INSTALL_PREFIX=$PREFIX
 
@@ -43,5 +66,6 @@ emcmake cmake .. \
 #   -DBUILD_DEPRECATED=ON \
 #   -DTEST_FORTRAN_COMPILER=OFF \
 #   ${CMAKE_ARGS} ..
+echo "EEEE"
 
 make install -j${CPU_COUNT} VERBOSE=1

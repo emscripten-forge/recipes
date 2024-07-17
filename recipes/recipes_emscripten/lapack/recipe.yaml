@@ -2,7 +2,6 @@ context:
   version: 3.12.0
   blas_major: 2
   blas_minor: 200
-  lfortran_version: 0.36
 
 # TODO: verify version numbers
 
@@ -13,20 +12,21 @@ source:
   patches:
     - patches/00_disable_fortran_compiler_check.patch
     - patches/01_disable_fortran_c_interface_check.patch
-    - patches/02_fix_unexpected_argument_pp.patch
-    - patches/03_skip_error_files.patch
+  #   - patches/02_fix_unexpected_argument_pp.patch
+  #   - patches/03_skip_error_files.patch
 
 build:
   number: 0
 
 outputs:
-  - package:
-      name: libblas
-      version: ${{ blas_major }}.${{ blas_minor }}
-    requirements:
-      build:
-        - ${{ compiler("c") }}
-        - lfortran>=${{ lfortran_version }}
+  # - package:
+  #     name: libblas
+  #     version: ${{ blas_major }}.${{ blas_minor }}
+  #   requirements:
+  #     build:
+  #       - ${{ compiler("c") }}
+  #       - clang
+  #       - ninja
 
 # TODO: saving for later
   # - package:
@@ -54,9 +54,11 @@ outputs:
     requirements:
       build:
         - ${{ compiler("c") }}
-        - lfortran>=${{ lfortran_version }}
-      run:
-        - libblas
+        - clang
+        - ninja
+      # NOTE: building all in one for now
+      # run:
+      #   - libblas
 
 # TODO: saving for later
   # - package:
@@ -82,23 +84,23 @@ outputs:
   #       - liblapack
   #       - liblapacke
 
-  - package:
-      name: blas
-      version: ${{ blas_major }}.${{ blas_minor }}
-    requirements:
-      run:
-        - liblapack
-        - liblapacke
-        - libcblas
-        - blas-devel
-        - libtmglib
+  # - package:
+  #     name: blas
+  #     version: ${{ blas_major }}.${{ blas_minor }}
+  #   requirements:
+  #     run:
+  #       - liblapack
+  #       - liblapacke
+  #       - libcblas
+  #       - blas-devel
+  #       - libtmglib
 
-  - package:
-      name: lapack
-      version: ${{ version }}
-    requirements:
-      run:
-        - liblapack
+  # - package:
+  #     name: lapack
+  #     version: ${{ version }}
+  #   requirements:
+  #     run:
+  #       - liblapack
 
 # TODO: add tests
 
