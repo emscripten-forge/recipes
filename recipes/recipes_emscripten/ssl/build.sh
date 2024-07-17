@@ -31,6 +31,6 @@ SIDE_MODULE_LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 PKG_BUILD_DIR=$PREFIX/lib/python3.11
 mkdir -p ${PKG_BUILD_DIR}
 emcc _ssl.o -lssl -L $PREFIX/lib $SIDE_MODULE_LDFLAGS -o ${PKG_BUILD_DIR}/_ssl.so -fPIC -sWASM_BIGINT \
-    -s SIDE_MODULE=1 -s LINKABLE=1 -s EXPORT_ALL=1 -s WASM=1  
+    -s SIDE_MODULE=1 -s LINKABLE=1 -s EXPORT_ALL=1 -s WASM=1 -lpython3.11 -L$PREFIX/lib
 cp Lib/ssl.py $PREFIX/lib/python3.11/ssl.py
 
