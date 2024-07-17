@@ -1,6 +1,6 @@
 #!/bin/bash
 
-emconfigure ./Configure gcc -no-ui-console -DHAVE_FORK=0 -DOPENSSL_NO_SECURE_MEMORY -DNO_SYSLOG -fPIC
+emconfigure ./Configure gcc -no-ui-console -DHAVE_FORK=0 -DOPENSSL_NO_SECURE_MEMORY -DNO_SYSLOG -fPIC -sWASM_BIGINT
 sed -i '' -e 's!^CROSS_COMPILE=.*!!g' Makefile
 make build_generated
 make -j ${CPU_COUNT:-3} libcrypto.a
@@ -12,8 +12,8 @@ emar -d libcrypto.a liblegacy-lib-bn_asm.o liblegacy-lib-des_enc.o liblegacy-lib
 mkdir -p ${PREFIX}/include
 mkdir -p ${PREFIX}/lib 
 
-emcc -sSIDE_MODULE=1 libcrypto.a -o ${PREFIX}/lib/libcrypto.so
-emcc -sSIDE_MODULE=1 libssl.a -o ${PREFIX}/lib/libssl.so
+emcc -sSIDE_MODULE=1 libcrypto.a -o ${PREFIX}/lib/libcrypto.so -sWASM_BIGINT
+emcc -sSIDE_MODULE=1 libssl.a -o ${PREFIX}/lib/libssl.so -sWASM_BIGINT
 
 
 cp -r include/crypto  ${PREFIX}/include/crypto
