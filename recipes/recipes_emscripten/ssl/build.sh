@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+rm $PREFIX/lib/libcrypto.so
+rm $PREFIX/lib/libssl.so
+
 export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1 \
     -s WASM=1  -s SIDE_MODULE=1 -sWASM_BIGINT"
 
