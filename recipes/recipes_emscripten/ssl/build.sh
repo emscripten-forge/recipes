@@ -33,7 +33,7 @@ STDLIB_MODULE_CFLAGS=$PY_STDMODULE_CFLAGS
 echo "EM_FORGE_SIDE_MODULE_LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
 
 # OPENSSL_THREADS declares that OPENSSL is threadsafe. We are single threaded so everything is threadsafe.
-emcc $STDLIB_MODULE_CFLAGS -c Modules/_ssl.c -o _ssl.o \
+emcc $STDLIB_MODULE_CFLAGS $INCLUDE_FLAGS -c Modules/_ssl.c -o _ssl.o \
     -DOPENSSL_THREADS 
 
 SIDE_MODULE_LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
