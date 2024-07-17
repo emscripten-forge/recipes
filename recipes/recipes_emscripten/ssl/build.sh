@@ -5,7 +5,7 @@ export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1 \
 
 
 # include "include" in CFLAGS
-INCLUDE_FLAGS="-I$PREFIX/include/python3.11 -I$PREFIX/include/"
+INCLUDE_FLAGS="-I$PREFIX/include/python3.11 -I$PREFIX/include/ -I Include/ -I . -I Include/internal/"
 
 
 #  'PY_STDMODULE_CFLAGS': '-DNDEBUG -g -fwrapv -O3 -Wall -O2 -g0 -fPIC  '
