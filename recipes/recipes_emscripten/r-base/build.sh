@@ -4,18 +4,25 @@ set -ex
 
 export
 
-export FC=gfortran
-export F77=gfortran
-export F90=gfortran
-export F95=gfortran
-export GFORTRAN=gfortran
+# Copy flang
+export FLANG_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/_finstall
+cp -r $FLANG_DIR/bin/* $BUILD_PREFIX/bin/
+cp -r $FLANG_DIR/lib/* $BUILD_PREFIX/lib/
+cp -r $FLANG_DIR/include/* $BUILD_PREFIX/include/
+cp -r $FLANG_DIR/share/* $BUILD_PREFIX/share/
+
+export FC=flang-new
+# export F77=gfortran
+# export F90=gfortran
+# export F95=gfortran
+# export GFORTRAN=gfortran
 # export EMSDK_PATH=${EMSCRIPTEN_FORGE_EMSDK_DIR}
 # export FFLAGS="$FFLAGS \
 #     --target=wasm32-unknown-emscripten \
 #     --generate-object-code \
 #     --fixed-form-infer \
 #     --implicit-interface"
-export FPICFLAGS="-fPIC"
+# export FPICFLAGS="-fPIC"
 
 # export CC=emcc
 # export CXX=em++
@@ -51,6 +58,7 @@ export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_have_pcre832=yes
 export r_cv_have_curl_https=no
+export r_cv_size_max=yes
 
 export ac_cv_func_stpcpy=yes
 
@@ -59,12 +67,16 @@ emconfigure ./configure \
     --prefix=$PREFIX    \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
+    --with-pcre2=yes     \
+    --with-zlib=$PREFIX/lib/libz.a    \
+    --with-bzlib=yes     \
     --with-lapack=no    \
     --with-blas=no      \
     --with-readline=no  \
     --with-x=no         \
     --with-cairo=yes    \
     --enable-static=yes \
-    --with-internal-tzcode
+    --with-internal-tzcode \
+    --with-recommended-packages=no
 
 emmake make -j${CPU_COUNT}
