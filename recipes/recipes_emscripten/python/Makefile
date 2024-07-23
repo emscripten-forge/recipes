@@ -22,7 +22,7 @@ $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB)
 		sed -i -e 's/libinstall:.*/libinstall:/' Makefile; \
 		sed -i '/MODOBJS=/s/$$/ $$(LIBMPDEC_OBJS) $$(LIBEXPAT_OBJS) /' Makefile; \
 		touch $(BUILD)/$(LIB) ; \
-		emmake make PYTHON_FOR_BUILD=$(HOSTPYTHON) CROSS_COMPILE=yes inclinstall libinstall $(LIB) -j $${PYODIDE_JOBS:-3} && \
+		emmake make PYTHON_FOR_BUILD=$(HOSTPYTHON) CROSS_COMPILE=yes inclinstall libinstall $(LIB) -j${CPU_COUNT} && \
 		cp $(LIB) $(INSTALL)/lib/ \
 	)
 	# Generate sysconfigdata. It outputs into a subfolder of build/, and
@@ -102,6 +102,6 @@ $(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.lo
 	( \
 		cd $(BUILD); \
 		make regen-frozen; \
-		emmake make CROSS_COMPILE=yes $(LIB) -j $${PYODIDE_JOBS:-3} \
+		emmake make CROSS_COMPILE=yes $(LIB) -j${CPU_COUNT} \
 	)
 	touch $(BUILD)/$(LIB)
