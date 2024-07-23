@@ -29,7 +29,7 @@ emconfigure ./configure \
       ac_cv_have_decl_alarm=no \
       gl_cv_func_sleep_works=yes
 
-export CFLAGS="-O2 --minify=0 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker,node -sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings -sFORCE_FILESYSTEM=1 -sINVOKE_RUN=0 -sMODULARIZE=1 -sSINGLE_FILE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0"
+export CFLAGS="-O2 --minify=0 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings -sFORCE_FILESYSTEM=1 -sINVOKE_RUN=0 -sMODULARIZE=1 -sSINGLE_FILE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0"
 emmake make all CFLAGS="$CFLAGS" EXEEXT=.js 
 
 ls
