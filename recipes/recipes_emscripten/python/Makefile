@@ -9,11 +9,8 @@ BUILD=$(ROOT)/build/${PKG_VERSION}/Python-${PKG_VERSION}
 INSTALL=$(PREFIX)
 LIB=libpython$(PYMAJOR).$(PYMINOR).a
 
-FFIBUILD=$(ROOT)/build/libffi
-LIBFFIREPO=https://github.com/libffi/libffi
-LIBFFI_COMMIT=f08493d249d2067c8b3207ba46693dd858f95db3
 
-all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a
+all: $(INSTALL)/lib/$(LIB)
 
 
 $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB)
@@ -51,21 +48,6 @@ $(BUILD)/.patched:
 	cat patches/*.patch | (cd $(BUILD) ; patch -p1)
 	touch $@
 
-$(INSTALL)/lib/libffi.a :
-	rm -rf $(FFIBUILD)
-	mkdir $(FFIBUILD)
-	(\
-		cd $(FFIBUILD) \
-		&& git init \
-		&& git fetch --depth 1 $(LIBFFIREPO) $(LIBFFI_COMMIT) \
-		&& git checkout FETCH_HEAD \
-		&& . $(EMSCRIPTEN_FORGE_EMSDK_DIR)/emsdk_env.sh \
-		&& ./testsuite/emscripten/build.sh --wasm-bigint \
-		&& make install \
-	)
-	cp $(FFIBUILD)/target/include/*.h $(BUILD)/Include/
-	mkdir -p $(INSTALL)/lib
-	cp $(FFIBUILD)/target/lib/libffi.a $(INSTALL)/lib/
 
 $(BUILD)/Makefile: $(BUILD)/.patched
 	# --enable-big-digits=30 :
@@ -97,7 +79,7 @@ $(BUILD)/Makefile: $(BUILD)/.patched
 $(BUILD)/Modules/Setup.local: Setup.local
 	cp Setup.local $(BUILD)/Modules/
 
-$(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.local $(INSTALL)/lib/libffi.a
+$(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.local
 	cp Setup.local $(BUILD)/Modules/
 	( \
 		cd $(BUILD); \
