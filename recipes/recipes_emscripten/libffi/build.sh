@@ -3,25 +3,14 @@
 #this build script is adapted from the libffi repo at `testsuite/emscripten/build.sh`
 set -e
 
-SOURCE_DIR=$PWD
-
 # Working directories
+SOURCE_DIR=$PWD
 TARGET=$SOURCE_DIR/build
 mkdir -p "$TARGET"
 
-# compile options
-WASM_BIGINT=true # JS BigInt to Wasm i64 integration
-DEBUG=false
-
 # Common compiler flags
 export CFLAGS="-O3 -fPIC"
-if [ "$WASM_BIGINT" = "true" ]; then
-  # We need to detect WASM_BIGINT support at compile time
-  export CFLAGS+=" -DWASM_BIGINT"
-fi
-if [ "$DEBUG" = "true" ]; then
-  export CFLAGS+=" -DDEBUG_F"
-fi
+export CFLAGS+=" -DWASM_BIGINT" # We need to detect WASM_BIGINT support at compile time, if bigint is not wanted simply remove
 export CXXFLAGS="$CFLAGS"
 
 # Build paths
