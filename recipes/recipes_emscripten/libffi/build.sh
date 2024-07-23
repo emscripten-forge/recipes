@@ -1,37 +1,42 @@
+#!/bin/bash
 
-# make some directories
-mkdir -p $PREFIX/include
-mkdir -p $PREFIX/lib
-mkdir -p $PREFIX/bin
-mkdir -p $PREFIX/etc/conda
-mkdir -p cpython/build
+#this build script is adapted from the libffi repo at `testsuite/emscripten/build.sh`
+set -e
 
+SOURCE_DIR=$PWD
 
-# overwrite $RECIPEDIR/pyodide_env.sh with am empty file
-# since we do not want to use the pyodide_env.sh from pyodide
-echo "" > $RECIPE_DIR/pyodide_env.sh
+# Working directories
+TARGET=$SOURCE_DIR/build
+mkdir -p "$TARGET"
 
+# compile options
+WASM_BIGINT=true # JS BigInt to Wasm i64 integration
+DEBUG=false
 
-# create a symlink from $BUILD_PREFIX/emsdk directory to this dir emsdk.
-# This allows us to overwrite the emsdk from pyodide
-rm -rf emsdk
-mkdir -p emsdk
-cd emsdk
-ln -s $CONDA_EMSDK_DIR emsdk
-cd ..
+# Common compiler flags
+export CFLAGS="-O3 -fPIC"
+if [ "$WASM_BIGINT" = "true" ]; then
+  # We need to detect WASM_BIGINT support at compile time
+  export CFLAGS+=" -DWASM_BIGINT"
+fi
+if [ "$DEBUG" = "true" ]; then
+  export CFLAGS+=" -DDEBUG_F"
+fi
+export CXXFLAGS="$CFLAGS"
 
+# Build paths
+export CPATH="$TARGET/include"
+export PKG_CONFIG_PATH="$TARGET/lib/pkgconfig"
+export EM_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 
-mkdir -p cpython/build/Python-3.11.3/Include
+# Specific variables for cross-compilation
+export CHOST="wasm32-unknown-linux" # wasm32-unknown-emscripten
 
-#replace "all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a" with "$(INSTALL)/lib/libffi.a"
+autoreconf -fiv
+emconfigure ./configure --host=$CHOST --prefix="$TARGET" --enable-static --disable-shared --disable-dependency-tracking \
+  --disable-builddir --disable-multi-os-directory --disable-raw-api --disable-docs
+make install
+cp fficonfig.h build/include/
+cp include/ffi_common.h build/include/
 
-sed -i 's/all: $(INSTALL)\/lib\/$(LIB) $(INSTALL)\/lib\/libffi.a/all: $(INSTALL)\/lib\/libffi.a/g' cpython/Makefile
-
-#################################################################
-#  THE ACTUAL BUILD
-make -C cpython
-################################################################
-
-
-# install libffi
-cp -r cpython/build/libffi/target/ $PREFIX/
+cp -r build/* $PREFIX/
