@@ -21,7 +21,18 @@ export EMSDK=.
 
 echo "emsdk patching"
 pushd upstream/emscripten
-cat $RECIPE_DIR/patches/*.patch | patch -p1 --verbose 
+# cat $RECIPE_DIR/patches/*.patch | patch -p1 --verbose 
+# run each patch individually to see which one fails
+for patch_file in $RECIPE_DIR/patches/*.patch; 
+do 
+    echo "Applying patch: $patch_file"
+    patch -p1 --verbose < "$patch_file"
+    if [ $? -ne 0 ]; then
+        echo "Failed to apply patch: $patch_file"
+    else
+        echo "Successfully applied patch: $patch_file"
+    fi
+done
 popd    
 echo "...done"
 
