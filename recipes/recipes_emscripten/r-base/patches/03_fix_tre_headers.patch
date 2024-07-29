@@ -1,0 +1,64 @@
+From 053082819893ddbe9d1db365136d739c340ee2f3 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 29 Jul 2024 17:38:49 +0200
+Subject: [PATCH] Fix tre headers
+
+---
+ src/extra/tre/regcomp.c         | 1 +
+ src/extra/tre/tre-internal.h    | 3 +++
+ src/extra/tre/tre-match-utils.h | 2 ++
+ 3 files changed, 6 insertions(+)
+
+diff --git a/src/extra/tre/regcomp.c b/src/extra/tre/regcomp.c
+index 31d4e52..a3a2410 100644
+--- a/src/extra/tre/regcomp.c
++++ b/src/extra/tre/regcomp.c
+@@ -52,6 +52,7 @@ tre_regncomp(regex_t *preg, const char *regex, size_t n, int cflags)
+     {
+       size_t consumed;
+       tre_char_t *wcptr = wregex;
++#define HAVE_MBSTATE_T 1
+ #ifdef HAVE_MBSTATE_T
+       mbstate_t state;
+       memset(&state, '\0', sizeof(state));
+diff --git a/src/extra/tre/tre-internal.h b/src/extra/tre/tre-internal.h
+index 5cb37f7..bcbfe8b 100644
+--- a/src/extra/tre/tre-internal.h
++++ b/src/extra/tre/tre-internal.h
+@@ -9,6 +9,7 @@
+ #ifndef TRE_INTERNAL_H
+ #define TRE_INTERNAL_H 1
+ 
++#define HAVE_WCHAR_H 1
+ #ifdef HAVE_WCHAR_H
+ #include <wchar.h>
+ #endif /* HAVE_WCHAR_H */
+@@ -29,6 +30,7 @@
+ 
+ #define elementsof(x)	( sizeof(x) / sizeof(x[0]) )
+ 
++#define HAVE_MBRTOWC 1
+ #ifdef HAVE_MBRTOWC
+ #define tre_mbrtowc(pwc, s, n, ps) (mbrtowc((pwc), (s), (n), (ps)))
+ #else /* !HAVE_MBRTOWC */
+@@ -38,6 +40,7 @@
+ #endif /* !HAVE_MBRTOWC */
+ 
+ #ifdef TRE_MULTIBYTE
++#define HAVE_MBSTATE_T 1
+ #ifdef HAVE_MBSTATE_T
+ #define TRE_MBSTATE
+ #endif /* TRE_MULTIBYTE */
+diff --git a/src/extra/tre/tre-match-utils.h b/src/extra/tre/tre-match-utils.h
+index d0a4214..8fdc892 100644
+--- a/src/extra/tre/tre-match-utils.h
++++ b/src/extra/tre/tre-match-utils.h
+@@ -6,6 +6,8 @@
+ 
+ */
+ 
++#include <wchar.h>
++
+ #define str_source ((const tre_str_source*)string)
+ 
+ #ifdef TRE_WCHAR
