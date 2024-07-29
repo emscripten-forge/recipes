@@ -65,7 +65,7 @@ foreach(lua_binary ${lua_binaries})
       PUBLIC "SHELL: -s FORCE_FILESYSTEM"
       PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
       PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
-      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings"
+      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
   )
   # set target link options
@@ -73,7 +73,7 @@ foreach(lua_binary ${lua_binaries})
       PUBLIC "SHELL: -s FORCE_FILESYSTEM"
       PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
       PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
-      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings"
+      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
   )
 endforeach()
