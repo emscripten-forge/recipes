@@ -1,0 +1,14 @@
+diff --git a/src/unix/sys-unix.c b/src/unix/sys-unix.c
+index c20afe6..f6ac6a9 100644
+--- a/src/unix/sys-unix.c
++++ b/src/unix/sys-unix.c
+@@ -480,7 +480,8 @@ static pid_t timeout_wait(int *wstatus)
+ 
+     int saveerrno = errno;
+     while((wres = waitpid(tost.child_pid, wstatus, WNOHANG)) == 0)
+-	sigsuspend(&unblocked_ss);
++	// sigsuspend(&unblocked_ss); Not implemented in Emscripten
++	errno = EINTR;
+ 
+     if (errno == EINTR)
+ 	/* EINTR is not really an error but expected situation here, however,
