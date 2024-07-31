@@ -1,0 +1,22 @@
+From eef880ddc9542f1ee96a8a0bd2e4e72342096b10 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 31 Jul 2024 13:12:36 +0200
+Subject: [PATCH] Ignore crude heuristic file size
+
+---
+ src/library/base/makebasedb.R | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/library/base/makebasedb.R b/src/library/base/makebasedb.R
+index 8922fdc..a555077 100644
+--- a/src/library/base/makebasedb.R
++++ b/src/library/base/makebasedb.R
+@@ -119,7 +119,7 @@ local({
+     baseFileBase <- file.path(.Library,"base","R","base")
+ 
+     if (file.info(baseFileBase)["size"] < 20000) # crude heuristic
+-        stop("may already be using lazy loading on base");
++        message("WARNING: may already be using lazy loading on base");
+ 
+     basevars <- ls(baseenv(), all.names=TRUE)
+     prims <- basevars[sapply(basevars, function(n) is.primitive(get(n, baseenv())))]

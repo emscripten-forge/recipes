@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "HEEELLOO"
-
 # export
 
 # Copy flang
@@ -86,3 +84,4 @@ emconfigure ./configure \
     --with-recommended-packages=no
 
 emmake make -j${CPU_COUNT}
+emmake make install
