@@ -5,7 +5,6 @@ ROOT=$(abspath .)
 PYTHON_CFLAGS=$(CFLAGS_BASE) -DPY_CALL_TRAMPOLINE	
 
 BUILD=$(ROOT)/build/${PKG_VERSION}/Python-${PKG_VERSION}
-#INSTALL=$(ROOT)/installs/python-${PKG_VERSION}
 INSTALL=$(PREFIX)
 LIB=libpython$(PYMAJOR).$(PYMINOR).a
 
@@ -13,7 +12,11 @@ FFIBUILD=$(ROOT)/build/libffi
 LIBFFIREPO=https://github.com/libffi/libffi
 LIBFFI_COMMIT=f08493d249d2067c8b3207ba46693dd858f95db3
 
-all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a
+HIWIREBUILD=$(ROOT)/build/hiwire
+HIWIREREPO=https://github.com/hoodmane/hiwire
+HIWIRE_COMMIT=49f3450e34f3f50d4b8296e782dc321bb2e3264e
+
+all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a $(INSTALL)/lib/libhiwire.a
 
 
 $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB)
@@ -66,6 +69,22 @@ $(INSTALL)/lib/libffi.a :
 	cp $(FFIBUILD)/target/include/*.h $(BUILD)/Include/
 	mkdir -p $(INSTALL)/lib
 	cp $(FFIBUILD)/target/lib/libffi.a $(INSTALL)/lib/
+	@echo "LIBFFI STAGE DONE"
+
+$(INSTALL)/lib/libhiwire.a :
+	rm -rf $(HIWIREBUILD)
+	mkdir $(HIWIREBUILD)
+	(\
+		cd $(HIWIREBUILD) \
+		&& git init \
+		&& git fetch --depth 1 $(HIWIREREPO) $(HIWIRE_COMMIT) \
+		&& git checkout FETCH_HEAD \
+		&& . $(PYODIDE_ROOT)/emsdk/emsdk/emsdk_env.sh \
+		&& CC=emcc EMSCRIPTEN_DEDUPLICATE=1 EXTERN_FAIL=1 make \
+	)
+	cp -r $(HIWIREBUILD)/dist/lib $(PYINSTALL)/
+	cp -r $(HIWIREBUILD)/dist/include $(PYINSTALL)/include/hiwire
+	@echo "HIWIRE STAGE DONE"
 
 $(BUILD)/Makefile: $(BUILD)/.patched
 	# --enable-big-digits=30 :
@@ -90,12 +109,14 @@ $(BUILD)/Makefile: $(BUILD)/.patched
 			  --host=wasm32-unknown-emscripten\
 			  --build=$(shell $(BUILD)/config.guess) \
 			  --prefix=$(INSTALL)  \
-			  --with-build-python=$$(which python3.12.4) \
+			  --with-build-python=$$(which python3.12) \
 	)
+	@echo "MAKEFILE STAGE DONE"
 
 
 $(BUILD)/Modules/Setup.local: Setup.local
 	cp Setup.local $(BUILD)/Modules/
+	@echo "SETUP LOCAL STAGE DONE"
 
 $(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.local $(INSTALL)/lib/libffi.a
 	cp Setup.local $(BUILD)/Modules/
@@ -105,3 +126,4 @@ $(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.lo
 		emmake make CROSS_COMPILE=yes $(LIB) -j${CPU_COUNT} \
 	)
 	touch $(BUILD)/$(LIB)
+	@echo "LIB STAGE DONE"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYTHON_TOP_VERSION=3.12
+export PYMAJOR_VERSION=3.12
 
 set -euxo pipefail
 
@@ -22,7 +22,7 @@ cp ${BUILD}/LICENSE .
 # since the python build script overwrites the env variable PYTHON to python.js
 # as it assumes this is the correct name for the python binary when building for emscripten.
 # But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python3.11
-ln -s $BUILD_PREFIX/bin/python${PYTHON_TOP_VERSION} $BUILD_PREFIX/bin/python.js
+ln -s $BUILD_PREFIX/bin/python${PYMAJOR_VERSION} $BUILD_PREFIX/bin/python.js
 
 # create an empty emsdk_env.sh in CONDA_EMSDK_DIR
 echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
@@ -35,6 +35,7 @@ cp -r ${RECIPE_DIR}/patches .
 cp ${RECIPE_DIR}/Setup.local .
 cp ${RECIPE_DIR}/adjust_sysconfig.py .
 
+# The actual build
 make 
 
 # (TODO move in recipe) install libmpdec and libexpat
@@ -56,14 +57,14 @@ echo "echo \"pip is not a supported on this platform.\"" >> $PREFIX/bin/pip
 chmod +x $PREFIX/bin/pip
 
 # a fake python3 command
-touch $PREFIX/bin/python${PYTHON_TOP_VERSION}
-echo "#!/bin/bash" >> $PREFIX/bin/python${PYTHON_TOP_VERSION}
-echo "echo \"python3 is not a supported on this platform.\"" >> $PREFIX/bin/python${PYTHON_TOP_VERSION}
-chmod +x $PREFIX/bin/python${PYTHON_TOP_VERSION}
+touch $PREFIX/bin/python${PYMAJOR_VERSION}
+echo "#!/bin/bash" >> $PREFIX/bin/python${PYMAJOR_VERSION}
+echo "echo \"python3 is not a supported on this platform.\"" >> $PREFIX/bin/python${PYMAJOR_VERSION}
+chmod +x $PREFIX/bin/python${PYMAJOR_VERSION}
 
 # create symlink st. all possible python3.11 commands are available
-ln -s $PREFIX/bin/python${PYTHON_TOP_VERSION} $PREFIX/bin/python
-ln -s $PREFIX/bin/python${PYTHON_TOP_VERSION} $PREFIX/bin/python3
+ln -s $PREFIX/bin/python${PYMAJOR_VERSION} $PREFIX/bin/python
+ln -s $PREFIX/bin/python${PYMAJOR_VERSION} $PREFIX/bin/python3
 
 # copy sysconfigdata
 cp $PREFIX/sysconfigdata/_sysconfigdata__emscripten_wasm32-emscripten.py  $PREFIX/etc/conda/
