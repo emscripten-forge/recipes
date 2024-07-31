@@ -12,14 +12,6 @@ unset FLANG_DIR
 
 # Copy Clang RT
 cp $RECIPE_DIR/libclang_rt.builtins-wasm32.a $BUILD_PREFIX/lib/
-# cp -r $WASI_DIR/bin/* $BUILD_PREFIX/bin/
-# cp -r $WASI_DIR/lib/* $BUILD_PREFIX/lib/
-# cp -r $WASI_DIR/share/* $BUILD_PREFIX/share/
-# unset WASI_DIR
-
-# Copy wabt
-# cp /home/ihuicatl/Repos/Emscripten/wabt/build/wasm-objdump $BUILD_PREFIX/bin/
-# export objdump=$BUILD_PREFIX/bin/wabm-objdump
 
 
 export FC=flang-new
@@ -59,11 +51,8 @@ export CFLAGS="$CFLAGS -matomics -mbulk-memory"
 export CXXFLAGS="$CXXFLAGS -matomics -mbulk-memory"
 
 # Otherwise set to .not_implemented and cannot be used
-# Must be shared... otherwise duplicate symbol issues
+# FIXME: Must be shared... otherwise duplicate symbol issues
 export SHLIB_EXT=".so"
-
-# Get an updated config.sub and config.guess
-# cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
 
 export R="${BUILD_PREFIX}/bin/R"
 export R_ARGS="--library=${PREFIX}/lib/R/library --no-test-load"
