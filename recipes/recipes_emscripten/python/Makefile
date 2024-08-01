@@ -12,11 +12,7 @@ FFIBUILD=$(ROOT)/build/libffi
 LIBFFIREPO=https://github.com/libffi/libffi
 LIBFFI_COMMIT=f08493d249d2067c8b3207ba46693dd858f95db3
 
-HIWIREBUILD=$(ROOT)/build/hiwire
-HIWIREREPO=https://github.com/hoodmane/hiwire
-HIWIRE_COMMIT=49f3450e34f3f50d4b8296e782dc321bb2e3264e
-
-all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a $(INSTALL)/lib/libhiwire.a
+all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a
 
 
 $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB)
@@ -71,21 +67,6 @@ $(INSTALL)/lib/libffi.a :
 	cp $(FFIBUILD)/target/lib/libffi.a $(INSTALL)/lib/
 	@echo "LIBFFI STAGE DONE"
 
-$(INSTALL)/lib/libhiwire.a :
-	rm -rf $(HIWIREBUILD)
-	mkdir $(HIWIREBUILD)
-	(\
-		cd $(HIWIREBUILD) \
-		&& git init \
-		&& git fetch --depth 1 $(HIWIREREPO) $(HIWIRE_COMMIT) \
-		&& git checkout FETCH_HEAD \
-		&& . $(PYODIDE_ROOT)/emsdk/emsdk/emsdk_env.sh \
-		&& CC=emcc EMSCRIPTEN_DEDUPLICATE=1 EXTERN_FAIL=1 make \
-	)
-	cp -r $(HIWIREBUILD)/dist/lib $(PYINSTALL)/
-	cp -r $(HIWIREBUILD)/dist/include $(PYINSTALL)/include/hiwire
-	@echo "HIWIRE STAGE DONE"
-
 $(BUILD)/Makefile: $(BUILD)/.patched
 	# --enable-big-digits=30 :
 	#   Python integers have "digits" of size 15 by default on systems with 32
@@ -109,7 +90,7 @@ $(BUILD)/Makefile: $(BUILD)/.patched
 			  --host=wasm32-unknown-emscripten\
 			  --build=$(shell $(BUILD)/config.guess) \
 			  --prefix=$(INSTALL)  \
-			  --with-build-python=$$(which python3.12) \
+			  --with-build-python=$(BUILD_PREFIX)/bin/python \
 	)
 	@echo "MAKEFILE STAGE DONE"
 
