@@ -46,7 +46,8 @@ export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 # you have headers in a nonstandard directory <include dir>
 export CPPFLAGS="-I$PREFIX/include" # Otherwise can't find zlib.h
 
-# Add atomics and bulk-memory features
+# FIXME: Add atomics and bulk-memory features
+# The context.c file needs these features
 export CFLAGS="$CFLAGS -matomics -mbulk-memory"
 export CXXFLAGS="$CXXFLAGS -matomics -mbulk-memory"
 
