@@ -1,0 +1,42 @@
+context:
+  name: proj
+  version: 9.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://download.osgeo.org/proj/proj-${{ version }}.tar.gz
+  sha256: ffe20170ee2b952207adf8a195e2141eab12cda181e49fdeb54425d98c7171d7
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - cmake
+    - make 
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - requests     
+  host:
+    - sqlitecpp
+    - libtiff
+  run:
+    - sqlitecpp
+    - libtiff
+
+tests:
+  - script:
+    - test -f ${PREFIX}/include/proj.h
+
+about:
+  homepage: https://proj.org/
+  license: MIT
+  license_file: COPYING
+  summary: Cartographic Projections and Coordinate Transformations Library
+
+extra:
+  recipe-maintainers:
+    - KGB99

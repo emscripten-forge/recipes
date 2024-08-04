@@ -6,9 +6,15 @@ emcmake cmake ${CMAKE_ARGS} \
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_INSTALL_PREFIX=${PREFIX} \
       -DCMAKE_INSTALL_LIBDIR=lib \
-      -DBUILD_SHARED_LIBS=OFF \
+      -DBUILD_SHARED_LIBS=ON \
+      -DDISABLE_GEOS_INLINE=ON \
+      -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
+      -DBUILD_TESTING=OFF \
+      -DBUILD_BENCHMARKS=OFF \
+      -DBUILD_DOCUMENTATION=OFF \
+      -DBUILD_GEOSOP=OFF \
       ..
 
-emmake make -j${CPU_COUNT} #${VERBOSE_CM}
+emmake make -j${CPU_COUNT}
 
 emmake make install -j${CPU_COUNT}
