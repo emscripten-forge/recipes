@@ -25,7 +25,6 @@ sysconfigdata:
 	mkdir -p $(SYSCONFIGDATA_DIR)
 	cp $(PYBUILDDIR)/$(SYSCONFIG_NAME).py $(PREFIX)/lib/python$(PYMAJOR).$(PYMINOR)/
 	cp $(PYBUILDDIR)/$(SYSCONFIG_NAME).py $(SYSCONFIGDATA_DIR)
-	@echo "SYSCONFIGDATA STEP DONE"
 
 LIBPYTHON_EXTRA_OBJECTS=$$(LIBMPDEC_OBJS) $$(LIBEXPAT_OBJS) $$(LIBHACL_SHA2_OBJS)
 
@@ -44,7 +43,6 @@ $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB) sysconfigdata $(BUILD)/.patched_makefile
 		emmake make PYTHON_FOR_BUILD=$(HOSTPYTHON) CROSS_COMPILE=yes inclinstall libinstall $(LIB) -j${CPU_COUNT} && \
 		cp $(LIB) $(INSTALL)/lib/ \
 	)
-	@echo "EMMAKE MAKE STEP DONE"
 	# Generate sysconfigdata. It outputs into a subfolder of build/, and
 	# the subfolder is written to pybuilddir.txt.
 	_PYTHON_SYSCONFIGDATA_NAME=$(SYSCONFIG_NAME) _PYTHON_PROJECT_BASE=$(BUILD) $(HOSTPYTHON) -m sysconfig --generate-posix-vars
@@ -86,7 +84,6 @@ $(INSTALL)/lib/libffi.a :
 	cp $(FFIBUILD)/target/include/*.h $(BUILD)/Include/
 	mkdir -p $(INSTALL)/lib
 	cp $(FFIBUILD)/target/lib/libffi.a $(INSTALL)/lib/
-	@echo "LIBFFI STAGE DONE"
 
 $(BUILD)/Makefile: $(BUILD)/.patched
 	# --enable-big-digits=30 :
@@ -113,12 +110,10 @@ $(BUILD)/Makefile: $(BUILD)/.patched
 			  --prefix=$(INSTALL)  \
 			  --with-build-python=$(BUILD_PREFIX)/bin/python \
 	)
-	@echo "MAKEFILE STAGE DONE"
 
 
 $(BUILD)/Modules/Setup.local: Setup.local
 	cp Setup.local $(BUILD)/Modules/
-	@echo "SETUP LOCAL STAGE DONE"
 
 $(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.local $(INSTALL)/lib/libffi.a
 	cp Setup.local $(BUILD)/Modules/
@@ -128,4 +123,3 @@ $(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.lo
 		emmake make CROSS_COMPILE=yes $(LIB) -j${CPU_COUNT} \
 	)
 	touch $(BUILD)/$(LIB)
-	@echo "LIB STAGE DONE"
