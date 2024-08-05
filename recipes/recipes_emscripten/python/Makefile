@@ -5,7 +5,6 @@ ROOT=$(abspath .)
 PYTHON_CFLAGS=$(CFLAGS_BASE) -DPY_CALL_TRAMPOLINE	
 
 BUILD=$(ROOT)/build/${PKG_VERSION}/Python-${PKG_VERSION}
-#INSTALL=$(ROOT)/installs/python-${PKG_VERSION}
 INSTALL=$(PREFIX)
 LIB=libpython$(PYMAJOR).$(PYMINOR).a
 
@@ -15,12 +14,31 @@ LIBFFI_COMMIT=f08493d249d2067c8b3207ba46693dd858f95db3
 
 all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a
 
+.PHONY=sysconfigdata
+sysconfigdata:
+	# Generate sysconfigdata. It outputs into a subfolder of build/, and
+	# the subfolder is written to pybuilddir.txt.
+	cd $(BUILD) && _PYTHON_SYSCONFIGDATA_NAME=$(SYSCONFIG_NAME) _PYTHON_PROJECT_BASE=$(BUILD) $(HOSTPYTHON) -m sysconfig --generate-posix-vars
+	$(eval PYBUILDDIR=$(BUILD)/`cat $(BUILD)/pybuilddir.txt`)
+	ROOT=$(ROOT) PYTHONPATH=$(PYBUILDDIR) python$(PYMAJOR).$(PYMINOR) adjust_sysconfig.py
+	mkdir -p $(PREFIX)/lib/python$(PYMAJOR).$(PYMINOR)/
+	mkdir -p $(SYSCONFIGDATA_DIR)
+	cp $(PYBUILDDIR)/$(SYSCONFIG_NAME).py $(PREFIX)/lib/python$(PYMAJOR).$(PYMINOR)/
+	cp $(PYBUILDDIR)/$(SYSCONFIG_NAME).py $(SYSCONFIGDATA_DIR)
 
-$(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB)
+LIBPYTHON_EXTRA_OBJECTS=$$(LIBMPDEC_OBJS) $$(LIBEXPAT_OBJS) $$(LIBHACL_SHA2_OBJS)
+
+$(BUILD)/.patched_makefile:
+	# Clear out libinstall deps (we build what we want explicitly first)
+	cd $(BUILD) && sed -i -e 's/libinstall:.*/libinstall:/' Makefile;
+	# Inject extra objects into libpython3.12.a so we don't have to link them
+	# separately
+	cd $(BUILD) && sed -i '/MODOBJS=/s/$$/ $(LIBPYTHON_EXTRA_OBJECTS)/' Makefile
+	touch $(BUILD)/.patched_makefile
+
+$(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB) sysconfigdata $(BUILD)/.patched_makefile
 	( \
 		cd $(BUILD); \
-		sed -i -e 's/libinstall:.*/libinstall:/' Makefile; \
-		sed -i '/MODOBJS=/s/$$/ $$(LIBMPDEC_OBJS) $$(LIBEXPAT_OBJS) /' Makefile; \
 		touch $(BUILD)/$(LIB) ; \
 		emmake make PYTHON_FOR_BUILD=$(HOSTPYTHON) CROSS_COMPILE=yes inclinstall libinstall $(LIB) -j${CPU_COUNT} && \
 		cp $(LIB) $(INSTALL)/lib/ \
@@ -90,7 +108,7 @@ $(BUILD)/Makefile: $(BUILD)/.patched
 			  --host=wasm32-unknown-emscripten\
 			  --build=$(shell $(BUILD)/config.guess) \
 			  --prefix=$(INSTALL)  \
-			  --with-build-python=$$(which python3.11) \
+			  --with-build-python=$(BUILD_PREFIX)/bin/python \
 	)
 
 

@@ -1,19 +1,9 @@
-From bb33672157df771613c9d6c61756c5294f13333d Mon Sep 17 00:00:00 2001
-From: ryanking13 <def6488@gmail.com>
-Date: Fri, 2 Dec 2022 11:36:44 +0000
-Subject: [PATCH 3/9] Add emscripten platform support to
- ctypes.util.find_library
-
----
- Lib/ctypes/util.py | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
-
 diff --git a/Lib/ctypes/util.py b/Lib/ctypes/util.py
-index 0c2510e161..c8875ec009 100644
+index c550883..d3cda4e 100644
 --- a/Lib/ctypes/util.py
 +++ b/Lib/ctypes/util.py
-@@ -80,6 +80,30 @@ def find_library(name):
-                 continue
+@@ -67,6 +67,30 @@ if os.name == "nt":
+                 return fname
          return None
  
 +elif os.name == "posix" and sys.platform == "emscripten":
@@ -40,9 +30,6 @@ index 0c2510e161..c8875ec009 100644
 +
 +        return None
 +
- elif sys.platform.startswith("aix"):
-     # AIX has two styles of storing shared libraries
-     # GNU auto_tools refer to these as svr4 and aix
--- 
-2.29.2.windows.2
-
+ elif os.name == "posix" and sys.platform == "darwin":
+     from ctypes.macholib.dyld import dyld_find as _dyld_find
+     def find_library(name):
