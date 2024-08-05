@@ -29,13 +29,13 @@ sysconfigdata:
 
 LIBPYTHON_EXTRA_OBJECTS=$$(LIBMPDEC_OBJS) $$(LIBEXPAT_OBJS) $$(LIBHACL_SHA2_OBJS)
 
-$(PYBUILD)/.patched_makefile:
+$(BUILD)/.patched_makefile:
 	# Clear out libinstall deps (we build what we want explicitly first)
-	cd $(PYBUILD) && sed -i -e 's/libinstall:.*/libinstall:/' Makefile;
+	cd $(BUILD) && sed -i -e 's/libinstall:.*/libinstall:/' Makefile;
 	# Inject extra objects into libpython3.12.a so we don't have to link them
 	# separately
-	cd $(PYBUILD) && sed -i '/MODOBJS=/s/$$/ $(LIBPYTHON_EXTRA_OBJECTS)/' Makefile
-	touch $(PYBUILD)/.patched_makefile
+	cd $(BUILD) && sed -i '/MODOBJS=/s/$$/ $(LIBPYTHON_EXTRA_OBJECTS)/' Makefile
+	touch $(BUILD)/.patched_makefile
 
 $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB) sysconfigdata $(BUILD)/.patched_makefile
 	( \
@@ -44,11 +44,12 @@ $(INSTALL)/lib/$(LIB): $(BUILD)/$(LIB) sysconfigdata $(BUILD)/.patched_makefile
 		emmake make PYTHON_FOR_BUILD=$(HOSTPYTHON) CROSS_COMPILE=yes inclinstall libinstall $(LIB) -j${CPU_COUNT} && \
 		cp $(LIB) $(INSTALL)/lib/ \
 	)
+	@echo "EMMAKE MAKE STEP DONE"
 	# Generate sysconfigdata. It outputs into a subfolder of build/, and
 	# the subfolder is written to pybuilddir.txt.
 	_PYTHON_SYSCONFIGDATA_NAME=$(SYSCONFIG_NAME) _PYTHON_PROJECT_BASE=$(BUILD) $(HOSTPYTHON) -m sysconfig --generate-posix-vars
 
-	$(eval BUILDDIR=`cat builddir.txt`)
+	$(eval PYBUILDDIR=`cat builddir.txt`)
 	PYTHONPATH=$(PYBUILDDIR) python adjust_sysconfig.py
 	cp $(PYBUILDDIR)/$(SYSCONFIG_NAME).py $(INSTALL)/lib/python$(PYMAJOR).$(PYMINOR)/
 	mkdir -p $(SYSCONFIGDATA_DIR)
