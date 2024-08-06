@@ -25,7 +25,8 @@ emmake cmake ${CMAKE_ARGS} ..  \
     -DLINK_LIBMPDEC=OFF \
     -DLINK_LIBEXPAT=OFF \
     -DWITH_NODE_TESTS=OFF \
-    -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+    -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
+    -DPY_VERSION=3.12 
 
 
 # Build step
