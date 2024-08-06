@@ -1,0 +1,49 @@
+context:
+  version: 1.1.4
+  name: r-rlang
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/rlang_${{ version }}.tar.gz
+    - https://cran.r-project.org/src/contrib/Archive/rlang/rlang_${{ version }}.tar.gz
+  sha256: f2d74527508bf3287102470beb27de0d234c3cbba399c28d3312f2c83c64a6e1
+
+build:
+  number: 0
+  # rpaths:
+  #   - lib/R/lib/
+  #   - lib/
+
+requirements:
+  build:
+    - cross-r-base # TODO: pin version of r-base
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+# test:
+#   commands:
+#     - $R -e "library('rlang')"
+
+about:
+  homepage: http://rlang.r-lib.org
+  repository: https://github.com/r-lib/rlang
+  license: GPL-3.0-only
+  summary: |
+    A toolbox for working with base types, core R features like the condition
+    system, and core 'Tidyverse' features like tidy evaluation.
+  license_family: GPL3
+  # license_file: {{ environ["PREFIX"] }}/lib/R/share/licenses/GPL-3
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
