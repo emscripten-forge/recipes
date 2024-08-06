@@ -1,3 +1,3 @@
 #!/bin/bash
 
-${R} CMD INSTALL .
+${R} CMD build .
