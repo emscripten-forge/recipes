@@ -15,10 +15,10 @@
 # Thanks to talljimbo for the patch adding the 'LDVERSION' config
 # variable usage.
 
-set(PYTHON_INCLUDE_DIR      "$ENV{PREFIX}/include/python3.11")
-set(PYTHON_LIBRARY          "$ENV{PREFIX}/lib/libpython3.11.a")
+set(PYTHON_INCLUDE_DIR      "$ENV{PREFIX}/include/python3.12")
+set(PYTHON_LIBRARY          "$ENV{PREFIX}/lib/libpython3.12.a")
 set(PYTHON_MODULE_EXTENSION ".so")
-set(PYTHON_SITE_PACKAGES    "$ENV{PREFIX}/lib/python3.11/site-packages")
+set(PYTHON_SITE_PACKAGES    "$ENV{PREFIX}/lib/python3.12/site-packages")
 set(PYTHON_IS_DEBUG         "FALSE")
 mark_as_advanced(PYTHON_LIBRARY PYTHON_INCLUDE_DIR)
 
