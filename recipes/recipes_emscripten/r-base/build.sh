@@ -35,6 +35,9 @@ export SHLIB_EXT=".so"
 export R="${BUILD_PREFIX}/bin/R"
 export R_ARGS="--library=${PREFIX}/lib/R/library --no-test-load"
 
+# NOTE: These flags are saved in etc/Makeconf and are passed down to any other
+# R packages built with the R binary/shell wrapper.
+
 #   MAIN_CFLAGS:   additional CFLAGS used when compiling the main binary
 export MAIN_CFLAGS="-sMAIN_MODULE"
 #   SHLIB_CFLAGS:  additional CFLAGS used when building shared objects
