@@ -10,6 +10,10 @@ cp -r $FLANG_DIR/include/* $BUILD_PREFIX/include/
 cp -r $FLANG_DIR/share/* $BUILD_PREFIX/share/
 unset FLANG_DIR
 
+# NOTE: a few of these tests check for specific symbols in the libraries,
+# however the objdump tool is not set up to handle wasm files.
+# Maybe this is why the checks fail.
+
 # Skip non-working checks
 export r_cv_header_zlib_h=yes # Otherwise the version check fails
 export r_cv_have_bzlib=yes
@@ -197,3 +201,11 @@ emmake make -j${CPU_COUNT}
 
 echo "♥️♥️♥️ INSTALL"
 emmake make install
+
+# NOTE: bin/R is a shell wrapper for the R binary (found in lib/R/bin/exec/R)
+# Manually copying the R.wasm file
+cp src/main/R.wasm $PREFIX/lib/R/bin/exec/R.wasm
+
+# and in case the Rscript is needed later... (it also has a shell wrapper)
+# cp src/unix/Rscript $PREFIX/lib/R/bin/exec/Rscript
+# cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/exec/Rscript.wasm
