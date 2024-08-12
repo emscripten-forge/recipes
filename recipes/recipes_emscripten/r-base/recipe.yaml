@@ -28,7 +28,7 @@ source:
   # - patches/12_tst_skip_md_rule.patch # REMOVE later
 
 build:
-  number: 8 # TODO: reset later
+  number: 9 # TODO: reset later
 
 requirements:
   build:
@@ -38,27 +38,28 @@ requirements:
     - pkg-config
     - cmake
     - make
-    - libpng
-    - readline
-    - zlib
-    - bzip2
-    - libdeflate
-    - xz
-    - tzdata
-    - libiconv
-    - r-base  # for R and Rscript binaries (See patches)
-    # TODO: pin r-base version BUT currently incompatible with zlib v1.2
+    - r-base == ${{ version }}  # for R and Rscript binaries (See patches)
   host:
-    - liblapack>=3.12
+    - liblapack>=3.12 # REMOVE: do not use external blas/lapack
     - libiconv
     - zlib>=1.2.13
     - bzip2
-    - cairo>=0.18
-    - pcre2>=10.43
     - xz # for lzma
-  run:
-    - zlib
-    - bzip2
+    - cairo>=1.18
+    - pcre2>=10.43
+    - tzdata
+    - libpng
+    - libtiff
+    - icu
+
+
+tests:
+- script:
+    - test -f $PREFIX/lib/R/bin/exec/R.wasm
+    - node $PREFIX/lib/R/bin/exec/R --version
+  requirements:
+    build:
+    - nodejs
 
 about:
   homepage: http://www.r-project.org/

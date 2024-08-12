@@ -43,7 +43,7 @@ export R_ARGS="--library=${PREFIX}/lib/R/library --no-test-load"
 # R packages built with the R binary/shell wrapper.
 
 #   MAIN_CFLAGS:   additional CFLAGS used when compiling the main binary
-export MAIN_CFLAGS="-sMAIN_MODULE"
+export MAIN_CFLAGS="-sMAIN_MODULE --pre-js ${RECIPE_DIR}/pre.js"
 #   SHLIB_CFLAGS:  additional CFLAGS used when building shared objects
 export SHLIB_CFLAGS="-sSIDE_MODULE"
 #   MAIN_FFLAGS:   additional FFLAGS used when compiling the main binary
@@ -191,7 +191,6 @@ emconfigure ./configure \
     --enable-R-shlib=no \
     --without-readline  \
     --without-x         \
-    --without-java      \
     --enable-shared  \
     --with-internal-tzcode \
     --with-recommended-packages=no
