@@ -98,7 +98,7 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 #               nonstandard directory <lib dir>
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
-export LIBS="-lz -lFortranRuntime"
+export LIBS="-lz -lFortranRuntime" # Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
 #               you have headers in a nonstandard directory <include dir>
 export CPPFLAGS="-I$PREFIX/include" # Otherwise can't find zlib.h
@@ -189,6 +189,7 @@ emconfigure ./configure \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
     --enable-R-shlib=no \
+    --enable-BLAS-shlib \
     --with-cairo \
     --without-readline  \
     --without-x         \
