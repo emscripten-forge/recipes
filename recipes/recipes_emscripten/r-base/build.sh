@@ -189,11 +189,15 @@ emconfigure ./configure \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
     --enable-R-shlib=no \
+    --with-cairo \
     --without-readline  \
     --without-x         \
     --enable-shared  \
+    --enable-java=no \
+    --disable-rpath \
     --with-internal-tzcode \
-    --with-recommended-packages=no
+    --with-recommended-packages=no \
+    --with-libdeflate-compression=no
 
 echo "♥️♥️♥️ BUILD"
 emmake make -j${CPU_COUNT}
@@ -206,5 +210,5 @@ emmake make install
 cp src/main/R.wasm $PREFIX/lib/R/bin/exec/R.wasm
 
 # and in case the Rscript is needed later... (it also has a shell wrapper)
-# cp src/unix/Rscript $PREFIX/lib/R/bin/exec/Rscript
-# cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/exec/Rscript.wasm
+cp src/unix/Rscript $PREFIX/lib/R/bin/exec/Rscript
+cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/exec/Rscript.wasm
