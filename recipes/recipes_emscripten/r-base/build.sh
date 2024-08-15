@@ -195,7 +195,7 @@ emconfigure ./configure \
     --with-cairo \
     --without-readline  \
     --without-x         \
-    --enable-shared  \
+    --enable-static  \
     --enable-java=no \
     --enable-R-profiling=no \
     --disable-rpath \
