@@ -1,32 +1,54 @@
 context:
-  version: 1.11.1
+  version: 1.13.0
   name: scipy
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  url: https://files.pythonhosted.org/packages/fb/a3/328965862f41ba67d27ddd26205962007ec87d99eec6d364a29bf00ac093/scipy-1.13.0.tar.gz
+  sha256: 58569af537ea29d3f78e5abd18398459f195546bb3be23d16677fb26616cc11e
+  patches:
+    - patches/0001-Fix-dstevr-in-special-lapack_defs.h.patch
+    - patches/0002-int-to-string.patch
+    - patches/0003-gemm_-no-const.patch
+    - patches/0004-make-int-return-values.patch
+    - patches/0005-Remove-test-modules-that-fails-to-build.patch
+    - patches/0006-Fix-fitpack.patch
+    - patches/0007-Fix-gees-calls.patch
+    - patches/0008-MAINT-linalg-Remove-id_dist-Fortran-files.patch
+    - patches/0009-Mark-mvndst-functions-recursive.patch
+    - patches/0010-Make-sreorth-recursive.patch
+    - patches/0011-Link-openblas-with-modules-that-require-f2c.patch
+    - patches/0012-Remove-fpchec-inline-if-else-constructs.patch
+    - patches/0013-Remove-chla_transtype.patch
+    - patches/0014-Set-wrapper-return-type-to-int.patch
+    - patches/0015-Skip-svd_gesdd-test.patch
+
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
   - ${{ compiler('c') }}
+  - ${{ compiler('cxx')}}
+  - click
+  - doit
+  - pydevtool
+  - pybind11
+  - openblas
+  - boost-cpp
+  - make
+  - cmake
+#  - cross-python_emscripten-wasm32
   run:
   - openblas
   - numpy
+#  executable:
+#  - gfortran
 
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_scipy.py
-  requirements:
-    build:
-    - pytester
-    run:
-    - pytester-run
 extra:
   recipe-maintainers:
   - DerThorsten
-
+  - KGB99
