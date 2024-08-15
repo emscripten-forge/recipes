@@ -98,7 +98,8 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 #               nonstandard directory <lib dir>
 export LDFLAGS="-L$PREFIX/lib \
     -s WASM_BIGINT \
-    -s STACK_SIZE=5MB"
+    -s STACK_SIZE=5MB \
+    -s ALLOW_MEMORY_GROWTH=1"
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
 export LIBS="-lz -lFortranRuntime" # Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
