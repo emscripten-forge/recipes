@@ -96,7 +96,9 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 #   CFLAGS      C compiler flags
 #   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
 #               nonstandard directory <lib dir>
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+export LDFLAGS="-L$PREFIX/lib \
+    -s WASM_BIGINT \
+    -s STACK_SIZE=5MB"
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
 export LIBS="-lz -lFortranRuntime" # Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
@@ -211,5 +213,4 @@ emmake make install
 cp src/main/R.wasm $PREFIX/lib/R/bin/exec/R.wasm
 
 # and in case the Rscript is needed later... (it also has a shell wrapper)
-cp src/unix/Rscript $PREFIX/lib/R/bin/exec/Rscript
-cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/exec/Rscript.wasm
+cp src/unix/Rscript* $PREFIX/bin
