@@ -23,21 +23,12 @@ export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_have_pcre832=yes
 export r_cv_size_max=yes
-
 export ac_cv_lib_z_inflateInit2_=yes
 export ac_cv_lib_bz2_BZ2_bzlibVersion=yes
-
-# FIXME: Add atomics and bulk-memory features
-# The context.c file needs these features
-export CFLAGS="$CFLAGS -matomics -mbulk-memory"
-export CXXFLAGS="$CXXFLAGS -matomics -mbulk-memory"
 
 # Otherwise set to .not_implemented and cannot be used
 # Must be shared... otherwise duplicate symbol issues
 export SHLIB_EXT=".so"
-
-export R="${BUILD_PREFIX}/bin/R"
-export R_ARGS="--library=${PREFIX}/lib/R/library --no-test-load"
 
 # NOTE: These flags are saved in etc/Makeconf and are passed down to any other
 # R packages built with the R binary/shell wrapper.
@@ -94,6 +85,8 @@ export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 export PKG_CONFIG_LIBDIR=$PREFIX/lib
 #   CC          C compiler command
 #   CFLAGS      C compiler flags
+# NOTE: The context.c file needs these features
+export CFLAGS="$CFLAGS -matomics -mbulk-memory"
 #   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
 #               nonstandard directory <lib dir>
 export LDFLAGS="-L$PREFIX/lib \
@@ -182,7 +175,8 @@ export FC=flang-new
 # libRblas.so: undefined symbol: _FortranACharacterCompareScalar1
 
 # NOTE: the host and build systems are explicitly set to enable the cross-
-# compiling options. Otherwise, it assumes it's not cross-compiling.
+# compiling options even though it's not actually supported.
+# Otherwise, it assumes it's not cross-compiling.
 
 chmod +x ./configure
 
