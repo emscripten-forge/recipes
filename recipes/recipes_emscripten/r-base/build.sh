@@ -89,10 +89,15 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 export CFLAGS="$CFLAGS -matomics -mbulk-memory"
 #   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
 #               nonstandard directory <lib dir>
+# https://emscripten.org/docs/tools_reference/settings_reference.html
 export LDFLAGS="-L$PREFIX/lib \
     -s WASM_BIGINT \
     -s STACK_SIZE=5MB \
-    -s ALLOW_MEMORY_GROWTH=1"
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
+    -s FORCE_FILESYSTEM=1 \
+    -s INVOKE_RUN=0 \
+    -s MODULARIZE=1"
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
 export LIBS="-lz -lFortranRuntime" # Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
@@ -192,6 +197,7 @@ emconfigure ./configure \
     --without-x         \
     --enable-shared  \
     --enable-java=no \
+    --enable-R-profiling=no \
     --disable-rpath \
     --with-internal-tzcode \
     --with-recommended-packages=no \
