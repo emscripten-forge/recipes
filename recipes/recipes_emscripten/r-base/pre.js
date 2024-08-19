@@ -1,3 +1,3 @@
 Module['prerun'] = () => {
-    ENV['R_HOME'] = '/usr/lib/R';
+    ENV['R_HOME'] = '/lib/R';
 };

@@ -25,6 +25,8 @@ export r_cv_have_pcre832=yes
 export r_cv_size_max=yes
 export ac_cv_lib_z_inflateInit2_=yes
 export ac_cv_lib_bz2_BZ2_bzlibVersion=yes
+export ac_cv_have_decl_getrusage=no # Not supported
+export ac_cv_have_decl_getrlimit=no # Not supported
 
 # Otherwise set to .not_implemented and cannot be used
 # Must be shared... otherwise duplicate symbol issues
@@ -33,6 +35,7 @@ export SHLIB_EXT=".so"
 # NOTE: These flags are saved in etc/Makeconf and are passed down to any other
 # R packages built with the R binary/shell wrapper.
 
+# NOTE: The pre.js only gets added to the Rscript binary and not the R binary
 #   MAIN_CFLAGS:   additional CFLAGS used when compiling the main binary
 export MAIN_CFLAGS="-sMAIN_MODULE --pre-js ${RECIPE_DIR}/pre.js"
 #   SHLIB_CFLAGS:  additional CFLAGS used when building shared objects
@@ -96,10 +99,10 @@ export LDFLAGS="-L$PREFIX/lib \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
     -s FORCE_FILESYSTEM=1 \
-    -s INVOKE_RUN=0 \
-    -s MODULARIZE=1"
+    -s INVOKE_RUN=0"
+    # -s MODULARIZE=1" NOTE: disabled for testing only
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
-export LIBS="-lz -lFortranRuntime" # Needed for external blas and lapack
+export LIBS="-lz -lFortranRuntime" # NOTE: Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
 #               you have headers in a nonstandard directory <include dir>
 export CPPFLAGS="-I$PREFIX/include" # Otherwise can't find zlib.h
@@ -198,6 +201,7 @@ emconfigure ./configure \
     --enable-static  \
     --enable-java=no \
     --enable-R-profiling=no \
+    --enable-byte-compiled-packages=no \
     --disable-rpath \
     --with-internal-tzcode \
     --with-recommended-packages=no \
@@ -211,7 +215,7 @@ emmake make install
 
 # NOTE: bin/R is a shell wrapper for the R binary (found in lib/R/bin/exec/R)
 # Manually copying the R.wasm file
-cp src/main/R.wasm $PREFIX/lib/R/bin/exec/R.wasm
+cp src/main/R.* $PREFIX/lib/R/bin/exec/
 
 # and in case the Rscript is needed later... (it also has a shell wrapper)
-cp src/unix/Rscript* $PREFIX/bin
+cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/
