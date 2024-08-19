@@ -6,7 +6,7 @@ async function my_main(){
     let exitCode = 126;  // "Command invoked cannot execute"
     const ModuleF = require(binary_js_runner);
     const Module = await ModuleF({
-        // arguments: args_without_js_path
+        arguments: process.argv,
         quit: (status, toThrow) => {
             exitCode = status;
         }
