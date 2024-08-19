@@ -8,15 +8,13 @@ package:
   version: ${{ version }}
 
 source:
-  url:
-    - https://cran.r-project.org/src/contrib/rlang_${{ version }}.tar.gz
-    - https://cran.r-project.org/src/contrib/Archive/rlang/rlang_${{ version }}.tar.gz
+  url: https://cran.r-project.org/src/contrib/rlang_${{ version }}.tar.gz
   sha256: f2d74527508bf3287102470beb27de0d234c3cbba399c28d3312f2c83c64a6e1
 
 build:
   number: 0
   script:
-    content: ${R} CMD build .
+    content: $R CMD INSTALL . $R_ARGS --no-byte-compile
 
 requirements:
   build:
@@ -29,9 +27,16 @@ requirements:
   run:
     - r-base == ${{ r_base_version }}
 
-# test:
-#   commands:
-#     - $R -e "library('rlang')"
+tests:
+- script:
+    - test -f $PREFIX/lib/R/bin/exec/R.wasm
+    # - node $PREFIX/lib/R/bin/exec/R --vanilla -e "library(rlang)"
+    - node $PREFIX/lib/R/bin/exec/R --version
+    - node $PREFIX/lib/R/bin/exec/R --vanilla --verbose -e "library(rlang)"
+    - node $PREFIX/lib/R/bin/exec/R --vanilla -e "print('hello')"
+  requirements:
+    build:
+    - nodejs
 
 about:
   homepage: http://rlang.r-lib.org
