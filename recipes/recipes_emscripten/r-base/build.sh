@@ -101,8 +101,8 @@ export LDFLAGS="-L$PREFIX/lib \
     -s ALLOW_MEMORY_GROWTH=1 \
     -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
     -s FORCE_FILESYSTEM=1 \
-    -s INVOKE_RUN=0"
-    # -s MODULARIZE=1" NOTE: disabled for testing only
+    -s INVOKE_RUN=0 \
+    -s MODULARIZE=1"
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
 export LIBS="-lz -lFortranRuntime" # NOTE: Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
@@ -191,7 +191,6 @@ export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 
 chmod +x ./configure
 
-echo "♥️♥️♥️ CONFIGURE"
 emconfigure ./configure \
     --prefix=$PREFIX    \
     --build="x86_64-conda-linux-gnu" \
@@ -210,10 +209,7 @@ emconfigure ./configure \
     --with-recommended-packages=no \
     --with-libdeflate-compression=no
 
-echo "♥️♥️♥️ BUILD"
 emmake make -j${CPU_COUNT}
-
-echo "♥️♥️♥️ INSTALL"
 emmake make install
 
 # NOTE: bin/R is a shell wrapper for the R binary (found in lib/R/bin/exec/R)

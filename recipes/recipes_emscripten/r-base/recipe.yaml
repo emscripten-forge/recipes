@@ -6,10 +6,9 @@ package:
   name: ${{ name }}
   version: ${{ version }}
 
-
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  sha256: b4cb675deaaeb7299d3b265d218cde43f192951ce5b89b7bb1a5148a36b2d94d # 4.4.1
+  sha256: b4cb675deaaeb7299d3b265d218cde43f192951ce5b89b7bb1a5148a36b2d94d
   patches:
   - patches/00_fix_Rshlibpath_var.patch
   - patches/01_skip_libcurl.patch
@@ -50,14 +49,16 @@ requirements:
     - libtiff
     # - icu # FIXME: icu check fails
 
-
 tests:
-- script:
-    - test -f $PREFIX/lib/R/bin/exec/R.wasm
-    - node $PREFIX/lib/R/bin/exec/R --version
-  requirements:
-    build:
-    - nodejs
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/lib/R/bin/exec/R -e "a=1+1;print(a)")
+      if [[ "$OUTPUT" != "2" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized
 
 about:
   homepage: http://www.r-project.org/
