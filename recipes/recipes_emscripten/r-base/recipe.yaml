@@ -9,9 +9,7 @@ package:
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  # sha256: 80851231393b85bf3877ee9e39b282e750ed864c5ec60cbd68e6e139f0520330 # 4.3.3
   sha256: b4cb675deaaeb7299d3b265d218cde43f192951ce5b89b7bb1a5148a36b2d94d # 4.4.1
-  # sha256: 55e4a9a6d43be314e2c03d0266a6fa5444afdce50b303bfc3b82b3979516e074 # 4.2.3
   patches:
   - patches/00_fix_Rshlibpath_var.patch
   - patches/01_skip_libcurl.patch
@@ -24,11 +22,10 @@ source:
   - patches/09_ignore_crude_heuristic_file_size.patch
   - patches/10_build_docs_with_Rscript.patch
   - patches/11_use_basenames_for_compilers.patch # Just use emcc directly. CC = issues
-  # - patches/12_tst_skip_md_rule.patch # REMOVE later
   - patches/13_default_R_home.patch
 
 build:
-  number: 11 # TODO: reset later
+  number: 0
 
 requirements:
   build:
@@ -40,8 +37,8 @@ requirements:
     - make
     - r-base == ${{ version }}  # for R and Rscript binaries (See patches)
   host:
-    - liblapack>=3.12 # TODO: replace with blas only package (shared lib?) or OpenBLAS
-    # - openblas # FIXME: the check fails, looking for dgemm_
+    - libblas>=3.12
+    - libflang
     - libiconv
     - zlib>=1.2.13
     - bzip2

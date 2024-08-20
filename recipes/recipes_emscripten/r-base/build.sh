@@ -1,14 +1,16 @@
 #!/bin/bash
 
-# export
+set -e
 
-# Copy flang
-export FLANG_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/_finstall18
-cp -r $FLANG_DIR/bin/* $BUILD_PREFIX/bin/
-cp -r $FLANG_DIR/lib/* $BUILD_PREFIX/lib/
-cp -r $FLANG_DIR/include/* $BUILD_PREFIX/include/
-cp -r $FLANG_DIR/share/* $BUILD_PREFIX/share/
-unset FLANG_DIR
+# Using flang as a WASM cross-compiler
+# https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
+# https://github.com/conda-forge/flang-feedstock/pull/69
+micromamba install -p $BUILD_PREFIX \
+    conda-forge/label/llvm_rc::libllvm19 \
+    conda-forge/label/llvm_dev::flang=19.1.0.rc2 \
+    -y --no-channel-priority
+rm $BUILD_PREFIX/bin/clang # links to clang19
+ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 # NOTE: a few of these tests check for specific symbols in the libraries,
 # however the objdump tool is not set up to handle wasm files.
@@ -110,6 +112,7 @@ export CPPFLAGS="-I$PREFIX/include" # Otherwise can't find zlib.h
 #   FC          Fortran compiler command
 export FC=flang-new
 #   FCFLAGS     Fortran compiler flags
+export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 #   CXX         C++ compiler command
 #   CXXFLAGS    C++ compiler flags
 #   CXXCPP      C++ preprocessor
@@ -217,5 +220,5 @@ emmake make install
 # Manually copying the R.wasm file
 cp src/main/R.* $PREFIX/lib/R/bin/exec/
 
-# and in case the Rscript is needed later... (it also has a shell wrapper)
+# and Rscript (also has shell wrapper)
 cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/
