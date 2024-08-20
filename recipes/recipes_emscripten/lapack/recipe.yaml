@@ -1,110 +1,49 @@
 context:
   version: 3.12.0
-  blas_major: 2
-  blas_minor: 200
-
-# TODO: verify version numbers
+  name: lapack
 
 source:
-  url: https://github.com/Reference-LAPACK/lapack/archive/v${{ version }}.tar.gz
-  # sha256: 4b9ba79bfd4921ca820e83979db76ab3363155709444a787979e81c22285ffa9 # v3.11.0
-  sha256: eac9570f8e0ad6f30ce4b963f4f033f0f643e7c3912fc9ee6cd99120675ad48b # v3.12.0
+  url: https://github.com/Reference-LAPACK/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: eac9570f8e0ad6f30ce4b963f4f033f0f643e7c3912fc9ee6cd99120675ad48b
   patches:
-    - patches/00_disable_fortran_compiler_check.patch
-    - patches/01_disable_fortran_c_interface_check.patch
-  #   - patches/02_fix_unexpected_argument_pp.patch
-  #   - patches/03_skip_error_files.patch
+  - patches/0001_Disable_fortran_compiler_check.patch
 
 build:
   number: 0
 
+# TODO: Use cache output once it's not experimental
+
 outputs:
-  # - package:
-  #     name: libblas
-  #     version: ${{ blas_major }}.${{ blas_minor }}
-  #   requirements:
-  #     build:
-  #       - ${{ compiler("c") }}
-  #       - clang
-  #       - ninja
+- package:
+    name: libblas
+    version: ${{ version }}
+  build:
+    files:
+      - lib/libblas.a
+      - lib/pkgconfig/blas.pc
+  requirements:
+    build:
+      - ${{ compiler("c") }}
+      - ninja
+  tests:
+  - script: test -f $PREFIX/lib/libblas.a
 
-# TODO: saving for later
-  # - package:
-  #     name: libtmglib
-  #     version: ${{ version }}
-  #   requirements:
-  #     build:
-  #       - ${{ compiler("c") }}
-  #       - lfortran
-
-# TODO: saving for later
-  # - package:
-  #     name: libcblas
-  #     version: ${{ blas_major }}.${{ blas_minor }}
-  #   requirements:
-  #     build:
-  #       - ${{ compiler("c") }}
-  #       - lfortran
-  #     run:
-  #       - libblas
-
-  - package:
-      name: liblapack
-      version: ${{ version }}
-    requirements:
-      build:
-        - ${{ compiler("c") }}
-        - clang
-        - ninja
-      # NOTE: building all in one for now
-      # run:
-      #   - libblas
-      run:
-        - libflang
-
-# TODO: saving for later
-  # - package:
-  #     name: liblapacke
-  #     version: ${{ version }}
-  #   requirements:
-  #     build:
-  #       - ${{ compiler("c") }}
-  #       - lfortran
-  #     run:
-  #       - libblas
-  #       - libcblas
-  #       - liblapack
-
-# TODO: saving for later
-  # - package:
-  #     name: blas-devel
-  #     version: ${{ blas_major }}.${{ blas_minor }}
-  #   requirements:
-  #     run:
-  #       - libblas
-  #       - libcblas
-  #       - liblapack
-  #       - liblapacke
-
-  # - package:
-  #     name: blas
-  #     version: ${{ blas_major }}.${{ blas_minor }}
-  #   requirements:
-  #     run:
-  #       - liblapack
-  #       - liblapacke
-  #       - libcblas
-  #       - blas-devel
-  #       - libtmglib
-
-  # - package:
-  #     name: lapack
-  #     version: ${{ version }}
-  #   requirements:
-  #     run:
-  #       - liblapack
-
-# TODO: add tests
+- package:
+    name: liblapack
+    version: ${{ version }}
+  build:
+    files:
+      - lib/liblapack.a
+      - lib/pkgconfig/lapack.pc
+      - lib/cmake/lapack-${{ version }}/lapack*
+  requirements:
+    build:
+      - ${{ compiler("c") }}
+      - ninja
+    run:
+      - libblas
+  tests:
+  - script: test -f $PREFIX/lib/liblapack.a
 
 about:
   homepage: http://www.netlib.org/lapack
@@ -113,5 +52,5 @@ about:
   summary: Linear Algebra PACKage
 
 extra:
-  recipe-maintainers:
+  maintainers:
     - IsabelParedes
