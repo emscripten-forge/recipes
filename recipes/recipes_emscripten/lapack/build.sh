@@ -2,28 +2,36 @@
 
 set -ex
 
-mkdir -p build
-cd build
+# mkdir -p build
+# cd build
 
-# Copy flang
-export FLANG_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/_finstall
-cp -r $FLANG_DIR/bin/* $BUILD_PREFIX/bin/
-cp -r $FLANG_DIR/lib/* $BUILD_PREFIX/lib/
-cp -r $FLANG_DIR/include/* $BUILD_PREFIX/include/
-cp -r $FLANG_DIR/share/* $BUILD_PREFIX/share/
+# # Copy flang
+# export FLANG_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/_finstall
+# cp -r $FLANG_DIR/bin/* $BUILD_PREFIX/bin/
+# cp -r $FLANG_DIR/lib/* $BUILD_PREFIX/lib/
+# cp -r $FLANG_DIR/include/* $BUILD_PREFIX/include/
+# cp -r $FLANG_DIR/share/* $BUILD_PREFIX/share/
+
+# Using flang as a WASM cross-compiler
+# https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
+# https://github.com/conda-forge/flang-feedstock/pull/69
+micromamba install -p $BUILD_PREFIX \
+    conda-forge/label/llvm_rc::libllvm19 \
+    conda-forge/label/llvm_dev::flang=19.1.0.rc2 \
+    -y --no-channel-priority
 
 
-# Build flang runtime
-export FLANG_RUNTIME_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/flang/runtime
+# # Build flang runtime
+# export FLANG_RUNTIME_DIR=/home/ihuicatl/Repos/Packaging/llvm-project/flang/runtime
 
-emcmake cmake -S $FLANG_RUNTIME_DIR -B _fbuild_runtime -GNinja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX \
-    -DCMAKE_CXX_COMPILER=clang++
+# emcmake cmake -S $FLANG_RUNTIME_DIR -B _fbuild_runtime -GNinja \
+#     -DCMAKE_BUILD_TYPE=Release \
+#     -DCMAKE_INSTALL_PREFIX=$PREFIX \
+#     -DCMAKE_CXX_COMPILER=clang++
 
-# because alias cmake = emcmake cmake
-$(which cmake) --build _fbuild_runtime
-$(which cmake) --install _fbuild_runtime
+# # because alias cmake = emcmake cmake
+# $(which cmake) --build _fbuild_runtime
+# $(which cmake) --install _fbuild_runtime
 
 echo "EEEE DONE WITH RUNTIME"
 # mkdir -p $PREFIX/include
@@ -38,10 +46,11 @@ echo "EEEE DONE WITH RUNTIME"
 
 # CMAKE_INSTALL_LIBDIR="lib" suppresses CentOS default of lib64 (conda expects lib)
 export FC=flang-new
+export FFLAGS="--target=wasm32-unknown-emscripten"
 
 LDFLAGS=""
 
-emcmake cmake .. \
+emcmake cmake -S . -B _build \
     -DCMAKE_Fortran_COMPILER=$FC \
     -DTEST_FORTRAN_COMPILER=OFF \
     -DCBLAS=no \
@@ -68,4 +77,6 @@ emcmake cmake .. \
 #   ${CMAKE_ARGS} ..
 echo "EEEE"
 
-make install -j${CPU_COUNT} VERBOSE=1
+# make install -j${CPU_COUNT} VERBOSE=1
+$(which cmake) --build _build
+$(which cmake) --install _build
