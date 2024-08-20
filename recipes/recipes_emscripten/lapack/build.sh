@@ -17,9 +17,9 @@ export FFLAGS="--target=wasm32-unknown-emscripten"
 
 emcmake cmake -S . -B _build \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCBLAS=no \
-    -DLAPACKE=no \
-    -DBUILD_TESTING=no \
+    -DCBLAS=ON \
+    -DLAPACKE=OFF \
+    -DBUILD_TESTING=OFF \
     -DCMAKE_Fortran_PREPROCESS=yes \
     -DCMAKE_Fortran_COMPILER=$FC \
     -DCMAKE_Fortran_FLAGS=$FFLAGS \
