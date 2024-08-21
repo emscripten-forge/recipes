@@ -1,12 +1,28 @@
-From f5ad0d8afe9ee2f5b7b7a3f39f805e9df73e7fe4 Mon Sep 17 00:00:00 2001
+From c4a8150024ae0942ab18d993c6c4617a6d405e65 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Tue, 30 Jul 2024 15:12:13 +0200
-Subject: [PATCH] Skip bad substitution
+Date: Wed, 21 Aug 2024 11:42:12 +0200
+Subject: [PATCH 1/9] Fix bad substitution error
 
 ---
+ configure      |  4 ++--
  etc/ldpaths.in | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/configure b/configure
+index a9a29c0..da201a5 100644
+--- a/configure
++++ b/configure
+@@ -24559,8 +24559,8 @@ case "${host_os}" in
+ esac
+ 
+ ## Export LD_LIBRARY_PATH or equivalent.
+-if eval "test -z \"\${${Rshlibpath_var}}\""; then
+-  eval "${Rshlibpath_var}=\"${R_LD_LIBRARY_PATH}\""
++if test -z ${Rshlibpath_var}; then
++  export Rshlibpath_var=${R_LD_LIBRARY_PATH}
+ else
+   eval "${Rshlibpath_var}=\"${R_LD_LIBRARY_PATH}${PATH_SEPARATOR}\${${Rshlibpath_var}}\""
+ fi
 diff --git a/etc/ldpaths.in b/etc/ldpaths.in
 index 314d364..ac201a8 100644
 --- a/etc/ldpaths.in
