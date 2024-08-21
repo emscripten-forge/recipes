@@ -104,7 +104,7 @@ export LDFLAGS="-L$PREFIX/lib \
     -s INVOKE_RUN=0 \
     -s MODULARIZE=1"
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
-export LIBS="-lz -lFortranRuntime" # NOTE: Needed for external blas and lapack
+export LIBS="-lFortranRuntime" # NOTE: Needed for external blas and lapack
 #   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
 #               you have headers in a nonstandard directory <include dir>
 export CPPFLAGS="-I$PREFIX/include" # Otherwise can't find zlib.h
