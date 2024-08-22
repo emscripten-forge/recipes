@@ -1,7 +1,18 @@
 #!/bin/bash
-# TODO: change the wasm_library_dir and numpy_lib variables
-export CFLAGS="
-    -I$(WASM_LIBRARY_DIR)/include \ 
+
+set -e
+
+# Using flang as a WASM cross-compiler
+# https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
+# https://github.com/conda-forge/flang-feedstock/pull/69
+micromamba install -p $BUILD_PREFIX \
+    conda-forge/label/llvm_rc::libllvm19=19.1.0.rc2 \
+    conda-forge/label/llvm_dev::flang=19.1.0.rc2 \
+    -y --no-channel-priority
+rm $BUILD_PREFIX/bin/clang # links to clang19
+ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
+
+export CFLAGS="-I$PREFIX/include \ 
     -Wno-return-type \ 
     -DUNDERSCORE_G77 \ 
     -fvisibility=default \ 
@@ -12,24 +23,30 @@ export CXXFLAGS="
     -fvisibility=default \
     "
 
-export LDFLAGS="
+export LDFLAGS="-L$PREFIX/lib \
+    -s WASM_BIGINT \
+    -s STACK_SIZE=5MB \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
+    -s FORCE_FILESYSTEM=1 \
+    -s INVOKE_RUN=0 \
+    -s MODULARIZE=1
     -L$(NUMPY_LIB)/core/lib/ \ 
     -L$(NUMPY_LIB)/random/lib/ \
-    -fexceptions \ 
-    "
+    -fexceptions"
 
 export BACKEND_FLAGS="
     -build-dir=build \
     "
 
-set -x
-git clone https://github.com/hoodmane/f2c.git --depth 1
-(cd f2c/src && cp makefile.u makefile && sed -i '' 's/gram.c:/gram.c1:/' makefile)
-export F2C_PATH=$(BUILD_PREFIX)/f2c/src/f2c
+#   FC          Fortran compiler command
+export FC=flang-new
+#   FCFLAGS     Fortran compiler flags
+export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 
-echo F2C_PATH: $F2C_PATH
-export NPY_BLAS_LIBS="-I$WASM_LIBRARY_DIR/include $WASM_LIBRARY_DIR/lib/libopenblas.so"
-export NPY_LAPACK_LIBS="-I$WASM_LIBRARY_DIR/include $WASM_LIBRARY_DIR/lib/libopenblas.so"
+
+export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
+export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 
 sed -i '' 's/void DQA/int DQA/g' scipy/integrate/__quadpack.h
 
@@ -66,6 +83,5 @@ sed -i '' 's/,1)/)/g' scipy/spatial/qhull_misc.h
 
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
-
 
 $PYTHON -m build
