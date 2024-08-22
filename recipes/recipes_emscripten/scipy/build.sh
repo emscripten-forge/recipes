@@ -2,6 +2,8 @@
 
 set -e
 
+mkdir -p build
+
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
@@ -86,12 +88,16 @@ echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 
 #${PYTHON} -m pip install . --no-build-isolation
 
+# meson-python already sets up a -Dbuildtype=release argument to meson, so
+# we need to strip --buildtype out of MESON_ARGS or fail due to redundancy
+MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
+
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 $PYTHON -m build -w -n -x \
-    -Cbuilddir=builddir \
+    -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
     -Csetup-args=-Dblas=blas \
     -Csetup-args=-Dlapack=lapack \
     -Csetup-args=-Duse-g77-abi=true \
-    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
-    || (cat builddir/meson-logs/meson-log.txt && exit 1)
+#    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
+#    || (cat builddir/meson-logs/meson-log.txt && exit 1)
