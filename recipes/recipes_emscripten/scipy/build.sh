@@ -84,4 +84,14 @@ sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 
-${PYTHON} -m pip install . --no-build-isolation
+#${PYTHON} -m pip install . --no-build-isolation
+
+# -wnx flags mean: --wheel --no-isolation --skip-dependency-check
+$PYTHON -m build -w -n -x \
+    -Cbuilddir=builddir \
+    -Cinstall-args=--tags=runtime,python-runtime,devel \
+    -Csetup-args=-Dblas=blas \
+    -Csetup-args=-Dlapack=lapack \
+    -Csetup-args=-Duse-g77-abi=true \
+    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
+    || (cat builddir/meson-logs/meson-log.txt && exit 1)
