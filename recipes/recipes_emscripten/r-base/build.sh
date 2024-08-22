@@ -55,11 +55,11 @@ export SHLIB_CFLAGS="-sSIDE_MODULE"
 #                  from a C or Fortran compiler only
 
 #   SHLIB_LDFLAGS: special flags used by SHLIB_LD
-# NOTE: Needed to override the default -shared flag, however this causes an
+# FIXME: Needed to override the default -shared flag, however this causes an
 # issue with zlib.
 # wasm-ld: error: $PREFIX/lib/libz.a(crc32.o): relocation R_WASM_MEMORY_ADDR_SLEB
 # cannot be used against symbol `crc_table`; recompile with -fPIC
-# export SHLIB_LDFLAGS="-sSIDE_MODULE"
+export SHLIB_LDFLAGS="-sSIDE_MODULE"
 
 #   DYLIB_LD:      command for linking dynamic libraries which contain object files
 #                  from a C or Fortran compiler only
