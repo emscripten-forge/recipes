@@ -3,7 +3,6 @@
 set -e
 
 mkdir -p build
-
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
@@ -14,32 +13,31 @@ micromamba install -p $BUILD_PREFIX \
 rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
-export CFLAGS="-I$PREFIX/include \ 
-    -Wno-return-type \ 
-    -DUNDERSCORE_G77 \ 
-    -fvisibility=default \ 
-    "
+#export CFLAGS="-I$PREFIX/include \ 
+#    -Wno-return-type \ 
+#    -DUNDERSCORE_G77 \ 
+#    -fvisibility=default \ 
+#    "
 
-export CXXFLAGS="
-    -fexceptions \
-    -fvisibility=default \
-    "
+#export CXXFLAGS="
+#    -fexceptions \
+#    -fvisibility=default \
+#    "
 
-export LDFLAGS="-L$PREFIX/lib \
-    -s WASM_BIGINT \
-    -s STACK_SIZE=5MB \
-    -s ALLOW_MEMORY_GROWTH=1 \
-    -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
-    -s FORCE_FILESYSTEM=1 \
-    -s INVOKE_RUN=0 \
-    -s MODULARIZE=1
-    -L$(NUMPY_LIB)/core/lib/ \ 
-    -L$(NUMPY_LIB)/random/lib/ \
-    -fexceptions"
+#export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
 
-export BACKEND_FLAGS="
-    -build-dir=build \
-    "
+#export LDFLAGS="-L$PREFIX/lib \
+#    -fexceptions"
+#    -L$(NUMPY_LIB)/core/lib/ \ 
+#    -L$(NUMPY_LIB)/random/lib/ \
+export LDFLAGS=""
+
+#export BACKEND_FLAGS="
+#    -build-dir=build \
+#    "
+
+#   LIBS        libraries to pass to the linker, e.g. -l<library>
+export LIBS="-lFortranRuntime" # NOTE: Needed for external blas and lapack
 
 #   FC          Fortran compiler command
 export FC=flang-new
@@ -99,5 +97,7 @@ $PYTHON -m build -w -n -x \
     -Csetup-args=-Dblas=blas \
     -Csetup-args=-Dlapack=lapack \
     -Csetup-args=-Duse-g77-abi=true \
+    -Csetup-args=-Dfortran_std=none \
+    -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" 
+#    || (cat $BUILD_PREFIX/build/meson-logs/meson-log.txt && exit 1)
 #    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
-#    || (cat builddir/meson-logs/meson-log.txt && exit 1)
