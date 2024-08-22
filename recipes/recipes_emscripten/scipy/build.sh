@@ -13,11 +13,10 @@ micromamba install -p $BUILD_PREFIX \
 rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
-#export CFLAGS="-I$PREFIX/include \ 
-#    -Wno-return-type \ 
-#    -DUNDERSCORE_G77 \ 
-#    -fvisibility=default \ 
-#    "
+export CFLAGS="-I$PREFIX/include \ 
+    -Wno-return-type \ 
+    -DUNDERSCORE_G77 \ 
+    -fvisibility=default"
 
 #export CXXFLAGS="
 #    -fexceptions \
@@ -26,11 +25,9 @@ ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 #export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
 
-#export LDFLAGS="-L$PREFIX/lib \
-#    -fexceptions"
-#    -L$(NUMPY_LIB)/core/lib/ \ 
-#    -L$(NUMPY_LIB)/random/lib/ \
-export LDFLAGS=""
+export LDFLAGS="-L$PREFIX/lib"
+
+export DYLIB_LDFLAGS="-sSIDE_MODULE"
 
 #export BACKEND_FLAGS="
 #    -build-dir=build \
@@ -94,8 +91,6 @@ MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
 $PYTHON -m build -w -n -x \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
-    -Csetup-args=-Dblas=blas \
-    -Csetup-args=-Dlapack=lapack \
     -Csetup-args=-Duse-g77-abi=true \
     -Csetup-args=-Dfortran_std=none \
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" 
