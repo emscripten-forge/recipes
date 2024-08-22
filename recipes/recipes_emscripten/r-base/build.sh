@@ -55,12 +55,7 @@ export SHLIB_CFLAGS="-sSIDE_MODULE"
 #                  from a C or Fortran compiler only
 
 #   SHLIB_LDFLAGS: special flags used by SHLIB_LD
-# FIXME: Needed to override the default -shared flag, however this causes an
-# issue with zlib.
-# wasm-ld: error: $PREFIX/lib/libz.a(crc32.o): relocation R_WASM_MEMORY_ADDR_SLEB
-# cannot be used against symbol `crc_table`; recompile with -fPIC
 export SHLIB_LDFLAGS="-sSIDE_MODULE"
-
 #   DYLIB_LD:      command for linking dynamic libraries which contain object files
 #                  from a C or Fortran compiler only
 #   DYLIB_LDFLAGS: special flags used for make a dynamic library
@@ -203,8 +198,8 @@ emconfigure ./configure \
     --prefix=$PREFIX    \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
-    --enable-R-shlib=no \
-    --enable-BLAS-shlib \
+    --enable-R-static-lib \
+    --enable-BLAS-shlib=no \
     --with-cairo \
     --without-readline  \
     --without-x         \
