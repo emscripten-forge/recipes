@@ -45,6 +45,7 @@ export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 #export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 #export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 #export PKG_CONFIG_PATH=/some/path...:$PKG_CONFIG_PATH
+echo $PKG_CONFIG_PATH
 
 sed -i 's/void DQA/int DQA/g' scipy/integrate/__quadpack.h
 
@@ -93,6 +94,7 @@ $PYTHON -m build -w -n -x \
     -Csetup-args=-Dbuildtype=debug \
     -Csetup-args=-Duse-g77-abi=true \
     -Csetup-args=-Dblas=blas \
+    -Csetup-args=-Dlapack=lapack \
     -Csetup-args=-Dfortran_std=none \
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" 
 #    || (cat $BUILD_PREFIX/build/meson-logs/meson-log.txt && exit 1)
