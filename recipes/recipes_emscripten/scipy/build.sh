@@ -92,6 +92,7 @@ $PYTHON -m build -w -n -x \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
     -Csetup-args=-Duse-g77-abi=true \
+    -Csetup-args=-Dblas=blas \
     -Csetup-args=-Dfortran_std=none \
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" 
 #    || (cat $BUILD_PREFIX/build/meson-logs/meson-log.txt && exit 1)
