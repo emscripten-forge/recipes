@@ -46,7 +46,12 @@ export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 #export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 #export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 #export PKG_CONFIG_PATH=/some/path...:$PKG_CONFIG_PATH
-echo $PKG_CONFIG_PATH
+#   PKG_CONFIG  path to pkg-config (or pkgconf) utility
+export PKG_CONFIG=${BUILD_PREFIX}/bin/pkg-config
+#   PKG_CONFIG_PATH directories to add to pkg-config's search path
+export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+#   PKG_CONFIG_LIBDIR path overriding pkg-config's default search path
+export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
 # Change many functions that return void into functions that return int
 sed -i 's/void DQA/int DQA/g' scipy/integrate/__quadpack.h
