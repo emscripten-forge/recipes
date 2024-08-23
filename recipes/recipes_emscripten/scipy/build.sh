@@ -42,8 +42,9 @@ export FC=flang-new
 export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 
 
-export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
-export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
+#export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
+#export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
+#export PKG_CONFIG_PATH=/some/path...:$PKG_CONFIG_PATH
 
 sed -i 's/void DQA/int DQA/g' scipy/integrate/__quadpack.h
 
@@ -81,16 +82,15 @@ sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 
-#${PYTHON} -m pip install . --no-build-isolation
-
 # meson-python already sets up a -Dbuildtype=release argument to meson, so
 # we need to strip --buildtype out of MESON_ARGS or fail due to redundancy
-MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
+#MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 $PYTHON -m build -w -n -x \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
+    -Csetup-args=-Dbuildtype=debug \
     -Csetup-args=-Duse-g77-abi=true \
     -Csetup-args=-Dblas=blas \
     -Csetup-args=-Dfortran_std=none \
