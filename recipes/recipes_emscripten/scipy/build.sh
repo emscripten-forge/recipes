@@ -35,7 +35,9 @@ export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 #   PKG_CONFIG_LIBDIR path overriding pkg-config's default search path
 export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
-export MESON_ARGS="--prefix=$PREFIX -Dlibdir=lib"
+# meson-python already sets up a -Dbuildtype=release argument to meson, so
+# we need to strip --buildtype out of MESON_ARGS or fail due to redundancy
+#MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
