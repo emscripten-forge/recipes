@@ -64,8 +64,8 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 #MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
-#cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
-#echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
+cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
+echo "python = '$PREFIX/bin/python3.11'" >> $SRC_DIR/emscripten.meson.cross
 
 $PYTHON -m build -w -n -x -v \
     -Cbuilddir=build \
