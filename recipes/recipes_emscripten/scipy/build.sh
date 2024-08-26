@@ -18,6 +18,30 @@ rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 
+export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
+    -fdebug-prefix-map=/home/runner/work/recipes/recipes/output/bld/rattler-build_scipy_1724669666/work=/usr/local/src/conda/scipy-1.13.0 \
+    -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix -DUNDERSCORE_G77 -I$PREFIX/include -sWASM_BIGINT" 
+#    -Wno-return-type \ 
+#    -fvisibility=default"
+
+export CXXFLAGS="$CXXFLAGS \
+    -fexceptions \
+    -fvisibility=default"
+
+#export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
+
+#export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
+#    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
+
+#export DYLIB_LDFLAGS="-sSIDE_MODULE"
+
+#export BACKEND_FLAGS="
+#    -build-dir=build \
+#    "
+
+#   LIBS        libraries to pass to the linker, e.g. -l<library>
+export LIBS=" $LIBS \
+    -lFortranRuntime" # NOTE: Needed for external blas and lapack
 
 #   FC          Fortran compiler command
 export FC=flang-new
@@ -40,8 +64,8 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 #MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
-cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
-echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
+#cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
+#echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
 
 $PYTHON -m build -w -n -x -v \
     -Cbuilddir=build \
@@ -50,7 +74,7 @@ $PYTHON -m build -w -n -x -v \
     -Csetup-args=-Dblas=blas \
     -Csetup-args=-Dlapack=lapack \
     -Csetup-args=-Dfortran_std=none \
-    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
+    -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" \
     -Ccompile-args="-j1" \
     -Ccompile-args="-v" 
 #    -Csetup-args=-Duse-g77-abi=true \
