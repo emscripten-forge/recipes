@@ -20,7 +20,7 @@ ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
     -fdebug-prefix-map=/home/runner/work/recipes/recipes/output/bld/rattler-build_scipy_1724669666/work=/usr/local/src/conda/scipy-1.13.0 \
-    -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix -DUNDERSCORE_G77 -I$PREFIX/include -sWASM_BIGINT" 
+    -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix -DUNDERSCORE_G77 -I$PREFIX/include" 
 #    -Wno-return-type \ 
 #    -fvisibility=default"
 
@@ -59,9 +59,7 @@ export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 #   PKG_CONFIG_LIBDIR path overriding pkg-config's default search path
 export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
-# meson-python already sets up a -Dbuildtype=release argument to meson, so
-# we need to strip --buildtype out of MESON_ARGS or fail due to redundancy
-#MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
+export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
