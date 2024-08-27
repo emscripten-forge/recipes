@@ -63,10 +63,12 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
 export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 
-# -wnx flags mean: --wheel --no-isolation --skip-dependency-check
+export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
-echo "python = '$PREFIX/bin/python3.11'" >> $SRC_DIR/emscripten.meson.cross
+echo -e "python = '$PREFIX/bin/python3.11'\n" >> $SRC_DIR/emscripten.meson.cross #not sure if this should be host or build python (maybe change to $BUILD_PREFIX)
+echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'" >> $SRC_DIR/emscripten.meson.cross
 
+# -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 $PYTHON -m build -w -n -x -v \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
