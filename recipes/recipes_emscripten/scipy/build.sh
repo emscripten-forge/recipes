@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+set -o pipefail
 
 mkdir -p build
 
@@ -75,7 +76,8 @@ echo -e "pythran-include-dir = sitepkg + 'pythran'" >> $SRC_DIR/emscripten.meson
 cat $SRC_DIR/emscripten.meson.cross
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
-$PYTHON -m build -w -n -x -v \
+run_build() {
+    $PYTHON -m build -w -n -x -v \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
     -Csetup-args=-Dbuildtype=debug \
@@ -85,6 +87,11 @@ $PYTHON -m build -w -n -x -v \
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" \
     -Ccompile-args="-j1" \
     -Ccompile-args="-v" 
+}
+
+if ! run_build; then
+    cat $SRC_DIR/build/meson-logs/meson-log.txt
+    exit 1
+fi
 #    -Csetup-args=-Duse-g77-abi=true \
-#    || (cat $BUILD_PREFIX/build/meson-logs/meson-log.txt && exit 1)
 #    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
