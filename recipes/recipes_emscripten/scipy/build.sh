@@ -19,8 +19,7 @@ ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 
 export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
-    -fdebug-prefix-map=/home/runner/work/recipes/recipes/output/bld/rattler-build_scipy_1724669666/work=/usr/local/src/conda/scipy-1.13.0 \
-    -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix -DUNDERSCORE_G77 -I$PREFIX/include" 
+    -DUNDERSCORE_G77 -I$PREFIX/include" 
 #    -Wno-return-type \ 
 #    -fvisibility=default"
 
