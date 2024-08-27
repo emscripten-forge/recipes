@@ -5,7 +5,7 @@ set -o pipefail
 
 mkdir -p build
 
-printenv
+#printenv
 
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
@@ -29,11 +29,18 @@ export CXXFLAGS="$CXXFLAGS \
 
 #export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
 
-export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
-    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
+#export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
+#    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
 
 # empty LDFLAGS because of -sWASM_BIGINT
-#export LDFLAGS="-L$PREFIX/lib"
+export LDFLAGS="-L$PREFIX/lib \
+    -sWASM_BIGINT \
+    -sSTACK_SIZE=5MB \
+    -sALLOW_MEMORY_GROWTH=1 \
+    -sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
+    -sFORCE_FILESYSTEM=1 \
+    -sINVOKE_RUN=0 \
+    -sMODULARIZE=1"
 
 #export DYLIB_LDFLAGS="-sSIDE_MODULE"
 
