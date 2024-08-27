@@ -32,7 +32,7 @@ export CXXFLAGS="$CXXFLAGS \
 #    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
 
 # empty LDFLAGS because of -sWASM_BIGINT
-export LDFLAGS=""
+#export LDFLAGS=""
 
 #export DYLIB_LDFLAGS="-sSIDE_MODULE"
 
