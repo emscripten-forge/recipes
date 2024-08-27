@@ -4,9 +4,8 @@ set -e
 
 mkdir -p build
 
-echo "-------- PRINTING ENVIRONMENT VARIABLES   --------"
 printenv
-echo "-------- DONE PRINTING                    --------"
+
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
@@ -63,10 +62,17 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
 export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 
-export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
+# https://docs.scipy.org/doc/scipy/building/cross_compilation.html#
+#export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
+# we write the emscripten.meson.cross file mostly here to be able to include dynamic paths
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 echo -e "python = '$PREFIX/bin/python3.11'\n" >> $SRC_DIR/emscripten.meson.cross #not sure if this should be host or build python (maybe change to $BUILD_PREFIX)
-echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'" >> $SRC_DIR/emscripten.meson.cross
+echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'\n" >> $SRC_DIR/emscripten.meson.cross
+echo -e "[properties]\nneeds_exe_wrapper = true\nskip_sanity_check = true\n" >> $SRC_DIR/emscripten.meson.cross
+echo -e "longdouble_format= 'IEEE_QUAD_LE'\nnumpy-include-dir = sitepkg + 'numpy/core/include'\n" >> $SRC_DIR/emscripten.meson.cross
+echo -e "pythran-include-dir = sitepkg + 'pythran'" >> $SRC_DIR/emscripten.meson.cross
+
+cat $SRC_DIR/emscripten.meson.cross
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 $PYTHON -m build -w -n -x -v \
