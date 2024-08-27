@@ -32,6 +32,9 @@ export CXXFLAGS="$CXXFLAGS \
 #export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
 #    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
 
+# empty LDFLAGS because of -sWASM_BIGINT
+export LDFLAGS=""
+
 #export DYLIB_LDFLAGS="-sSIDE_MODULE"
 
 #export BACKEND_FLAGS="
