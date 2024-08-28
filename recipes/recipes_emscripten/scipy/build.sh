@@ -1,12 +1,12 @@
 #!/bin/bash
 
 set -e
-set -o pipefail
 
 mkdir -p build
 
-#printenv
-
+echo "-------- PRINTING ENVIRONMENT VARIABLES   --------"
+printenv
+echo "-------- DONE PRINTING                    --------"
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
@@ -18,41 +18,21 @@ rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 
-#export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
-#    -DUNDERSCORE_G77 -I$PREFIX/include" 
+export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
+    -DUNDERSCORE_G77 -I$PREFIX/include" 
 #    -Wno-return-type \ 
 #    -fvisibility=default"
-
-export CFLAGS="-I$PREFIX/include \
-    -DUNDERSCORE_G77 \
-    -fvisibility=default"
 
 export CXXFLAGS="$CXXFLAGS \
     -fexceptions \
     -fvisibility=default"
 
-
-export SHLIB_CFLAGS="-sSIDE_MODULE"
-export SHLIB_LDFLAGS="-sSIDE_MODULE"
-export DYLIB_LDFLAGS="-sSIDE_MODULE"
-
-
 #export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
 
-#export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
-#    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
+export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
+    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
 
-#export LDFLAGS="-L$PREFIX/lib \
-#    -sWASM_BIGINT \
-#    -sSTACK_SIZE=5MB \
-#    -sALLOW_MEMORY_GROWTH=1 \
-#    -sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
-#    -sFORCE_FILESYSTEM=1 \
-#    -sINVOKE_RUN=0 \
-#    -sMODULARIZE=1"
-
-# empty LDFLAGS because of -sWASM_BIGINT
-export LDFLAGS="-L$PREFIX/lib"
+#export DYLIB_LDFLAGS="-sSIDE_MODULE"
 
 #export BACKEND_FLAGS="
 #    -build-dir=build \
@@ -80,21 +60,11 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
 export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 
-# https://docs.scipy.org/doc/scipy/building/cross_compilation.html#
-#export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
-# we write the emscripten.meson.cross file mostly here to be able to include dynamic paths
-cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
-echo -e "python = '$BUILD_PREFIX/bin/python3.11'\n" >> $SRC_DIR/emscripten.meson.cross #not sure if this should be host or build python (maybe change to $BUILD_PREFIX)
-echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'\n" >> $SRC_DIR/emscripten.meson.cross
-echo -e "[properties]\nneeds_exe_wrapper = true\nskip_sanity_check = true\n" >> $SRC_DIR/emscripten.meson.cross
-echo -e "longdouble_format= 'IEEE_QUAD_LE'\nnumpy-include-dir = sitepkg + 'numpy/core/include'\n" >> $SRC_DIR/emscripten.meson.cross
-echo -e "pythran-include-dir = sitepkg + 'pythran'" >> $SRC_DIR/emscripten.meson.cross
-
-#cat $SRC_DIR/emscripten.meson.cross
-
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
-run_build() {
-    $PYTHON -m build -w -n -x -v \
+cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
+echo "python = '$BUILD_PREFIX/bin/python3.11'" >> $SRC_DIR/emscripten.meson.cross
+
+$PYTHON -m build -w -n -x -v \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
     -Csetup-args=-Dbuildtype=debug \
@@ -104,11 +74,6 @@ run_build() {
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" \
     -Ccompile-args="-j1" \
     -Ccompile-args="-v" 
-}
-
-if ! run_build; then
-    cat $SRC_DIR/build/meson-logs/meson-log.txt
-    exit 1
-fi
 #    -Csetup-args=-Duse-g77-abi=true \
+#    || (cat $BUILD_PREFIX/build/meson-logs/meson-log.txt && exit 1)
 #    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
