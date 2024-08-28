@@ -64,16 +64,21 @@ export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 echo "python = '$BUILD_PREFIX/bin/python3.11'" >> $SRC_DIR/emscripten.meson.cross
 
-$PYTHON -m build -w -n -x -v \
+# -wnx flags mean: --wheel --no-isolation --skip-dependency-check
+run_build() {
+    $PYTHON -m build -w -n -x -v \
     -Cbuilddir=build \
     -Cinstall-args=--tags=runtime,python-runtime,devel \
     -Csetup-args=-Dbuildtype=debug \
     -Csetup-args=-Dblas=blas \
     -Csetup-args=-Dlapack=lapack \
     -Csetup-args=-Dfortran_std=none \
-    -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" \
+    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
     -Ccompile-args="-j1" \
     -Ccompile-args="-v" 
-#    -Csetup-args=-Duse-g77-abi=true \
-#    || (cat $BUILD_PREFIX/build/meson-logs/meson-log.txt && exit 1)
-#    -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=} \
+}
+
+if ! run_build; then
+    cat $SRC_DIR/build/meson-logs/meson-log.txt
+    exit 1
+fi
