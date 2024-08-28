@@ -84,7 +84,7 @@ export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 #export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
 # we write the emscripten.meson.cross file mostly here to be able to include dynamic paths
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
-echo -e "python = '$PREFIX/bin/python3.11'\n" >> $SRC_DIR/emscripten.meson.cross #not sure if this should be host or build python (maybe change to $BUILD_PREFIX)
+echo -e "python = '$BUILD_PREFIX/bin/python3.11'\n" >> $SRC_DIR/emscripten.meson.cross #not sure if this should be host or build python (maybe change to $BUILD_PREFIX)
 echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'\n" >> $SRC_DIR/emscripten.meson.cross
 echo -e "[properties]\nneeds_exe_wrapper = true\nskip_sanity_check = true\n" >> $SRC_DIR/emscripten.meson.cross
 echo -e "longdouble_format= 'IEEE_QUAD_LE'\nnumpy-include-dir = sitepkg + 'numpy/core/include'\n" >> $SRC_DIR/emscripten.meson.cross
