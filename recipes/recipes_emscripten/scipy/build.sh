@@ -18,10 +18,14 @@ rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 
-export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
-    -DUNDERSCORE_G77 -I$PREFIX/include" 
+#export CFLAGS="-mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -ffunction-sections -pipe -isystem $PREFIX/include \
+#    -DUNDERSCORE_G77 -I$PREFIX/include" 
 #    -Wno-return-type \ 
 #    -fvisibility=default"
+
+export CFLAGS="-I$PREFIX/include \
+    -DUNDERSCORE_G77 \
+    -fvisibility=default"
 
 export CXXFLAGS="$CXXFLAGS \
     -fexceptions \
@@ -32,8 +36,6 @@ export CXXFLAGS="$CXXFLAGS \
 #export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
 #    -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
 
-# empty LDFLAGS because of -sWASM_BIGINT
-export LDFLAGS="-L$PREFIX/lib"
 #export LDFLAGS="-L$PREFIX/lib \
 #    -sWASM_BIGINT \
 #    -sSTACK_SIZE=5MB \
@@ -43,6 +45,9 @@ export LDFLAGS="-L$PREFIX/lib"
 #    -sINVOKE_RUN=0 \
 #    -sMODULARIZE=1"
 
+# empty LDFLAGS because of -sWASM_BIGINT
+#export LDFLAGS="-L$PREFIX/lib"
+
 #export DYLIB_LDFLAGS="-sSIDE_MODULE"
 
 #export BACKEND_FLAGS="
@@ -50,8 +55,8 @@ export LDFLAGS="-L$PREFIX/lib"
 #    "
 
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
-export LIBS=" $LIBS \
-    -lFortranRuntime" # NOTE: Needed for external blas and lapack
+#export LIBS=" $LIBS \
+#    -lFortranRuntime" # NOTE: Needed for external blas and lapack
 
 #   FC          Fortran compiler command
 export FC=flang-new
@@ -81,7 +86,7 @@ echo -e "[properties]\nneeds_exe_wrapper = true\nskip_sanity_check = true\n" >> 
 echo -e "longdouble_format= 'IEEE_QUAD_LE'\nnumpy-include-dir = sitepkg + 'numpy/core/include'\n" >> $SRC_DIR/emscripten.meson.cross
 echo -e "pythran-include-dir = sitepkg + 'pythran'" >> $SRC_DIR/emscripten.meson.cross
 
-cat $SRC_DIR/emscripten.meson.cross
+#cat $SRC_DIR/emscripten.meson.cross
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 run_build() {
