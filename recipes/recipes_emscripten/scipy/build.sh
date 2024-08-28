@@ -31,6 +31,12 @@ export CXXFLAGS="$CXXFLAGS \
     -fexceptions \
     -fvisibility=default"
 
+
+export SHLIB_CFLAGS="-sSIDE_MODULE"
+export SHLIB_LDFLAGS="-sSIDE_MODULE"
+export DYLIB_LDFLAGS="-sSIDE_MODULE"
+
+
 #export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
 
 #export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
@@ -46,17 +52,15 @@ export CXXFLAGS="$CXXFLAGS \
 #    -sMODULARIZE=1"
 
 # empty LDFLAGS because of -sWASM_BIGINT
-#export LDFLAGS="-L$PREFIX/lib"
-
-#export DYLIB_LDFLAGS="-sSIDE_MODULE"
+export LDFLAGS="-L$PREFIX/lib"
 
 #export BACKEND_FLAGS="
 #    -build-dir=build \
 #    "
 
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
-#export LIBS=" $LIBS \
-#    -lFortranRuntime" # NOTE: Needed for external blas and lapack
+export LIBS=" $LIBS \
+    -lFortranRuntime" # NOTE: Needed for external blas and lapack
 
 #   FC          Fortran compiler command
 export FC=flang-new
