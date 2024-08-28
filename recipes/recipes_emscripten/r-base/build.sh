@@ -27,8 +27,13 @@ export r_cv_have_pcre832=yes
 export r_cv_size_max=yes
 export ac_cv_lib_z_inflateInit2_=yes
 export ac_cv_lib_bz2_BZ2_bzlibVersion=yes
-export ac_cv_have_decl_getrusage=no # Not supported
-export ac_cv_have_decl_getrlimit=no # Not supported
+
+# Not supported
+export ac_cv_have_decl_getrusage=no
+export ac_cv_have_decl_getrlimit=no
+export ac_cv_have_decl_sigaltstack=no
+export ac_cv_have_decl_wcsftime=no
+export ac_cv_have_decl_umask=no
 
 # Otherwise set to .not_implemented and cannot be used
 # Must be shared... otherwise duplicate symbol issues
