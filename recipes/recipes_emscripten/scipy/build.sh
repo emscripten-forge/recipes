@@ -24,16 +24,9 @@ export CXXFLAGS="$CXXFLAGS \
     -fexceptions \
     -fvisibility=default"
 
-#export NUMPY_LIB=${BUILD_PREFIX}/lib/python${PYVERSION}/site-packages/numpy
-
 export LDFLAGS="-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now -Wl,--disable-new-dtags -Wl,--gc-sections -Wl,--allow-shlib-undefined \
     -Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
 
-#export DYLIB_LDFLAGS="-sSIDE_MODULE"
-
-#export BACKEND_FLAGS="
-#    -build-dir=build \
-#    "
 
 #   LIBS        libraries to pass to the linker, e.g. -l<library>
 export LIBS=" $LIBS \
@@ -45,9 +38,6 @@ export FC=flang-new
 export FCFLAGS="$FFLAGS --target=wasm32-unknown-emscripten"
 
 
-#export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
-#export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
-#export PKG_CONFIG_PATH=/some/path...:$PKG_CONFIG_PATH
 #   PKG_CONFIG  path to pkg-config (or pkgconf) utility
 export PKG_CONFIG=${BUILD_PREFIX}/bin/pkg-config
 #   PKG_CONFIG_PATH directories to add to pkg-config's search path
@@ -57,7 +47,8 @@ export PKG_CONFIG_LIBDIR=$PREFIX/lib
 
 export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 
-# -wnx flags mean: --wheel --no-isolation --skip-dependency-check
+# we write to the cross file here so that we can add paths dynamically
+# https://docs.scipy.org/doc/scipy/building/cross_compilation.html
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 echo "python = '$BUILD_PREFIX/bin/python3.11'" >> $SRC_DIR/emscripten.meson.cross
 echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'\n" >> $SRC_DIR/emscripten.meson.cross
