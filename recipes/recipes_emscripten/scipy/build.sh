@@ -60,6 +60,12 @@ export MESON_ARGS="--buildtype debug --prefix=$PREFIX -Dlibdir=lib"
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 echo "python = '$BUILD_PREFIX/bin/python3.11'" >> $SRC_DIR/emscripten.meson.cross
+echo -e "[constants]\nsitepkg = '$PREFIX/lib/python3.11/site-packages/'\n" >> $SRC_DIR/emscripten.meson.cross
+echo -e "[properties]\nneeds_exe_wrapper = true\nskip_sanity_check = true\n" >> $SRC_DIR/emscripten.meson.cross
+echo -e "longdouble_format= 'IEEE_QUAD_LE'\nnumpy-include-dir = sitepkg + 'numpy/core/include'\n" >> $SRC_DIR/emscripten.meson.cross
+echo -e "pythran-include-dir = sitepkg + 'pythran'" >> $SRC_DIR/emscripten.meson.cross
+
+cat $SRC_DIR/emscripten.meson.cross
 
 # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 run_build() {
