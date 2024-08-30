@@ -4,9 +4,6 @@ set -e
 
 mkdir -p build
 
-echo "-------- PRINTING ENVIRONMENT VARIABLES   --------"
-printenv
-echo "-------- DONE PRINTING                    --------"
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
