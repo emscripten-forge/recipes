@@ -1,5 +1,8 @@
 #!/bin/bash
 
+export CFLAGS="$CFLAGS -fPIC -I$PREFIX/include"
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+
 ./autogen.sh
 emconfigure ./configure \
     --prefix=$PREFIX \
