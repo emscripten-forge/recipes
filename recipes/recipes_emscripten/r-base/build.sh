@@ -39,8 +39,6 @@ mkdir _build
 cp $RECIPE_DIR/config.site _build/config.site
 cd _build
 
-chmod +x ../configure
-
 # NOTE: the host and build systems are explicitly set to enable the cross-
 # compiling options even though it's not fully supported.
 # Otherwise, it assumes it's not cross-compiling.
