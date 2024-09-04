@@ -1,0 +1,129 @@
+From bfef30593b38dded4d8be13e59bdc93f3fab10a4 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Mon, 29 Jul 2024 10:11:21 +0200
+Subject: [PATCH 6/7] [Flang][Runtime] Handle missing definitions in <cfenv>
+
+According to the C99 standard, <fenv.h> may not define FE_INVALID and
+the likes. Even if C++11 mandate them, musl and emscripten don't provide
+them, so handle that case.
+---
+ flang/runtime/edit-input.cpp | 11 +++++++++++
+ flang/runtime/exceptions.cpp | 24 +++++++++++++++++++++++-
+ flang/runtime/stop.cpp       | 10 ++++++++++
+ 3 files changed, 44 insertions(+), 1 deletion(-)
+
+diff --git a/flang/runtime/edit-input.cpp b/flang/runtime/edit-input.cpp
+index 37989bbcee0a..ec900071875e 100644
+--- a/flang/runtime/edit-input.cpp
++++ b/flang/runtime/edit-input.cpp
+@@ -507,18 +507,29 @@ static RT_API_ATTRS void RaiseFPExceptions(
+ #define RAISE std::feraiseexcept
+ #endif
+ #endif // !defined(RT_DEVICE_COMPILATION)
++
++// Some environment (e.g. emscripten, musl) don't define FE_OVERFLOW as allowed
++// by c99 (but not c++11) :-/
++#if defined(FE_OVERFLOW) || defined(RT_DEVICE_COMPILATION)
+   if (flags & decimal::ConversionResultFlags::Overflow) {
+     RAISE(FE_OVERFLOW);
+   }
++#endif
++#if defined(FE_UNDERFLOW) || defined(RT_DEVICE_COMPILATION)
+   if (flags & decimal::ConversionResultFlags::Underflow) {
+     RAISE(FE_UNDERFLOW);
+   }
++#endif
++#if defined(FE_INEXACT) || defined(RT_DEVICE_COMPILATION)
+   if (flags & decimal::ConversionResultFlags::Inexact) {
+     RAISE(FE_INEXACT);
+   }
++#endif
++#if defined(FE_INVALID) || defined(RT_DEVICE_COMPILATION)
+   if (flags & decimal::ConversionResultFlags::Invalid) {
+     RAISE(FE_INVALID);
+   }
++#endif
+ #undef RAISE
+ }
+ 
+diff --git a/flang/runtime/exceptions.cpp b/flang/runtime/exceptions.cpp
+index 2032ce7b1224..8239c556bcea 100644
+--- a/flang/runtime/exceptions.cpp
++++ b/flang/runtime/exceptions.cpp
+@@ -12,9 +12,26 @@
+ #include "terminator.h"
+ #include <cfenv>
+ 
++// When not supported, these macro are undefined in cfenv.h,
++// set them to zero in that case.
++#ifndef FE_INVALID
++#define FE_INVALID 0
++#endif
+ #ifndef __FE_DENORM
+ #define __FE_DENORM 0 // denorm is nonstandard
+ #endif
++#ifndef FE_DIVBYZERO
++#define FE_DIVBYZERO 0
++#endif
++#ifndef FE_OVERFLOW
++#define FE_OVERFLOW 0
++#endif
++#ifndef FE_UNDERFLOW
++#define FE_UNDERFLOW 0
++#endif
++#ifndef FE_INEXACT
++#define FE_INEXACT 0
++#endif
+ 
+ namespace Fortran::runtime {
+ 
+@@ -45,7 +62,12 @@ uint32_t RTNAME(MapException)(uint32_t excepts) {
+   if (excepts == 0 || excepts >= mapSize) {
+     terminator.Crash("Invalid excepts value: %d", excepts);
+   }
+-  return map[excepts];
++  uint32_t except_value = map[excepts];
++  if (except_value == 0) {
++    terminator.Crash(
++        "Excepts value %d not supported by flang runtime", excepts);
++  }
++  return except_value;
+ }
+ 
+ // Verify that the size of ieee_modes_type and ieee_status_type objects from
+diff --git a/flang/runtime/stop.cpp b/flang/runtime/stop.cpp
+index 98324da1d91e..cfb36b408402 100644
+--- a/flang/runtime/stop.cpp
++++ b/flang/runtime/stop.cpp
+@@ -26,21 +26,31 @@ static void DescribeIEEESignaledExceptions() {
+ #endif
+   if (excepts) {
+     std::fputs("IEEE arithmetic exceptions signaled:", stderr);
++#ifdef FE_DIVBYZERO
+     if (excepts & FE_DIVBYZERO) {
+       std::fputs(" DIVBYZERO", stderr);
+     }
++#endif
++#ifdef FE_INEXACT
+     if (excepts & FE_INEXACT) {
+       std::fputs(" INEXACT", stderr);
+     }
++#endif
++#ifdef FE_INVALID
+     if (excepts & FE_INVALID) {
+       std::fputs(" INVALID", stderr);
+     }
++#endif
++#ifdef FE_OVERFLOW
+     if (excepts & FE_OVERFLOW) {
+       std::fputs(" OVERFLOW", stderr);
+     }
++#endif
++#ifdef FE_UNDERFLOW
+     if (excepts & FE_UNDERFLOW) {
+       std::fputs(" UNDERFLOW", stderr);
+     }
++#endif
+     std::fputc('\n', stderr);
+   }
+ }
