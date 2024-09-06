@@ -1,0 +1,25 @@
+From 20e0c7a1fbef6b570dd17e9ca8d1c9f763b61d6f Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 21 Aug 2024 13:07:43 +0200
+Subject: [PATCH 5/9] Use R binary from build prefix
+
+---
+ src/scripts/R.sh.in | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/scripts/R.sh.in b/src/scripts/R.sh.in
+index cdbac8b..9b82870 100644
+--- a/src/scripts/R.sh.in
++++ b/src/scripts/R.sh.in
+@@ -249,7 +249,10 @@ done
+ 
+ . "${R_HOME}/etc${R_ARCH}/ldpaths"
+ 
+-R_binary="${R_HOME}/bin/exec${R_ARCH}/R"
++# This does not work when cross-compiling because the R binary is JavaScript
++# R_binary="${R_HOME}/bin/exec${R_ARCH}/R"
++R_binary="${BUILD_PREFIX}/bin/R"
++
+ export R_ARCH
+ 
+ case "${gui}" in

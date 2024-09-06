@@ -1,0 +1,44 @@
+context:
+  name: tiktoken
+  version: 0.7.0
+
+package:
+  name: ${{name}}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/t/${{ name }}/tiktoken-${{ version }}.tar.gz
+  sha256: 1077266e949c24e0291f6c350433c6f0971365ece2b173a23bc3b9f9defef6b6
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{target_platform}}
+  - setuptools-rust
+  - rust
+  - cargo-bundle-licenses
+  host:
+  - python
+  run:
+  - regex
+
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_tiktoken.py
+
+
+about:
+  license_family: MIT
+  license_file:
+  - LICENSE
+  - THIRDPARTY.yml

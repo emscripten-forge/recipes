@@ -1,0 +1,41 @@
+context:
+  version: 1.14.0
+  name: gtest
+  
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/googletest/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  run_constraints:
+    - gmock ${{ version }}
+  run_exports:
+    - ${{ pin_subpackage('gtest', max_pin='x.x.x') }}
+tests:
+  - script:
+    - test -f $PREFIX/lib/libgtest.a
+    - test -f $PREFIX/lib/libgmock.a
+    - test -f $PREFIX/include/gtest/gtest.h
+    - test -f $PREFIX/include/gmock/gmock.h 
+
+about:
+  homepage: https://github.com/google/googletest
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Google's C++ test framework
+
+extra:
+  recipe-maintainers:
+    - KGB99
