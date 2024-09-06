@@ -1,0 +1,89 @@
+From 6254628834e8a98f06aab0c019613e3dc44575e1 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Fri, 9 Aug 2024 08:42:52 +0200
+Subject: [PATCH 7/7] Patches to build flang runtime with emcc
+
+---
+ flang/runtime/CMakeLists.txt | 46 ++++++++++++++++++------------------
+ flang/runtime/copy.cpp       |  4 ++--
+ 2 files changed, 25 insertions(+), 25 deletions(-)
+
+diff --git a/flang/runtime/CMakeLists.txt b/flang/runtime/CMakeLists.txt
+index d587fd44b167..a008e150ad54 100644
+--- a/flang/runtime/CMakeLists.txt
++++ b/flang/runtime/CMakeLists.txt
+@@ -103,7 +103,7 @@ append(${NO_LTO_FLAGS} CMAKE_CXX_FLAGS)
+ add_definitions(-U_GLIBCXX_ASSERTIONS)
+ add_definitions(-U_LIBCPP_ENABLE_ASSERTIONS)
+ 
+-add_subdirectory(Float128Math)
++# add_subdirectory(Float128Math)
+ 
+ set(sources
+   ISO_Fortran_binding.cpp
+@@ -230,28 +230,28 @@ set(supported_files
+ enable_cuda_compilation(FortranRuntime "${supported_files}")
+ enable_omp_offload_compilation("${supported_files}")
+ 
+-if (NOT TARGET FortranFloat128Math)
+-  # If FortranFloat128Math is not defined, then we are not building
+-  # standalone FortranFloat128Math library. Instead, include
+-  # the relevant sources into FortranRuntime itself.
+-  # The information is provided via FortranFloat128MathILib
+-  # interface library.
+-  get_target_property(f128_sources
+-    FortranFloat128MathILib INTERFACE_SOURCES
+-    )
+-  if (f128_sources)
+-    # The interface may define special macros for Float128Math files,
+-    # so we need to propagate them.
+-    get_target_property(f128_defs
+-      FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
+-      )
+-    set_property(SOURCE ${f128_sources}
+-      APPEND PROPERTY COMPILE_DEFINITIONS
+-      ${f128_defs}
+-      )
+-    list(APPEND sources ${f128_sources})
+-  endif()
+-endif()
++# if (NOT TARGET FortranFloat128Math)
++#   # If FortranFloat128Math is not defined, then we are not building
++#   # standalone FortranFloat128Math library. Instead, include
++#   # the relevant sources into FortranRuntime itself.
++#   # The information is provided via FortranFloat128MathILib
++#   # interface library.
++#   get_target_property(f128_sources
++#     FortranFloat128MathILib INTERFACE_SOURCES
++#     )
++#   if (f128_sources)
++#     # The interface may define special macros for Float128Math files,
++#     # so we need to propagate them.
++#     get_target_property(f128_defs
++#       FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
++#       )
++#     set_property(SOURCE ${f128_sources}
++#       APPEND PROPERTY COMPILE_DEFINITIONS
++#       ${f128_defs}
++#       )
++#     list(APPEND sources ${f128_sources})
++#   endif()
++# endif()
+ 
+ if (NOT DEFINED MSVC)
+   add_flang_library(FortranRuntime
+diff --git a/flang/runtime/copy.cpp b/flang/runtime/copy.cpp
+index 7cf948365414..f7f3d5e8dd6d 100644
+--- a/flang/runtime/copy.cpp
++++ b/flang/runtime/copy.cpp
+@@ -51,8 +51,8 @@ RT_API_ATTRS void CopyElement(const Descriptor &to, const SubscriptValue toAt[],
+           SubscriptValue extents[maxRank];
+           const typeInfo::Value *bounds{component->bounds()};
+           for (int dim{0}; dim < component->rank(); ++dim) {
+-            SubscriptValue lb{bounds[2 * dim].GetValue(&to).value_or(0)};
+-            SubscriptValue ub{bounds[2 * dim + 1].GetValue(&to).value_or(0)};
++            SubscriptValue lb = bounds[2 * dim].GetValue(&to).value_or(0);
++            SubscriptValue ub = bounds[2 * dim + 1].GetValue(&to).value_or(0);
+             extents[dim] = ub >= lb ? ub - lb + 1 : 0;
+           }
+           const typeInfo::DerivedType &compType{*component->derivedType()};

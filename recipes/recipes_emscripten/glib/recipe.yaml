@@ -1,38 +1,50 @@
 context:
-  version: "2.56.4"
-  major_minor: "2.56"
+  version: 2.80.5
+  major_minor: '2.80'
 
 package:
   name: glib
   version: ${{ version }}
 
 source:
-  url: https://download.gnome.org/sources/glib/${{ major_minor }}/glib-${{ version }}.tar.xz
-  sha256: 27f703d125efb07f8a743666b580df0b4095c59fc8750e8890132c91d437504c
+  url: https://download.gnome.org/sources/glib/${{ major_minor }}/glib-${{ version
+    }}.tar.xz
+  sha256: 9f23a9de803c695bbfde7e37d6626b18b9a83869689dd79019bf3ae66c3e6771
+  # Patch from https://gist.github.com/kleisauke/acfa1c09522705efa5eb0541d2d00887
   patches:
-    # patches taken from webR
-    # License: MIT
-    - patches/emscripten-configure.diff
-    - patches/emscripten-function-ptr.diff
-    - patches/emscripten-wasm.diff
-    - patches/emscripten-disable-pcre.diff
-    - patches/fix-python12.diff
+  - patches/glib.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    - pkg-config
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - gettext
-    - make
+  - pkg-config
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - meson
+  - packaging
   host:
-    - zlib
-    - libffi
+  - zlib
+  - libffi
+  - pcre2>=10.43
+
+tests:
+- package_contents:
+    include:
+    - glib-2.0/glib.h
+    - glib-2.0/gio/gio.h
+    - glib-2.0/gobject/gobject.h
+    - glib-2.0/gmodule.h
+    lib:
+    - libglib-2.0.a
+    - libgio-2.0.a
+    - libgobject-2.0.a
+    - libgmodule-2.0.a
+    - libgthread-2.0.a
 
 about:
   homepage: https://developer.gnome.org/glib/
   license: LGPL-2.1-or-later
-  summary: Provides core application building blocks for libraries and applications written in C.
+  summary: Provides core application building blocks for libraries and applications
+    written in C.
