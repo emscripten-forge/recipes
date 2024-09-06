@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "lets go"
-ls 
+ls
 ./bootstrap --skip-po
 emconfigure ./configure \
       --enable-single-binary \
@@ -13,9 +13,9 @@ emconfigure ./configure \
       gl_cv_func_sleep_works=yes
 
 
-echo "sed"      
+echo "sed"
 sed -i 's|$(MAKE) src/make-prime-list$(EXEEXT)|gcc src/make-prime-list.c -o src/make-prime-list$(EXEEXT) -Ilib/|' Makefile
-export CFLAGS="-O2 --minify=0 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings -sFORCE_FILESYSTEM=1 -sINVOKE_RUN=0 -sMODULARIZE=1 -sSINGLE_FILE=1"
+export CFLAGS="-O2 --minify=0 -sALLOW_MEMORY_GROWTH=1 -sENVIRONMENT=web,worker -sEXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY -sFORCE_FILESYSTEM=1 -sMODULARIZE=1"
 
 make EXEEXT=.js CFLAGS="$CFLAGS" -k -j4 || true
 
@@ -24,4 +24,4 @@ ls
 ls src/coreutils.js
 
 mkdir -p $PREFIX/bin
-cp src/coreutils.js $PREFIX/bin/coreutils.js
+cp src/coreutils.{js,wasm} $PREFIX/bin/

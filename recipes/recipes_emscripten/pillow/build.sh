@@ -8,3 +8,6 @@ $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder build libjpeg --pic
 export LDFLAGS="${LDFLAGS} -s USE_LIBJPEG"
 export CFLAGS="${CFLAGS} -s USE_ZLIB=1 -s USE_LIBJPEG=1 -s USE_FREETYPE=1 -s SIDE_MODULE=1"
 ${PYTHON} -m pip  install .
+
+
+rm -rf $PREFIX/bin
