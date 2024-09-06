@@ -1,0 +1,85 @@
+From e5ceab2077126c26e85a829682a30bc0defb78d1 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 21 Aug 2024 13:52:30 +0200
+Subject: [PATCH 9/9] Use basenames for compilers
+
+This is needed because the path gets hardcoded and then it cannot find emcc when
+building other R packages. etc/Makeconf gets copied by the activation script
+of cross-r-base.
+
+---
+ etc/Makeconf.in | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/etc/Makeconf.in b/etc/Makeconf.in
+index d84a912..f648ee3 100644
+--- a/etc/Makeconf.in
++++ b/etc/Makeconf.in
+@@ -9,45 +9,45 @@
+ ## This fails if it contains spaces, or if it is quoted
+ include $(R_SHARE_DIR)/make/vars.mk
+ 
+-AR = @AR@
++AR = emar
+ BLAS_LIBS = @BLAS_LIBS@
+ 
+ ## C compilers
+-CC = @CC@
++CC = emcc
+ CFLAGS = @CFLAGS@ $(LTO)
+-CC17 = @CC17@
++CC17 = emcc
+ C17FLAGS = @C17FLAGS@ $(LTO)
+-CC23 = @CC23@
++CC23 = emcc
+ C23FLAGS = @C23FLAGS@ $(LTO)
+-CC90 = @CC90@
++CC90 = emcc
+ C90FLAGS = @C90FLAGS@ $(LTO)
+-CC99 = @CC99@
++CC99 = emcc
+ C99FLAGS = @C99FLAGS@ $(LTO)
+ CPICFLAGS = @CPICFLAGS@
+-CPPFLAGS = @CPPFLAGS@
++CPPFLAGS = -I$(PREFIX)/include
+ C_VISIBILITY = @C_VISIBILITY@
+ 
+ ## C++ compilers
+-CXX = @CXX@ @CXXSTD@
++CXX = em++ @CXXSTD@
+ CXXFLAGS = @CXXFLAGS@ $(LTO)
+ CXXPICFLAGS = @CXXPICFLAGS@
+-CXX11 = @CXX11@
++CXX11 = em++
+ CXX11FLAGS = @CXX11FLAGS@ $(LTO)
+ CXX11PICFLAGS = @CXX11PICFLAGS@
+ CXX11STD = @CXX11STD@
+-CXX14 = @CXX14@
++CXX14 = em++
+ CXX14FLAGS = @CXX14FLAGS@ $(LTO)
+ CXX14PICFLAGS = @CXX14PICFLAGS@
+ CXX14STD = @CXX14STD@
+-CXX17 = @CXX17@
++CXX17 = em++
+ CXX17FLAGS = @CXX17FLAGS@ $(LTO)
+ CXX17PICFLAGS = @CXX17PICFLAGS@
+ CXX17STD = @CXX17STD@
+-CXX20 = @CXX20@
++CXX20 = em++
+ CXX20FLAGS = @CXX20FLAGS@ $(LTO)
+ CXX20PICFLAGS = @CXX20PICFLAGS@
+ CXX20STD = @CXX20STD@
+-CXX23 = @CXX23@
++CXX23 = em++
+ CXX23FLAGS = @CXX23FLAGS@ $(LTO)
+ CXX23PICFLAGS = @CXX23PICFLAGS@
+ CXX23STD = @CXX23STD@
+@@ -116,7 +116,7 @@ OBJCFLAGS = @OBJCFLAGS@ $(LTO)
+ OBJC_LIBS = @OBJC_LIBS@
+ OBJCXX = @OBJCXX@
+ R_ARCH = @R_ARCH@
+-RANLIB = @RANLIB@
++RANLIB = emranlib
+ SAFE_FFLAGS = @SAFE_FFLAGS@
+ ## A version of SHLIB_LIBADD not overridden in install.R.
+ SAN_LIBS =

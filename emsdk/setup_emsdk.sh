@@ -50,9 +50,9 @@ cat $PATCH_DIR/*.patch | patch -p1 --verbose
 popd    
 echo "...done"
 
-echo "emsdk building ..."   
-./emsdk install --build=Release $EMSCRIPTEN_VERSION ccache-git-emscripten-64bit
-echo "...done"
+# echo "emsdk building ..."   
+# ./emsdk install --build=Release $EMSCRIPTEN_VERSION ccache-git-emscripten-64bit
+# echo "...done"
 
 echo "emsdk activating ..."
 ./emsdk activate --embedded --build=Release $EMSCRIPTEN_VERSION

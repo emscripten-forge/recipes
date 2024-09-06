@@ -1,0 +1,410 @@
+From d276ebc10b6aafdfdb5094c947ce148221349ef7 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 21 Aug 2024 12:36:59 +0200
+Subject: [PATCH 2/9] Disable libcurl
+
+---
+ configure | 388 +++++++++++++++++++++++++++---------------------------
+ 1 file changed, 194 insertions(+), 194 deletions(-)
+
+diff --git a/configure b/configure
+index da201a5..59ed097 100644
+--- a/configure
++++ b/configure
+@@ -53144,202 +53144,202 @@ fi
+ 
+ 
+ 
+-## libcurl
+-
+-# Extract the first word of "curl-config", so it can be a program name with args.
+-set dummy curl-config; ac_word=$2
+-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+-printf %s "checking for $ac_word... " >&6; }
+-if test ${ac_cv_path_CURL_CONFIG+y}
+-then :
+-  printf %s "(cached) " >&6
+-else case e in #(
+-  e) case $CURL_CONFIG in
+-  [\\/]* | ?:[\\/]*)
+-  ac_cv_path_CURL_CONFIG="$CURL_CONFIG" # Let the user override the test with a path.
+-  ;;
+-  *)
+-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+-for as_dir in $PATH
+-do
+-  IFS=$as_save_IFS
+-  case $as_dir in #(((
+-    '') as_dir=./ ;;
+-    */) ;;
+-    *) as_dir=$as_dir/ ;;
+-  esac
+-    for ac_exec_ext in '' $ac_executable_extensions; do
+-  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+-    ac_cv_path_CURL_CONFIG="$as_dir$ac_word$ac_exec_ext"
+-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+-    break 2
+-  fi
+-done
+-  done
+-IFS=$as_save_IFS
+-
+-  ;;
+-esac ;;
+-esac
+-fi
+-CURL_CONFIG=$ac_cv_path_CURL_CONFIG
+-if test -n "$CURL_CONFIG"; then
+-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CURL_CONFIG" >&5
+-printf "%s\n" "$CURL_CONFIG" >&6; }
+-else
+-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+-printf "%s\n" "no" >&6; }
+-fi
+-
+-
+-if test -n "${CURL_CONFIG}"; then
+-  echo "checking libcurl version ..." \
+-    `${CURL_CONFIG} --version | sed -e 's,^[^0-9]*,,'`
+-  if test -z "${CURL_CPPFLAGS}"; then
+-    CURL_CPPFLAGS=`${CURL_CONFIG} --cflags`
+-  fi
+-  ## This should be correct for a static-only build, user will
+-  ## need to override to specify static linking (see config.site)
+-  ## SU: No, it's not, unfortunately, we have to use --static-libs
+-  ## for static-only builds as those provide incomplete flags with --libs
+-  if test -z "${CURL_LIBS}"; then
+-    if test x`${CURL_CONFIG} --built-shared` = xno; then
+-      CURL_LIBS=`${CURL_CONFIG} --static-libs`
+-    else
+-      CURL_LIBS=`${CURL_CONFIG} --libs`
+-    fi
+-  fi
+-fi
+-r_save_CPPFLAGS="${CPPFLAGS}"
+-CPPFLAGS="${CURL_CPPFLAGS} ${CPPFLAGS}"
+-r_save_LIBS="${LIBS}"
+-LIBS="${CURL_LIBS} ${LIBS}"
+-       for ac_header in curl/curl.h
+-do :
+-  ac_fn_c_check_header_compile "$LINENO" "curl/curl.h" "ac_cv_header_curl_curl_h" "$ac_includes_default"
+-if test "x$ac_cv_header_curl_curl_h" = xyes
+-then :
+-  printf "%s\n" "#define HAVE_CURL_CURL_H 1" >>confdefs.h
+- have_libcurl=yes
+-else case e in #(
+-  e) have_libcurl=no ;;
+-esac
+-fi
+-
+-done
+-
+-if test "x${have_libcurl}" = "xyes"; then
+-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if libcurl is >= 7.28.0" >&5
+-printf %s "checking if libcurl is >= 7.28.0... " >&6; }
+-if test ${r_cv_have_curl728+y}
+-then :
+-  printf %s "(cached) " >&6
+-else case e in #(
+-  e) if test "$cross_compiling" = yes
+-then :
+-  r_cv_have_curl728=no
+-else case e in #(
+-  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-#include <stdlib.h>
+-#include <curl/curl.h>
+-int main(void)
+-{
+-#ifdef LIBCURL_VERSION_MAJOR
+-#if LIBCURL_VERSION_MAJOR > 7
+-  exit(0);
+-#elif LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 28
+-  exit(0);
+-#else
+-  exit(1);
+-#endif
+-#else
+-  exit(1);
+-#endif
+-}
+-
+-_ACEOF
+-if ac_fn_c_try_run "$LINENO"
+-then :
+-  r_cv_have_curl728=yes
+-else case e in #(
+-  e) r_cv_have_curl728=no ;;
+-esac
+-fi
+-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+-  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+-esac
+-fi
+- ;;
+-esac
+-fi
+-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $r_cv_have_curl728" >&5
+-printf "%s\n" "$r_cv_have_curl728" >&6; }
+-fi
+-if test "x${r_cv_have_curl728}" = xno; then
+-  have_libcurl=no
+-fi
+-
+-if test "x${have_libcurl}" = "xyes"; then
+-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if libcurl supports https" >&5
+-printf %s "checking if libcurl supports https... " >&6; }
+-if test ${r_cv_have_curl_https+y}
+-then :
+-  printf %s "(cached) " >&6
+-else case e in #(
+-  e) if test "$cross_compiling" = yes
+-then :
+-  r_cv_have_curl_https=no
+-else case e in #(
+-  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-#include <stdlib.h> // for exit
+-#include <string.h>
+-#include <curl/curl.h>
+-int main(void)
+-{
+-    curl_version_info_data *data = curl_version_info(CURLVERSION_NOW);
+-    const char * const *p  = data->protocols;
+-    int found = 0;
+-    for (; *p; p++)
+-	if(strcmp(*p, "https") == 0) {found = 1; break;}
+-    exit(found ? 0 : 1);
+-}
+-
+-_ACEOF
+-if ac_fn_c_try_run "$LINENO"
+-then :
+-  r_cv_have_curl_https=yes
+-else case e in #(
+-  e) r_cv_have_curl_https=no ;;
+-esac
+-fi
+-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+-  conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
+-esac
+-fi
+- ;;
+-esac
+-fi
+-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $r_cv_have_curl_https" >&5
+-printf "%s\n" "$r_cv_have_curl_https" >&6; }
+-fi
+-if test "x${r_cv_have_curl_https}" = xno; then
+-  have_libcurl=no
+-fi
+-if test "x${have_libcurl}" = xyes; then
+-
+-printf "%s\n" "#define HAVE_LIBCURL 1" >>confdefs.h
+-
+-  CPPFLAGS="${r_save_CPPFLAGS}"
+-  LIBS="${r_save_LIBS}"
++# ## libcurl
++
++# # Extract the first word of "curl-config", so it can be a program name with args.
++# set dummy curl-config; ac_word=$2
++# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
++# printf %s "checking for $ac_word... " >&6; }
++# if test ${ac_cv_path_CURL_CONFIG+y}
++# then :
++#   printf %s "(cached) " >&6
++# else case e in #(
++#   e) case $CURL_CONFIG in
++#   [\\/]* | ?:[\\/]*)
++#   ac_cv_path_CURL_CONFIG="$CURL_CONFIG" # Let the user override the test with a path.
++#   ;;
++#   *)
++#   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
++# for as_dir in $PATH
++# do
++#   IFS=$as_save_IFS
++#   case $as_dir in #(((
++#     '') as_dir=./ ;;
++#     */) ;;
++#     *) as_dir=$as_dir/ ;;
++#   esac
++#     for ac_exec_ext in '' $ac_executable_extensions; do
++#   if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
++#     ac_cv_path_CURL_CONFIG="$as_dir$ac_word$ac_exec_ext"
++#     printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
++#     break 2
++#   fi
++# done
++#   done
++# IFS=$as_save_IFS
++
++#   ;;
++# esac ;;
++# esac
++# fi
++# CURL_CONFIG=$ac_cv_path_CURL_CONFIG
++# if test -n "$CURL_CONFIG"; then
++#   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CURL_CONFIG" >&5
++# printf "%s\n" "$CURL_CONFIG" >&6; }
++# else
++#   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
++# printf "%s\n" "no" >&6; }
++# fi
++
++
++# if test -n "${CURL_CONFIG}"; then
++#   echo "checking libcurl version ..." \
++#     `${CURL_CONFIG} --version | sed -e 's,^[^0-9]*,,'`
++#   if test -z "${CURL_CPPFLAGS}"; then
++#     CURL_CPPFLAGS=`${CURL_CONFIG} --cflags`
++#   fi
++#   ## This should be correct for a static-only build, user will
++#   ## need to override to specify static linking (see config.site)
++#   ## SU: No, it's not, unfortunately, we have to use --static-libs
++#   ## for static-only builds as those provide incomplete flags with --libs
++#   if test -z "${CURL_LIBS}"; then
++#     if test x`${CURL_CONFIG} --built-shared` = xno; then
++#       CURL_LIBS=`${CURL_CONFIG} --static-libs`
++#     else
++#       CURL_LIBS=`${CURL_CONFIG} --libs`
++#     fi
++#   fi
++# fi
++# r_save_CPPFLAGS="${CPPFLAGS}"
++# CPPFLAGS="${CURL_CPPFLAGS} ${CPPFLAGS}"
++# r_save_LIBS="${LIBS}"
++# LIBS="${CURL_LIBS} ${LIBS}"
++#        for ac_header in curl/curl.h
++# do :
++#   ac_fn_c_check_header_compile "$LINENO" "curl/curl.h" "ac_cv_header_curl_curl_h" "$ac_includes_default"
++# if test "x$ac_cv_header_curl_curl_h" = xyes
++# then :
++#   printf "%s\n" "#define HAVE_CURL_CURL_H 1" >>confdefs.h
++#  have_libcurl=yes
++# else case e in #(
++#   e) have_libcurl=no ;;
++# esac
++# fi
++
++# done
++
++# if test "x${have_libcurl}" = "xyes"; then
++# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if libcurl is >= 7.28.0" >&5
++# printf %s "checking if libcurl is >= 7.28.0... " >&6; }
++# if test ${r_cv_have_curl728+y}
++# then :
++#   printf %s "(cached) " >&6
++# else case e in #(
++#   e) if test "$cross_compiling" = yes
++# then :
++#   r_cv_have_curl728=no
++# else case e in #(
++#   e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++# /* end confdefs.h.  */
++
++# #include <stdlib.h>
++# #include <curl/curl.h>
++# int main(void)
++# {
++# #ifdef LIBCURL_VERSION_MAJOR
++# #if LIBCURL_VERSION_MAJOR > 7
++#   exit(0);
++# #elif LIBCURL_VERSION_MAJOR == 7 && LIBCURL_VERSION_MINOR >= 28
++#   exit(0);
++# #else
++#   exit(1);
++# #endif
++# #else
++#   exit(1);
++# #endif
++# }
++
++# _ACEOF
++# if ac_fn_c_try_run "$LINENO"
++# then :
++#   r_cv_have_curl728=yes
++# else case e in #(
++#   e) r_cv_have_curl728=no ;;
++# esac
++# fi
++# rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
++#   conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
++# esac
++# fi
++#  ;;
++# esac
++# fi
++# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $r_cv_have_curl728" >&5
++# printf "%s\n" "$r_cv_have_curl728" >&6; }
++# fi
++# if test "x${r_cv_have_curl728}" = xno; then
++#   have_libcurl=no
++# fi
++
++# if test "x${have_libcurl}" = "xyes"; then
++# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if libcurl supports https" >&5
++# printf %s "checking if libcurl supports https... " >&6; }
++# if test ${r_cv_have_curl_https+y}
++# then :
++#   printf %s "(cached) " >&6
++# else case e in #(
++#   e) if test "$cross_compiling" = yes
++# then :
++#   r_cv_have_curl_https=no
++# else case e in #(
++#   e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
++# /* end confdefs.h.  */
++
++# #include <stdlib.h> // for exit
++# #include <string.h>
++# #include <curl/curl.h>
++# int main(void)
++# {
++#     curl_version_info_data *data = curl_version_info(CURLVERSION_NOW);
++#     const char * const *p  = data->protocols;
++#     int found = 0;
++#     for (; *p; p++)
++# 	if(strcmp(*p, "https") == 0) {found = 1; break;}
++#     exit(found ? 0 : 1);
++# }
++
++# _ACEOF
++# if ac_fn_c_try_run "$LINENO"
++# then :
++#   r_cv_have_curl_https=yes
++# else case e in #(
++#   e) r_cv_have_curl_https=no ;;
++# esac
++# fi
++# rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
++#   conftest.$ac_objext conftest.beam conftest.$ac_ext ;;
++# esac
++# fi
++#  ;;
++# esac
++# fi
++# { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $r_cv_have_curl_https" >&5
++# printf "%s\n" "$r_cv_have_curl_https" >&6; }
++# fi
++# if test "x${r_cv_have_curl_https}" = xno; then
++#   have_libcurl=no
++# fi
++# if test "x${have_libcurl}" = xyes; then
++
++# printf "%s\n" "#define HAVE_LIBCURL 1" >>confdefs.h
++
++#   CPPFLAGS="${r_save_CPPFLAGS}"
++#   LIBS="${r_save_LIBS}"
+ 
+ 
+-else
+-  as_fn_error $? "libcurl >= 7.28.0 library and headers are required with support for https" "$LINENO" 5
+-fi
++# else
++#   as_fn_error $? "WARNING: libcurl >= 7.28.0 library and headers are required with support for https" "$LINENO" 5
++# fi
+ 
+ 
+ 
