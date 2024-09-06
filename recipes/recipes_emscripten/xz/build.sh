@@ -1,5 +1,8 @@
 mkdir build && cd build
 
+export CFLAGS="$CFLAGS -fPIC"
+export CXXFLAGS="$CXXFLAGS -fPIC"
+
 emconfigure ../configure \
     --enable-shared=no \
     --enable-static=yes \
