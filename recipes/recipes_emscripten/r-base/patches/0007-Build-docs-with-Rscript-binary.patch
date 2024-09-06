@@ -1,0 +1,86 @@
+From 88766c447d56089697c5ad49a0ed72f82c22f11f Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 21 Aug 2024 13:19:28 +0200
+Subject: [PATCH 7/9] Build docs with Rscript binary
+
+---
+ doc/Makefile.in | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/doc/Makefile.in b/doc/Makefile.in
+index c9e3a73..d89a1f5 100644
+--- a/doc/Makefile.in
++++ b/doc/Makefile.in
+@@ -23,7 +23,8 @@ INSTDIRS = notes
+ 
+ HELP2MAN = perl $(top_srcdir)/tools/help2man.pl
+ 
+-R_EXE = $(top_builddir)/bin/R --vanilla --no-echo
++R_EXE = "$(BUILD_PREFIX)/bin/R --vanilla --no-echo"
++RSCRIPT_EXE = $(BUILD_PREFIX)/bin/Rscript
+ 
+ all: Makefile R docs
+ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+@@ -31,6 +32,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+ 
+ ## FIXME:  NEWS.rds is needed by news() and hence in principle part of 'R', but
+ ##  it can only be built by R_EXE which at this point does not exist (if built from scratch)
++## But, since we're cross-compiling it does exist
+ R: Makefile svnonly
+ 	@for d in $(SUBDIRS); do \
+ 	  (cd $${d} && $(MAKE) $@) || exit 1; \
+@@ -47,24 +49,24 @@ docs: NEWS.rds NEWS html/NEWS.html NEWS.pdf NEWS.2.rds NEWS.3.rds R.1 Rscript.1
+ R.1:
+ 	@$(HELP2MAN) --include=$(srcdir)/R.aux --no-info --output=R.1 \
+ 	  --name="a language for data analysis and graphics" \
+-	  $(top_builddir)/bin/R
++	  $(R_EXE)
+ 
+ Rscript.1:
+ 	@$(HELP2MAN) --no-info --output=Rscript.1 \
+ 	  --name="front end for scripting with R" \
+-	  $(top_builddir)/bin/Rscript
++	  $(RSCRIPT_EXE)
+ 
+ NEWS.rds: $(srcdir)/NEWS.Rd
+-	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.Rd\", \
++	@$(RSCRIPT_EXE) -e "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.Rd\", \
+ 	  macros = \"../share/Rd/macros/system.Rd\"), stages = 'install', warningCalls = FALSE), \
+-	  'NEWS.rds')" | $(R_EXE)
++	  'NEWS.rds')"
+ 
+ NEWS: NEWS.rds
+ 	@$(ECHO) "creating doc/NEWS"
+-	@$(ECHO) 'options(warn=1);tools:::Rd2txt_NEWS_in_Rd("NEWS.rds", "NEWS")' |  $(R_EXE)
++	@$(RSCRIPT_EXE) -e 'options(warn=1);tools:::Rd2txt_NEWS_in_Rd("NEWS.rds", "NEWS")'
+ 
+ html/NEWS.html: NEWS.rds
+-	@$(ECHO) 'options(warn=1);tools:::Rd2HTML_NEWS_in_Rd("NEWS.rds", "html/NEWS.html")' |  $(R_EXE)
++	@$(RSCRIPT_EXE) -e 'options(warn=1);tools:::Rd2HTML_NEWS_in_Rd("NEWS.rds", "html/NEWS.html")'
+ 
+ PDFLATEX = @PDFLATEX@
+ ## needs pdflatex (and more)
+@@ -80,9 +82,9 @@ NEWS.pdf: NEWS.rds
+ docs3: NEWS.3.rds NEWS.3.html NEWS.3.pdf
+ 
+ NEWS.3.rds: $(srcdir)/NEWS.3.Rd
+-	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.3.Rd\", \
++	@$(RSCRIPT_EXE) -e "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.3.Rd\", \
+ 	  macros = \"../share/Rd/macros/system.Rd\"), stages = 'install', warningCalls = FALSE), \
+-	  'NEWS.3.rds')" | $(R_EXE)
++	  'NEWS.3.rds')"
+ 
+ NEWS.3: NEWS.3.rds
+ 	@$(ECHO) "creating NEWS.3"
+@@ -105,9 +107,9 @@ NEWS.3.pdf: NEWS.3.rds
+ docs2: NEWS.2.rds NEWS.2.html NEWS.2.pdf
+ 
+ NEWS.2.rds: $(srcdir)/NEWS.2.Rd
+-	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.2.Rd\", \
++	@$(RSCRIPT_EXE) -e "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.2.Rd\", \
+ 	  macros = \"../share/Rd/macros/system.Rd\"), stages = 'install', warningCalls = FALSE), \
+-	  'NEWS.2.rds')" | $(R_EXE)
++	  'NEWS.2.rds')"
+ 
+ ## NB: this is only the top part of NEWS.2 in the sources.
+ NEWS.2: NEWS.2.rds
