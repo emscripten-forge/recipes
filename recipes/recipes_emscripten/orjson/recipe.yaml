@@ -1,0 +1,41 @@
+context:
+  name: orjson
+  version: 3.10.6
+
+package:
+  name: ${{name}}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/70/24/8be1c9f6d21e3c510c441d6cbb6f3a75f2538b42a45f0c17ffb2182882f1/orjson-${{version}}.tar.gz
+  sha256: e54b63d0a7c6c54a5f5f726bc93a2078111ef060fec4ecbf34c5db800ca3b3a7
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{target_platform}}
+  - cffi == 1.15.1
+  - setuptools-rust
+  - rust
+  - maturin
+
+  host:
+  - python
+  - openssl
+  - cffi == 1.15.1
+  run:
+  - cffi == 1.15.1
+  - typing_extensions
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_orjson.py
