@@ -1,25 +1,20 @@
+#!/bin/bash
 
-# make some directories
+set -euxo pipefail
+
 mkdir -p $PREFIX/include
 mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/bin
 mkdir -p $PREFIX/etc/conda
-mkdir -p cpython/build
 
-# the following line can re-enable the _sqlite3 module (but atm we keep it disabled)
-cp $RECIPE_DIR/Setup.local  ./cpython/Setup.local
+# Move all python package files to the build folder
+export BUILD=build/${PKG_VERSION}/Python-${PKG_VERSION}
+mkdir -p ${BUILD}
+mv Makefile.pre.in README.rst aclocal.m4 config.guess config.sub setup.py pyconfig.h.in install-sh configure.ac ${BUILD}
+mv Doc Grammar Include LICENSE Lib Mac Misc Modules Objects PC PCbuild Parser Programs Python Tools configure ${BUILD}
 
-# this only overwrite the install path
-cp $RECIPE_DIR/Makefile.envs  .
-
-# pyodide uses cc instead of emcc so we need to overwrite this
-cp $RECIPE_DIR/adjust_sysconfig.py  ./cpython/adjust_sysconfig.py
-
-
-# overwrite $RECIPEDIR/pyodide_env.sh with am empty file
-# since we do not want to use the pyodide_env.sh from pyodide
-echo "" > $RECIPE_DIR/pyodide_env.sh
-
+# copy the LICENSE file back for the recipe
+cp ${BUILD}/LICENSE .
 
 # create a symlink from  $BUILD_PREFIX/bin/python3.11 to $BUILD_PREFIX/bin/python.js
 # since the python build script overwrites the env variable PYTHON to python.js
@@ -32,31 +27,17 @@ echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
 # make it executable
 chmod +x $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
 
-# create a symlink from $BUILD_PREFIX/emsdk directory to this dir emsdk.
-# This allows us to overwrite the emsdk from pyodide
-rm -rf emsdk
-mkdir -p emsdk
-cd emsdk
-ln -s $EMSCRIPTEN_FORGE_EMSDK_DIR emsdk
-cd ..
+cp ${RECIPE_DIR}/Makefile .
+cp ${RECIPE_DIR}/Makefile.envs .
+cp -r ${RECIPE_DIR}/patches .
+cp ${RECIPE_DIR}/Setup.local .
+cp ${RECIPE_DIR}/adjust_sysconfig.py .
 
-
-# when only building libffi we need to uncomment the following line
-# mkdir -p cpython/build/Python-3.11.3/Include
-
-#################################################################
-#  THE ACTUAL BUILD
-make -C cpython 
-################################################################
-
-
-# install libffi (we do this in libffi_pyodide)
-#cp -r cpython/build/libffi/target/ $PREFIX/
+make 
 
 # (TODO move in recipe) install libmpdec and libexpat
-cp cpython/build/Python-3.11.3/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
-cp cpython/build/Python-3.11.3/Modules/expat/libexpat.a     $PREFIX/lib
-
+cp ${BUILD}/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
+cp ${BUILD}/Modules/expat/libexpat.a     $PREFIX/lib
 
 # a fake wheel command
 touch $PREFIX/bin/wheel

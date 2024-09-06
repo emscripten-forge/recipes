@@ -23,7 +23,7 @@ class CannotHandleRecipeException(Exception):
         super().__init__(f"Cannot handle recipe in {recipe_dir}: {msg}")
 
 
-def get_new_version(recipe_file, is_ratler):
+def get_new_version(recipe_file):
     # read the file
     with open(recipe_file) as file:
         recipe = YAML().load(file)
@@ -61,18 +61,11 @@ def get_new_version(recipe_file, is_ratler):
     if 'sha256' not in source:
         raise CannotHandleRecipeException(recipe_file, "No sha256 in source")
     
-    # check that the url is a template
-    if is_ratler:
-        if "${{" not in url_template or "}}" not in url_template:
+
+    if "${{" not in url_template or "}}" not in url_template:
             raise CannotHandleRecipeException(recipe_file, "url is not a template")
-    else:
-        if "{{" not in url_template or "}}" not in url_template:
-            raise CannotHandleRecipeException(recipe_file, "url is not a template")
-    
-    if is_ratler:
-        environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
-    else:
-        environment = jinja2.Environment(trim_blocks=True,variable_start_string='{{', variable_end_string='}}')
+ 
+    environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
 
     # get name from dir
     name = recipe_file.parent.name
@@ -127,15 +120,19 @@ def bump_recipe_version(recipe_dir):
     current_version = None
     new_version = None
     new_sha256 = None
-    for  recipe_fname, is_rattler in  recipe_locations:
-        if (recipe_dir / recipe_fname).exists():
-            recipe_file = recipe_dir / recipe_fname
-            cv, nv, h = get_new_version(recipe_file, is_ratler=is_rattler)
-            if nv is not None:
-                new_version = nv
-                current_version = cv
-                new_sha256 = h
-                break
+
+
+    recipe_fname = 'recipe.yaml'
+    if (recipe_dir / recipe_fname).exists():
+        recipe_file = recipe_dir / recipe_fname
+        cv, nv, h = get_new_version(recipe_file)
+        if nv is not None:
+            new_version = nv
+            current_version = cv
+            new_sha256 = h
+    else:
+        return False, None, None
+            
 
     # no new version found -- nothing to do
     if new_version is None:
@@ -144,12 +141,15 @@ def bump_recipe_version(recipe_dir):
     # use the last directory in the path as the branch name
     name = recipe_dir.name
 
-    # check if the recipe has test_.py files
-    # if it does, we can mark the PR as automerge
-    test_files = [f for f in recipe_dir.iterdir() if f.name.startswith("test_") and f.name.endswith(".py")]
-    automerge = len(test_files) > 0
+    # check if the recipe has test section
+    # load recipe
+    automerge = False
+    with open(recipe_file) as file:
+        recipe = YAML().load(file)
+        if 'tests' in recipe:
+            automerge = True
 
-
+        
     branch_name = f"bump-{name}_{current_version}_to_{new_version}"
 
 
