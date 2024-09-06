@@ -1,0 +1,64 @@
+context:
+  name: "r-base"
+  version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
+  sha256: b4cb675deaaeb7299d3b265d218cde43f192951ce5b89b7bb1a5148a36b2d94d
+  patches:
+    - patches/0001-Fix-bad-substitution-error.patch
+    - patches/0002-Disable-libcurl.patch
+    - patches/0003-Remove-unsupported-sigsuspend.patch
+    - patches/0004-Disable-internet-module.patch
+    - patches/0005-Use-R-binary-from-build-prefix.patch
+    - patches/0006-Ignore-crude-heuristic-file-size.patch
+    - patches/0007-Build-docs-with-Rscript-binary.patch
+    - patches/0008-Set-default-R_Home.patch
+    - patches/0009-Use-basenames-for-compilers.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - libtool
+    - pkg-config
+    - cmake
+    - make
+    - r-base == ${{ version }}  # for R and Rscript binaries (See patches)
+  host:
+    - liblapack>=3.12
+    - libflang                  # for FortranRuntime
+    - libiconv
+    - zlib>=1.2.13
+    - bzip2
+    - xz                        # for lzma
+    - cairo>=1.18
+    - pcre2>=10.43
+    - tzdata
+    - libpng
+    - libtiff
+
+tests:
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/lib/R/bin/Rscript --version)
+    requirements:
+      build:
+        - run_modularized
+
+about:
+  homepage: http://www.r-project.org/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: COPYING
+  summary: R is a free software environment for statistical computing and graphics.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes

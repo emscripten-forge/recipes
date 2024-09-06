@@ -1,0 +1,51 @@
+context:
+  name: "icu"
+  version: 73.2
+  version_under: "73_2"
+  version_hyphen: "73-2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/unicode-org/icu/releases/download/release-${{ version_hyphen }}/icu4c-${{ version_under }}-src.tgz
+    sha256: 818a80712ed3caacd9b652305e01afc7fa167e6f2e94996da44b90c2ab604ce1
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - libtool
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+
+tests:
+- script:
+    - test -f $PREFIX/lib/libicudata.a
+    - test -f $PREFIX/lib/libicui18n.a
+    - test -f $PREFIX/lib/libicuio.a
+    - test -f $PREFIX/lib/libicutest.a
+    - test -f $PREFIX/lib/libicutu.a
+    - test -f $PREFIX/lib/libicuuc.a
+    - node $PREFIX/bin/genbrk --help
+    - node $PREFIX/bin/gencfu --help
+    - node $PREFIX/bin/gencnval --help
+    - node $PREFIX/bin/gendict --help
+    - node $PREFIX/bin/icuinfo
+  requirements:
+    build:
+      - nodejs
+
+about:
+  homepage: https://icu.unicode.org
+  license: MIT
+  license_file: LICENSE
+  summary: International Components for Unicode.
+  documentation: https://unicode-org.github.io/icu-docs/apidoc/released/icu4c/
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes

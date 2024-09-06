@@ -15,12 +15,12 @@ def test_import():
         ("serial", "SeparateCode"),
         ("serial", "ChunkCombinedCode"),
         ("serial", "ChunkCombinedOffset"),
-        #("serial", "ChunkCombinedNan"),  # Needs contourpy >= 1.2.0
+        ("serial", "ChunkCombinedNan"),
         ("threaded", "Separate"),
         ("threaded", "SeparateCode"),
         ("threaded", "ChunkCombinedCode"),
         ("threaded", "ChunkCombinedOffset"),
-        #("threaded", "ChunkCombinedNan"),  # Needs contourpy >= 1.2.0
+        ("threaded", "ChunkCombinedNan"),
     ],
 )
 def test_line(name, line_type):

@@ -1,0 +1,36 @@
+From d248b70f49ae63689962b0f8bd0cab8e2f35a592 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <serge.guelton@telecom-bretagne.eu>
+Date: Fri, 26 Jul 2024 07:34:39 +0000
+Subject: [PATCH 4/7] [Flang][Runtime] Explicitly convert shift value to
+ SubscriptValue (#99822)
+
+Shift value are within the range of SubscriptValue but the API forces
+them to 64bits. This assumption doesn't hold for 32bit machine, so add
+an explicit cast.
+---
+ flang/runtime/transformational.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/flang/runtime/transformational.cpp b/flang/runtime/transformational.cpp
+index cf1e61c0844d..b6b204be4418 100644
+--- a/flang/runtime/transformational.cpp
++++ b/flang/runtime/transformational.cpp
+@@ -508,7 +508,8 @@ void RTDEF(CshiftVector)(Descriptor &result, const Descriptor &source,
+   SubscriptValue lb{sourceDim.LowerBound()};
+   for (SubscriptValue j{0}; j < extent; ++j) {
+     SubscriptValue resultAt{1 + j};
+-    SubscriptValue sourceAt{lb + (j + shift) % extent};
++    SubscriptValue sourceAt{
++        lb + static_cast<SubscriptValue>(j + shift) % extent};
+     if (sourceAt < lb) {
+       sourceAt += extent;
+     }
+@@ -619,7 +620,7 @@ void RTDEF(EoshiftVector)(Descriptor &result, const Descriptor &source,
+   }
+   SubscriptValue lb{source.GetDimension(0).LowerBound()};
+   for (SubscriptValue j{1}; j <= extent; ++j) {
+-    SubscriptValue sourceAt{lb + j - 1 + shift};
++    SubscriptValue sourceAt{lb + j - 1 + static_cast<SubscriptValue>(shift)};
+     if (sourceAt >= lb && sourceAt < lb + extent) {
+       CopyElement(result, &j, source, &sourceAt, terminator);
+     } else if (boundary) {
