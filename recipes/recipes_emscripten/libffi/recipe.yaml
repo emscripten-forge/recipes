@@ -1,44 +1,34 @@
 context:
-  version: 3.4.2
-  pyodide_version: 0.24.0
   name: libffi
+  version: 3.4.6
 package:
-  name: ${{name}}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://github.com/pyodide/pyodide/archive/refs/tags/${{pyodide_version}}.tar.gz
-  sha256: c8350c4780be44fe763a66f5024197025b0f8740cc4a7c9ad833a89c69916276
+- url: https://github.com/libffi/libffi/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9ac790464c1eb2f5ab5809e978a1683e9393131aede72d1b0a0703771d3c6cda
 build:
-  number: 4
+  number: 0
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - ${{ compiler("c") }}
-  - python=3.11
-  - nodejs
-  - ccache
-  - f2c
-  - pkg-config
-  - swig
-  - make
-  - cmake
-  - pkg-config
-  - texinfo
   - autoconf
   - automake
   - libtool
-  - patch   # only needed on MacOS
-  - sed   # only needed on MacOS
-  - wget
 
+tests:
+- script:
+    - test -f $PREFIX/include/ffi.h
+    - test -f $PREFIX/lib/libffi.a
+    - test -f $PREFIX/share/man/man3/ffi.3
 
 about:
   license: MIT
   license_file: LICENSE
   summary: A Portable Foreign Function Interface Library.
-
   description: |
     The libffi library provides a portable, high level programming interface
     to various calling conventions. This allows a programmer to call any
@@ -47,4 +37,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-
+  - KGB99
