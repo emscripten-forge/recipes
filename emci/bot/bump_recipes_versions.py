@@ -196,11 +196,12 @@ def try_to_merge_pr(pr, recipe_dir=None):
                     if 'recipe-maintainers' in recipe['extra']:
                         maintainers = recipe['extra']['recipe-maintainers']
 
-        message = """Either the CI is failing, or the recipe is not tested. I need help from a human"""
+        message = """Either the CI is failing, or the recipe is not tested. I need help from a human."""
         if maintainers:
-            message += "\n\nPing the maintainers:"
+            message += "\nPing the maintainers: "
             for maintainer in maintainers:
-                message += f"\n@{maintainer} "
+                message += f"@{maintainer} "
+            message += "\nIf you believe you are wrongly pinned, please comment here or open a PR removing you from the maintainers list."
 
         try:
             # Running edit-last in case there was already a comment, we don't want to spam with comments
