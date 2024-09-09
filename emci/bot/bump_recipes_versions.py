@@ -255,20 +255,18 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
         ).decode('utf-8').split('\n')
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
-        
+        # map from folder names to recipe-dir
         recipe_name_to_recipe_dir = {recipe.name: recipe for recipe in all_recipes}
 
 
         prs_id = [line.split()[0] for line in prs if line]
         prs_packages = [line.split()[2] for line in prs if line]
 
-
         # Merge PRs if possible
         for pr,pr_pkg in zip(prs_id, prs_packages):
+            # get the recipe dir
             recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
             try_to_merge_pr(pr, recipe_dir=recipe_dir)
-
-    
 
         # only recipes for which there is no opened PR
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]
