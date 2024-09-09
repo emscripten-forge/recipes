@@ -1,0 +1,40 @@
+context:
+  name: r-digest
+  version: 0.6.37
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://cran.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 82c4d149994b8a4a9af930f5a8e47420829935abed41f3f9030e94b6a48f0321
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- script:
+  - test -f $PREFIX/lib/R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://dirk.eddelbuettel.com/code/digest.html
+  repository: https://github.com/eddelbuettel/digest
+  license: GPL-2.0
+  license_family: GPL2
+  summary: Compact hash representations of arbritrary R objects.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
