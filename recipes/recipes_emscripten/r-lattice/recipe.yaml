@@ -1,0 +1,46 @@
+context:
+  name: r-lattice
+  version: 0.22-6
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 4b377211e472ece7872b9d6759f9b9c660b09594500462eb6146312a1d4d00f7
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://lattice.r-forge.r-project.org/
+  repository: https://github.com/deepayan/lattice/
+  license:  GPL-2.0-or-later
+  license_family: GPL3
+  summary: |
+    A powerful and elegant high-level data visualization system inspired by
+    Trellis graphics, with an emphasis on multivariate data. Lattice is
+    sufficient for typical graphics needs, and is also flexible enough to handle
+    most nonstandard requirements. See ?Lattice for an introduction.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
