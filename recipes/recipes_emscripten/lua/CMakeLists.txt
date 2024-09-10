@@ -67,7 +67,6 @@ foreach(lua_binary ${lua_binaries})
       PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
       PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
-      # PUBLIC "SHELL: -s INVOKE_RUN=1"
   )
   # set target link options
   target_link_options(${lua_binary}
@@ -76,7 +75,6 @@ foreach(lua_binary ${lua_binaries})
       PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
       PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
-      # PUBLIC "SHELL: -s INVOKE_RUN=1"
   )
 endforeach()
 
