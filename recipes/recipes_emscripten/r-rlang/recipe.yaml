@@ -8,7 +8,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://cran.r-project.org/src/contrib/rlang_${{ version }}.tar.gz
+  url: https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: f2d74527508bf3287102470beb27de0d234c3cbba399c28d3312f2c83c64a6e1
 
 build:
@@ -18,15 +18,15 @@ requirements:
   build:
     - r-base == ${{ r_base_version }}
     - ${{ compiler('c') }}
-    - make
   host:
     - r-base == ${{ r_base_version }}
   run:
     - r-base == ${{ r_base_version }}
 
 tests:
-- script:
-    - test -f $PREFIX/lib/R/library/rlang/libs/rlang.so
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: http://rlang.r-lib.org
