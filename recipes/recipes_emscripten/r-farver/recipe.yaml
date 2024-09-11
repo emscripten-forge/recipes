@@ -1,0 +1,49 @@
+context:
+  name: r-farver
+  version: 2.1.2
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 528823b95daab4566137711f1c842027a952bea1b2ae6ff098e2ca512b17fe25
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('cxx') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://farver.data-imaginist.com/
+  repository: https://github.com/thomasp85/farver
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |
+    The encoding of colour can be handled in many different ways, using
+    different colour spaces. As different colour spaces have different uses,
+    efficient conversion between these representations are important. The
+    'farver' package provides a set of functions that gives access to very fast
+    colour space conversion and comparisons implemented in C++, and offers speed
+    improvements over the 'convertColor' function in the 'grDevices' package.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
