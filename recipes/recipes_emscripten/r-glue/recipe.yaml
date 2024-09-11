@@ -8,21 +8,27 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://cran.r-project.org//src/contrib/glue_${{ version }}.tar.gz
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: 1af51b51f52c1aeb3bfe9349f55896dd78b5542ffdd5654e432e4d646e4a86dc
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
     - r-base == ${{ r_base_version }}
     - ${{ compiler('c') }}
-    - make
   host:
     - r-base == ${{ r_base_version }}
   run:
     - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://github.com/tidyverse/glue
