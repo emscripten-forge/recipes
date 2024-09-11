@@ -1,0 +1,45 @@
+context:
+  name: r-mass
+  version: 7.3-61
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
+  sha256: 3144c8bf579dd7b7c47c259728c27f53f53e294e7ed307da434dfd144e800a90
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] | upper }}/libs/${{ name[2:] | upper }}.so
+
+about:
+  homepage: http://www.stats.ox.ac.uk/pub/MASS4/
+  repository: https://github.com/cran/MASS
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  license_file: GPL-3
+  summary: |
+    Functions and datasets to support Venables and Ripley, "Modern Applied
+    Statistics with S" (4th edition, 2002).
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
