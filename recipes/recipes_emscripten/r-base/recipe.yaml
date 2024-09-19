@@ -19,9 +19,10 @@ source:
     - patches/0007-Build-docs-with-Rscript-binary.patch
     - patches/0008-Set-default-R_Home.patch
     - patches/0009-Use-basenames-for-compilers.patch
+    - patches/0010-Fix-iconv-checks-when-using-internal-lapack-blas.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -33,24 +34,22 @@ requirements:
     - make
     - r-base == ${{ version }}  # for R and Rscript binaries (See patches)
   host:
-    - liblapack>=3.12
     - libflang                  # for FortranRuntime
     - libiconv
     - zlib>=1.2.13
     - bzip2
     - xz                        # for lzma
-    - cairo>=1.18
     - pcre2>=10.43
     - tzdata
     - libpng
     - libtiff
 
 tests:
-  - script: |
-      OUTPUT=$(run_modularized $PREFIX/lib/R/bin/Rscript --version)
-    requirements:
-      build:
-        - run_modularized
+- script:
+    - node ${PREFIX}/lib/R/bin/Rscript --version
+  requirements:
+    build:
+      - nodejs
 
 about:
   homepage: http://www.r-project.org/

@@ -19,10 +19,6 @@ export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_size_max=yes
 
-# NOTE: When cross-compiling, it sets the version check to fail regardless of
-# the lapack version. This is a workaround to skip the version check.
-# export r_cv_lapack_ver=yes
-
 # Not supported
 export ac_cv_have_decl_getrusage=no
 export ac_cv_have_decl_getrlimit=no
@@ -47,11 +43,8 @@ emconfigure ../configure \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
     --enable-R-static-lib \
-    --enable-BLAS-shlib \
-    --with-cairo \
     --without-readline  \
     --without-x         \
-    --enable-static  \
     --enable-java=no \
     --enable-R-profiling=no \
     --enable-byte-compiled-packages=no \
@@ -60,8 +53,7 @@ emconfigure ../configure \
     --disable-threads \
     --disable-nls \
     --with-internal-tzcode \
-    --with-recommended-packages=no \
-    --with-libdeflate-compression=no
+    --with-recommended-packages=no
 
 # NOTE: Remove the -lFortranRuntime from the FLIBS to avoid double-linking
 # when creating the R binary
