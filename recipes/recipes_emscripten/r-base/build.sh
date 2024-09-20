@@ -26,6 +26,9 @@ export ac_cv_have_decl_sigaltstack=no
 export ac_cv_have_decl_wcsftime=no
 export ac_cv_have_decl_umask=no
 
+# SIDE_MODULE + pthread is experimental, and pthread_kill is not implemented
+export r_cv_search_pthread_kill=no
+
 export OBJDUMP=llvm-objdump
 
 # Otherwise set to .not_implemented and cannot be used
@@ -50,7 +53,6 @@ emconfigure ../configure \
     --enable-byte-compiled-packages=no \
     --disable-rpath \
     --disable-openmp \
-    --disable-threads \
     --disable-nls \
     --with-internal-tzcode \
     --with-recommended-packages=no
