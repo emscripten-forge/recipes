@@ -1,0 +1,47 @@
+context:
+  name: curl
+  version: 8.10.1
+
+source:
+  url: http://curl.haxx.se/download/${{name }}-${{ version }}.tar.bz2
+  sha256: 3763cd97aae41dcf41950d23e87ae23b2edb2ce3a5b0cf678af058c391b6ae31
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: libcurl-static
+    version: ${{ version }}
+  build:
+    files:
+      - include/curl/*
+      - lib/libcurl.a
+      - lib/pkgconfig/libcurl.pc
+      - bin/curl
+      - bin/curl-config
+  requirements:
+    build:
+      - ${{ compiler("c") }}
+      - cmake
+      - make
+      - libtool
+      - pkg-config
+    host:
+      - zlib
+      - zstd  # [unix]
+      - openssl   # [unix]
+  tests:
+  - script: test -f $PREFIX/lib/libcurl.a
+
+about:
+  homepage: http://curl.haxx.se/
+  license: curl
+  license_family: MIT
+  license_file: COPYING
+  summary: tool and library for transferring data with URL syntax
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - anutosh491
