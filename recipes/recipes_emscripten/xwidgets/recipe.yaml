@@ -1,44 +1,45 @@
 context:
-  version: 0.28.0
+  version: 0.29.0
 
 package:
   name: xwidgets
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/jupyter-xeus/xwidgets/archive/refs/tags/{{ version }}.tar.gz
-  sha256: 610d26f94af957749da42cfcf970f2c1301b687ba14318d0cacead76e91ec82e
+  url: https://github.com/jupyter-xeus/xwidgets/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 07c789b7936b19a123f37ac1edfd0598a89f23e02d4eeffc9976817be68bee42
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
   host:
-    - xtl >=0.7,<0.8
-    - nlohmann_json
-    - xeus >=3.0,<4.0
-    - xproperty >=0.11.0,<0.12
+  - nlohmann_json >=3.11
+  - xeus >=5,<6
+  - xproperty >=0.12.0,<0.13
   run:
-    - xtl >=0.7,<0.8
-    - nlohmann_json
-    - xeus >=3.0,<4.0
-    - xproperty >=0.11.0,<0.12
+  - nlohmann_json >=3.11
+  - xeus >=5,<6
+  - xproperty >=0.12.0,<0.13
+
+tests:
+- script:
+    - test -d $PREFIX/include/xwidgets
+    - test -f $PREFIX/include/xwidgets/xtransport.hpp
+    - test -f $PREFIX/lib/libxwidgets.a
 
 about:
-  home: https://github.com/jupyter-xeus/xwidgets
-  license: BSD-3
+  license: BSD-3-Clause
   license_family: BSD-3
   license_file: LICENSE
-  summary: xtl
-  doc_url: https://github.com/jupyter-xeus/xwidgets
-  dev_url: https://github.com/jupyter-xeus/xwidgets
-
+  summary: C++ backend for Jupyter interactive widgets
+  homepage: https://github.com/jupyter-xeus/xwidgets
 extra:
   recipe-maintainers:
-    - DerThorsten
-    - JohanMabille
+  - DerThorsten
+  - JohanMabille
 

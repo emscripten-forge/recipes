@@ -1,38 +1,82 @@
 context:
-  version: 1.3.2
+  version: 2.1.0
   name: pyjs
 package:
-  name: '{{name}}'
-  version: '{{ version }}'
-
+  name: ${{name}}
+  version: ${{ version }}
+    
 source:
-  - url: https://github.com/emscripten-forge/{{name}}/archive/refs/tags/{{version}}.tar.gz
-    sha256: 98f7c926643f0edbddc8105c4158af2117212a3aeedd578452086dbe4bf0831b
-
+  url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
+  sha256:   8633dfd8b5bf9403e6b9c02c582557dcc49226034689032939b547c7dc431000
 build:
-  number: 2
+  number: 8
+
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - make
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
   host:
-    - python
-    - sqlite
-    - zlib
-    - bzip2
-    - libffi
-    - pybind11
+  - python
+  - sqlite
+  - zlib
+  - bzip2
+  - libffi
+  - pybind11<2.12.0
+
+tests:
+  - script: |
+      echo "install playwright"
+      playwright install
+      echo "test in browser (main thread)"
+      pyjs_code_runner run script \
+          browser-main \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+      # worker
+      echo "test in browser (worker thread)"
+      pyjs_code_runner run script \
+          browser-worker \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+
+    requirements:
+      build:      
+          - pytester
+          - if: build_platform == "linux-64"
+            then:
+              - pyjs_code_runner >=3.0.0
+              - microsoft::playwright <1.42
+            else:
+              - pyjs_code_runner >=3.0.0
+              - microsoft::playwright
+      run:
+        - pytest
+        - numpy
+    files:
+      source:
+        - tests/**/*
+
 
 about:
-  home: https://github.com/emscripten-forge/pyjs
   license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE
   summary: pyjs
 
+  homepage: https://github.com/emscripten-forge/pyjs
 extra:
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

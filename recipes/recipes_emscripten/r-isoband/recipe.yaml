@@ -1,0 +1,46 @@
+context:
+  name: r-isoband
+  version: 0.2.7
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 7693223343b45b86de2b5b638ff148f0dafa6d7b1237e822c5272902f79cdf61
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://isoband.r-lib.org/
+  repository: https://github.com/r-lib/isoband/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |
+    A fast C++ implementation to generate contour lines (isolines) and contour
+    polygons (isobands) from regularly spaced grids containing elevation data.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

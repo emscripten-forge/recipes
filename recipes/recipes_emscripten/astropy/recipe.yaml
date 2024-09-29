@@ -1,40 +1,46 @@
 context:
-  version: '6.0.0'
+  version: 6.1.4
 
 package:
   name: astropy
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/a/astropy/astropy-{{ version }}.tar.gz
-    sha256: 03cd801a55305da523cd8d780d76359f57255dcdc59fe0bdd71fd5154fc777d9
-    patches:
-      - patches/skip_ep.patch
+- url: https://pypi.io/packages/source/a/astropy/astropy-${{ version }}.tar.gz
+  sha256: 361558e2b093a99bebe69f1fd47fac86a192607a4c16ed39ba0a800b2ab60c34
+  # patches:
+  # - patches/skip_ep.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    - cross-python_emscripten-wasm32
-    - python
-    - cython
-    - numpy
-    - pip
-    - extension-helpers
+  - ${{ compiler("cxx") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - cython
+  - numpy
+  - pip
+  - extension-helpers
   host:
-    - python
-    - jinja2
-    - markupsafe
-    - numpy
+  - python
+  - jinja2
+  - markupsafe
+  - numpy
   run:
-    - numpy
-    - pyerfa
-    - pyyaml
-    - packaging
+  - numpy
+  - pyerfa
+  - pyyaml
+  - packaging
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_astropy.py
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_astropy.py

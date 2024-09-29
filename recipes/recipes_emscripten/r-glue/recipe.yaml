@@ -1,0 +1,47 @@
+context:
+  name: r-glue
+  version: 1.7.0
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 1af51b51f52c1aeb3bfe9349f55896dd78b5542ffdd5654e432e4d646e4a86dc
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://github.com/tidyverse/glue
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: |
+    An implementation of interpreted string literals, inspired by Python's
+    Literal String Interpolation <https://www.python.org/dev/peps/pep-0498/> and
+    Docstrings <https://www.python.org/dev/peps/pep-0257/> and Julia's Triple-
+    Quoted String Literals
+    <https://docs.julialang.org/en/stable/manual/strings/#triple-quoted-string-literals>.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

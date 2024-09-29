@@ -1,0 +1,45 @@
+context:
+  name: r-utf8
+  version: 1.2.4
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 418f824bbd9cd868d2d8a0d4345545c62151d321224cdffca8b1ffd98a167b7d
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://ptrckprry.com/r-utf8/
+  repository: https://github.com/patperry/r-utf8
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: |
+    Process and print 'UTF-8' encoded international text (Unicode). Input,
+    validate, normalize, encode, format, and display.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

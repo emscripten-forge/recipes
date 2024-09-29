@@ -1,0 +1,38 @@
+name: compile pyjs
+on:
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'recipes/recipes/emscripten_emscripten-wasm3/**'
+  pull_request:
+    paths:
+      - 'recipes/recipes/emscripten_emscripten-wasm32/**'
+jobs:
+
+  build_simple_with_pixi:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_PLATFORM: emscripten-wasm32
+      GITHUB_OWNER: "emscripten-forge"
+    strategy:
+      fail-fast: false
+
+    steps:
+      ################################################################
+      # SETUP
+      ################################################################
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      ################################################################
+      # CONFIG
+      ################################################################
+      - uses: prefix-dev/setup-pixi@v0.6.0
+        with:
+          pixi-version: v0.20.1
+      - run: |
+          pixi run setup
+          pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/pyjs

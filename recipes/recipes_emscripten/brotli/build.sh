@@ -17,7 +17,3 @@ cmake ${CMAKE_ARGS} -DCMAKE_INSTALL_PREFIX=$PREFIX \
       .
 
 ninja install
-
-
-#!/bin/bash
-${PYTHON} -m pip  install .

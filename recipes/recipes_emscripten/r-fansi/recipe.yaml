@@ -1,0 +1,43 @@
+context:
+  name: r-fansi
+  version: 1.0.6
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: ea9dc690dfe50a7fad7c5eb863c157d70385512173574c56f4253b6dfe431863
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - r-base == ${{ r_base_version }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base == ${{ r_base_version }}
+  run:
+    - r-base == ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://github.com/brodieG/fansi
+  repository: https://github.com/brodieG/fansi
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  license_file:  COPYING
+  summary: ANSI Control Sequence Aware String Functions.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

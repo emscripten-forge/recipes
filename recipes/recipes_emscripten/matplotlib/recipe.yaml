@@ -1,71 +1,75 @@
 context:
   name: matplotlib
-  version: '3.8.2'
-
-package:
-  name: '{{ name|lower }}'
-  version: '{{ version }}'
+  version: "3.9.1"
 
 source:
-  - url: https://github.com/matplotlib/matplotlib/archive/v{{ version }}.tar.gz
-    sha256: 5b8e5e971586577ae08ed6de9f1d07a9c2c8545721de9617cb33e9fbcb71431f
-    # sha256: 5ac5ca25e6ecd1e7711e1f859b4b6f74f290ef517387d1502bf8012bf2b1647e
-    patches:
-      - patches/disable_macosx_backend.patch
-      - patches/fix-threading-and-font-cache.patch
-  - path: mplsetup.cfg
-  - path: setupext.py
+- url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
+  sha256: 4fdf46dc325fdf4cbc61f7fa66de7b48287df0a71b3442b63ff0784041cae2e7
+  patches:
+  - patches/fix-threading-and-font-cache.patch
 
 build:
   number: 0
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_matplotlib.py
-steps:
+outputs:
   - package:
       name: matplotlib-base
+      version: ${{ version }}
     build:
-      script: build.sh
+      script: build-base.sh
     requirements:
       build:
-        - python
-        - numpy
-        - cross-python_emscripten-wasm32
-        - pybind11
+      - python
+      - pip
+      - cross-python_${{ target_platform }}
 
-        - "{{ compiler('c') }}"
-        - "{{ compiler('cxx') }}"
-        - sel(not win): pkg-config
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - pkg-config
+      - meson-python
 
-        # TODO add certifi package to emscripten-wasm32 and depend in host on this
-        - certifi
-        - pip
-        - setuptools_scm_git_archive
+      - setuptools_scm_git_archive
+
+      # to template the emscripten.meson.cross file
+      - sed
 
       host:
-        - python
-        - numpy
-        - pybind11
+      - python
+      - numpy
+      - pybind11
+      - freetype
+      - qhull
+
       run:
-        - cycler
-        - fonttools
-        - kiwisolver
-        - numpy
-        - packaging
-        - pillow
-        - pyparsing
-        - python-dateutil
-        - pytz
+      - contourpy
+      - cycler
+      - fonttools
+      - kiwisolver
+      - numpy
+      - packaging
+      - pillow
+      - pyparsing
+      - python-dateutil
+      - pytz
 
   - package:
       name: matplotlib
+      version: ${{ version }}
+
     requirements:
       host:
-        - python
+      - python
       run:
-        - python
-        - "{{ pin_subpackage('matplotlib-base', exact=True) }}"
+      - python
+      - ${{ pin_subpackage('matplotlib-base', exact=True) }}
 
+    tests:
+    - script: pytester
+      files:
+        recipe:
+        - test_import_matplotlib.py
+      requirements:
+        build:
+        - pytester
+        run:
+        - pytester-run

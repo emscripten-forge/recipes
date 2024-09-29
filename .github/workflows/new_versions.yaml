@@ -7,17 +7,18 @@ on:
 
 jobs:
   update_versions:
+    if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: install mamba
-        uses: mamba-org/provision-with-micromamba@main
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: tickbot.yml
+          environment-file: ci_env.yml
 
       - name: Determine new package version and open/merge PRs
         shell: bash -l -eo pipefail {0}
-        run: python bump_recipes_versions.py
+        run:  python -m emci bot bump-recipes-versions
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}

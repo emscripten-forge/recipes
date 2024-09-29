@@ -29,6 +29,11 @@ echo "------------------------------------"
 echo "Installing emsdk"
 echo "------------------------------------" 
 
+# if $EMSDK_PATH exists, exit
+if [ -d "$EMSDK_PATH" ]; then
+    echo "emsdk already exists at $EMSDK_PATH"
+    exit 0
+fi
 
 echo "...cloning emsdk"
 git clone --depth 1 https://github.com/emscripten-core/emsdk.git $EMSDK_PATH
@@ -45,9 +50,9 @@ cat $PATCH_DIR/*.patch | patch -p1 --verbose
 popd    
 echo "...done"
 
-echo "emsdk building ..."   
-./emsdk install --build=Release $EMSCRIPTEN_VERSION ccache-git-emscripten-64bit
-echo "...done"
+# echo "emsdk building ..."   
+# ./emsdk install --build=Release $EMSCRIPTEN_VERSION ccache-git-emscripten-64bit
+# echo "...done"
 
 echo "emsdk activating ..."
 ./emsdk activate --embedded --build=Release $EMSCRIPTEN_VERSION

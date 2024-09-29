@@ -1,54 +1,50 @@
 context:
-  version: 0.15.13
+  version: 0.17.1
 
 package:
   name: xeus-python
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/{{ version }}.tar.gz
-  sha256: 36f202821e3a62fec285c9a93f5cd3f0c1adc4ef2cbc5c3a0f5aa3fc6360e326
+  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 8ecb2a92dc49309fe3d6dfc096323260ea20fd9736b84532f15578761fb687d0
 
 
 build:
-  number: 0
+  number: 6
 
 requirements:
   build:
-    - '{{ compiler("cxx") }}'
-    - cmake
-    - ninja
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
   host:
-    - libpython
-    - nlohmann_json
-    - xeus
-    - xeus-lite
-    - pybind11
-    - pybind11_json
-    - xtl
-    - pyjs >=1.3.2,<2.0.0
+  - libpython
+  - nlohmann_json
+  - xeus
+  - xeus-lite
+  - pybind11
+  - pybind11_json
+  - xtl
+  - pyjs >=2,<3
   run:
-    - python
-    - ipython
-    - jedi
-    - xeus-python-shell >=0.6.0,<0.7
-    - requests-wasm-polyfill >=0.3.0
+  - python
+  - ipython
+  - jedi
+  - xeus-python-shell >=0.6.0,<0.7
+  - pyjs >=2,<3
 
-test:
-  commands:
-    - sel(emscripten): test -f $PREFIX/bin/xpython.wasm
-    - sel(emscripten): test -f $PREFIX/bin/xpython.js
-
+tests:
+- script:
+  - test -f $PREFIX/bin/xpython.wasm
+  - test -f $PREFIX/bin/xpython.js
 about:
-  home: https://github.com/jupyter-xeus/xeus-python
-  license: BSD-3
+  license: BSD-3-Clause
   license_family: BSD-3
   license_file: LICENSE
   summary: xeus-python
-  doc_url: https://github.com/jupyter-xeus/xeus-python
-  dev_url: https://github.com/jupyter-xeus/xeus-python
-
+  homepage: https://github.com/jupyter-xeus/xeus-python
 extra:
   recipe-maintainers:
-    - DerThorsten
-    - martinRenou
+  - DerThorsten
+  - martinRenou
