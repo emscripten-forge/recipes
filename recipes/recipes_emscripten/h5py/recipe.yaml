@@ -1,0 +1,55 @@
+context:
+  version: 3.10.0
+  maj_min_ver: 3.10
+
+package:
+  name: h5py
+  version: ${{ version }}
+
+source:
+  url: https://github.com/h5py/h5py/archive/${{ version }}.tar.gz
+  sha256: 9cac7838ab139ec71adf721a1305b954e18efa4f80c82fcfe34e1eb9639ded29
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - cross-python_emscripten-wasm32
+    - cython >=0.29.31,<1
+    - hdf5
+    - numpy   
+    - cython >=0.29.31,<1
+    - pkgconfig
+  host:
+    - python
+    - pip
+    - numpy
+    - hdf5
+  run:
+    - python
+    - cached-property
+    - '${{ pin_compatible("numpy") }}'
+    - hdf5
+
+about:
+  homepage: https://www.h5py.org/
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Read and write HDF5 files from Python
+  description: |
+    The h5py package is a Pythonic interface to the HDF5 binary data format
+  repository: https://github.com/h5py/h5py
+
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_h5py.py
