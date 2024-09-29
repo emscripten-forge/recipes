@@ -13,6 +13,6 @@ export H5PY_DIRECT_VFD='0'
 export HDF5_MPI=OFF
 
 # Explitly set HDF5 version
-export HDF5_VERSION=1.12.3
+export HDF5_VERSION=1.12.2
 
 "${PYTHON}" -m pip install . --no-deps --ignore-installed --no-cache-dir -vv
