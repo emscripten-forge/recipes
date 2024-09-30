@@ -9,7 +9,7 @@ emcmake cmake .. \
     -DBUILD_SHARED_LIBS=ON \
     -DBUILD_STATIC_LIBS=OFF \
     -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
-    -DONLY_SHARED_LIBS=1 \
+    -DONLY_SHARED_LIBS=ON \
     -DBUILD_TESTING=OFF \
     -DCMAKE_C_FLAGS="-fPIC -Wno-incompatible-pointer-types-discards-qualifiers" \
     -DCMAKE_CXX_FLAGS="-fPIC -Wno-incompatible-pointer-types-discards-qualifiers" \
@@ -17,7 +17,7 @@ emcmake cmake .. \
     -DHDF5_BUILD_EXAMPLES=OFF \
     -DHDF5_BUILD_TOOLS=OFF \
     -DHDF5_BUILD_UTILS=OFF \
-    -DHDF5_ENABLE_Z_LIB_SUPPORT=1 \
+    -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
     -DHDF5_ENABLE_ROS3_VFD=OFF \
     -DZLIB_INCLUDE_DIR=${PREFIX}/include \
     -DZLIB_LIBRARY=${PREFIX}/lib/libz_static.a
@@ -27,3 +27,5 @@ emcmake cmake .. \
 cp ${RECIPE_DIR}/settings/* src/
 
 emmake make -j${CPU_COUNT} install
+
+# cp -P ${PREFIX}/lib/libhdf* ${DISTDIR}
