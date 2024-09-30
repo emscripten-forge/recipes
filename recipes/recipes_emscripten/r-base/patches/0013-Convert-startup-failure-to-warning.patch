@@ -1,0 +1,25 @@
+From 0fb624d3aa8be1736314fda48dbb56587dc98863 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 30 Sep 2024 17:12:25 +0200
+Subject: [PATCH] Convert startup failure to warning
+
+---
+ src/scripts/R.sh.in | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/scripts/R.sh.in b/src/scripts/R.sh.in
+index cdbac8b..ded75e5 100644
+--- a/src/scripts/R.sh.in
++++ b/src/scripts/R.sh.in
+@@ -270,7 +270,10 @@ fi
+ 
+ ## Startup
+ if test -z "${debugger}"; then
+-  exec "${R_binary}" @R_BATCHSAVE@ ${args} "${@}"
++  chmod +x "${R_binary}"
++  if ! "${R_binary}" @R_BATCHSAVE@ ${args} "${@}"; then
++    echo "WARNING: Failed to execute ${R_binary} ${args} ${@}"
++  fi
+ else
+   ## Ideally, we would like the debugger to start R with additional
+   ## ('inferior') arguments, but not all debuggers can do this.  We know
