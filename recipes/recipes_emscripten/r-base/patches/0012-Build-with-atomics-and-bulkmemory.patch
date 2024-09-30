@@ -1,0 +1,37 @@
+From 4ff6f58145ba10e61905d93a5084a39f7f139dc6 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 19 Sep 2024 19:00:20 +0200
+Subject: [PATCH 3/5] Build with atomics and bulkmemory
+
+---
+ src/main/Makefile.in | 3 +++
+ src/unix/Makefile.in | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/main/Makefile.in b/src/main/Makefile.in
+index d7585f9..a80964f 100644
+--- a/src/main/Makefile.in
++++ b/src/main/Makefile.in
+@@ -85,6 +85,9 @@ ALL_CPPFLAGS = $(TRE_CPPFLAGS) $(XDR_CPPFLAGS) $(R_XTRA_CPPFLAGS) \
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO)
+ @WANT_R_SHLIB_TRUE@ALL_FFLAGS = $(ALL_FFLAGS_LO)
+ @WANT_R_SHLIB_FALSE@ALL_FFLAGS = $(ALL_FFLAGS_PIE)
++## Fixes: --shared-memory is disallowed by context.o because it was not compiled
++## with 'atomics' or 'bulk-memory' features
++ALL_CPPFLAGS += -matomics -mbulk-memory
+ 
+ 
+ ## use an explicit library: there might be an unsatisfactory -lintl around
+diff --git a/src/unix/Makefile.in b/src/unix/Makefile.in
+index b1cc9a3..d3ed938 100644
+--- a/src/unix/Makefile.in
++++ b/src/unix/Makefile.in
+@@ -31,7 +31,7 @@ DISTFILES = \
+   Makefile.in $(SOURCES_C_BASE) Rscript.c \
+   $(HEADERS) libR.pc.in system.txt
+ 
+-ALL_CPPFLAGS += $(CPICFLAGS)
++ALL_CPPFLAGS += $(CPICFLAGS) -matomics -mbulk-memory
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO)
+ 
+ all: R
