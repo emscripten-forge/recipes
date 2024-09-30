@@ -55,11 +55,12 @@ emconfigure ../configure \
     --disable-openmp \
     --disable-nls \
     --with-internal-tzcode \
-    --with-recommended-packages=no
+    --with-recommended-packages=no \
+|| cat config.log
 
 # NOTE: Remove the -lFortranRuntime from the FLIBS to avoid double-linking
 # when creating the R binary
-echo "FLIBS =   " >> Makeconf
+echo "FLIBS =" >> Makeconf
 
 emmake make -j${CPU_COUNT}
 emmake make install
