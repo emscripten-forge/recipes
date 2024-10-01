@@ -1,6 +1,6 @@
 context:
   name: r-jsonlite
-  version: 1.8.8
+  version: 1.8.9
   r_base_version: 4.4.1
 
 package:
@@ -11,19 +11,25 @@ source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 7de21316984c3ba3d7423d12f43d1c30c716007c5e39bf07e11885e0ceb0caa4
+  sha256: 89f130e0e1163328c01decd54e7712b5ebf3d0a667da0052833722cb9a6e90b0
 
 build:
-  number: 1
+  number: 0
+  script:
+    - $R CMD INSTALL $R_ARGS --no-byte-compile .
+    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
+    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
+    # The activation script of cross-r-base copies cairo and tcltk from
+    # the build environment.
 
 requirements:
   build:
-  - r-base == ${{ r_base_version }}
+  - cross-r-base >= ${{ r_base_version }}
   - ${{ compiler('c') }}
   host:
-  - r-base == ${{ r_base_version }}
+  - r-base >= ${{ r_base_version }}
   run:
-  - r-base == ${{ r_base_version }}
+  - r-base >= ${{ r_base_version }}
 
 tests:
 - package_contents:
