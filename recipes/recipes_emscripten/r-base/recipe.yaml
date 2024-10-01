@@ -19,9 +19,12 @@ source:
     - patches/0007-Build-docs-with-Rscript-binary.patch
     - patches/0008-Set-default-R_Home.patch
     - patches/0009-Use-basenames-for-compilers.patch
+    - patches/0010-Fix-iconv-checks-when-using-internal-lapack-blas.patch
+    - patches/0011-Build-with-fPIC-only-modules-that-need-it.patch
+    - patches/0012-Build-with-atomics-and-bulkmemory.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -33,24 +36,23 @@ requirements:
     - make
     - r-base == ${{ version }}  # for R and Rscript binaries (See patches)
   host:
-    - liblapack>=3.12
     - libflang                  # for FortranRuntime
     - libiconv
     - zlib>=1.2.13
     - bzip2
     - xz                        # for lzma
-    - cairo>=1.18
     - pcre2>=10.43
     - tzdata
     - libpng
     - libtiff
+    # TODO: add cairo and pango once available
 
 tests:
-  - script: |
-      OUTPUT=$(run_modularized $PREFIX/lib/R/bin/Rscript --version)
-    requirements:
-      build:
-        - run_modularized
+- script:
+    - node ${PREFIX}/lib/R/bin/Rscript --version
+  requirements:
+    build:
+      - nodejs
 
 about:
   homepage: http://www.r-project.org/

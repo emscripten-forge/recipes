@@ -19,16 +19,15 @@ export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_size_max=yes
 
-# NOTE: When cross-compiling, it sets the version check to fail regardless of
-# the lapack version. This is a workaround to skip the version check.
-# export r_cv_lapack_ver=yes
-
 # Not supported
 export ac_cv_have_decl_getrusage=no
 export ac_cv_have_decl_getrlimit=no
 export ac_cv_have_decl_sigaltstack=no
 export ac_cv_have_decl_wcsftime=no
 export ac_cv_have_decl_umask=no
+
+# SIDE_MODULE + pthread is experimental, and pthread_kill is not implemented
+export r_cv_search_pthread_kill=no
 
 export OBJDUMP=llvm-objdump
 
@@ -47,28 +46,37 @@ emconfigure ../configure \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
     --enable-R-static-lib \
-    --enable-BLAS-shlib \
-    --with-cairo \
     --without-readline  \
     --without-x         \
-    --enable-static  \
     --enable-java=no \
     --enable-R-profiling=no \
     --enable-byte-compiled-packages=no \
     --disable-rpath \
     --disable-openmp \
-    --disable-threads \
     --disable-nls \
     --with-internal-tzcode \
     --with-recommended-packages=no \
-    --with-libdeflate-compression=no
+|| cat config.log
 
 # NOTE: Remove the -lFortranRuntime from the FLIBS to avoid double-linking
 # when creating the R binary
-echo "FLIBS =   " >> Makeconf
+echo "FLIBS =" >> Makeconf
 
 emmake make -j${CPU_COUNT}
 emmake make install
+
+# FIXME: The database files for the internal modules are installed in a "help"
+# directory, this copies them to the expected location. It also helps avoid
+# packaging r-base files in other R packages when using cross-r-base.
+pushd $PREFIX/lib/R/library
+    for pkg in $(ls); do
+        if [ "$pkg" == "datasets" ]; then
+            cp -n ${BUILD_PREFIX}/lib/R/library/$pkg/data/* $pkg/data/
+        elif [ -d $pkg/help ]; then
+            cp -n $pkg/help/$pkg.rd* $pkg/R/
+        fi
+    done
+popd
 
 # Manually copying .wasm files
 cp src/main/R.* $PREFIX/lib/R/bin/exec/
