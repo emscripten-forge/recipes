@@ -71,9 +71,9 @@ emmake make install
 pushd $PREFIX/lib/R/library
     for pkg in $(ls); do
         if [ "$pkg" == "datasets" ]; then
-            cp --update=none ${BUILD_PREFIX}/lib/R/library/$pkg/data/* $pkg/data/
+            cp -n ${BUILD_PREFIX}/lib/R/library/$pkg/data/* $pkg/data/
         elif [ -d $pkg/help ]; then
-            cp --update=none $pkg/help/$pkg.rd* $pkg/R/
+            cp -n $pkg/help/$pkg.rd* $pkg/R/
         fi
     done
 popd
