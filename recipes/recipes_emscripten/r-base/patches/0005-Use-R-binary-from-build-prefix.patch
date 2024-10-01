@@ -1,25 +1,54 @@
-From 20e0c7a1fbef6b570dd17e9ca8d1c9f763b61d6f Mon Sep 17 00:00:00 2001
+From a1bf7a149e8f7728c581b4995bcd143d9de91eb9 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Wed, 21 Aug 2024 13:07:43 +0200
-Subject: [PATCH 5/9] Use R binary from build prefix
+Date: Tue, 1 Oct 2024 13:20:32 +0200
+Subject: [PATCH] Use R binary from build prefix
 
 ---
- src/scripts/R.sh.in | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ src/scripts/R.sh.in | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/src/scripts/R.sh.in b/src/scripts/R.sh.in
-index cdbac8b..9b82870 100644
+index cdbac8b..74b0472 100644
 --- a/src/scripts/R.sh.in
 +++ b/src/scripts/R.sh.in
-@@ -249,7 +249,10 @@ done
+@@ -1,7 +1,7 @@
+ #!@R_SHELL@
+ # Shell wrapper for R executable.
+ 
+-R_HOME_DIR=
++R_HOME_DIR="${BUILD_PREFIX}/lib/R"
+ if test "${R_HOME_DIR}" = "@prefix@/@LIBnn@/R"; then
+    case "@R_OS@" in
+    linux*)
+@@ -26,6 +26,9 @@ if test "${R_HOME_DIR}" = "@prefix@/@LIBnn@/R"; then
+   esac
+ fi
+ 
++# This is to be able to use R libs in the build environment
++R_HOME_DIR="${BUILD_PREFIX}/lib/R"
++
+ if test -n "${R_HOME}" && \
+    test "${R_HOME}" != "${R_HOME_DIR}"; then
+   echo "WARNING: ignoring environment value of R_HOME"
+@@ -249,7 +252,9 @@ done
  
  . "${R_HOME}/etc${R_ARCH}/ldpaths"
  
 -R_binary="${R_HOME}/bin/exec${R_ARCH}/R"
-+# This does not work when cross-compiling because the R binary is JavaScript
-+# R_binary="${R_HOME}/bin/exec${R_ARCH}/R"
-+R_binary="${BUILD_PREFIX}/bin/R"
++# This must be executable in the build environment
++R_binary="${BUILD_PREFIX}/lib/R/bin/exec${R_ARCH}/R"
 +
  export R_ARCH
  
  case "${gui}" in
+@@ -270,7 +275,9 @@ fi
+ 
+ ## Startup
+ if test -z "${debugger}"; then
+-  exec "${R_binary}" @R_BATCHSAVE@ ${args} "${@}"
++  if ! "${R_binary}" @R_BATCHSAVE@ ${args} "${@}"; then
++    echo "WARNING: Failed to execute ${R_binary} ${args} ${@}"
++  fi
+ else
+   ## Ideally, we would like the debugger to start R with additional
+   ## ('inferior') arguments, but not all debuggers can do this.  We know

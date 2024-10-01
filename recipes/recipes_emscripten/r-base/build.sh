@@ -65,6 +65,19 @@ echo "FLIBS =" >> Makeconf
 emmake make -j${CPU_COUNT}
 emmake make install
 
+# FIXME: The database files for the internal modules are installed in a "help"
+# directory, this copies them to the expected location. It also helps avoid
+# packaging r-base files in other R packages when using cross-r-base.
+pushd $PREFIX/lib/R/library
+    for pkg in $(ls); do
+        if [ "$pkg" == "datasets" ]; then
+            cp --update=none ${BUILD_PREFIX}/lib/R/library/$pkg/data/* $pkg/data/
+        elif [ -d $pkg/help ]; then
+            cp --update=none $pkg/help/$pkg.rd* $pkg/R/
+        fi
+    done
+popd
+
 # Manually copying .wasm files
 cp src/main/R.* $PREFIX/lib/R/bin/exec/
 cp src/unix/Rscript.wasm $PREFIX/lib/R/bin/
