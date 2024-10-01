@@ -15,15 +15,21 @@ source:
 
 build:
   number: 0
+  script:
+    - $R CMD INSTALL $R_ARGS --no-byte-compile .
+    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
+    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
+    # The activation script of cross-r-base copies cairo and tcltk from
+    # the build environment.
 
 requirements:
   build:
-    - r-base == ${{ r_base_version }}
+    - cross-r-base >= ${{ r_base_version }}
     - ${{ compiler('cxx') }}
   host:
-    - r-base == ${{ r_base_version }}
+    - r-base >= ${{ r_base_version }}
   run:
-    - r-base == ${{ r_base_version }}
+    - r-base >= ${{ r_base_version }}
 
 tests:
 - package_contents:
