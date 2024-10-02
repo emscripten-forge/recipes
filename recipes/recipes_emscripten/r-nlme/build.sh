@@ -12,11 +12,7 @@ micromamba install -p $BUILD_PREFIX \
 rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
-echo "R_HOME=\$(PREFIX)/lib/R" > $BUILD_PREFIX/lib/R/etc/Makeconf
-cat $PREFIX/lib/R/etc/Makeconf >> $BUILD_PREFIX/lib/R/etc/Makeconf
-
-$BUILD_PREFIX/bin/R CMD INSTALL . \
-    --no-test-load --no-byte-compile --library=$PREFIX/lib/R/library
+$R CMD INSTALL $R_ARGS --no-byte-compile .
 
 rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
 rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
