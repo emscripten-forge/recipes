@@ -1,0 +1,60 @@
+context:
+  name: r-mgcv
+  version: 1.9-1
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version|replace('-', '_') }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 700fbc37bedd3a49505b9bc4949faee156d9cfb4f669d797d06a10a15a5bdb32
+
+build:
+  number: 0
+  script:
+    - $R CMD INSTALL $R_ARGS --no-byte-compile .
+    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
+    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
+    # The activation script of cross-r-base copies cairo and tcltk from
+    # the build environment.
+
+    # Remove the Matrix folder which is not required.
+    - rm -rf $PREFIX/lib/R/library/Matrix
+
+requirements:
+  build:
+  - cross-r-base >= ${{ r_base_version }}
+  - r-matrix
+  - r-nlme
+  - ${{ compiler('c') }}
+  host:
+  - r-base == ${{ r_base_version }}
+  - libblas>=3.12
+  - liblapack>=3.12
+  - r-matrix
+  - r-nlme
+  - libflang                  # for FortranRuntime
+  run:
+  - r-base == ${{ r_base_version }}
+  - r-matrix
+  - r-nlme
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://CRAN.R-project.org/package=mgcv
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  summary: Generalized additive (mixed) models, some of their extensions and other generalized ridge regression with multiple smoothing parameter estimation by (Restricted) Marginal Likelihood, Generalized Cross Validation and similar, or using iterated nested Laplace approximation for fully Bayesian inference.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491
