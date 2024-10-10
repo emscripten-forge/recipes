@@ -1,6 +1,6 @@
 context:
-  name: r-fastmap
-  version: 1.2.0
+  name: r-tibble
+  version: 3.2.1
   r_base_version: 4.4.1
 
 package:
@@ -11,10 +11,10 @@ source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: b1da04a2915d1d057f3c2525e295ef15016a64e6667eac83a14641bbd83b9246
+  sha256: 65a72d0c557fd6e7c510d150c935ed6ced5db7d05fc20236b370f11428372131
 
 build:
-  number: 2
+  number: 0
   script:
     - $R CMD INSTALL $R_ARGS --no-byte-compile .
     - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
@@ -24,13 +24,33 @@ build:
 
 requirements:
   build:
-    - cross-r-base >= ${{ r_base_version }}
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
+  - cross-r-base >= ${{ r_base_version }}
+  - r-fansi
+  - r-lifecycle
+  - r-magrittr
+  - r-pillar
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+  - ${{ compiler('c') }}
   host:
-    - r-base >= ${{ r_base_version }}
+  - r-base == ${{ r_base_version }}
+  - r-fansi
+  - r-lifecycle
+  - r-magrittr
+  - r-pillar
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
   run:
-    - r-base >= ${{ r_base_version }}
+  - r-base == ${{ r_base_version }}
+  - r-fansi
+  - r-lifecycle
+  - r-magrittr
+  - r-pillar
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
 
 tests:
 - package_contents:
@@ -38,18 +58,15 @@ tests:
     - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
-  homepage: https://r-lib.github.io/fastmap/
-  repository: https://github.com/r-lib/fastmap
+  homepage: https://tibble.tidyverse.org/
   license: MIT
   license_family: MIT
   license_file: LICENSE
   summary: |
-    Fast implementation of a key-value store. Environments are commonly used as
-    key-value stores, but every time a new key is used, it is added to R's
-    global symbol table, causing a small amount of memory leakage. This can be
-    problematic in cases where many different keys are used. Fastmap avoids this
-    memory leak issue by implementing the map using data structures in C++.
+    Provides a 'tbl_df' class (the 'tibble') that provides stricter checking and
+    better formatting than the traditional data frame.
 
 extra:
   recipe-maintainers:
   - IsabelParedes
+  - anutosh491

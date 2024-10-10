@@ -14,16 +14,22 @@ source:
   sha256: 418f824bbd9cd868d2d8a0d4345545c62151d321224cdffca8b1ffd98a167b7d
 
 build:
-  number: 1
+  number: 2
+  script:
+    - $R CMD INSTALL $R_ARGS --no-byte-compile .
+    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
+    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
+    # The activation script of cross-r-base copies cairo and tcltk from
+    # the build environment.
 
 requirements:
   build:
-    - r-base == ${{ r_base_version }}
+    - cross-r-base >= ${{ r_base_version }}
     - ${{ compiler('c') }}
   host:
-    - r-base == ${{ r_base_version }}
+    - r-base >= ${{ r_base_version }}
   run:
-    - r-base == ${{ r_base_version }}
+    - r-base >= ${{ r_base_version }}
 
 tests:
 - package_contents:

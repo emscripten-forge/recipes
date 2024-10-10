@@ -1,20 +1,20 @@
 context:
-  name: r-fastmap
-  version: 1.2.0
+  version: 2.1-1
+  name: r-colorspace
   r_base_version: 4.4.1
 
 package:
   name: ${{ name }}
-  version: ${{ version }}
+  version: ${{ version|replace('-', '_') }}
 
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: b1da04a2915d1d057f3c2525e295ef15016a64e6667eac83a14641bbd83b9246
+  sha256: e721cee5f4d6e4b0fc8eb18265e316b4f856fd3be02f0775a26032663758cd0b
 
 build:
-  number: 2
+  number: 0
   script:
     - $R CMD INSTALL $R_ARGS --no-byte-compile .
     - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
@@ -26,7 +26,6 @@ requirements:
   build:
     - cross-r-base >= ${{ r_base_version }}
     - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
   host:
     - r-base >= ${{ r_base_version }}
   run:
@@ -38,18 +37,12 @@ tests:
     - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
-  homepage: https://r-lib.github.io/fastmap/
-  repository: https://github.com/r-lib/fastmap
-  license: MIT
-  license_family: MIT
-  license_file: LICENSE
-  summary: |
-    Fast implementation of a key-value store. Environments are commonly used as
-    key-value stores, but every time a new key is used, it is added to R's
-    global symbol table, causing a small amount of memory leakage. This can be
-    problematic in cases where many different keys are used. Fastmap avoids this
-    memory leak issue by implementing the map using data structures in C++.
+  homepage: http://colorspace.R-Forge.R-project.org
+  license: BSD-3-Clause
+  license_family: BSD
+  summary: A Toolbox for Manipulating and Assessing Colors and Palettes
 
 extra:
   recipe-maintainers:
-  - IsabelParedes
+    - IsabelParedes
+    - anutosh491
