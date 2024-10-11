@@ -61,19 +61,19 @@ set(lua_binaries lua luac)
 
 foreach(lua_binary ${lua_binaries})
   # set target compile options
-  target_compile_definitions(${lua_binary} 
+  target_compile_definitions(${lua_binary}
       PUBLIC "SHELL: -s FORCE_FILESYSTEM"
       PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
       PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
-      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY"
+      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
   )
   # set target link options
-  target_link_options(${lua_binary} 
+  target_link_options(${lua_binary}
       PUBLIC "SHELL: -s FORCE_FILESYSTEM"
       PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
       PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
-      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY"
+      PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
   )
 endforeach()
