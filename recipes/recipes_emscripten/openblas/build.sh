@@ -28,7 +28,7 @@ emmake make libs \
     BINARY=64 \
     LDFLAGS="${SIDE_MODULE_LDFLAGS}"
 
-emmake make install PREFIX=$PREFIX
+emmake make install PREFIX=$PREFIX NO_SHARED=1
 
 mkdir -p $PREFIX/lib
 cp libopenblas.a $PREFIX/lib
