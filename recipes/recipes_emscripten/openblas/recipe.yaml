@@ -1,36 +1,36 @@
 context:
-  version: 0.3.26
   name: openblas
+  version: 0.3.28
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  sha256: 4e6e4f5cb14c209262e33e6816d70221a2fe49eb69eaf0a06f065598ac602c68
-  url: https://github.com/OpenMathLib/OpenBLAS/releases/download/v${{ version }}/OpenBLAS-${{ version }}.tar.gz
-  patches:
-    - patches/0001-Add-Wno-return-type-flag.patch
-    - patches/0002-Align-xerbla_array-signature-with-scipy-expectation.patch
-    - patches/0003-Skip-linktest.patch
+  url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1
 
 build:
-  number: 13
+  number: 0
 
 requirements:
   build:
   - ${{ compiler('c') }}
+  - cmake
+  - make     # [unix]
   host:
-  - libf2c
+  - libflang                  # for FortranRuntime
 
-tests:
-- package_contents:
-    lib:
-    - libopenblas.so
-    include:
-    - cblas.h
-    - lapack.h
+# tests:
+# TODO
+
+about:
+  homepage: http://www.openblas.net/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: An optimized BLAS library based on GotoBLAS2 1.13 BSD version
 
 extra:
-  recipe-maintainers:
-  - DerThorsten
+  maintainers:
+    - DerThorsten
+    - anutosh491
