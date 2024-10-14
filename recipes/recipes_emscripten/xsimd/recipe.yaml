@@ -1,0 +1,46 @@
+context:
+  name: xsimd
+  version: 13.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/xtensor-stack/xsimd/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 8bdbbad0c3e7afa38d88d0d484d70a1671a1d8aefff03f4223ab2eb6a41110a3
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - python
+
+tests:
+  - script: |
+      echo "install playwright"
+      playwright install
+      python ${PREFIX}/bin/test_wasm_playwright.py ${PREFIX}/bin
+
+    requirements:
+      build:
+          - microsoft::playwright
+
+about:
+  homepage: https://github.com/xtensor-stack/xsimd
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: C++ Wrappers for SIMD Intrinsices
+  description: High-level APIs for SIMD operations
+  documentation: https://xsimd.readthedocs.io
+  repository: https://github.com/xtensor-stack/xsimd
+
+extra:
+  recipe-maintainers:
+  - JohanMabille
+  - anutosh491
