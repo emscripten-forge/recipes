@@ -18,7 +18,8 @@ export CC=emcc
 export FC=flang-new
 export FFLAGS="--target=wasm32-unknown-emscripten"
 
-emmake make libs shared \
+emmake make libs \
+    NO_SHARED=1 \
     TARGET=RISCV64_GENERIC \
     CC=$CC \
     FC=$FC \
