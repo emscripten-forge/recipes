@@ -32,13 +32,3 @@ emmake make install PREFIX=$PREFIX NO_SHARED=1
 
 mkdir -p $PREFIX/lib
 cp libopenblas.a $PREFIX/lib
-
-# $(which cmake) --build _build
-# $(which cmake) --install _build
-
-# PYODIDE_PACKED=$RECIPE_DIR/openblas-0.3.23.zip
-# # unzip
-# unzip $PYODIDE_PACKED
-# # copy libopenblas.so to
-# mkdir -p $PREFIX/lib
-# cp libopenblas.a $PREFIX/lib
