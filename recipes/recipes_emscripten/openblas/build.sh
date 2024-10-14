@@ -19,12 +19,13 @@ export FC=flang-new
 export FFLAGS="--target=wasm32-unknown-emscripten"
 
 emmake make libs shared \
-    TARGET=GENERIC \
+    TARGET=RISCV64_GENERIC \
     CC=$CC \
     FC=$FC \
     HOSTCC=gcc \
     USE_THREAD=0 \
-    BINARY=64
+    BINARY=64 \
+    LDFLAGS="${SIDE_MODULE_LDFLAGS}"
 
 emmake make install PREFIX=$PREFIX
 
