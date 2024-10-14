@@ -18,12 +18,13 @@ export CC=emcc
 export FC=flang-new
 export FFLAGS="--target=wasm32-unknown-emscripten"
 
-emmake make TARGET=GENERIC \
+emmake make libs shared \
+    TARGET=RISCV64_GENERIC \
     CC=$CC \
     FC=$FC \
-    HOSTCC=clang \
+    HOSTCC=gcc \
     USE_THREAD=0 \
-    lib
+    BINARY=64
 
 emmake make install PREFIX=$PREFIX
 
