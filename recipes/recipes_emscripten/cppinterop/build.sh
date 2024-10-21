@@ -17,7 +17,7 @@ emcmake  cmake -DCMAKE_BUILD_TYPE=Release               \
     ../
 
 # Build step
-EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j1
+emmake make -j1
 
 # Install step
 emmake make install
