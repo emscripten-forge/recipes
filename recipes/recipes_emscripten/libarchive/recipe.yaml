@@ -1,0 +1,62 @@
+context:
+  name: libarchive
+  version: 3.7.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ name }}/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 2a27a429dde8a6920973a609f13e0d1f94b45a2c40c9f49fc66f7fd915e15b79
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - autoconf
+    - automake
+    - libtool
+    - pkg-config
+  host:
+    - bzip2
+    - zlib
+    - zstd
+    - libxml2
+
+tests:
+- script:
+    - node $PREFIX/bin/bsdtar --version
+  requirements:
+    build:
+    - nodejs
+- package_contents:
+    bin:
+    - bsdcat.wasm
+    - bsdcpio.wasm
+    - bsdtar.wasm
+    - bsdunzip.wasm
+    include:
+    - archive.h
+    lib:
+    - libarchive.a
+
+about:
+  homepage: http://www.libarchive.org/
+  license: BSD-2-Clause
+  license_file: COPYING
+  license_family: BSD
+  summary: Multi-format archive and compression library
+  description: |
+    The libarchive project develops a portable, efficient C library that can
+    read and write streaming archives in a variety of formats. It also includes
+    implementations of the common tar, cpio, and zcat command-line tools that
+    use the libarchive library.
+  repository: https://github.com/libarchive/libarchive
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
+    - AnastasiaSliusar
