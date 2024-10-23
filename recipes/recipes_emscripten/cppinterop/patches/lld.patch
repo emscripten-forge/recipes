@@ -1,0 +1,195 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bcd16a9..ab4f254 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -24,11 +24,28 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+     if (NOT DEFINED Cling_DIR)
+       set(Cling_DIR ${LLVM_DIR})
+     endif()
++    if (NOT DEFINED LLD_DIR)
++      set(LLD_DIR ${LLVM_DIR})
++    endif()
++  endif()
++  if (DEFINED LLD_DIR)
++    if (NOT DEFINED LLVM_DIR)
++      set(LLVM_DIR ${LLD_DIR})
++    endif()
++    if (NOT DEFINED Clang_DIR)
++      set(Clang_DIR ${LLD_DIR})
++    endif()
++    if (NOT DEFINED Cling_DIR)
++      set(Cling_DIR ${LLD_DIR})
++    endif()
+   endif()
+   if (DEFINED Clang_DIR)
+     if (NOT DEFINED LLVM_DIR)
+       set(LLVM_DIR ${Clang_DIR})
+     endif()
++    if (NOT DEFINED LLD_DIR)
++      set(LLD_DIR ${Clang_DIR})
++    endif()
+     if (NOT DEFINED Cling_DIR)
+       set(Cling_DIR ${Clang_DIR})
+     endif()
+@@ -61,6 +78,9 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+   set(CLANG_MIN_SUPPORTED 13.0)
+   set(CLANG_MAX_SUPPORTED "19.1.x")
+   set(CLANG_VERSION_UPPER_BOUND 20.0.0)
++  set(LLD_MIN_SUPPORTED 13.0)
++  set(LLD_MAX_SUPPORTED "19.1.x")
++  set(LLD_VERSION_UPPER_BOUND 20.0.0)
+   set(LLVM_MIN_SUPPORTED 13.0)
+   set(LLVM_MAX_SUPPORTED "19.1.x")
+   set(LLVM_VERSION_UPPER_BOUND 20.0.0)
+@@ -75,6 +95,11 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+   if (DEFINED LLVM_DIR)
+     set(llvm_search_hints PATHS ${LLVM_DIR} HINTS "${LLVM_DIR}/lib/cmake/llvm" "${LLVM_DIR}/cmake" "${LLVM_CONFIG_EXTRA_PATH_HINTS}")
+     set(clang_search_hints PATHS ${LLVM_DIR} HINTS "${LLVM_DIR}/lib/cmake/clang" "${LLVM_DIR}/cmake")
++    set(lld_search_hints PATHS ${LLVM_DIR} HINTS "${LLVM_DIR}/lib/cmake/lld" "${LLVM_DIR}/cmake")
++  endif()
++  if (DEFINED LLD_DIR)
++    set(llvm_search_hints PATHS ${LLD_DIR} HINTS "${LLD_DIR}/lib/cmake/llvm" "${LLD_DIR}/cmake")
++    set(lld_search_hints PATHS ${LLD_DIR} HINTS "${lld_search_hints}" "${LLD_DIR}/lib/cmake/lld" "${LLD_DIR}/cmake")
+   endif()
+   if (DEFINED Clang_DIR)
+     set(llvm_search_hints PATHS ${Clang_DIR} HINTS "${Clang_DIR}/lib/cmake/llvm" "${Clang_DIR}/cmake")
+@@ -137,6 +162,43 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+   message(STATUS "Found supported version: LLVM ${LLVM_PACKAGE_VERSION}")
+   message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+ 
++## Find supported LLD
++
++if (DEFINED LLD_VERSION)
++  if (LLD_VERSION VERSION_GREATER_EQUAL LLD_VERSION_UPPER_BOUND)
++    set(LLD_VERSION ${LLD_VERSION_UPPER_BOUND})
++  endif()
++  if (LLD_VERSION VERSION_LESS LLD_MIN_SUPPORTED)
++    set(LLD_VERSION ${LLD_MIN_SUPPORTED})
++  endif()
++
++  find_package(LLD ${LLD_VERSION} REQUIRED CONFIG ${lld_search_hints} NO_DEFAULT_PATH)
++endif()
++
++if (NOT LLD_FOUND AND DEFINED LLD_DIR)
++  find_package(LLD REQUIRED CONFIG ${lld_search_hints} NO_DEFAULT_PATH)
++endif()
++
++if (NOT LLD_FOUND)
++  find_package(LLD REQUIRED CONFIG)
++endif()
++
++if (NOT LLD_FOUND)
++  message(FATAL_ERROR "Please set LLD_DIR pointing to the LLD build or installation folder")
++endif()
++
++set(LLD_VERSION_MAJOR ${LLVM_VERSION_MAJOR})
++set(LLD_VERSION_MINOR ${LLVM_VERSION_MINOR})
++set(LLD_VERSION_PATCH ${LLVM_VERSION_PATCH})
++set(LLD_PACKAGE_VERSION ${LLVM_PACKAGE_VERSION})
++
++if (LLD_PACKAGE_VERSION VERSION_LESS LLD_MIN_SUPPORTED OR LLD_PACKAGE_VERSION VERSION_GREATER_EQUAL LLD_VERSION_UPPER_BOUND)
++  message(FATAL_ERROR "Found unsupported version: LLD ${LLD_PACKAGE_VERSION};\nPlease set LLD_DIR pointing to the LLD version ${LLD_MIN_SUPPORTED} to ${LLD_MAX_SUPPORTED} build or installation folder")
++endif()
++
++message(STATUS "Found supported version: LLD ${LLD_PACKAGE_VERSION}")
++message(STATUS "Using LLDConfig.cmake in: ${LLD_DIR}")
++
+   ## Find supported Clang
+ 
+   if (DEFINED CLANG_VERSION)
+@@ -237,6 +299,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+   if (USE_CLING)
+     include_directories(SYSTEM ${CLING_INCLUDE_DIRS})
+   endif(USE_CLING)
++  include_directories(SYSTEM ${LLD_INCLUDE_DIRS})
+   include_directories(SYSTEM ${CLANG_INCLUDE_DIRS})
+   include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+   separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+@@ -247,6 +310,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+   endif(USE_CLING)
+   message(STATUS "CLANG_INCLUDE_DIRS: ${CLANG_INCLUDE_DIRS}")
+   message(STATUS "LLVM_INCLUDE_DIRS: ${LLVM_INCLUDE_DIRS}")
++  message(STATUS "LLD_INCLUDE_DIRS: ${LLD_INCLUDE_DIRS}")
+   message(STATUS "LLVM_DEFINITIONS_LIST: ${LLVM_DEFINITIONS_LIST}")
+ 
+   # If the llvm sources are present add them with higher priority.
+@@ -299,7 +363,7 @@ endif()
+ 
+ # Add appropriate flags for GCC
+ if (LLVM_COMPILER_IS_GCC_COMPATIBLE)
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings")
++  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-common -Woverloaded-virtual -Wcast-qual -fno-strict-aliasing -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings -fPIC")
+ endif ()
+ 
+ # Fixes "C++ exception handler used, but unwind semantics are not enabled" warning Windows
+@@ -378,6 +442,9 @@ endif()
+ if (TARGET clang-headers)
+   list(APPEND LLVM_COMMON_DEPENDS clang-headers)
+ endif()
++if (TARGET lld-headers)  # Check for LLD headers
++  list(APPEND LLVM_COMMON_DEPENDS lld-headers)
++endif()
+ 
+ # Generate docs for CppInterOp
+ option(CPPINTEROP_INCLUDE_DOCS "Generate build targets for the CppInterOp docs.")
+diff --git a/lib/Interpreter/CMakeLists.txt b/lib/Interpreter/CMakeLists.txt
+index 7f4ca53..ee87c5f 100644
+--- a/lib/Interpreter/CMakeLists.txt
++++ b/lib/Interpreter/CMakeLists.txt
+@@ -6,6 +6,12 @@ set(LLVM_LINK_COMPONENTS
+   OrcJit
+   Support
+ )
++
++if(EMSCRIPTEN)
++  list(APPEND LLVM_LINK_COMPONENTS MC TargetParser WebAssembly)
++  set(WASM_LINK lldWasm)
++endif()
++
+ # FIXME: Investigate why this needs to be conditionally included.
+ if ("LLVMFrontendDriver" IN_LIST LLVM_AVAILABLE_LIBS)
+   list(APPEND LLVM_LINK_COMPONENTS  FrontendDriver)
+@@ -41,8 +47,18 @@ set(link_libs
+   clangFrontend
+   clangLex
+   clangSema
++  ${WASM_LINK}
+   )
+ 
++
++if(EMSCRIPTEN)
++  # Map LLVM components to their corresponding library names
++  llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
++
++  # Append llvm_libs to your existing link_libs
++  list(APPEND link_libs ${llvm_libs})
++endif()
++
+  if(NOT WIN32)
+   list(APPEND link_libs dl)
+  endif()
+@@ -102,6 +118,24 @@ add_llvm_library(clangCppInterOp
+   ${link_libs}
+  )
+ 
++if(EMSCRIPTEN)
++  target_link_libraries(clangCppInterOp PRIVATE embind)
++
++  target_link_options(clangCppInterOp PRIVATE
++  -O1
++  -sMODULARIZE
++  -sEXPORT_ES6=1
++  -sASSERTIONS
++  -sALLOW_MEMORY_GROWTH=1
++  -sINITIAL_MEMORY=128MB
++  -sTOTAL_STACK=32MB
++  -sMAIN_MODULE=1
++  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,stringToNewUTF8,getValue,setValue
++  -sEXPORTED_FUNCTIONS=_malloc,_free,__ZTIN10emscripten3valE
++  --preload-file ${EMSCRIPTEN_SYSROOT}/@/
++  )
++endif()
++
+ string(REPLACE ";" "\;" _VER CPPINTEROP_VERSION)
+ set_source_files_properties(CppInterOp.cpp PROPERTIES COMPILE_DEFINITIONS
+   "LLVM_BINARY_DIR=\"${LLVM_BINARY_DIR}\";CPPINTEROP_VERSION=\"${_VAR}\""
