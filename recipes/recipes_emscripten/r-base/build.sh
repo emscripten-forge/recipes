@@ -2,7 +2,8 @@
 
 set -e
 
-cp $PREFIX/lib/pkgconfig/* $BUILD_PREFIX/lib/pkgconfig/
+mv $BUILD_PREFIX/lib/pkgconfig $BUILD_PREFIX/lib/pkgconfig.bak
+cp -r $PREFIX/lib/pkgconfig $BUILD_PREFIX/lib/pkgconfig
 
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
