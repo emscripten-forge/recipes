@@ -2,6 +2,11 @@
 
 set -e
 
+echo "DEBUG Find cairo"
+pkg-config --print-errors cairo
+echo "DEBUG Find pango"
+pkg-config --print-errors pango
+
 mv $BUILD_PREFIX/lib/pkgconfig $BUILD_PREFIX/lib/pkgconfig.bak
 cp -r $PREFIX/lib/pkgconfig $BUILD_PREFIX/lib/pkgconfig
 
