@@ -5,10 +5,7 @@ set -e
 echo "DEBUG Find cairo"
 pkg-config --print-errors cairo
 echo "DEBUG Find pango"
-pkg-config --print-errors pango
-
-mv $BUILD_PREFIX/lib/pkgconfig $BUILD_PREFIX/lib/pkgconfig.bak
-cp -r $PREFIX/lib/pkgconfig $BUILD_PREFIX/lib/pkgconfig
+pkg-config --print-errors pango || true
 
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
