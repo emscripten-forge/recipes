@@ -18,6 +18,7 @@ export r_cv_have_bzlib=yes
 export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_size_max=yes
+export r_cv_cairo_works=yes
 
 # Not supported
 export ac_cv_have_decl_getrusage=no
@@ -46,6 +47,7 @@ emconfigure ../configure \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
     --enable-R-static-lib \
+    --with-static-cairo \
     --without-readline  \
     --without-x         \
     --enable-java=no \
