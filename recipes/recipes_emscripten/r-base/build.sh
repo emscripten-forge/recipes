@@ -2,6 +2,11 @@
 
 set -e
 
+echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+echo "PKG CONFIG: $(which pkg-config)"
+export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+echo "PKG_CONFIG_PATH NEW=$PKG_CONFIG_PATH"
+
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
