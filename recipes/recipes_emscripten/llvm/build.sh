@@ -25,7 +25,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
 
 # Build step
-emmake make -j1
+emmake make -j2
 
 # Install step
 emmake make install
