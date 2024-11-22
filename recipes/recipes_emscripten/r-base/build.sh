@@ -2,6 +2,11 @@
 
 set -e
 
+echo "DEBUG Find cairo"
+pkg-config --print-errors cairo
+echo "DEBUG Find pango"
+pkg-config --print-errors pango || true
+
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
@@ -18,6 +23,7 @@ export r_cv_have_bzlib=yes
 export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_size_max=yes
+export r_cv_cairo_works=yes
 
 # Not supported
 export ac_cv_have_decl_getrusage=no
@@ -46,6 +52,7 @@ emconfigure ../configure \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
     --enable-R-static-lib \
+    --with-static-cairo \
     --without-readline  \
     --without-x         \
     --enable-java=no \
