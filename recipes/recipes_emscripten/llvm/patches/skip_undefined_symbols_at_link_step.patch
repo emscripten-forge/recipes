@@ -12,51 +12,18 @@ index 7954cde36588..dbd61f0b8b1e 100644
    getSymbolAddress(llvm::StringRef Name, SymbolNameKind NameKind) const;
  
 diff --git a/clang/lib/Interpreter/Wasm.cpp b/clang/lib/Interpreter/Wasm.cpp
-index 1001410aa0f2..c0297e0d3a05 100644
+index 1001410aa0f2..ef0b54d7884b 100644
 --- a/clang/lib/Interpreter/Wasm.cpp
 +++ b/clang/lib/Interpreter/Wasm.cpp
-@@ -37,6 +37,15 @@ WasmIncrementalExecutor::WasmIncrementalExecutor(
-     llvm::orc::ThreadSafeContext &TSC)
-     : IncrementalExecutor(TSC) {}
- 
-+void removeGlobalInit(llvm::Module *M) {
-+  std::string targetName = "_GLOBAL__sub_I_" + M->getName().str();
-+  for (auto &Func : *M) {
-+    if (Func.hasName() && Func.getName().str() == targetName) {
-+      Func.deleteBody();
-+    }
-+  }
-+}
-+
- llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
-   std::string ErrorString;
- 
-@@ -72,13 +81,13 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
-   OutputFile.close();
- 
-   std::vector<const char *> LinkerArgs = {"wasm-ld",
--                                          "-pie",
-+                                          "-shared",
-                                           "--import-memory",
-                                           "--no-entry",
-                                           "--export-all",
+@@ -79,6 +79,7 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
                                            "--experimental-pic",
--                                          "--no-export-dynamic",
+                                           "--no-export-dynamic",
                                            "--stack-first",
 +                                          "--allow-undefined",
                                            OutputFileName.c_str(),
                                            "-o",
                                            OutputFileName.c_str()};
-@@ -96,6 +105,8 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
-         "Failed to load incremental module", llvm::inconvertibleErrorCode());
-   }
- 
-+  removeGlobalInit(PTU.TheModule.get());
-+
-   return llvm::Error::success();
- }
- 
-@@ -109,6 +120,10 @@ llvm::Error WasmIncrementalExecutor::runCtors() const {
+@@ -109,6 +110,10 @@ llvm::Error WasmIncrementalExecutor::runCtors() const {
    return llvm::Error::success();
  }
  
