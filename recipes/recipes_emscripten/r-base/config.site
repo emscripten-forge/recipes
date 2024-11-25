@@ -53,7 +53,7 @@ CC=emcc
 ## and '-g' in all other cases except icc (for which see R-admin.html).
 ## Be wary of aggressive settings such as -ffast-math, -Ofast and
 ## -Werror (which is likely to cause configure to fail).
-CFLAGS="-g3 -matomics -mbulk-memory -fPIC" # Needed for context.c
+# CFLAGS=
 
 ## Ditto for a compiler that supports C17 features and not C23 ones.
 ## For example, 'CC17=gcc -std=gnu17', omit -Wstrict-prototypes from C17FLAGS.
@@ -93,15 +93,7 @@ CFLAGS="-g3 -matomics -mbulk-memory -fPIC" # Needed for context.c
 ## For example, on some systems one needs 'MAIN_CFLAGS=-pg' when
 ## profiling.
 ## NOTE: These apply to Rscript
-MAIN_CFLAGS="--pre-js ${RECIPE_DIR}/pre.js \
--sWASM_BIGINT \
--sMAIN_MODULE=1 \
--sSTACK_SIZE=5MB \
--sALLOW_MEMORY_GROWTH=1 \
--sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
--sFORCE_FILESYSTEM=1 \
--sINVOKE_RUN=0 \
--sMODULARIZE"
+# MAIN_CFLAGS=
 SHLIB_CFLAGS="-sSIDE_MODULE=1"
 
 ## Header file search directory ('-IDIR') and any other miscellaneous
@@ -117,7 +109,7 @@ FC=flang-new
 
 ## Options for the Fortran compiler.
 ## Use this to specify comilation flags for fixed-form Fortran.
-FFLAGS="-g --target=wasm32-unknown-emscripten -fPIC"
+FFLAGS="-g --target=wasm32-unknown-emscripten"
 ## Ditto for free-form Fortran.
 ## FCFLAGS=
 ## If just one of these is set, it is used for both.
@@ -168,8 +160,8 @@ MAIN_LDFLAGS="--pre-js ${RECIPE_DIR}/pre.js \
 -sEXPORTED_RUNTIME_METHODS=callMain,FS,ENV,getEnvStrings,TTY \
 -sFORCE_FILESYSTEM=1 \
 -sINVOKE_RUN=0"
-    # -sMODULIRIZE=1 \
-    # -sEXPORT_NAME=R"
+# -sMODULARIZE=1 \
+# -sEXPORT_NAME=R"
 
 ## Any special flags which must be used when compiling C code to be
 ## turned into a shared object.  This is typically something like
@@ -202,7 +194,7 @@ FPICFLAGS="-fPIC"
 ## On macOS, the default is
 ## -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup
 ## For other platforms, see configure.ac
-SHLIB_LDFLAGS="-sSIDE_MODULE=1"
+SHLIB_LDFLAGS="-sSIDE_MODULE=1 -sWASM_BIGINT"
 
 ## ditto for a dynamic library: DYLIB_LDFLAGS defaults to SHLIB_LDFLAGS
 ## DYLIB_LD=
@@ -463,7 +455,7 @@ SHLIB_CXXLDFLAGS="-sSIDE_MODULE=1"
 ##   where int is used).
 ## Allow user to override the configure checks if they know what they
 ##   are doing (the value is unchecked).  Empty values are ignored.
-## FC_LEN_T=size_t
+FC_LEN_T=size_t
 
 ## C Stack Direction
 ## In case optimization defeats the configure test: 'down' (the usual) or 'up'

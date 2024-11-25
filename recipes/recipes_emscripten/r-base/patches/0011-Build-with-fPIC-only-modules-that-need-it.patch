@@ -1,0 +1,104 @@
+From cd54d15048c734f23c9c352415bf2491a7315c05 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 19 Sep 2024 18:36:33 +0200
+Subject: [PATCH 1/5] Build with -fPIC only modules that need it
+
+---
+ src/appl/Makefile.in        | 2 ++
+ src/extra/tre/Makefile.in   | 2 ++
+ src/extra/tzone/Makefile.in | 2 +-
+ src/extra/xdr/Makefile.in   | 2 +-
+ src/main/Makefile.in        | 2 +-
+ src/nmath/Makefile.in       | 1 +
+ src/unix/Makefile.in        | 1 +
+ 7 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/src/appl/Makefile.in b/src/appl/Makefile.in
+index 2c2243e..34ccbd2 100644
+--- a/src/appl/Makefile.in
++++ b/src/appl/Makefile.in
+@@ -31,6 +31,8 @@ DISTFILES = \
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO)
+ @WANT_R_SHLIB_TRUE@ALL_FFLAGS = $(ALL_FFLAGS_LO)
+ @WANT_R_SHLIB_FALSE@ALL_FFLAGS = $(ALL_FFLAGS_PIE)
++ALL_CPPFLAGS += $(CPICFLAGS)
++ALL_FFLAGS += $(FPICFLAGS)
+ 
+ Rblas_la = libRblas$(R_DYLIB_EXT)
+ ## This should neally be Darwin-only.
+diff --git a/src/extra/tre/Makefile.in b/src/extra/tre/Makefile.in
+index 844e15e..552cfd0 100644
+--- a/src/extra/tre/Makefile.in
++++ b/src/extra/tre/Makefile.in
+@@ -24,6 +24,8 @@ HEADERS = tre.h tre-ast.h tre-compile.h tre-config.h tre-internal.h \
+ 
+ DEPENDS = $(SOURCES:.c=.d)
+ OBJECTS = $(SOURCES:.c=.o)
++
++ALL_CPPFLAGS += $(CPICFLAGS)
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO) @C_VISIBILITY@
+ 
+ distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+diff --git a/src/extra/tzone/Makefile.in b/src/extra/tzone/Makefile.in
+index 07d263a..7064b7f 100644
+--- a/src/extra/tzone/Makefile.in
++++ b/src/extra/tzone/Makefile.in
+@@ -18,7 +18,7 @@ DEPENDS = $(SOURCES:.c=.d)
+ OBJECTS = $(SOURCES:.c=.o)
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(R_XTRA_CFLAGS) $(CPICFLAGS) $(SHLIB_CFLAGS) $(CFLAGS) @C_VISIBILITY@
+ 
+-ALL_CPPFLAGS=$(R_XTRA_CPPFLAGS) -I$(srcdir) -I$(top_srcdir)/src/main $(CPPFLAGS) $(DEFS) @XTRA_INTL_CPPFLAGS@
++ALL_CPPFLAGS=$(R_XTRA_CPPFLAGS)	$(CPICFLAGS) -I$(srcdir) -I$(top_srcdir)/src/main $(CPPFLAGS) $(DEFS) @XTRA_INTL_CPPFLAGS@
+ 
+ R all: Makefile 
+ 	@$(MAKE) Makedeps
+diff --git a/src/extra/xdr/Makefile.in b/src/extra/xdr/Makefile.in
+index c449a57..4b5c756 100644
+--- a/src/extra/xdr/Makefile.in
++++ b/src/extra/xdr/Makefile.in
+@@ -12,7 +12,7 @@ R_HOME = $(top_builddir)
+ include $(top_builddir)/Makeconf
+ 
+ XDR_CPPFLAGS = -I$(srcdir)
+-ALL_CPPFLAGS = $(XDR_CPPFLAGS) $(R_XTRA_CPPFLAGS) $(CPPFLAGS) $(DEFS)
++ALL_CPPFLAGS = $(XDR_CPPFLAGS) $(R_XTRA_CPPFLAGS) $(CPPFLAGS) $(CPICFLAGS) $(DEFS)
+ 
+ SOURCES = xdr.c xdr_float.c xdr_mem.c xdr_stdio.c
+ DEPENDS = $(SOURCES:.c=.d)
+diff --git a/src/main/Makefile.in b/src/main/Makefile.in
+index a4180e8..d7585f9 100644
+--- a/src/main/Makefile.in
++++ b/src/main/Makefile.in
+@@ -81,7 +81,7 @@ XDR_CPPFLAGS = @BUILD_XDR_TRUE@ -I$(top_srcdir)/src/extra/xdr
+ 
+ ## platform.c needs $(CURL_CPPFLAGS).
+ ALL_CPPFLAGS = $(TRE_CPPFLAGS) $(XDR_CPPFLAGS) $(R_XTRA_CPPFLAGS) \
+-  $(CURL_CPPFLAGS) $(CPPFLAGS) -I$(top_srcdir)/src/nmath $(DEFS)
++  $(CURL_CPPFLAGS) $(CPPFLAGS) $(CPICFLAGS) -I$(top_srcdir)/src/nmath $(DEFS)
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO)
+ @WANT_R_SHLIB_TRUE@ALL_FFLAGS = $(ALL_FFLAGS_LO)
+ @WANT_R_SHLIB_FALSE@ALL_FFLAGS = $(ALL_FFLAGS_PIE)
+diff --git a/src/nmath/Makefile.in b/src/nmath/Makefile.in
+index 9d31a57..e006e39 100644
+--- a/src/nmath/Makefile.in
++++ b/src/nmath/Makefile.in
+@@ -58,6 +58,7 @@ DISTFILES = Makefile.in Makefile.win $(SOURCES) $(HEADERS)
+ 
+ SUBDIRS_WITH_NO_BUILD = standalone
+ 
++ALL_CPPFLAGS += $(CPICFLAGS)
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO)
+ 
+ all: R
+diff --git a/src/unix/Makefile.in b/src/unix/Makefile.in
+index 4a35278..b1cc9a3 100644
+--- a/src/unix/Makefile.in
++++ b/src/unix/Makefile.in
+@@ -31,6 +31,7 @@ DISTFILES = \
+   Makefile.in $(SOURCES_C_BASE) Rscript.c \
+   $(HEADERS) libR.pc.in system.txt
+ 
++ALL_CPPFLAGS += $(CPICFLAGS)
+ @WANT_R_SHLIB_TRUE@ALL_CFLAGS = $(ALL_CFLAGS_LO)
+ 
+ all: R

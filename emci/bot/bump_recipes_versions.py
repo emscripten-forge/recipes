@@ -169,7 +169,7 @@ def bump_recipe_version(recipe_dir):
     return True , current_version, new_version
 
            
-def try_to_merge_pr(pr):
+def try_to_merge_pr(pr, recipe_dir=None):
 
     passed = subprocess.run(
         ['gh', 'pr', 'checks', str(pr)],
@@ -188,7 +188,20 @@ def try_to_merge_pr(pr):
         # Pin recipe maintainer? Or add assignee?
         subprocess.check_output(['gh', 'pr', 'edit', str(pr), '--add-label', 'Needs Human Review'])
 
-        message = 'Either the CI is failing, or the recipe is not tested. I need help from a human.'
+        maintainers = []
+        if recipe_dir is not None:
+            with open(Path(recipe_dir)/"recipe.yaml") as file:
+                recipe = YAML().load(file) 
+                if 'extra' in recipe:
+                    if 'recipe-maintainers' in recipe['extra']:
+                        maintainers = recipe['extra']['recipe-maintainers']
+
+        message = """Either the CI is failing, or the recipe is not tested. I need help from a human."""
+        if maintainers:
+            message += "\nPing the maintainers: "
+            for maintainer in maintainers:
+                message += f"@{maintainer} "
+            message += "\nIf you believe you are wrongly pinned, please comment here or open a PR removing you from the maintainers list."
 
         try:
             # Running edit-last in case there was already a comment, we don't want to spam with comments
@@ -241,16 +254,19 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
             ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
         ).decode('utf-8').split('\n')
 
+        all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
+        # map from folder names to recipe-dir
+        recipe_name_to_recipe_dir = {recipe.name: recipe for recipe in all_recipes}
+
+
         prs_id = [line.split()[0] for line in prs if line]
         prs_packages = [line.split()[2] for line in prs if line]
 
         # Merge PRs if possible
-        for pr in prs_id:
-            try_to_merge_pr(pr)
-
-        
-        all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
-  
+        for pr,pr_pkg in zip(prs_id, prs_packages):
+            # get the recipe dir
+            recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
+            try_to_merge_pr(pr, recipe_dir=recipe_dir)
 
         # only recipes for which there is no opened PR
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]

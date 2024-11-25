@@ -1,0 +1,26 @@
+From c5a9ed4060aae8fb4afba1e93ad443f50fdc348a Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 19 Sep 2024 12:01:16 +0200
+Subject: [PATCH] Fix iconv checks when using internal lapack/blas.
+
+acx_lapack_ok is set to yes even when the lapack library is not
+available. This causes "-lblas" to be appended to LIBS, which is a
+problem when using the internal lapack/blas implementation because the
+blas library is not built yet. And ultimately this causes the iconv
+checks to fail because it cannot find blas.
+---
+ configure | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configure b/configure
+index 59ed097..a696ecd 100755
+--- a/configure
++++ b/configure
+@@ -48419,6 +48419,7 @@ else case e in #(
+   e) if test "$cross_compiling" = yes
+ then :
+   r_cv_atlas_liblapack=no
++  acx_lapack_ok=no
+ else case e in #(
+   e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
