@@ -12,10 +12,30 @@ index 7954cde36588..dbd61f0b8b1e 100644
    getSymbolAddress(llvm::StringRef Name, SymbolNameKind NameKind) const;
  
 diff --git a/clang/lib/Interpreter/Wasm.cpp b/clang/lib/Interpreter/Wasm.cpp
-index 1001410aa0f2..ef0b54d7884b 100644
+index 1001410aa0f2..f6ba3a61715a 100644
 --- a/clang/lib/Interpreter/Wasm.cpp
 +++ b/clang/lib/Interpreter/Wasm.cpp
-@@ -79,6 +79,7 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
+@@ -53,6 +53,11 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
+   PTU.TheModule->setDataLayout(TargetMachine->createDataLayout());
+   std::string OutputFileName = PTU.TheModule->getName().str() + ".wasm";
+ 
++  // verify if PTU is unique
++  llvm::outs() << "LLVM IR for Module: " << PTU.TheModule->getName() << "\n";
++  PTU.TheModule->print(llvm::outs(), nullptr);
++  llvm::outs() << "\n";
++
+   std::error_code Error;
+   llvm::raw_fd_ostream OutputFile(llvm::StringRef(OutputFileName), Error);
+ 
+@@ -73,12 +78,15 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
+ 
+   std::vector<const char *> LinkerArgs = {"wasm-ld",
+                                           "-pie",
++                                          "--trace",
++                                          "--verbose",
+                                           "--import-memory",
+                                           "--no-entry",
+                                           "--export-all",
                                            "--experimental-pic",
                                            "--no-export-dynamic",
                                            "--stack-first",
@@ -23,7 +43,7 @@ index 1001410aa0f2..ef0b54d7884b 100644
                                            OutputFileName.c_str(),
                                            "-o",
                                            OutputFileName.c_str()};
-@@ -109,6 +110,10 @@ llvm::Error WasmIncrementalExecutor::runCtors() const {
+@@ -109,6 +117,10 @@ llvm::Error WasmIncrementalExecutor::runCtors() const {
    return llvm::Error::success();
  }
  

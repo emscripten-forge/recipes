@@ -22,7 +22,13 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
     -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DLLVM_ENABLE_THREADS=OFF                       \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
+    -DLLVM_ENABLE_ZSTD=OFF                          \
+    -DLLVM_ENABLE_LIBXML2=OFF                       \
+    -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
+    -DCLANG_ENABLE_ARCMT=OFF                        \
+    -DCLANG_ENABLE_FORMAT=OFF                       \
+    -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
+    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
 emmake make -j4
