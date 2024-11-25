@@ -47,8 +47,6 @@ export CONFIG_ARGS="--enable-R-static-lib \
 --with-libdeflate-compression=no \
 --with-recommended-packages=no"
 
-chmod +x configure
-
 #-------------------------------------------------------------------------------
 # LINUX BUILD
 #-------------------------------------------------------------------------------
