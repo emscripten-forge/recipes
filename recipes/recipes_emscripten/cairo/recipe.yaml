@@ -9,11 +9,9 @@ package:
 source:
   url: http://cairographics.org/releases/${{ name }}-${{ version }}.tar.xz
   sha256: 243a0736b978a33dee29f9cca7521733b78a65b5418206fef7bd1c3d4cf10b64
-  patches:
-  - patches/cairo-wasm.patch
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
@@ -32,12 +30,16 @@ requirements:
     - lzo
     - expat
     - zlib
+    - libffi
 
 tests:
-- script:
-    - test -f $PREFIX/lib/libcairo.a
-    - test -f $PREFIX/lib/libcairo-gobject.a
-    - test -f $PREFIX/include/cairo/cairo.h
+- package_contents:
+    lib:
+    - libcairo.a
+    - libcairo-script-interpreter.a
+    include:
+    - cairo/cairo.h
+    - cairo/cairo-svg.h
 
 about:
   homepage: http://cairographics.org/
