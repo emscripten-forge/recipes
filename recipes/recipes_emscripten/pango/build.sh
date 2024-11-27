@@ -1,22 +1,24 @@
 #!/bin/bash
 
-set -ex
+set -eux
 
-# get meson to find pkg-config when cross compiling
-export PKG_CONFIG=$BUILD_PREFIX/bin/pkg-config
-export PKG_CONFIG_PATH_FOR_BUILD=$BUILD_PREFIX/lib/pkgconfig
-export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$BUILD_PREFIX/lib/pkgconfig
+# Requires glib-mkenums to generate some headers during the build process,
+# so this executable must come from the build environment.
+ln -s $BUILD_PREFIX/bin/glib-mkenums $PREFIX/bin/glib-mkenums
 
 meson_config_args=(
     -Dintrospection=disabled # requires gobject-introspection as run-time dep
     -Dfontconfig=enabled
     -Dfreetype=enabled
-    -Dcairo=disabled
+    -Dcairo=enabled
+    -Dlibthai=disabled
+    -Dxft=disabled
+    -Ddocumentation=false
+    -Dbuild-examples=false
     -Dbuild-testsuite=false
 )
 
 meson setup builddir \
-    ${MESON_ARGS} \
     "${meson_config_args[@]}" \
     --buildtype=release \
     --default-library=static \
@@ -28,3 +30,9 @@ meson setup builddir \
 
 ninja -v -C builddir -j ${CPU_COUNT}
 ninja -C builddir install -j ${CPU_COUNT}
+
+# Remove the symlink to glib-mkenums
+rm $PREFIX/bin/glib-mkenums
+
+# These worker files do not get installed by the meson install command
+cp builddir/utils/*.worker.js $PREFIX/bin/
