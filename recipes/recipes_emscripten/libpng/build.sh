@@ -5,7 +5,7 @@ rm $PREFIX/lib/libz.so*
 cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
 
 # atomics and bulk-memory are required for cairo
-export CFLAGS="-I$PREFIX/include -matomics -mbulk-memory"
+export CFLAGS="-I$PREFIX/include -matomics -mbulk-memory -fPIC"
 export CPPFLAGS="-I$PREFIX/include"
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 
@@ -22,3 +22,7 @@ emmake make install
 
 # Not packaging any shared libraries
 rm $PREFIX/lib/libpng*.la
+
+# Copy wasm files
+cp pngfix.wasm $PREFIX/bin/
+cp png-fix-itxt.wasm $PREFIX/bin/
