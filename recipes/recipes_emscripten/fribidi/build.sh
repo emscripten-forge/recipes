@@ -1,3 +1,5 @@
+export CFLAGS="$CFLAGS -fPIC"
+
 emconfigure ./configure \
     --enable-shared=no \
     --enable-static=yes \
