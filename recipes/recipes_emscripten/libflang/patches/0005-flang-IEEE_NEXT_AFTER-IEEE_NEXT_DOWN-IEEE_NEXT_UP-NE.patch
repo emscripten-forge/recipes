@@ -1,0 +1,1478 @@
+From e8097a12207e15b6768a473d06a37796d4403b46 Mon Sep 17 00:00:00 2001
+From: vdonaldson <37090318+vdonaldson@users.noreply.github.com>
+Date: Mon, 29 Jul 2024 09:22:36 -0400
+Subject: [PATCH 5/7] [flang] IEEE_NEXT_AFTER, IEEE_NEXT_DOWN, IEEE_NEXT_UP,
+ NEAREST (#100782)
+
+IEEE_ARITHMETIC intrinsic module procedures IEEE_NEXT_AFTER,
+IEEE_NEXT_DOWN, and IEEE_NEXT_UP, and intrinsic NEAREST return larger or
+smaller values adjacent to their primary REAL argument. The four
+procedures vary in how the direction is chosen, in how special cases are
+treated, and in what exceptions are generated. Implement the three
+IEEE_ARITHMETIC procedures. Update the NEAREST implementation to support
+all six REAL kinds 2,3,4,8,10,16, and fix several bugs.
+
+IEEE_NEXT_AFTER(X,Y) returns a NaN when Y is a NaN as that seems to be
+the universal choice of other compilers.
+
+Change the front end compile time implementation of these procedures to
+return normal (HUGE) values for infinities when applicable, rather than
+always returning the input infinity.
+---
+ .../flang/Optimizer/Builder/IntrinsicCall.h   |   9 +-
+ .../Optimizer/Builder/Runtime/Exceptions.h    |   8 +-
+ flang/include/flang/Runtime/exceptions.h      |   9 +-
+ flang/include/flang/Runtime/magic-numbers.h   |   4 +
+ flang/lib/Evaluate/real.cpp                   |   4 +-
+ flang/lib/Optimizer/Builder/IntrinsicCall.cpp | 228 ++++++++-
+ .../Optimizer/Builder/Runtime/Exceptions.cpp  |   8 +-
+ .../lib/Optimizer/Builder/Runtime/Numeric.cpp |  18 +-
+ flang/runtime/exceptions.cpp                  |  75 +--
+ flang/test/Evaluate/fold-nearest.f90          |  14 +-
+ flang/test/Lower/Intrinsics/ieee_next.f90     | 284 +++++++++++
+ flang/test/Lower/Intrinsics/nearest.f90       | 475 +++++++++++++++---
+ .../Optimizer/Builder/Runtime/NumericTest.cpp |   8 -
+ 13 files changed, 949 insertions(+), 195 deletions(-)
+ create mode 100644 flang/test/Lower/Intrinsics/ieee_next.f90
+
+diff --git a/flang/include/flang/Optimizer/Builder/IntrinsicCall.h b/flang/include/flang/Optimizer/Builder/IntrinsicCall.h
+index 80f077ad133f..78bb82b17d40 100644
+--- a/flang/include/flang/Optimizer/Builder/IntrinsicCall.h
++++ b/flang/include/flang/Optimizer/Builder/IntrinsicCall.h
+@@ -330,6 +330,8 @@ struct IntrinsicLibrary {
+   mlir::Value genModulo(mlir::Type, llvm::ArrayRef<mlir::Value>);
+   void genMoveAlloc(llvm::ArrayRef<fir::ExtendedValue>);
+   void genMvbits(llvm::ArrayRef<fir::ExtendedValue>);
++  enum class NearestProc { Nearest, NextAfter, NextDown, NextUp };
++  template <NearestProc>
+   mlir::Value genNearest(mlir::Type, llvm::ArrayRef<mlir::Value>);
+   mlir::Value genNint(mlir::Type, llvm::ArrayRef<mlir::Value>);
+   fir::ExtendedValue genNorm2(mlir::Type, llvm::ArrayRef<fir::ExtendedValue>);
+@@ -422,9 +424,12 @@ struct IntrinsicLibrary {
+                                   mlir::Type resultType,
+                                   llvm::ArrayRef<fir::ExtendedValue> args);
+ 
+-  /// Generate code to raise \p except if \p cond is absent,
++  /// Generate code to raise \p excepts if \p cond is absent,
+   /// or present and true.
+-  void genRaiseExcept(int except, mlir::Value cond = {});
++  void genRaiseExcept(int excepts, mlir::Value cond = {});
++
++  /// Generate a quiet NaN of a given floating point type.
++  mlir::Value genQNan(mlir::Type resultType);
+ 
+   /// Define the different FIR generators that can be mapped to intrinsic to
+   /// generate the related code.
+diff --git a/flang/include/flang/Optimizer/Builder/Runtime/Exceptions.h b/flang/include/flang/Optimizer/Builder/Runtime/Exceptions.h
+index 29745b8c231d..aa6e33c7440a 100644
+--- a/flang/include/flang/Optimizer/Builder/Runtime/Exceptions.h
++++ b/flang/include/flang/Optimizer/Builder/Runtime/Exceptions.h
+@@ -21,10 +21,10 @@ class FirOpBuilder;
+ 
+ namespace fir::runtime {
+ 
+-/// Generate a runtime call to map an ieee_flag_type exception value to a
+-/// libm fenv.h value.
+-mlir::Value genMapException(fir::FirOpBuilder &builder, mlir::Location loc,
+-                            mlir::Value except);
++/// Generate a runtime call to map a set of ieee_flag_type exceptions to a
++/// libm fenv.h excepts value.
++mlir::Value genMapExcept(fir::FirOpBuilder &builder, mlir::Location loc,
++                         mlir::Value excepts);
+ 
+ } // namespace fir::runtime
+ #endif // FORTRAN_OPTIMIZER_BUILDER_RUNTIME_EXCEPTIONS_H
+diff --git a/flang/include/flang/Runtime/exceptions.h b/flang/include/flang/Runtime/exceptions.h
+index 8f806ab9ad98..1ab22da103a5 100644
+--- a/flang/include/flang/Runtime/exceptions.h
++++ b/flang/include/flang/Runtime/exceptions.h
+@@ -12,7 +12,6 @@
+ #define FORTRAN_RUNTIME_EXCEPTIONS_H_
+ 
+ #include "flang/Runtime/entry-names.h"
+-#include "flang/Runtime/magic-numbers.h"
+ #include <cinttypes>
+ 
+ namespace Fortran::runtime {
+@@ -21,11 +20,9 @@ class Descriptor;
+ 
+ extern "C" {
+ 
+-// Map a (single) IEEE_FLAG_TYPE exception value to a libm fenv.h value.
+-// This could be extended to handle sets of exceptions, but there is no
+-// current use case for that. This mapping is done at runtime to support
+-// cross compilation.
+-std::int32_t RTNAME(MapException)(std::int32_t except);
++// Map a set of IEEE_FLAG_TYPE exception values to a libm fenv.h excepts value.
++// This mapping is done at runtime to support cross compilation.
++std::uint32_t RTNAME(MapException)(std::uint32_t excepts);
+ 
+ } // extern "C"
+ } // namespace Fortran::runtime
+diff --git a/flang/include/flang/Runtime/magic-numbers.h b/flang/include/flang/Runtime/magic-numbers.h
+index 1cded1fd6323..bab0e9ae0529 100644
+--- a/flang/include/flang/Runtime/magic-numbers.h
++++ b/flang/include/flang/Runtime/magic-numbers.h
+@@ -100,6 +100,10 @@ The denorm value is a nonstandard extension.
+ #define _FORTRAN_RUNTIME_IEEE_OVERFLOW 8
+ #define _FORTRAN_RUNTIME_IEEE_UNDERFLOW 16
+ #define _FORTRAN_RUNTIME_IEEE_INEXACT 32
++#define _FORTRAN_RUNTIME_IEEE_ALL \
++  _FORTRAN_RUNTIME_IEEE_INVALID | _FORTRAN_RUNTIME_IEEE_DENORM | \
++      _FORTRAN_RUNTIME_IEEE_DIVIDE_BY_ZERO | _FORTRAN_RUNTIME_IEEE_OVERFLOW | \
++      _FORTRAN_RUNTIME_IEEE_UNDERFLOW | _FORTRAN_RUNTIME_IEEE_INEXACT
+ 
+ #if 0
+ ieee_round_type values
+diff --git a/flang/lib/Evaluate/real.cpp b/flang/lib/Evaluate/real.cpp
+index 223f67fee41d..a5f8070c684f 100644
+--- a/flang/lib/Evaluate/real.cpp
++++ b/flang/lib/Evaluate/real.cpp
+@@ -330,12 +330,12 @@ ValueWithRealFlags<Real<W, P>> Real<W, P>::SQRT(Rounding rounding) const {
+ template <typename W, int P>
+ ValueWithRealFlags<Real<W, P>> Real<W, P>::NEAREST(bool upward) const {
+   ValueWithRealFlags<Real> result;
++  bool isNegative{IsNegative()};
+   if (IsFinite()) {
+     Fraction fraction{GetFraction()};
+     int expo{Exponent()};
+     Fraction one{1};
+     Fraction nearest;
+-    bool isNegative{IsNegative()};
+     if (upward != isNegative) { // upward in magnitude
+       auto next{fraction.AddUnsigned(one)};
+       if (next.carry) {
+@@ -359,6 +359,8 @@ ValueWithRealFlags<Real<W, P>> Real<W, P>::NEAREST(bool upward) const {
+       }
+     }
+     result.flags = result.value.Normalize(isNegative, expo, nearest);
++  } else if (IsInfinite() && upward == isNegative) {
++    result.value = isNegative ? HUGE().Negate() : HUGE(); // largest mag finite
+   } else {
+     result.flags.set(RealFlag::InvalidArgument);
+     result.value = *this;
+diff --git a/flang/lib/Optimizer/Builder/IntrinsicCall.cpp b/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
+index 0e5e30a7024d..22439010e779 100644
+--- a/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
++++ b/flang/lib/Optimizer/Builder/IntrinsicCall.cpp
+@@ -98,9 +98,6 @@ static bool isStaticallyPresent(const fir::ExtendedValue &exv) {
+ /// IEEE module procedure names not yet implemented for genModuleProcTODO.
+ static constexpr char ieee_int[] = "ieee_int";
+ static constexpr char ieee_get_underflow_mode[] = "ieee_get_underflow_mode";
+-static constexpr char ieee_next_after[] = "ieee_next_after";
+-static constexpr char ieee_next_down[] = "ieee_next_down";
+-static constexpr char ieee_next_up[] = "ieee_next_up";
+ static constexpr char ieee_real[] = "ieee_real";
+ static constexpr char ieee_rem[] = "ieee_rem";
+ static constexpr char ieee_rint[] = "ieee_rint";
+@@ -355,9 +352,9 @@ static constexpr IntrinsicHandler handlers[]{
+      &I::genIeeeMaxMin</*isMax=*/false, /*isNum=*/true, /*isMag=*/false>},
+     {"ieee_min_num_mag",
+      &I::genIeeeMaxMin</*isMax=*/false, /*isNum=*/true, /*isMag=*/true>},
+-    {"ieee_next_after", &I::genModuleProcTODO<ieee_next_after>},
+-    {"ieee_next_down", &I::genModuleProcTODO<ieee_next_down>},
+-    {"ieee_next_up", &I::genModuleProcTODO<ieee_next_up>},
++    {"ieee_next_after", &I::genNearest<I::NearestProc::NextAfter>},
++    {"ieee_next_down", &I::genNearest<I::NearestProc::NextDown>},
++    {"ieee_next_up", &I::genNearest<I::NearestProc::NextUp>},
+     {"ieee_quiet_eq", &I::genIeeeQuietCompare<mlir::arith::CmpFPredicate::OEQ>},
+     {"ieee_quiet_ge", &I::genIeeeQuietCompare<mlir::arith::CmpFPredicate::OGE>},
+     {"ieee_quiet_gt", &I::genIeeeQuietCompare<mlir::arith::CmpFPredicate::OGT>},
+@@ -497,7 +494,7 @@ static constexpr IntrinsicHandler handlers[]{
+        {"len", asValue},
+        {"to", asAddr},
+        {"topos", asValue}}}},
+-    {"nearest", &I::genNearest},
++    {"nearest", &I::genNearest<I::NearestProc::Nearest>},
+     {"nint", &I::genNint},
+     {"norm2",
+      &I::genNorm2,
+@@ -3972,11 +3969,14 @@ IntrinsicLibrary::genIchar(mlir::Type resultType,
+ //   8   Positive normal
+ //   9   Positive infinity
+ static constexpr int finiteTest = 0b0111111000;
++static constexpr int infiniteTest = 0b1000000100;
+ static constexpr int nanTest = 0b0000000011;
+ static constexpr int negativeTest = 0b0000111100;
+ static constexpr int normalTest = 0b0101101000;
+ static constexpr int positiveTest = 0b1111000000;
+ static constexpr int snanTest = 0b0000000001;
++static constexpr int subnormalTest = 0b0010010000;
++static constexpr int zeroTest = 0b0001100000;
+ 
+ mlir::Value IntrinsicLibrary::genIsFPClass(mlir::Type resultType,
+                                            llvm::ArrayRef<mlir::Value> args,
+@@ -3988,8 +3988,15 @@ mlir::Value IntrinsicLibrary::genIsFPClass(mlir::Type resultType,
+   return builder.createConvert(loc, resultType, isfpclass);
+ }
+ 
+-/// Generate code to raise \p except if \p cond is absent, or present and true.
+-void IntrinsicLibrary::genRaiseExcept(int except, mlir::Value cond) {
++// Generate a quiet NaN of a given floating point type.
++mlir::Value IntrinsicLibrary::genQNan(mlir::Type resultType) {
++  return genIeeeValue(resultType, builder.createIntegerConstant(
++                                      loc, builder.getIntegerType(8),
++                                      _FORTRAN_RUNTIME_IEEE_QUIET_NAN));
++}
++
++// Generate code to raise \p excepts if \p cond is absent, or present and true.
++void IntrinsicLibrary::genRaiseExcept(int excepts, mlir::Value cond) {
+   fir::IfOp ifOp;
+   if (cond) {
+     ifOp = builder.create<fir::IfOp>(loc, cond, /*withElseRegion=*/false);
+@@ -3998,8 +4005,8 @@ void IntrinsicLibrary::genRaiseExcept(int except, mlir::Value cond) {
+   mlir::Type i32Ty = builder.getIntegerType(32);
+   genRuntimeCall(
+       "feraiseexcept", i32Ty,
+-      fir::runtime::genMapException(
+-          builder, loc, builder.createIntegerConstant(loc, i32Ty, except)));
++      fir::runtime::genMapExcept(
++          builder, loc, builder.createIntegerConstant(loc, i32Ty, excepts)));
+   if (cond)
+     builder.setInsertionPointAfter(ifOp);
+ }
+@@ -4363,14 +4370,14 @@ void IntrinsicLibrary::genIeeeGetFlag(llvm::ArrayRef<fir::ExtendedValue> args) {
+   mlir::Value zero = builder.createIntegerConstant(loc, i32Ty, 0);
+   auto [fieldRef, ignore] = getFieldRef(builder, loc, flag);
+   mlir::Value field = builder.create<fir::LoadOp>(loc, fieldRef);
+-  mlir::Value exceptSet = IntrinsicLibrary::genRuntimeCall(
++  mlir::Value excepts = IntrinsicLibrary::genRuntimeCall(
+       "fetestexcept", i32Ty,
+-      fir::runtime::genMapException(
++      fir::runtime::genMapExcept(
+           builder, loc, builder.create<fir::ConvertOp>(loc, i32Ty, field)));
+   mlir::Value logicalResult = builder.create<fir::ConvertOp>(
+       loc, resultTy,
+       builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::ne,
+-                                          exceptSet, zero));
++                                          excepts, zero));
+   builder.create<fir::StoreOp>(loc, logicalResult, flagValue);
+ }
+ 
+@@ -4391,7 +4398,7 @@ void IntrinsicLibrary::genIeeeGetHaltingMode(
+       IntrinsicLibrary::genRuntimeCall("fegetexcept", i32Ty, {});
+   mlir::Value intResult = builder.create<mlir::arith::AndIOp>(
+       loc, haltSet,
+-      fir::runtime::genMapException(
++      fir::runtime::genMapExcept(
+           builder, loc, builder.create<fir::ConvertOp>(loc, i32Ty, field)));
+   mlir::Value logicalResult = builder.create<fir::ConvertOp>(
+       loc, resultTy,
+@@ -4657,7 +4664,6 @@ mlir::Value IntrinsicLibrary::genIeeeMaxMin(mlir::Type resultType,
+     y1 = y;
+   }
+   mlir::Type i1Ty = builder.getI1Type();
+-  mlir::Type i8Ty = builder.getIntegerType(8);
+   mlir::arith::CmpFPredicate pred;
+   mlir::Value cmp, result, resultIsX, resultIsY;
+ 
+@@ -4698,12 +4704,10 @@ mlir::Value IntrinsicLibrary::genIeeeMaxMin(mlir::Type resultType,
+   } else {
+     resultIsX = resultIsY = builder.createBool(loc, false);
+   }
+-  mlir::Value qNaN =
+-      genIeeeValue(resultType, builder.createIntegerConstant(
+-                                   loc, i8Ty, _FORTRAN_RUNTIME_IEEE_QUIET_NAN));
+   result = builder.create<mlir::arith::SelectOp>(
+       loc, resultIsX, x,
+-      builder.create<mlir::arith::SelectOp>(loc, resultIsY, y, qNaN));
++      builder.create<mlir::arith::SelectOp>(loc, resultIsY, y,
++                                            genQNan(resultType)));
+   mlir::Value hasSNaNOp = builder.create<mlir::arith::OrIOp>(
+       loc, genIsFPClass(builder.getI1Type(), args[0], snanTest),
+       genIsFPClass(builder.getI1Type(), args[1], snanTest));
+@@ -4747,7 +4751,7 @@ void IntrinsicLibrary::genIeeeSetFlagOrHaltingMode(
+   mlir::Type i32Ty = builder.getIntegerType(32);
+   auto [fieldRef, ignore] = getFieldRef(builder, loc, getBase(args[0]));
+   mlir::Value field = builder.create<fir::LoadOp>(loc, fieldRef);
+-  mlir::Value except = fir::runtime::genMapException(
++  mlir::Value except = fir::runtime::genMapExcept(
+       builder, loc, builder.create<fir::ConvertOp>(loc, i32Ty, field));
+   auto ifOp = builder.create<fir::IfOp>(
+       loc, builder.create<fir::ConvertOp>(loc, i1Ty, getBase(args[1])),
+@@ -5610,16 +5614,186 @@ void IntrinsicLibrary::genMvbits(llvm::ArrayRef<fir::ExtendedValue> args) {
+   builder.create<fir::StoreOp>(loc, res, toAddr);
+ }
+ 
+-// NEAREST
++// NEAREST, IEEE_NEXT_AFTER, IEEE_NEXT_DOWN, IEEE_NEXT_UP
++template <I::NearestProc proc>
+ mlir::Value IntrinsicLibrary::genNearest(mlir::Type resultType,
+                                          llvm::ArrayRef<mlir::Value> args) {
+-  assert(args.size() == 2);
++  // NEAREST
++  //   Return the number adjacent to arg X in the direction of the infinity
++  //   with the sign of arg S. Terminate with an error if arg S is zero.
++  //   Generate exceptions as for IEEE_NEXT_AFTER.
++  // IEEE_NEXT_AFTER
++  //   Return isNan(Y) ? NaN : X==Y ? X : num adjacent to X in the dir of Y.
++  //   Signal IEEE_OVERFLOW, IEEE_INEXACT for finite X and infinite result.
++  //   Signal IEEE_UNDERFLOW, IEEE_INEXACT for subnormal result.
++  // IEEE_NEXT_DOWN
++  //   Return the number adjacent to X and less than X.
++  //   Signal IEEE_INVALID when X is a signaling NaN.
++  // IEEE_NEXT_UP
++  //   Return the number adjacent to X and greater than X.
++  //   Signal IEEE_INVALID when X is a signaling NaN.
++  //
++  // valueUp     -- true if a finite result must be larger than X.
++  // magnitudeUp -- true if a finite abs(result) must be larger than abs(X).
++  //
++  // if (isNextAfter && isNan(Y)) X = NaN // result = NaN
++  // if (isNan(X) || (isNextAfter && X == Y) || (isInfinite(X) && magnitudeUp))
++  //   result = X
++  // else if (isZero(X))
++  //   result = valueUp ? minPositiveSubnormal : minNegativeSubnormal
++  // else
++  //   result = magUp ? (X + minPositiveSubnormal) : (X - minPositiveSubnormal)
+ 
+-  mlir::Value realX = fir::getBase(args[0]);
+-  mlir::Value realS = fir::getBase(args[1]);
++  assert(args.size() == 1 || args.size() == 2);
++  mlir::Value x = args[0];
++  mlir::FloatType xType = mlir::dyn_cast<mlir::FloatType>(x.getType());
++  const unsigned xBitWidth = xType.getWidth();
++  mlir::Type i1Ty = builder.getI1Type();
++  if constexpr (proc == NearestProc::NextAfter)
++    // If isNan(Y), set X to a qNaN that will propagate to the resultIsX result.
++    x = builder.create<mlir::arith::SelectOp>(
++        loc, genIsFPClass(i1Ty, args[1], nanTest), genQNan(xType), x);
++  mlir::Value resultIsX = genIsFPClass(i1Ty, x, nanTest);
++  mlir::Type intType = builder.getIntegerType(xBitWidth);
++  mlir::Value one = builder.createIntegerConstant(loc, intType, 1);
+ 
+-  return builder.createConvert(
+-      loc, resultType, fir::runtime::genNearest(builder, loc, realX, realS));
++  // Set valueUp to true if a finite result must be larger than arg X.
++  mlir::Value valueUp;
++  if constexpr (proc == NearestProc::Nearest) {
++    // Arg S must not be zero.
++    fir::IfOp ifOp =
++        builder.create<fir::IfOp>(loc, genIsFPClass(i1Ty, args[1], zeroTest),
++                                  /*withElseRegion=*/false);
++    builder.setInsertionPointToStart(&ifOp.getThenRegion().front());
++    fir::runtime::genReportFatalUserError(
++        builder, loc, "intrinsic nearest S argument is zero");
++    builder.setInsertionPointAfter(ifOp);
++    mlir::Value sSign = IntrinsicLibrary::genIeeeSignbit(intType, {args[1]});
++    valueUp = builder.create<mlir::arith::CmpIOp>(
++        loc, mlir::arith::CmpIPredicate::ne, sSign, one);
++  } else if constexpr (proc == NearestProc::NextAfter) {
++    // Convert X and Y to a common type to allow comparison. Direct conversions
++    // between kinds 2, 3, 10, and 16 are not all supported. These conversions
++    // are implemented by converting kind=2,3 values to kind=4, possibly
++    // followed with a conversion of that value to a larger type.
++    mlir::Value x1 = x;
++    mlir::Value y = args[1];
++    mlir::FloatType yType = mlir::dyn_cast<mlir::FloatType>(args[1].getType());
++    const unsigned yBitWidth = yType.getWidth();
++    if (xType != yType) {
++      mlir::Type f32Ty = mlir::FloatType::getF32(builder.getContext());
++      if (xBitWidth < 32)
++        x1 = builder.createConvert(loc, f32Ty, x1);
++      if (yBitWidth > 32 && yBitWidth > xBitWidth)
++        x1 = builder.createConvert(loc, yType, x1);
++      if (yBitWidth < 32)
++        y = builder.createConvert(loc, f32Ty, y);
++      if (xBitWidth > 32 && xBitWidth > yBitWidth)
++        y = builder.createConvert(loc, xType, y);
++    }
++    resultIsX = builder.create<mlir::arith::OrIOp>(
++        loc, resultIsX,
++        builder.create<mlir::arith::CmpFOp>(
++            loc, mlir::arith::CmpFPredicate::OEQ, x1, y));
++    valueUp = builder.create<mlir::arith::CmpFOp>(
++        loc, mlir::arith::CmpFPredicate::OLT, x1, y);
++  } else if constexpr (proc == NearestProc::NextDown) {
++    valueUp = builder.createBool(loc, false);
++  } else if constexpr (proc == NearestProc::NextUp) {
++    valueUp = builder.createBool(loc, true);
++  }
++  mlir::Value magnitudeUp = builder.create<mlir::arith::CmpIOp>(
++      loc, mlir::arith::CmpIPredicate::ne, valueUp,
++      IntrinsicLibrary::genIeeeSignbit(i1Ty, {args[0]}));
++  resultIsX = builder.create<mlir::arith::OrIOp>(
++      loc, resultIsX,
++      builder.create<mlir::arith::AndIOp>(
++          loc, genIsFPClass(i1Ty, x, infiniteTest), magnitudeUp));
++
++  // Result is X. (For ieee_next_after with isNan(Y), X has been set to a NaN.)
++  fir::IfOp outerIfOp = builder.create<fir::IfOp>(loc, resultType, resultIsX,
++                                                  /*withElseRegion=*/true);
++  builder.setInsertionPointToStart(&outerIfOp.getThenRegion().front());
++  if constexpr (proc == NearestProc::NextDown || proc == NearestProc::NextUp)
++    genRaiseExcept(_FORTRAN_RUNTIME_IEEE_INVALID,
++                   genIsFPClass(i1Ty, x, snanTest));
++  builder.create<fir::ResultOp>(loc, x);
++
++  // Result is minPositiveSubnormal or minNegativeSubnormal. (X is zero.)
++  builder.setInsertionPointToStart(&outerIfOp.getElseRegion().front());
++  mlir::Value resultIsMinSubnormal = builder.create<mlir::arith::CmpFOp>(
++      loc, mlir::arith::CmpFPredicate::OEQ, x,
++      builder.createRealZeroConstant(loc, xType));
++  fir::IfOp innerIfOp =
++      builder.create<fir::IfOp>(loc, resultType, resultIsMinSubnormal,
++                                /*withElseRegion=*/true);
++  builder.setInsertionPointToStart(&innerIfOp.getThenRegion().front());
++  mlir::Value minPositiveSubnormal =
++      builder.create<mlir::arith::BitcastOp>(loc, resultType, one);
++  mlir::Value minNegativeSubnormal = builder.create<mlir::arith::BitcastOp>(
++      loc, resultType,
++      builder.create<mlir::arith::ConstantOp>(
++          loc, intType,
++          builder.getIntegerAttr(
++              intType, llvm::APInt::getBitsSetWithWrap(
++                           xBitWidth, /*lo=*/xBitWidth - 1, /*hi=*/1))));
++  mlir::Value result = builder.create<mlir::arith::SelectOp>(
++      loc, valueUp, minPositiveSubnormal, minNegativeSubnormal);
++  if constexpr (proc == NearestProc::Nearest || proc == NearestProc::NextAfter)
++    genRaiseExcept(_FORTRAN_RUNTIME_IEEE_UNDERFLOW |
++                   _FORTRAN_RUNTIME_IEEE_INEXACT);
++  builder.create<fir::ResultOp>(loc, result);
++
++  // Result is (X + minPositiveSubnormal) or (X - minPositiveSubnormal).
++  builder.setInsertionPointToStart(&innerIfOp.getElseRegion().front());
++  if (xBitWidth == 80) {
++    // Kind 10. Call std::nextafter, which generates exceptions as required
++    // for ieee_next_after and nearest. Override this exception processing
++    // for ieee_next_down and ieee_next_up.
++    constexpr bool overrideExceptionGeneration =
++        proc == NearestProc::NextDown || proc == NearestProc::NextUp;
++    [[maybe_unused]] mlir::Type i32Ty;
++    [[maybe_unused]] mlir::Value allExcepts, excepts, mask;
++    if constexpr (overrideExceptionGeneration) {
++      i32Ty = builder.getIntegerType(32);
++      allExcepts = fir::runtime::genMapExcept(
++          builder, loc,
++          builder.createIntegerConstant(loc, i32Ty, _FORTRAN_RUNTIME_IEEE_ALL));
++      excepts = genRuntimeCall("fetestexcept", i32Ty, allExcepts);
++      mask = genRuntimeCall("fedisableexcept", i32Ty, allExcepts);
++    }
++    result = fir::runtime::genNearest(builder, loc, x, valueUp);
++    if constexpr (overrideExceptionGeneration) {
++      genRuntimeCall("feclearexcept", i32Ty, allExcepts);
++      genRuntimeCall("feraiseexcept", i32Ty, excepts);
++      genRuntimeCall("feenableexcept", i32Ty, mask);
++    }
++    builder.create<fir::ResultOp>(loc, result);
++  } else {
++    // Kind 2, 3, 4, 8, 16. Increment or decrement X cast to integer.
++    mlir::Value intX = builder.create<mlir::arith::BitcastOp>(loc, intType, x);
++    result = builder.create<mlir::arith::BitcastOp>(
++        loc, resultType,
++        builder.create<mlir::arith::SelectOp>(
++            loc, magnitudeUp,
++            builder.create<mlir::arith::AddIOp>(loc, intX, one),
++            builder.create<mlir::arith::SubIOp>(loc, intX, one)));
++    if constexpr (proc == NearestProc::Nearest ||
++                  proc == NearestProc::NextAfter) {
++      genRaiseExcept(_FORTRAN_RUNTIME_IEEE_OVERFLOW |
++                         _FORTRAN_RUNTIME_IEEE_INEXACT,
++                     genIsFPClass(i1Ty, result, infiniteTest));
++      genRaiseExcept(_FORTRAN_RUNTIME_IEEE_UNDERFLOW |
++                         _FORTRAN_RUNTIME_IEEE_INEXACT,
++                     genIsFPClass(i1Ty, result, subnormalTest));
++    }
++    builder.create<fir::ResultOp>(loc, result);
++  }
++
++  builder.setInsertionPointAfter(innerIfOp);
++  builder.create<fir::ResultOp>(loc, innerIfOp.getResult(0));
++  builder.setInsertionPointAfter(outerIfOp);
++  return outerIfOp.getResult(0);
+ }
+ 
+ // NINT
+diff --git a/flang/lib/Optimizer/Builder/Runtime/Exceptions.cpp b/flang/lib/Optimizer/Builder/Runtime/Exceptions.cpp
+index 294ccbaf82a0..8775b50437af 100644
+--- a/flang/lib/Optimizer/Builder/Runtime/Exceptions.cpp
++++ b/flang/lib/Optimizer/Builder/Runtime/Exceptions.cpp
+@@ -13,10 +13,10 @@
+ 
+ using namespace Fortran::runtime;
+ 
+-mlir::Value fir::runtime::genMapException(fir::FirOpBuilder &builder,
+-                                          mlir::Location loc,
+-                                          mlir::Value except) {
++mlir::Value fir::runtime::genMapExcept(fir::FirOpBuilder &builder,
++                                       mlir::Location loc,
++                                       mlir::Value excepts) {
+   mlir::func::FuncOp func{
+       fir::runtime::getRuntimeFunc<mkRTKey(MapException)>(loc, builder)};
+-  return builder.create<fir::CallOp>(loc, func, except).getResult(0);
++  return builder.create<fir::CallOp>(loc, func, excepts).getResult(0);
+ }
+diff --git a/flang/lib/Optimizer/Builder/Runtime/Numeric.cpp b/flang/lib/Optimizer/Builder/Runtime/Numeric.cpp
+index 1d13248db598..d98288419d68 100644
+--- a/flang/lib/Optimizer/Builder/Runtime/Numeric.cpp
++++ b/flang/lib/Optimizer/Builder/Runtime/Numeric.cpp
+@@ -406,10 +406,10 @@ mlir::Value fir::runtime::genModulo(fir::FirOpBuilder &builder,
+   return builder.create<fir::CallOp>(loc, func, args).getResult(0);
+ }
+ 
+-/// Generate call to Nearest intrinsic runtime routine.
++/// Generate call to Nearest intrinsic or a "Next" intrinsic module procedure.
+ mlir::Value fir::runtime::genNearest(fir::FirOpBuilder &builder,
+                                      mlir::Location loc, mlir::Value x,
+-                                     mlir::Value s) {
++                                     mlir::Value valueUp) {
+   mlir::func::FuncOp func;
+   mlir::Type fltTy = x.getType();
+ 
+@@ -425,19 +425,7 @@ mlir::Value fir::runtime::genNearest(fir::FirOpBuilder &builder,
+     fir::intrinsicTypeTODO(builder, fltTy, loc, "NEAREST");
+ 
+   auto funcTy = func.getFunctionType();
+-
+-  mlir::Type sTy = s.getType();
+-  mlir::Value zero = builder.createRealZeroConstant(loc, sTy);
+-  auto cmp = builder.create<mlir::arith::CmpFOp>(
+-      loc, mlir::arith::CmpFPredicate::OGT, s, zero);
+-
+-  mlir::Type boolTy = mlir::IntegerType::get(builder.getContext(), 1);
+-  mlir::Value False = builder.createIntegerConstant(loc, boolTy, 0);
+-  mlir::Value True = builder.createIntegerConstant(loc, boolTy, 1);
+-
+-  mlir::Value positive =
+-      builder.create<mlir::arith::SelectOp>(loc, cmp, True, False);
+-  auto args = fir::runtime::createArguments(builder, loc, funcTy, x, positive);
++  auto args = fir::runtime::createArguments(builder, loc, funcTy, x, valueUp);
+ 
+   return builder.create<fir::CallOp>(loc, func, args).getResult(0);
+ }
+diff --git a/flang/runtime/exceptions.cpp b/flang/runtime/exceptions.cpp
+index dfd3b812e22a..2032ce7b1224 100644
+--- a/flang/runtime/exceptions.cpp
++++ b/flang/runtime/exceptions.cpp
+@@ -6,11 +6,10 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-// Map Fortran ieee_arithmetic module exceptions to fenv.h exceptions.
++// Runtime exception support.
+ 
+ #include "flang/Runtime/exceptions.h"
+ #include "terminator.h"
+-#include "flang/Runtime/magic-numbers.h"
+ #include <cfenv>
+ 
+ #ifndef __FE_DENORM
+@@ -21,58 +20,32 @@ namespace Fortran::runtime {
+ 
+ extern "C" {
+ 
+-std::int32_t RTNAME(MapException)(int32_t except) {
++// Map a set of Fortran ieee_arithmetic module exceptions to a libm fenv.h
++// excepts value.
++uint32_t RTNAME(MapException)(uint32_t excepts) {
+   Terminator terminator{__FILE__, __LINE__};
+ 
+-  static constexpr int32_t mask{_FORTRAN_RUNTIME_IEEE_INVALID |
+-      _FORTRAN_RUNTIME_IEEE_DENORM | _FORTRAN_RUNTIME_IEEE_DIVIDE_BY_ZERO |
+-      _FORTRAN_RUNTIME_IEEE_OVERFLOW | _FORTRAN_RUNTIME_IEEE_UNDERFLOW |
+-      _FORTRAN_RUNTIME_IEEE_INEXACT};
+-  if (except == 0 || except != (except & mask)) {
+-    terminator.Crash("Invalid exception value: %d", except);
++  static constexpr uint32_t v{FE_INVALID};
++  static constexpr uint32_t s{__FE_DENORM}; // subnormal
++  static constexpr uint32_t z{FE_DIVBYZERO};
++  static constexpr uint32_t o{FE_OVERFLOW};
++  static constexpr uint32_t u{FE_UNDERFLOW};
++  static constexpr uint32_t x{FE_INEXACT};
++
++#define vm(p) p, p | v
++#define sm(p) vm(p), vm(p | s)
++#define zm(p) sm(p), sm(p | z)
++#define om(p) zm(p), zm(p | o)
++#define um(p) om(p), om(p | u)
++#define xm um(0), um(x)
++
++  static constexpr uint32_t map[]{xm};
++  static constexpr uint32_t mapSize{sizeof(map) / sizeof(uint32_t)};
++  static_assert(mapSize == 64);
++  if (excepts == 0 || excepts >= mapSize) {
++    terminator.Crash("Invalid excepts value: %d", excepts);
+   }
+-
+-  // Fortran and fenv.h values are identical; return the value.
+-  if constexpr (_FORTRAN_RUNTIME_IEEE_INVALID == FE_INVALID &&
+-      _FORTRAN_RUNTIME_IEEE_DENORM == __FE_DENORM &&
+-      _FORTRAN_RUNTIME_IEEE_DIVIDE_BY_ZERO == FE_DIVBYZERO &&
+-      _FORTRAN_RUNTIME_IEEE_OVERFLOW == FE_OVERFLOW &&
+-      _FORTRAN_RUNTIME_IEEE_UNDERFLOW == FE_UNDERFLOW &&
+-      _FORTRAN_RUNTIME_IEEE_INEXACT == FE_INEXACT) {
+-    return except;
+-  }
+-
+-  // fenv.h calls that take exception arguments are able to process multiple
+-  // exceptions in one call, such as FE_OVERFLOW | FE_DIVBYZERO | FE_INVALID.
+-  // And intrinsic module procedures that manage exceptions are elemental
+-  // procedures that may specify multiple exceptions, such as ieee_all.
+-  // However, general elemental call processing places single scalar arguments
+-  // in a loop. As a consequence, argument 'except' here will be a power of
+-  // two, corresponding to a single exception. If code generation were
+-  // modified to bypass normal elemental call processing for calls with
+-  // ieee_usual, ieee_all, or user-specified array arguments, this switch
+-  // could be extended to support that.
+-
+-  // Fortran and fenv.h values differ.
+-  switch (except) {
+-  case _FORTRAN_RUNTIME_IEEE_INVALID:
+-    return FE_INVALID;
+-  case _FORTRAN_RUNTIME_IEEE_DENORM:
+-    if (__FE_DENORM) {
+-      return __FE_DENORM;
+-    }
+-    break;
+-  case _FORTRAN_RUNTIME_IEEE_DIVIDE_BY_ZERO:
+-    return FE_DIVBYZERO;
+-  case _FORTRAN_RUNTIME_IEEE_OVERFLOW:
+-    return FE_OVERFLOW;
+-  case _FORTRAN_RUNTIME_IEEE_UNDERFLOW:
+-    return FE_UNDERFLOW;
+-  case _FORTRAN_RUNTIME_IEEE_INEXACT:
+-    return FE_INEXACT;
+-  }
+-
+-  terminator.Crash("Invalid exception set: %d", except);
++  return map[excepts];
+ }
+ 
+ // Verify that the size of ieee_modes_type and ieee_status_type objects from
+diff --git a/flang/test/Evaluate/fold-nearest.f90 b/flang/test/Evaluate/fold-nearest.f90
+index a7366e6d7540..41853a699d8e 100644
+--- a/flang/test/Evaluate/fold-nearest.f90
++++ b/flang/test/Evaluate/fold-nearest.f90
+@@ -39,6 +39,7 @@ end module
+ module m2
+   use ieee_arithmetic, only: ieee_next_after
+   real, parameter :: minSubnormal = 1.e-45
++  real, parameter :: h = huge(0.0)
+   logical, parameter :: test_0 = ieee_next_after(0., 0.) == 0.
+   logical, parameter :: test_1 = ieee_next_after(0., 1.) == minSubnormal
+   logical, parameter :: test_2 = ieee_next_after(minSubnormal, -1.) == 0
+@@ -47,9 +48,9 @@ module m2
+   !WARN: warning: division by zero
+   real, parameter :: inf = 1. / 0.
+   logical, parameter :: test_5 = ieee_next_after(inf, inf) == inf
+-  logical, parameter :: test_6 = ieee_next_after(inf, -inf) == inf
+-  logical, parameter :: test_7 = ieee_next_after(-inf, inf) == -inf
+-  logical, parameter :: test_8 = ieee_next_after(-inf, -1.) == -inf
++  logical, parameter :: test_6 = ieee_next_after(inf, -inf) == h
++  logical, parameter :: test_7 = ieee_next_after(-inf, inf) == -h
++  logical, parameter :: test_8 = ieee_next_after(-inf, -1.) == -h
+   logical, parameter :: test_9 = ieee_next_after(1.9999999, 3.) == 2.
+   logical, parameter :: test_10 = ieee_next_after(2., 1.) == 1.9999999
+ #if __x86_64__
+@@ -69,6 +70,7 @@ end module
+ module m3
+   use ieee_arithmetic, only: ieee_next_up, ieee_next_down
+   real(kind(0.d0)), parameter :: minSubnormal = 5.d-324
++  real(kind(0.d0)), parameter :: h = huge(0.d0)
+   logical, parameter :: test_1 = ieee_next_up(0.d0) == minSubnormal
+   logical, parameter :: test_2 = ieee_next_down(0.d0) == -minSubnormal
+   logical, parameter :: test_3 = ieee_next_up(1.d0) == 1.0000000000000002d0
+@@ -81,10 +83,8 @@ module m3
+   logical, parameter :: test_6 = ieee_next_down(-huge(0.d0)) == -inf
+   !WARN: warning: IEEE_NEXT_UP intrinsic folding: bad argument
+   logical, parameter :: test_7 = ieee_next_up(inf) == inf
+-  !WARN: warning: IEEE_NEXT_DOWN intrinsic folding: bad argument
+-  logical, parameter :: test_8 = ieee_next_down(inf) == inf
+-  !WARN: warning: IEEE_NEXT_UP intrinsic folding: bad argument
+-  logical, parameter :: test_9 = ieee_next_up(-inf) == -inf
++  logical, parameter :: test_8 = ieee_next_down(inf) == h
++  logical, parameter :: test_9 = ieee_next_up(-inf) == -h
+   !WARN: warning: IEEE_NEXT_DOWN intrinsic folding: bad argument
+   logical, parameter :: test_10 = ieee_next_down(-inf) == -inf
+   logical, parameter :: test_11 = ieee_next_up(1.9999999999999997d0) == 2.d0
+diff --git a/flang/test/Lower/Intrinsics/ieee_next.f90 b/flang/test/Lower/Intrinsics/ieee_next.f90
+new file mode 100644
+index 000000000000..fa9692b83bc8
+--- /dev/null
++++ b/flang/test/Lower/Intrinsics/ieee_next.f90
+@@ -0,0 +1,284 @@
++! RUN: bbc -emit-fir -o - %s | FileCheck %s
++
++! CHECK-LABEL: c.func @_QQmain
++program p
++  use ieee_arithmetic, only: ieee_value, ieee_negative_inf, ieee_positive_inf
++  use ieee_arithmetic, only: ieee_next_after, ieee_next_down, ieee_next_up
++  implicit none
++  ! CHECK-DAG: %[[V_4:[0-9]+]] = fir.alloca f80 {bindc_name = "r10", uniq_name = "_QFEr10"}
++  ! CHECK-DAG: %[[V_5:[0-9]+]] = fir.declare %[[V_4]] {uniq_name = "_QFEr10"} : (!fir.ref<f80>) -> !fir.ref<f80>
++  ! CHECK-DAG: %[[V_6:[0-9]+]] = fir.alloca f128 {bindc_name = "r16", uniq_name = "_QFEr16"}
++  ! CHECK-DAG: %[[V_7:[0-9]+]] = fir.declare %[[V_6]] {uniq_name = "_QFEr16"} : (!fir.ref<f128>) -> !fir.ref<f128>
++  ! CHECK-DAG: %[[V_8:[0-9]+]] = fir.alloca f16 {bindc_name = "r2", uniq_name = "_QFEr2"}
++  ! CHECK-DAG: %[[V_9:[0-9]+]] = fir.declare %[[V_8]] {uniq_name = "_QFEr2"} : (!fir.ref<f16>) -> !fir.ref<f16>
++  ! CHECK-DAG: %[[V_10:[0-9]+]] = fir.alloca bf16 {bindc_name = "r3", uniq_name = "_QFEr3"}
++  ! CHECK-DAG: %[[V_11:[0-9]+]] = fir.declare %[[V_10]] {uniq_name = "_QFEr3"} : (!fir.ref<bf16>) -> !fir.ref<bf16>
++  ! CHECK-DAG: %[[V_12:[0-9]+]] = fir.alloca f32 {bindc_name = "r4", uniq_name = "_QFEr4"}
++  ! CHECK-DAG: %[[V_13:[0-9]+]] = fir.declare %[[V_12]] {uniq_name = "_QFEr4"} : (!fir.ref<f32>) -> !fir.ref<f32>
++  ! CHECK-DAG: %[[V_14:[0-9]+]] = fir.alloca f64 {bindc_name = "r8", uniq_name = "_QFEr8"}
++  ! CHECK-DAG: %[[V_15:[0-9]+]] = fir.declare %[[V_14]] {uniq_name = "_QFEr8"} : (!fir.ref<f64>) -> !fir.ref<f64>
++  ! CHECK-DAG: %[[V_16:[0-9]+]] = fir.address_of(@_QFEx10) : !fir.ref<f80>
++  ! CHECK-DAG: %[[V_17:[0-9]+]] = fir.declare %[[V_16]] {uniq_name = "_QFEx10"} : (!fir.ref<f80>) -> !fir.ref<f80>
++  ! CHECK-DAG: %[[V_18:[0-9]+]] = fir.alloca f128 {bindc_name = "x16", uniq_name = "_QFEx16"}
++  ! CHECK-DAG: %[[V_19:[0-9]+]] = fir.declare %[[V_18]] {uniq_name = "_QFEx16"} : (!fir.ref<f128>) -> !fir.ref<f128>
++  ! CHECK-DAG: %[[V_20:[0-9]+]] = fir.alloca f16 {bindc_name = "x2", uniq_name = "_QFEx2"}
++  ! CHECK-DAG: %[[V_21:[0-9]+]] = fir.declare %[[V_20]] {uniq_name = "_QFEx2"} : (!fir.ref<f16>) -> !fir.ref<f16>
++  ! CHECK-DAG: %[[V_22:[0-9]+]] = fir.address_of(@_QFEx3) : !fir.ref<bf16>
++  ! CHECK-DAG: %[[V_23:[0-9]+]] = fir.declare %[[V_22]] {uniq_name = "_QFEx3"} : (!fir.ref<bf16>) -> !fir.ref<bf16>
++  ! CHECK-DAG: %[[V_24:[0-9]+]] = fir.address_of(@_QFEx4) : !fir.ref<f32>
++  ! CHECK-DAG: %[[V_25:[0-9]+]] = fir.declare %[[V_24]] {uniq_name = "_QFEx4"} : (!fir.ref<f32>) -> !fir.ref<f32>
++  ! CHECK-DAG: %[[V_26:[0-9]+]] = fir.address_of(@_QFEx8) : !fir.ref<f64>
++  ! CHECK-DAG: %[[V_27:[0-9]+]] = fir.declare %[[V_26]] {uniq_name = "_QFEx8"} : (!fir.ref<f64>) -> !fir.ref<f64>
++  real(2)  ::  r2,  x2
++  real(3)  ::  r3,  x3 = -huge(x3)
++  real(4)  ::  r4,  x4 = -0.
++  real(8)  ::  r8,  x8 =  0.
++  real(10) :: r10, x10 =  huge(x10)
++  real(16) :: r16, x16
++
++  x2  = ieee_value(x2, ieee_negative_inf)
++  x16 = ieee_value(x2, ieee_positive_inf)
++
++  ! CHECK:     %[[V_45:[0-9]+]] = fir.load %[[V_21]] : !fir.ref<f16>
++  ! CHECK:     %[[V_46:[0-9]+]] = fir.load %[[V_17]] : !fir.ref<f80>
++  ! CHECK-DAG: %[[V_47:[0-9]+]] = fir.coordinate_of %{{.*}}, %c2{{.*}} : (!fir.ref<!fir.array<12xi16>>, i8) -> !fir.ref<i16>
++  ! CHECK-DAG: %[[V_48:[0-9]+]] = fir.load %[[V_47]] : !fir.ref<i16>
++  ! CHECK-DAG: %[[V_49:[0-9]+]] = arith.bitcast %[[V_48]] : i16 to f16
++  ! CHECK-DAG: %[[V_50:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_46]]) <{bit = 3 : i32}> : (f80) -> i1
++  ! CHECK:     %[[V_51:[0-9]+]] = arith.select %[[V_50]], %[[V_49]], %[[V_45]] : f16
++  ! CHECK:     %[[V_52:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_51]]) <{bit = 3 : i32}> : (f16) -> i1
++  ! CHECK:     %[[V_53:[0-9]+]] = fir.convert %[[V_51]] : (f16) -> f80
++  ! CHECK:     %[[V_54:[0-9]+]] = arith.cmpf oeq, %[[V_53]], %[[V_46]] fastmath<contract> : f80
++  ! CHECK:     %[[V_55:[0-9]+]] = arith.ori %[[V_52]], %[[V_54]] : i1
++  ! CHECK:     %[[V_56:[0-9]+]] = arith.cmpf olt, %[[V_53]], %[[V_46]] fastmath<contract> : f80
++  ! CHECK:     %[[V_57:[0-9]+]] = arith.bitcast %[[V_45]] : f16 to i16
++  ! CHECK:     %[[V_58:[0-9]+]] = arith.shrui %[[V_57]], %c15{{.*}} : i16
++  ! CHECK:     %[[V_59:[0-9]+]] = fir.convert %[[V_58]] : (i16) -> i1
++  ! CHECK:     %[[V_60:[0-9]+]] = arith.cmpi ne, %[[V_56]], %[[V_59]] : i1
++  ! CHECK:     %[[V_61:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_51]]) <{bit = 516 : i32}> : (f16) -> i1
++  ! CHECK:     %[[V_62:[0-9]+]] = arith.andi %[[V_61]], %[[V_60]] : i1
++  ! CHECK:     %[[V_63:[0-9]+]] = arith.ori %[[V_55]], %[[V_62]] : i1
++  ! CHECK:     %[[V_64:[0-9]+]] = fir.if %[[V_63]] -> (f16) {
++  ! CHECK:       fir.result %[[V_51]] : f16
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_202:[0-9]+]] = arith.cmpf oeq, %[[V_51]], %cst{{[_0-9]*}} fastmath<contract> : f16
++  ! CHECK:       %[[V_203:[0-9]+]] = fir.if %[[V_202]] -> (f16) {
++  ! CHECK:         %[[V_204:[0-9]+]] = arith.select %[[V_56]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f16
++  ! CHECK:         %[[V_205:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                             fir.call @feraiseexcept(%[[V_205]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_204]] : f16
++  ! CHECK:       } else {
++  ! CHECK:         %[[V_204:[0-9]+]] = arith.bitcast %[[V_51]] : f16 to i16
++  ! CHECK-DAG:     %[[V_205:[0-9]+]] = arith.subi %[[V_204]], %c1{{.*}} : i16
++  ! CHECK-DAG:     %[[V_206:[0-9]+]] = arith.addi %[[V_204]], %c1{{.*}} : i16
++  ! CHECK:         %[[V_207:[0-9]+]] = arith.select %[[V_60]], %[[V_206]], %[[V_205]] : i16
++  ! CHECK:         %[[V_208:[0-9]+]] = arith.bitcast %[[V_207]] : i16 to f16
++  ! CHECK:         %[[V_209:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_208]]) <{bit = 516 : i32}> : (f16) -> i1
++  ! CHECK:         fir.if %[[V_209]] {
++  ! CHECK:           %[[V_211:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                               fir.call @feraiseexcept(%[[V_211]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_210:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_208]]) <{bit = 144 : i32}> : (f16) -> i1
++  ! CHECK:         fir.if %[[V_210]] {
++  ! CHECK:           %[[V_211:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                               fir.call @feraiseexcept(%[[V_211]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_208]] : f16
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_203]] : f16
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_64]] to %[[V_9]] : !fir.ref<f16>
++  r2 = ieee_next_after(x2, x10)
++  print "('after:  ', z4.4, ' -> ', z4.4, ' = ', g0)", x2, r2, r2
++
++  ! CHECK:     %[[V_81:[0-9]+]] = fir.load %[[V_23]] : !fir.ref<bf16>
++  ! CHECK:     %[[V_82:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_81]]) <{bit = 3 : i32}> : (bf16) -> i1
++  ! CHECK:     %[[V_83:[0-9]+]] = fir.convert %[[V_81]] : (bf16) -> f32
++  ! CHECK:     %[[V_84:[0-9]+]] = arith.bitcast %[[V_83]] : f32 to i32
++  ! CHECK:     %[[V_85:[0-9]+]] = arith.shrui %[[V_84]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_86:[0-9]+]] = fir.convert %[[V_85]] : (i32) -> i1
++  ! CHECK:     %[[V_87:[0-9]+]] = arith.cmpi ne, %[[V_86]], %true{{[_0-9]*}} : i1
++  ! CHECK:     %[[V_88:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_81]]) <{bit = 516 : i32}> : (bf16) -> i1
++  ! CHECK:     %[[V_89:[0-9]+]] = arith.andi %[[V_88]], %[[V_87]] : i1
++  ! CHECK:     %[[V_90:[0-9]+]] = arith.ori %[[V_82]], %[[V_89]] : i1
++  ! CHECK:     %[[V_91:[0-9]+]] = fir.if %[[V_90]] -> (bf16) {
++  ! CHECK:       %[[V_202:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_81]]) <{bit = 1 : i32}> : (bf16) -> i1
++  ! CHECK:       fir.if %[[V_202]] {
++  ! CHECK:         %[[V_203:[0-9]+]] = fir.call @_FortranAMapException(%c1{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                             fir.call @feraiseexcept(%[[V_203]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_81]] : bf16
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_202:[0-9]+]] = arith.cmpf oeq, %[[V_81]], %cst{{[_0-9]*}} fastmath<contract> : bf16
++  ! CHECK:       %[[V_203:[0-9]+]] = fir.if %[[V_202]] -> (bf16) {
++  ! CHECK:         fir.result %cst{{[_0-9]*}} : bf16
++  ! CHECK:       } else {
++  ! CHECK:         %[[V_204:[0-9]+]] = arith.bitcast %[[V_81]] : bf16 to i16
++  ! CHECK-DAG:     %[[V_205:[0-9]+]] = arith.subi %[[V_204]], %c1{{.*}} : i16
++  ! CHECK-DAG:     %[[V_206:[0-9]+]] = arith.addi %[[V_204]], %c1{{.*}} : i16
++  ! CHECK:         %[[V_207:[0-9]+]] = arith.select %[[V_87]], %[[V_206]], %[[V_205]] : i16
++  ! CHECK:         %[[V_208:[0-9]+]] = arith.bitcast %[[V_207]] : i16 to bf16
++  ! CHECK:         fir.result %[[V_208]] : bf16
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_203]] : bf16
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_91]] to %[[V_11]] : !fir.ref<bf16>
++  r3 = ieee_next_up(x3)
++  print "('up:     ', z4.4, ' -> ', z4.4, ' = ', g0)", x3, r3, r3
++
++  ! CHECK:     %[[V_104:[0-9]+]] = fir.load %[[V_25]] : !fir.ref<f32>
++  ! CHECK:     %[[V_105:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_104]]) <{bit = 3 : i32}> : (f32) -> i1
++  ! CHECK:     %[[V_106:[0-9]+]] = arith.bitcast %[[V_104]] : f32 to i32
++  ! CHECK:     %[[V_107:[0-9]+]] = arith.shrui %[[V_106]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_108:[0-9]+]] = fir.convert %[[V_107]] : (i32) -> i1
++  ! CHECK:     %[[V_109:[0-9]+]] = arith.cmpi ne, %[[V_108]], %false{{[_0-9]*}} : i1
++  ! CHECK:     %[[V_110:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_104]]) <{bit = 516 : i32}> : (f32) -> i1
++  ! CHECK:     %[[V_111:[0-9]+]] = arith.andi %[[V_110]], %[[V_109]] : i1
++  ! CHECK:     %[[V_112:[0-9]+]] = arith.ori %[[V_105]], %[[V_111]] : i1
++  ! CHECK:     %[[V_113:[0-9]+]] = fir.if %[[V_112]] -> (f32) {
++  ! CHECK:       %[[V_202:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_104]]) <{bit = 1 : i32}> : (f32) -> i1
++  ! CHECK:       fir.if %[[V_202]] {
++  ! CHECK:         %[[V_203:[0-9]+]] = fir.call @_FortranAMapException(%c1{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                             fir.call @feraiseexcept(%[[V_203]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_104]] : f32
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_202:[0-9]+]] = arith.cmpf oeq, %[[V_104]], %cst{{[_0-9]*}} fastmath<contract> : f32
++  ! CHECK:       %[[V_203:[0-9]+]] = fir.if %[[V_202]] -> (f32) {
++  ! CHECK:         fir.result %cst{{[_0-9]*}} : f32
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_204:[0-9]+]] = arith.subi %[[V_106]], %c1{{.*}} : i32
++  ! CHECK-DAG:     %[[V_205:[0-9]+]] = arith.addi %[[V_106]], %c1{{.*}} : i32
++  ! CHECK:         %[[V_206:[0-9]+]] = arith.select %[[V_109]], %[[V_205]], %[[V_204]] : i32
++  ! CHECK:         %[[V_207:[0-9]+]] = arith.bitcast %[[V_206]] : i32 to f32
++  ! CHECK:         fir.result %[[V_207]] : f32
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_203]] : f32
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_113]] to %[[V_13]] : !fir.ref<f32>
++  r4 = ieee_next_down(x4)
++  print "('down:   ', z8.8, ' -> ', z8.8, ' = ', g0)", x4, r4, r4
++
++  ! CHECK:     %[[V_125:[0-9]+]] = fir.load %[[V_27]] : !fir.ref<f64>
++  ! CHECK:     %[[V_126:[0-9]+]] = fir.load %[[V_21]] : !fir.ref<f16>
++  ! CHECK-DAG: %[[V_127:[0-9]+]] = fir.address_of(@_FortranAIeeeValueTable_8) : !fir.ref<!fir.array<12xi64>>
++  ! CHECK-DAG: %[[V_128:[0-9]+]] = fir.coordinate_of %[[V_127]], %c2{{.*}} : (!fir.ref<!fir.array<12xi64>>, i8) -> !fir.ref<i64>
++  ! CHECK-DAG: %[[V_129:[0-9]+]] = fir.load %[[V_128]] : !fir.ref<i64>
++  ! CHECK-DAG: %[[V_130:[0-9]+]] = arith.bitcast %[[V_129]] : i64 to f64
++  ! CHECK-DAG: %[[V_131:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_126]]) <{bit = 3 : i32}> : (f16) -> i1
++  ! CHECK:     %[[V_132:[0-9]+]] = arith.select %[[V_131]], %[[V_130]], %[[V_125]] : f64
++  ! CHECK:     %[[V_133:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_132]]) <{bit = 3 : i32}> : (f64) -> i1
++  ! CHECK:     %[[V_134:[0-9]+]] = fir.convert %[[V_126]] : (f16) -> f64
++  ! CHECK:     %[[V_135:[0-9]+]] = arith.cmpf oeq, %[[V_132]], %[[V_134]] fastmath<contract> : f64
++  ! CHECK:     %[[V_136:[0-9]+]] = arith.ori %[[V_133]], %[[V_135]] : i1
++  ! CHECK:     %[[V_137:[0-9]+]] = arith.cmpf olt, %[[V_132]], %[[V_134]] fastmath<contract> : f64
++  ! CHECK:     %[[V_138:[0-9]+]] = arith.bitcast %[[V_125]] : f64 to i64
++  ! CHECK:     %[[V_139:[0-9]+]] = arith.shrui %[[V_138]], %c63{{.*}} : i64
++  ! CHECK:     %[[V_140:[0-9]+]] = fir.convert %[[V_139]] : (i64) -> i1
++  ! CHECK:     %[[V_141:[0-9]+]] = arith.cmpi ne, %[[V_137]], %[[V_140]] : i1
++  ! CHECK:     %[[V_142:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_132]]) <{bit = 516 : i32}> : (f64) -> i1
++  ! CHECK:     %[[V_143:[0-9]+]] = arith.andi %[[V_142]], %[[V_141]] : i1
++  ! CHECK:     %[[V_144:[0-9]+]] = arith.ori %[[V_136]], %[[V_143]] : i1
++  ! CHECK:     %[[V_145:[0-9]+]] = fir.if %[[V_144]] -> (f64) {
++  ! CHECK:       fir.result %[[V_132]] : f64
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_202:[0-9]+]] = arith.cmpf oeq, %[[V_132]], %cst{{[_0-9]*}} fastmath<contract> : f64
++  ! CHECK:       %[[V_203:[0-9]+]] = fir.if %[[V_202]] -> (f64) {
++  ! CHECK:         %[[V_204:[0-9]+]] = arith.select %[[V_137]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f64
++  ! CHECK:         %[[V_205:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                             fir.call @feraiseexcept(%[[V_205]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_204]] : f64
++  ! CHECK:       } else {
++  ! CHECK:         %[[V_204:[0-9]+]] = arith.bitcast %[[V_132]] : f64 to i64
++  ! CHECK-DAG:     %[[V_205:[0-9]+]] = arith.subi %[[V_204]], %c1{{.*}} : i64
++  ! CHECK-DAG:     %[[V_206:[0-9]+]] = arith.addi %[[V_204]], %c1{{.*}} : i64
++  ! CHECK:         %[[V_207:[0-9]+]] = arith.select %[[V_141]], %[[V_206]], %[[V_205]] : i64
++  ! CHECK:         %[[V_208:[0-9]+]] = arith.bitcast %[[V_207]] : i64 to f64
++  ! CHECK:         %[[V_209:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_208]]) <{bit = 516 : i32}> : (f64) -> i1
++  ! CHECK:         fir.if %[[V_209]] {
++  ! CHECK:           %[[V_211:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                               fir.call @feraiseexcept(%[[V_211]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_210:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_208]]) <{bit = 144 : i32}> : (f64) -> i1
++  ! CHECK:         fir.if %[[V_210]] {
++  ! CHECK:           %[[V_211:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                               fir.call @feraiseexcept(%[[V_211]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_208]] : f64
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_203]] : f64
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_145]] to %[[V_15]] : !fir.ref<f64>
++  r8 = ieee_next_after(x8, x2)
++  print "('after:  ', z16.16, ' -> ', z16.16, ' = ', g0)", x8, r8, r8
++
++  ! CHECK:     %[[V_158:[0-9]+]] = fir.load %[[V_17]] : !fir.ref<f80>
++  ! CHECK:     %[[V_159:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_158]]) <{bit = 3 : i32}> : (f80) -> i1
++  ! CHECK:     %[[V_160:[0-9]+]] = arith.bitcast %[[V_158]] : f80 to i80
++  ! CHECK:     %[[V_161:[0-9]+]] = arith.shrui %[[V_160]], %c79{{.*}} : i80
++  ! CHECK:     %[[V_162:[0-9]+]] = fir.convert %[[V_161]] : (i80) -> i1
++  ! CHECK:     %[[V_163:[0-9]+]] = arith.cmpi ne, %[[V_162]], %true{{[_0-9]*}} : i1
++  ! CHECK:     %[[V_164:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_158]]) <{bit = 516 : i32}> : (f80) -> i1
++  ! CHECK:     %[[V_165:[0-9]+]] = arith.andi %[[V_164]], %[[V_163]] : i1
++  ! CHECK:     %[[V_166:[0-9]+]] = arith.ori %[[V_159]], %[[V_165]] : i1
++  ! CHECK:     %[[V_167:[0-9]+]] = fir.if %[[V_166]] -> (f80) {
++  ! CHECK:       %[[V_202:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_158]]) <{bit = 1 : i32}> : (f80) -> i1
++  ! CHECK:       fir.if %[[V_202]] {
++  ! CHECK:         %[[V_203:[0-9]+]] = fir.call @_FortranAMapException(%c1{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                             fir.call @feraiseexcept(%[[V_203]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_158]] : f80
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_202:[0-9]+]] = arith.cmpf oeq, %[[V_158]], %cst{{[_0-9]*}} fastmath<contract> : f80
++  ! CHECK:       %[[V_203:[0-9]+]] = fir.if %[[V_202]] -> (f80) {
++  ! CHECK:         fir.result %cst{{[_0-9]*}} : f80
++  ! CHECK:       } else {
++  ! CHECK:         %[[V_204:[0-9]+]] = fir.call @_FortranAMapException(%c63{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:         %[[V_205:[0-9]+]] = fir.call @fetestexcept(%[[V_204]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         %[[V_206:[0-9]+]] = fir.call @fedisableexcept(%[[V_204]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         %[[V_207:[0-9]+]] = fir.call @_FortranANearest10(%[[V_158]], %true{{[_0-9]*}}) fastmath<contract> : (f80, i1) -> f80
++  ! CHECK:         %[[V_208:[0-9]+]] = fir.call @feclearexcept(%[[V_204]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         %[[V_209:[0-9]+]] = fir.call @feraiseexcept(%[[V_205]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         %[[V_210:[0-9]+]] = fir.call @feenableexcept(%[[V_206]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_207]] : f80
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_203]] : f80
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_167]] to %[[V_5]] : !fir.ref<f80>
++  r10 = ieee_next_up(x10)
++  print "('up:     ', z20.20, ' -> ', z20.20, ' = ', g0)", x10, r10, r10
++
++  ! CHECK:     %[[V_180:[0-9]+]] = fir.load %[[V_19]] : !fir.ref<f128>
++  ! CHECK:     %[[V_181:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_180]]) <{bit = 3 : i32}> : (f128) -> i1
++  ! CHECK:     %[[V_182:[0-9]+]] = arith.bitcast %[[V_180]] : f128 to i128
++  ! CHECK:     %[[V_183:[0-9]+]] = arith.shrui %[[V_182]], %c127{{.*}} : i128
++  ! CHECK:     %[[V_184:[0-9]+]] = fir.convert %[[V_183]] : (i128) -> i1
++  ! CHECK:     %[[V_185:[0-9]+]] = arith.cmpi ne, %[[V_184]], %false{{[_0-9]*}} : i1
++  ! CHECK:     %[[V_186:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_180]]) <{bit = 516 : i32}> : (f128) -> i1
++  ! CHECK:     %[[V_187:[0-9]+]] = arith.andi %[[V_186]], %[[V_185]] : i1
++  ! CHECK:     %[[V_188:[0-9]+]] = arith.ori %[[V_181]], %[[V_187]] : i1
++  ! CHECK:     %[[V_189:[0-9]+]] = fir.if %[[V_188]] -> (f128) {
++  ! CHECK:       %[[V_202:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_180]]) <{bit = 1 : i32}> : (f128) -> i1
++  ! CHECK:       fir.if %[[V_202]] {
++  ! CHECK:         %[[V_203:[0-9]+]] = fir.call @_FortranAMapException(%c1{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                             fir.call @feraiseexcept(%[[V_203]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_180]] : f128
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_202:[0-9]+]] = arith.cmpf oeq, %[[V_180]], %cst{{[_0-9]*}} fastmath<contract> : f128
++  ! CHECK:       %[[V_203:[0-9]+]] = fir.if %[[V_202]] -> (f128) {
++  ! CHECK:         fir.result %cst{{[_0-9]*}} : f128
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_204:[0-9]+]] = arith.subi %[[V_182]], %c1{{.*}} : i128
++  ! CHECK-DAG:     %[[V_205:[0-9]+]] = arith.addi %[[V_182]], %c1{{.*}} : i128
++  ! CHECK:         %[[V_206:[0-9]+]] = arith.select %[[V_185]], %[[V_205]], %[[V_204]] : i128
++  ! CHECK:         %[[V_207:[0-9]+]] = arith.bitcast %[[V_206]] : i128 to f128
++  ! CHECK:         fir.result %[[V_207]] : f128
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_203]] : f128
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_189]] to %[[V_7]] : !fir.ref<f128>
++
++  r16 = ieee_next_down(x16)
++  print "('down:   ', z32.32, ' -> ', z32.32, ' = ', g0)", x16, r16, r16
++end
+diff --git a/flang/test/Lower/Intrinsics/nearest.f90 b/flang/test/Lower/Intrinsics/nearest.f90
+index a023fa8cd804..5920d299d5fd 100644
+--- a/flang/test/Lower/Intrinsics/nearest.f90
++++ b/flang/test/Lower/Intrinsics/nearest.f90
+@@ -1,72 +1,407 @@
+-! RUN: bbc -emit-fir -hlfir=false %s -o - | FileCheck %s
++! RUN: bbc -emit-fir %s -o - | FileCheck %s
+ 
+-! CHECK-LABEL: nearest_test1
++! CHECK-LABEL: c.func @_QPnearest_test1
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca f16 {bindc_name = "res", uniq_name = "_QFnearest_test1Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test1Eres"} : (!fir.ref<f16>) -> !fir.ref<f16>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test1Es"} : (!fir.ref<f16>, !fir.dscope) -> !fir.ref<f16>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test1Ex"} : (!fir.ref<f16>, !fir.dscope) -> !fir.ref<f16>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<f16>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<f16>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (f16) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (f16) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = arith.bitcast %[[V_6]] : f16 to i16
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.shrui %[[V_9]], %c15{{.*}} : i16
++  ! CHECK:     %[[V_11:[0-9]+]] = arith.cmpi ne, %[[V_10]], %c1{{.*}} : i16
++  ! CHECK:     %[[V_12:[0-9]+]] = arith.bitcast %[[V_5]] : f16 to i16
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.shrui %[[V_12]], %c15{{.*}} : i16
++  ! CHECK:     %[[V_14:[0-9]+]] = fir.convert %[[V_13]] : (i16) -> i1
++  ! CHECK:     %[[V_15:[0-9]+]] = arith.cmpi ne, %[[V_11]], %[[V_14]] : i1
++  ! CHECK:     %[[V_16:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (f16) -> i1
++  ! CHECK:     %[[V_17:[0-9]+]] = arith.andi %[[V_16]], %[[V_15]] : i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.ori %[[V_7]], %[[V_17]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = fir.if %[[V_18]] -> (f16) {
++  ! CHECK:       fir.result %[[V_5]] : f16
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_20:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : f16
++  ! CHECK:       %[[V_21:[0-9]+]] = fir.if %[[V_20]] -> (f16) {
++  ! CHECK:         %[[V_22:[0-9]+]] = arith.select %[[V_11]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f16
++  ! CHECK:         %[[V_23:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_23]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_22]] : f16
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_22:[0-9]+]] = arith.subi %[[V_12]], %c1{{.*}} : i16
++  ! CHECK-DAG:     %[[V_23:[0-9]+]] = arith.addi %[[V_12]], %c1{{.*}} : i16
++  ! CHECK:         %[[V_24:[0-9]+]] = arith.select %[[V_15]], %[[V_23]], %[[V_22]] : i16
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.bitcast %[[V_24]] : i16 to f16
++  ! CHECK:         %[[V_26:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 516 : i32}> : (f16) -> i1
++  ! CHECK:         fir.if %[[V_26]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_27:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 144 : i32}> : (f16) -> i1
++  ! CHECK:         fir.if %[[V_27]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_25]] : f16
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_21]] : f16
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_19]] to %[[V_2]] : !fir.ref<f16>
++  ! CHECK:     return
++  ! CHECK:   }
+ subroutine nearest_test1(x, s)
+-    real :: x, s, res
+-  ! CHECK: %[[res:.*]] = fir.alloca f32 {bindc_name = "res", uniq_name = "_QFnearest_test1Eres"}
+-  ! CHECK: %[[x:.*]] = fir.load %arg0 : !fir.ref<f32>
+-  ! CHECK: %[[s:.*]] = fir.load %arg1 : !fir.ref<f32>
+-  ! CHECK: %[[zero:.*]] = arith.constant 0.000000e+00 : f32
+-  ! CHECK: %[[cmp:.*]] = arith.cmpf ogt, %[[s]], %[[zero]] {{.*}} : f32
+-  ! CHECK: %[[pos:.*]] = arith.select %[[cmp]], %true, %false : i1
+-    res = nearest(x, s)
+-  ! CHECK: %[[tmp:.*]] = fir.call @_FortranANearest4(%[[x]], %[[pos]]) {{.*}}: (f32, i1) -> f32
+-  ! CHECK: fir.store %[[tmp]] to %[[res]] : !fir.ref<f32>
+-  end subroutine nearest_test1
+-  
+-  ! CHECK-LABEL: nearest_test2
+-  subroutine nearest_test2(x, s)
+-    real(kind=8) :: x, s, res
+-  ! CHECK: %[[res:.*]] = fir.alloca f64 {bindc_name = "res", uniq_name = "_QFnearest_test2Eres"}
+-  ! CHECK: %[[x:.*]] = fir.load %arg0 : !fir.ref<f64>
+-  ! CHECK: %[[s:.*]] = fir.load %arg1 : !fir.ref<f64>
+-  ! CHECK: %[[zero:.*]] = arith.constant 0.000000e+00 : f64
+-  ! CHECK: %[[cmp:.*]] = arith.cmpf ogt, %[[s]], %[[zero]] {{.*}} : f64
+-  ! CHECK: %[[pos:.*]] = arith.select %[[cmp]], %true, %false : i1
+-    res = nearest(x, s)
+-  ! CHECK: %[[tmp:.*]] = fir.call @_FortranANearest8(%[[x]], %[[pos]]) {{.*}}: (f64, i1) -> f64
+-  ! CHECK: fir.store %[[tmp]] to %[[res]] : !fir.ref<f64>
+-  end subroutine nearest_test2
+-  
+-  ! CHECK-LABEL: nearest_test3
+-  subroutine nearest_test3(x, s)
+-    real(kind=10) :: x, s, res
+-  ! CHECK: %[[res:.*]] = fir.alloca f80 {bindc_name = "res", uniq_name = "_QFnearest_test3Eres"}
+-  ! CHECK: %[[x:.*]] = fir.load %arg0 : !fir.ref<f80>
+-  ! CHECK: %[[s:.*]] = fir.load %arg1 : !fir.ref<f80>
+-  ! CHECK: %[[zero:.*]] = arith.constant 0.000000e+00 : f80
+-  ! CHECK: %[[cmp:.*]] = arith.cmpf ogt, %[[s]], %[[zero]] {{.*}} : f80
+-  ! CHECK: %[[pos:.*]] = arith.select %[[cmp]], %true, %false : i1
+-    res = nearest(x, s)
+-  ! CHECK: %[[tmp:.*]] = fir.call @_FortranANearest10(%[[x]], %[[pos]]) {{.*}}: (f80, i1) -> f80
+-  ! CHECK: fir.store %[[tmp]] to %[[res]] : !fir.ref<f80>
+-  end subroutine nearest_test3
+-  
+-  ! CHECK-LABEL: nearest_test4
+-  subroutine nearest_test4(x, s)
+-    real(kind=16) :: x, s, res
+-  ! CHECK: %[[res:.*]] = fir.alloca f128 {bindc_name = "res", uniq_name = "_QFnearest_test4Eres"}
+-  ! CHECK: %[[x:.*]] = fir.load %arg0 : !fir.ref<f128>
+-  ! CHECK: %[[s:.*]] = fir.load %arg1 : !fir.ref<f128>
+-  ! CHECK: %[[zero:.*]] = arith.constant 0.000000e+00 : f128
+-  ! CHECK: %[[cmp:.*]] = arith.cmpf ogt, %[[s]], %[[zero]] {{.*}} : f128
+-  ! CHECK: %[[pos:.*]] = arith.select %[[cmp]], %true, %false : i1
+-    res = nearest(x, s)
+-  ! CHECK: %[[tmp:.*]] = fir.call @_FortranANearest16(%[[x]], %[[pos]]) {{.*}}: (f128, i1) -> f128
+-  ! CHECK: fir.store %[[tmp]] to %[[res]] : !fir.ref<f128>
+-  end subroutine nearest_test4
+-  
+-  ! CHECK-LABEL: nearest_test5
+-  subroutine nearest_test5(x, s)
+-    real(kind=16) :: x, res
+-  ! CHECK: %[[res:.*]] = fir.alloca f128 {bindc_name = "res", uniq_name = "_QFnearest_test5Eres"}
+-  ! CHECK: %[[x:.*]] = fir.load %arg0 : !fir.ref<f128>
+-    real :: s
+-  ! CHECK: %[[s:.*]] = fir.load %arg1 : !fir.ref<f32>
+-  ! CHECK: %[[zero:.*]] = arith.constant 0.000000e+00 : f32
+-  ! CHECK: %[[cmp:.*]] = arith.cmpf ogt, %[[s]], %[[zero]] {{.*}} : f32
+-  ! CHECK: %[[pos:.*]] = arith.select %[[cmp]], %true, %false : i1
+-    res = nearest(x, s)
+-  ! CHECK: %[[tmp:.*]] = fir.call @_FortranANearest16(%[[x]], %[[pos]]) {{.*}}: (f128, i1) -> f128
+-  ! CHECK: fir.store %[[tmp]] to %[[res]] : !fir.ref<f128>
+-  end subroutine nearest_test5
++  real(kind=2) :: x, s, res
++  res = nearest(x, s)
++end
++
++! CHECK-LABEL: c.func @_QPnearest_test2
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca bf16 {bindc_name = "res", uniq_name = "_QFnearest_test2Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test2Eres"} : (!fir.ref<bf16>) -> !fir.ref<bf16>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test2Es"} : (!fir.ref<bf16>, !fir.dscope) -> !fir.ref<bf16>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test2Ex"} : (!fir.ref<bf16>, !fir.dscope) -> !fir.ref<bf16>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<bf16>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<bf16>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (bf16) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (bf16) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = fir.convert %[[V_6]] : (bf16) -> f32
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.bitcast %[[V_9]] : f32 to i32
++  ! CHECK:     %[[V_11:[0-9]+]] = arith.shrui %[[V_10]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_12:[0-9]+]] = fir.convert %[[V_11]] : (i32) -> i16
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.cmpi ne, %[[V_12]], %c1{{.*}} : i16
++  ! CHECK:     %[[V_14:[0-9]+]] = fir.convert %[[V_5]] : (bf16) -> f32
++  ! CHECK:     %[[V_15:[0-9]+]] = arith.bitcast %[[V_14]] : f32 to i32
++  ! CHECK:     %[[V_16:[0-9]+]] = arith.shrui %[[V_15]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_17:[0-9]+]] = fir.convert %[[V_16]] : (i32) -> i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.cmpi ne, %[[V_13]], %[[V_17]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (bf16) -> i1
++  ! CHECK:     %[[V_20:[0-9]+]] = arith.andi %[[V_19]], %[[V_18]] : i1
++  ! CHECK:     %[[V_21:[0-9]+]] = arith.ori %[[V_7]], %[[V_20]] : i1
++  ! CHECK:     %[[V_22:[0-9]+]] = fir.if %[[V_21]] -> (bf16) {
++  ! CHECK:       fir.result %[[V_5]] : bf16
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_23:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : bf16
++  ! CHECK:       %[[V_24:[0-9]+]] = fir.if %[[V_23]] -> (bf16) {
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.select %[[V_13]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : bf16
++  ! CHECK:         %[[V_26:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_26]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_25]] : bf16
++  ! CHECK:       } else {
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.bitcast %[[V_5]] : bf16 to i16
++  ! CHECK-DAG:     %[[V_26:[0-9]+]] = arith.subi %[[V_25]], %c1{{.*}} : i16
++  ! CHECK-DAG:     %[[V_27:[0-9]+]] = arith.addi %[[V_25]], %c1{{.*}} : i16
++  ! CHECK:         %[[V_28:[0-9]+]] = arith.select %[[V_18]], %[[V_27]], %[[V_26]] : i16
++  ! CHECK:         %[[V_29:[0-9]+]] = arith.bitcast %[[V_28]] : i16 to bf16
++  ! CHECK:         %[[V_30:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_29]]) <{bit = 516 : i32}> : (bf16) -> i1
++  ! CHECK:         fir.if %[[V_30]] {
++  ! CHECK:           %[[V_32:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_32]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_31:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_29]]) <{bit = 144 : i32}> : (bf16) -> i1
++  ! CHECK:         fir.if %[[V_31]] {
++  ! CHECK:           %[[V_32:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_32]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_29]] : bf16
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_24]] : bf16
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_22]] to %[[V_2]] : !fir.ref<bf16>
++  ! CHECK:     return
++  ! CHECK:   }
++subroutine nearest_test2(x, s)
++  real(kind=3) :: x, s, res
++  res = nearest(x, s)
++end
++
++! CHECK-LABEL: c.func @_QPnearest_test3
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca f32 {bindc_name = "res", uniq_name = "_QFnearest_test3Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test3Eres"} : (!fir.ref<f32>) -> !fir.ref<f32>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test3Es"} : (!fir.ref<f32>, !fir.dscope) -> !fir.ref<f32>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test3Ex"} : (!fir.ref<f32>, !fir.dscope) -> !fir.ref<f32>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<f32>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<f32>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (f32) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (f32) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = arith.bitcast %[[V_6]] : f32 to i32
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.shrui %[[V_9]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_11:[0-9]+]] = arith.cmpi ne, %[[V_10]], %c1{{.*}} : i32
++  ! CHECK:     %[[V_12:[0-9]+]] = arith.bitcast %[[V_5]] : f32 to i32
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.shrui %[[V_12]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_14:[0-9]+]] = fir.convert %[[V_13]] : (i32) -> i1
++  ! CHECK:     %[[V_15:[0-9]+]] = arith.cmpi ne, %[[V_11]], %[[V_14]] : i1
++  ! CHECK:     %[[V_16:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (f32) -> i1
++  ! CHECK:     %[[V_17:[0-9]+]] = arith.andi %[[V_16]], %[[V_15]] : i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.ori %[[V_7]], %[[V_17]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = fir.if %[[V_18]] -> (f32) {
++  ! CHECK:       fir.result %[[V_5]] : f32
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_20:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : f32
++  ! CHECK:       %[[V_21:[0-9]+]] = fir.if %[[V_20]] -> (f32) {
++  ! CHECK:         %[[V_22:[0-9]+]] = arith.select %[[V_11]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f32
++  ! CHECK:         %[[V_23:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_23]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_22]] : f32
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_22:[0-9]+]] = arith.subi %[[V_12]], %c1{{.*}} : i32
++  ! CHECK-DAG:     %[[V_23:[0-9]+]] = arith.addi %[[V_12]], %c1{{.*}} : i32
++  ! CHECK:         %[[V_24:[0-9]+]] = arith.select %[[V_15]], %[[V_23]], %[[V_22]] : i32
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.bitcast %[[V_24]] : i32 to f32
++  ! CHECK:         %[[V_26:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 516 : i32}> : (f32) -> i1
++  ! CHECK:         fir.if %[[V_26]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_27:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 144 : i32}> : (f32) -> i1
++  ! CHECK:         fir.if %[[V_27]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_25]] : f32
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_21]] : f32
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_19]] to %[[V_2]] : !fir.ref<f32>
++  ! CHECK:     return
++  ! CHECK:   }
++subroutine nearest_test3(x, s)
++  real :: x, s, res
++  res = nearest(x, s)
++end
++
++! CHECK-LABEL: c.func @_QPnearest_test4
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca f64 {bindc_name = "res", uniq_name = "_QFnearest_test4Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test4Eres"} : (!fir.ref<f64>) -> !fir.ref<f64>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test4Es"} : (!fir.ref<f64>, !fir.dscope) -> !fir.ref<f64>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test4Ex"} : (!fir.ref<f64>, !fir.dscope) -> !fir.ref<f64>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<f64>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<f64>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (f64) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (f64) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = arith.bitcast %[[V_6]] : f64 to i64
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.shrui %[[V_9]], %c63{{.*}} : i64
++  ! CHECK:     %[[V_11:[0-9]+]] = arith.cmpi ne, %[[V_10]], %c1{{.*}} : i64
++  ! CHECK:     %[[V_12:[0-9]+]] = arith.bitcast %[[V_5]] : f64 to i64
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.shrui %[[V_12]], %c63{{.*}} : i64
++  ! CHECK:     %[[V_14:[0-9]+]] = fir.convert %[[V_13]] : (i64) -> i1
++  ! CHECK:     %[[V_15:[0-9]+]] = arith.cmpi ne, %[[V_11]], %[[V_14]] : i1
++  ! CHECK:     %[[V_16:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (f64) -> i1
++  ! CHECK:     %[[V_17:[0-9]+]] = arith.andi %[[V_16]], %[[V_15]] : i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.ori %[[V_7]], %[[V_17]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = fir.if %[[V_18]] -> (f64) {
++  ! CHECK:       fir.result %[[V_5]] : f64
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_20:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : f64
++  ! CHECK:       %[[V_21:[0-9]+]] = fir.if %[[V_20]] -> (f64) {
++  ! CHECK:         %[[V_22:[0-9]+]] = arith.select %[[V_11]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f64
++  ! CHECK:         %[[V_23:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_23]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_22]] : f64
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_22:[0-9]+]] = arith.subi %[[V_12]], %c1{{.*}} : i64
++  ! CHECK-DAG:     %[[V_23:[0-9]+]] = arith.addi %[[V_12]], %c1{{.*}} : i64
++  ! CHECK:         %[[V_24:[0-9]+]] = arith.select %[[V_15]], %[[V_23]], %[[V_22]] : i64
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.bitcast %[[V_24]] : i64 to f64
++  ! CHECK:         %[[V_26:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 516 : i32}> : (f64) -> i1
++  ! CHECK:         fir.if %[[V_26]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_27:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 144 : i32}> : (f64) -> i1
++  ! CHECK:         fir.if %[[V_27]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_25]] : f64
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_21]] : f64
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_19]] to %[[V_2]] : !fir.ref<f64>
++  ! CHECK:     return
++  ! CHECK:   }
++subroutine nearest_test4(x, s)
++  real(kind=8) :: x, s, res
++  res = nearest(x, s)
++end
++
++! CHECK-LABEL: c.func @_QPnearest_test5
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca f80 {bindc_name = "res", uniq_name = "_QFnearest_test5Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test5Eres"} : (!fir.ref<f80>) -> !fir.ref<f80>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test5Es"} : (!fir.ref<f80>, !fir.dscope) -> !fir.ref<f80>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test5Ex"} : (!fir.ref<f80>, !fir.dscope) -> !fir.ref<f80>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<f80>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<f80>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (f80) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (f80) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = arith.bitcast %[[V_6]] : f80 to i80
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.shrui %[[V_9]], %c79{{.*}} : i80
++  ! CHECK:     %[[V_11:[0-9]+]] = arith.cmpi ne, %[[V_10]], %c1{{.*}} : i80
++  ! CHECK:     %[[V_12:[0-9]+]] = arith.bitcast %[[V_5]] : f80 to i80
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.shrui %[[V_12]], %c79{{.*}} : i80
++  ! CHECK:     %[[V_14:[0-9]+]] = fir.convert %[[V_13]] : (i80) -> i1
++  ! CHECK:     %[[V_15:[0-9]+]] = arith.cmpi ne, %[[V_11]], %[[V_14]] : i1
++  ! CHECK:     %[[V_16:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (f80) -> i1
++  ! CHECK:     %[[V_17:[0-9]+]] = arith.andi %[[V_16]], %[[V_15]] : i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.ori %[[V_7]], %[[V_17]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = fir.if %[[V_18]] -> (f80) {
++  ! CHECK:       fir.result %[[V_5]] : f80
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_20:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : f80
++  ! CHECK:       %[[V_21:[0-9]+]] = fir.if %[[V_20]] -> (f80) {
++  ! CHECK:         %[[V_22:[0-9]+]] = arith.select %[[V_11]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f80
++  ! CHECK:         %[[V_23:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_23]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_22]] : f80
++  ! CHECK:       } else {
++  ! CHECK:         %[[V_22:[0-9]+]] = fir.call @_FortranANearest10(%[[V_5]], %[[V_11]]) fastmath<contract> : (f80, i1) -> f80
++  ! CHECK:         fir.result %[[V_22]] : f80
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_21]] : f80
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_19]] to %[[V_2]] : !fir.ref<f80>
++  ! CHECK:     return
++  ! CHECK:   }
++subroutine nearest_test5(x, s)
++  real(kind=10) :: x, s, res
++  res = nearest(x, s)
++end
++
++! CHECK-LABEL: c.func @_QPnearest_test6
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca f128 {bindc_name = "res", uniq_name = "_QFnearest_test6Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test6Eres"} : (!fir.ref<f128>) -> !fir.ref<f128>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test6Es"} : (!fir.ref<f128>, !fir.dscope) -> !fir.ref<f128>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test6Ex"} : (!fir.ref<f128>, !fir.dscope) -> !fir.ref<f128>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<f128>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<f128>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (f128) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (f128) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = arith.bitcast %[[V_6]] : f128 to i128
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.shrui %[[V_9]], %c127{{.*}} : i128
++  ! CHECK:     %[[V_11:[0-9]+]] = arith.cmpi ne, %[[V_10]], %c1{{.*}} : i128
++  ! CHECK:     %[[V_12:[0-9]+]] = arith.bitcast %[[V_5]] : f128 to i128
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.shrui %[[V_12]], %c127{{.*}} : i128
++  ! CHECK:     %[[V_14:[0-9]+]] = fir.convert %[[V_13]] : (i128) -> i1
++  ! CHECK:     %[[V_15:[0-9]+]] = arith.cmpi ne, %[[V_11]], %[[V_14]] : i1
++  ! CHECK:     %[[V_16:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (f128) -> i1
++  ! CHECK:     %[[V_17:[0-9]+]] = arith.andi %[[V_16]], %[[V_15]] : i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.ori %[[V_7]], %[[V_17]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = fir.if %[[V_18]] -> (f128) {
++  ! CHECK:       fir.result %[[V_5]] : f128
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_20:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : f128
++  ! CHECK:       %[[V_21:[0-9]+]] = fir.if %[[V_20]] -> (f128) {
++  ! CHECK:         %[[V_22:[0-9]+]] = arith.select %[[V_11]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f128
++  ! CHECK:         %[[V_23:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_23]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_22]] : f128
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_22:[0-9]+]] = arith.subi %[[V_12]], %c1{{.*}} : i128
++  ! CHECK-DAG:     %[[V_23:[0-9]+]] = arith.addi %[[V_12]], %c1{{.*}} : i128
++  ! CHECK:         %[[V_24:[0-9]+]] = arith.select %[[V_15]], %[[V_23]], %[[V_22]] : i128
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.bitcast %[[V_24]] : i128 to f128
++  ! CHECK:         %[[V_26:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 516 : i32}> : (f128) -> i1
++  ! CHECK:         fir.if %[[V_26]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_27:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_25]]) <{bit = 144 : i32}> : (f128) -> i1
++  ! CHECK:         fir.if %[[V_27]] {
++  ! CHECK:           %[[V_28:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_28]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_25]] : f128
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_21]] : f128
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_19]] to %[[V_2]] : !fir.ref<f128>
++  ! CHECK:     return
++  ! CHECK:   }
++subroutine nearest_test6(x, s)
++  real(kind=16) :: x, s, res
++  res = nearest(x, s)
++end
++
++! CHECK-LABEL: c.func @_QPnearest_test7
++  ! CHECK:     %[[V_0:[0-9]+]] = fir.dummy_scope : !fir.dscope
++  ! CHECK:     %[[V_1:[0-9]+]] = fir.alloca f128 {bindc_name = "res", uniq_name = "_QFnearest_test7Eres"}
++  ! CHECK:     %[[V_2:[0-9]+]] = fir.declare %[[V_1]] {uniq_name = "_QFnearest_test7Eres"} : (!fir.ref<f128>) -> !fir.ref<f128>
++  ! CHECK:     %[[V_3:[0-9]+]] = fir.declare %arg1 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test7Es"} : (!fir.ref<f32>, !fir.dscope) -> !fir.ref<f32>
++  ! CHECK:     %[[V_4:[0-9]+]] = fir.declare %arg0 dummy_scope %[[V_0]] {uniq_name = "_QFnearest_test7Ex"} : (!fir.ref<f128>, !fir.dscope) -> !fir.ref<f128>
++  ! CHECK:     %[[V_5:[0-9]+]] = fir.load %[[V_4]] : !fir.ref<f128>
++  ! CHECK:     %[[V_6:[0-9]+]] = fir.load %[[V_3]] : !fir.ref<f32>
++  ! CHECK:     %[[V_7:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 3 : i32}> : (f128) -> i1
++  ! CHECK:     %[[V_8:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_6]]) <{bit = 96 : i32}> : (f32) -> i1
++  ! CHECK:     fir.if %[[V_8]] {
++  ! CHECK:       fir.call @_FortranAReportFatalUserError
++  ! CHECK:     }
++  ! CHECK:     %[[V_9:[0-9]+]] = arith.bitcast %[[V_6]] : f32 to i32
++  ! CHECK:     %[[V_10:[0-9]+]] = arith.shrui %[[V_9]], %c31{{.*}} : i32
++  ! CHECK:     %[[V_11:[0-9]+]] = fir.convert %[[V_10]] : (i32) -> i128
++  ! CHECK:     %[[V_12:[0-9]+]] = arith.cmpi ne, %[[V_11]], %c1{{.*}} : i128
++  ! CHECK:     %[[V_13:[0-9]+]] = arith.bitcast %[[V_5]] : f128 to i128
++  ! CHECK:     %[[V_14:[0-9]+]] = arith.shrui %[[V_13]], %c127{{.*}} : i128
++  ! CHECK:     %[[V_15:[0-9]+]] = fir.convert %[[V_14]] : (i128) -> i1
++  ! CHECK:     %[[V_16:[0-9]+]] = arith.cmpi ne, %[[V_12]], %[[V_15]] : i1
++  ! CHECK:     %[[V_17:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_5]]) <{bit = 516 : i32}> : (f128) -> i1
++  ! CHECK:     %[[V_18:[0-9]+]] = arith.andi %[[V_17]], %[[V_16]] : i1
++  ! CHECK:     %[[V_19:[0-9]+]] = arith.ori %[[V_7]], %[[V_18]] : i1
++  ! CHECK:     %[[V_20:[0-9]+]] = fir.if %[[V_19]] -> (f128) {
++  ! CHECK:       fir.result %[[V_5]] : f128
++  ! CHECK:     } else {
++  ! CHECK:       %[[V_21:[0-9]+]] = arith.cmpf oeq, %[[V_5]], %cst{{[_0-9]*}} fastmath<contract> : f128
++  ! CHECK:       %[[V_22:[0-9]+]] = fir.if %[[V_21]] -> (f128) {
++  ! CHECK:         %[[V_23:[0-9]+]] = arith.select %[[V_12]], %cst{{[_0-9]*}}, %cst{{[_0-9]*}} : f128
++  ! CHECK:         %[[V_24:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                            fir.call @feraiseexcept(%[[V_24]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         fir.result %[[V_23]] : f128
++  ! CHECK:       } else {
++  ! CHECK-DAG:     %[[V_23:[0-9]+]] = arith.subi %[[V_13]], %c1{{.*}} : i128
++  ! CHECK-DAG:     %[[V_24:[0-9]+]] = arith.addi %[[V_13]], %c1{{.*}} : i128
++  ! CHECK:         %[[V_25:[0-9]+]] = arith.select %[[V_16]], %[[V_24]], %[[V_23]] : i128
++  ! CHECK:         %[[V_26:[0-9]+]] = arith.bitcast %[[V_25]] : i128 to f128
++  ! CHECK:         %[[V_27:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_26]]) <{bit = 516 : i32}> : (f128) -> i1
++  ! CHECK:         fir.if %[[V_27]] {
++  ! CHECK:           %[[V_29:[0-9]+]] = fir.call @_FortranAMapException(%c40{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_29]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         %[[V_28:[0-9]+]] = "llvm.intr.is.fpclass"(%[[V_26]]) <{bit = 144 : i32}> : (f128) -> i1
++  ! CHECK:         fir.if %[[V_28]] {
++  ! CHECK:           %[[V_29:[0-9]+]] = fir.call @_FortranAMapException(%c48{{.*}}) fastmath<contract> : (i32) -> i32
++  ! CHECK:                              fir.call @feraiseexcept(%[[V_29]]) fastmath<contract> : (i32) -> i32
++  ! CHECK:         }
++  ! CHECK:         fir.result %[[V_26]] : f128
++  ! CHECK:       }
++  ! CHECK:       fir.result %[[V_22]] : f128
++  ! CHECK:     }
++  ! CHECK:     fir.store %[[V_20]] to %[[V_2]] : !fir.ref<f128>
++  ! CHECK:     return
++  ! CHECK:   }
++subroutine nearest_test7(x, s)
++  real(kind=16) :: x, res
++  real :: s
++  res = nearest(x, s)
++end
+diff --git a/flang/unittests/Optimizer/Builder/Runtime/NumericTest.cpp b/flang/unittests/Optimizer/Builder/Runtime/NumericTest.cpp
+index becaa3c69f6c..47342da07f06 100644
+--- a/flang/unittests/Optimizer/Builder/Runtime/NumericTest.cpp
++++ b/flang/unittests/Optimizer/Builder/Runtime/NumericTest.cpp
+@@ -56,14 +56,6 @@ void testGenNearest(fir::FirOpBuilder &builder, mlir::Type xType,
+   mlir::Value s = builder.create<fir::UndefOp>(loc, sType);
+   mlir::Value nearest = fir::runtime::genNearest(builder, loc, x, s);
+   checkCallOp(nearest.getDefiningOp(), fctName, 2, /*addLocArg=*/false);
+-  auto callOp = mlir::dyn_cast<fir::CallOp>(nearest.getDefiningOp());
+-  mlir::Value select = callOp.getOperands()[1];
+-  EXPECT_TRUE(mlir::isa<mlir::arith::SelectOp>(select.getDefiningOp()));
+-  auto selectOp = mlir::dyn_cast<mlir::arith::SelectOp>(select.getDefiningOp());
+-  mlir::Value cmp = selectOp.getCondition();
+-  EXPECT_TRUE(mlir::isa<mlir::arith::CmpFOp>(cmp.getDefiningOp()));
+-  auto cmpOp = mlir::dyn_cast<mlir::arith::CmpFOp>(cmp.getDefiningOp());
+-  EXPECT_EQ(s, cmpOp.getLhs());
+ }
+ 
+ TEST_F(RuntimeCallTest, genNearestTest) {

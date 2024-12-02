@@ -1,5 +1,5 @@
 context:
-  version: 17.0.4
+  version: 19.1.4
 
 package:
   name: llvm
@@ -8,12 +8,13 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version
     }}.tar.gz
-  sha256: 46200b79f52a02fe26d0a43fd856ab6ceff49ab2a0b7c240ac4b700a6ada700c
+  sha256: 010e1fd3cabee8799bd2f8a6fbc68f28207494f315cf9da7057a2820f79fd531
   patches:
   - patches/cross_compile.patch
+  - patches/skip_undefined_symbols_at_link_step.patch
 
 build:
-  number: 6
+  number: 2
 
 requirements:
   build:
@@ -22,11 +23,21 @@ requirements:
   - cmake
   - make    # [unix]
 
+tests:
+- package_contents:
+    files:
+    - lib/cmake/llvm/LLVMConfig.cmake
+    - lib/cmake/clang/ClangConfig.cmake
+    - lib/cmake/lld/LLDConfig.cmake
+    - lib/liblldWasm.a
+    - lib/libclangInterpreter.a
+
 about:
   license: Apache-2.0 WITH LLVM-exception
   license_family: Apache
   license_file: LICENSE.TXT
-  summary: llvm
+  summary: The LLVM Project is a collection of modular and reusable compiler and toolchain
+    technologies.
   homepage: https://llvm.org
 extra:
   recipe-maintainers:

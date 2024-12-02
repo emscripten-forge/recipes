@@ -1,5 +1,5 @@
 context:
-  version: '1.25.2'
+  version: 2.1.3
   cross_target_plattform: emscripten-wasm32
   target_plattform: emscripten-wasm32
 
@@ -7,34 +7,35 @@ package:
   name: numpy
   version: ${{ version }}
 source:
-  url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{ version }}.tar.gz
-  sha256: fd608e19c8d7c55021dffd43bfe5492fab8cc105cc8986f813f8c3c048b38760
+  url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{
+    version }}.tar.gz
+  sha256: aa08e04e08aaf974d4458def539dece0d28146d866a39da5639596f4921fd761
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - cross-python_emscripten-wasm32
-    - cython
-    - setuptools >=68.0
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_${{target_platform}}
+  - cython
+  - meson-python
+  - ninja >=1.8.2
+  - pip >=24.0
   host:
-    - python
+  - python
   run:
-    - python
-
+  - python
 
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester >= 0.9.0
-      run:
-        - pytester-run >= 0.9.0
-    files:
-      recipe:
-        - test_numpy.py
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_numpy.py
 
 about:
   homepage: http://numpy.org/
@@ -44,4 +45,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

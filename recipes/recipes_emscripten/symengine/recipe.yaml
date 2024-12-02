@@ -1,0 +1,50 @@
+context:
+  name: symengine
+  version: 0.13.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  sha256: f46bcf037529cd1a422369327bf360ad4c7d2b02d0f607a62a5b09c74a55bb59
+  url: https://github.com/symengine/symengine/releases/download/v${{ version }}/symengine-${{
+    version }}.tar.gz
+
+build:
+  number: 0
+  script: |
+    emcmake cmake \
+      -DBUILD_TESTS=OFF \
+      -DBUILD_BENCHMARKS=OFF \
+      -DINTEGER_CLASS=boostmp \
+      -DCMAKE_PREFIX_PATH=$PREFIX \
+      -DCMAKE_INSTALL_PREFIX=$PREFIX \
+      -DCMAKE_INSTALL_LIBDIR=lib \
+      -DBUILD_FOR_DISTRIBUTION=yes \
+      -DBUILD_SHARED_LIBS=no \
+      -DBoost_INCLUDE_DIR=$BUILD_PREFIX/include \
+      .
+    emmake make install
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  - boost-cpp
+
+about:
+  homepage: https://symengine.org/
+  license: MIT
+  license_file: LICENSE
+  summary: A fast symbolic manipulation library, written in C++.
+  description: |
+    SymEngine is a standalone fast C++ symbolic manipulation library.
+    Optional thin wrappers allow usage of the library from other languages.
+  documentation: https://symengine.org/
+  repository: https://github.com/symengine/symengine
+
+extra:
+  recipe-maintainers:
+  - richardotis

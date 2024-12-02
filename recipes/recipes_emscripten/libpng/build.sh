@@ -1,11 +1,28 @@
+# FIXME: libz.so has the wrong magic bytes
+rm $PREFIX/lib/libz.so*
+
 # Get an updated config.sub and config.guess
 cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
 
-export CFLAGS="$CFLAGS -I$PREFIX/include -L$PREFIX/lib"
-export CPPFLAGS="$CPPFLAGS -I$PREFIX/include"
+# atomics and bulk-memory are required for cairo
+export CFLAGS="-I$PREFIX/include -matomics -mbulk-memory -fPIC"
+export CPPFLAGS="-I$PREFIX/include"
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 
-emconfigure ./configure --prefix=$PREFIX \
-            --with-zlib-prefix=$PREFIX
+mkdir -p build
+cd build
 
-emmake make -j${CPU_COUNT} ${VERBOSE_AT}
+emconfigure ../configure --prefix=$PREFIX \
+            --with-zlib-prefix=$PREFIX \
+            --disable-shared
+# NOTE: to enable shared, the -shared flag needs to be replaced with SIDE_MODULE
+
+emmake make -j${CPU_COUNT}
 emmake make install
+
+# Not packaging any shared libraries
+rm $PREFIX/lib/libpng*.la
+
+# Copy wasm files
+cp pngfix.wasm $PREFIX/bin/
+cp png-fix-itxt.wasm $PREFIX/bin/

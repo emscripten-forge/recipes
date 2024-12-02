@@ -1,6 +1,6 @@
 context:
   name: lfortran
-  version: 0.35.0
+  version: 0.42.0
 
 package:
   name: ${{ name }}
@@ -9,10 +9,10 @@ package:
 source:
   url: https://github.com/lfortran/lfortran/releases/download/v${{ version }}/${{
     name }}-${{ version }}.tar.gz
-  sha256: 5ecc1ae03067b985943c45f6ec05e9f6e72efd6ad004b052e7a98ba552ff79b0
+  sha256: 3144abce88da2bcfd39e2c5c655b1bc977c429f3e7dae58afbe45c0237f07298
 
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
@@ -20,18 +20,24 @@ requirements:
   - ${{ compiler('cxx') }}
   - cmake
   - make     # [unix]
-  - zlib=1.2.13
+  - zlib=1.3.1
   - lfortran=${{ version }}
-    # - xeus =3.0.5       # [build_platform != target_platform]
-    # - xeus-zmq =1.0.2   # [build_platform != target_platform]
+    # - xeus =5.1.0      # [build_platform != target_platform]
+    # - xeus-zmq =3.0.0   # [build_platform != target_platform]
     # - llvmdev =16.0.6   # [build_platform != target_platform]
-    # - xtl               # [build_platform != target_platform]
-    # - nlohmann_json =3.11.2     # [build_platform != target_platform]
-    # - cppzmq            # [build_platform != target_platform]
+    # - nlohmann_json =3.11.3     # [build_platform != target_platform]
     # - zlib              # [build_platform != target_platform]
     # - zstd-static =1.5.5  # [build_platform != target_platform]
   host:
   - zlib
+
+tests:
+- script:
+  - test -f ${PREFIX}/lib/liblfortran_runtime.a
+  - node ${PREFIX}/bin/test_lfortran.js
+  requirements:
+    build:
+    - nodejs
 
 about:
   license: BSD-3-Clause

@@ -1,17 +1,16 @@
 context:
-  version: 2.0.0
+  version: 2.4.0
   name: pyjs
 package:
   name: ${{name}}
   version: ${{ version }}
-
+    
 source:
-- url: 
-    https://github.com/emscripten-forge/${{name}}/archive/refs/tags/${{version}}.tar.gz
-  sha256: 668f36da03ab81d35850205c47e96e1c08afc20559d72dc3c734bba2c678b826
-
+  url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
+  sha256:   f99ccde0b025efe76dd21243534660f231881fdff969b811b215406096a9488e
 build:
-  number: 1
+  number: 0
+
 
 requirements:
   build:
@@ -20,12 +19,58 @@ requirements:
   - cmake
   - make
   host:
-  - python
+  - python<3.12
   - sqlite
   - zlib
+  - zstd
   - bzip2
   - libffi
-  - pybind11
+  - pybind11<2.12.0
+
+tests:
+  - script: |
+      echo "install playwright"
+      playwright install
+      echo "test in browser (main thread)"
+      pyjs_code_runner run script \
+          browser-main \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+      # worker
+      echo "test in browser (worker thread)"
+      pyjs_code_runner run script \
+          browser-worker \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+
+    requirements:
+      build:      
+          - pytester
+          - if: build_platform == "linux-64"
+            then:
+              - pyjs_code_runner >=3.0.0
+              - microsoft::playwright <1.42
+            else:
+              - pyjs_code_runner >=3.0.0
+              - microsoft::playwright
+      run:
+        - pytest
+        - numpy<2
+        - python<3.12
+    files:
+      source:
+        - tests/**/*
+
 
 about:
   license: BSD-3-Clause

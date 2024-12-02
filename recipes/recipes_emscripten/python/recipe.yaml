@@ -1,40 +1,31 @@
 context:
   version: 3.11.3
-  pyodide_version: 0.24.0
   name: python
 package:
   name: ${{name}}
   version: ${{ version }}
 
 source:
-- url: https://github.com/pyodide/pyodide/archive/refs/tags/${{pyodide_version}}.tar.gz
-  sha256: c8350c4780be44fe763a66f5024197025b0f8740cc4a7c9ad833a89c69916276
+- url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
+  sha256: 8a5db99c961a7ecf27c75956189c9602c968751f11dbeae2b900dbff1c085b5e
 
 build:
-  number: 24
-  string: h_hash_24_cpython
+  number: 25
+  string: h_hash_25_cpython
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - ${{ compiler("c") }}
-  - python=3.11
-  - nodejs
-  - ccache
-  - f2c
-  - pkg-config
-  - swig
   - make
-  - cmake
-  - pkg-config
-  - texinfo
-  - autoconf
-  - automake
-  - libtool
-  - patch   # only needed on MacOS
-  - sed   # only needed on MacOS
-  - wget
 
+tests:
+  - script:
+    - test -f $PREFIX/include/python3.11/Python.h
+    - test -f $PREFIX/lib/python3.11/enum.py
+    - test -f $PREFIX/lib/python3.11/ast.py
+    - test -f $PREFIX/lib/libpython3.11.a
+    - test -f $PREFIX/bin/python3.11
 
 about:
   license: Python-2.0
@@ -52,3 +43,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - KGB99

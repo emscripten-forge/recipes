@@ -23,7 +23,7 @@ class CannotHandleRecipeException(Exception):
         super().__init__(f"Cannot handle recipe in {recipe_dir}: {msg}")
 
 
-def get_new_version(recipe_file, is_ratler):
+def get_new_version(recipe_file):
     # read the file
     with open(recipe_file) as file:
         recipe = YAML().load(file)
@@ -61,18 +61,11 @@ def get_new_version(recipe_file, is_ratler):
     if 'sha256' not in source:
         raise CannotHandleRecipeException(recipe_file, "No sha256 in source")
     
-    # check that the url is a template
-    if is_ratler:
-        if "${{" not in url_template or "}}" not in url_template:
+
+    if "${{" not in url_template or "}}" not in url_template:
             raise CannotHandleRecipeException(recipe_file, "url is not a template")
-    else:
-        if "{{" not in url_template or "}}" not in url_template:
-            raise CannotHandleRecipeException(recipe_file, "url is not a template")
-    
-    if is_ratler:
-        environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
-    else:
-        environment = jinja2.Environment(trim_blocks=True,variable_start_string='{{', variable_end_string='}}')
+ 
+    environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
 
     # get name from dir
     name = recipe_file.parent.name
@@ -127,15 +120,19 @@ def bump_recipe_version(recipe_dir):
     current_version = None
     new_version = None
     new_sha256 = None
-    for  recipe_fname, is_rattler in  recipe_locations:
-        if (recipe_dir / recipe_fname).exists():
-            recipe_file = recipe_dir / recipe_fname
-            cv, nv, h = get_new_version(recipe_file, is_ratler=is_rattler)
-            if nv is not None:
-                new_version = nv
-                current_version = cv
-                new_sha256 = h
-                break
+
+
+    recipe_fname = 'recipe.yaml'
+    if (recipe_dir / recipe_fname).exists():
+        recipe_file = recipe_dir / recipe_fname
+        cv, nv, h = get_new_version(recipe_file)
+        if nv is not None:
+            new_version = nv
+            current_version = cv
+            new_sha256 = h
+    else:
+        return False, None, None
+            
 
     # no new version found -- nothing to do
     if new_version is None:
@@ -144,12 +141,15 @@ def bump_recipe_version(recipe_dir):
     # use the last directory in the path as the branch name
     name = recipe_dir.name
 
-    # check if the recipe has test_.py files
-    # if it does, we can mark the PR as automerge
-    test_files = [f for f in recipe_dir.iterdir() if f.name.startswith("test_") and f.name.endswith(".py")]
-    automerge = len(test_files) > 0
+    # check if the recipe has test section
+    # load recipe
+    automerge = False
+    with open(recipe_file) as file:
+        recipe = YAML().load(file)
+        if 'tests' in recipe:
+            automerge = True
 
-
+        
     branch_name = f"bump-{name}_{current_version}_to_{new_version}"
 
 
@@ -169,7 +169,7 @@ def bump_recipe_version(recipe_dir):
     return True , current_version, new_version
 
            
-def try_to_merge_pr(pr):
+def try_to_merge_pr(pr, recipe_dir=None):
 
     passed = subprocess.run(
         ['gh', 'pr', 'checks', str(pr)],
@@ -188,7 +188,20 @@ def try_to_merge_pr(pr):
         # Pin recipe maintainer? Or add assignee?
         subprocess.check_output(['gh', 'pr', 'edit', str(pr), '--add-label', 'Needs Human Review'])
 
-        message = 'Either the CI is failing, or the recipe is not tested. I need help from a human.'
+        maintainers = []
+        if recipe_dir is not None:
+            with open(Path(recipe_dir)/"recipe.yaml") as file:
+                recipe = YAML().load(file) 
+                if 'extra' in recipe:
+                    if 'recipe-maintainers' in recipe['extra']:
+                        maintainers = recipe['extra']['recipe-maintainers']
+
+        message = """Either the CI is failing, or the recipe is not tested. I need help from a human."""
+        if maintainers:
+            message += "\nPing the maintainers: "
+            for maintainer in maintainers:
+                message += f"@{maintainer} "
+            message += "\nIf you believe you are wrongly pinned, please comment here or open a PR removing you from the maintainers list."
 
         try:
             # Running edit-last in case there was already a comment, we don't want to spam with comments
@@ -241,16 +254,19 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
             ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
         ).decode('utf-8').split('\n')
 
+        all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
+        # map from folder names to recipe-dir
+        recipe_name_to_recipe_dir = {recipe.name: recipe for recipe in all_recipes}
+
+
         prs_id = [line.split()[0] for line in prs if line]
         prs_packages = [line.split()[2] for line in prs if line]
 
         # Merge PRs if possible
-        for pr in prs_id:
-            try_to_merge_pr(pr)
-
-        
-        all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
-  
+        for pr,pr_pkg in zip(prs_id, prs_packages):
+            # get the recipe dir
+            recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
+            try_to_merge_pr(pr, recipe_dir=recipe_dir)
 
         # only recipes for which there is no opened PR
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]

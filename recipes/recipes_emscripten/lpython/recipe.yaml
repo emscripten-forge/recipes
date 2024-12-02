@@ -1,0 +1,52 @@
+context:
+  name: lpython
+  version: 0.22.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/lcompilers/lpython/releases/download/v${{ version }}/${{
+    name }}-${{ version }}.tar.gz
+  sha256: 9dcfe113cd95366ca8e6e7f23e13a60b666243f93e44179a641c6c30f8a02afa
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - make     # [unix]
+  - zlib=1.3.1
+    # - xeus =5.1.0       # [build_platform != target_platform]
+    # - xeus-zmq =3.0.0   # [build_platform != target_platform]
+    # - llvmdev =16.0.6   # [build_platform != target_platform]
+    # - nlohmann_json =3.11.3     # [build_platform != target_platform]
+    # - zlib              # [build_platform != target_platform]
+    # - zstd-static =1.5.5  # [build_platform != target_platform]
+  host:
+  - zlib
+
+tests:
+- script:
+    - node ${PREFIX}/bin/test_lpython.js
+  requirements:
+    build:
+      - nodejs
+
+about:
+  homepage: https://lpython.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Modern interactive LLVM-based Python compiler
+  repository: https://github.com/lcompilers/lpython.git
+
+extra:
+  recipe-maintainers:
+  - certik
+  - anutosh491
+  - Shaikh-Ubaid

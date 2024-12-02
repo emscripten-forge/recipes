@@ -1,0 +1,41 @@
+context:
+  version: 5.2.13
+
+package:
+  name: xz
+  version: ${{ version }}
+
+source:
+  url: http://downloads.sourceforge.net/project/lzmautils/xz-${{ version }}.tar.bz2
+  sha256: 620cdbfc31adbc7e3e5cd8c3c3aa9ffed9335f0ddc42719cf9afce5136a978c1
+
+build:
+  number: 1
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - make
+  - automake
+  - libtool
+
+tests:
+- script:
+  - test -f $PREFIX/lib/liblzma.a
+  - test -f $PREFIX/include/lzma.h
+  - node $PREFIX/bin/xz --version
+  requirements:
+    build:
+    - nodejs
+
+about:
+  homepage: http://tukaani.org/xz/
+  license: LGPL-2.1 AND GPL-2.0
+  license_file: COPYING
+  summary: Data compression software with high compression ratio
+  description: |
+    XZ Utils is free general-purpose data compression software with a high
+    compression ratio. XZ Utils were written for POSIX-like systems, but also
+    work on some not-so-POSIX systems.
+  documentation: http://tukaani.org/xz/
+  repository: http://git.tukaani.org/
