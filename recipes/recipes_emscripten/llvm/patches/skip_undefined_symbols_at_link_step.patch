@@ -11,41 +11,19 @@ index 7954cde36588..dbd61f0b8b1e 100644
    llvm::Expected<llvm::orc::ExecutorAddr>
    getSymbolAddress(llvm::StringRef Name, SymbolNameKind NameKind) const;
  
-diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
-index b4882ab5d223..985d0b7c0ef3 100644
---- a/clang/lib/Interpreter/Interpreter.cpp
-+++ b/clang/lib/Interpreter/Interpreter.cpp
-@@ -192,8 +192,8 @@ IncrementalCompilerBuilder::CreateCpp() {
- #ifdef __EMSCRIPTEN__
-   Argv.push_back("-target");
-   Argv.push_back("wasm32-unknown-emscripten");
--  Argv.push_back("-pie");
-   Argv.push_back("-shared");
-+  Argv.push_back("-fvisibility=default");
- #endif
-   Argv.insert(Argv.end(), UserArgs.begin(), UserArgs.end());
- 
 diff --git a/clang/lib/Interpreter/Wasm.cpp b/clang/lib/Interpreter/Wasm.cpp
-index 1001410aa0f2..56d215d00f58 100644
+index 1001410aa0f2..ef0b54d7884b 100644
 --- a/clang/lib/Interpreter/Wasm.cpp
 +++ b/clang/lib/Interpreter/Wasm.cpp
-@@ -72,13 +72,12 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
-   OutputFile.close();
- 
-   std::vector<const char *> LinkerArgs = {"wasm-ld",
--                                          "-pie",
-+                                          "-shared",
-                                           "--import-memory",
-                                           "--no-entry",
--                                          "--export-all",
+@@ -79,6 +79,7 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
                                            "--experimental-pic",
--                                          "--no-export-dynamic",
+                                           "--no-export-dynamic",
                                            "--stack-first",
 +                                          "--allow-undefined",
                                            OutputFileName.c_str(),
                                            "-o",
                                            OutputFileName.c_str()};
-@@ -109,6 +108,10 @@ llvm::Error WasmIncrementalExecutor::runCtors() const {
+@@ -109,6 +110,10 @@ llvm::Error WasmIncrementalExecutor::runCtors() const {
    return llvm::Error::success();
  }
  
