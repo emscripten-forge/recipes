@@ -9,7 +9,7 @@ export LDFLAGS=""
 
 
 # Configure step
-emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
+cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
     -DCMAKE_BUILD_TYPE=MinSizeRel                   \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
@@ -31,10 +31,10 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
-emmake make -j4
+make -j4
 
 # Install step
-emmake make install
+make install
 
 # Copy all files with ".wasm" extension to $PREFIX/bin
 cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
