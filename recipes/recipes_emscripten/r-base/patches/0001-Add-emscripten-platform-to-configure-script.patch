@@ -1,0 +1,128 @@
+From ae49ea769b4c34444a908655837ddef2db11e823 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 19 Nov 2024 20:48:15 +0100
+Subject: [PATCH 01/12] Add emscripten platform to configure script
+
+Needed to correctly set shlibpath_var=LD_LIBRARY_PATH for emscripten
+and avoid substitution errors in the configure script.
+---
+ configure | 29 +++++++++++++++++++----------
+ 1 file changed, 19 insertions(+), 10 deletions(-)
+
+diff --git a/configure b/configure
+index ca7bd8d..a709af3 100644
+--- a/configure
++++ b/configure
+@@ -11285,7 +11285,7 @@ irix5* | irix6* | nonstopux*)
+   ;;
+ 
+ # This must be glibc/ELF.
+-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+   lt_cv_deplibs_check_method=pass_all
+   ;;
+ 
+@@ -14420,7 +14420,7 @@ lt_prog_compiler_static=
+       lt_prog_compiler_static='-non_shared'
+       ;;
+ 
+-    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+       case $cc_basename in
+       # old Intel for x86_64, which still supported -KPIC.
+       ecc*)
+@@ -16919,7 +16919,7 @@ linux*android*)
+   ;;
+ 
+ # This must be glibc/ELF.
+-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+   version_type=linux # correct to gnu/linux during the next big refactor
+   need_lib_prefix=no
+   need_version=no
+@@ -19071,7 +19071,7 @@ fi
+         inherit_rpath_CXX=yes
+         ;;
+ 
+-      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+         case $cc_basename in
+           KCC*)
+ 	    # Kuck and Associates, Inc. (KAI) C++ Compiler
+@@ -19887,7 +19887,7 @@ lt_prog_compiler_static_CXX=
+ 	    ;;
+ 	esac
+ 	;;
+-      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+ 	case $cc_basename in
+ 	  KCC*)
+ 	    # KAI C++ Compiler
+@@ -20962,7 +20962,7 @@ linux*android*)
+   ;;
+ 
+ # This must be glibc/ELF.
+-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+   version_type=linux # correct to gnu/linux during the next big refactor
+   need_lib_prefix=no
+   need_version=no
+@@ -21834,7 +21834,7 @@ lt_prog_compiler_static_FC=
+       lt_prog_compiler_static_FC='-non_shared'
+       ;;
+ 
+-    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+       case $cc_basename in
+       # old Intel for x86_64, which still supported -KPIC.
+       ecc*)
+@@ -24094,7 +24094,7 @@ linux*android*)
+   ;;
+ 
+ # This must be glibc/ELF.
+-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+   version_type=linux # correct to gnu/linux during the next big refactor
+   need_lib_prefix=no
+   need_version=no
+@@ -29580,11 +29580,14 @@ case "${host_os}" in
+   freebsd*)
+     R_SYSTEM_ABI="freebsd"
+     ;;
++  emscripten*)
++    R_SYSTEM_ABI="emscripten"
++    ;;
+   *)
+     R_SYSTEM_ABI="?"
+     ;;
+ esac
+-if test "${GCC}" = yes; then
++if test "${GCC}" = yes && test "${host_os}" != "emscripten"; then
+   R_SYSTEM_ABI="${R_SYSTEM_ABI},gcc"
+ else
+ case "${host_os}" in
+@@ -29592,17 +29595,23 @@ case "${host_os}" in
+   ## we assume native compilers elsewhere (e.g. for -KPIC), so do so here too.
+   R_SYSTEM_ABI="${R_SYSTEM_ABI},solcc"
+   ;;
++  emscripten*)
++  R_SYSTEM_ABI="${R_SYSTEM_ABI},emcc"
++  ;;
+   *)
+   R_SYSTEM_ABI="${R_SYSTEM_ABI},?"
+ esac
+ fi
+-if test "${GXX}" = yes; then
++if test "${GXX}" = yes && test "${host_os}" != "emscripten"; then
+   R_SYSTEM_ABI="${R_SYSTEM_ABI},gxx"
+ else
+ case "${host_os}" in
+   solaris*)
+   R_SYSTEM_ABI="${R_SYSTEM_ABI},solCC"
+   ;;
++  emscripten*)
++  R_SYSTEM_ABI="${R_SYSTEM_ABI},em++"
++  ;;
+   *)
+   R_SYSTEM_ABI="${R_SYSTEM_ABI},?"
+ esac

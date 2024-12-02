@@ -1,45 +1,53 @@
 context:
-  version: 2.4.8
+  name: expat
+  version: 2.6.4
   ver: ${{ version|replace('.', '_') }}
 
 package:
-  name: expat
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://github.com/libexpat/libexpat/releases/download/R_${{ ver }}/expat-${{
     version }}.tar.bz2
-  sha256: a247a7f6bbb21cf2ca81ea4cbb916bfb9717ca523631675f99b3d4a5678dcd16
+  sha256: 8dc480b796163d4436e6f1352e71800a774f73dbae213f1860b60607d2a83ada
 
 build:
   number: 0
-  # run_exports:
-  #   # changes soname at major versions, default settings OK
-  #   # https://abi-laboratory.pro/tracker/timeline/expat/
-  #   - {{ pin_subpackage('expat') }}
 
 requirements:
   build:
-    # - cmake
   - ninja
-  - make    # [unix]
-  - libtool    # [unix]
+  - make
+  - automake<1.17
+  - libtool
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
-  # host:
-    # - msinttypes  # [win and vc<14]
 
-# test:
-#   commands:
-#     - xmlwf -h
+tests:
+- package_contents:
+    bin:
+    - xmlwf.wasm
+    lib:
+    - libexpat.a
+    include:
+    - expat.h
+- script:
+    - node $PREFIX/bin/xmlwf -h
+  requirements:
+    build:
+      - nodejs
+
 
 about:
   license: MIT
   license_family: MIT
   license_file: COPYING
   summary: Expat XML parser library in C
-
   homepage: http://expat.sourceforge.net/
+  repository: https://github.com/libexpat/libexpat
+
 extra:
   recipe-maintainers:
   - wolfv
+  - IsabelParedes

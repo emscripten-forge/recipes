@@ -1,0 +1,22 @@
+From 4cdc89745924bfcee5264c4eb952ef863030e024 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 20 Nov 2024 18:30:45 +0100
+Subject: [PATCH 07/12] Disable which for emscripten
+
+---
+ src/library/base/R/unix/system.unix.R | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/library/base/R/unix/system.unix.R b/src/library/base/R/unix/system.unix.R
+index 3bb7d0c..a2afcc6 100644
+--- a/src/library/base/R/unix/system.unix.R
++++ b/src/library/base/R/unix/system.unix.R
+@@ -116,7 +116,7 @@ Sys.which <- function(names)
+     res <- character(length(names)); names(res) <- names
+     ## hopefully configure found [/usr]/bin/which
+     which <- "@WHICH@"
+-    if (!nzchar(which)) {
++    if (!nzchar(which) || grepl("emscripten", R.version$os)) {
+         warning("'which' was not found on this platform")
+         return(res)
+     }

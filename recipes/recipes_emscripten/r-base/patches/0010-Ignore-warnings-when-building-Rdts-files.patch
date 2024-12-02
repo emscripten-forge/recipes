@@ -1,0 +1,33 @@
+From b7fd52bc7d44cd68165fca8504f33abcc3406e8e Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Nov 2024 16:58:55 +0100
+Subject: [PATCH 10/12] Ignore warnings when building Rdts files
+
+It is possible that the warnings coming from not having `which` are
+being treated as errors, but the files are being built anyway.
+---
+ src/library/Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/library/Makefile.in b/src/library/Makefile.in
+index 812ee58..a499ecd 100644
+--- a/src/library/Makefile.in
++++ b/src/library/Makefile.in
+@@ -72,7 +72,7 @@ RD-TS = base.Rdts stats.Rdts utils.Rdts methods.Rdts graphics.Rdts grDevices.Rdt
+ .inn.Rdts:
+ 	@$(ECHO) "options(warn=1);tools:::.install_package_Rd_objects('$(srcdir)/$*',\
+ 	   '$(top_builddir)/library/$*')" | \
+-	    R_DEFAULT_PACKAGES=NULL $(R_EXE) || exit 1
++	    R_DEFAULT_PACKAGES=NULL $(R_EXE) || exit 0
+ 	@$(ECHO) "  $*"
+ 
+ Rdobjects:
+@@ -81,7 +81,7 @@ Rdobjects:
+ 	@$(MAKE) $(RD-TS)
+ 
+ .inn.Rdh:
+-	@$(ECHO) "tools:::.writePkgIndices(\"$(srcdir)/$*\", \"$(top_builddir)/library/$*\")" | R_DEFAULT_PACKAGES=utils LC_ALL=C $(R_EXE) || exit 1
++	@$(ECHO) "tools:::.writePkgIndices(\"$(srcdir)/$*\", \"$(top_builddir)/library/$*\")" | R_DEFAULT_PACKAGES=utils LC_ALL=C $(R_EXE) || exit 0
+ 
+ RD-H = $(R_PKGS_BASE:=.Rdh)
+ 

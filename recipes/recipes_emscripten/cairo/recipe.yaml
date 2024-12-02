@@ -1,0 +1,58 @@
+context:
+  name: "cairo"
+  version: 1.18.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: http://cairographics.org/releases/${{ name }}-${{ version }}.tar.xz
+  sha256: 243a0736b978a33dee29f9cca7521733b78a65b5418206fef7bd1c3d4cf10b64
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - meson
+    - ninja
+    - pkg-config
+    - gobject-introspection
+  host:
+    - freetype
+    - fontconfig>=2.12
+    - glib
+    - libpng
+    - pixman
+    - lzo
+    - expat
+    - zlib
+    - libffi
+
+tests:
+- package_contents:
+    lib:
+    - libcairo.a
+    - libcairo-script-interpreter.a
+    include:
+    - cairo/cairo.h
+    - cairo/cairo-svg.h
+
+about:
+  homepage: http://cairographics.org/
+  documentation: https://www.cairographics.org/documentation/
+  license: MPL-1.1 # or LGPL-2.1-only
+  license_file:
+    - COPYING
+    - COPYING-LGPL-2.1
+    - COPYING-MPL-1.1
+  summary: |
+    Cairo is a 2D graphics library with support for multiple output devices.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
+    - anutosh491

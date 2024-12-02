@@ -1,4 +1,4 @@
-# Credids
+# Credits
 
 ## Pyodide
 This project is heavily inspired by the [pyodide](https://pyodide.org/en/stable/) project.

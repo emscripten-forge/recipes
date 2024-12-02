@@ -13,7 +13,7 @@ outputs:
       version: ${{ version }}
 
     build:
-      number: 6
+      number: 11
 
       noarch: python
 
@@ -21,25 +21,26 @@ outputs:
       host:
         - python
       run:
-        - pyjs_code_runner
         - if: linux
           then:
-          - playwright < 1.42
-        - if: osx
-          then: 
-          - playwright
-
+            - pyjs_code_runner >= 3.0.0
+            - microsoft::playwright <1.42
+          else:
+            - pyjs_code_runner >= 3.0.0
+            - microsoft::playwright
 
   - package:
       name: pytester-run
       version: ${{ version }}
     build:
-      number: 6
+      number: 11
       noarch: generic
     requirements:
       run:
         - pyjs
-        - pytest
+        - pytest <8
+        - python <3.12
+        - emscripten-abi==3.1.45
  
 
 about:

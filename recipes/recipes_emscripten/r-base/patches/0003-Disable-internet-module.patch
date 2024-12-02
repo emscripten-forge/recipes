@@ -1,0 +1,40 @@
+From 6cf0957749deb5870b96c420d3a8d26d231fbaf6 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 19 Nov 2024 20:54:59 +0100
+Subject: [PATCH 03/12] Disable internet module
+
+---
+ src/modules/Makefile.in | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/src/modules/Makefile.in b/src/modules/Makefile.in
+index 9ff2a61..05ebf4a 100644
+--- a/src/modules/Makefile.in
++++ b/src/modules/Makefile.in
+@@ -13,23 +13,20 @@ include $(top_builddir)/Makeconf
+ distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+ DISTFILES = Makefile.in Makefile.win
+ 
+-SUBDIRS = X11 internet lapack
++SUBDIRS = X11 lapack
+ 
+-MODULES = internet lapack @BUILD_X11_TRUE@X11
++MODULES = lapack @BUILD_X11_TRUE@X11
+ 
+ all: Makefile R
+ 
+ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+ 	@cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+ 
+-R: Makefile make.internet make.lapack @BUILD_X11_TRUE@make.X11
++R: Makefile make.lapack @BUILD_X11_TRUE@make.X11
+ 
+ make.X11: Makefile
+ 	@(cd X11 && $(MAKE))
+ 
+-make.internet: Makefile
+-	@(cd internet && $(MAKE))
+-
+ make.lapack: Makefile
+ 	@(cd lapack && $(MAKE))
+ 

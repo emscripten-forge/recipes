@@ -1,4 +1,4 @@
-#Installing packages
+# Installing packages
 
 ## Install packages with micromamba
 We recommend using micromamba to install packages from this channel.

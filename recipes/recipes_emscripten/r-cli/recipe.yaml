@@ -1,0 +1,53 @@
+context:
+  version: 3.6.3
+  name: r-cli
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 4295085f11221c54b1dd2b1d39a675a85dfd9f900294297567e1d36f65ac4841
+
+build:
+  number: 1
+  script:
+    - $R CMD INSTALL $R_ARGS --no-byte-compile .
+    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
+    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
+    # The activation script of cross-r-base copies cairo and tcltk from
+    # the build environment.
+
+requirements:
+  build:
+    - cross-r-base >= ${{ r_base_version }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://cli.r-lib.org
+  repository: https://github.com/r-lib/cli
+  license: MIT
+  license_family: MIT
+  summary: |
+   A suite of tools to build attractive command line interfaces ('CLIs'), from semantic elements:
+   headings, lists, alerts, paragraphs, etc. Supports custom themes via a 'CSS'-like language.
+   It also contains a number of lower level 'CLI' elements: rules, boxes, trees, and 'Unicode'
+   symbols with 'ASCII' alternatives. It support ANSI colors and text styles as well.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
+    - anutosh491
