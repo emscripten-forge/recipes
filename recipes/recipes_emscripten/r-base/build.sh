@@ -37,6 +37,7 @@ export SHLIB_EXT=".so"
 export CONFIG_ARGS="--enable-R-static-lib \
 --without-readline  \
 --without-x \
+--with-static-cairo \
 --enable-java=no \
 --enable-R-profiling=no \
 --enable-byte-compiled-packages=no \
@@ -56,7 +57,8 @@ export CONFIG_ARGS="--enable-R-static-lib \
 mkdir -p _build_linux
 pushd _build_linux
 (
-    # export PREFIX=$BUILD_PREFIX
+    export PKG_CONFIG_PATH=$BUILD_PREFIX/lib/pkgconfig
+    export PREFIX=$BUILD_PREFIX
     export CC=gcc
     export CXX=g++
     export FC=flang-new
@@ -102,10 +104,6 @@ pushd _build_wasm
         --build="x86_64-conda-linux-gnu" \
         --host="wasm32-unknown-emscripten" \
         $CONFIG_ARGS
-
-    # NOTE: Remove the -lFortranRuntime from the FLIBS to avoid double-linking
-    # when creating the R binary
-    echo "FLIBS =" >> Makeconf
 
     emmake make -j${CPU_COUNT}
 
