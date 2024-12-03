@@ -26,7 +26,6 @@ cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
     -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
     -DCLANG_ENABLE_ARCMT=OFF                        \
-    -DCLANG_ENABLE_FORMAT=OFF                       \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
