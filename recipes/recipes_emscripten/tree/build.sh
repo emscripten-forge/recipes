@@ -8,7 +8,6 @@ export CONFIG_LDFLAGS="\
     "
 
 emmake make \
-    EXEEXT=.js \
     CFLAGS="$CFLAGS -Os" \
     LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS"
 
