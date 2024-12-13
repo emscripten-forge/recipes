@@ -1,11 +1,7 @@
 context:
   name: r-isoband
   version: 0.2.7
-  r_base_version: 4.4.1
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  r_base_version: 4.4.2
 
 source:
   url:
@@ -14,28 +10,30 @@ source:
   sha256: 7693223343b45b86de2b5b638ff148f0dafa6d7b1237e822c5272902f79cdf61
 
 build:
-  number: 3
-  script:
-    - $R CMD INSTALL $R_ARGS --no-byte-compile .
-    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
-    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
-    # The activation script of cross-r-base copies cairo and tcltk from
-    # the build environment.
+  number: 4
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
 
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
   build:
-    - cross-r-base >= ${{ r_base_version }}
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-  host:
-    - r-base >= ${{ r_base_version }}
-  run:
-    - r-base >= ${{ r_base_version }}
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+    run:
+      - r-base >= ${{ r_base_version }}
 
-tests:
-- package_contents:
-    lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://isoband.r-lib.org/
