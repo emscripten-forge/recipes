@@ -1,0 +1,61 @@
+From db261fc0f078fc3884a1399ffc4efba293825de0 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Nov 2024 16:48:11 +0100
+Subject: [PATCH] Use linux Rscript executable when building the docs
+
+Creating the NEWS files fails even though the command works when testing
+directly. Copying the files from the linux build as a workaround.
+---
+ doc/Makefile.in | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/doc/Makefile.in b/doc/Makefile.in
+index c9e3a73..7865bf7 100644
+--- a/doc/Makefile.in
++++ b/doc/Makefile.in
+@@ -25,6 +25,12 @@ HELP2MAN = perl $(top_srcdir)/tools/help2man.pl
+ 
+ R_EXE = $(top_builddir)/bin/R --vanilla --no-echo
+ 
++R_SCRIPT_EXE = $(top_builddir)/bin/Rscript
++
++ifdef CROSS_COMPILING
++R_SCRIPT_EXE = $(R_SCRIPT_EXECUTABLE)
++endif
++
+ all: Makefile R docs
+ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+ 	@cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+@@ -52,12 +58,12 @@ R.1:
+ Rscript.1:
+ 	@$(HELP2MAN) --no-info --output=Rscript.1 \
+ 	  --name="front end for scripting with R" \
+-	  $(top_builddir)/bin/Rscript
++	  $(R_SCRIPT_EXE)
+ 
+ NEWS.rds: $(srcdir)/NEWS.Rd
+ 	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.Rd\", \
+ 	  macros = \"../share/Rd/macros/system.Rd\"), stages = 'install', warningCalls = FALSE), \
+-	  'NEWS.rds')" | $(R_EXE)
++	  'NEWS.rds')" | $(R_EXE) || cp $(LINUX_BUILD_DIR)/doc/NEWS.rds .
+ 
+ NEWS: NEWS.rds
+ 	@$(ECHO) "creating doc/NEWS"
+@@ -82,7 +88,7 @@ docs3: NEWS.3.rds NEWS.3.html NEWS.3.pdf
+ NEWS.3.rds: $(srcdir)/NEWS.3.Rd
+ 	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.3.Rd\", \
+ 	  macros = \"../share/Rd/macros/system.Rd\"), stages = 'install', warningCalls = FALSE), \
+-	  'NEWS.3.rds')" | $(R_EXE)
++	  'NEWS.3.rds')" | $(R_EXE) || cp $(LINUX_BUILD_DIR)/doc/NEWS.3.rds .
+ 
+ NEWS.3: NEWS.3.rds
+ 	@$(ECHO) "creating NEWS.3"
+@@ -107,7 +113,7 @@ docs2: NEWS.2.rds NEWS.2.html NEWS.2.pdf
+ NEWS.2.rds: $(srcdir)/NEWS.2.Rd
+ 	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.2.Rd\", \
+ 	  macros = \"../share/Rd/macros/system.Rd\"), stages = 'install', warningCalls = FALSE), \
+-	  'NEWS.2.rds')" | $(R_EXE)
++	  'NEWS.2.rds')" | $(R_EXE) || cp $(LINUX_BUILD_DIR)/doc/NEWS.2.rds .
+ 
+ ## NB: this is only the top part of NEWS.2 in the sources.
+ NEWS.2: NEWS.2.rds

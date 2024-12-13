@@ -1,0 +1,26 @@
+From e9a701fc520af1dcf9c35c99a170055c351e2873 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Nov 2024 17:01:35 +0100
+Subject: [PATCH] Use cross_libraries script when cross-compiling
+
+---
+ src/scripts/R.sh.in | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/scripts/R.sh.in b/src/scripts/R.sh.in
+index cdbac8b..61a0fb7 100644
+--- a/src/scripts/R.sh.in
++++ b/src/scripts/R.sh.in
+@@ -252,6 +252,12 @@ done
+ R_binary="${R_HOME}/bin/exec${R_ARCH}/R"
+ export R_ARCH
+ 
++if [ "${CROSS_COMPILING}" = "true" ] && [ -n "${RECIPE_DIR}" ]; then
++  LD_LIBRARY_PATH="${LINUX_BUILD_DIR}/lib:${LD_LIBRARY_PATH}"
++  R_binary="${R_EXECUTABLE}"
++  ${RECIPE_DIR}/cross_libraries.sh --setup ${R_HOME}
++fi
++
+ case "${gui}" in
+ Tk|tk|X11|x11)
+   ;;

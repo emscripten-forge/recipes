@@ -2,11 +2,13 @@
 
 set -ex
 
+export CFLAGS="${CFLAGS} -DCAIRO_NO_MUTEX=1"
+
 meson_config_args=(
     -Dfontconfig=enabled
-    -Dfreetype=disabled
+    -Dfreetype=enabled
     -Dglib=enabled
-    -Dpng=disabled
+    -Dpng=enabled
     -Dxlib=disabled
     -Dxlib-xcb=disabled
     -Dxcb=disabled

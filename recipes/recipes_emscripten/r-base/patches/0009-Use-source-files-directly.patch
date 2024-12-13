@@ -1,0 +1,92 @@
+From 6b2d42bbb8895cb321124814b526fca8aca36433 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Nov 2024 16:57:55 +0100
+Subject: [PATCH] Use source files directly
+
+---
+ share/make/basepkg.mk         | 19 ++++++++++++++-----
+ src/library/tools/Makefile.in | 11 ++++++++---
+ 2 files changed, 22 insertions(+), 8 deletions(-)
+
+diff --git a/share/make/basepkg.mk b/share/make/basepkg.mk
+index c0a69c8..cf1bdd2 100644
+--- a/share/make/basepkg.mk
++++ b/share/make/basepkg.mk
+@@ -1,5 +1,6 @@
+ ## ${R_HOME}/share/make/basepkg.mk
+ 
++toolsdir = $(srcdir)/../tools
+ 
+ .PHONY: front instdirs mkR mkR1 mkR2 mkRbase mkdesc mkdesc2 mkdemos mkdemos2 \
+   mkexec mkman mkpo mksrc mksrc-win mksrc-win2 mkRsimple mklazy mklazycomp \
+@@ -86,11 +87,17 @@ mkRbase:
+ mkdesc:
+ 	@if test -f DESCRIPTION; then \
+ 	  if test "$(PKG_BUILT_STAMP)" != ""; then \
+-	    $(ECHO) "tools:::.install_package_description('.', '$(top_builddir)/library/${pkg}', '$(PKG_BUILT_STAMP)')" | \
++	  	(cat $(toolsdir)/R/admin.R; \
++		 cat $(toolsdir)/R/QC.R; \
++		 cat $(toolsdir)/R/utils.R; \
++	    $(ECHO) ".install_package_description('.', '$(top_builddir)/library/${pkg}', '$(PKG_BUILT_STAMP)')") | \
+ 	    R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null ; \
+ 	  else \
+-	  $(ECHO) "tools:::.install_package_description('.', '$(top_builddir)/library/${pkg}')" | \
+-	  R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null ; \
++	  	(cat $(toolsdir)/R/admin.R; \
++		 cat $(toolsdir)/R/QC.R; \
++		 cat $(toolsdir)/R/utils.R; \
++	  	$(ECHO) ".install_package_description('.', '$(top_builddir)/library/${pkg}')") | \
++	  	R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null ; \
+ 	  fi; \
+ 	fi
+ 
+@@ -127,7 +134,8 @@ mkexec:
+ ## only used if byte-compilation is disabled
+ mklazy:
+ 	@$(INSTALL_DATA) all.R $(top_builddir)/library/$(pkg)/R/$(pkg)
+-	@$(ECHO) "tools:::makeLazyLoading(\"$(pkg)\")" | \
++	@(cat $(toolsdir)/R/makeLazyLoad.R; \
++	  $(ECHO) "makeLazyLoading(\"$(pkg)\")") | \
+ 	  R_DEFAULT_PACKAGES=$(DEFPKGS) LC_ALL=C $(R_EXE) > /dev/null
+ 
+ mklazycomp: $(top_builddir)/library/$(pkg)/R/$(pkg).rdb
+@@ -148,7 +156,8 @@ mksrc-win2:
+ 
+ sysdata: $(srcdir)/R/sysdata.rda
+ 	@$(ECHO) "installing 'sysdata.rda'"
+-	@$(ECHO) "tools:::sysdata2LazyLoadDB(\"$(srcdir)/R/sysdata.rda\",\"$(top_builddir)/library/$(pkg)/R\")" | \
++	@(cat $(toolsdir)/R/makeLazyLoad.R; \
++	  $(ECHO) "sysdata2LazyLoadDB(\"$(srcdir)/R/sysdata.rda\",\"$(top_builddir)/library/$(pkg)/R\")") | \
+ 	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE)
+ 
+ 
+diff --git a/src/library/tools/Makefile.in b/src/library/tools/Makefile.in
+index 786a6d7..7299435 100644
+--- a/src/library/tools/Makefile.in
++++ b/src/library/tools/Makefile.in
+@@ -39,7 +39,10 @@ all: Makefile DESCRIPTION
+ 	  fi \
+ 	fi
+ 	@$(MAKE) sysdata
+-	@$(ECHO) "tools:::.install_package_description('.', '"$(top_builddir)/library/${pkg}"')" | \
++	@(cat $(srcdir)/R/admin.R; \
++	  cat $(srcdir)/R/QC.R; \
++	  cat $(srcdir)/R/utils.R; \
++	  $(ECHO) ".install_package_description('.', '"$(top_builddir)/library/${pkg}"')") | \
+ 	  R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null
+ 
+ mkR: mkR1
+@@ -61,9 +64,11 @@ Rsimple: mkR mkRsimple
+ 
+ Rlazy: mkR mkRsimple
+ 	@$(INSTALL_DATA) all.R $(top_builddir)/library/$(pkg)/R/$(pkg)
+-	@(cat $(srcdir)/R/makeLazyLoad.R; \
++	R_SYSTEM_ABI='@R_SYSTEM_ABI@'
++	$(ECHO) "R_SYSTEM_ABI is ${R_SYSTEM_ABI}"
++	(cat $(srcdir)/R/makeLazyLoad.R; \
+ 	  $(ECHO) "makeLazyLoading(\"$(pkg)\")") | \
+ 	  R_SYSTEM_ABI='@R_SYSTEM_ABI@' \
+-	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE) > /dev/null
++	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE)
+ 
+ Rlazycomp: mkR mkRsimple mklazycomp

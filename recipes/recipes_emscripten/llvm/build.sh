@@ -9,7 +9,7 @@ export LDFLAGS=""
 
 
 # Configure step
-emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
+cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
     -DCMAKE_BUILD_TYPE=MinSizeRel                   \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
@@ -20,16 +20,20 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_INCLUDE_TESTS=OFF                        \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"     \
     -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DLLVM_ENABLE_THREADS=OFF                       \
-    -DCMAKE_CXX_FLAGS="-isystem $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot/include/c++/v1"
+    -DLLVM_ENABLE_ZSTD=OFF                          \
+    -DLLVM_ENABLE_LIBXML2=OFF                       \
+    -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
+    -DCLANG_ENABLE_ARCMT=OFF                        \
+    -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
+    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
-EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j1
+make -j4
 
 # Install step
-emmake make install
+make install
 
 # Copy all files with ".wasm" extension to $PREFIX/bin
 cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin

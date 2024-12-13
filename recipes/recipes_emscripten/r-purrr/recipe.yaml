@@ -1,11 +1,7 @@
 context:
   name: r-purrr
   version: 1.0.2
-  r_base_version: 4.4.1
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  r_base_version: 4.4.2
 
 source:
   url:
@@ -14,42 +10,44 @@ source:
   sha256: 2c1bc6bb88433dff0892b41136f2f5c23573b335ff35a4775c72aa57b48bbb63
 
 build:
-  number: 0
-  script:
-    - $R CMD INSTALL $R_ARGS --no-byte-compile .
-    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
-    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
-    # The activation script of cross-r-base copies cairo and tcltk from
-    # the build environment.
+  number: 2
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
 
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
   build:
-  - cross-r-base >= ${{ r_base_version }}
-  - r-cli >=3.6.3
-  - r-lifecycle >=1.0.4
-  - r-magrittr
-  - r-rlang
-  - r-vctrs
-  - ${{ compiler('c') }}
-  host:
-  - r-base == ${{ r_base_version }}
-  - r-cli >=3.6.3
-  - r-lifecycle >=1.0.4
-  - r-magrittr
-  - r-rlang
-  - r-vctrs
-  run:
-  - r-base == ${{ r_base_version }}
-  - r-cli >=3.6.3
-  - r-lifecycle >=1.0.4
-  - r-magrittr
-  - r-rlang
-  - r-vctrs
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+    - cross-r-base >= ${{ r_base_version }}
+    - r-cli >=3.6.3
+    - r-lifecycle >=1.0.4
+    - r-magrittr
+    - r-rlang
+    - r-vctrs
+    - ${{ compiler('c') }}
+    host:
+    - r-base >= ${{ r_base_version }}
+    - r-cli >=3.6.3
+    - r-lifecycle >=1.0.4
+    - r-magrittr
+    - r-rlang
+    - r-vctrs
+    run:
+    - r-base >= ${{ r_base_version }}
+    - r-cli >=3.6.3
+    - r-lifecycle >=1.0.4
+    - r-magrittr
+    - r-rlang
+    - r-vctrs
 
-tests:
-- package_contents:
-    lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://purrr.tidyverse.org

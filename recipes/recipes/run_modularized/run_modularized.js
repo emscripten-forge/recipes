@@ -8,6 +8,12 @@ async function my_main(){
     const ModuleF = require(binary_js_runner);
     const Module = await ModuleF({
         arguments: process.argv,
+        locateFile: (filename) => {
+            // .wasm and .data files are in the same directory as the module .js file
+            const path = require('path');
+            const directory = path.dirname(binary_js_runner);
+            return path.join(directory, filename);
+        },
         quit: (status, toThrow) => {
             if (already_called) {
                 return;
