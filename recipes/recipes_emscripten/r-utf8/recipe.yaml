@@ -1,11 +1,7 @@
 context:
   name: r-utf8
   version: 1.2.4
-  r_base_version: 4.4.1
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  r_base_version: 4.4.2
 
 source:
   url:
@@ -14,27 +10,29 @@ source:
   sha256: 418f824bbd9cd868d2d8a0d4345545c62151d321224cdffca8b1ffd98a167b7d
 
 build:
-  number: 3
-  script:
-    - $R CMD INSTALL $R_ARGS --no-byte-compile .
-    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
-    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
-    # The activation script of cross-r-base copies cairo and tcltk from
-    # the build environment.
+  number: 4
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
 
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
   build:
-    - cross-r-base >= ${{ r_base_version }}
-    - ${{ compiler('c') }}
-  host:
-    - r-base >= ${{ r_base_version }}
-  run:
-    - r-base >= ${{ r_base_version }}
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+    run:
+      - r-base >= ${{ r_base_version }}
 
-tests:
-- package_contents:
-    lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://ptrckprry.com/r-utf8/
