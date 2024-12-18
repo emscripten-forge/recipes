@@ -10,7 +10,7 @@ LIB=libpython$(PYMAJOR).$(PYMINOR).a
 
 FFIBUILD=$(ROOT)/build/libffi
 LIBFFIREPO=https://github.com/libffi/libffi
-LIBFFI_COMMIT=f08493d249d2067c8b3207ba46693dd858f95db3
+LIBFFI_COMMIT=3d0ce1e6fcf19f853894862abcbac0ae78a7be60
 
 all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a
 

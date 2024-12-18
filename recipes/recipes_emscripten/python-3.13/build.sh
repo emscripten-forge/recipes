@@ -21,7 +21,7 @@ cp ${BUILD}/LICENSE .
 # create a symlink from  $BUILD_PREFIX/bin/python3.11 to $BUILD_PREFIX/bin/python.js
 # since the python build script overwrites the env variable PYTHON to python.js
 # as it assumes this is the correct name for the python binary when building for emscripten.
-# But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python3.11
+# But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python<version_major>.<version_minor>
 ln -s $BUILD_PREFIX/bin/python${PYMAJOR_VERSION} $BUILD_PREFIX/bin/python.js
 
 # create an empty emsdk_env.sh in CONDA_EMSDK_DIR
