@@ -31,7 +31,7 @@ LIBPYTHON_EXTRA_OBJECTS=$$(LIBMPDEC_OBJS) $$(LIBEXPAT_OBJS) $$(LIBHACL_SHA2_OBJS
 $(BUILD)/.patched_makefile:
 	# Clear out libinstall deps (we build what we want explicitly first)
 	cd $(BUILD) && sed -i -e 's/libinstall:.*/libinstall:/' Makefile;
-	# Inject extra objects into libpython3.12.a so we don't have to link them
+	# Inject extra objects into libpython3.13.a so we don't have to link them
 	# separately
 	cd $(BUILD) && sed -i '/MODOBJS=/s/$$/ $(LIBPYTHON_EXTRA_OBJECTS)/' Makefile
 	touch $(BUILD)/.patched_makefile
