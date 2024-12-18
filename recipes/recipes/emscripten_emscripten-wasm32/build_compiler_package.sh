@@ -46,4 +46,11 @@ for file in $PREFIX/opt/emsdk/upstream/emscripten/*; do
     echo "Linking $file"
     ln -sf $file $PREFIX/bin/
   fi
+
+  # Check if the ends with .py
+  if [[ $file == *.py ]]; then
+    # Create a symbolic link in the $PREFIX/bin directory
+    echo "Linking $file"
+    ln -sf $file $PREFIX/bin/
+  fi
 done
