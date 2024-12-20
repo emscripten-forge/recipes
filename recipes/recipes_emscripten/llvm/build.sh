@@ -7,14 +7,14 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 # clear LDFLAGS flags because they contain sWASM_BIGINT
 export LDFLAGS=""
 
-
 # Configure step
-cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
+emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_BUILD_TYPE=MinSizeRel                   \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
     -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten    \
     -DLLVM_TARGETS_TO_BUILD="WebAssembly"           \
+    -DLLVM_ENABLE_ASSERTIONS=ON                     \
     -DLLVM_INCLUDE_BENCHMARKS=OFF                   \
     -DLLVM_INCLUDE_EXAMPLES=OFF                     \
     -DLLVM_INCLUDE_TESTS=OFF                        \
@@ -30,10 +30,16 @@ cmake ${CMAKE_ARGS} -S ../llvm -B .                 \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
-make -j4
+emmake make clang -j4
+emmake make clang-repl -j4
+emmake make lld -j4
 
 # Install step
-make install
+emmake make install
 
 # Copy all files with ".wasm" extension to $PREFIX/bin
-cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
+# The approach taken for running clang-repl in the browser doesn't
+# involve using clang-repl.js & clang-repl.wasm. It involves using
+# libclangInterpreter.a and liblldWasm.a, hence the step below can be avoided
+# as our current use case only involves running clang-repl in the browser.
+# cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
