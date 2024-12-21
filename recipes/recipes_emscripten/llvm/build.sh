@@ -20,7 +20,6 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_INCLUDE_TESTS=OFF                        \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
-    -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DLLVM_ENABLE_THREADS=OFF                       \
     -DLLVM_ENABLE_ZSTD=OFF                          \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
@@ -30,16 +29,10 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
 
 # Build step
-emmake make clang -j4
-emmake make clang-repl -j4
-emmake make lld -j4
+emmake make -j4
 
 # Install step
 emmake make install
 
 # Copy all files with ".wasm" extension to $PREFIX/bin
-# The approach taken for running clang-repl in the browser doesn't
-# involve using clang-repl.js & clang-repl.wasm. It involves using
-# libclangInterpreter.a and liblldWasm.a, hence the step below can be avoided
-# as our current use case only involves running clang-repl in the browser.
-# cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
+cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
