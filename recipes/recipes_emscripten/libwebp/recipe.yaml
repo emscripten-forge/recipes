@@ -6,9 +6,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: 
-    http://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${{
-    version }}.tar.gz
+  url: http://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${{ version }}.tar.gz
   sha256: 7d6fab70cf844bf6769077bd5d7a74893f8ffd4dfb42861745750c63c2a5c92c
 
 build:
@@ -16,9 +14,20 @@ build:
 
 requirements:
   build:
-  - ${{ compiler('c') }}
-  - cmake
-  - ninja
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+
+tests:
+  - package_contents:
+      lib:
+        - libwebp.a
+      include:
+        - webp/decode.h
+        - webp/encode.h
+      files:
+        - share/WebP/cmake/WebPConfig.cmake
+        - lib/pkgconfig/libwebp.pc
 
 about:
   license: BSD-3-Clause
@@ -33,4 +42,4 @@ about:
   homepage: https://developers.google.com/speed/webp
 extra:
   recipe-maintainers:
-  - wolfv
+    - wolfv
