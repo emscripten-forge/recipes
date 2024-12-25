@@ -6,8 +6,6 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # Configure step
 emcmake cmake -DCMAKE_BUILD_TYPE=Release               \
-    -DUSE_CLING=OFF                                     \
-    -DUSE_REPL=ON                                       \
     -DCMAKE_PREFIX_PATH=$PREFIX                         \
     -DLLVM_DIR=$PREFIX                                  \
     -DLLD_DIR=$PREFIX                                  \
