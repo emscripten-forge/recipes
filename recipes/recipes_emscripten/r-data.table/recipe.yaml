@@ -1,0 +1,50 @@
+context:
+  version: 1.16.4
+  name: r-data.table
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 72764bb3aebc111de60223cfb32b6111a47081e3a1e7f6d20c78eb7f30269cdf
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+      - zlib
+    run:
+      - r-base >= ${{ r_base_version }}
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+
+about:
+  homepage: http://r-datatable.com/
+  repository: https://github.com/Rdatatable/data.table
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: |
+   data.table provides a high-performance version of base R's data.frame with
+   syntax and feature enhancements for ease of use, convenience and programming
+   speed.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
