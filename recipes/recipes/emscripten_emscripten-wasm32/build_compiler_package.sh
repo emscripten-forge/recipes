@@ -25,8 +25,8 @@ cat $RECIPE_DIR/patches/*.patch | patch -p1 --verbose
 popd    
 echo "...done"
 
-
-
+chmod +x $EMSDK/upstream/emscripten/emcc.py
+chmod +x $EMSDK/upstream/emscripten/emrun.py
 
 mkdir -p $PREFIX/opt/emsdk/
 cp -r $EMSDK/upstream $PREFIX/opt/emsdk/upstream
