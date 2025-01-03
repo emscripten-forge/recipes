@@ -1,11 +1,7 @@
 context:
   name: r-nlme
   version: 3.1-166
-  r_base_version: 4.4.1
-
-package:
-  name: ${{ name }}
-  version: ${{ version|replace('-', '_') }}
+  r_base_version: 4.4.2
 
 source:
   url:
@@ -14,25 +10,32 @@ source:
   sha256: 237a14ee8d78755b11a7efe234b95be40b46fbdd1b4aaf463f6d532be1909762
 
 build:
-  number: 1
+  number: 2
 
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version|replace('-', '_') }}
   build:
-  - cross-r-base >= ${{ r_base_version }}
-  - r-lattice
-  - ${{ compiler('c') }}
-  host:
-  - r-base >= ${{ r_base_version }}
-  - r-lattice
-  - libflang                  # for FortranRuntime
-  run:
-  - r-base >= ${{ r_base_version }}
-  - r-lattice
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+    - cross-r-base >= ${{ r_base_version }}
+    - r-lattice
+    - ${{ compiler('c') }}
+    host:
+    - r-base >= ${{ r_base_version }}
+    - r-lattice
+    - libflang                  # for FortranRuntime
+    run:
+    - r-base >= ${{ r_base_version }}
+    - r-lattice
 
-tests:
-- package_contents:
-    lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://svn.r-project.org/R-packages/trunk/nlme
