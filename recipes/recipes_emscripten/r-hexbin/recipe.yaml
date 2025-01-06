@@ -1,0 +1,50 @@
+context:
+  name: r-hexbin
+  version: 1.28.5
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 2ed087d6399f247d44e555b69d785b48362445c4c8c77330bbd57d282b49d3e6
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version|replace('-', '_') }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+    - cross-r-base >= ${{ r_base_version }}
+    - r-lattice
+    - ${{ compiler('c') }}
+    host:
+    - r-base >= ${{ r_base_version }}
+    - r-lattice
+    - libflang                  # for FortranRuntime
+    run:
+    - r-base >= ${{ r_base_version }}
+    - r-lattice
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://svn.r-project.org/R-packages/trunk/nlme
+  repository: http://github.com/edzer/hexbin
+  license: GPL-2.0-only
+  license_family: GPL2
+  license_file: GPL-2
+  summary: Hexagonal binning routines and plotting methods
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
