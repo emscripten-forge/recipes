@@ -1,0 +1,75 @@
+context:
+  version: 1.1.4
+  name: r-dplyr
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: cf730414d5d4ab387b4e9890a4b1df9d17a3903488e8da8df1cf2e11e44558cb
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - r-magrittr
+      - r-rlang
+      - r-tibble
+      - r-vctrs
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-generics
+      - r-glue
+      - r-lifecycle
+      - r-magrittr
+      - r-pillar
+      - r-r6
+      - r-rlang
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-generics
+      - r-glue
+      - r-lifecycle
+      - r-magrittr
+      - r-pillar
+      - r-r6
+      - r-rlang
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+
+about:
+  homepage: https://dplyr.tidyverse.org
+  repository: https://github.com/tidyverse/dplyr
+  license: MIT
+  license_file: LICENSE
+  summary: |
+   A fast, consistent tool for working with data frame like objects, both in
+   memory and out of memory.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
