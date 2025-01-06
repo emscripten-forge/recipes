@@ -1,0 +1,84 @@
+context:
+  version: 1.3.1
+  name: r-tidyr
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: e820c261cb5543f572f49276a7bdc7302aa4215da4bf850b1b939a315353835d
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - r-dplyr
+      - r-magrittr
+      - r-purrr
+      - r-rlang
+      - r-tibble
+      - r-vctrs
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-dplyr
+      - r-glue
+      - r-lifecycle
+      - r-magrittr
+      - r-purrr
+      - r-rlang
+      - r-stringr
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+      - r-cpp11
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-dplyr
+      - r-glue
+      - r-lifecycle
+      - r-magrittr
+      - r-purrr
+      - r-rlang
+      - r-stringr
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+      - r-cpp11
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://tidyr.tidyverse.org
+  repository: https://github.com/tidyverse/tidyr
+  license: MIT
+  license_file: LICENSE
+  summary: Tidy Messy Data
+  description: |
+    Tools to help to create tidy data, where each column is a variable, each
+    row is an observation, and each cell contains a single value. 'tidyr'
+    contains tools for changing the shape (pivoting) and hierarchy (nesting and
+    'unnesting') of a dataset, turning deeply nested lists into rectangular data
+    frames ('rectangling'), and extracting values out  of string columns. It
+    also includes tools for working with missing values  (both implicit and
+    explicit).
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
