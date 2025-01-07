@@ -1,0 +1,57 @@
+context:
+  version: 1.2.1
+  name: r-askpass
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 6c2106a74c44a748f2cea795d9686e27a0058a90debcfd8558b62b06aec0c7dd
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-sys
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-sys
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://r-lib.r-universe.dev/askpass
+  repository: https://github.com/r-lib/askpass
+  license: MIT
+  license_file: LICENSE
+  summary: Password Entry for R, Git, and SSH
+  description: |
+   Cross-platform utilities for prompting the user for credentials or a
+   passphrase, for example to authenticate with a server or read a protected
+   key. Includes native programs for MacOS and Windows, hence no 'tcltk' is
+   required. Password entry can be invoked in two different ways: directly from
+   R via the askpass() function, or indirectly as password-entry back-end for
+   'ssh-agent' or 'git-credential' via the SSH_ASKPASS and GIT_ASKPASS
+   environment variables. Thereby the user can be prompted for credentials or a
+   passphrase if needed when R calls out to git or ssh.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
