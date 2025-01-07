@@ -1,0 +1,50 @@
+context:
+  version: 0.12
+  name: r-mime
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: a9001051d6c1e556e881910b1816b42872a1ee41ab76d0040ce66a27135e3849
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+    run:
+      - r-base >= ${{ r_base_version }}
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://cran.rstudio.com/package=mime
+  repository: https://github.com/yihui/mime
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Map filenames to MIME types
+  description: |
+   Guesses the MIME type from a filename extension using the data derived from
+   /etc/mime.types in UNIX-type systems.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
