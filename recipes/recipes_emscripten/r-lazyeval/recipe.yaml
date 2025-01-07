@@ -1,0 +1,51 @@
+context:
+  version: 0.2.2
+  name: r-lazyeval
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: d6904112a21056222cfcd5eb8175a78aa063afe648a562d9c42c6b960a8820d4
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+    run:
+      - r-base >= ${{ r_base_version }}
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://CRAN.R-project.org/package=lazyeval
+  repository: https://github.com/hadley/lazyeval
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file: GPL-3
+  summary: An alternative to non-standard evaluation (NSE) for R
+  description: |
+   An alternative approach to non-standard evaluation using formulas. Provides a
+   full implementation of LISP style 'quasiquotation', making it easier to
+   generate code with other code.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
