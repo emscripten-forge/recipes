@@ -1,0 +1,66 @@
+context:
+  version: 1.3.2
+  name: r-promises
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 94d5b07eb54d73174d3f5dd573b8bd996a59f5cf9eaf8f344793ac6c5f2654bd
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('cxx') }}
+      - r-later
+      - r-magrittr
+      - r-rcpp
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-fastmap
+      - r-later
+      - r-magrittr
+      - r-r6
+      - r-rcpp
+      - r-rlang
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-fastmap
+      - r-later
+      - r-magrittr
+      - r-r6
+      - r-rcpp
+      - r-rlang
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+
+about:
+  homepage: https://rstudio.github.io/promises/
+  repository: https://github.com/rstudio/promises
+  license: MIT
+  license_file: LICENSE
+  summary: A promise library for R
+  description: |
+   Provides fundamental abstractions for doing asynchronous programming in R
+   using promises. Asynchronous programming is useful for allowing a single R
+   process to orchestrate multiple tasks in the background while also attending
+   to something else. Semantics are similar to 'JavaScript' promises, but with a
+   syntax that is idiomatic R.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
