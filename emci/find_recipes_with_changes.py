@@ -8,8 +8,8 @@ def find_recipes_with_changes(old, new):
     recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
     # print("recipes_with_changes", recipes_with_changes)
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
-        # if subdir == "recipes":
-        #     continue
+        if subdir == "recipes":
+            continue
         for file_with_change in files_with_changes:
             if file_with_change.startswith(f"recipes/{subdir}/"):
                 # print(file_with_change)
