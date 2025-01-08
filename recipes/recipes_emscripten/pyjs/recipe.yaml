@@ -1,5 +1,5 @@
 context:
-  version: 2.4.0
+  version: 2.4.1
   name: pyjs
 package:
   name: ${{name}}
@@ -7,7 +7,7 @@ package:
     
 source:
   url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
-  sha256:   f99ccde0b025efe76dd21243534660f231881fdff969b811b215406096a9488e
+  sha256:   9ff1655a1d070bfd44f16ad3d1599ca2c575ea67241e44697de8468d8f917459
 build:
   number: 0
 
@@ -19,13 +19,13 @@ requirements:
   - cmake
   - make
   host:
-  - python<3.12
-  - sqlite
+  - python
   - zlib
   - zstd
-  - bzip2
+  - sqlite
   - libffi
-  - pybind11<2.12.0
+  - bzip2
+  - pybind11
 
 tests:
   - script: |
@@ -55,18 +55,9 @@ tests:
 
     requirements:
       build:      
-          - pytester
-          - if: build_platform == "linux-64"
-            then:
-              - pyjs_code_runner >=3.0.0
-              - microsoft::playwright <1.42
-            else:
-              - pyjs_code_runner >=3.0.0
-              - microsoft::playwright
+        - pytester
       run:
-        - pytest
-        - numpy<2
-        - python<3.12
+        - pytester-run
     files:
       source:
         - tests/**/*

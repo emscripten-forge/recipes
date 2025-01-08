@@ -23,9 +23,12 @@ export CHOST="wasm32-unknown-linux" # wasm32-unknown-emscripten
 
 autoreconf -fiv
 emconfigure ./configure --host=$CHOST --prefix="$TARGET" --enable-static --disable-shared --disable-dependency-tracking \
-  --disable-builddir --disable-multi-os-directory --disable-raw-api --disable-docs
+  --disable-builddir --disable-multi-os-directory --disable-raw-api --disable-docs 
 make install
 cp fficonfig.h build/include/
 cp include/ffi_common.h build/include/
 
 cp -r build/* $PREFIX/
+
+# delete broken pkg-config files
+rm -rf $PREFIX/lib/pkgconfig

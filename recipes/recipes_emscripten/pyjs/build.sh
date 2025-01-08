@@ -25,6 +25,8 @@ emmake cmake ${CMAKE_ARGS} ..  \
     -DLINK_LIBMPDEC=OFF \
     -DLINK_LIBEXPAT=OFF \
     -DWITH_NODE_TESTS=OFF \
+    -DZLIB_INCLUDE_DIR=$PREFIX/include \
+    -DZLIB_LIBRARY=$PREFIX/lib/libz.a  \
     -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 

@@ -1,14 +1,21 @@
 context:
   name: python_abi
-  version: "3.11"
+  version: "3.13.1" # keep sync with python
+  ver2nd: ${{ version | version_to_buildstring}}
+  python_abi_tag: "cp${{ ver2nd }}"
+  build_num: 0
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 build:
-  number:  
-  string: "0_cp311"
+  number: ${{ build_num }}
+  string: ${{ build_num }}_${{ python_abi_tag }}
+
+requirements:
+  run_constraints:
+    python ${{ version }}.* *_${{ python_abi_tag }}
 
 about:
   license: BSD-3-Clause
