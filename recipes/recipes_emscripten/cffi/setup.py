@@ -2,53 +2,52 @@ import sys, os, platform
 import subprocess
 import errno
 
-# on Windows we give up and always import setuptools early to fix things for us
-if sys.platform == "win32":
-    import setuptools
+# the setuptools distutils shim should make distutils available, but this will definitely do
+# it, since setuptools is now required at build-time
+import setuptools
 
-PREFIX = os.environ.get("PREFIX")
-print(f"\n\n\n{PREFIX=}")
+# get prefix env var
+PREFIX = os.environ["PREFIX"]
 
-sources = ['c/_cffi_backend.c']
-libraries = [f'{PREFIX}/lib/libffi.a']
-include_dirs = [f'{PREFIX}/include/ffi',
+
+sources = ['src/c/_cffi_backend.c']
+libraries = ['$PREFIX/lib/libffi.a']
+include_dirs = [f'{PREFIX}/include/',
                 f'{PREFIX}/include/libffi']    # may be changed by pkg-config
-define_macros = []
+define_macros = [('FFI_BUILDING', '1')]   # for linking with libffi static library
 library_dirs = []
 extra_compile_args = []
 extra_link_args = []
 
 
 def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
-    pass
-    # pkg_config = os.environ.get('PKG_CONFIG','pkg-config')
-    # if False:
-    #     try:
-    #         p = subprocess.Popen([pkg_config, option, 'libffi'],
-    #                              stdout=subprocess.PIPE)
-    #     except OSError as e:
-    #         if e.errno not in [errno.ENOENT, errno.EACCES]:
-    #             raise
-    # else:
-    #     t = p.stdout.read().decode().strip()
-    #     p.stdout.close()
-    #     if p.wait() == 0:
-    #         res = t.split()
-    #         # '-I/usr/...' -> '/usr/...'
-    #         for x in res:
-    #             assert x.startswith(result_prefix)
-    #         res = [x[len(result_prefix):] for x in res]
-    #         #print 'PKG_CONFIG:', option, res
-    #         #
-    #         sysroot = sysroot and os.environ.get('PKG_CONFIG_SYSROOT_DIR', '')
-    #         if sysroot:
-    #             # old versions of pkg-config don't support this env var,
-    #             # so here we emulate its effect if needed
-    #             res = [path if path.startswith(sysroot)
-    #                         else sysroot + path
-    #                      for path in res]
-    #         #
-    #         resultlist[:] = res
+    pkg_config = os.environ.get('PKG_CONFIG','pkg-config')
+    try:
+        p = subprocess.Popen([pkg_config, option, 'libffi'],
+                             stdout=subprocess.PIPE)
+    except OSError as e:
+        if e.errno not in [errno.ENOENT, errno.EACCES]:
+            raise
+    else:
+        t = p.stdout.read().decode().strip()
+        p.stdout.close()
+        if p.wait() == 0:
+            res = t.split()
+            # '-I/usr/...' -> '/usr/...'
+            for x in res:
+                assert x.startswith(result_prefix)
+            res = [x[len(result_prefix):] for x in res]
+            #print 'PKG_CONFIG:', option, res
+            #
+            sysroot = sysroot and os.environ.get('PKG_CONFIG_SYSROOT_DIR', '')
+            if sysroot:
+                # old versions of pkg-config don't support this env var,
+                # so here we emulate its effect if needed
+                res = [path if path.startswith(sysroot)
+                            else sysroot + path
+                         for path in res]
+            #
+            resultlist[:] = res
 
 no_compiler_found = False
 def no_working_compiler_found():
@@ -119,20 +118,21 @@ def use_pkg_config():
     _ask_pkg_config(libraries,          '--libs-only-l', '-l')
 
 def use_homebrew_for_libffi():
-    # We can build by setting:
-    # PKG_CONFIG_PATH = $(brew --prefix libffi)/lib/pkgconfig
-    with os.popen('brew --prefix libffi') as brew_prefix_cmd:
-        prefix = brew_prefix_cmd.read().strip()
-    pkgconfig = os.path.join(prefix, 'lib', 'pkgconfig')
-    os.environ['PKG_CONFIG_PATH'] = (
-        os.environ.get('PKG_CONFIG_PATH', '') + ':' + pkgconfig)
+    pass
+    # # We can build by setting:
+    # # PKG_CONFIG_PATH = $(brew --prefix libffi)/lib/pkgconfig
+    # with os.popen('brew --prefix libffi') as brew_prefix_cmd:
+    #     prefix = brew_prefix_cmd.read().strip()
+    # pkgconfig = os.path.join(prefix, 'lib', 'pkgconfig')
+    # os.environ['PKG_CONFIG_PATH'] = (
+    #     os.environ.get('PKG_CONFIG_PATH', '') + ':' + pkgconfig)
 
 if sys.platform == "win32" and uses_msvc():
     if platform.machine() == "ARM64":
-        include_dirs.append(os.path.join("c/libffi_arm64/include"))
-        library_dirs.append(os.path.join("c/libffi_arm64"))
+        include_dirs.append(os.path.join("src/c/libffi_arm64/include"))
+        library_dirs.append(os.path.join("src/c/libffi_arm64"))
     else:
-        COMPILE_LIBFFI = 'c/libffi_x86_x64'    # from the CPython distribution
+        COMPILE_LIBFFI = 'src/c/libffi_x86_x64'    # from the CPython distribution
         assert os.path.isdir(COMPILE_LIBFFI), "directory not found!"
         include_dirs[:] = [COMPILE_LIBFFI]
         libraries[:] = []
@@ -152,13 +152,18 @@ else:
     ask_supports_thread()
     ask_supports_sync_synchronize()
 
-if 'darwin' in sys.platform:
-    # priority is given to `pkg_config`, but always fall back on SDK's libffi.
-    extra_compile_args += ['-iwithsysroot/usr/include/ffi']
+# if 'darwin' in sys.platform:
+#     # priority is given to `pkg_config`, but always fall back on SDK's libffi.
+#     extra_compile_args += ['-iwithsysroot/usr/include/ffi']
 
-if 'freebsd' in sys.platform:
-    include_dirs.append('/usr/local/include')
-    library_dirs.append('/usr/local/lib')
+# if 'freebsd' in sys.platform:
+#     include_dirs.append('/usr/local/include')
+#     library_dirs.append('/usr/local/lib')
+
+forced_extra_objs = os.environ.get('CFFI_FORCE_STATIC', [])
+if forced_extra_objs:
+    forced_extra_objs = forced_extra_objs.split(';')
+
 
 if __name__ == '__main__':
     from setuptools import setup, Distribution, Extension
@@ -175,6 +180,10 @@ if __name__ == '__main__':
     # arguments mostly empty in this case.
     cpython = ('_cffi_backend' not in sys.builtin_module_names)
 
+    install_requires = []
+    if cpython:
+        install_requires.append('pycparser')
+
     setup(
         name='cffi',
         description='Foreign Function Interface for Python calling C code.',
@@ -190,8 +199,10 @@ Contact
 
 `Mailing list <https://groups.google.com/forum/#!forum/python-cffi>`_
 """,
-        version='1.15.0',
+        version='1.17.1',
+        python_requires='>=3.8',
         packages=['cffi'] if cpython else [],
+        package_dir={"": "src"},
         package_data={'cffi': ['_cffi_include.h', 'parse_c_type.h', 
                                '_embedding.h', '_cffi_errors.h']}
                      if cpython else {},
@@ -213,11 +224,10 @@ Contact
             library_dirs=library_dirs,
             extra_compile_args=extra_compile_args,
             extra_link_args=extra_link_args,
+            extra_objects=forced_extra_objs,
         )] if cpython else [],
 
-        install_requires=[
-            'pycparser' if sys.version_info >= (2, 7) else 'pycparser<2.19',
-        ] if cpython else [],
+        install_requires=install_requires,
 
         entry_points = {
             "distutils.setup_keywords": [
@@ -227,14 +237,13 @@ Contact
 
         classifiers=[
             'Programming Language :: Python',
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9',
             'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3.11',
+            'Programming Language :: Python :: 3.12',
+            'Programming Language :: Python :: 3.13',
             'Programming Language :: Python :: Implementation :: CPython',
             'Programming Language :: Python :: Implementation :: PyPy',
             'License :: OSI Approved :: MIT License',

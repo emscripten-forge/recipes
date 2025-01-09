@@ -13,6 +13,7 @@ mkdir -p build
 cd build
 
 emconfigure ../configure --prefix=$PREFIX \
+            --host=wasm32-unknown-emscripten \
             --with-zlib-prefix=$PREFIX \
             --disable-shared
 # NOTE: to enable shared, the -shared flag needs to be replaced with SIDE_MODULE

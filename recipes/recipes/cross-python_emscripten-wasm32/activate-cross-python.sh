@@ -1,4 +1,17 @@
 #!/bin/bash
+
+# echo "ACTIVATE CROSS PYTHON in $BUILD_PREFIX" $BUILD_PREFIX $$BUILD_PREFIX
+# echo $BUILD_PREFIX
+
+# if [ -z ${BUILD_PREFIX+x} ]; then echo "BUILD_PREFIX is unset"; else echo "BUILD_PREFIX is set to '$BUILD_PREFIX'"; fi
+
+
+# $BUILD_PREFIX/bin/python3  -c "import sys;print(sys.executable)"
+# python 
+
+# # probe if cross-env is already installed
+# $BUILD_PREFIX/bin/python3 -m crossenv 
+
 OLD_PYTHON=$PYTHON
 unset PYTHON
 MYPYTHON=$BUILD_PREFIX/bin/python
@@ -11,6 +24,11 @@ mkdir -p $PREFIX/bin
 cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
 
 
+# echo "probe"
+# # probe if cross-env is already installed
+# $BUILD_PREFIX/bin/python3 -m crossenv 
+
+# echo "probe done"
 
 
 
@@ -21,6 +39,7 @@ source $CONDA_PREFIX/etc/conda/activate.d/emscripten_emscripten-wasm32_activate.
 if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   echo "Setting up cross-python"
   PY_VER=$($BUILD_PREFIX/bin/python -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
+  echo "PY_VER=$PY_VER"
   if [ -d "$PREFIX/lib_pypy" ]; then
     sysconfigdata_fn=$(find "$PREFIX/lib_pypy/" -name "_sysconfigdata_*.py" -type f)
   elif [ -d "$PREFIX/lib/pypy$PY_VER" ]; then

@@ -1,2 +1,10 @@
 #!/bin/bash
-${PYTHON} -m pip install .
+
+LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
+CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
+
+export LDFLAGS
+export CFLAGS
+
+
+ARCHFLAGS="" ${PYTHON} -m pip install . --verbose
