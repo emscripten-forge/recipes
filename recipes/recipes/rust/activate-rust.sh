@@ -11,8 +11,8 @@ export PATH=$CARGO_HOME/bin:$PATH
 # if $CARO_HOME does not exist, install rustup
 if [ ! -d "$CARGO_HOME" ]; then
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y #--default-toolchain=1.78.0
-    rustup install nightly-2024-04-22
-    rustup default nightly-2024-04-22
+    rustup install nightly-2025-01-09
+    rustup default nightly-2025-01-09
     rustup target add wasm32-unknown-emscripten
 fi
 
