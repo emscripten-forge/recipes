@@ -1,0 +1,41 @@
+context:
+  name: pcre
+  version: "8.45"
+
+package:
+  name: pcre
+  version: ${{ version }}
+
+source:
+  url: https://ftp.exim.org/pub/pcre/pcre-${{ version }}.tar.gz
+  sha256: 4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09
+  patches:
+    - 0001-Define-snprintf-for-old-VS.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - libtool
+    - pkg-config 
+    - libtool
+    - make
+  run_exports:
+    - ${{ pin_subpackage('pcre', upper_bound='x') }}
+
+about:
+  homepage: http://www.pcre.org/
+  license: BSD-3-Clause
+  license_file: LICENCE
+  summary: Regular expression pattern matching using the same syntax and semantics as Perl 5.
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - scopatz
+    - sebastian-luna-valero
+    - saraedum
+    - ocefpaf

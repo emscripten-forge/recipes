@@ -1,0 +1,27 @@
+From df83a0b654b1b49cfd24455c36ee03d7ed6cfa6f Mon Sep 17 00:00:00 2001
+From: Mick Batchelor <mickbatch98@gmail.com>
+Date: Sat, 2 Sep 2023 14:10:50 +1000
+Subject: [PATCH 2/2] emscripten shared fix
+
+---
+ CMakeLists.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b230b9e..d6ac211 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -107,6 +107,10 @@ target_compile_options(yaml-cpp
+     # http://msdn.microsoft.com/en-us/library/3c594ae3.aspx
+     $<$<CXX_COMPILER_ID:MSVC>:/W3 /wd4127 /wd4355>)
+ 
++if (EMSCRIPTEN)
++  target_compile_options(yaml-cpp PUBLIC -fPIC)
++endif()
++
+ target_compile_definitions(yaml-cpp
+   PRIVATE
+     $<${build-windows-dll}:${PROJECT_NAME}_DLL>
+-- 
+2.39.2.windows.1
+

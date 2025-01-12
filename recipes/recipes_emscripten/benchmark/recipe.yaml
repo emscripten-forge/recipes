@@ -1,0 +1,37 @@
+context:
+  version: "1.8.3"
+
+package:
+  name: "benchmark"
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/benchmark/archive/v${{ version }}.tar.gz
+  sha256: 6bc180a57d23d4d9515519f92b0c83d61b05b5bab188961f36ac7b06b0d9e9ce
+  patches:
+    - fix-build.patch
+
+build:
+  number: 3
+
+requirements:
+  build:
+    - cmake
+    - ninja
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+
+tests:
+- package_contents:
+    include:
+    - benchmark/benchmark.h
+    lib:
+    - libbenchmark.so
+    - libbenchmark_main.so
+
+about:
+  homepage: https://github.com/google/benchmark
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: A microbenchmark support library

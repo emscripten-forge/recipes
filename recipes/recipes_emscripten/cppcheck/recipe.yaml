@@ -1,0 +1,44 @@
+context:
+  name: cppcheck
+  version: 2.10.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/danmar/cppcheck/archive/${{ version }}.tar.gz
+  sha256: 8aae5e116daeaaf5d19f3efa61b91c06f161cb97412a1d1af6e1e20686e48967
+  patches:
+    - patch/fix-binary-relocation-issue-1.90.patch
+    - patch/0001-fix-wasm-extension-for-dmake.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python
+    - cross-python_emscripten-wasm32
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - make
+    - cmake
+    - pygments
+  host:
+    - python
+    - setuptools
+    - pcre
+  run:
+    - pcre
+    - python
+    - pygments
+
+about:
+  description: Cppcheck is a static analysis tool for C/C++ code. Unlike C/C++ compilers and many other analysis tools it does not detect syntax errors in the code. Cppcheck primarily detects the types of bugs that the compilers normally do not detect. The goal is to detect only real errors in the code (i.e. have zero false
+    positives).
+  homepage: http://cppcheck.sourceforge.net/
+  license: GPL-3.0-or-later
+  license_family: GPL
+  license_file: COPYING
+  summary: A static analysis tool for C/C++ code.

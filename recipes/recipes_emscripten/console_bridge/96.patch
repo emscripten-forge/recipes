@@ -1,0 +1,35 @@
+From a42b4e1d835548c284c1f57c93b4c51fa5083692 Mon Sep 17 00:00:00 2001
+From: Silvio Traversaro <silvio.traversaro@iit.it>
+Date: Sat, 2 Apr 2022 16:27:28 +0200
+Subject: [PATCH] Install pkg-config .pc file also on Windows/MSVC
+
+Signed-off-by: Silvio <silvio@traversaro.it>
+---
+ CMakeLists.txt | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3f55509..0ba726a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -107,14 +107,12 @@ install(FILES
+         "${CMAKE_BINARY_DIR}/${cmake_conf_version_file}"
+   DESTINATION ${CMAKE_CONFIG_INSTALL_DIR} COMPONENT cmake)
+ 
+-if (NOT MSVC)
+-  set(PKG_DESC "Console Bridge")
+-  set(PKG_CB_LIBS "-l${PROJECT_NAME}")
+-  set(pkg_conf_file "console_bridge.pc")
+-  configure_file("${pkg_conf_file}.in" "${CMAKE_BINARY_DIR}/${pkg_conf_file}" @ONLY)
+-  install(FILES "${CMAKE_BINARY_DIR}/${pkg_conf_file}"
+-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/ COMPONENT pkgconfig)
+-endif()
++set(PKG_DESC "Console Bridge")
++set(PKG_CB_LIBS "-l${PROJECT_NAME}")
++set(pkg_conf_file "console_bridge.pc")
++configure_file("${pkg_conf_file}.in" "${CMAKE_BINARY_DIR}/${pkg_conf_file}" @ONLY)
++install(FILES "${CMAKE_BINARY_DIR}/${pkg_conf_file}"
++  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/ COMPONENT pkgconfig)
+ 
+ SET_DIRECTORY_PROPERTIES(PROPERTIES
+   ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_BINARY_DIR}/console_bridge-config.cmake
