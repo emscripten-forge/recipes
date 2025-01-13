@@ -9,9 +9,6 @@ on:
     paths:
       - 'recipes/**'
 
-permissions:
-  contents: read
-  id-token: write
 
 jobs:
 
@@ -96,7 +93,7 @@ jobs:
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -l {0}
         env:
-          QUETZ_API_KEY: ${{ secrets.QUETZ_API_KEY }}
+          PREFIX_DEV_API_KEY: ${{ secrets.PREFIX_DEV_API_KEY }}
         run: |
           overall_success=true
 
@@ -111,6 +108,7 @@ jobs:
 
                   rattler-build upload prefix \
                     --channel emscripten-forge-dev \
+                    -a $PREFIX_DEV_API_KEY \
                     ${package}
                   
                   RETURNCODE=$?
