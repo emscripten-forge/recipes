@@ -29,7 +29,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
     
     # add conda forge and emscripten-forge channels
     cmd.extend([
-        "-c", "https://repo.mamba.pm/emscripten-forge",
+        "-c", "https://repo.prefix.dev/emscripten-forge-dev",
         "-c", "microsoft",
         "-c", "conda-forge",
     ])
