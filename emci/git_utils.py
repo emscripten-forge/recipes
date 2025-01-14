@@ -111,7 +111,7 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
 
     args = ['gh', 'pr', 'create', 
             '-B', target_branch_name, 
-            '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'
+            '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
             '--label', 'Automerge' if automerge else 'Needs Tests'
     ]
     if target_branch_name == 'main':
