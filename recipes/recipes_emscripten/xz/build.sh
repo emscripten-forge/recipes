@@ -7,6 +7,8 @@ emconfigure ../configure \
     --enable-shared=no \
     --enable-static=yes \
     --enable-threads=no \
+    --build="x86_64-conda-linux-gnu" \
+    --host="wasm32-unknown-emscripten" \
     --prefix=$PREFIX
 
 emmake make install
