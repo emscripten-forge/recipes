@@ -13,3 +13,5 @@ emconfigure ../configure \
     --disable-dependency-tracking \
     --disable-shared
 emmake make -j ${CPU_COUNT:-3} install
+
+find . -iname "iconv.wasm" -exec cp {} $PREFIX/bin/ \;
