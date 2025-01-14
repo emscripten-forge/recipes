@@ -269,7 +269,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=1)
             print("checkout done")
 
         assert get_current_branch_name() == pr_target_branch
-        current_branch_name = target_branch_name
+        current_branch_name = pr_target_branch
 
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
