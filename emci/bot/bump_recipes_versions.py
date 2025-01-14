@@ -269,9 +269,9 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
                 ['gh', 'pr', 'view', pr_id, '--json', 'baseRefName', '-q', '.baseRefName']
             ).decode('utf-8').strip()
             if  target_branch_name == current_branch_name:
-                prs.append(pr)
+                prs.append(pr_line)
             else:
-                print(f"skip PR {pr} [ current branch {current_branch_name} but PR is for {target_branch_name}]")
+                print(f"skip PR {pr_id} [ current branch {current_branch_name} but PR is for {target_branch_name}]")
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
