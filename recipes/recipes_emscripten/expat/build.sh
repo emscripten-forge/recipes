@@ -5,6 +5,7 @@ cp $BUILD_PREFIX/share/libtool/build-aux/config.* ./conftools
 export CFLAGS="-fPIC"
 
 emconfigure ./configure --prefix=$PREFIX \
+            --host="wasm32-unknown-emscripten" \
             --enable-static \
             --disable-shared
 
