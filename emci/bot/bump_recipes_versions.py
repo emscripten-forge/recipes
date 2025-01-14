@@ -226,7 +226,7 @@ def user_ctx(user, email, bypass=False):
         subprocess.check_output(['git', 'config', '--unset', 'user.email'])
     
 
-def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=10):
+def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=1):
 
    # empty context manager
     @contextlib.contextmanager
