@@ -7,10 +7,17 @@ on:
 
 jobs:
   update_versions:
+    strategy:
+      matrix:
+        branch: [main, emscripten-3.1.73]
+
+
     if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
 
       - name: Install micromamba
         uses: mamba-org/setup-micromamba@v1
