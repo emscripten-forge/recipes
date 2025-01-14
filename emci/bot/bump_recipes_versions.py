@@ -261,11 +261,12 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
             ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
         ).decode('utf-8').split('\n')
         prs = []
-        for pr in all_prs:
-            
-            # gh pr view #1479 --json  baseRefName -q '.baseRefName'
+        for pr_line in all_prs:
+            if not pr_line:
+                continue
+            pr_id = pr_line.split()[0]
             target_branch_name = subprocess.check_output(
-                ['gh', 'pr', 'view', pr, '--json', 'baseRefName', '-q', '.baseRefName']
+                ['gh', 'pr', 'view', pr_id, '--json', 'baseRefName', '-q', '.baseRefName']
             ).decode('utf-8').strip()
             if  target_branch_name == current_branch_name:
                 prs.append(pr)
