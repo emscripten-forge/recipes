@@ -68,10 +68,10 @@ app.add_typer(bot_app, name="bot")
 
 
 @bot_app.command()
-def bump_recipes_versions():
+def bump_recipes_versions(target_branch_name: str):
     from .bot.bump_recipes_versions import bump_recipe_versions
 
-    bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR)
+    bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
 if __name__ == "__main__":
     app()

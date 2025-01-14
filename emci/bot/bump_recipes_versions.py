@@ -9,7 +9,7 @@ import copy
 from .next_version import next_version
 from .url_exists import url_exists
 from .hash_url import hash_url
-from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user
+from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
 import sys
 import json
 
@@ -226,7 +226,7 @@ def user_ctx(user, email, bypass=False):
         subprocess.check_output(['git', 'config', '--unset', 'user.email'])
     
 
-def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
+def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=1):
 
    # empty context manager
     @contextlib.contextmanager
@@ -249,11 +249,17 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
 
     # get all opened PRs
     with user_ctx():
+        
+        current_branch_name = get_current_branch_name()
+        if current_branch_name == pr_target_branch:
+            print(f"Already on target branch {pr_target_branch}")
+        else:
+            print(f"swichting from {current_branch_name} to {pr_target_branch}")    
+            # switch to the target branch
+            subprocess.run(['git', 'stash'], check=False)
+            subprocess.check_output(['git', 'checkout', pr_target_branch])
 
-        # get current branch name
-        current_branch_name = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8').strip()
-
-        print(f"Current branch name: {current_branch_name}")
+        assert get_current_branch_name() == pr_target_branch
 
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
@@ -265,13 +271,13 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
             if not pr_line:
                 continue
             pr_id = pr_line.split()[0]
-            target_branch_name = subprocess.check_output(
+            that_pr_target_branch = subprocess.check_output(
                 ['gh', 'pr', 'view', pr_id, '--json', 'baseRefName', '-q', '.baseRefName']
             ).decode('utf-8').strip()
-            if  target_branch_name == current_branch_name:
+            if  that_pr_target_branch == pr_target_branch:
                 prs.append(pr_line)
             else:
-                print(f"skip PR {pr_id} [ current branch {current_branch_name} but PR is for {target_branch_name}]")
+                print(f"PR {pr_id} is not targeting {pr_target_branch} [but {that_pr_target_branch}], skipping it")
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
