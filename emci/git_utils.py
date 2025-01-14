@@ -98,7 +98,7 @@ def automerge_is_enabled(pr):
 
 
 
-def make_pr_for_recipe(recipe_dir, pr_title, branch_name, automerge):
+def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, automerge):
 
     # git commit
     subprocess.check_output(['git', 'add', recipe_dir])
@@ -111,7 +111,7 @@ def make_pr_for_recipe(recipe_dir, pr_title, branch_name, automerge):
     # call gh to create a PR
     subprocess.check_call([
         'gh', 'pr', 'create',
-        '-B', 'main',
+        '-B', target_branch_name,
         '--title', pr_title,
         '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
         '--label', 'Automerge' if automerge else 'Needs Tests'

@@ -113,7 +113,7 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_ratler):
 def make_pr_title(name, old_version, new_version):
     return f"Update {name} from {old_version} to {new_version}"
 
-def bump_recipe_version(recipe_dir):
+def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
     recipe_locations = [ ("recipe.yaml", True)]
 
@@ -164,7 +164,9 @@ def bump_recipe_version(recipe_dir):
         # commit the changes and make a PR
         pr_title = make_pr_title(name, current_version, new_version)
         print(f"Making PR for {name} with title: {pr_title}")
-        make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name, automerge=automerge)
+        make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name, 
+            target_branch_name=target_pr_branch_name,
+            automerge=automerge)
             
     return True , current_version, new_version
 
@@ -248,6 +250,11 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
     # get all opened PRs
     with user_ctx():
 
+        # get current branch name
+        current_branch_name = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).decode('utf-8').strip()
+
+        print(f"Current branch name: {current_branch_name}")
+
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
         prs = subprocess.check_output(
@@ -282,7 +289,7 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
         total_bumped = 0
         for recipe in all_recipes:
             try:
-                bumped_version, old_version, new_version = bump_recipe_version(recipe)
+                bumped_version, old_version, new_version = bump_recipe_version(recipe, current_branch_name)
                 if bumped_version:
                     print(f"Bumped {recipe} from {old_version} to {new_version}")
                 total_bumped += int(bumped_version)
