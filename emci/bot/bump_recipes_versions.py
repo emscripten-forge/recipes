@@ -257,7 +257,11 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=1)
             print(f"swichting from {current_branch_name} to {pr_target_branch}")    
             # switch to the target branch
             subprocess.run(['git', 'stash'], check=False)
+            print(f"fetch {pr_target_branch}")
+            subprocess.check_output(['git', 'fetch', 'origin', pr_target_branch])
+            print(f"checkout {pr_target_branch}")
             subprocess.check_output(['git', 'checkout', pr_target_branch])
+            print("checkout done")
 
         assert get_current_branch_name() == pr_target_branch
 
