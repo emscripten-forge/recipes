@@ -1,0 +1,22 @@
+From c94f49cd8aa0d91b38cd0dc3872c42425822cbb0 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 14 Jan 2025 19:49:23 +0100
+Subject: [PATCH] Build cairo without pthread
+
+---
+ configure | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/configure b/configure
+index 6d4d68d..83ce92a 100755
+--- a/configure
++++ b/configure
+@@ -50966,6 +50966,8 @@ printf "%s\n" "$as_me: using static pangocairo" >&6;}
+        CAIROX11_LIBS=`"${PKG_CONFIG}" --libs ${xmodlist}`
+     fi
+ 
++CAIRO_LIBS=$(echo $CAIRO_LIBS | sed 's/-pthread//g' | sed 's/-sPTHREAD_POOL_SIZE=4//g')
++
+     CPPFLAGS="${CPPFLAGS} ${CAIRO_CPPFLAGS}"
+     LIBS="${LIBS} ${CAIRO_LIBS}"
+ 
