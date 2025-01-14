@@ -1,8 +1,15 @@
 #!/bin/bash
 
-emconfigure ./configure \
-   CFLAGS="-fPIC" \
-   --prefix=$PREFIX \
-   --disable-dependency-tracking \
-   --disable-shared
+set -eux
+
+mkdir _build
+cd _build
+
+emconfigure ../configure \
+    CFLAGS="-fPIC" \
+    --prefix=$PREFIX \
+    --build="x86_64-conda-linux-gnu" \
+    --host="wasm32-unknown-emscripten" \
+    --disable-dependency-tracking \
+    --disable-shared
 emmake make -j ${CPU_COUNT:-3} install
