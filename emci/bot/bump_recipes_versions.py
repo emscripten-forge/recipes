@@ -153,9 +153,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
             automerge = True
 
         
-    branch_name = f"bump-{name}_{current_version}_to_{new_version}"
-    if target_pr_branch_name != "main":
-        branch_name = f"{target_pr_branch_name}_{target_pr_branch_name}"
+    branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
 
 
     with git_branch_ctx(branch_name, stash_current=False):
@@ -231,7 +229,7 @@ def user_ctx(user, email, bypass=False):
         subprocess.check_output(['git', 'config', '--unset', 'user.email'])
     
 
-def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=1):
+def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=10):
     print(f"Bumping recipes in {recipe_dir} to {pr_target_branch}")
    # empty context manager
     @contextlib.contextmanager
