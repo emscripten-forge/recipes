@@ -1,5 +1,5 @@
 context:
-  version: '1.17'
+  version: '1.18'
 
 package:
   name: libiconv
@@ -7,11 +7,35 @@ package:
 
 source:
 - url: https://ftp.gnu.org/pub/gnu/libiconv/libiconv-${{ version }}.tar.gz
-  sha256: 8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313
+  sha256: 3b08f5f4f9b4eb82f151a7040bfd6fe6c6fb922efe4b1659c66ea933276965e8
 
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
   - ${{ compiler("c") }}
+
+tests:
+- package_contents:
+    lib:
+    - libiconv.a
+    include:
+    - iconv.h
+- script:
+  - node ${PREFIX}/bin/iconv --version
+  requirements:
+    build:
+    - nodejs
+
+about:
+  homepage: https://www.gnu.org/software/libiconv/
+  license: LGPL-2.1-only
+  license_file: COPYING.LIB
+  summary: |
+    This library provides an iconv() implementation, for use on systems which
+    don't have one, or whose implementation cannot convert from/to Unicode.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
