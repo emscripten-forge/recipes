@@ -257,9 +257,20 @@ def bump_recipe_versions(recipe_dir, use_bot=True, pr_limit=10):
 
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
-        prs = subprocess.check_output(
+        all_prs = subprocess.check_output(
             ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
         ).decode('utf-8').split('\n')
+        prs = []
+        for pr in all_prs:
+            
+            # gh pr view #1479 --json  baseRefName -q '.baseRefName'
+            target_branch_name = subprocess.check_output(
+                ['gh', 'pr', 'view', pr, '--json', 'baseRefName', '-q', '.baseRefName']
+            ).decode('utf-8').strip()
+            if  target_branch_name == current_branch_name:
+                prs.append(pr)
+            else:
+                print(f"skip PR {pr} [ current branch {current_branch_name} but PR is for {target_branch_name}]")
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
