@@ -1,28 +1,37 @@
 context:
+  name: fribidi
   version: 1.0.16
 
 package:
-  name: fribidi
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/fribidi/fribidi/releases/download/v${{ version }}/fribidi-${{
-    version }}.tar.xz
+  url: https://github.com/fribidi/fribidi/releases/download/v${{ version }}/fribidi-${{ version }}.tar.xz
   sha256: 1b1cde5b235d40479e91be2f0e88a309e3214c8ab470ec8a2744d82a5a9ea05c
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
   - ${{ compiler('c') }}
   - pkg-config
   - gettext
+  - meson
+  - ninja
 
 tests:
+- package_contents:
+    lib:
+    - libfribidi.a
+    include:
+    - fribidi/fribidi.h
 - script:
-  - test -f ${PREFIX}/lib/libfribidi.a
-  - test -f ${PREFIX}/include/fribidi/fribidi.h
+    - node $PREFIX/bin/fribidi.js --version
+  requirements:
+    build:
+    - nodejs
 
 about:
   homepage: https://github.com/fribidi/fribidi
@@ -36,3 +45,7 @@ about:
     implemented. It is our hope that this library will stimulate more free
     software in the Middle Eastern countries.
   repository: https://github.com/fribidi/fribidi
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
