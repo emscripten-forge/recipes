@@ -23,6 +23,3 @@ emmake make -j1
 
 # Install step
 emmake make install
-
-# Copy all files with ".wasm" extension to $PREFIX/bin
-cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
