@@ -295,11 +295,16 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_id = [line.split()[0] for line in prs if line]
         prs_packages = [line.split()[2] for line in prs if line]
 
-        # Merge PRs if possible
-        for pr,pr_pkg in zip(prs_id, prs_packages):
-            # get the recipe dir
-            recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
-            try_to_merge_pr(pr, recipe_dir=recipe_dir)
+        # Merge PRs if possible (only for main atm)
+        if pr_target_branch == "main":
+            for pr,pr_pkg in zip(prs_id, prs_packages):
+                # get the recipe dir
+                recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
+
+                try:
+                    try_to_merge_pr(pr, recipe_dir=recipe_dir)
+                except Exception as e:
+                    print(f"Error in {pr}: {e}")
 
         # only recipes for which there is no opened PR
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]
