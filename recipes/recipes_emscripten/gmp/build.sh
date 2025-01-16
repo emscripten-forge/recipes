@@ -4,6 +4,7 @@ CC_FOR_BUILD=emcc CPP_FOR_BUILD=emcc HOST_CC=emcc  emconfigure ./configure \
     --disable-assembly  \
     --enable-cxx \
     --host=none \
+    --disable-tests
     # --enable-fat
 
 emmake make -j${CPU_COUNT}
