@@ -1,0 +1,278 @@
+diff --git a/gio/gappinfo.c b/gio/gappinfo.c
+index 8e7f17a97..5d99e8503 100644
+--- a/gio/gappinfo.c
++++ b/gio/gappinfo.c
+@@ -796,6 +796,7 @@ default_for_type_data_free (DefaultForTypeData *data)
+   g_free (data);
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ static void
+ get_default_for_type_thread (GTask         *task,
+                              gpointer       object,
+@@ -911,6 +912,7 @@ g_app_info_get_default_for_uri_scheme_async (const char          *uri_scheme,
+   g_task_run_in_thread (task, get_default_for_scheme_thread);
+   g_object_unref (task);
+ }
++#endif
+ 
+ /**
+  * g_app_info_get_default_for_uri_scheme_finish:
+@@ -966,6 +968,7 @@ g_app_info_get_default_for_type_finish (GAsyncResult  *result,
+   return g_task_propagate_pointer (G_TASK (result), error);
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ /**
+  * g_app_info_launch_default_for_uri:
+  * @uri: the uri to show
+@@ -1037,6 +1040,7 @@ g_app_info_launch_default_for_uri (const char         *uri,
+ 
+   return res;
+ }
++#endif
+ 
+ typedef struct
+ {
+@@ -1194,6 +1198,7 @@ launch_default_app_for_uri_cb (GObject      *object,
+     }
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ /**
+  * g_app_info_launch_default_for_uri_async:
+  * @uri: the uri to show
+@@ -1255,6 +1260,7 @@ g_app_info_launch_default_for_uri_async (const char          *uri,
+ 
+   g_free (uri_scheme);
+ }
++#endif
+ 
+ /**
+  * g_app_info_launch_default_for_uri_finish:
+diff --git a/gio/gappinfo.h b/gio/gappinfo.h
+index 93974db7f..301836426 100644
+--- a/gio/gappinfo.h
++++ b/gio/gappinfo.h
+@@ -236,6 +236,8 @@ GList *   g_app_info_get_fallback_for_type       (const gchar *content_type);
+ 
+ GIO_AVAILABLE_IN_ALL
+ void      g_app_info_reset_type_associations     (const char  *content_type);
++
++#ifndef G_PLATFORM_WASM
+ GIO_AVAILABLE_IN_ALL
+ GAppInfo *g_app_info_get_default_for_type        (const char  *content_type,
+                                                   gboolean     must_support_uris);
+@@ -245,9 +247,11 @@ void      g_app_info_get_default_for_type_async  (const char          *content_t
+                                                   GCancellable        *cancellable,
+                                                   GAsyncReadyCallback  callback,
+                                                   gpointer             user_data);
++#endif
+ GIO_AVAILABLE_IN_2_74
+ GAppInfo *g_app_info_get_default_for_type_finish (GAsyncResult         *result,
+                                                   GError              **error);
++#ifndef G_PLATFORM_WASM
+ GIO_AVAILABLE_IN_ALL
+ GAppInfo *g_app_info_get_default_for_uri_scheme  (const char  *uri_scheme);
+ 
+@@ -256,14 +260,16 @@ void      g_app_info_get_default_for_uri_scheme_async (const char          *uri_
+                                                        GCancellable        *cancellable,
+                                                        GAsyncReadyCallback  callback,
+                                                        gpointer             user_data);
++#endif
+ GIO_AVAILABLE_IN_2_74
+ GAppInfo *g_app_info_get_default_for_uri_scheme_finish (GAsyncResult         *result,
+                                                         GError              **error);
+-
++#ifndef G_PLATFORM_WASM
+ GIO_AVAILABLE_IN_ALL
+ gboolean  g_app_info_launch_default_for_uri      (const char              *uri,
+                                                   GAppLaunchContext       *context,
+                                                   GError                 **error);
++#endif
+ 
+ GIO_AVAILABLE_IN_2_50
+ void      g_app_info_launch_default_for_uri_async  (const char           *uri,
+diff --git a/gio/gapplicationimpl-dbus.c b/gio/gapplicationimpl-dbus.c
+index f9bf28c40..3cad72411 100644
+--- a/gio/gapplicationimpl-dbus.c
++++ b/gio/gapplicationimpl-dbus.c
+@@ -941,7 +941,7 @@ g_dbus_command_line_printerr_literal (GApplicationCommandLine *cmdline,
+ static GInputStream *
+ g_dbus_command_line_get_stdin (GApplicationCommandLine *cmdline)
+ {
+-#ifdef G_OS_UNIX
++#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
+   GDBusCommandLine *gdbcl = (GDBusCommandLine *) cmdline;
+   GInputStream *result = NULL;
+   GDBusMessage *message;
+diff --git a/gio/gfile.c b/gio/gfile.c
+index 431599bdd..d5d59504e 100644
+--- a/gio/gfile.c
++++ b/gio/gfile.c
+@@ -7644,6 +7644,7 @@ g_file_mount_enclosing_volume_finish (GFile         *location,
+  *   Utility functions                      *
+  ********************************************/
+ 
++#ifndef G_PLATFORM_WASM
+ /**
+  * g_file_query_default_handler:
+  * @file: a #GFile to open
+@@ -7717,6 +7718,7 @@ g_file_query_default_handler (GFile         *file,
+                        _("No application is registered as handling this file"));
+   return NULL;
+ }
++#endif
+ 
+ static void
+ query_default_handler_query_app_info_for_type_cb (GObject      *object,
+@@ -7748,6 +7750,7 @@ query_default_handler_query_app_info_for_type_cb (GObject      *object,
+   g_object_unref (task);
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ static void
+ query_default_handler_query_info_cb (GObject      *object,
+                                      GAsyncResult *result,
+@@ -7873,6 +7876,7 @@ g_file_query_default_handler_async (GFile              *file,
+ 
+   g_free (uri_scheme);
+ }
++#endif
+ 
+ /**
+  * g_file_query_default_handler_finish:
+diff --git a/gio/gfile.h b/gio/gfile.h
+index b45689ee6..12b9c4e83 100644
+--- a/gio/gfile.h
++++ b/gio/gfile.h
+@@ -1243,10 +1243,13 @@ gboolean                g_file_poll_mountable_finish      (GFile
+ 
+ /* Utilities */
+ 
++#ifndef G_PLATFORM_WASM
+ GIO_AVAILABLE_IN_ALL
+ GAppInfo *g_file_query_default_handler       (GFile                  *file,
+ 					      GCancellable           *cancellable,
+ 					      GError                **error);
++#endif
++
+ GIO_AVAILABLE_IN_2_60
+ void      g_file_query_default_handler_async (GFile                  *file,
+                                               int                     io_priority,
+diff --git a/gio/gtestdbus.c b/gio/gtestdbus.c
+index 24caf661c..45962cc04 100644
+--- a/gio/gtestdbus.c
++++ b/gio/gtestdbus.c
+@@ -631,6 +631,7 @@ make_pipe (gint     pipe_fds[2],
+ #endif
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ static void
+ start_daemon (GTestDBus *self)
+ {
+@@ -715,6 +716,7 @@ start_daemon (GTestDBus *self)
+   g_free (config_path);
+   g_free (config_arg);
+ }
++#endif
+ 
+ static void
+ stop_daemon (GTestDBus *self)
+@@ -801,6 +803,7 @@ g_test_dbus_add_service_dir (GTestDBus *self,
+   g_ptr_array_add (self->priv->service_dirs, g_strdup (path));
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ /**
+  * g_test_dbus_up:
+  * @self: a #GTestDBus
+@@ -827,7 +830,7 @@ g_test_dbus_up (GTestDBus *self)
+   g_setenv ("DBUS_SESSION_BUS_ADDRESS", self->priv->bus_address, TRUE);
+   self->priv->up = TRUE;
+ }
+-
++#endif
+ 
+ /**
+  * g_test_dbus_stop:
+diff --git a/gio/gunixconnection.c b/gio/gunixconnection.c
+index e2c3a8145..dea3f56ad 100644
+--- a/gio/gunixconnection.c
++++ b/gio/gunixconnection.c
+@@ -82,7 +82,7 @@ g_unix_connection_send_fd (GUnixConnection  *connection,
+                            GCancellable     *cancellable,
+                            GError          **error)
+ {
+-#ifdef G_OS_UNIX
++#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
+   GSocketControlMessage *scm;
+   GSocket *socket;
+ 
+diff --git a/glib/giochannel.h b/glib/giochannel.h
+index 913019cd4..e980ef1e6 100644
+--- a/glib/giochannel.h
++++ b/glib/giochannel.h
+@@ -302,6 +302,7 @@ GQuark          g_io_channel_error_quark      (void);
+ GLIB_AVAILABLE_IN_ALL
+ GIOChannelError g_io_channel_error_from_errno (gint en);
+ 
++#ifndef G_PLATFORM_WASM
+ /* On Unix, IO channels created with this function for any file
+  * descriptor or socket.
+  *
+@@ -324,7 +325,7 @@ GLIB_AVAILABLE_IN_ALL
+ GIOChannel* g_io_channel_unix_new    (int         fd);
+ GLIB_AVAILABLE_IN_ALL
+ gint        g_io_channel_unix_get_fd (GIOChannel *channel);
+-
++#endif
+ 
+ /* Hook for GClosure / GSource integration. Don't touch */
+ GLIB_VAR GSourceFuncs g_io_watch_funcs;
+diff --git a/glib/gtestutils.c b/glib/gtestutils.c
+index 5c5f9051f..5181f460f 100644
+--- a/glib/gtestutils.c
++++ b/glib/gtestutils.c
+@@ -3668,6 +3668,7 @@ child_read (GIOChannel *io, GIOCondition cond, gpointer user_data)
+   return TRUE;
+ }
+ 
++#ifndef G_PLATFORM_WASM
+ static void
+ wait_for_child (GPid pid,
+                 int stdout_fd, gboolean echo_stdout,
+@@ -3748,6 +3749,7 @@ wait_for_child (GPid pid,
+   g_clear_pointer (&data.stdout_io, g_io_channel_unref);
+   g_clear_pointer (&data.stderr_io, g_io_channel_unref);
+ }
++#endif
+ 
+ /**
+  * g_test_trap_fork:
+@@ -3797,7 +3799,7 @@ gboolean
+ g_test_trap_fork (guint64        usec_timeout,
+                   GTestTrapFlags test_trap_flags)
+ {
+-#ifdef G_OS_UNIX
++#if defined(G_OS_UNIX) && !defined(G_PLATFORM_WASM)
+   int stdout_pipe[2] = { -1, -1 };
+   int stderr_pipe[2] = { -1, -1 };
+   int errsv;
+@@ -3864,6 +3866,7 @@ g_test_trap_fork (guint64        usec_timeout,
+ }
+ G_GNUC_END_IGNORE_DEPRECATIONS
+ 
++#ifndef G_PLATFORM_WASM
+ /**
+  * g_test_trap_subprocess:
+  * @test_path: (nullable): Test to run in a subprocess
+@@ -4065,6 +4068,7 @@ g_test_trap_subprocess_with_envp (const char           *test_path,
+                   stderr_fd, !!(test_flags & G_TEST_SUBPROCESS_INHERIT_STDERR),
+                   usec_timeout);
+ }
++#endif
+ 
+ /**
+  * g_test_subprocess:
