@@ -6,6 +6,15 @@ let already_called = false;
 async function my_main(){
     let exitCode = 126;  // "Command invoked cannot execute"
     const ModuleF = require(binary_js_runner);
+
+    function setExitCode(status) {
+        if (already_called) {
+            return;
+        }
+        already_called = true;
+        exitCode = status;
+    }
+    
     const Module = await ModuleF({
         arguments: process.argv,
         locateFile: (filename) => {
@@ -14,13 +23,8 @@ async function my_main(){
             const directory = path.dirname(binary_js_runner);
             return path.join(directory, filename);
         },
-        quit: (status, toThrow) => {
-            if (already_called) {
-                return;
-            }
-            already_called = true;
-            exitCode = status;
-        }
+        onExit: (status) => setExitCode(status),
+        quit: (status, toThrow) => setExitCode(status)
     });
     return exitCode;
 }
