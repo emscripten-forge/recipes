@@ -1,33 +1,33 @@
 context:
-  version: 1.14.0
+  version: 1.15.2
   name: gtest
-  
+
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://github.com/google/googletest/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7
+  sha256: 7b42b4d6ed48810c5362c265a17faebe90dc2373c885e5216439d37927f02926
 
 build:
   number: 0
 
 requirements:
   build:
-    - ${{ compiler('cxx') }}
-    - cmake
-    - ninja
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
   run_constraints:
-    - gmock ${{ version }}
+  - gmock = ${{ version }}
   run_exports:
-    - ${{ pin_subpackage('gtest', max_pin='x.x.x') }}
+  - ${{ pin_subpackage('gtest', upper_bound='x.x.x') }}
 tests:
-  - script:
-    - test -f $PREFIX/lib/libgtest.a
-    - test -f $PREFIX/lib/libgmock.a
-    - test -f $PREFIX/include/gtest/gtest.h
-    - test -f $PREFIX/include/gmock/gmock.h 
+- script:
+  - test -f $PREFIX/lib/libgtest.a
+  - test -f $PREFIX/lib/libgmock.a
+  - test -f $PREFIX/include/gtest/gtest.h
+  - test -f $PREFIX/include/gmock/gmock.h
 
 about:
   homepage: https://github.com/google/googletest
@@ -38,4 +38,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - KGB99
+  - KGB99
