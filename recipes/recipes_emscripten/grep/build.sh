@@ -1,5 +1,6 @@
 export CONFIG_CFLAGS="\
     -Os \
+    -Wno-implicit-function-declaration \
     "
 export CONFIG_LDFLAGS="\
     -Os \
