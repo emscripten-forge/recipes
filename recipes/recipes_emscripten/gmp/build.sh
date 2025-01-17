@@ -2,6 +2,13 @@ echo "Building GMP"
 
 
 
+# the workflow in the gmp makefile is to 
+# first compile some "generator" programs
+# and then run them to generate some source files.
+# Since these "generator" programs are binaries,
+# they will be wasm / js binaries when compiling
+# with emscripten. Therefore, we need to run them
+# with node instead of executing them directly.
 filename=Makefile.in
 
 # Check the operating system
@@ -15,9 +22,6 @@ else
     echo "Unsupported OS: $OSTYPE"
     exit 1
 fi
-
-
-
 
 
 
