@@ -2,6 +2,9 @@
 
 export LDFLAGS="$(LDFLAGS) -sUSE_FREETYPE=1 -sUSE_PTHREADS=0"
 
+# Disable pthreads
+sed '292,296d' meson.build
+
 meson_setup_args=(
     -Dtests=disabled
     -Ddefault_library=static
