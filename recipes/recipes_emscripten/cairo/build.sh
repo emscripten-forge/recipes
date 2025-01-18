@@ -6,6 +6,8 @@ export CFLAGS="${CFLAGS} -DCAIRO_NO_MUTEX=1"
 export LDFLAGS="$(LDFLAGS) -sUSE_FREETYPE=1 -sUSE_PTHREADS=0"
 PTHREAD_CFLAGS=" "
 
+sed -i '712,732d' meson.build
+
 meson_config_args=(
     -Dfontconfig=enabled
     -Dfreetype=enabled
