@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export LDFLAGS="$(LDFLAGS) -sUSE_FREETYPE=1 -sUSE_PTHREADS=0"
+
 meson_setup_args=(
     -Dtests=disabled
     -Ddefault_library=static

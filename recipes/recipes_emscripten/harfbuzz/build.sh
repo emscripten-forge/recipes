@@ -2,6 +2,8 @@
 
 set -ex
 
+export LDFLAGS="$(LDFLAGS) -sUSE_PTHREADS=0"
+
 meson_config_args=(
     -Dglib=enabled
     -Dicu=enabled

@@ -6,6 +6,9 @@ set -eux
 # so this executable must come from the build environment.
 ln -s $BUILD_PREFIX/bin/glib-mkenums $PREFIX/bin/glib-mkenums
 
+export LDFLAGS="$(LDFLAGS) -sUSE_FREETYPE=1 -sUSE_PTHREADS=0"
+export PTHREAD_CFLAGS=" "
+
 meson_config_args=(
     -Dintrospection=disabled # requires gobject-introspection as run-time dep
     -Dfontconfig=enabled
