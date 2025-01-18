@@ -38,4 +38,4 @@ ninja -C builddir install -j ${CPU_COUNT}
 rm $PREFIX/bin/glib-mkenums
 
 # These worker files do not get installed by the meson install command
-cp builddir/utils/*.worker.js $PREFIX/bin/
+cp builddir/utils/*.js $PREFIX/bin/
