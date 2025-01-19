@@ -1,0 +1,51 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4f81148..4f6a568 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -98,10 +98,10 @@ install(
+ #
+ # Add tests
+ #
+-include(CTest) # This module defines BUILD_TESTING option
+-if(BUILD_TESTING)
+-  add_subdirectory(tests)
+-endif()
++# include(CTest) # This module defines BUILD_TESTING option
++# if(BUILD_TESTING)
++#  add_subdirectory(tests)
++# endif()
+ 
+ #
+ # Generate 'yamlConfig.cmake', 'yamlConfigVersion.cmake' and 'yamlTargets.cmake'
+diff --git a/yamlConfig.cmake.in b/yamlConfig.cmake.in
+new file mode 100644
+index 0000000..c5ecdf1
+--- /dev/null
++++ b/yamlConfig.cmake.in
+@@ -0,0 +1,15 @@
++# Config file for the yaml library.
++#
++# It defines the following variables:
++#   yaml_LIBRARIES    - libraries to link against
++
++@PACKAGE_INIT@
++
++set_and_check(yaml_TARGETS "@PACKAGE_CONFIG_DIR_CONFIG@/yamlTargets.cmake")
++
++if(NOT yaml_TARGETS_IMPORTED)
++  set(yaml_TARGETS_IMPORTED 1)
++  include(${yaml_TARGETS})
++endif()
++
++set(yaml_LIBRARIES yaml)
+diff --git a/cmake/config.h.in b/cmake/config.h.in
+new file mode 100644
+index 0000000..c92894b
+--- /dev/null
++++ b/cmake/config.h.in
+@@ -0,0 +1,4 @@
++#define YAML_VERSION_MAJOR @YAML_VERSION_MAJOR@
++#define YAML_VERSION_MINOR @YAML_VERSION_MINOR@
++#define YAML_VERSION_PATCH @YAML_VERSION_PATCH@
++#define YAML_VERSION_STRING "@YAML_VERSION_STRING@"
+\ No newline at end of file
