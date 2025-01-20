@@ -7,10 +7,17 @@ on:
 
 jobs:
   update_versions:
+    strategy:
+      matrix:
+        branch: [main, emscripten-3.1.73]
+
+
     if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Install micromamba
         uses: mamba-org/setup-micromamba@v1
@@ -19,6 +26,6 @@ jobs:
 
       - name: Determine new package version and open/merge PRs
         shell: bash -l -eo pipefail {0}
-        run:  python -m emci bot bump-recipes-versions
+        run:  python -m emci bot bump-recipes-versions  ${{ matrix.branch }} 
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}

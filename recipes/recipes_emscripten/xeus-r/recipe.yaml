@@ -1,0 +1,63 @@
+context:
+  version: 0.3.0
+  name: xeus-r
+  r_base_version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/xeus-r/archive/refs/tags/${{ version }}.tar.gz
+  sha256: f0b4308b5a9ec1e3acf8f31fb20897f3814cfea2403be5ad79fe2617652a963c
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make  # [unix]
+  host:
+    - nlohmann_json
+    - xeus-lite >=3.0.0,<4.0
+    - xeus >=5.0.0,<6.0
+    - pcre2>=10.43
+    - zlib>=1.2.13
+    - libflang                  # for FortranRuntime
+    - xz                        # for lzma
+    - bzip2
+    - libiconv
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-rlang
+    - r-evaluate
+    - r-jsonlite
+    - r-glue
+    - r-cli >=3.6.3
+    - r-repr
+    - r-IRdisplay
+    - r-ggplot2
+    - r-htmltools
+    - r-munsell >=0.5.1
+    - r-colorspace
+
+tests:
+- package_contents:
+    bin:
+    - xr.js
+    - xr.wasm
+
+about:
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: Jupyter kernel for the R programming language
+  homepage: https://github.com/jupyter-xeus/xeus-r
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
+    - anutosh491

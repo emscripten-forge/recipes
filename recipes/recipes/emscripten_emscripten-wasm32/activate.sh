@@ -2,8 +2,13 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     export CONDA_FORGE_EMSCRIPTEN_ACTIVATED=1
 
-    export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
-    export PYTHON=${BUILD_PREFIX}/bin/python3
+    if [ -z ${BUILD_PREFIX+x} ]; then
+        export EMSDK_PYTHON=${CONDA_PREFIX}/bin/python3
+        export PYTHON=${CONDA_PREFIX}/bin/python3
+    else
+        export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
+        export PYTHON=${BUILD_PREFIX}/bin/python3
+    fi
 
     CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
  
