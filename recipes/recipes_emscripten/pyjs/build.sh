@@ -24,6 +24,7 @@ emmake cmake ${CMAKE_ARGS} ..  \
     -DBUILD_RUNTIME_NODE=OFF \
     -DLINK_LIBMPDEC=OFF \
     -DLINK_LIBEXPAT=OFF \
+    -DLINK_LIBLZMA=ON \
     -DWITH_NODE_TESTS=OFF \
     -DZLIB_INCLUDE_DIR=$PREFIX/include \
     -DZLIB_LIBRARY=$PREFIX/lib/libz.a  \
