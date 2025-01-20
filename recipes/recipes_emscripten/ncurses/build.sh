@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Get an updated config.sub and config.guess
 # Running autoreconf messes up the build so just copy these two files
 cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
