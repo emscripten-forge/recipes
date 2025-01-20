@@ -1,0 +1,49 @@
+From 48870c7f63324b0c2a1990a4cdd31815d83c6404 Mon Sep 17 00:00:00 2001
+From: Sylvain Corlay <sylvain.corlay@gmail.com>
+Date: Sat, 18 Jan 2025 10:55:25 +0100
+Subject: [PATCH] Disable threads
+
+---
+ meson.build | 24 +-----------------------
+ 1 file changed, 1 insertion(+), 23 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 9cf1bf0..80c7498 100644
+--- a/meson.build
++++ b/meson.build
+@@ -450,31 +450,9 @@ if dep_png.found()
+   config.set('HAVE_LIBPNG', 1)
+ endif
+ dep_m = cc.find_library('m', required : false)
+-dep_threads = dependency('threads')
+ 
+-# MSVC-style compilers do not come with pthreads, so we must link
+-# to it explicitly, currently pthreads-win32 is supported
+ pthreads_found = false
+-
+-if dep_threads.found() and cc.has_header('pthread.h')
+-  if cc.get_argument_syntax() == 'msvc'
+-    pthread_lib = null_dep
+-    foreach pthread_type : ['VC3', 'VSE3', 'VCE3', 'VC2', 'VSE2', 'VCE2']
+-      if not pthread_lib.found()
+-        pthread_lib = cc.find_library('pthread@0@'.format(pthread_type), required : false)
+-      endif
+-    endforeach
+-    if pthread_lib.found()
+-      pthreads_found = true
+-      dep_threads = pthread_lib
+-    endif
+-  else
+-    pthreads_found = true
+-  endif
+-else
+-  # Avoid linking with -pthread if we don't actually have pthreads
+-  dep_threads = null_dep
+-endif
++dep_threads = null_dep
+ 
+ if pthreads_found
+   config.set('HAVE_PTHREADS', 1)
+-- 
+2.39.3 (Apple Git-145)
+
