@@ -1,4 +1,4 @@
 #!/bin/bash
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib" 
+export GLPK_HEADER_PATH="$PREFIX/include"
 ${PYTHON} -m pip install .
 

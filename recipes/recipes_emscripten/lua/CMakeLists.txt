@@ -64,7 +64,7 @@ foreach(lua_binary ${lua_binaries})
   target_compile_definitions(${lua_binary}
       PUBLIC "SHELL: -s FORCE_FILESYSTEM"
       PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
-      PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
+      PUBLIC "SHELL: -s EXIT_RUNTIME=1"
       PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
   )
@@ -72,7 +72,7 @@ foreach(lua_binary ${lua_binaries})
   target_link_options(${lua_binary}
       PUBLIC "SHELL: -s FORCE_FILESYSTEM"
       PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
-      PUBLIC "SHELL: -s ENVIRONMENT=web,worker,node"
+      PUBLIC "SHELL: -s EXIT_RUNTIME=1"
       PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY"
       PUBLIC "SHELL: -s MODULARIZE=1"
   )

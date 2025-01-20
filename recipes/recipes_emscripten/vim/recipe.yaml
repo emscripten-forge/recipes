@@ -1,0 +1,45 @@
+context:
+  version: 9.1.0917
+
+package:
+  name: vim
+  version: ${{ version }}
+
+source:
+  url: https://github.com/vim/vim/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a5cdcfcfeb13dc4deddcba461d40234dbf47e61941cb7170c9ebe147357bb62d
+  patches:
+    - patches/0001-const-char-args.patch
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+  host:
+    - ncurses
+
+tests:
+  - script:
+    - test -f $PREFIX/bin/vim.data
+    - test -f $PREFIX/bin/vim.js
+    - test -f $PREFIX/bin/vim.wasm
+  - script: |
+      # Limit output to exclude compilation date and time.
+      OUTPUT=$(run_modularized $PREFIX/bin/vim.js --version | head -1 | cut -c -22)
+      if [[ "$OUTPUT" != "VIM - Vi IMproved 9.1 " ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+
+about:
+  license: Vim
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ianthomas23
