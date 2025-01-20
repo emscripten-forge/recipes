@@ -8,11 +8,8 @@ BUILD=$(ROOT)/build/${PKG_VERSION}/Python-${PKG_VERSION}
 INSTALL=$(PREFIX)
 LIB=libpython$(PYMAJOR).$(PYMINOR).a
 
-FFIBUILD=$(ROOT)/build/libffi
-LIBFFIREPO=https://github.com/libffi/libffi
-LIBFFI_COMMIT=3d0ce1e6fcf19f853894862abcbac0ae78a7be60
 
-all: $(INSTALL)/lib/$(LIB) $(INSTALL)/lib/libffi.a
+all: $(INSTALL)/lib/$(LIB) 
 
 .PHONY=sysconfigdata
 sysconfigdata:
@@ -69,21 +66,6 @@ $(BUILD)/.patched:
 	cat patches/*.patch | (cd $(BUILD) ; patch -p1)
 	touch $@
 
-$(INSTALL)/lib/libffi.a :
-	rm -rf $(FFIBUILD)
-	mkdir $(FFIBUILD)
-	(\
-		cd $(FFIBUILD) \
-		&& git init \
-		&& git fetch --depth 1 $(LIBFFIREPO) $(LIBFFI_COMMIT) \
-		&& git checkout FETCH_HEAD \
-		&& . $(EMSCRIPTEN_FORGE_EMSDK_DIR)/emsdk_env.sh \
-		&& ./testsuite/emscripten/build.sh --wasm-bigint \
-		&& make install \
-	)
-	cp $(FFIBUILD)/target/include/*.h $(BUILD)/Include/
-	mkdir -p $(INSTALL)/lib
-	cp $(FFIBUILD)/target/lib/libffi.a $(INSTALL)/lib/
 
 $(BUILD)/Makefile: 
 	# --enable-big-digits=30 :
@@ -97,8 +79,8 @@ $(BUILD)/Makefile:
 		cd $(BUILD); \
 		CONFIG_SITE=./Tools/wasm/config.site-wasm32-emscripten READELF=true emconfigure \
 		  ./configure \
-			  CFLAGS="${PYTHON_CFLAGS}" \
-			  CPPFLAGS="-sUSE_BZIP2=1 -sUSE_ZLIB=1" \
+			  CFLAGS="${PYTHON_CFLAGS} -I$(PREFIX)" \
+			  CPPFLAGS="-sUSE_BZIP2=1 -sUSE_ZLIB=1 -I$(PREFIX)" \
 			  PLATFORM_TRIPLET="$(PLATFORM_TRIPLET)" \
 			  --without-pymalloc \
 			  --disable-shared \
@@ -115,7 +97,7 @@ $(BUILD)/Makefile:
 $(BUILD)/Modules/Setup.local: Setup.local
 	cp Setup.local $(BUILD)/Modules/
 
-$(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.local $(INSTALL)/lib/libffi.a
+$(BUILD)/$(LIB): $(BUILD)/Makefile $(BUILD)/pyconfig.h $(BUILD)/Modules/Setup.local 
 	cp Setup.local $(BUILD)/Modules/
 	( \
 		cd $(BUILD); \
