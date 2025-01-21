@@ -17,14 +17,15 @@ build:
 
 requirements:
   build:
+  # NOTE: harfbuzz doesn't need host dependencies
+  # as it only uses the library headers and doesn't
+  # link with them directly.
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
   - meson
   - ninja
   - pkg-config
-  - glib
-  host:
-    # - cairo TODO: add once available
+  - cairo >=1.18
   - glib
   - freetype
   - icu
@@ -32,12 +33,15 @@ requirements:
 
 tests:
 - script:
-  # - test -f $PREFIX/lib/libharfbuzz-gobject.a
+  - test -f $PREFIX/lib/libharfbuzz-gobject.a
+  - test -f $PREFIX/lib/libharfbuzz-cairo.a
   - test -f $PREFIX/lib/libharfbuzz-icu.a
   - test -f $PREFIX/lib/libharfbuzz-subset.a
   - test -f $PREFIX/lib/libharfbuzz.a
   - test -f $PREFIX/include/harfbuzz/hb.h
-# TODO: test hb-view, hb-shape, and hb-subset with cairo or chafa enabled
+  - test -f $PREFIX/include/harfbuzz/hb-shape.h
+  - test -f $PREFIX/include/harfbuzz/hb-subset.h
+# TODO: test hb-view with chafa enabled
 
 about:
   homepage: https://harfbuzz.github.io/
