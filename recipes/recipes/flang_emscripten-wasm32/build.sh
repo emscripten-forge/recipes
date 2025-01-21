@@ -8,5 +8,5 @@ cmake -S llvm -B _fbuild -GNinja \
         -DLLVM_DEFAULT_TARGET_TRIPLE=wasm32-unknown-emscripten \
         -DLLVM_TARGETS_TO_BUILD=WebAssembly \
         -DLLVM_ENABLE_PROJECTS="clang;flang;mlir"
-cmake --build _fbuild
+cmake --build _fbuild -j 1
 cmake --build _fbuild --target install
