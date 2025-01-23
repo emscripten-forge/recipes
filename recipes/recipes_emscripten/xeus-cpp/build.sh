@@ -1,30 +1,24 @@
-mkdir build
+#!/bin/bash
+
+set -eux
+
+# Create build directory
+mkdir -p build
 cd build
 
-export CMAKE_PREFIX_PATH=$PREFIX
-export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
+# Set up the environment variables for cross-compiling to WASM
+export SYSROOT_PATH=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot
 
-if [[ $target_platform == "emscripten-wasm32" ]]; then
-    export USE_WASM=ON
-else
-    export USE_WASM=OFF
-fi
+# Configure step with Emscripten's emcmake
+emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
+    -DCMAKE_BUILD_TYPE=Release                             \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
+    -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=ON                    \
+    -DCMAKE_FIND_ROOT_PATH=$PREFIX                         \
+    -DSYSROOT_PATH=$SYSROOT_PATH
 
-ls $PREFIX/lib
-echo "BUILDING"
-
-# Configure step
-emcmake cmake ${CMAKE_ARGS} -S .. -B .                \
-    -DCMAKE_BUILD_TYPE=Release                        \
-    -DCMAKE_PREFIX_PATH=$PREFIX                       \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=$USE_WASM        \
-    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON            \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"       \
-    -DCMAKE_VERBOSE_MAKEFILE=ON
-
-# Build step
-EMCC_CFLAGS='-sERROR_ON_UNDEFINED_SYMBOLS=0' emmake make -j1
+# Build step with emmake
+emmake make -j1
 
 # Install step
 emmake make install
