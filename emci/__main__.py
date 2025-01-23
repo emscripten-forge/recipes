@@ -16,6 +16,7 @@ build_app = typer.Typer()
 app.add_typer(build_app, name="build")
 
 
+
 @build_app.command()
 def changed(
     root_dir,
@@ -72,6 +73,18 @@ def bump_recipes_versions():
     from .bot.bump_recipes_versions import bump_recipe_versions
 
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR)
+
+@bot_app.command()
+def recipes_from_pyodide(pyodide_dir: str, conda_forge_noarch_repodata_path: str):
+    from .bot.recipes_from_pyodide import recipes_from_pyodie
+
+    recipes_from_pyodie(pyodide_dir, conda_forge_noarch_repodata_path)
+
+@bot_app.command()
+def convert_pyodide_recipe(recipe_dir, output_dir):
+    from .bot.recipes_from_pyodide import convert_pyodide_recipe
+
+    convert_pyodide_recipe(recipe_dir, output_dir)
 
 if __name__ == "__main__":
     app()
