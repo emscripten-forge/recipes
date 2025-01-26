@@ -1,0 +1,57 @@
+context:
+  name: r-cachem
+  version: 1.1.0
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 550839fc2ae5d865db475ba2c1714144f07fa0c052c72135b0e4a70287492e21
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - r-rlang
+      - r-fastmap
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-rlang
+      - r-fastmap
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-rlang
+      - r-fastmap
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://cachem.r-lib.org/
+  repository: https://github.com/r-lib/cachem
+  license: MIT
+  summary: Key-value caches for R
+  description: |
+    Key-value stores with automatic pruning. Caches can limit either their total
+    size or the age of the oldest object (or both), automatically pruning
+    objects to maintain the constraints.
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
