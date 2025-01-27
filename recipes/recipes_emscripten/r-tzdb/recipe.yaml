@@ -1,0 +1,53 @@
+context:
+  version: 0.4.0
+  name: r-tzdb
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 4253c66041bdddfd463c98183bf0052fbcacdb7c5cff9eadbb858b3dcf9d3a23
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('cxx') }}
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-cpp11
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-cpp11
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://tzdb.r-lib.org/
+  repository: https://github.com/r-lib/tzdb
+  license: MIT
+  license_file: LICENSE
+  summary: Time Zone Database Information
+  description: |
+    Provides an up-to-date copy of the Internet Assigned Numbers Authority
+    (IANA) Time Zone Database. It is updated periodically to reflect changes
+    made by political bodies to time zone boundaries, UTC offsets, and daylight
+    saving time rules.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
