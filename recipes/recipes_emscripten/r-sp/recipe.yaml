@@ -1,0 +1,54 @@
+context:
+  version: 2.1-4
+  name: r-sp
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: e185e7fb61d2d7dbc50fd765a93e170fa778083a653588db1f5e99d019479f0a
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version | replace('-', '_') }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - r-lattice
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-lattice
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-lattice
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://edzer.github.io/sp/
+  repository: https://github.com/edzer/sp/
+  license: GPL-2.0-or-later
+  license_file: GPL-3
+  summary: Classes and Methods for Spatial Data
+  description: |
+    Classes and methods for spatial data; the classes document where the spatial
+    location information resides, for 2D or 3D data. Utility functions are
+    provided, e.g. for plotting data as maps, spatial selection, as well as
+    methods for retrieving coordinates, for subsetting, print, summary, etc.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
