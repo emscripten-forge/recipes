@@ -306,6 +306,10 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
 
+        # print all ids and the prs_packages
+        for pr,pr_pkg in zip(prs_id, prs_packages):
+            print(f"PR {pr} is for package {pr_pkg}")
+
         # only recipes for which there is no opened PR
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]
         
