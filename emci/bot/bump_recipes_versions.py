@@ -271,29 +271,21 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
-        all_prs = subprocess.check_output(
-            ['gh', 'pr', 'list', '--author', 'emscripten-forge-bot'],
-        ).decode('utf-8').split('\n')
-        prs = []
-        for pr_line in all_prs:
-            if not pr_line:
-                continue
-            pr_id = pr_line.split()[0]
-            that_pr_target_branch = subprocess.check_output(
-                ['gh', 'pr', 'view', pr_id, '--json', 'baseRefName', '-q', '.baseRefName']
-            ).decode('utf-8').strip()
-            if  that_pr_target_branch == pr_target_branch:
-                prs.append(pr_line)
-            else:
-                print(f"PR {pr_id} is not targeting {pr_target_branch} [but {that_pr_target_branch}], skipping it")
+        
+        
+        command = ["gh","pr","list","--author","emscripten-forge-bot","--base",pr_target_branch,"--json","number,title"]
+        # run command and get the output as json
+        all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
+
+
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
         recipe_name_to_recipe_dir = {recipe.name: recipe for recipe in all_recipes}
 
 
-        prs_id = [line.split()[0] for line in prs if line]
-        prs_packages = [line.split()[2] for line in prs if line]
+        prs_id = [pr['number'] for pr in all_prs]
+        prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
         # Merge PRs if possible (only for main atm)
         if pr_target_branch == "main":
@@ -305,6 +297,10 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
                     try_to_merge_pr(pr, recipe_dir=recipe_dir)
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
+
+        # print all ids and the prs_packages
+        for pr,pr_pkg in zip(prs_id, prs_packages):
+            print(f"PR {pr} is for package {pr_pkg}")
 
         # only recipes for which there is no opened PR
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]

@@ -1,0 +1,80 @@
+context:
+  version: 2.5.4
+  name: r-haven
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 9e1531bb37aa474abd91db5e0ed9e3a355c03faa65f4e653b3ea68b7c61ea835
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - r-cli
+      - r-forcats
+      - r-hms
+      - r-lifecycle
+      - r-readr
+      - r-rlang
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+      - r-cpp11
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-forcats
+      - r-hms
+      - r-lifecycle
+      - r-readr
+      - r-rlang
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+      - r-cpp11
+      - zlib
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-forcats
+      - r-hms
+      - r-lifecycle
+      - r-readr
+      - r-rlang
+      - r-tibble
+      - r-tidyselect
+      - r-vctrs
+      - r-cpp11
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://haven.tidyverse.org/
+  repository: https://github.com/tidyverse/haven
+  license: MIT
+  license_file: LICENSE
+  summary: Import and Export 'SPSS', 'Stata' and 'SAS' Files
+  description: |
+    Import foreign statistical formats into R via the embedded 'ReadStat' C
+    library, <https://github.com/WizardMac/ReadStat>.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
