@@ -1,7 +1,7 @@
 import pytest
 
-def test_matplotlib():
-
+def test_matplotlib(tmp_path):
+    tmp_path = Path(tmp_path)
     from pathlib import Path
 
     import matplotlib
@@ -14,7 +14,8 @@ def test_matplotlib():
 
     fig = plt.figure()
     plt.plot(np.sin(np.linspace(0, 20, 100)))
-    plt.show();
+    plt.savefig(tmp_path / 'test.png')
+    assert (tmp_path / 'test.png').exists()
 
 
 def test_import_ft2font():
