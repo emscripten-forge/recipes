@@ -1,8 +1,9 @@
 import pytest
+from pathlib import Path
 
 def test_matplotlib(tmp_path):
     tmp_path = Path(tmp_path)
-    from pathlib import Path
+
 
     import matplotlib
     import mpl_toolkits
