@@ -14,9 +14,20 @@ ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
+
+# stderr: flang-new: error: unknown argument: '-s'
+# flang-new: error: no such file or directory: 'SIDE_MODULE=1'
 export LDFLAGS=""
+# export FC_LD=wasm-ld
+
 
 mkdir builddir
+
+meson_config_args=(
+    -Dblas=blas
+    -Dlapack=lapack
+    -Duse-pythran=false
+)
 
 meson setup builddir \
     "${meson_config_args[@]}" \
@@ -24,21 +35,17 @@ meson setup builddir \
     --default-library=static \
     --prefer-static \
     --prefix=$PREFIX \
-    -Dlibdir=lib \
-    -Dfortran_std=none \
-    -Dblas=blas \
-    -Dlapack=lapack \
     --wrap-mode=nofallback \
     --cross-file=$RECIPE_DIR/emscripten.meson.cross
 
-# -wnx flags mean: --wheel --no-isolation --skip-dependency-check
-$PYTHON -m build -w -n -x \
-    -Cbuilddir=builddir \
-    -Cinstall-args=--tags=runtime,python-runtime,devel \
-    -Csetup-args=-Dblas=blas \
-    -Csetup-args=-Dlapack=lapack \
-    -Csetup-args=-Duse-g77-abi=true \
-    -Csetup-args=${MESON_ARGS// / -Csetup-args=}
+# # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
+# $PYTHON -m build -w -n -x \
+#     -Cbuilddir=builddir \
+#     -Cinstall-args=--tags=runtime,python-runtime,devel \
+#     -Csetup-args=-Dblas=blas \
+#     -Csetup-args=-Dlapack=lapack \
+#     -Csetup-args=-Duse-g77-abi=true \
+#     -Csetup-args=${MESON_ARGS// / -Csetup-args=}
 
 # # copy complete folder scipy to side-packages
 # mkdir -p $PREFIX/lib/python3.11/site-packages
