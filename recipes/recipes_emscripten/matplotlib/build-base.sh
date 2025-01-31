@@ -11,9 +11,9 @@ rm $SRC_DIR/emscripten.meson.cross.temp
 
 cat $SRC_DIR/emscripten.meson.cross
 
-export CFLAGS="$CFLAGS -sWASM_BIGINT"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+export CFLAGS="$CFLAGS -sWASM_BIGINT -fexceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -fexceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
 
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
