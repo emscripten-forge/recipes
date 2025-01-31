@@ -1,4 +1,5 @@
 emcmake cmake \
+    -DCMAKE_CXX_STANDARD=17 \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS=OFF \
     -DBUILD_BENCHMARKS=OFF \
