@@ -9,7 +9,7 @@ emcmake cmake \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DBUILD_FOR_DISTRIBUTION=yes \
     -DBUILD_SHARED_LIBS=no \
-    -DBoost_INCLUDE_DIR=$BUILD_PREFIX/include \
+    -DBoost_INCLUDE_DIR=$PREFIX/include \
     -DWITH_SYMENGINE_THREAD_SAFE=ON \
     -DWITH_SYMENGINE_RCP=ON \
     -DWITH_FLINT=OFF \
