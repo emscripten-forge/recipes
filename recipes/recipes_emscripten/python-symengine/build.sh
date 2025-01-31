@@ -1,7 +1,7 @@
 #!/bin/bash
 
 unset CMAKE_CXX_FLAGS
-eport CMAKE_CXX_FLAGS=""
+export CMAKE_CXX_FLAGS=""
 
 export CXXFLAGS="--std=c++17"
 export CMAKE_CXX_STANDARD=17
