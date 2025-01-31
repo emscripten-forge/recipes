@@ -1,5 +1,8 @@
 #!/bin/bash
 
+cp $RECIPE_DIR/CMakelists.txt $SRC_DIR
+
+
 unset CMAKE_CXX_FLAGS
 export CMAKE_CXX_FLAGS=""
 
