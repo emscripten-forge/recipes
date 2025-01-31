@@ -4,6 +4,9 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
+export CFLAGS="$CFLAGS -sWASM_BIGINT -fexceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -fexceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
 
 # Configure step
 cmake ${CMAKE_ARGS} ..                                \

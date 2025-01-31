@@ -1,0 +1,78 @@
+context:
+  version: 2.1.5
+  name: r-readr
+  r_base_version: 4.4.2
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 0fa65a5fe0a46cffe221b7696b52adb82dd4d7a692a895484e438e439594e10a
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    files:
+      - lib/R/library/${{ name[2:] }}/*
+  requirements:
+    build:
+      - cross-r-base >= ${{ r_base_version }}
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - r-magrittr
+      - r-rlang
+      - r-tibble
+      - r-vctrs
+    host:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-clipr
+      - r-crayon
+      - r-hms
+      - r-lifecycle
+      - r-r6
+      - r-rlang
+      - r-tibble
+      - r-vroom
+      - r-cpp11
+      - r-tzdb
+    run:
+      - r-base >= ${{ r_base_version }}
+      - r-cli
+      - r-clipr
+      - r-crayon
+      - r-hms
+      - r-lifecycle
+      - r-r6
+      - r-rlang
+      - r-tibble
+      - r-vroom
+      - r-cpp11
+      - r-tzdb
+
+  tests:
+  - package_contents:
+      lib:
+      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+
+about:
+  homepage: https://readr.tidyverse.org
+  repository: https://github.com/tidyverse/readr
+  license: MIT
+  license_file: LICENSE
+  summary: Read flat files (csv, tsv, fwf) into R
+  description: |
+    The goal of 'readr' is to provide a fast and friendly way to read
+    rectangular data (like 'csv', 'tsv', and 'fwf'). It is designed to flexibly
+    parse many types of data found in the wild, while still cleanly failing when
+    data unexpectedly changes.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
