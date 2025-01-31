@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cp $RECIPE_DIR/CMakelists.txt $SRC_DIR
+cp $RECIPE_DIR/CMakeLists.txt $SRC_DIR
 
 
 unset CMAKE_CXX_FLAGS
