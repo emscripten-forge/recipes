@@ -1,31 +1,66 @@
 context:
-  version: 1.11.1
   name: scipy
+  version: 1.15.1
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  - url: https://pypi.org/packages/source/s/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: 033a75ddad1463970c96a88063a1df87ccfddd526437136b6ee81ff0312ebdf6
+
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
-  - ${{ compiler('c') }}
+    - python
+    - cross-python_${{ target_platform }}
+    - cython
+    - numpy
+    - pybind11
+    - meson-python
+    - cmake
+    - ninja
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    # - ${{ compiler('fortran') }}
+  host:
+    - libblas >=3.12
+    - libcblas >=3.12
+    - liblapack >=3.12
+    - python
+    - cython
+    - python-build
+    - pybind11
+    - pythran
+    - numpy
+    - pip
   run:
-  - openblas
-  - numpy
+    - python
+    # numpy's run-export only requires <3 because not every package
+    # is exposed as deeply to its ABI. scipy however only supports
+    # the two next minor versions after the numpy we build against, see
+    # https://scipy.github.io/devdocs/dev/core-dev/index.html#version-ranges-for-numpy-and-other-dependencies
+    - numpy <2.3
+    # double-check lower bound from
+    # https://github.com/scipy/scipy/blob/v${{ version }}/pyproject.toml#L55
+    - numpy >=1.23.5
 
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_scipy.py
-  requirements:
-    build:
-    - pytester
-    run:
-    - pytester-run
+about:
+  homepage: http://www.scipy.org/
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Scientific Library for Python
+  description: |
+    SciPy is a Python-based ecosystem of open-source software for mathematics,
+    science, and engineering.
+  documentation: http://www.scipy.org/docs.html
+  repository: https://github.com/scipy/scipy
+
 extra:
   recipe-maintainers:
   - DerThorsten
