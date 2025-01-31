@@ -1,13 +1,13 @@
 context:
-  version: 2.6.0
+  version: 2.7.0
   name: pyjs
 package:
   name: ${{name}}
   version: ${{ version }}
-    
+
 source:
   url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
-  sha256: a358a81c61e4776e70f07705a6b24b266773fe1d3f4c947e0e99906acd602ee6
+  sha256: 7760b6447a5617880445581ed08ddae290e5867ad6e4c61c0e8516cc05d9f7c5
 
 build:
   number: 1
@@ -31,39 +31,39 @@ requirements:
   - liblzma
 
 tests:
-  - script: |
-      echo "install playwright"
-      playwright install
-      echo "test in browser (main thread)"
-      pyjs_code_runner run script \
-          browser-main \
-          --conda-env     $PREFIX \
-          --mount         $(pwd)/tests:/tests \
-          --script        main.py \
-          --work-dir      /tests \
-          --headless \
-          --async-main \
-          --no-cache
-      # worker
-      echo "test in browser (worker thread)"
-      pyjs_code_runner run script \
-          browser-worker \
-          --conda-env     $PREFIX \
-          --mount         $(pwd)/tests:/tests \
-          --script        main.py \
-          --work-dir      /tests \
-          --headless \
-          --async-main \
-          --no-cache
+- script: |
+    echo "install playwright"
+    playwright install
+    echo "test in browser (main thread)"
+    pyjs_code_runner run script \
+        browser-main \
+        --conda-env     $PREFIX \
+        --mount         $(pwd)/tests:/tests \
+        --script        main.py \
+        --work-dir      /tests \
+        --headless \
+        --async-main \
+        --no-cache
+    # worker
+    echo "test in browser (worker thread)"
+    pyjs_code_runner run script \
+        browser-worker \
+        --conda-env     $PREFIX \
+        --mount         $(pwd)/tests:/tests \
+        --script        main.py \
+        --work-dir      /tests \
+        --headless \
+        --async-main \
+        --no-cache
 
-    requirements:
-      build:      
-        - pytester
-      run:
-        - pytester-run
-    files:
-      source:
-        - tests/**/*
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    source:
+    - tests/**/*
 
 
 about:
