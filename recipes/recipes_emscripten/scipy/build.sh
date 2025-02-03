@@ -42,16 +42,16 @@ cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
 
-# export LDFLAGS="$LDFLAGS -shared -sSIDE_MODULE=1"
+cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
 
 
 # stderr: flang-new: error: unknown argument: '-s'
 # flang-new: error: no such file or directory: 'SIDE_MODULE=1'
-export LDFLAGS=""
+export LDFLAGS="--disable-shared"
 export CFLAGS=""
 export CXXFLAGS=""
-# export FCFLAGS=""
-# export FFLAGS=""
+export FCFLAGS=""
+
 # export FC_LD=wasm-ld
 
 
@@ -70,7 +70,7 @@ meson setup builddir \
     --prefer-static \
     --prefix=$PREFIX \
     --wrap-mode=nofallback \
-    --cross-file=$SRC_DIR/emscripten.meson.cross  $$ cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
+    --cross-file=$SRC_DIR/emscripten.meson.cross
 
 # # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 # $PYTHON -m build -w -n -x \
