@@ -66,7 +66,7 @@ meson setup builddir \
     --prefer-static \
     --prefix=$PREFIX \
     --wrap-mode=nofallback \
-    --cross-file=$RECIPE_DIR/emscripten.meson.cross
+    --cross-file=$SRC_DIR/emscripten.meson.cross
 
 # # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 # $PYTHON -m build -w -n -x \
