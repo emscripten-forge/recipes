@@ -16,10 +16,14 @@ def sanetize_arguments(args):
     args = args.replace("-s SIDE_MODULE=1", "")
 
     #  -sWASM_BIGINT
-    args = args.replace("-sWASM_BIGINT=0", "")
-    args = args.replace("-s WASM_BIGINT=0", "")
+    args = args.replace("-sWASM_BIGINT", "")
+    args = args.replace("-s WASM_BIGINT", "")
 
-    
+    # -sWASM=1
+    args = args.replace("-sWASM=1", "")
+    args = args.replace("-s WASM=1", "")
+
+
 
     # make a list of arguments again
     args = args.split(" ")
