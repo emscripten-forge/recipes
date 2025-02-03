@@ -1,0 +1,22 @@
+#!/bin/sh
+
+unset _PYTHON_SYSCONFIGDATA_NAME
+
+if [ -z "$PYTHON" ]; then
+  PYTHON=$EMSDK_PYTHON
+fi
+
+if [ -z "$PYTHON" ]; then
+  PYTHON=$(command -v python3 2> /dev/null)
+fi
+
+if [ -z "$PYTHON" ]; then
+  PYTHON=$(command -v python 2> /dev/null)
+fi
+
+if [ -z "$PYTHON" ]; then
+  echo 'unable to find python in $PATH'
+  exit 1
+fi
+
+exec "$PYTHON" -E "$0.py" "$@"

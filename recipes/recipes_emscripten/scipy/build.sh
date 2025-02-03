@@ -12,12 +12,26 @@ micromamba install -p $BUILD_PREFIX \
 rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
+# rename flang-new binary to flang-new-bak
+mv $BUILD_PREFIX/bin/flang-new $BUILD_PREFIX/bin/flang-new-bak
+
+# copy flang-wrappers to bin
+cp $RECIPE_DIR/bin/flang-wrappers/flang-new     $BUILD_PREFIX/bin/flang-new
+cp $RECIPE_DIR/bin/flang-wrappers/flang-new.py  $BUILD_PREFIX/bin/flang-new.py
+
+
+
+
+
+
+
+
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
 
 # stderr: flang-new: error: unknown argument: '-s'
 # flang-new: error: no such file or directory: 'SIDE_MODULE=1'
-export LDFLAGS=""
+# export LDFLAGS=""
 # export FC_LD=wasm-ld
 
 
