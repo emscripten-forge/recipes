@@ -23,6 +23,10 @@ def sanetize_arguments(args):
     args = args.replace("-sWASM=1", "")
     args = args.replace("-s WASM=1", "")
 
+    # -sERROR_ON_UNDEFINED_SYMBOLS=0 
+    args = args.replace("-sERROR_ON_UNDEFINED_SYMBOLS=0", "")
+    args = args.replace("-s ERROR_ON_UNDEFINED_SYMBOLS=0", "")
+
 
 
     # make a list of arguments again
