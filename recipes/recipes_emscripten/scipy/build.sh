@@ -16,8 +16,8 @@ ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 mv $BUILD_PREFIX/bin/flang-new $BUILD_PREFIX/bin/flang-new-bak
 
 # copy flang-wrappers to bin
-cp $RECIPE_DIR/bin/flang-wrappers/flang-new     $BUILD_PREFIX/bin/
-cp $RECIPE_DIR/bin/flang-wrappers/flang-new.py  $BUILD_PREFIX/bin/
+cp $RECIPE_DIR/flang-wrappers/flang-new     $BUILD_PREFIX/bin/
+cp $RECIPE_DIR/flang-wrappers/flang-new.py  $BUILD_PREFIX/bin/
 
 
 
