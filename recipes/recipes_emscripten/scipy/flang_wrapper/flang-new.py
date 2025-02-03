@@ -30,6 +30,9 @@ def sanetize_arguments(args):
     # -shared
     args = args.replace("-shared", "")
 
+    # ignore -O2
+    args = args.replace("-O2", "")
+
 
 
     # make a list of arguments again
