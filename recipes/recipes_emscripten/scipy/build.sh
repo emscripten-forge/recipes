@@ -47,8 +47,7 @@ export FFLAGS="-g --target=wasm32-unknown-emscripten"
 
 
 # stderr: flang-new: error: unknown argument: '-s'
-# flang-new: error: no such file or directory: 'SIDE_MODULE=1'
-export LDFLAGS="--disable-shared"
+export LDFLAGS="-s SIDE_MODULE=1"
 export CFLAGS=""
 export CXXFLAGS=""
 export FCFLAGS=""
