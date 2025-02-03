@@ -32,6 +32,11 @@ def sanetize_arguments(args):
     # args = args.replace("-shared", "")
 
 
+    # in some testscripts to check if a certain flag working we see "output.js" in the arguments instead of .wasm
+    # we need to replace it with .wasm
+    args = args.replace("output.js", "output.wasm")
+
+
     # ignore -O2
     args = args.replace("-O2", "")
 
