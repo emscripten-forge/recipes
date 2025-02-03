@@ -29,6 +29,8 @@ cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
 
+export LDFLAGS="$LDFLAGS -shared"
+
 # stderr: flang-new: error: unknown argument: '-s'
 # flang-new: error: no such file or directory: 'SIDE_MODULE=1'
 # export LDFLAGS=""
