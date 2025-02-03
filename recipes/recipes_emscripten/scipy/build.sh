@@ -47,7 +47,11 @@ export LDFLAGS="$LDFLAGS -shared -sSIDE_MODULE=1"
 
 # stderr: flang-new: error: unknown argument: '-s'
 # flang-new: error: no such file or directory: 'SIDE_MODULE=1'
-# export LDFLAGS=""
+export LDFLAGS=""
+export CFLAGS=""
+export CXXFLAGS=""
+export FCFLAGS=""
+export FFLAGS=""
 # export FC_LD=wasm-ld
 
 
