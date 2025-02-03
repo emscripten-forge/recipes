@@ -32,6 +32,9 @@ def sanetize_arguments(args):
     # make a list of arguments again
     args = args.split(" ")
 
+    # -nostdlib
+    args.append("-nostdlib")
+
     return args
 
 if __name__ == "__main__":
