@@ -27,10 +27,16 @@ def sanetize_arguments(args):
     args = args.replace("-sERROR_ON_UNDEFINED_SYMBOLS=0", "")
     args = args.replace("-s ERROR_ON_UNDEFINED_SYMBOLS=0", "")
 
+    # -shared
+    args = args.replace("-shared", "")
+
 
 
     # make a list of arguments again
     args = args.split(" ")
+
+    # remove empty strings
+    args = [arg for arg in args if arg != ""]
 
     # -nostdlib
     args.append("-nostdlib")
