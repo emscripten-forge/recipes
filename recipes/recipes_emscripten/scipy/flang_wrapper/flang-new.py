@@ -1,6 +1,7 @@
 
 import os
 from pathlib import Path
+import subprocess
 
 BUILD_PREFIX = os.environ["BUILD_PREFIX"]
 ACTUAL_FLANG_BINARY_PATH = Path(BUILD_PREFIX) / "bin" / "flang-new-bak"
