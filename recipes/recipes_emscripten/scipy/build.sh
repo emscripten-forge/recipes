@@ -70,7 +70,7 @@ meson setup builddir \
     --prefer-static \
     --prefix=$PREFIX \
     --wrap-mode=nofallback \
-    --cross-file=$SRC_DIR/emscripten.meson.cross
+    --cross-file=$SRC_DIR/emscripten.meson.cross  $$ cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
 
 # # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
 # $PYTHON -m build -w -n -x \
