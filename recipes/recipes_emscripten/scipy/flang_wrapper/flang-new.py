@@ -27,8 +27,11 @@ def sanetize_arguments(args):
     args = args.replace("-sERROR_ON_UNDEFINED_SYMBOLS=0", "")
     args = args.replace("-s ERROR_ON_UNDEFINED_SYMBOLS=0", "")
 
+
     # -shared
+    args = args.replace("--disabled-shared", "PLACEHOLDER")
     args = args.replace("-shared", "")
+    args = args.replace("PLACEHOLDER", "--disabled-shared")
 
     # ignore -O2
     args = args.replace("-O2", "")
