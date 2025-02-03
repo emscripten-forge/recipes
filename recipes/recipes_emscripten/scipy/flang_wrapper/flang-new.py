@@ -29,9 +29,9 @@ def sanetize_arguments(args):
 
 
     # -shared
-    args = args.replace("--disabled-shared", "PLACEHOLDER")
+    args = args.replace("--disable-shared", "PLACEHOLDER")
     args = args.replace("-shared", "")
-    args = args.replace("PLACEHOLDER", "--disabled-shared")
+    args = args.replace("PLACEHOLDER", "--disable-shared")
 
     # ignore -O2
     args = args.replace("-O2", "")
