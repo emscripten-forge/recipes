@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -ex
+set -e  # Exit the script if any command fails
+
 
 export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
 
@@ -42,7 +43,7 @@ cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
 
-cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
+
 
 
 # stderr: flang-new: error: unknown argument: '-s'
@@ -63,25 +64,18 @@ meson_config_args=(
     -Duse-pythran=false
 )
 
-meson setup builddir \
-    "${meson_config_args[@]}" \
-    --buildtype=release \
-    --default-library=static \
-    --prefer-static \
-    --prefix=$PREFIX \
-    --wrap-mode=nofallback \
-    --cross-file=$SRC_DIR/emscripten.meson.cross
+#try and in case of failure, print cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
+{
+    meson setup builddir \
+        "${meson_config_args[@]}" \
+        --buildtype=release \
+        --default-library=static \
+        --prefer-static \
+        --prefix=$PREFIX \
+        --wrap-mode=nofallback \
+        --cross-file=$SRC_DIR/emscripten.meson.cross
 
-# # -wnx flags mean: --wheel --no-isolation --skip-dependency-check
-# $PYTHON -m build -w -n -x \
-#     -Cbuilddir=builddir \
-#     -Cinstall-args=--tags=runtime,python-runtime,devel \
-#     -Csetup-args=-Dblas=blas \
-#     -Csetup-args=-Dlapack=lapack \
-#     -Csetup-args=-Duse-g77-abi=true \
-#     -Csetup-args=${MESON_ARGS// / -Csetup-args=}
-
-# # copy complete folder scipy to side-packages
-# mkdir -p $PREFIX/lib/python3.11/site-packages
-# cp -r scipy $PREFIX/lib/python3.11/site-packages
-# cp -r scipy-1.11.1.dist-info $PREFIX/lib/python3.11/site-packages
+} || {
+    cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
+    exit 1
+}
