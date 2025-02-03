@@ -69,11 +69,12 @@ meson_config_args=(
     meson setup builddir \
         "${meson_config_args[@]}" \
         --buildtype=release \
-        --default-library=static \
-        --prefer-static \
-        --prefix=$PREFIX \
-        --wrap-mode=nofallback \
         --cross-file=$SRC_DIR/emscripten.meson.cross
+        # --default-library=static \
+        # --prefer-static \
+        # --prefix=$PREFIX \
+        # --wrap-mode=nofallback \
+    
 
 } || {
     cat  $SRC_DIR/builddir/meson-logs/meson-log.txt

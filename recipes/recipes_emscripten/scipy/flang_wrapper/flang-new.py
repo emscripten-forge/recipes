@@ -61,11 +61,20 @@ if __name__ == "__main__":
     Sanetized arguments: {fixed_args}
     """)
 
+    # print all current LDFLAGS / CFLAGS / CXXFLAGS
+
+    print("LDFLAGS: ", os.environ.get("LDFLAGS", ""))
+    print("CFLAGS: ", os.environ.get("CFLAGS", ""))
+    print("CXXFLAGS: ", os.environ.get("CXXFLAGS", ""))
+
+    
+
     # Run the actual flang binary
     process = subprocess.Popen(
         [str(ACTUAL_FLANG_BINARY_PATH)] + fixed_args,
         stdout=sys.stdout,
-        stderr=sys.stderr
+        stderr=sys.stderr,
+        env=dict(os.environ, LDFLAGS="", CFLAGS="", CXXFLAGS="")
     )
     
     # Wait for the process to finish and get the return code
