@@ -9,7 +9,10 @@ sed "s|@(NUMPY_INCLUDE_DIR)|${NUMPY_INCLUDE_DIR}|g" $RECIPE_DIR/emscripten.meson
 sed "s|@(PYTHON)|${PYTHON}|g" $SRC_DIR/emscripten.meson.cross.temp > $SRC_DIR/emscripten.meson.cross
 rm $SRC_DIR/emscripten.meson.cross.temp
 
+echo "THE CROSS FILE"
 cat $SRC_DIR/emscripten.meson.cross
+echo "END CROSS FILE"
+
 
 
 # Using flang as a WASM cross-compiler
