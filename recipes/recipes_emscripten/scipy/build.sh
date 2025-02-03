@@ -61,9 +61,6 @@ export FCFLAGS=""
 
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
-    -Csetup-args="-Dsystem-freetype=true" \
-    -Csetup-args="-Dsystem-qhull=true" \
-    -Csetup-args="-Dmacosx=false" \
-    -C setup-args="-Dblas=blas" \
-    -C setup-args="-Dlapack=lapack" \
-    -C setup-args="-Duse-pythran=false"
+    -Csetup-args="-Dblas=blas" \
+    -Csetup-args="-Dlapack=lapack" \
+    -Csetup-args="-Duse-pythran=false"
