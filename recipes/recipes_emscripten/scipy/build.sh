@@ -55,27 +55,15 @@ export FCFLAGS=""
 # export FC_LD=wasm-ld
 
 
-mkdir builddir
 
-meson_config_args=(
-    -Dblas=blas
-    -Dlapack=lapack
-    -Duse-pythran=false
-)
 
-#try and in case of failure, print cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
-{
-    meson setup builddir \
-        "${meson_config_args[@]}" \
-        --buildtype=release \
-        --cross-file=$SRC_DIR/emscripten.meson.cross
-        # --default-library=static \
-        # --prefer-static \
-        # --prefix=$PREFIX \
-        # --wrap-mode=nofallback \
-    
 
-} || {
-    cat  $SRC_DIR/builddir/meson-logs/meson-log.txt
-    exit 1
-}
+
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
+    -Csetup-args="-Dsystem-freetype=true" \
+    -Csetup-args="-Dsystem-qhull=true" \
+    -Csetup-args="-Dmacosx=false" \
+    -C setup-args="-Dblas=blas" \
+    -C setup-args="-Dlapack=lapack" \
+    -C setup-args="-Duse-pythran=false"
