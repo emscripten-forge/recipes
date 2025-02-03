@@ -42,7 +42,7 @@ cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
 
-export LDFLAGS="$LDFLAGS -shared -sSIDE_MODULE=1"
+# export LDFLAGS="$LDFLAGS -shared -sSIDE_MODULE=1"
 
 
 # stderr: flang-new: error: unknown argument: '-s'
@@ -50,8 +50,8 @@ export LDFLAGS="$LDFLAGS -shared -sSIDE_MODULE=1"
 export LDFLAGS=""
 export CFLAGS=""
 export CXXFLAGS=""
-export FCFLAGS=""
-export FFLAGS=""
+# export FCFLAGS=""
+# export FFLAGS=""
 # export FC_LD=wasm-ld
 
 
