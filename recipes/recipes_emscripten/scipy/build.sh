@@ -38,8 +38,10 @@ ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 ############################
 # try to compile a simple file
 ############################
+echo "INVOKE FLANG"
 $BUILD_PREFIX/bin/flang-new $RECIPE_DIR/test.f90 -o output.obj -D_FILE_OFFSET_BITS=64 -c -g --target=wasm32-unknown-emscripten -O0
-
+echo "INVOKE FLANG DONE"
+ls
 
 
 
