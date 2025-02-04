@@ -1,0 +1,164 @@
+From d8ecdabd1065d60d7fcab1d71fea359c652cee68 Mon Sep 17 00:00:00 2001
+From: Tim Snyder <snyder.tim@gmail.com>
+Date: Sat, 25 Feb 2023 00:00:34 +0000
+Subject: [PATCH] force prefix to c-strings for relocation
+
+is update of fix for cppcheck-feedstock#8
+---
+ cli/cppcheckexecutor.cpp  | 5 +++--
+ gui/helpdialog.cpp        | 3 ++-
+ gui/mainwindow.cpp        | 3 ++-
+ gui/projectfile.cpp       | 6 +++---
+ gui/projectfiledialog.cpp | 5 +++--
+ lib/cppcheck.cpp          | 9 +++++----
+ lib/library.cpp           | 3 ++-
+ lib/platform.cpp          | 2 +-
+ lib/settings.cpp          | 5 +++--
+ 9 files changed, 24 insertions(+), 17 deletions(-)
+
+diff --git a/cli/cppcheckexecutor.cpp b/cli/cppcheckexecutor.cpp
+index 81202d54e..a0bda3afe 100644
+--- a/cli/cppcheckexecutor.cpp
++++ b/cli/cppcheckexecutor.cpp
+@@ -283,9 +283,10 @@ int CppCheckExecutor::check_internal(CppCheck& cppcheck)
+         const std::list<ErrorMessage::FileLocation> callstack;
+         const std::string msg("Failed to load std.cfg. Your Cppcheck installation is broken, please re-install.");
+ #ifdef FILESDIR
++        const std::string filesdir(std::string(FILESDIR).c_str());
+         const std::string details("The Cppcheck binary was compiled with FILESDIR set to \""
+-                                  FILESDIR "\" and will therefore search for "
+-                                  "std.cfg in " FILESDIR "/cfg.");
++                                  + filesdir + "\" and will therefore search for "
++                                  "std.cfg in " + filesdir + "/cfg.");
+ #else
+         const std::string cfgfolder(Path::fromNativeSeparators(Path::getPathFromFilename(settings.exename)) + "cfg");
+         const std::string details("The Cppcheck binary was compiled without FILESDIR set. Either the "
+diff --git a/gui/helpdialog.cpp b/gui/helpdialog.cpp
+index e9aac0689..02de809ae 100644
+--- a/gui/helpdialog.cpp
++++ b/gui/helpdialog.cpp
+@@ -56,7 +56,8 @@ static QString getHelpFile()
+           << (QApplication::applicationDirPath() + "/help")
+           << QApplication::applicationDirPath();
+ #ifdef FILESDIR
+-    const QString filesdir = FILESDIR;
++    std::string stdfilesdir(std::string(FILESDIR).c_str());
++    const QString filesdir = stdfilesdir;
+     paths << (filesdir + "/help")
+           << filesdir;
+ #endif
+diff --git a/gui/mainwindow.cpp b/gui/mainwindow.cpp
+index 9188ffe62..da0c16721 100644
+--- a/gui/mainwindow.cpp
++++ b/gui/mainwindow.cpp
+@@ -803,7 +803,8 @@ Library::Error MainWindow::loadLibrary(Library *library, const QString &filename
+ 
+ #ifdef FILESDIR
+     // Try to load the library from FILESDIR/cfg..
+-    const QString filesdir = FILESDIR;
++    std::string stdfilesdir(std::string(FILESDIR).c_str());
++    const QString filesdir = stdfilesdir;
+     if (!filesdir.isEmpty()) {
+         ret = library->load(nullptr, (filesdir+"/cfg/"+filename).toLatin1());
+         if (ret.errorcode != Library::ErrorCode::FILE_NOT_FOUND)
+diff --git a/gui/projectfile.cpp b/gui/projectfile.cpp
+index 03e02338a..5be61c867 100644
+--- a/gui/projectfile.cpp
++++ b/gui/projectfile.cpp
+@@ -1101,11 +1101,11 @@ QString ProjectFile::getAddonFilePath(QString filesDir, const QString &addon)
+         filesDir += "/";
+ 
+     QStringList searchPaths;
+-    searchPaths << filesDir << (filesDir + "addons/") << (filesDir + "../addons/")
++    searchPaths << filesDir << (filesDir + "addons/") << (filesDir + "../addons/");
+ #ifdef FILESDIR
+-        << (QLatin1String(FILESDIR) + "/addons/")
++    std::string stdfilesdir(std::string(FILESDIR).c_str());
++    searchPaths << (QLatin1String(stdfilesdir) + "/addons/");
+ #endif
+-    ;
+ 
+     for (const QString& path : searchPaths) {
+         QString f = path + addon + ".py";
+diff --git a/gui/projectfiledialog.cpp b/gui/projectfiledialog.cpp
+index 2eca3c2a7..81e106c88 100644
+--- a/gui/projectfiledialog.cpp
++++ b/gui/projectfiledialog.cpp
+@@ -108,8 +108,9 @@ ProjectFileDialog::ProjectFileDialog(ProjectFile *projectFile, bool premium, QWi
+     QStringList searchPaths;
+     searchPaths << appPath << appPath + "/cfg" << inf.canonicalPath();
+ #ifdef FILESDIR
+-    if (FILESDIR[0])
+-        searchPaths << FILESDIR << FILESDIR "/cfg";
++    std::string filesdir(std::string(FILESDIR).c_str());
++    if (filesdir[0])
++        searchPaths << filesdir << filesdir + "/cfg";
+ #endif
+     if (!datadir.isEmpty())
+         searchPaths << datadir << datadir + "/cfg";
+diff --git a/lib/cppcheck.cpp b/lib/cppcheck.cpp
+index da577d71d..681650324 100644
+--- a/lib/cppcheck.cpp
++++ b/lib/cppcheck.cpp
+@@ -103,10 +103,11 @@ namespace {
+                 return exepath + "addons/" + fileName;
+ 
+ #ifdef FILESDIR
+-            if (Path::fileExists(FILESDIR + ("/" + fileName)))
+-                return FILESDIR + ("/" + fileName);
+-            if (Path::fileExists(FILESDIR + ("/addons/" + fileName)))
+-                return FILESDIR + ("/addons/" + fileName);
++	    std::string filesdir(std::string(FILESDIR).c_str());
++            if (Path::fileExists(filesdir + ("/" + fileName)))
++                return filesdir + ("/" + fileName);
++            if (Path::fileExists(filesdir + ("/addons/" + fileName)))
++                return filesdir + ("/addons/" + fileName);
+ #endif
+             return "";
+         }
+diff --git a/lib/library.cpp b/lib/library.cpp
+index 14f7aa4da..5acf5896d 100644
+--- a/lib/library.cpp
++++ b/lib/library.cpp
+@@ -103,7 +103,8 @@ Library::Error Library::load(const char exename[], const char path[])
+ 
+         std::list<std::string> cfgfolders;
+ #ifdef FILESDIR
+-        cfgfolders.emplace_back(FILESDIR "/cfg");
++	std::string filesdir(std::string(FILESDIR).c_str());
++        cfgfolders.emplace_back(filesdir + "/cfg");
+ #endif
+         if (exename) {
+             const std::string exepath(Path::fromNativeSeparators(Path::getPathFromFilename(exename)));
+diff --git a/lib/platform.cpp b/lib/platform.cpp
+index ade5f4541..4615dc0c8 100644
+--- a/lib/platform.cpp
++++ b/lib/platform.cpp
+@@ -172,7 +172,7 @@ bool cppcheck::Platform::loadPlatformFile(const char exename[], const std::strin
+         filenames.push_back(Path::getPathFromFilename(Path::fromNativeSeparators(exename)) + "platforms/" + filename + ".xml");
+     }
+ #ifdef FILESDIR
+-    std::string filesdir = FILESDIR;
++    std::string filesdir(std::string(FILESDIR).c_str());
+     if (!filesdir.empty() && filesdir[filesdir.size()-1] != '/')
+         filesdir += '/';
+     filenames.push_back(filesdir + ("platforms/" + filename));
+diff --git a/lib/settings.cpp b/lib/settings.cpp
+index 94d455afb..5d06feca1 100644
+--- a/lib/settings.cpp
++++ b/lib/settings.cpp
+@@ -82,8 +82,9 @@ void Settings::loadCppcheckCfg()
+ {
+     std::string fileName = Path::getPathFromFilename(exename) + "cppcheck.cfg";
+ #ifdef FILESDIR
+-    if (Path::fileExists(FILESDIR "/cppcheck.cfg"))
+-        fileName = FILESDIR "/cppcheck.cfg";
++    std::string filesdir(std::string(FILESDIR).c_str());
++    if (Path::fileExists(filesdir + "/cppcheck.cfg"))
++        fileName = filesdir + "/cppcheck.cfg";
+ #endif
+ 
+     std::ifstream fin(fileName);
+-- 
+2.39.1
+
