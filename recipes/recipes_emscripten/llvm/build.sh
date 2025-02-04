@@ -5,7 +5,8 @@ export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # clear LDFLAGS flags because they contain sWASM_BIGINT
-export LDFLAGS=""
+# using --profiling-funcs to get a better stack trace
+export LDFLAGS="-Wl,--profiling-funcs"
 
 # Configure step
 emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
@@ -20,13 +21,14 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_INCLUDE_TESTS=OFF                        \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
+    -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DLLVM_ENABLE_THREADS=OFF                       \
     -DLLVM_ENABLE_ZSTD=OFF                          \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
     -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
+    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions"
 
 # Build step
 emmake make -j4

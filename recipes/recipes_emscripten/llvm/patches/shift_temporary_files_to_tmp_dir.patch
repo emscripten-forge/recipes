@@ -1,5 +1,5 @@
 diff --git a/clang/lib/Interpreter/Wasm.cpp b/clang/lib/Interpreter/Wasm.cpp
-index aa10b160ccf8..184867e2b55f 100644
+index aa10b160ccf8..55c3323e31f5 100644
 --- a/clang/lib/Interpreter/Wasm.cpp
 +++ b/clang/lib/Interpreter/Wasm.cpp
 @@ -76,8 +76,8 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
@@ -13,3 +13,19 @@ index aa10b160ccf8..184867e2b55f 100644
  
    std::error_code Error;
    llvm::raw_fd_ostream ObjectFileOutput(llvm::StringRef(ObjectFileName), Error);
+@@ -99,10 +99,15 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
+ 
+   std::vector<const char *> LinkerArgs = {"wasm-ld",
+                                           "-shared",
++                                          "--allow-multiple-definition",
+                                           "--import-memory",
+                                           "--experimental-pic",
+                                           "--stack-first",
+                                           "--allow-undefined",
++                                          "--demangle",
++                                          "--no-gc-sections",
++                                          "--export-all",
++                                          "--export-dynamic",
+                                           ObjectFileName.c_str(),
+                                           "-o",
+                                           BinaryFileName.c_str()};
