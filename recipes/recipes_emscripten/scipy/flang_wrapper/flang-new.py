@@ -47,7 +47,7 @@ def sanetize_arguments(args):
 
     # remove empty strings
     args = [arg for arg in args if arg != ""]
-    args = ['-fc1'] + args
+
 
     # -nostdlib
     args.append("-nostdlib")
