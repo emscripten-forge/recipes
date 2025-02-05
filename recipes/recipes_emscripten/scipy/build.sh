@@ -64,7 +64,8 @@ cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 #############################################################
 export FC=flang-new
 export FFLAGS="-g --target=wasm32-unknown-emscripten"
-export LDFLAGS="" #"-s SIDE_MODULE=1"
+#  enable WASM_BIGINT to support 64-bit integers and fexceptions to support exceptions
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
 export CFLAGS=""
 export CXXFLAGS=""
 export FCFLAGS=""
