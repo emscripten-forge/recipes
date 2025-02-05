@@ -14,6 +14,13 @@ def sanetize_arguments(args):
         if arg == "-O3":
             args[i] = "-O2" 
 
+        if arg == "-module-dir":
+            args[i] = ""
+            args[i+1] = ""
+    
+    # remove all empty strings
+    args = list(filter(lambda x: x != "", args))
+
     # -nostdlib
     args.append("-nostdlib")
 
