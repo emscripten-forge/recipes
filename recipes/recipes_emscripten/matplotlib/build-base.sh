@@ -7,12 +7,9 @@ export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/
 # write out the cross file
 sed "s|@(NUMPY_INCLUDE_DIR)|${NUMPY_INCLUDE_DIR}|g" $RECIPE_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.cross.temp
 sed "s|@(PYTHON)|${PYTHON}|g" $SRC_DIR/emscripten.meson.cross.temp > $SRC_DIR/emscripten.meson.cross
-
 rm $SRC_DIR/emscripten.meson.cross.temp
-echo "THE CROSS FILE:"
-cat $SRC_DIR/emscripten.meson.cross
 
-echo "\n THE CROSS FILE END"
+cat $SRC_DIR/emscripten.meson.cross
 
 export CFLAGS="$CFLAGS -sWASM_BIGINT -fexceptions"
 export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -fexceptions"
