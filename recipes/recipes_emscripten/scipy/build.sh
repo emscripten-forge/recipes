@@ -84,4 +84,5 @@ ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
     -Csetup-args="-Dblas=blas" \
     -Csetup-args="-Dlapack=lapack" \
+    -Csetup-args="-Dfortran_std=none" \
     -Csetup-args="-Duse-pythran=false"
