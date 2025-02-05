@@ -43,6 +43,12 @@ $BUILD_PREFIX/bin/flang-new $RECIPE_DIR/test.f90 -o output.obj -D_FILE_OFFSET_BI
 echo "INVOKE FLANG DONE"
 ls
 
+#############################################################
+# patch meson since it otherwise complains with an error that
+# emscripten does not support shared libraries ... which is far 
+# from the truth
+#############################################################
+find $BUILD_PREFIX -name linkers.py -exec sed -i "s/raise MesonException(f'{self.id} does not support shared libraries.')/return []/g" {} +
 
 
 #############################################################
