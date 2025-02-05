@@ -1,22 +1,19 @@
 #!/bin/sh
 
-unset _PYTHON_SYSCONFIGDATA_NAME
+# Process the arguments
+MODIFIED_ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        -O3)
+            MODIFIED_ARGS+=("-O2") # Replace -O3 with -O2
+            ;;
+        -sWASM_BIGINT)
+            # Remove -sWASM_BIGINT (do nothing)
+            ;;
+        *)
+            MODIFIED_ARGS+=("$arg") # Keep other arguments unchanged
+            ;;
+    esac
+done
 
-if [ -z "$PYTHON" ]; then
-  PYTHON=$EMSDK_PYTHON
-fi
-
-if [ -z "$PYTHON" ]; then
-  PYTHON=$(command -v python3 2> /dev/null)
-fi
-
-if [ -z "$PYTHON" ]; then
-  PYTHON=$(command -v python 2> /dev/null)
-fi
-
-if [ -z "$PYTHON" ]; then
-  echo 'unable to find python in $PATH'
-  exit 1
-fi
-
-exec "$PYTHON" -E "$0.py" "$@"
+exec $BUILD_PREFIX/bin/flang-new "${MODIFIED_ARGS[@]}"
