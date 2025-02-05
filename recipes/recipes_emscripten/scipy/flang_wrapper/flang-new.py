@@ -36,9 +36,12 @@ def sanetize_arguments(args):
     # we need to replace it with .wasm
     args = args.replace("output.js", "output.wasm")
 
+    # -U _OPENMP
+    args = args.replace("-U _OPENMP", "")
+    args = args.replace("-U_OPENMP", "")
 
-    # ignore -O2
-    args = args.replace("-O2", "")
+    # # ignore -O2
+    # args = args.replace("-O2", "")
 
 
 
