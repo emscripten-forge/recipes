@@ -8,49 +8,11 @@ ACTUAL_FLANG_BINARY_PATH = Path(BUILD_PREFIX) / "bin" / "flang-new-bak"
 
 
 def sanetize_arguments(args):
-    # # make one big space separated string
-    # args = " ".join(args)
 
-    # # replace "-sSHARED=1" with ""
-    # args = args.replace("-sSIDE_MODULE=1", "")
-    # args = args.replace("-s SIDE_MODULE=1", "")
-
-    # #  -sWASM_BIGINT
-    # args = args.replace("-sWASM_BIGINT", "")
-    # args = args.replace("-s WASM_BIGINT", "")
-
-    # # -sWASM=1
-    # args = args.replace("-sWASM=1", "")
-    # args = args.replace("-s WASM=1", "")
-
-    # # -sERROR_ON_UNDEFINED_SYMBOLS=0 
-    # args = args.replace("-sERROR_ON_UNDEFINED_SYMBOLS=0", "")
-    # args = args.replace("-s ERROR_ON_UNDEFINED_SYMBOLS=0", "")
-
-
-    # # # -shared
-    # # args = args.replace("-shared", "")
-
-
-    # # in some testscripts to check if a certain flag working we see "output.js" in the arguments instead of .wasm
-    # # we need to replace it with .wasm
-    # args = args.replace("output.js", "output.wasm")
-
-    # # -U _OPENMP
-    # args = args.replace("-U _OPENMP", "")
-    # args = args.replace("-U_OPENMP", "")
-
-    # # # ignore -O2
-    # # args = args.replace("-O2", "")
-
-
-
-    # # make a list of arguments again
-    # args = args.split(" ")
-
-    # # remove empty strings
-    # args = [arg for arg in args if arg != ""]
-
+    # replace -03 with -O2
+    for i, arg in enumerate(args):
+        if arg == "-O3":
+            args[i] = "-O2" 
 
     # -nostdlib
     args.append("-nostdlib")
