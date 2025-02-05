@@ -27,9 +27,8 @@ export PKG_CONFIG_PATH="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_c
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
 #############################################################
-micromamba install -p $BUILD_PREFIX \
-    micromamba install conda-forge/label/emscripten::flang libllvm19 --no-channel-priority -y
-    
+micromamba install -p $BUILD_PREFIX  conda-forge/label/emscripten::flang libllvm19 --no-channel-priority -y
+
 rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
