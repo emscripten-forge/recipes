@@ -28,8 +28,8 @@ export PKG_CONFIG_PATH="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_c
 # https://github.com/conda-forge/flang-feedstock/pull/69
 #############################################################
 micromamba install -p $BUILD_PREFIX \
-    conda-forge/label/llvm_rc::libllvm19=19.1.3.rc2 \
-    conda-forge/label/llvm_dev::flang=19.1.3.rc2 \
+    conda-forge/label/llvm_rc::libllvm19=19.1.3 \
+    conda-forge/label/llvm_dev::flang=19.1.3 \
     -y --no-channel-priority
 rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
