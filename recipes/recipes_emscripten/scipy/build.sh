@@ -51,12 +51,12 @@ ls
 find $BUILD_PREFIX -name linkers.py -exec sed -i "s/raise MesonException(f'{self.id} does not support shared libraries.')/return []/g" {} +
 
 
-############################################################
-# wrap flang-new with a python script
-############################################################
-mv $BUILD_PREFIX/bin/flang-new $BUILD_PREFIX/bin/flang-new-bak
-cp $RECIPE_DIR/flang_wrapper/flang-new     $BUILD_PREFIX/bin/
-cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
+# ############################################################
+# # wrap flang-new with a python script
+# ############################################################
+# mv $BUILD_PREFIX/bin/flang-new $BUILD_PREFIX/bin/flang-new-bak
+# cp $RECIPE_DIR/flang_wrapper/flang-new     $BUILD_PREFIX/bin/
+# cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 
 
 #############################################################
