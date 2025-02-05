@@ -1,19 +1,21 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-# Process the arguments
-MODIFIED_ARGS=""
+
+# Process arguments
+MODIFIED_ARGS=()
 for arg in "$@"; do
     case "$arg" in
         -O3)
-            MODIFIED_ARGS="$MODIFIED_ARGS -O2"
+            MODIFIED_ARGS+=("-O2")  # Replace -O3 with -O2
             ;;
         -sWASM_BIGINT)
             # Remove this argument
             ;;
         *)
-            MODIFIED_ARGS="$MODIFIED_ARGS $arg"
+            MODIFIED_ARGS+=("$arg")  # Keep other arguments unchanged
             ;;
     esac
 done
 
-exec $BUILD_PREFIX/bin/flang-new-bak $MODIFIED_ARGS
+
+exec "$BUILD_PREFIX/bin/flang-new-bak" "${MODIFIED_ARGS[@]}"
