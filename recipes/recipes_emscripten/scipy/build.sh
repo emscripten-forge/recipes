@@ -85,4 +85,5 @@ ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="-Dblas=blas" \
     -Csetup-args="-Dlapack=lapack" \
     -Csetup-args="-Dfortran_std=none" \
-    -Csetup-args="-Duse-pythran=false"
+    -Csetup-args="-Duse-pythran=false" \ 
+    -Csetup-args="-Duse-g77-abi=true" 
