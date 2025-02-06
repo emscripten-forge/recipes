@@ -37,7 +37,7 @@ ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 # clang resource directory
 ################################
 # rm -rf $BUILD_PREFIX/lib/clang/19 #what could go wrong...
-ln -s $BUILD_PREFIX/opt/emsdk/upstream/clang/20 $BUILD_PREFIX/lib/clang/19
+# ln -s $BUILD_PREFIX/opt/emsdk/upstream/clang/20 $BUILD_PREFIX/lib/clang/19
 
 
 
