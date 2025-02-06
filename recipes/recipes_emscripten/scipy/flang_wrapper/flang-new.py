@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
     # get all arguments
     import sys
-    args = sys.argv[0:]
+    args = sys.argv[:]
     fixed_args = sanetize_arguments(args)
     print(f"""THIS IS A FLANG-WRAPPER
     ACTUAL FLANG BINARY: {ACTUAL_FLANG_BINARY_PATH}
