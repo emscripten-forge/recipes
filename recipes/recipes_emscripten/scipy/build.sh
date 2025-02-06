@@ -52,9 +52,9 @@ find $BUILD_PREFIX -name linkers.py -exec sed -i "s/raise MesonException(f'{self
 # ############################################################
 # # wrap flang-new with a python script
 # ############################################################
-mv $BUILD_PREFIX/bin/flang-new $BUILD_PREFIX/bin/flang-new-bak
-cp $RECIPE_DIR/flang_wrapper/flang-new     $BUILD_PREFIX/bin/
-cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
+# mv $BUILD_PREFIX/bin/flang-new $BUILD_PREFIX/bin/flang-new-bak
+# cp $RECIPE_DIR/flang_wrapper/flang-new     $BUILD_PREFIX/bin/
+# cp $RECIPE_DIR/flang_wrapper/flang-new.py  $BUILD_PREFIX/bin/
 
 
 #############################################################
