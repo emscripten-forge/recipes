@@ -38,8 +38,8 @@ ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 #############################################################
 # note this should actually be done by the cross-python script
 # but it is not working (in particular when doing debug builds)
-cp -r $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/
-cp -r $BUILD_PREFIX/include/python${PY_VER} $BUILD_PREFIX/include/
+cp -r $PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/
+cp -r $PREFIX/include/python${PY_VER} $BUILD_PREFIX/include/
 
 
 ############################
