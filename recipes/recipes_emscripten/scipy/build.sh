@@ -39,11 +39,24 @@ ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 # note this should actually be done by the cross-python script
 # but it is not working (in particular when doing debug builds)
 
-mkdir -p $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy
-mkdir -p $BUILD_PREFIX/include/
 
-cp -r $PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/
-cp -r $PREFIX/include/python${PY_VER} $BUILD_PREFIX/include/
+if [ -d "$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy" ]; then
+    echo "Copying numpy headers from host to the build environment"
+    mkdir -p $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy
+    cp -r $PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/
+
+else
+    echo "numpy headers not found in $PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy"
+fi
+
+if [ -d "$PREFIX/include/python${PY_VER}" ]; then
+    mkdir -p $BUILD_PREFIX/include/
+    echo "Copying python headers from host to the build environment"
+    cp -r $PREFIX/include/python${PY_VER} $BUILD_PREFIX/include/
+else
+    echo "python headers not found in $PREFIX/include/python${PY_VER}"
+fi
+
 
 
 ############################
