@@ -33,12 +33,13 @@ rm $BUILD_PREFIX/bin/clang # links to clang19
 ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 
-################################
-# clang resource directory
-################################
-# rm -rf $BUILD_PREFIX/lib/clang/19 #what could go wrong...
-# ln -s $BUILD_PREFIX/opt/emsdk/upstream/clang/20 $BUILD_PREFIX/lib/clang/19
-
+#############################################################
+# copy numpy headers from host to the build environment
+#############################################################
+# note this should actually be done by the cross-python script
+# but it is not working (in particular when doing debug builds)
+cp -r $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy $BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/numpy
+cp -r $BUILD_PREFIX/include/python${PY_VER} $BUILD_PREFIX/include/python${PY_VER}
 
 
 ############################
