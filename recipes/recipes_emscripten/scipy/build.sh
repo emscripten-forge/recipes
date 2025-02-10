@@ -9,7 +9,7 @@ echo "CONTENT OF custom_submodules/PROPACK"
 ls $SRC_DIR/custom_submodules/PROPACK
 
 echo "remove the original propack"
-rm -f $SRC_DIR/scipy/sparse/linalg/_propack/PROPACK     
+rm -rf $SRC_DIR/scipy/sparse/linalg/_propack/PROPACK     
 
 echo "copy the custom propack"
 cp -r $SRC_DIR/custom_submodules/PROPACK $SRC_DIR/scipy/sparse/linalg/_propack/
