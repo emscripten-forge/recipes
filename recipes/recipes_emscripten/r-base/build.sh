@@ -10,7 +10,7 @@ micromamba install -p $BUILD_PREFIX \
     conda-forge/label/llvm_dev::flang=19.1.0.rc2 \
     -y --no-channel-priority
 rm $BUILD_PREFIX/bin/clang # links to clang19
-ln -s $BUILD_PREFIX/bin/clang-18 $BUILD_PREFIX/bin/clang # links to emsdk clang
+ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
 
 # Skip non-working checks
 export r_cv_header_zlib_h=yes

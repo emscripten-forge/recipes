@@ -23,9 +23,10 @@ source:
     - patches/0011-Use-cross_libraries-script-when-cross-compiling.patch
     - patches/0012-Install-wasm-files.patch
     - patches/0013-Remove-png-lib-from-bitmap-libs.patch
+    - patches/0014-Set-cairo-as-default-bitmap-type.patch
 
 build:
-  number: 5
+  number: 6
 
 requirements:
   build:
@@ -43,35 +44,31 @@ requirements:
   - bzip2
   - xz
   - pcre2>=10.43
-  - tzdata
   - libpng
   - libtiff
   - cairo >=1.18
-  - pango >=1.54
-  - glib
   host:
-  - libflang                    # for FortranRuntime
+  - libflang<19.1.7                   # for FortranRuntime
   - libiconv
   - zlib>=1.2.13
   - bzip2
   - xz                          # for lzma
   - pcre2>=10.43
-  - tzdata
   - libpng
   - libtiff
   - cairo >=1.18
-  - pango >=1.54
   - fontconfig >=2.15
-  - glib
-  - harfbuzz >=10.0
-  - fribidi
   - pixman
-  - graphite2
   - expat
-  - libffi
   - freetype
 
 tests:
+- package_contents:
+    lib:
+    - R/lib/libR.a
+    - R/lib/libRblas.so
+    - R/lib/libRlapack.so
+    - R/library/grDevices/libs/cairo.so
 - script:
   - node ${PREFIX}/lib/R/bin/Rscript --version
   requirements:
