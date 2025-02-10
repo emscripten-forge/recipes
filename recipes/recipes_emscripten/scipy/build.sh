@@ -5,7 +5,18 @@ set -e  # Exit the script if any command fails
 #############################################################
 # copy patched / custom code for subprojects/submodules
 #############################################################
-cp -r $SRC_DIR/custom_submodules/PROPACK $SRC_DIR/scipy/sparse/linalg/_propack/PROPACK
+echo "CONTENT OF custom_submodules/PROPACK"
+ls $SRC_DIR/custom_submodules/PROPACK
+
+echo "remove the original propack"
+rm -f $SRC_DIR/scipy/sparse/linalg/_propack/PROPACK     
+
+echo "copy the custom propack"
+cp -r $SRC_DIR/custom_submodules/PROPACK $SRC_DIR/scipy/sparse/linalg/_propack/
+
+echo "CONTENT OF scipy/sparse/linalg/_propack"
+ls $SRC_DIR/scipy/sparse/linalg/_propack
+
 
 #############################################################
 # write out the cross file
