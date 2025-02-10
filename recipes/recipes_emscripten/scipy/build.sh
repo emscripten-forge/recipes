@@ -2,7 +2,10 @@
 
 set -e  # Exit the script if any command fails
 
-
+#############################################################
+# copy patched / custom code for subprojects/submodules
+#############################################################
+cp -r $SRC_DIR/custom_submodules/PROPACK $SRC_DIR/scipy/sparse/linalg/_propack/PROPACK
 
 #############################################################
 # write out the cross file
