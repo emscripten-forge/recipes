@@ -94,7 +94,7 @@ endian = 'little'
 
 [binaries]
 exe_wrapper = 'node'
-pkgconfig = 'pkg-config'
+pkg-config = 'pkg-config'
 
 ```
 
@@ -144,3 +144,35 @@ requirements:
 * [cryptography](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/cryptography)
 * [pydantic-core](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/pydantic-core)
 * [pycrdt](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/pycrdt)
+
+
+## R Packages
+
+A typical R package requires at least one compiler and the `cross-r-base` package.
+
+```yaml
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-r-base
+  host:
+  - r-base
+  run:
+  - r-base
+```
+
+To build the package, a one-line script is sufficient:
+
+```bash
+$R CMD INSTALL $R_ARGS --no-byte-compile .
+```
+
+If the package requires a Fortran compiler, then `flang` must be installed in the build script.
+
+Please note that the `cross-r-base` package adds files to the `$PREFIX` directory which do not belong to the package being built. This is because the build for `r-base` on conda-forge is different than the build for `r-base` on emscripten-forge. To avoid packaging irrelevant files, we filter files with an [outputs section](https://rattler.build/latest/reference/recipe_file/#outputs-section).
+
+**Example recipes**:
+
+- [r-bit](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/r-bit/recipe.yaml)
+- [r-colorspace](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/r-colorspace/recipe.yaml)
+- [r-nlme](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/r-nlme/recipe.yaml) (uses `flang`)
