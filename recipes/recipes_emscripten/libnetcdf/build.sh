@@ -1,0 +1,2 @@
+emconfigure ./configure
+emmake make
