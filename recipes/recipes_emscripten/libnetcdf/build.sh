@@ -1,2 +1,2 @@
-emconfigure ./configure --host=$target_platform 
+emconfigure ./configure --host=none 
 emmake make
