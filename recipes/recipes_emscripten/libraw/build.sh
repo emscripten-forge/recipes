@@ -19,7 +19,14 @@ LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
 
 
 
-./configure --prefix="${PREFIX}" --enable-openmp=no
+./configure --prefix="${PREFIX}" \
+    --disable-openmp \
+    --disable-examples \
+    --enable-static \
+    --disable-shared 
+    
+
+
 
 
 CPPFLAGS="${CPPFLAGS} -I${PREFIX}/include" 
