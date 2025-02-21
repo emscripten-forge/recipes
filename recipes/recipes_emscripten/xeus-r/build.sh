@@ -15,6 +15,7 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_BUILD_TYPE=Release                             \
     -DCMAKE_PREFIX_PATH=$PREFIX                            \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
+    -DCMAKE_BUILD_PREFIX="$BUILD_PREFIX"                   \
     -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON                      \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON
 
