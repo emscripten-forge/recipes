@@ -1,0 +1,54 @@
+From 1d3f4daa3a9a357612cdd2dbc6e22f6f73d1173f Mon Sep 17 00:00:00 2001
+From: Sam Gardner <sam@wx4stg.com>
+Date: Wed, 19 Feb 2025 19:27:18 -0600
+Subject: [PATCH] patches for emscripten-forge build
+
+---
+ lib/obstack.c | 10 ++++++++--
+ lib/obstack.h |  6 +++++-
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/lib/obstack.c b/lib/obstack.c
+index 6e7b52c..66b4f1f 100644
+--- a/lib/obstack.c
++++ b/lib/obstack.c
+@@ -76,6 +76,12 @@
+                                MAX (sizeof (uintmax_t),			      \
+                                     sizeof (void *)))
+ 
++__attribute__((noreturn)) void obstack_default_failed_handler(void) {
++    abort();
++}
++
++__attribute__((noreturn)) void (*obstack_alloc_failed_handler)(void) = obstack_default_failed_handler;
++
+ /* Call functions with either the traditional malloc/free calling
+    interface, or the mmalloc/mfree interface (that adds an extra first
+    argument), based on the value of use_extra_arg.  */
+@@ -348,7 +354,7 @@ print_and_abort (void)
+    abort gracefully or use longjump - but shouldn't return.  This
+    variable by default points to the internal function
+    'print_and_abort'.  */
+-__attribute_noreturn__ void (*obstack_alloc_failed_handler) (void)
+-  = print_and_abort;
++// __attribute_noreturn__ void (*obstack_alloc_failed_handler) (void)
++//   = print_and_abort;
+ # endif /* !_OBSTACK_NO_ERROR_HANDLER */
+ #endif /* !_OBSTACK_ELIDE_CODE */
+diff --git a/lib/obstack.h b/lib/obstack.h
+index e558133..f9033b3 100644
+--- a/lib/obstack.h
++++ b/lib/obstack.h
+@@ -227,7 +227,11 @@ extern _OBSTACK_SIZE_T _obstack_memory_used (struct obstack *)
+    more memory.  This can be set to a user defined function which
+    should either abort gracefully or use longjump - but shouldn't
+    return.  The default action is to print a message and abort.  */
+-extern __attribute_noreturn__ void (*obstack_alloc_failed_handler) (void);
++//extern __attribute_noreturn__ void (*obstack_alloc_failed_handler) (void);
++#ifndef obstack_alloc_failed_handler
++extern __attribute__((noreturn)) void (*obstack_alloc_failed_handler)(void);
++#endif
++
+ 
+ /* Exit value used when 'print_and_abort' is used.  */
+ extern int obstack_exit_failure;

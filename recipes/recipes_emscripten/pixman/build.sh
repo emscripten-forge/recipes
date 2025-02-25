@@ -1,10 +1,19 @@
+#!/bin/bash
+
+set -eux
+
+meson_config_args=(
+    -Dgtk=disabled
+    -Dlibdir=lib
+    -Ddemos=disabled
+    -Dtests=disabled
+)
+
 meson setup builddir \
-    ${MESON_ARGS} \
     "${meson_config_args[@]}" \
     --buildtype=release \
     --default-library=static \
     --prefix=$PREFIX \
-    -Dlibdir=lib \
     --wrap-mode=nofallback \
     --cross-file=$RECIPE_DIR/emscripten.meson.cross
 
