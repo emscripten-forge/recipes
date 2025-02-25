@@ -101,7 +101,7 @@ find $BUILD_PREFIX -name linkers.py -exec sed -i "s/raise MesonException(f'{self
 # setting up flags
 #############################################################
 export FC=flang-new
-export FFLAGS="-g --target=wasm32-unknown-emscripten"
+export FFLAGS="-g --target=wasm32-unknown-emscripten -fno-common"
 #  enable WASM_BIGINT to support 64-bit integers and fexceptions to support exceptions
 export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
 export LDFLAGS=""
