@@ -3,6 +3,10 @@ context:
   name: r-bit64
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,32 +14,25 @@ source:
   sha256: fbc0ce142fc22c9a9fdcbac930a814dfb648563d4b6a77dff739c23cc81319b7
 
 build:
-  number: 0
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 1
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version|replace('-', '_') }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-      - r-bit
-    host:
-      - r-base >= ${{ r_base_version }}
-      - r-bit
-    run:
-      - r-base >= ${{ r_base_version }}
-      - r-bit
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - r-bit
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-bit
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-bit
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://bit64.r-lib.org/
