@@ -2,6 +2,13 @@
 
 set -eux
 
+# Install r-hera
+echo "R_HOME=${BUILD_PREFIX}/lib/R" > "${BUILD_PREFIX}/lib/R/etc/Makeconf"
+cat "${PREFIX}/lib/R/etc/Makeconf" >> "${BUILD_PREFIX}/lib/R/etc/Makeconf"
+
+${BUILD_PREFIX}/bin/R CMD INSTALL hera --no-byte-compile --no-test-load \
+    --library=$PREFIX/lib/R/library
+
 # Create build directory
 mkdir -p build
 cd build
@@ -15,9 +22,7 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_BUILD_TYPE=Release                             \
     -DCMAKE_PREFIX_PATH=$PREFIX                            \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
-    -DCMAKE_BUILD_PREFIX="$BUILD_PREFIX"                   \
-    -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON                      \
-    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON
+    -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON
 
 # Build step with emmake
 emmake make -j1
