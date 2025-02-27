@@ -3,6 +3,10 @@ context:
   name: r-colorspace
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,35 +14,33 @@ source:
   sha256: e721cee5f4d6e4b0fc8eb18265e316b4f856fd3be02f0775a26032663758cd0b
 
 build:
-  number: 2
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 3
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version|replace('-', '_') }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-    host:
-      - r-base >= ${{ r_base_version }}
-    run:
-      - r-base >= ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: http://colorspace.R-Forge.R-project.org
   license: BSD-3-Clause
   license_family: BSD
   summary: A Toolbox for Manipulating and Assessing Colors and Palettes
+  description: |
+    Carries out mapping between assorted color spaces including RGB, HSV, HLS,
+    CIEXYZ, CIELUV, HCL (polar CIELUV), CIELAB, and polar CIELAB. Qualitative,
+    sequential, and diverging color palettes based on HCL colors are provided
+    along with corresponding ggplot2 color scales.
 
 extra:
   recipe-maintainers:
