@@ -1,6 +1,6 @@
 export NCURSES_CFLAGS=$($PREFIX/bin/ncurses6-config --cflags)
 export NCURSES_LDFLAGS=$($PREFIX/bin/ncurses6-config --libs-only-L)
-export XTERM_256COLOR=$PREFIX/share/terminfo/78/xterm-256color
+export XTERM_256COLOR=$($PREFIX/bin/ncurses6-config --terminfo)/x/xterm-256color
 export VIMRC=$PWD/vimrc
 
 echo $NCURSES_CFLAGS
@@ -52,7 +52,7 @@ emmake make EXEEXT=.js -j4 LDFLAGS=" \
     --exclude-file $PWD/usr/local/share/vim/vim91/lang \
     --exclude-file $PWD/usr/local/share/vim/vim91/doc \
     --exclude-file $PWD/usr/local/share/vim/vim91/tutor \
-    --preload-file $XTERM_256COLOR@/usr/local/share/terminfo/78/xterm-256color \
+    --preload-file $XTERM_256COLOR@/usr/local/share/terminfo/x/xterm-256color \
     --preload-file $VIMRC@/etc/vimrc \
     "
 
