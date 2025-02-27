@@ -3,6 +3,10 @@ context:
   name: r-askpass
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,31 +14,24 @@ source:
   sha256: 6c2106a74c44a748f2cea795d9686e27a0058a90debcfd8558b62b06aec0c7dd
 
 build:
-  number: 0
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 1
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-    host:
-      - r-base >= ${{ r_base_version }}
-      - r-sys
-    run:
-      - r-base >= ${{ r_base_version }}
-      - r-sys
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-sys
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-sys
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://r-lib.r-universe.dev/askpass
