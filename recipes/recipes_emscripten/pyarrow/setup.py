@@ -264,11 +264,16 @@ class build_ext(_build_ext):
                     return
 
             cmake_options = [
-                f'-DCMAKE_INSTALL_PREFIX={install_prefix}',
+                f'-DCMAKE_INSTALL_PREFIX={prefix_dir}',
                 f'-DPYTHON_EXECUTABLE={sys.executable}',
                 f'-DPython3_EXECUTABLE={sys.executable}',
                 f'-DPYARROW_CXXFLAGS={self.cmake_cxxflags}',
                 f'-DArrow_DIR={prefix_dir}/lib/cmake/Arrow/'
+                f"-Dre2_DIR={prefix_dir}/lib/cmake/re2",
+                f"-Dutf8proc_LIB={prefix_dir}/lib/libutf8proc.a",
+                f"-Dutf8proc_INCLUDE_DIR={prefix_dir}/include",
+                f"-DCMAKE_PREFIX_PATH:PATH={prefix_dir}",
+                f"-DCMAKE_INSTALL_PREFIX:PATH={prefix_dir}",
             ]
 
             def append_cmake_bool(value, varname):
