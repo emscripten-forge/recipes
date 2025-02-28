@@ -177,7 +177,10 @@ if(TRUE)
   # else()
   set(Python3_NumPy_INCLUDE_DIR $ENV{BUILD_PREFIX}/lib/python3.13/site-packages/numpy/_core/include)
   # endif()
-  set(ENV{_PYTHON_SYSCONFIGDATA_NAME} $ENV{PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py)
+
+  _PYTHON_SYSCONFIGDATA_PATH
+  set(ENV{_PYTHON_SYSCONFIGDATA_NAME} _sysconfigdata__emscripten_wasm32-emscripten)
+  set(ENV{_PYTHON_SYSCONFIGDATA_PATH} $ENV{PREFIX}/etc/conda/)
   # we set the c and cxx compiler manually to bypass pywasmcross
   # which is pyodide's way of messing with C++ build parameters.
   set(CMAKE_C_COMPILER emcc)
