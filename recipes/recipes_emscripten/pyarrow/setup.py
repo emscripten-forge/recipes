@@ -25,7 +25,7 @@ import re
 import shlex
 import sys
 import warnings
-
+import os
 if sys.version_info >= (3, 10):
     import sysconfig
 else:
@@ -52,6 +52,8 @@ if Cython.__version__ < '3':
 setup_dir = os.path.abspath(os.path.dirname(__file__))
 
 ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+
+prefix_dir= os.environ.get('PREFIX')
 
 
 @contextlib.contextmanager
@@ -266,6 +268,7 @@ class build_ext(_build_ext):
                 f'-DPYTHON_EXECUTABLE={sys.executable}',
                 f'-DPython3_EXECUTABLE={sys.executable}',
                 f'-DPYARROW_CXXFLAGS={self.cmake_cxxflags}',
+                f'-DArrow_DIR={prefix_dir}/lib/Arrow'
             ]
 
             def append_cmake_bool(value, varname):
