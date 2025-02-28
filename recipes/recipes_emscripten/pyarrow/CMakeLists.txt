@@ -178,7 +178,6 @@ if(TRUE)
   set(Python3_NumPy_INCLUDE_DIR $ENV{BUILD_PREFIX}/lib/python3.13/site-packages/numpy/_core/include)
   # endif()
 
-  _PYTHON_SYSCONFIGDATA_PATH
   set(ENV{_PYTHON_SYSCONFIGDATA_NAME} _sysconfigdata__emscripten_wasm32-emscripten)
   set(ENV{_PYTHON_SYSCONFIGDATA_PATH} $ENV{PREFIX}/etc/conda/)
   # we set the c and cxx compiler manually to bypass pywasmcross
