@@ -19,6 +19,30 @@ ln -s $BUILD_PREFIX/bin/python3 $PREFIX/bin/python
 PYARROW_CMAKE_OPTIONS="-DPython3_INCLUDE_DIRS=$PREFIX/include/python3.13  -DPython3_NumPy_INCLUDE_DIRS=$PREFIX/lib/python3.13/site-packages/numpy/core/include -DPython3_EXECUTABLE=$BUILD_PREFIX/bin/python3 -DPython3_INTERPRETER=$BUILD_PREFIX/bin/python3"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_SIMD_LEVEL=None"
 
+
+
+
+
+
+
+
+
+export ARROW_HOME=$PREFIX
+export PARQUET_HOME=$PREFIX
+export PYARROW_WITH_ACERO=0
+export PYARROW_WITH_AZURE=0
+export PYARROW_WITH_DATASET=0
+export PYARROW_WITH_FLIGHT=0
+export PYARROW_WITH_GANDIVA=0
+export PYARROW_WITH_GCS=0
+export PYARROW_WITH_HDFS=0
+export PYARROW_WITH_ORC=0
+export PYARROW_WITH_PARQUET=0
+export PYARROW_WITH_PARQUET_ENCRYPTION=0
+export PYARROW_WITH_S3=0
+export PYARROW_WITH_SUBSTRAIT=0
+
+
 export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.13/site-packages/numpy/core/include   -I$PREFIX/lib/python3.13/site-packages/numpy/core/include" 
 
 export CFLAGS="$CFLAGS $INCLUDE_NUMPY_FLAGS"
