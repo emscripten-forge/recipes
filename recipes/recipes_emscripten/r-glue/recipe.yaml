@@ -1,39 +1,36 @@
 context:
   name: r-glue
-  version: 1.7.0
+  version: 1.8.0
   r_base_version: 4.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cran.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 1af51b51f52c1aeb3bfe9349f55896dd78b5542ffdd5654e432e4d646e4a86dc
+  sha256: c86f364ba899b8662f5da3e1a75f43ae081ab04e0d51171d052356e7ee4b72a0
 
 build:
-  number: 4
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-    host:
-      - r-base >= ${{ r_base_version }}
-    run:
-      - r-base >= ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://github.com/tidyverse/glue
@@ -41,11 +38,12 @@ about:
   license_file: LICENSE
   license_family: MIT
   summary: |
-    An implementation of interpreted string literals, inspired by Python's
-    Literal String Interpolation <https://www.python.org/dev/peps/pep-0498/> and
-    Docstrings <https://www.python.org/dev/peps/pep-0257/> and Julia's Triple-
-    Quoted String Literals
-    <https://docs.julialang.org/en/stable/manual/strings/#triple-quoted-string-literals>.
+    Glue strings to data in R. Small, fast, dependency free interpreted string
+    literals.
+  description: |
+    glue offers interpreted string literals that are small, fast, and dependency
+    -free. glue does this by embedding R expressions in curly braces, which are
+    then evaluated and inserted into the string.
 
 extra:
   recipe-maintainers:
