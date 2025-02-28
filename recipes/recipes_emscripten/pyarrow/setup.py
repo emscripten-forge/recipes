@@ -269,6 +269,8 @@ class build_ext(_build_ext):
                 f'-DPython3_EXECUTABLE={sys.executable}',
                 f'-DPYARROW_CXXFLAGS={self.cmake_cxxflags}',
                 f'-DArrow_DIR={prefix_dir}/lib/cmake/Arrow/',
+                f'-DArrowDataset_DIR={prefix_dir}/lib/cmake/ArrowDataset/',
+                f'-ArrowAcero_DIR={prefix_dir}/lib/cmake/ArrowAcero/',
                 f"-Dre2_DIR={prefix_dir}/lib/cmake/re2",
                 f"-Dutf8proc_LIB={prefix_dir}/lib/libutf8proc.a",
                 f"-Dutf8proc_INCLUDE_DIR={prefix_dir}/include",
