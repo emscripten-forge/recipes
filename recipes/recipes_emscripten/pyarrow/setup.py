@@ -54,7 +54,7 @@ setup_dir = os.path.abspath(os.path.dirname(__file__))
 ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
 
 prefix_dir= os.environ.get('PREFIX')
-
+recipe_dir = os.environ.get('RECIPE_DIR')
 
 @contextlib.contextmanager
 def changed_dir(dirname):
@@ -276,6 +276,7 @@ class build_ext(_build_ext):
                 f"-Dutf8proc_INCLUDE_DIR={prefix_dir}/include",
                 f"-DCMAKE_PREFIX_PATH:PATH={prefix_dir}",
                 f"-DCMAKE_INSTALL_PREFIX:PATH={prefix_dir}",
+                f"-DCMAKE_PROJECT_INCLUDE={recipe_dir}/overwriteProp.cmake"
             ]
 
             def append_cmake_bool(value, varname):
