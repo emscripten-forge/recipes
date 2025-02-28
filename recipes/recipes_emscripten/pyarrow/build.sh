@@ -2,7 +2,7 @@
 
 
 cp ${RECIPE_DIR}/setup.py ${SRC_DIR}/python/
-# cp ${RECIPE_DIR}/CMakeLists.txt ${SRC_DIR}/python/
+cp ${RECIPE_DIR}/CMakeLists.txt ${SRC_DIR}/python/
 cp ${RECIPE_DIR}/FindPythonLibsNew.cmake ${SRC_DIR}/cpp/cmake_modules/
 cp ${RECIPE_DIR}/FindPython3Alt.cmake ${SRC_DIR}/cpp/cmake_modules/
 cp ${RECIPE_DIR}/SetupCxxFlags.cmake ${SRC_DIR}/cpp/cmake_modules/
@@ -28,6 +28,6 @@ export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
 cd python
 ${PYTHON} -m pip install . -vvv 
 
-INIT_PATH=$PREFIX/lib/python3.11/site-packages/pyarrow/__init__.py
+# INIT_PATH=$PREFIX/lib/python3.11/site-packages/pyarrow/__init__.py
 
-sed -i "s/__version__ = None/__version__ = \"$PKG_VERSION\"/g" $INIT_PATH
+# sed -i "s/__version__ = None/__version__ = \"$PKG_VERSION\"/g" $INIT_PATH
