@@ -21,6 +21,8 @@
 cmake_minimum_required(VERSION 3.25)
 project(pyarrow)
 
+include_directories($ENV{PREFIX}/include)
+
 # This is needed for 3.13 free-threading. CMake used to add Python
 # include directories with `-isystem`, which led to some Python-internal
 # includes to resolve to normal 3.13 includes (cause -isystem includes
