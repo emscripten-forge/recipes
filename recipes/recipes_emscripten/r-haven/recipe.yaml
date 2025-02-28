@@ -3,6 +3,10 @@ context:
   name: r-haven
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,60 +14,53 @@ source:
   sha256: 9e1531bb37aa474abd91db5e0ed9e3a355c03faa65f4e653b3ea68b7c61ea835
 
 build:
-  number: 1
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 2
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-      - r-cli
-      - r-forcats
-      - r-hms
-      - r-lifecycle
-      - r-readr
-      - r-rlang
-      - r-tibble
-      - r-tidyselect
-      - r-vctrs
-      - r-cpp11
-    host:
-      - r-base >= ${{ r_base_version }}
-      - r-cli
-      - r-forcats
-      - r-hms
-      - r-lifecycle
-      - r-readr
-      - r-rlang
-      - r-tibble
-      - r-tidyselect
-      - r-vctrs
-      - r-cpp11
-      - zlib
-    run:
-      - r-base >= ${{ r_base_version }}
-      - r-cli
-      - r-forcats
-      - r-hms
-      - r-lifecycle
-      - r-readr
-      - r-rlang
-      - r-tibble
-      - r-tidyselect
-      - r-vctrs
-      - r-cpp11
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - r-cli
+    - r-forcats
+    - r-hms
+    - r-lifecycle
+    - r-readr
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-vctrs
+    - r-cpp11
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-cli
+    - r-forcats
+    - r-hms
+    - r-lifecycle
+    - r-readr
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-vctrs
+    - r-cpp11
+    - zlib
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-cli
+    - r-forcats
+    - r-hms
+    - r-lifecycle
+    - r-readr
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-vctrs
+    - r-cpp11
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://haven.tidyverse.org/
