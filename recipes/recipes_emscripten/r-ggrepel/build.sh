@@ -6,4 +6,4 @@ set -ex
 # cross-r-base. We need to copy it again here.
 cp $RECIPE_DIR/patches/exceptions_impl.h $PREFIX/lib/R/library/Rcpp/include/Rcpp/
 
-$R CMD INSTALL $R_ARGS --no-byte-compile .
+$R CMD INSTALL $R_ARGS .

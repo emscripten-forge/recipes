@@ -3,6 +3,10 @@ context:
   name: r-ggrepel
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,43 +14,36 @@ source:
   sha256: 268a6eda6377d27b403af40423cdf6dce30b2fe1460f771377dc68ce3e4e7212
 
 build:
-  number: 0
+  number: 1
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('cxx') }}
-      - r-ggplot2
-      - r-rcpp
-      - r-rlang
-      - r-scales
-      - r-withr
-    host:
-      - r-base >= ${{ r_base_version }}
-      - r-ggplot2
-      - r-rcpp
-      - r-rlang
-      - r-scales
-      - r-withr
-    run:
-      - r-base >= ${{ r_base_version }}
-      - r-ggplot2
-      - r-rcpp
-      - r-rlang
-      - r-scales
-      - r-withr
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - r-ggplot2
+    - r-rcpp
+    - r-rlang
+    - r-scales
+    - r-withr
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-ggplot2
+    - r-rcpp
+    - r-rlang
+    - r-scales
+    - r-withr
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-ggplot2
+    - r-rcpp
+    - r-rlang
+    - r-scales
+    - r-withr
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://ggrepel.slowkow.com/
