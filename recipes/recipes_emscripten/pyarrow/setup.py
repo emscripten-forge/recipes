@@ -268,7 +268,7 @@ class build_ext(_build_ext):
                 f'-DPYTHON_EXECUTABLE={sys.executable}',
                 f'-DPython3_EXECUTABLE={sys.executable}',
                 f'-DPYARROW_CXXFLAGS={self.cmake_cxxflags}',
-                f'-DArrow_DIR={prefix_dir}/lib/Arrow'
+                f'-DArrow_DIR={prefix_dir}/lib/cmake/Arrow/'
             ]
 
             def append_cmake_bool(value, varname):
