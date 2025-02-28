@@ -175,7 +175,7 @@ if(TRUE)
   # if(PYODIDE_NUMPY_MAJOR_VERSION GREATER_EQUAL 2)
   #   set(Python3_NumPy_INCLUDE_DIR $ENV{NUMPY_LIB}/_core/include)
   # else()
-  set(Python3_NumPy_INCLUDE_DIR $ENV{PREFIX}/lib/python3.13/site-packages/numpy/_core/include)
+  set(Python3_NumPy_INCLUDE_DIR $ENV{BUILD_PREFIX}/lib/python3.13/site-packages/numpy/_core/include)
   # endif()
   set(ENV{_PYTHON_SYSCONFIGDATA_NAME} $ENV{PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py)
   # we set the c and cxx compiler manually to bypass pywasmcross
