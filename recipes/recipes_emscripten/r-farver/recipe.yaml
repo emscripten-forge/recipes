@@ -3,6 +3,10 @@ context:
   version: 2.1.2
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,29 +14,22 @@ source:
   sha256: 528823b95daab4566137711f1c842027a952bea1b2ae6ff098e2ca512b17fe25
 
 build:
-  number: 2
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 3
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('cxx') }}
-    host:
-      - r-base >= ${{ r_base_version }}
-    run:
-      - r-base >= ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://farver.data-imaginist.com/
@@ -40,7 +37,8 @@ about:
   license: MIT
   license_family: MIT
   license_file: LICENSE
-  summary: |
+  summary: High Performance Colourspace Manipulation in R
+  description: |
     The encoding of colour can be handled in many different ways, using
     different colour spaces. As different colour spaces have different uses,
     efficient conversion between these representations are important. The
