@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-# cp ${RECIPE_DIR}/setup.py ${SRC_DIR}/python/
+cp ${RECIPE_DIR}/setup.py ${SRC_DIR}/python/
 # cp ${RECIPE_DIR}/CMakeLists.txt ${SRC_DIR}/python/
 cp ${RECIPE_DIR}/FindPythonLibsNew.cmake ${SRC_DIR}/cpp/cmake_modules/
 cp ${RECIPE_DIR}/FindPython3Alt.cmake ${SRC_DIR}/cpp/cmake_modules/
