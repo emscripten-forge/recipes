@@ -370,7 +370,7 @@ set(PYARROW_CPP_SRCS
     ${PYARROW_CPP_SOURCE_DIR}/numpy_convert.cc
     ${PYARROW_CPP_SOURCE_DIR}/numpy_init.cc
     ${PYARROW_CPP_SOURCE_DIR}/numpy_to_arrow.cc
-    ${PYARROW_CPP_SOURCE_DIR}/python_test.cc
+    # ${PYARROW_CPP_SOURCE_DIR}/python_test.cc
     ${PYARROW_CPP_SOURCE_DIR}/python_to_arrow.cc
     ${PYARROW_CPP_SOURCE_DIR}/pyarrow.cc
     ${PYARROW_CPP_SOURCE_DIR}/serialize.cc
@@ -673,8 +673,7 @@ set(CYTHON_EXTENSIONS
     _csv
     _feather
     _fs
-    _json
-    _pyarrow_cpp_tests)
+    _json)
 set_source_files_properties(pyarrow/lib.pyx PROPERTIES CYTHON_API TRUE)
 
 set(LINK_LIBS arrow_python)
