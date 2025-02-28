@@ -3,6 +3,10 @@ context:
   name: r-dplyr
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,70 +14,63 @@ source:
   sha256: cf730414d5d4ab387b4e9890a4b1df9d17a3903488e8da8df1cf2e11e44558cb
 
 build:
-  number: 1
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 2
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-      - r-cli
-      - r-generics
-      - r-glue
-      - r-lifecycle
-      - r-magrittr
-      - r-pillar
-      - r-r6
-      - r-rlang
-      - r-tibble
-      - r-tidyselect
-      - r-vctrs
-    host:
-      - r-base >= ${{ r_base_version }}
-      - r-cli
-      - r-generics
-      - r-glue
-      - r-lifecycle
-      - r-magrittr
-      - r-pillar
-      - r-r6
-      - r-rlang
-      - r-tibble
-      - r-tidyselect
-      - r-vctrs
-    run:
-      - r-base >= ${{ r_base_version }}
-      - r-cli
-      - r-generics
-      - r-glue
-      - r-lifecycle
-      - r-magrittr
-      - r-pillar
-      - r-r6
-      - r-rlang
-      - r-tibble
-      - r-tidyselect
-      - r-vctrs
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - r-cli
+    - r-generics
+    - r-glue
+    - r-lifecycle
+    - r-magrittr
+    - r-pillar
+    - r-r6
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-vctrs
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-cli
+    - r-generics
+    - r-glue
+    - r-lifecycle
+    - r-magrittr
+    - r-pillar
+    - r-r6
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-vctrs
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-cli
+    - r-generics
+    - r-glue
+    - r-lifecycle
+    - r-magrittr
+    - r-pillar
+    - r-r6
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-vctrs
 
-
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://dplyr.tidyverse.org
   repository: https://github.com/tidyverse/dplyr
   license: MIT
   license_file: LICENSE
-  summary: |
+  summary: A grammar of data manipulation
+  description: |
    A fast, consistent tool for working with data frame like objects, both in
    memory and out of memory.
 
