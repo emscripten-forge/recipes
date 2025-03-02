@@ -1,0 +1,45 @@
+context:
+  version: 0.3.0
+  name: r-tinyplot
+  r_base_version: 4.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: ed821e3c18bc2a03a0e86c0970df4e8d836e13fb66533531e139fe8347399c7f
+
+build:
+  number: 3
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://grantmcdermott.com/tinyplot/
+  license: Apache License 2.0
+  license_family: Apache
+  summary: Lightweight Extension of the Base R Graphics System
+  description: |
+    Lightweight extension of the base R graphics system, with support
+    for automatic legends, facets, themes, and various other enhancements.
+
+extra:
+  recipe-maintainers:
+    - grantmcdermott
