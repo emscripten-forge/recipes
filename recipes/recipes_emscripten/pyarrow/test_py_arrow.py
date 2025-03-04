@@ -1,10 +1,24 @@
-import pyarrow as pa
+
+
+# add root to python path
+import sys
+sys.path.append('/')
+
+
+# print all files/folders in /
+import os
+print("ROOT")
+print(os.listdir('/'))
+
+# print all files/folders in side-packages
+print("SITE-PACKAGES")
+print(os.listdir('/lib/python3.13/site-packages/'))
 
 ##########################################################################################
 # The following tests were extracted from various tests files in the orignal repository
 
 # test_array.py (partial)
-
+import pyarrow as pa
 
 import weakref
 import pytest
