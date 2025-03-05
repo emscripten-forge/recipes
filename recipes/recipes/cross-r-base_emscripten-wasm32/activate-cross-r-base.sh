@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "R_HOME=${BUILD_PREFIX}/lib/R" > "${BUILD_PREFIX}/lib/R/etc/Makeconf"
+echo "R_HOME=$PREFIX/lib/R" > "${BUILD_PREFIX}/lib/R/etc/Makeconf"
 cat "${PREFIX}/lib/R/etc/Makeconf" >> "${BUILD_PREFIX}/lib/R/etc/Makeconf"
 
 export R="${BUILD_PREFIX}/bin/R"
