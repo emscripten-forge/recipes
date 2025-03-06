@@ -22,6 +22,8 @@ PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DArrow_DIR=$PREFIX/lib/cmake/Arro
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DArrowDataset_DIR=$PREFIX/lib/cmake/ArrowDataset"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -Dre2_DIR=$PREFIX/lib/cmake/re2"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -Dutf8proc_LIB=$PREFIX/lib/libutf8proc.a"
+#  absl_DIR
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -Dabsl_DIR=$PREFIX/lib/cmake/absl"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -Dutf8proc_INCLUDE_DIR=$PREFIX/include"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/overwriteProp.cmake"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_BUILD_SHARED=OFF"
@@ -116,44 +118,44 @@ $PREFIX/bin/python -c "import sys; print(sys.platform);print(sys.executable)"
 
 
 
-
 # 
 # $PREFIX/bin/python -m pip install . -vvv  --platform wasm32-emscripten --target $PREFIX
 
 # echo "PYTHON IS $PYTHON ${PYTHON}"
 ${PYTHON} -m pip install . -vvv  
 #  --platform wasm32-emscripten 
+SP=$PREFIX/lib/python3.13/site-packages/
+
 rm -rf $PREFIX/pyarrow/tests
 rm -rf $PREFIX/pyarrow/_pyarrow_cpp_tests.cpython-313-wasm32-emscripten.so
 rm -rf $PREFIX/pyarrow/__pycache__/
 
-SP=$PREFIX/lib/python3.13/site-packages/pyarrow
 
-#  rm  $PREFIX/pyarrow/_compute.cpython-313-wasm32-emscripten.so
-#  rm  $PREFIX/pyarrow/_compute.pxd
-#  rm  $PREFIX/pyarrow/_compute.pyx
-#  rm  -f $PREFIX/pyarrow/_compute_docstrings.py
-#  rm  -f  $PREFIX/pyarrow/_csv.cpython-313-wasm32-emscripten.so
-#  rm  -f  $PREFIX/pyarrow/_csv.pxd
-#  rm  -f  $PREFIX/pyarrow/_csv.pyx
-#  rm  -f  $PREFIX/pyarrow/_cuda.pxd
-#  rm  -f  $PREFIX/pyarrow/_cuda.pyx
-#  rm  -f  $PREFIX/pyarrow/_dataset.pxd
-#  rm  -f  $PREFIX/pyarrow/_dataset.pyx
-#  rm  -f  $PREFIX/pyarrow/_dataset_orc.pyx
-#  rm  -f  $PREFIX/pyarrow/_dataset_parquet.pxd
-#  rm  -f  $PREFIX/pyarrow/_dataset_parquet.pyx
-#  rm  -f  $PREFIX/pyarrow/_dataset_parquet_encryption.pyx
-#  rm  -f  $PREFIX/pyarrow/_dlpack.pxi
-#  rm  -f  $PREFIX/pyarrow/_feather.cpython-313-wasm32-emscripten.so
-#  rm  -f  $PREFIX/pyarrow/_feather.pyx
-#  rm  -f  $PREFIX/pyarrow/_flight.pyx
-#  rm  -f  $PREFIX/pyarrow/_fs.cpython-313-wasm32-emscripten.so
-#  rm  -f  $PREFIX/pyarrow/_fs.pxd
-#  rm  -f  $PREFIX/pyarrow/_fs.pyx
-#  rm  -f  $PREFIX/pyarrow/_gcsfs.pyx
-#  rm  -f  $PREFIX/pyarrow/_generated_version.py
-#  rm  -f  $PREFIX/pyarrow/_hdfs.pyx
+ rm  -f $PREFIX/pyarrow/_compute.cpython-313-wasm32-emscripten.so
+ rm  -f $PREFIX/pyarrow/_compute.pxd
+ rm  -f $PREFIX/pyarrow/_compute.pyx
+ rm  -f $PREFIX/pyarrow/_compute_docstrings.py
+ rm  -f  $PREFIX/pyarrow/_csv.cpython-313-wasm32-emscripten.so
+ rm  -f  $PREFIX/pyarrow/_csv.pxd
+ rm  -f  $PREFIX/pyarrow/_csv.pyx
+ rm  -f  $PREFIX/pyarrow/_cuda.pxd
+ rm  -f  $PREFIX/pyarrow/_cuda.pyx
+ rm  -f  $PREFIX/pyarrow/_dataset.pxd
+ rm  -f  $PREFIX/pyarrow/_dataset.pyx
+ rm  -f  $PREFIX/pyarrow/_dataset_orc.pyx
+ rm  -f  $PREFIX/pyarrow/_dataset_parquet.pxd
+ rm  -f  $PREFIX/pyarrow/_dataset_parquet.pyx
+ rm  -f  $PREFIX/pyarrow/_dataset_parquet_encryption.pyx
+ rm  -f  $PREFIX/pyarrow/_dlpack.pxi
+ rm  -f  $PREFIX/pyarrow/_feather.cpython-313-wasm32-emscripten.so
+ rm  -f  $PREFIX/pyarrow/_feather.pyx
+ rm  -f  $PREFIX/pyarrow/_flight.pyx
+ rm  -f  $PREFIX/pyarrow/_fs.cpython-313-wasm32-emscripten.so
+ rm  -f  $PREFIX/pyarrow/_fs.pxd
+ rm  -f  $PREFIX/pyarrow/_fs.pyx
+ rm  -f  $PREFIX/pyarrow/_gcsfs.pyx
+ rm  -f  $PREFIX/pyarrow/_generated_version.py
+ rm  -f  $PREFIX/pyarrow/_hdfs.pyx
 #  rm  -f  $PREFIX/pyarrow/_json.cpython-313-wasm32-emscripten.so
 #  rm  -f  $PREFIX/pyarrow/_json.pxd
 
