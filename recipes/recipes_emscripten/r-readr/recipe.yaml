@@ -3,6 +3,10 @@ context:
   name: r-readr
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,56 +14,56 @@ source:
   sha256: 0fa65a5fe0a46cffe221b7696b52adb82dd4d7a692a895484e438e439594e10a
 
 build:
-  number: 1
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 2
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-      - ${{ compiler('cxx') }}
-      - r-magrittr
-      - r-rlang
-      - r-tibble
-      - r-vctrs
-    host:
-      - r-base >= ${{ r_base_version }}
-      - r-cli
-      - r-clipr
-      - r-crayon
-      - r-hms
-      - r-lifecycle
-      - r-r6
-      - r-rlang
-      - r-tibble
-      - r-vroom
-      - r-cpp11
-      - r-tzdb
-    run:
-      - r-base >= ${{ r_base_version }}
-      - r-cli
-      - r-clipr
-      - r-crayon
-      - r-hms
-      - r-lifecycle
-      - r-r6
-      - r-rlang
-      - r-tibble
-      - r-vroom
-      - r-cpp11
-      - r-tzdb
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - r-cli
+    - r-clipr
+    - r-crayon
+    - r-hms
+    - r-lifecycle
+    - r-r6
+    - r-rlang
+    - r-tibble
+    - r-vroom
+    - r-cpp11
+    - r-tzdb
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-cli
+    - r-clipr
+    - r-crayon
+    - r-hms
+    - r-lifecycle
+    - r-r6
+    - r-rlang
+    - r-tibble
+    - r-vroom
+    - r-cpp11
+    - r-tzdb
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-cli
+    - r-clipr
+    - r-crayon
+    - r-hms
+    - r-lifecycle
+    - r-r6
+    - r-rlang
+    - r-tibble
+    - r-vroom
+    - r-cpp11
+    - r-tzdb
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] | replace('.', '_') }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://readr.tidyverse.org
