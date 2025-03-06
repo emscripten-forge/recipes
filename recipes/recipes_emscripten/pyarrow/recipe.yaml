@@ -1,27 +1,27 @@
 context:
-  version: 11.0.0
+  version: 19.0.1
 
 package:
-  name: arrow-python
+  name: pyarrow
   version: ${{ version }}
 
 source:
-- url: 
-    https://github.com/apache/arrow/archive/refs/tags/apache-arrow-${{version}}.dev.tar.gz
-  sha256: 5581107cb445a4f0b316d57c3073c034857d633eb33b73a63ca71a34c3ab4caf
-  patches:
-  - patches/wasm.patch
-
+  # # - url: https://github.com/apache/arrow/releases/download/apache-arrow-${{version}}/apache-arrow-${{version}}.tar.gz
+  # #   sha256: acb76266e8b0c2fbb7eb15d542fbb462a73b3fd1e32b80fad6c2fafd95a51160
+  # - path: /Users/thorstenbeier/src/arrow/
+  - git: https://github.com/DerThorsten/arrow
+    branch: em
 build:
-  number: 5
+  number: 0
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - cross-python_emscripten-wasm32
   - python
-  - cython < 2
+  - cython >=3.0.12
   - setuptools
+  - setuptools-scm
   - numpy
   - pip
   - cmake
@@ -32,6 +32,7 @@ requirements:
   - cffi
   - arrow-cpp
   - re2
+  - libabseil
   - libutf8proc
   run:
   - numpy
@@ -60,6 +61,5 @@ about:
   homepage: https://arrow.apache.org/
 extra:
   recipe-maintainers:
-  - Klaim
   - martinRenou
   - DerThorsten
