@@ -3,6 +3,10 @@ context:
   version: 2.3.10
   r_base_version: 4.4.2
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
@@ -10,29 +14,22 @@ source:
   sha256: e236d42d366e361d4855aa4f520260debd53a31e4786442b94770b045da02a6d
 
 build:
-  number: 0
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 1
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-    host:
-      - r-base >= ${{ r_base_version }}
-    run:
-      - r-base >= ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://github.com/vubiostat/r-yaml
