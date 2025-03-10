@@ -1,38 +1,35 @@
 context:
   name: r-xfun
-  version: 0.50
+  version: 0.51
   r_base_version: 4.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 4d0c9a983ac67e7f82592273567313ba836dcd832386f30b4409ecd5b3f2410a
+  sha256: 07fb4e0253142d8de62556fbbf97b47cf2aa7b1dd50dc5360901dca8141fadf6
 
 build:
   number: 0
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-      - cross-r-base >= ${{ r_base_version }}
-      - ${{ compiler('c') }}
-    host:
-      - r-base >= ${{ r_base_version }}
-    run:
-      - r-base >= ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://git.yihui.org/xfun/
