@@ -31,7 +31,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions"
 
 # Build step
-emmake make -j4
+emmake make -j2
 
 # Install step
 emmake make install
