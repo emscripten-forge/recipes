@@ -4,6 +4,9 @@
 # to build, then we will not own the contents in the host, which means
 # we cannot navigate into the folder. Setting it to 0750 makes it
 # easier to debug.
+
+cp $RECIPE_DIR/make.inc $SRC_DIR/make.inc
+
 chmod -R o+rx .
 
 export AR=emar
