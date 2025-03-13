@@ -4,6 +4,12 @@ echo F2C_PATH: $F2C_PATH
 export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 
+
+
+
+
+
+
 sed -i 's/void DQA/int DQA/g' scipy/integrate/__quadpack.h
 
 # Change many functions that return void into functions that return int
@@ -19,6 +25,8 @@ sed -i 's/extern void/extern int/g' scipy/optimize/__minpack.h
 sed -i 's/void/int/g' scipy/linalg/cython_blas_signatures.txt
 sed -i 's/void/int/g' scipy/linalg/cython_lapack_signatures.txt
 sed -i 's/^void/int/g' scipy/interpolate/src/_fitpackmodule.c
+
+sed -i 's/double z_abs(/double my_z_abs(/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcomplex.c
 
 sed -i 's/extern void/extern int/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}
 sed -i 's/PUBLIC void/PUBLIC int/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}

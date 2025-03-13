@@ -372,14 +372,14 @@ def compiler_wrapper(args: list[str]):
                         ]
                     )
                     filepath = filepath.with_suffix(".f")
-                subprocess.check_call(["f2c", filepath.name], cwd=filepath.parent)
+                subprocess.check_call(["f2c","-R", filepath.name], cwd=filepath.parent)
                 c_file = filepath.with_suffix('.c')
                 fix_f2c_output(c_file)
                 new_args.append(str(c_file))
             else:
                 new_args.append(arg)
 
-        remove_from_list(['-ffixed-form', '-fno-second-underscore', '-lgfortran', '-Minform=inform', '-module'], new_args)
+        remove_from_list(['-ffixed-form', '-fno-second-underscore', '-lgfortran', '-Minform=inform', '-module', '-lflang', '-lpgmath'], new_args)
         new_args += ["-I", f"{os.environ['BUILD_PREFIX']}/include"]
         # new_args += ["-Wl,--allow-multiple-definition"]
         if ('-print-libgcc-file-name' in new_args or '-print-file-name=libgfortran.so' in new_args):
