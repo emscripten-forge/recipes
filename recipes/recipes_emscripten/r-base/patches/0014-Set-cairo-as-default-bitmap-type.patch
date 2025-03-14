@@ -1,0 +1,29 @@
+From a26995892f296cf2b144e450693c6eaec7202273 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 23 Jan 2025 14:29:33 +0100
+Subject: [PATCH] Set cairo as default bitmap type
+
+---
+ src/library/grDevices/R/zzz.R | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/src/library/grDevices/R/zzz.R b/src/library/grDevices/R/zzz.R
+index fd04188..f22cea6 100644
+--- a/src/library/grDevices/R/zzz.R
++++ b/src/library/grDevices/R/zzz.R
+@@ -28,10 +28,11 @@ if (.Platform$OS.type == "windows") {
+     if (.Platform$OS.type != "windows" && !.Call(C_cairoProps, 2L))
+         X11.options(type = "Xlib")
+ 
+-    extras <- if(.Platform$OS.type == "windows")
+-        list(windowsTimeouts = c(100L,500L)) else
+-        list(bitmapType = if(capabilities("aqua")) "quartz"
+-        else if(.Call(C_cairoProps, 2L)) "cairo" else "Xlib")
++    # extras <- if(.Platform$OS.type == "windows")
++    #     list(windowsTimeouts = c(100L,500L)) else
++    #     list(bitmapType = if(capabilities("aqua")) "quartz"
++    #     else if(.Call(C_cairoProps, 1L)) "cairo" else "Xlib")
++    extras <- list(bitmapType = "cairo")
+     op.grDevices <- c(list(locatorBell = TRUE, device.ask.default = FALSE),
+                       extras, list(device = .select_device()))
+     toset <- !(names(op.grDevices) %in% names(.Options))
