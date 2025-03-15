@@ -4,6 +4,8 @@ set -x
 mkdir -p src/bin/asset_dir
 cp -v $BUILD_PREFIX/share/lfortran/lib/*.mod src/bin/asset_dir
 
+echo "CMAKE_PREFIX_PATH_LFORTRAN: $CMAKE_PREFIX_PATH_LFORTRAN"
+
 emcmake cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" \
