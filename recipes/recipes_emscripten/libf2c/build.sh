@@ -13,6 +13,9 @@ ls
 
 chmod -R o+rx .
 
+# export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fPIC"
+# export CFLAGS="$CFLAGS -sWASM_BIGINT -fPIC"
+
 ARCH="emar" emmake make -j3 f2clib
 mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/include

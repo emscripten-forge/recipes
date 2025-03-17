@@ -55,6 +55,11 @@ def find_header(source_dir: Path, header_name: str) -> Path:
 
 
 def scipy_fixes(args: list[str]) -> None:
+    
+    for arg in args:
+        if "pthread" in args:
+            raise RuntimeError("no thread pls",args)
+
     for arg in args:
         if arg.endswith(".c"):
             scipy_fix_cfile(Path(arg))

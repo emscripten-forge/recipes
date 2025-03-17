@@ -379,7 +379,7 @@ def compiler_wrapper(args: list[str]):
             else:
                 new_args.append(arg)
 
-        remove_from_list(['-ffixed-form', '-fno-second-underscore', '-lgfortran', '-Minform=inform', '-module', '-lflang', '-lpgmath'], new_args)
+        remove_from_list(['-ffixed-form', '-fno-second-underscore', '-lgfortran', '-Minform=inform', '-module', '-lflang', '-lpgmath', '-pthread'], new_args)
         new_args += ["-I", f"{os.environ['BUILD_PREFIX']}/include"]
         # new_args += ["-Wl,--allow-multiple-definition"]
         if ('-print-libgcc-file-name' in new_args or '-print-file-name=libgfortran.so' in new_args):

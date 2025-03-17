@@ -8,6 +8,14 @@ export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 
 
 
+# sed -i '/, thread_dep, atomic_dep/d' scipy/optimize/_highspy/meson.build
+#                                      scipy/optimize/_highspy/meson.build
+
+# sed -i '/thread_dep/d'              scipy/fft/_pocketfft/meson.build
+# sed -i '/, thread_dep/d'            scipy/stats/meson.build
+
+cp $RECIPE_DIR/patches/scipy_config.in.h   scipy/scipy_config.h.in
+
 
 
 sed -i 's/void DQA/int DQA/g' scipy/integrate/__quadpack.h
@@ -64,7 +72,8 @@ export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
 # add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77"
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77 -s WASM_BIGINT"
+export LDFLAGS="$LDFLAGS -s WASM_BIGINT"
 
 
 

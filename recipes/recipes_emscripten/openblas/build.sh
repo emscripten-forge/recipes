@@ -14,7 +14,8 @@ sed -ri 's@int ([cz](dotc|dotu|ladiv))@void \1@g' lapack-netlib/SRC/*.c\
     lapack-netlib/SRC/DEPRECATED/*.c
 
 emmake make libs shared CC=emcc HOSTCC=gcc TARGET=RISCV64_GENERIC NOFORTRAN=1 NO_LAPACKE=1 \
-    USE_THREAD=0 LDFLAGS="$SIDE_MODULE_LDFLAGS"
+    USE_THREAD=0 LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
+    
 mkdir -p dist
 # Add libf2c symbols to libopenblas.so
 emcc $PREFIX/lib/libf2c.a libopenblas.a $EM_FORGE_SIDE_MODULE_LDFLAGS \
