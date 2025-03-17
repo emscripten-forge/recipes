@@ -1,6 +1,6 @@
 #!/bin/bash
 
-emconfigure ./Configure gcc -no-ui-console -DHAVE_FORK=0 -DOPENSSL_NO_SECURE_MEMORY -DNO_SYSLOG -fPIC -sWASM_BIGINT
+emconfigure ./Configure gcc -DHAVE_FORK=0 -DOPENSSL_NO_SECURE_MEMORY -DNO_SYSLOG -fPIC -sWASM_BIGINT
 
 # if on a mac
 if [[ $(uname) == Darwin ]]; then
