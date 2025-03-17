@@ -15,6 +15,8 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten    \
     -DLLVM_TARGETS_TO_BUILD="WebAssembly"           \
     -DLLVM_ENABLE_ASSERTIONS=ON                     \
+    -DLLVM_ENABLE_EH=ON                             \
+    -DLLVM_ENABLE_RTTI=ON                           \
     -DLLVM_INCLUDE_BENCHMARKS=OFF                   \
     -DLLVM_INCLUDE_EXAMPLES=OFF                     \
     -DLLVM_INCLUDE_TESTS=OFF                        \
@@ -26,7 +28,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4"
+    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions"
 
 # Build step
 emmake make -j4
