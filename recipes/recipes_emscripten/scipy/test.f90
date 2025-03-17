@@ -1,3 +1,0 @@
-program t
-
-end program 
