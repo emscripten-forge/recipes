@@ -8,7 +8,7 @@ export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 
 
 sed -i "s/dependency('threads', required: false)/dependency('', required: false)/g" scipy/meson.build
-
+sed -i "s/dependency('atomic', required: false)/dependency('', required: false)/g" scipy/meson.build
 
 cp $RECIPE_DIR/patches/scipy_config.in.h   scipy/scipy_config.h.in
 
