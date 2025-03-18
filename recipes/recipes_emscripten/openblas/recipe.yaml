@@ -1,19 +1,39 @@
 context:
-  version: 0.3.23
   name: openblas
+  version: 0.3.28
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  url: https://github.com/OpenMathLib/OpenBLAS/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f1003466ad074e9b0c8d421a204121100b0751c96fc6fcf3d1456bd12f8a00a1
+  patches:
+  - patches/0001-Add-Wno-return-type-flag.patch
+  - patches/0002-march.patch
+
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
   - ${{ compiler('c') }}
+  - cmake
+  - make     # [unix]
+  host:
+  - libflang                  # for FortranRuntime
 
+# tests:
+# TODO
+
+about:
+  homepage: http://www.openblas.net/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: An optimized BLAS library based on GotoBLAS2 1.13 BSD version
 
 extra:
-  recipe-maintainers:
-  - DerThorsten
+  maintainers:
+    - DerThorsten
+    - anutosh491
