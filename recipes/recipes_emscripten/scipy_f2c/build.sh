@@ -5,7 +5,7 @@ export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 
 
-
+sed -i '/char chla_transtype(int \*trans)/d' scipy/linalg/cython_lapack_signatures.txt
 
 sed -i "s/dependency('threads', required: false)/dependency('', required: false)/g" scipy/meson.build
 sed -i "s/dependency('atomic', required: false)/dependency('', required: false)/g" scipy/meson.build
