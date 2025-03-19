@@ -2,6 +2,7 @@
 
 set -eux
 
+# FIXME: See https://github.com/emscripten-forge/recipes/pull/2046
 rm $PREFIX/lib/libFortranRuntime.a
 cp $RECIPE_DIR/libFortranRuntime.a $PREFIX/lib/
 
