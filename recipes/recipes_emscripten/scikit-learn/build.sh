@@ -1,8 +1,10 @@
 #!/bin/bash
 
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
-export CFLAGS="$CFLAGS -Wno-implicit-function-declaration"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
+export CFLAGS="$CFLAGS -Wno-implicit-function-declaration -fexceptions"
 
+
+cp $RECIPE_DIR/patches/_base.py $SRC_DIR/sklearn/datasets/_base.py
 
 # otherwise "cython" is not properly executable
 echo "add shebang to cython file"
