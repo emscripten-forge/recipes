@@ -9,5 +9,9 @@ export CXXFLAGS="-fPIC"
 emcmake cmake -S flang/runtime -B _fbuild_runtime -GNinja \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=$PREFIX
-$(which cmake) --build _fbuild_runtime
-$(which cmake) --build _fbuild_runtime --target install
+
+cd _fbuild_runtime
+ninja -v
+ninja install
+
+emcc $PREFIX/lib/libFortranRuntime.a -o tst.so -sSIDE_MODULE=1 -sWASM_BIGINT
