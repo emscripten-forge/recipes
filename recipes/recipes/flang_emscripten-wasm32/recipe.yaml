@@ -1,0 +1,50 @@
+context:
+  name: libflang
+  version: 19.1.0.rc2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version | replace(".rc", "-rc") }}.tar.gz
+  sha256: 5332e77a658136c778fc32ec2a3687de4d63e0ff48010be205c4e7af6e76f1f1
+  patches:
+    # from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
+    - patches/0001-Instructions-for-building-a-functional-Flang-cross-c.patch
+    - patches/0002-Minimal-WASM-support-for-flang.patch
+    - patches/0003-Specialize-Flang-to-target-WASM.patch
+    # see https://github.com/llvm/llvm-project/pull/99822
+    - patches/0004-Flang-Runtime-Explicitly-convert-shift-value-to-Subs.patch
+    # see https://github.com/llvm/llvm-project/pull/101242 (plus a necessary precursor)
+    - patches/0005-flang-IEEE_NEXT_AFTER-IEEE_NEXT_DOWN-IEEE_NEXT_UP-NE.patch
+    - patches/0006-Flang-Runtime-Handle-missing-definitions-in-cfenv.patch
+    # hard wasm overrides for building runtime with emcc
+    - patches/0007-Patches-to-build-flang-runtime-with-emcc.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - zstd
+
+tests:
+- script:
+  - test -f $PREFIX/lib/libFortranRuntime.a
+
+about:
+  homepage: https://flang.llvm.org
+  license: Apache-2.0
+  license_file: flang/LICENSE.TXT
+  summary: Flang is a Fortran compiler targeting LLVM.
+  repository: https://github.com/llvm/llvm-project
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
