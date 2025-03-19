@@ -56,6 +56,9 @@ sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 
+
+sed -i '/char chla_transtype(int \*trans)/d' scipy/linalg/cython_lapack_signatures.txt
+
 # https://github.com/mesonbuild/meson/blob/e542901af6e30865715d3c3c18f703910a096ec0/mesonbuild/backend/ninjabackend.py#L94
 # Prevent from using response file. The response file that meson generates is not compatible to pyodide-build
 export MESON_RSP_THRESHOLD=131072
