@@ -14,4 +14,4 @@ cd _fbuild_runtime
 ninja -v
 ninja install
 
-emcc $PREFIX/lib/libFortranRuntime.a -o tst.so -sSIDE_MODULE=1 -sWASM_BIGINT
+emcc $PREFIX/lib/libFortranRuntime.a -o tst.so -sSIDE_MODULE=1 
