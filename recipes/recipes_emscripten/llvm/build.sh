@@ -25,9 +25,11 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DLLVM_ENABLE_THREADS=OFF                       \
     -DLLVM_ENABLE_ZSTD=OFF                          \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
+    -DLLVM_BUILD_TOOLS=OFF                          \
     -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
+    -DCLANG_BUILD_TOOLS=OFF                         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions"
 
 # Build step
