@@ -7,9 +7,6 @@ export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
 export LDFLAGS="$LDFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
 
 
-
-cp $RECIPE_DIR/patches/_base.py $SRC_DIR/sklearn/datasets/_base.py
-
 # otherwise "cython" is not properly executable
 echo "add shebang to cython file"
 sed -i '1i#!/usr/bin/env python' $BUILD_PREFIX/bin/cython
