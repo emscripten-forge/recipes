@@ -2,19 +2,6 @@
 
 set -eux
 
-# FIXME: See https://github.com/emscripten-forge/recipes/pull/2046
-rm $PREFIX/lib/libFortranRuntime.a
-cp $RECIPE_DIR/libFortranRuntime.a $PREFIX/lib/
-
-# Using flang as a WASM cross-compiler
-# https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
-# https://github.com/conda-forge/flang-feedstock/pull/69
-micromamba install -p $BUILD_PREFIX \
-    conda-forge/label/emscripten::flang libllvm20 \
-    -y --no-channel-priority
-rm $BUILD_PREFIX/bin/clang # links to clang19
-ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
-
 # Skip non-working checks
 export r_cv_header_zlib_h=yes
 export r_cv_have_bzlib=yes
