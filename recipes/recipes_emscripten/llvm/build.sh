@@ -33,7 +33,7 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions"
 
 # Build and Install step
-emmake make clangInterpreter -j4 install
+emmake make clangInterpreter lldWasm -j8 install
 
 # Copy all files with ".wasm" extension to $PREFIX/bin
 cp $SRC_DIR/build/bin/*.wasm $PREFIX/bin
