@@ -1,7 +1,11 @@
 context:
   name: r-vctrs
   version: 0.6.5
-  r_base_version: 4.4.2
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
   url:
@@ -10,50 +14,46 @@ source:
   sha256: 43167d2248fd699594044b5c8f1dbb7ed163f2d64761e08ba805b04e7ec8e402
 
 build:
-  number: 2
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-    - cross-r-base >= ${{ r_base_version }}
-    - r-glue
-    - r-rlang
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    host:
-    - r-base >= ${{ r_base_version }}
-    - r-cli >=3.6.3
-    - r-glue
-    - r-rlang
-    - r-lifecycle >=1.0.4
-    run:
-    - r-base >= ${{ r_base_version }}
-    - r-cli >=3.6.3
-    - r-glue
-    - r-rlang
-    - r-lifecycle >=1.0.4
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - r-cli >=3.6.3
+  - r-glue
+  - r-rlang
+  - r-lifecycle >=1.0.4
+  host:
+  - r-base >= ${{ r_base_version }}
+  - r-cli >=3.6.3
+  - r-glue
+  - r-rlang
+  - r-lifecycle >=1.0.4
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-cli >=3.6.3
+  - r-glue
+  - r-rlang
+  - r-lifecycle >=1.0.4
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://vctrs.r-lib.org/
   license: MIT
   license_family: MIT
   license_file: LICENSE
-  summary: |
-   Defines new notions of prototype and size that are used to provide tools for consistent
-   and well-founded type-coercion and size-recycling, and are in turn connected to ideas of
-   type- and size-stability useful for analysing function interfaces.
+  summary: Vector helpers
+  description: |
+   Defines new notions of prototype and size that are used to provide tools for
+   consistent and well-founded type-coercion and size-recycling, and are in turn
+   connected to ideas of type- and size-stability useful for analysing function
+   interfaces.
 
 extra:
   recipe-maintainers:
