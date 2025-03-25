@@ -1,0 +1,50 @@
+context:
+  version: 3.4.3
+  name: r-sys
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 051e7332e3074db826efef9059067721864f9d70adc55bbcae3a72e5ae83913a
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://jeroen.r-universe.dev/sys
+  repository: https://github.com/jeroen/sys/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Powerful and Reliable Tools for Running System Commands in R
+  description: |
+   Drop-in replacements for the base system2() function with fine control and
+   consistent behavior across platforms. Supports clean interruption, timeout,
+   background tasks, and streaming STDIN / STDOUT / STDERR over binary or text
+   connections. Arguments on Windows automatically get encoded and quoted to
+   work on different locales.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
