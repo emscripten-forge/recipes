@@ -1,7 +1,6 @@
 # def test_scipy_linalg():
-#     import numpy as np
 #     import scipy.linalg
-#     from numpy.testing import assert_allclose
+
 
 #     N = 10
 #     X = np.random.RandomState(42).rand(N, N)

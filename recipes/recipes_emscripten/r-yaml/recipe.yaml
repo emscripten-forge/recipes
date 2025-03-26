@@ -1,0 +1,45 @@
+context:
+  name: r-yaml
+  version: 2.3.10
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: e236d42d366e361d4855aa4f520260debd53a31e4786442b94770b045da02a6d
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://github.com/vubiostat/r-yaml
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: R package for converting objects to and from YAML
+  description: |
+    Implements the 'libyaml' 'YAML' 1.1 parser and emitter
+    (<https://pyyaml.org/wiki/LibYAML>) for R.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
