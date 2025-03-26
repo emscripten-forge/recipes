@@ -1,0 +1,24 @@
+From 75b156266607e314f9caf4419abb91f349f1cf70 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 6 Jan 2025 20:33:00 +0100
+Subject: [PATCH] Do not link with atomic lib
+
+---
+ configure | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/configure b/configure
+index aa9a93f..2d0bd2a 100755
+--- a/configure
++++ b/configure
+@@ -21,6 +21,10 @@ else
+ fi
+ 
+ case "$CC" in
++  *emcc)
++    echo "Found Emscripten. Will skip tests that raise false positives."
++    unset EXTRA_PKG_LIBS
++    ;;
+   *undefined*)
+     echo "Found UBSAN. Will skip tests that raise false positives."
+     PKG_CPPFLAGS="$PKG_CPPFLAGS -DUSING_UBSAN"

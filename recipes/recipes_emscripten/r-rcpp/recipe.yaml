@@ -1,0 +1,48 @@
+context:
+  version: 1.0.14
+  name: r-Rcpp
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 74e84a52efb0e3e2713cdbbef5234b5ae1d44b33d32c3c337993e7fc423a8002
+  patches:
+    - patches/0001-Disable-demangler.patch
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}
+
+about:
+  homepage: https://www.rcpp.org/
+  repository: https://github.com/RcppCore/Rcpp
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  summary:  Seamless R and C++ Integration
+  description: |
+   Executes arbitrary R or C functions some time after the current time, after
+   the R execution stack has emptied. The functions are scheduled in an event loop.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
