@@ -1,0 +1,92 @@
+context:
+  version: 1.6.5
+  name: r-vroom
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 7bdca21e58c9c5049d7445d182f59fd399193cb2f4318d083de0a559ec9b5761
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cross-r-base_${{ target_platform }}
+    - r-bit64
+    - r-cli
+    - r-crayon
+    - r-glue
+    - r-hms
+    - r-lifecycle
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-tzdb
+    - r-vctrs
+    - r-withr
+    - r-cpp11
+    - r-progress
+  host:
+    - r-base >= ${{ r_base_version }}
+    - r-bit64
+    - r-cli
+    - r-crayon
+    - r-glue
+    - r-hms
+    - r-lifecycle
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-tzdb
+    - r-vctrs
+    - r-withr
+    - r-cpp11
+    - r-progress
+  run:
+    - r-base >= ${{ r_base_version }}
+    - r-bit64
+    - r-cli
+    - r-crayon
+    - r-glue
+    - r-hms
+    - r-lifecycle
+    - r-rlang
+    - r-tibble
+    - r-tidyselect
+    - r-tzdb
+    - r-vctrs
+    - r-withr
+    - r-cpp11
+    - r-progress
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://vroom.r-lib.org/
+  repository: https://github.com/r-lib/vroom
+  license: MIT
+  license_file: LICENSE
+  summary: Read and Write Rectangular Text Data Quickly
+  description: |
+    The goal of 'vroom' is to read and write data (like 'csv', 'tsv' and 'fwf')
+    quickly. When reading it uses a quick initial indexing step, then reads the
+    values lazily , so only the data you actually use needs to be read. The
+    writer formats the data in parallel and writes to disk asynchronously from
+    formatting.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
