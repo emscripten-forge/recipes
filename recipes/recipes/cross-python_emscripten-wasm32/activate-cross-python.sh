@@ -42,7 +42,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
 
 
   unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
-  if [[ ! -d $BUILD_PREFIX/venv ]]; then
+  # if [[ ! -d $BUILD_PREFIX/venv ]]; then
     $BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \
         --sysroot $PREFIX \
         --without-pip $BUILD_PREFIX/venv \
@@ -98,7 +98,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
   unset sysconfigdata_fn
   export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 
-fi
+# fi
 
 # setting up flags
 

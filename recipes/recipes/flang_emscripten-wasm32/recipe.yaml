@@ -1,0 +1,41 @@
+context:
+  name: flang_emscripten-wasm32
+  version: 19.1.7
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - zstd
+  run:
+    - emscripten_emscripten-wasm32
+    - libllvm20
+  run_exports:
+    strong:
+      - emscripten-abi >=3.1.73,<3.1.74.0a0
+
+tests:
+- package_contents:
+    lib:
+    - libFortranRuntime_emscripten-wasm32.a
+
+about:
+  homepage: https://flang.llvm.org
+  license: Apache-2.0
+  license_file: LICENSE.TXT
+  summary: Flang is a Fortran compiler targeting LLVM.
+  repository: https://github.com/llvm/llvm-project
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
