@@ -4,6 +4,7 @@ from contextlib import closing, contextmanager
 import os
 from pyjs_code_runner.run import run
 from pyjs_code_runner.backend.backend import BackendType
+from pyjs_code_runner.get_file_filter import get_file_filter
 from pathlib import Path
 import shutil
 import sys
@@ -11,6 +12,7 @@ import pprint
 # dir of this file
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 MAIN_MOUNT_DIR= Path(THIS_DIR) /"main_mount"
+EMPACK_CONFIG= str(Path(THIS_DIR) / "empack_config.yaml")
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
@@ -25,6 +27,11 @@ def main():
     print("Running the main function")
     # get the conda env from the env var "PREFIX"
     prefix = os.environ["PREFIX"]
+
+    print(f"load file filter from  {EMPACK_CONFIG}")
+    file_filter = get_file_filter([EMPACK_CONFIG])
+    print(file_filter)
+
 
     # get cwd
     work_dir = os.getcwd()
@@ -96,7 +103,7 @@ def main():
                     (Path(tests_dir).resolve(), virtual_work_dir),
                 ],
                 work_dir=virtual_work_dir,
-                pkg_file_filter=None,  # let empack handle this
+                pkg_file_filter=file_filter,
                 pyjs_dir=None,
                 cache_dir=None,
                 use_cache=False,
