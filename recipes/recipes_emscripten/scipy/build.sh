@@ -60,10 +60,7 @@ echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
 sed -i '/char chla_transtype(int \*trans)/d' scipy/linalg/cython_lapack_signatures.txt
 
 
-
-#  replace  dependencies: [lapack_dep, blas_dep, fortranobject_dep], with dependencies: [lapack, lapack_dep, blas_dep, fortranobject_dep],
-
-# sed -i 's/dependencies: \[lapack_dep, blas_dep, fortranobject_dep\]/dependencies: \[lapack, blas_dep, fortranobject_dep\]/g' scipy/integrate/meson.build
+sed -i 's/dependencies: \[lapack_dep, blas_dep, fortranobject_dep\]/dependencies: \[lapack_dep, lapack, blas_dep, fortranobject_dep\]/g' scipy/integrate/meson.build
 
 
 
