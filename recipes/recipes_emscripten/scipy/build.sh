@@ -63,7 +63,7 @@ sed -i '/char chla_transtype(int \*trans)/d' scipy/linalg/cython_lapack_signatur
 
 #  replace  dependencies: [lapack_dep, blas_dep, fortranobject_dep], with dependencies: [lapack, lapack_dep, blas_dep, fortranobject_dep],
 
-sed -i 's/dependencies: \[lapack_dep, blas_dep, fortranobject_dep\]/dependencies: \[lapack, blas_dep, fortranobject_dep\]/g' scipy/integrate/meson.build
+# sed -i 's/dependencies: \[lapack_dep, blas_dep, fortranobject_dep\]/dependencies: \[lapack, blas_dep, fortranobject_dep\]/g' scipy/integrate/meson.build
 
 
 
