@@ -1,18 +1,20 @@
 export F2C_PATH=$BUILD_PREFIX/bin/f2c
 
+set -ex
+
+export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS"
+export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS"
+
 echo F2C_PATH: $F2C_PATH
 export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 export NPY_LAPACK_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
 
+sed -i '/char chla_transtype(int \*trans)/d' scipy/linalg/cython_lapack_signatures.txt
+cat scipy/linalg/cython_lapack_signatures.txt
 
 
-
-
-# sed -i '/, thread_dep, atomic_dep/d' scipy/optimize/_highspy/meson.build
-#                                      scipy/optimize/_highspy/meson.build
-
-# sed -i '/thread_dep/d'              scipy/fft/_pocketfft/meson.build
-# sed -i '/, thread_dep/d'            scipy/stats/meson.build
+sed -i "s/dependency('threads', required: false)/dependency('', required: false)/g" scipy/meson.build
+sed -i "s/dependency('atomic', required: false)/dependency('', required: false)/g" scipy/meson.build
 
 cp $RECIPE_DIR/patches/scipy_config.in.h   scipy/scipy_config.h.in
 
@@ -55,9 +57,6 @@ sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
 
 # Input error causes "duplicate symbol" linker errors. Empty out the file.
 echo "" > scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
-
-
-sed -i '/char chla_transtype(int \*trans)/d' scipy/linalg/cython_lapack_signatures.txt
 
 # https://github.com/mesonbuild/meson/blob/e542901af6e30865715d3c3c18f703910a096ec0/mesonbuild/backend/ninjabackend.py#L94
 # Prevent from using response file. The response file that meson generates is not compatible to pyodide-build
