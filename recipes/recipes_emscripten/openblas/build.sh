@@ -30,13 +30,13 @@ emcc $PREFIX/lib/libf2c.a libopenblas.a $EM_FORGE_SIDE_MODULE_LDFLAGS \
 emmake make install PREFIX=$PREFIX
 
 # make sure to remove all shared libs **that dont link to libf2c**
-rm -rf $PREFIX/lib/
+rm -rf $PREFIX/lib/libopenblas.*
 
 # copy the shared lib from the build dir to the install dir
 # (this is the one that links to libf2c)
-mkdir -p $PREFIX/lib
+
 cp libopenblas.so $PREFIX/lib/
 
 
-mkdir -p $PREFIX/lib/pkgconfig
-cp $RECIPE_DIR/openblas.pc $PREFIX/lib/pkgconfig/
+# fix openblas.pc replace "extralib=-lpthread -lgfortran -lgfortran" with "extralib="
+$SED_CMD -i 's/extralibs=-lpthread -lgfortran -lgfortran/extralibs=/' $PREFIX/lib/pkgconfig/openblas.pc
