@@ -35,4 +35,8 @@ rm -rf $PREFIX/lib/
 # copy the shared lib from the build dir to the install dir
 # (this is the one that links to libf2c)
 mkdir -p $PREFIX/lib
-cp libopenblas.so $PREFIX/lib
+cp libopenblas.so $PREFIX/lib/
+
+
+mkdir -p $PREFIX/lib/pkgconfig
+cp $SRC_DIR/openblas.pc $PREFIX/lib/pkgconfig/
