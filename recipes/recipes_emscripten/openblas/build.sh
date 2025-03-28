@@ -39,4 +39,4 @@ cp libopenblas.so $PREFIX/lib/
 
 
 mkdir -p $PREFIX/lib/pkgconfig
-cp $SRC_DIR/openblas.pc $PREFIX/lib/pkgconfig/
+cp $RECIPE_DIR/openblas.pc $PREFIX/lib/pkgconfig/
