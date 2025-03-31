@@ -4,7 +4,7 @@ import sys
 if __name__ == "__main__":
 
     try:
-        retcode = pytest.main()
+        retcode = pytest.main(["-s"])
     except Exception as e:
         print(f"pytest failed with exception: {e}")
         #  get backtrace
