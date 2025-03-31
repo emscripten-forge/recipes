@@ -1,7 +1,11 @@
 context:
   name: r-htmltools
   version: 0.5.8.1
-  r_base_version: 4.4.2
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
   url:
@@ -10,51 +14,42 @@ source:
   sha256: f9f62293ec06c353c4584db6ccedb06a2da12e485208bd26b856f17dd013f176
 
 build:
-  number: 2
-  script: $R CMD INSTALL $R_ARGS --no-byte-compile .
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
 
-outputs:
-- package:
-    name: ${{ name }}
-    version: ${{ version }}
+requirements:
   build:
-    files:
-      - lib/R/library/${{ name[2:] }}/*
-  requirements:
-    build:
-    - cross-r-base >= ${{ r_base_version }}
-    - r-base64enc
-    - r-digest
-    - r-ellipsis
-    - r-fastmap
-    - r-rlang
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    host:
-    - r-base >= ${{ r_base_version }}
-    - r-base64enc
-    - r-digest
-    - r-ellipsis
-    - r-fastmap
-    - r-rlang
-    run:
-    - r-base >= ${{ r_base_version }}
-    - r-base64enc
-    - r-digest
-    - r-ellipsis
-    - r-fastmap
-    - r-rlang
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - r-base64enc
+  - r-digest
+  - r-fastmap
+  - r-rlang
+  host:
+  - r-base >= ${{ r_base_version }}
+  - r-base64enc
+  - r-digest
+  - r-fastmap
+  - r-rlang
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-base64enc
+  - r-digest
+  - r-fastmap
+  - r-rlang
 
-  tests:
-  - package_contents:
-      lib:
-      - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
-  homepage: https://github.com/rstudio/htmltools
+  homepage: https://rstudio.github.io/htmltools/
+  repository: https://github.com/rstudio/htmltools
   license: GPL-2.0-or-later
   license_family: GPL3
-  summary: Tools for HTML generation and output.
+  summary: Tools for HTML
+  description: Tools for creating, manipulating, and writing HTML from R.
 
 extra:
   recipe-maintainers:

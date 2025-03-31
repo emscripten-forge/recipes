@@ -1,0 +1,6 @@
+#undef HAVE_THREAD_LOCAL
+#undef HAVE__THREAD_LOCAL
+#undef HAVE___THREAD
+#undef HAVE___DECLSPEC_THREAD_
+
+#define SCIPY_TLS
