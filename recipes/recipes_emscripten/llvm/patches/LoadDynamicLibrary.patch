@@ -1,0 +1,87 @@
+diff --git a/clang/lib/Interpreter/IncrementalExecutor.h b/clang/lib/Interpreter/IncrementalExecutor.h
+index dbd61f0b8b1e..71d71bc3883e 100644
+--- a/clang/lib/Interpreter/IncrementalExecutor.h
++++ b/clang/lib/Interpreter/IncrementalExecutor.h
+@@ -57,7 +57,7 @@ public:
+   virtual llvm::Error removeModule(PartialTranslationUnit &PTU);
+   virtual llvm::Error runCtors() const;
+   virtual llvm::Error cleanUp();
+-  llvm::Expected<llvm::orc::ExecutorAddr>
++  virtual llvm::Expected<llvm::orc::ExecutorAddr>
+   getSymbolAddress(llvm::StringRef Name, SymbolNameKind NameKind) const;
+ 
+   llvm::orc::LLJIT &GetExecutionEngine() { return *Jit; }
+diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
+index fa4c1439c926..f8c8d0a42565 100644
+--- a/clang/lib/Interpreter/Interpreter.cpp
++++ b/clang/lib/Interpreter/Interpreter.cpp
+@@ -18,6 +18,7 @@
+ #include "llvm/Support/VirtualFileSystem.h"
+ #ifdef __EMSCRIPTEN__
+ #include "Wasm.h"
++#include <dlfcn.h>
+ #endif // __EMSCRIPTEN__
+ 
+ #include "clang/AST/ASTConsumer.h"
+@@ -711,6 +712,14 @@ llvm::Error Interpreter::Undo(unsigned N) {
+ }
+ 
+ llvm::Error Interpreter::LoadDynamicLibrary(const char *name) {
++#ifdef __EMSCRIPTEN__
++  void *handle = dlopen(name, RTLD_NOW | RTLD_GLOBAL);
++  if (!handle) {
++    llvm::errs() << dlerror() << '\n';
++    return llvm::make_error<llvm::StringError>("Failed to load dynamic library",
++                                               llvm::inconvertibleErrorCode());
++  }
++#else
+   auto EE = getExecutionEngine();
+   if (!EE)
+     return EE.takeError();
+@@ -722,6 +731,7 @@ llvm::Error Interpreter::LoadDynamicLibrary(const char *name) {
+     EE->getMainJITDylib().addGenerator(std::move(*DLSG));
+   else
+     return DLSG.takeError();
++#endif
+ 
+   return llvm::Error::success();
+ }
+diff --git a/clang/lib/Interpreter/Wasm.cpp b/clang/lib/Interpreter/Wasm.cpp
+index aa10b160ccf8..74c83169ced6 100644
+--- a/clang/lib/Interpreter/Wasm.cpp
++++ b/clang/lib/Interpreter/Wasm.cpp
+@@ -144,6 +144,19 @@ llvm::Error WasmIncrementalExecutor::cleanUp() {
+   return llvm::Error::success();
+ }
+ 
++llvm::Expected<llvm::orc::ExecutorAddr>
++WasmIncrementalExecutor::getSymbolAddress(llvm::StringRef Name,
++                                          SymbolNameKind NameKind) const {
++  void *Sym = dlsym(RTLD_DEFAULT, Name.str().c_str());
++  if (!Sym) {
++    return llvm::make_error<llvm::StringError>("dlsym failed for symbol: " +
++                                                   Name.str(),
++                                               llvm::inconvertibleErrorCode());
++  }
++
++  return llvm::orc::ExecutorAddr::fromPtr(Sym);
++}
++
+ WasmIncrementalExecutor::~WasmIncrementalExecutor() = default;
+ 
+ } // namespace clang
+\ No newline at end of file
+diff --git a/clang/lib/Interpreter/Wasm.h b/clang/lib/Interpreter/Wasm.h
+index 4632613326d3..9a752934e318 100644
+--- a/clang/lib/Interpreter/Wasm.h
++++ b/clang/lib/Interpreter/Wasm.h
+@@ -29,6 +29,9 @@ public:
+   llvm::Error removeModule(PartialTranslationUnit &PTU) override;
+   llvm::Error runCtors() const override;
+   llvm::Error cleanUp() override;
++  llvm::Expected<llvm::orc::ExecutorAddr>
++  getSymbolAddress(llvm::StringRef Name,
++                   SymbolNameKind NameKind) const override;
+ 
+   ~WasmIncrementalExecutor() override;
+ };
