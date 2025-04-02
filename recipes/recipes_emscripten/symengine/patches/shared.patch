@@ -1,0 +1,72 @@
+diff --git a/symengine/CMakeLists.txt b/symengine/CMakeLists.txt
+index 2ae82f97..2ecc489f 100644
+--- a/symengine/CMakeLists.txt
++++ b/symengine/CMakeLists.txt
+@@ -1,3 +1,8 @@
++set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
++set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
++set(CMAKE_STRIP FALSE)
++
+ if (WITH_SYMENGINE_TEUCHOS)
+     add_subdirectory(utilities/teuchos)
+     # Include Teuchos headers:
+@@ -275,6 +280,9 @@ include(GNUInstallDirs)
+ # Configure SymEngine using our CMake options:
+ set(SYMENGINE_CLING_LIBRARY_DIR "\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}\"")
+ 
++set(SYMENGINE_CPPINTEROP_LIBRARY_PATH "\"/lib/${CMAKE_SHARED_LIBRARY_PREFIX}symengine${CMAKE_SHARED_LIBRARY_SUFFIX}\"")
++message(STATUS "SYMENGINE_CPPINTEROP_LIBRARY_PATH = ${SYMENGINE_CPPINTEROP_LIBRARY_PATH}")
++
+ configure_file(symengine_config.h.in symengine_config.h)
+ configure_file(symengine_config_cling.h.in symengine_config_cling.h)
+ 
+@@ -283,7 +291,9 @@ include_directories(BEFORE ${symengine_BINARY_DIR})
+ # Include the source directory
+ include_directories(BEFORE ${symengine_SOURCE_DIR})
+ 
+-add_library(symengine ${SRC})
++add_library(symengine SHARED
++${SRC}
++)
+ 
+ include(GenerateExportHeader)
+ generate_export_header(symengine)
+@@ -321,6 +331,7 @@ if (WITH_SYMENGINE_TEUCHOS)
+     target_link_libraries(symengine teuchos)
+ endif()
+ target_link_libraries(symengine ${LIBS})
++set_target_properties(symengine PROPERTIES NO_SONAME 1)
+ 
+ if (WITH_LLVM AND NOT SYMENGINE_LLVM_LINK_DOWNSTREAM AND NOT WITH_SYMENGINE_TEUCHOS)
+     if (${EXCLUDE_LIBS})
+diff --git a/symengine/symengine_config.h.in b/symengine/symengine_config.h.in
+index a4f406cf..bbcf55b2 100644
+--- a/symengine/symengine_config.h.in
++++ b/symengine/symengine_config.h.in
+@@ -90,7 +90,7 @@
+ 
+ #include <symengine/symengine_export.h>
+ 
+-#ifdef __CLING__
++#if defined(__CLANG_REPL__) && defined(__EMSCRIPTEN__)
+ #include "symengine/symengine_config_cling.h"
+ #endif
+ 
+diff --git a/symengine/symengine_config_cling.h.in b/symengine/symengine_config_cling.h.in
+index bf99d723..91ea1042 100644
+--- a/symengine/symengine_config_cling.h.in
++++ b/symengine/symengine_config_cling.h.in
+@@ -1,7 +1,10 @@
+ #ifndef SYMENGINE_CONFIG_CLING_HPP
+ #define SYMENGINE_CONFIG_CLING_HPP
+ 
+-#pragma cling add_library_path(@SYMENGINE_CLING_LIBRARY_DIR@)
+-#pragma cling load("@CMAKE_SHARED_LIBRARY_PREFIX@symengine")
++#include "clang/Interpreter/CppInterOp.h"
++static bool _symengine_loaded = []() {
++    Cpp::LoadLibrary(@SYMENGINE_CPPINTEROP_LIBRARY_PATH@);
++    return true;
++}();
+ 
+ #endif
