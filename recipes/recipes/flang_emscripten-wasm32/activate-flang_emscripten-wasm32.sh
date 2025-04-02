@@ -17,6 +17,7 @@ export FLANG=flang-new
 export FPICFLAGS="-fPIC"
 
 rm $PREFIX/lib/libFortranRuntime.a || true
+mkdir -p $PREFIX/lib/
 cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
 
 rm $BUILD_PREFIX/bin/clang || true
