@@ -19,6 +19,7 @@ emcmake cmake \
     -DWITH_MPFR=OFF \
     -DWITH_MPC=OFF \
     -DWITH_OPENMP=OFF \
-    ../
+    -S . \
+    -B build
 
-emmake make install -j8
+emmake cmake --build build --target install
