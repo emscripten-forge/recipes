@@ -1,8 +1,8 @@
 #!/bin/bash
 
-cp $RECIPE_DIR/patches/erfaversion.c liberfa/erfa/src/erfaversion.c
+# cp $RECIPE_DIR/patches/erfaversion.c liberfa/erfa/src/erfaversion.c
 
-${PYTHON} erfa_generator.py
+# ${PYTHON} erfa_generator.py
 
-export CFLAGS="${CFLAGS}  -I$BUILD_PREFIX/lib/python$PY_VER/site-packages/numpy/core/include/"
+export CFLAGS="${CFLAGS}  -I$BUILD_PREFIX/lib/python$PY_VER/site-packages/numpy/_core/include/"
 ${PYTHON} -m pip  install .
