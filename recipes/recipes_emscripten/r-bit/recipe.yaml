@@ -1,0 +1,48 @@
+context:
+  version: 4.6.0
+  name: r-bit
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 48fe21c5d04c7b724d695eeb60074395c0c631a7fb234e2075de92471445de08
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://github.com/r-lib/bit
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  license_file: GPL-2
+  summary: Classes and Methods for Fast Memory-Efficient Boolean Selections
+  description: |
+    Provided are classes for boolean and skewed boolean vectors, fast boolean
+    methods, fast unique and non-unique integer sorting, fast set operations on
+    sorted and unsorted sets of integers, and foundations for ff (range index,
+    compression, chunked processing).
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes

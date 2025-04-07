@@ -36,8 +36,8 @@ jobs:
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: Delete fortran
-        run: sudo apt-get remove gfortran -y
+      # - name: Delete fortran
+      #   run: sudo apt-get remove gfortran -y
 
       - name: apt-install playwright dependencies
         run: |
@@ -52,7 +52,8 @@ jobs:
             libhyphen0 \
             libmanette-0.2-0 \
             libgles2 \
-            gstreamer1.0-libav
+            gstreamer1.0-libav \
+            libgtk-4-1
       ################################################################
       # CONFIG
       ################################################################
@@ -88,7 +89,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-3.1.73~1 origin/emscripten-3.1.73
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
       ################################################################
       # PULL_REQUEST
@@ -97,7 +98,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-3.1.73 HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
 
       ################################################################
       # UPLOAD
