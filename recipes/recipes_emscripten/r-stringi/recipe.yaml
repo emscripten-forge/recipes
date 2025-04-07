@@ -1,0 +1,52 @@
+context:
+  version: 1.8.4
+  name: r-stringi
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: c219f8f64d1a2bfd4ca9528452d44d30db1899af14f4b9ef248412443bc669f3
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - pkg-config
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://tidyr.tidyverse.org
+  repository: https://github.com/gagolews/stringi
+  license_family: OTHER # FOSS
+  license_file: LICENSE
+  summary: Fast and Portable Character String Processing Facilities
+  description: |
+    Fast, correct, consistent, portable, as well as convenient character string/
+    text processing in every locale and any native encoding. Owing to the use of
+    the ICU (International Components for Unicode) library, the package provides
+    R users with platform-independent functions known to Java, Perl, Python,
+    PHP, and Ruby programmers. Available features include: pattern searching,
+    random string generation, case mapping, string transliteration,
+    concatenation, Unicode normalization, date-time formatting and parsing,
+    and many more.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
