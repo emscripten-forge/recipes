@@ -1,0 +1,46 @@
+context:
+  name: octave
+  version: 9.4.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: da9481205bfa717660b7d4a16732d8b2d58aadceab4993d41242a8e2848ea6c1
+  patches:
+    - 0001-Force-detection-of-shared-libs.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - flang_${{ target_platform }}
+    - micromamba  # flang activation script
+    - make
+    - automake=1.16
+    - pkg-config
+    - grep
+    - sed
+    - perl
+    - ghostscript
+    - bison
+    - gperf
+  host:
+    - libblas>=3.12
+    - libcblas>=3.12
+    - liblapack>=3.12
+    - pcre2>=10.43
+  run_exports:
+    - ${{ pin_subpackage('octave', upper_bound='x') }}
+
+about:
+  homepage: https://www.gnu.org/software/octave/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  documentation: https://www.gnu.org/software/octave/doc/interpreter/
+  summary: GNU Octave is a high-level language, primarily intended for numerical computations
