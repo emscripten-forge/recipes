@@ -89,7 +89,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-3.1.73~1 origin/emscripten-3.1.73
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
       ################################################################
       # PULL_REQUEST
@@ -98,7 +98,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-3.1.73 HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
 
       ################################################################
       # UPLOAD
@@ -120,11 +120,10 @@ jobs:
                 for package in $files; do
                   echo "Uploading ${package} for ${platform}"
 
-                  echo "TEMPORARY DISABLED DUE TO REFACTOR"
-                  # rattler-build upload prefix \
-                  #   --channel emscripten-forge-dev \
-                  #   -a $PREFIX_DEV_API_KEY \
-                  #   ${package}
+                  rattler-build upload prefix \
+                    --channel emscripten-forge-dev \
+                    -a $PREFIX_DEV_API_KEY \
+                    ${package}
                   
                   RETURNCODE=$?
 
