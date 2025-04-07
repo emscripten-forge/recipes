@@ -6,15 +6,25 @@ let already_called = false;
 async function my_main(){
     let exitCode = 126;  // "Command invoked cannot execute"
     const ModuleF = require(binary_js_runner);
+
+    function setExitCode(status) {
+        if (already_called) {
+            return;
+        }
+        already_called = true;
+        exitCode = status;
+    }
+    
     const Module = await ModuleF({
         arguments: process.argv,
-        quit: (status, toThrow) => {
-            if (already_called) {
-                return;
-            }
-            already_called = true;
-            exitCode = status;
-        }
+        locateFile: (filename) => {
+            // .wasm and .data files are in the same directory as the module .js file
+            const path = require('path');
+            const directory = path.dirname(binary_js_runner);
+            return path.join(directory, filename);
+        },
+        onExit: (status) => setExitCode(status),
+        quit: (status, toThrow) => setExitCode(status)
     });
     return exitCode;
 }

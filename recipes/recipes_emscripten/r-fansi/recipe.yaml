@@ -1,7 +1,7 @@
 context:
   name: r-fansi
   version: 1.0.6
-  r_base_version: 4.4.1
+  r_base_version: 4.4.3
 
 package:
   name: ${{ name }}
@@ -12,19 +12,16 @@ source:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: ea9dc690dfe50a7fad7c5eb863c157d70385512173574c56f4253b6dfe431863
+  patches:
+    - patches/0001-Ignore-custom-limit-checks.patch
 
 build:
-  number: 2
-  script:
-    - $R CMD INSTALL $R_ARGS --no-byte-compile .
-    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
-    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
-    # The activation script of cross-r-base copies cairo and tcltk from
-    # the build environment.
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-    - cross-r-base >= ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
     - ${{ compiler('c') }}
   host:
     - r-base >= ${{ r_base_version }}

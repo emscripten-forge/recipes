@@ -1,7 +1,7 @@
 context:
   name: r-jsonlite
-  version: 1.8.9
-  r_base_version: 4.4.1
+  version: 1.9.1
+  r_base_version: 4.4.3
 
 package:
   name: ${{ name }}
@@ -11,21 +11,17 @@ source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 89f130e0e1163328c01decd54e7712b5ebf3d0a667da0052833722cb9a6e90b0
+  sha256: a7c204449a1432b845628b3e408492a3345a4fdbc1a9aba962a96a22ae0ade2e
 
 build:
   number: 0
-  script:
-    - $R CMD INSTALL $R_ARGS --no-byte-compile .
-    - rm $PREFIX/lib/R/library/grDevices/libs/cairo.so
-    - rm $PREFIX/lib/R/library/tcltk/libs/tcltk.so
-    # The activation script of cross-r-base copies cairo and tcltk from
-    # the build environment.
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base >= ${{ r_base_version }}
+  - cross-r-base_${{ target_platform }}
   - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
   host:
   - r-base >= ${{ r_base_version }}
   run:
@@ -42,7 +38,17 @@ about:
   license: MIT
   license_family: MIT
   license_file: LICENSE
-  summary: A fast JSON parser and generator optimized for statistical data and the web.
+  summary:  A Simple and Robust JSON Parser and Generator for R
+  description: |
+    A reasonably fast JSON parser and generator, optimized for statistical data
+    and the web. Offers simple, flexible tools for working with JSON in R, and
+    is particularly powerful for building pipelines and interacting with a web
+    API. The implementation is based on the mapping described in the vignette
+    (Ooms, 2014). In addition to converting JSON data from/to R objects,
+    'jsonlite' contains functions to stream, validate, and prettify JSON data.
+    The unit tests included with the package verify that all edge cases are
+    encoded and decoded consistently for use with dynamic data in systems and
+    applications.
 
 extra:
   recipe-maintainers:

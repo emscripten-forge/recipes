@@ -2,12 +2,13 @@ name: build recipes
 on:
   push:
     branches:
-      - 'main'
+      - 'emscripten-3.1.73'
     paths:
       - 'recipes/**'
   pull_request:
     paths:
       - 'recipes/**'
+
 
 jobs:
 
@@ -35,9 +36,24 @@ jobs:
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - name: Delete fortran
-        run: sudo apt-get remove gfortran -y
+      # - name: Delete fortran
+      #   run: sudo apt-get remove gfortran -y
 
+      - name: apt-install playwright dependencies
+        run: |
+            sudo apt-get update -y && sudo apt-get install -y  \
+            libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
+            libgstreamer-gl1.0-0 \
+            libgstreamer-plugins-bad1.0-0 \
+            libflite1 \
+            libavif16 \
+            libharfbuzz-icu0 \
+            libsecret-1-0 \
+            libhyphen0 \
+            libmanette-0.2-0 \
+            libgles2 \
+            gstreamer1.0-libav \
+            libgtk-4-1
       ################################################################
       # CONFIG
       ################################################################
@@ -55,7 +71,7 @@ jobs:
           environment-file: ci_env.yml
           environment-name: ci
           init-shell: bash
-          cache-environment: true
+          cache-environment: false
           post-cleanup: 'all'
 
       ################################################################
@@ -65,7 +81,6 @@ jobs:
         shell: bash -el {0}
         run: |
           cp $GITHUB_WORKSPACE/.github/workflows/.condarc $HOME
-          cp $GITHUB_WORKSPACE/conda_build_config.yaml $HOME
 
       ################################################################
       # PUSH
@@ -88,11 +103,11 @@ jobs:
       ################################################################
       # UPLOAD
       ################################################################
-      - name: Upload packages to Quetz
+      - name: Upload packages to prefix channel
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -l {0}
         env:
-          QUETZ_API_KEY: ${{ secrets.QUETZ_API_KEY }}
+          PREFIX_DEV_API_KEY: ${{ secrets.PREFIX_DEV_API_KEY }}
         run: |
           overall_success=true
 
@@ -105,27 +120,21 @@ jobs:
                 for package in $files; do
                   echo "Uploading ${package} for ${platform}"
 
-                  FILE_SHA256=$(sha256sum "${package}" | awk '{ print $1 }')
-                  CURL_CMD=(
-                    curl -H "X-API-Key: ${QUETZ_API_KEY}" -X POST
-                    "https://beta.mamba.pm/api/channels/emscripten-forge/upload/${package}?sha256=${FILE_SHA256}&force=false"
-                    --data-binary "@${package}"
-                    -o response_body.txt
-                    -w "%{http_code}"
-                    -s
-                  )
-                  HTTP_STATUS=$( "${CURL_CMD[@]}" )
-                  RESPONSE=$(<response_body.txt)
+                  rattler-build upload prefix \
+                    --channel emscripten-forge-dev \
+                    -a $PREFIX_DEV_API_KEY \
+                    ${package}
+                  
+                  RETURNCODE=$?
 
-                  # Check the HTTP status code and log appropriate message
-                  if [[ "$HTTP_STATUS" -eq 201 ]]; then
+                  # Check the RETURN CODE
+                  if [[ $RETURNCODE -eq 0 ]]; then
                     echo "Upload succeeded for ${package} on ${platform}"
                   else
                     echo "Error: Upload failed with HTTP status $HTTP_STATUS"
                     echo "Response Body: $RESPONSE"
                     overall_success=false
                   fi
-                  rm -f response_body.txt
                 done
               fi
             fi

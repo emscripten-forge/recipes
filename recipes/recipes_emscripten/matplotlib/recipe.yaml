@@ -1,75 +1,75 @@
 context:
   name: matplotlib
-  version: "3.9.1"
+  version: 3.10.1
 
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
-  sha256: 4fdf46dc325fdf4cbc61f7fa66de7b48287df0a71b3442b63ff0784041cae2e7
+  sha256: c3d78b5c4fedd8338323d24e040faf797e153a0d448fd641deee6eb3a3d6420b
   patches:
   - patches/fix-threading-and-font-cache.patch
+  - patches/static-cast.patch
 
 build:
   number: 0
 
 outputs:
-  - package:
-      name: matplotlib-base
-      version: ${{ version }}
+- package:
+    name: matplotlib-base
+    version: ${{ version }}
+  build:
+    script: build-base.sh
+  requirements:
     build:
-      script: build-base.sh
-    requirements:
-      build:
-      - python
-      - pip
-      - cross-python_${{ target_platform }}
+    - python
+    - pip
+    - cross-python_${{ target_platform }}
 
-      - ${{ compiler('c') }}
-      - ${{ compiler('cxx') }}
-      - pkg-config
-      - meson-python
-
-      - setuptools_scm_git_archive
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - pkg-config
+    - meson-python
+    - numpy
+    - setuptools_scm_git_archive
 
       # to template the emscripten.meson.cross file
-      - sed
+    - sed
 
-      host:
-      - python
-      - numpy
-      - pybind11
-      - freetype
-      - qhull
+    host:
+    - python
+    - numpy
+    - pybind11
+    - freetype
+    - qhull
+    run:
+    - contourpy
+    - cycler
+    - fonttools
+    - kiwisolver
+    - numpy
+    - packaging
+    - pillow
+    - pyparsing
+    - python-dateutil
+    - pytz
 
-      run:
-      - contourpy
-      - cycler
-      - fonttools
-      - kiwisolver
-      - numpy
-      - packaging
-      - pillow
-      - pyparsing
-      - python-dateutil
-      - pytz
+- package:
+    name: matplotlib
+    version: ${{ version }}
 
-  - package:
-      name: matplotlib
-      version: ${{ version }}
+  requirements:
+    host:
+    - python
+    run:
+    - python
+    - ${{ pin_subpackage('matplotlib-base', exact=True) }}
 
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_matplotlib.py
     requirements:
-      host:
-      - python
+      build:
+      - pytester
       run:
-      - python
-      - ${{ pin_subpackage('matplotlib-base', exact=True) }}
-
-    tests:
-    - script: pytester
-      files:
-        recipe:
-        - test_import_matplotlib.py
-      requirements:
-        build:
-        - pytester
-        run:
-        - pytester-run
+      - pytester-run

@@ -4,7 +4,7 @@
 
 # Propagate -pthread into CFLAGS to ensure GObject/GIO is compiled with the
 # atomics/bulk-memory features
-CFLAGS="$CFLAGS -pthread"
+export CFLAGS="$CFLAGS -pthread -matomics -mbulk-memory"
 
 meson_config_args=(
     -Dintrospection=disabled

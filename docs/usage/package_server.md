@@ -1,6 +1,6 @@
 # Packagve Server
 
-Emscripten-forge packages are hosted on the [emscripten-forge](https://beta.mamba.pm/channels/emscripten-forge) channel of a [Quetz](https://quetz.io/) server.
+Emscripten-forge packages are hosted on  [prefix.dev](https://prefix.dev/channels/emscripten-forge-dev).
 
 !!! note
 
@@ -8,7 +8,7 @@ Emscripten-forge packages are hosted on the [emscripten-forge](https://beta.mamb
 
     ```bash
     micromamba create -n myenv --platform=emscripten-wasm32 \
-        -c https://repo.mamba.pm/emscripten-forge \
+        -c https://prefix.dev/channels/emscripten-forge-dev \
         -c conda-forge \
         python numpy
     ```

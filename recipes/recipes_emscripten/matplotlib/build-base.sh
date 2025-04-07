@@ -2,7 +2,7 @@
 
 # Set up the cross file
 # Note: the include folder is moved to `$BUILD_PREFIX` by the cross-python activation script
-export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
+export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
 
 # write out the cross file
 sed "s|@(NUMPY_INCLUDE_DIR)|${NUMPY_INCLUDE_DIR}|g" $RECIPE_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.cross.temp
@@ -11,9 +11,9 @@ rm $SRC_DIR/emscripten.meson.cross.temp
 
 cat $SRC_DIR/emscripten.meson.cross
 
-export CFLAGS="$CFLAGS -sWASM_BIGINT"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+export CFLAGS="$CFLAGS -sWASM_BIGINT -fexceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -fexceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
 
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \

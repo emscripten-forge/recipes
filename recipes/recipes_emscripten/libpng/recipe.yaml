@@ -1,17 +1,18 @@
 context:
   name: libpng
-  version: 1.6.43
+  version: 1.6.47
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: http://download.sourceforge.net/libpng/libpng-${{ version }}.tar.gz
-  sha256: e804e465d4b109b5ad285a8fb71f0dd3f74f0068f91ce3cdfde618180c174925
+  url: http://downloads.sourceforge.net/project/${{ name }}/libpng16/${{ version }}/${{
+    name }}-${{ version }}.tar.gz
+  sha256: 084115c62fe023e3d88cd78764a4d8e89763985ee4b4a085825f7a00d85eafbb
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -21,10 +22,17 @@ requirements:
   - zlib
 
 tests:
+- package_contents:
+    bin:
+    - pngfix.wasm
+    - png-fix-itxt.wasm
+    lib:
+    - libpng16.a
+    include:
+    - png.h
 - script:
-  - test -f ${PREFIX}/lib/libpng.a
-  - test -f ${PREFIX}/include/png.h
   - libpng-config --version
+
 about:
   license: zlib-acknowledgement
   license_file: LICENSE
@@ -34,6 +42,8 @@ about:
     libpng is the official PNG reference library. It supports almost all PNG
     features, is extensible, and has been extensively tested for over 20 years.
   homepage: http://www.libpng.org/pub/png/libpng.html
+
 extra:
   recipe-maintainers:
   - martinRenou
+  - IsabelParedes
