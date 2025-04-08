@@ -1,0 +1,50 @@
+{% set name = "endf" %}
+{% set version = "0.0.7" %}  # Use the latest version from the GitHub repo
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/paulromano/endf-python/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: d25319bfd957214af5c4f1d91bdf200a0b6509d4209ff473f886dc8e9cb8a400
+
+build:
+  number: 0
+  skip: true  # [not emscripten]
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - emscripten-wasm
+    - cmake
+    - ninja
+    - make
+  host:
+    - python
+    - pip
+    - pybind11
+    - numpy
+  run:
+    - python
+    - numpy
+
+test:
+  imports:
+    - endf
+
+about:
+  home: https://github.com/shimwell/endf-python
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'Python package for handling ENDF (Evaluated Nuclear Data File) data'
+  description: |
+    Endf-python provides a Python interface to ENDF (Evaluated Nuclear Data File) data.
+    It allows reading and parsing ENDF files, extracting data, and converting between formats.
+  doc_url: https://github.com/shimwell/endf-python
+  dev_url: https://github.com/shimwell/endf-python
+
+extra:
+  recipe-maintainers:
+    - YOUR_GITHUB_USERNAME
