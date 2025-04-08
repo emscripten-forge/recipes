@@ -114,12 +114,13 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
             '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
             '--label', 'Automerge' if automerge else 'Needs Tests'
     ]
-    if target_branch_name == 'main':
-        extra_label = "3.1.45"
-    elif target_branch_name == "emscripten-3.1.73":
-        extra_label = "3.1.73"
-    else:
-        extra_label = None
+    # if target_branch_name == 'main':
+    #     extra_label = "3.1.45"
+    # elif target_branch_name == "emscripten-3.1.73":
+    #     extra_label = "3.1.73"
+    # else:
+    #     extra_label = None
+    extra_label = None
 
     if extra_label is not None:
         args.extend(['--label', extra_label])
