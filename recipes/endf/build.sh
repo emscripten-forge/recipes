@@ -1,6 +1,3 @@
-#!/bin/bash
-set -ex
-
 # Apply any necessary Emscripten-specific flags
 export CFLAGS="${CFLAGS} -s USE_PTHREADS=0"
 export CXXFLAGS="${CXXFLAGS} -s USE_PTHREADS=0"
