@@ -1,31 +1,103 @@
 context:
-  version: 1.11.1
-  name: scipy
+  version: 1.14.1
 
 package:
-  name: ${{ name }}
+  name: scipy
   version: ${{ version }}
 
+source:
+  - url: https://files.pythonhosted.org/packages/62/11/4d44a1f274e002784e4dbdb81e0ea96d2de2d1045b2132d5af62cc31fd28/scipy-1.14.1.tar.gz
+    sha256: 5a275584e726026a5699459aa72f828a610821006228e841b94275c4a7c08417
+    patches:
+      - patches/0001-Fix-dstevr-in-special-lapack_defs.h.patch
+      - patches/0002-int-to-string.patch
+      - patches/0003-gemm_-no-const.patch
+      - patches/0004-make-int-return-values.patch
+      - patches/0005-Fix-fitpack.patch
+      - patches/0006-Fix-gees-calls.patch
+      - patches/0007-MAINT-linalg-Remove-id_dist-Fortran-files.patch
+      - patches/0008-Mark-mvndst-functions-recursive.patch
+      - patches/0009-Make-sreorth-recursive.patch
+      - patches/0010-Link-openblas-with-modules-that-require-f2c.patch
+      - patches/0011-Remove-fpchec-inline-if-then-endif-constructs.patch
+      # - patches/0012-Remove-chla_transtype.patch
+      - patches/0013-Set-wrapper-return-type-to-int.patch
+      - patches/0014-Skip-svd_gesdd-test.patch
+      - patches/0015-Remove-f2py-generators.patch
+      - patches/0016-Make-sf_error_state_lib-a-static-library.patch
+      - patches/0017-Remove-test-modules-that-fail-to-build.patch
+      - patches/0018-Fix-lapack-larfg-function-signature.patch
+
+  # # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/_lib
+  # - git: https://github.com/scipy/boost-headers-only.git
+  #   rev: 3af99e6d566043072e95bc882d32c9c26f37e0ba
+  #   target_directory: scipy/_lib/boost
+
+  # - git: https://github.com/scipy/unuran.git
+  #   rev: 21810c856880bb2f1b3071c8ac4aaf634983b338
+  #   target_directory: scipy/_lib/unuran
+
+  # # https://github.com/scipy/scipy/tree/v{{ version }}/scipy/sparse/linalg/_propack
+  # - git: https://github.com/scipy/PROPACK.git
+  #   rev: 8a6b20767d74fe560d616d51e83e35b01bce6861
+  #   target_directory: scipy/sparse/linalg/_propack/PROPACK
+
 build:
-  number: 1
+  number: 3
 
 requirements:
   build:
-  - ${{ compiler('c') }}
+    - python
+    - cross-python_${{ target_platform }}
+    - cython
+    # we need gcc and gfortran for the preprocessor!
+    - gcc_impl_linux-64
+    - gfortran_impl_linux-64
+    # f2c to compile fortran
+    # special version / fork of hood
+    - emf2c
+    - pip
+    - numpy
+    - pybind11
+    - setuptools
+    - meson-python
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - pythran
+    - pkg-config
+
+  host:
+    - openblas
+    - libf2c
+    - python
+    - pybind11
+    - numpy
+    - pip
   run:
-  - openblas
-  - numpy
+    - openblas
+    - python
+    - numpy
 
 tests:
 - script: pytester
-  files:
-    recipe:
-    - test_scipy.py
   requirements:
     build:
     - pytester
+    - playwright == 1.50.0
     run:
     - pytester-run
-extra:
-  recipe-maintainers:
-  - DerThorsten
+    - openblas
+  files:
+    recipe:
+    - test_scipy.py
+ 
+about:
+  homepage: http://www.scipy.org/
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Scientific Library for Python
+  description: |
+    SciPy is a Python-based ecosystem of open-source software for mathematics,
+    science, and engineering.
+
+

@@ -1,0 +1,41 @@
+context:
+  name: tree
+  version: 2.2.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: http://oldmanprogrammer.net/tar/${{ name }}/${{ name }}-${{ version }}.tgz
+  sha256: 68ac45dc78c0c311ada06200ffc3c285e74223ba208061f8d15ffac25e44b2ec
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - make
+
+tests:
+  - script:
+    - test -f $PREFIX/bin/tree.js
+    - test -f $PREFIX/bin/tree.wasm
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/tree.js --version)
+      if [[ "$OUTPUT" != "tree v2.2.1 © 1996 - 2024 by Steve Baker, Thomas Moore, Francesc Rocher, Florian Sesser, Kyosuke Tokoro" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+
+about:
+  license: GPL-2.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ianthomas23

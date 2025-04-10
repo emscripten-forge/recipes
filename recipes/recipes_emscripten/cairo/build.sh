@@ -2,11 +2,13 @@
 
 set -ex
 
+export CFLAGS="${CFLAGS} -DCAIRO_NO_MUTEX=1"
+
 meson_config_args=(
     -Dfontconfig=enabled
-    -Dfreetype=disabled
-    -Dglib=enabled
-    -Dpng=disabled
+    -Dfreetype=enabled
+    -Dglib=disabled
+    -Dpng=enabled
     -Dxlib=disabled
     -Dxlib-xcb=disabled
     -Dxcb=disabled
@@ -21,7 +23,6 @@ meson setup builddir \
     --default-library=static \
     --prefer-static \
     --prefix=$PREFIX \
-    -Dlibdir=lib \
     --wrap-mode=nofallback \
     --cross-file=$RECIPE_DIR/emscripten.meson.cross
 

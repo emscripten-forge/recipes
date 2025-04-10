@@ -1,31 +1,66 @@
+
 context:
-  version: 3.11.3
+  version: "3.13.1"
   name: python
+  ver2: "3.13"
+  ver2nd: ${{ version | version_to_buildstring}}
+  build_number: 4
+  abi_tag: "cp${{ ver2nd }}"
+
 package:
-  name: ${{name}}
+  name: python
   version: ${{ version }}
 
 source:
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
-  sha256: 8a5db99c961a7ecf27c75956189c9602c968751f11dbeae2b900dbff1c085b5e
-
+  sha256: 9cf9427bee9e2242e3877dd0f6b641c1853ca461f39d6503ce260a59c80bf0d9
+  patches:
+    - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
 build:
-  number: 25
-  string: h_hash_25_cpython
+  number: ${{ build_number }}
+  string: h_${{ hash }}_${{build_number}}_${{ abi_tag }}
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - ${{ compiler("c") }}
   - make
+  - autoconf
+  - nodejs
+  - ccache
+  - f2c
+  - pkg-config
+  - swig
+  - make
+  - cmake
+  - pkg-config
+  - texinfo
+  - autoconf
+  - automake
+  - libtool
+  - patch   # only needed on MacOS
+  - sed   # only needed on MacOS
+  - wget
+  - python=3.13
+  host:
+  - openssl
+  - libffi
+  - liblzma
+  run:
+    - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
+  run_exports:
+    weak:
+      - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
+
+
 
 tests:
   - script:
-    - test -f $PREFIX/include/python3.11/Python.h
-    - test -f $PREFIX/lib/python3.11/enum.py
-    - test -f $PREFIX/lib/python3.11/ast.py
-    - test -f $PREFIX/lib/libpython3.11.a
-    - test -f $PREFIX/bin/python3.11
+    - test -f $PREFIX/include/python${{ver2}}/Python.h
+    - test -f $PREFIX/lib/python${{ver2}}/enum.py
+    - test -f $PREFIX/lib/python${{ver2}}/ast.py
+    - test -f $PREFIX/lib/libpython${{ver2}}.a
+    - test -f $PREFIX/bin/python${{ver2}}
 
 about:
   license: Python-2.0

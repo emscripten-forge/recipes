@@ -9,8 +9,8 @@ To install packages from this channel, use the following command:
 ```bash
 micromamba create -n my-channel-name \
     --platform=emscripten-wasm32 \
-    -c https://repo.mamba.pm/emscripten-forge \
-    -c https://repo.mamba.pm/conda-forge \
+    -c https://repo.prefix.dev/emscripten-forge-dev\
+    -c https://repo.prefix.dev/conda-forge \
     --yes \
     python numpy scipy matplotlib
 ```

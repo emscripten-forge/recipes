@@ -1,29 +1,30 @@
 context:
   name: r-mass
-  version: 7.3-61
-  r_base_version: 4.4.1
+  version: 7.3-65
+  r_base_version: 4.4.3
 
 package:
   name: ${{ name }}
-  version: ${{ version }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
     - https://cran.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
     - https://cloud.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
-  sha256: 3144c8bf579dd7b7c47c259728c27f53f53e294e7ed307da434dfd144e800a90
+  sha256: b07ef1e3c364ce56269b4a8a7759cc9f87c876554f91293437bb578cfe38172f
 
 build:
-  number: 1
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-    - r-base == ${{ r_base_version }}
+    - cross-r-base_${{ target_platform }}
     - ${{ compiler('c') }}
   host:
-    - r-base == ${{ r_base_version }}
+    - r-base >= ${{ r_base_version }}
   run:
-    - r-base == ${{ r_base_version }}
+    - r-base >= ${{ r_base_version }}
 
 tests:
 - package_contents:
@@ -36,7 +37,8 @@ about:
   license: GPL-2.0-or-later
   license_family: GPL3
   license_file: GPL-3
-  summary: |
+  summary: Support Functions and Datasets for Venables and Ripley's MASS
+  description: |
     Functions and datasets to support Venables and Ripley, "Modern Applied
     Statistics with S" (4th edition, 2002).
 

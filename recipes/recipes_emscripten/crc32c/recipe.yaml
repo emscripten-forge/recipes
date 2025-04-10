@@ -1,0 +1,50 @@
+context:
+  version: "2.7.1"
+  name: "crc32c"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/7f/4c/4e40cc26347ac8254d3f25b9f94710b8e8df24ee4dddc1ba41907a88a94d/crc32c-${{ version }}.tar.gz
+  sha256: f91b144a21eef834d64178e01982bb9179c354b3e9e5f4c803b0e5096384968c
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - python
+    - crossenv
+    - cross-python_emscripten-wasm32
+    - pip
+  host:
+    - python
+  run:
+    - python
+
+tests:
+  - script: pytester
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+    files:
+      recipe:
+        - test_crc32c.py
+
+
+about:
+  homepage: https://github.com/ICRAR/crc32c
+  license: LGPL-2.1
+  summary:  A python package implementing the crc32c algorithm in hardware and software
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+
+
+
