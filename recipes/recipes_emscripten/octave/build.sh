@@ -2,6 +2,9 @@ export FFLAGS="${FFLAGS} -g --target=wasm32-unknown-emscripten"
 
 export FLIBS="-lFortranRuntime"
 
+# Forcing autotools to NOT rerun after patches
+find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
+
 emconfigure ./configure \
    --prefix="${PREFIX}" \
    --build="x86_64-conda-linux-gnu" \
@@ -19,4 +22,6 @@ emconfigure ./configure \
    --disable-openmp \
    --disable-readline \
 
-emmake make
+emmake make --jobs
+
+emmake make install
