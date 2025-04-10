@@ -11,16 +11,22 @@ emconfigure ./configure \
    --host="wasm32-unknown-emscripten" \
    --disable-dependency-tracking \
    --enable-fortran-calling-convention="f2c" \
-   --enable-shared=yes \
+   --enable-shared \
+   --disable-dl \
    --disable-rpath \
-   --with-blas="yes" \
-   --with-lapack="yes" \
-   --without-pcre \
+   --disable-openmp \
+   --disable-readline \
+   --disable-docs \
+   --with-blas \
+   --with-lapack \
    --with-pcre2 \
    --with-pcre2-includedir="${PREFIX}/include" \
    --with-pcre2-libdir="-lpcre2-8" \
-   --disable-openmp \
-   --disable-readline \
+   --without-pcre \
+   --without-qt \
+   --without-qrupdate \
+   --without-framework-carbon \
+   --without-java \
 
 emmake make --jobs 1  # OOM
 
