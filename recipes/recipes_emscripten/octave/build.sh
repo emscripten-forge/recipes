@@ -22,6 +22,6 @@ emconfigure ./configure \
    --disable-openmp \
    --disable-readline \
 
-emmake make --jobs
+emmake make --jobs 1  # OOM
 
 emmake make install
