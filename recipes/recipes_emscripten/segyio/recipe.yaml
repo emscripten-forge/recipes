@@ -1,34 +1,52 @@
 context:
   name: segyio
-  version: '1.9.12'
+  version: 1.9.12
 
 package:
-  name: '${{ name|lower }}'
-  version: '${{ version }}'
+  name: segyio
+  version: ${{ version }}
 
 source:
-- url: https://github.com/equinor/segyio/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 79f1baa969deb613870c812655544af0c61370ffba3731f7f59836949495dd81
+  - url: https://github.com/equinor/segyio/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 79f1baa969deb613870c812655544af0c61370ffba3731f7f59836949495dd81
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - ${{ compiler("c") }}
-    - cross-python_emscripten-wasm32
-    - cython
-    - python
-    - pip
-    - setuptools_scm
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - cython
+  - python
+  - pip
+  - setuptools_scm
+  - numpy
   host:
-    - python
+  - numpy
+  - python
   run:
-    - python
+  - python
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_segyio.py
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_segyio.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+
+
+
+
+
+
+
+
+
+
