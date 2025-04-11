@@ -1,0 +1,70 @@
+context:
+  version: 0.6.0
+  name: xeus-r
+  r_base_version: 4.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/xeus-r/archive/refs/tags/${{ version }}.tar.gz
+  sha256: f7165ce9e3d46cde395baa29a5b5306333a3436ef0047a1b5c64e3b9f87b4171
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  # Dependencies to build hera
+  - cross-r-base_${{ target_platform }}
+  - r-base
+  - r-cli
+  - r-evaluate
+  - r-glue
+  - r-IRdisplay
+  - r-R6
+  - r-repr
+  host:
+  - nlohmann_json
+  - xeus-lite >=3.0.0,<4.0
+  - xeus >=5.0.0,<6.0
+  - pcre2>=10.43
+  - zlib>=1.2.13
+  - libflang                    # for FortranRuntime
+  - xz                          # for lzma
+  - bzip2
+  - libiconv
+  - r-base >= ${{ r_base_version }}
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-cli
+  - r-evaluate
+  - r-glue
+  - r-IRdisplay
+  - r-jsonlite
+  - r-R6
+  - r-repr
+  - r-rlang
+
+tests:
+- package_contents:
+    bin:
+    - xr.js
+    - xr.wasm
+
+about:
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: Jupyter kernel for the R programming language
+  homepage: https://github.com/jupyter-xeus/xeus-r
+  documentation: https://xeus-r.readthedocs.io
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

@@ -1,0 +1,60 @@
+context:
+  name: cartopy
+  version: 0.23.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/Cartopy-${{ version }}.tar.gz
+  sha256: 231f37b35701f2ba31d94959cca75e6da04c2eea3a7f14ce1c75ee3b0eae7676
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python                                 
+    - cross-python_${{ target_platform }}     
+    - cython                                 
+    - numpy                                  
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools >=40.6.0
+    - setuptools-scm >=7.0.0
+    - numpy
+  run:
+    - python
+    - matplotlib-base >=3.5
+    - shapely >=1.7
+    - packaging >=20
+    - pyshp >=2.3
+    - pyproj >=3.3.1
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cartopy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  
+about:
+  homepage: http://scitools.org.uk/cartopy
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: A library providing cartographic tools for python
+  repository: https://github.com/SciTools/cartopy
+  documentation: https://scitools.org.uk/cartopy/docs/latest/
+
+extra:
+  recipe-maintainers:
+    - KGB99

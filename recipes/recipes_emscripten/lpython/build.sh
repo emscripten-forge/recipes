@@ -26,3 +26,6 @@ emmake make -j${CPU_COUNT}
 # Install step
 emmake make install
 
+# Copy tests
+cp src/lpython/tests/test_lpython.js $PREFIX/bin/test_lpython.js
+cp src/lpython/tests/test_lpython.wasm $PREFIX/bin/test_lpython.wasm

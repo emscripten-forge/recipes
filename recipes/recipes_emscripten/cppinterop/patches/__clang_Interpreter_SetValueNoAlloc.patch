@@ -1,0 +1,34 @@
+diff --git a/lib/Interpreter/CMakeLists.txt b/lib/Interpreter/CMakeLists.txt
+index 103b331..0eb356c 100644
+--- a/lib/Interpreter/CMakeLists.txt
++++ b/lib/Interpreter/CMakeLists.txt
+@@ -4,18 +4,23 @@ if(EMSCRIPTEN)
+   set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
+   set(CMAKE_STRIP FALSE)
+ 
+-  add_llvm_library(clangCppInterOp
+-    SHARED
+-
++  add_library(clangCppInterOp SHARED
+     CppInterOp.cpp
+     CXCppInterOp.cpp
+     DynamicLibraryManager.cpp
+     DynamicLibraryManagerSymbol.cpp
+     Paths.cpp
++  )
+ 
+-    # Additional libraries from Clang and LLD
+-    LINK_LIBS
+-    clangInterpreter
++  target_link_libraries(clangCppInterOp clangInterpreter)
++
++  target_link_options(clangCppInterOp PRIVATE
++    PUBLIC "SHELL: -s WASM_BIGINT"
++    PUBLIC "SHELL: -Wl,--export=__clang_Interpreter_SetValueNoAlloc"
++  )
++
++  install(TARGETS clangCppInterOp
++    LIBRARY DESTINATION lib
+   )
+ else()
+   set(LLVM_LINK_COMPONENTS
