@@ -21,7 +21,7 @@ emconfigure ./configure \
    --with-lapack \
    --with-pcre2 \
    --with-pcre2-includedir="${PREFIX}/include" \
-   --with-pcre2-libdir="-lpcre2-8" \
+   --with-pcre2-libdir="${PREFIX}/lib" \
    --without-pcre \
    --without-qt \
    --without-qrupdate \
