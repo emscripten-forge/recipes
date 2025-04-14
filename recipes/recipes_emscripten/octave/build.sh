@@ -16,6 +16,7 @@ emconfigure ./configure \
    --disable-rpath \
    --disable-openmp \
    --disable-threads \
+   --disable-fftw-threads \
    --disable-readline \
    --disable-docs \
    --with-blas \
