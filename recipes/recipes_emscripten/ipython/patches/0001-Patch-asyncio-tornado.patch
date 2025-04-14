@@ -1,0 +1,60 @@
+diff --git a/IPython/__init__.py b/IPython/__init__.py
+index b7235481f..736011e53 100644
+--- a/IPython/__init__.py
++++ b/IPython/__init__.py
+@@ -1,3 +1,55 @@
++import asyncio
++import types
++import sys
++
++def mock_tornado():
++    """This is needed for some Matplotlib backends (webagg, ipympl) and plotly"""
++
++    # Appease plotly -> tenacity -> tornado.gen usage
++    gen = sys.modules["tornado.gen"] = types.ModuleType("gen")
++    gen.coroutine = lambda *args, **kwargs: args[0]
++    gen.sleep = lambda *args, **kwargs: None
++    gen.is_coroutine_function = lambda *args: False
++
++    tornado = sys.modules["tornado"] = types.ModuleType("tornado")
++    tornado.gen = gen
++
++def patch_asyncio():
++    def exception_handler(event_loop,context):
++        exception = context['exception']
++        traceback.print_exception(exception)
++
++    asyncio.get_event_loop().set_exception_handler(exception_handler)
++
++    from .core.async_helpers import _AsyncIORunner
++
++    def asyncio_call(self, coro):
++        import pyjs
++
++        task = asyncio.ensure_future(coro)
++
++        def py_callback(resolve, reject):
++            def done_cb(f):
++                r = f.result()
++                if not r.success:
++                    resolve()
++                    raise r.error_in_exec
++                else:
++                    resolve()
++            task.add_done_callback(done_cb)
++
++        import pyjs
++        cb = pyjs.create_once_callable(py_callback)
++        pyjs.js.globalThis.toplevel_promise = pyjs.js.Promise.new(cb);
++        pyjs.js.globalThis.toplevel_promise_py_proxy = pyjs.js.Function("return {delete:function(){}}")()
++
++        return task
++
++    _AsyncIORunner.__call__ = asyncio_call
++
++mock_tornado()
++patch_asyncio()
++
+ # PYTHON_ARGCOMPLETE_OK
+ """
+ IPython: tools for interactive and parallel computing in Python.

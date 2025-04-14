@@ -1,31 +1,37 @@
 context:
   name: biopython
-  version: '1.79'
+  version: '1.85'
 
 package:
   name: biopython
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-- url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: edb07eac99d3b8abd7ba56ff4bedec9263f76dfc3c3f450e7d2e2bcdecf8559b
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: 5dafab74059de4e78f49f6b5684eddae6e7ce46f09cfa059c1d1339e8b1ea0a6
 
 build:
   number: 0
 
 requirements:
   build:
-    - cross-python_emscripten-32
-    - python
-    - "{{ compiler('c') }}"
-    - pip
+  - cross-python_emscripten-wasm32
+  - python
+  - ${{ compiler('c') }}
+  - pip
   host:
-    - python
+  - python
   run:
-    - numpy
+  - numpy
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_biopython.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_biopython.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

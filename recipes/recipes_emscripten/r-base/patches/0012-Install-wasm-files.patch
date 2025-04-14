@@ -1,0 +1,34 @@
+From db3ec3cb52056eb608ccaa4e04f21aaccc13fce3 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Nov 2024 18:20:58 +0100
+Subject: [PATCH] Install .wasm files
+
+---
+ src/main/Makefile.in | 1 +
+ src/unix/Makefile.in | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/src/main/Makefile.in b/src/main/Makefile.in
+index d7585f9..848dbce 100644
+--- a/src/main/Makefile.in
++++ b/src/main/Makefile.in
+@@ -200,6 +200,7 @@ installdirs:
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(Rexecbindir2)"
+ install-bin: installdirs
+ 	@$(SHELL) $(top_srcdir)/tools/copy-if-change $(R_binary) "$(DESTDIR)$(Rexecbindir2)/R"
++	@$(SHELL) $(top_srcdir)/tools/copy-if-change R.wasm "$(DESTDIR)$(Rexecbindir2)/R.wasm" || true
+ install-lib: installdirs
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(Rexeclibdir)"
+ 	@$(SHELL) $(top_srcdir)/tools/copy-if-change $(libR_la) "$(DESTDIR)$(Rexeclibdir)/$(libR_la)"
+diff --git a/src/unix/Makefile.in b/src/unix/Makefile.in
+index b1cc9a3..bedd384 100644
+--- a/src/unix/Makefile.in
++++ b/src/unix/Makefile.in
+@@ -80,6 +80,7 @@ install-Rscript:
+ 	  -o Rscript $(srcdir)/Rscript.c
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(Rexecbindir)"
+ 	@$(INSTALL_PROGRAM) Rscript "$(DESTDIR)$(Rexecbindir)/Rscript"
++	@$(INSTALL_PROGRAM) Rscript.wasm "$(DESTDIR)$(Rexecbindir)/Rscript.wasm" || true
+ ## substitute at install time to allow 'prefix' to be overridden
+ install-pc:
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(libdir)/pkgconfig"

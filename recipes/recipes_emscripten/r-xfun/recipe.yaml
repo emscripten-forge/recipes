@@ -1,0 +1,46 @@
+context:
+  name: r-xfun
+  version: 0.51
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 07fb4e0253142d8de62556fbbf97b47cf2aa7b1dd50dc5360901dca8141fadf6
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://git.yihui.org/xfun/
+  repository: https://github.com/yihui/xfun
+  license: MIT
+  license_file: LICENSE
+  summary: Miscellaneous R functions
+  description: |
+    Miscellaneous functions commonly used in other packages maintained by
+    'Yihui Xie'.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

@@ -1,45 +1,50 @@
 context:
-  version: "7.1.1"
+  version: 8.3.5
 
 package:
   name: pytest
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/p/pytest/pytest-{{ version }}.tar.gz
-  sha256: 841132caef6b1ad17a9afde46dc4f6cfa59a05f9555aae5151f73bdf2820ca63
+  url: https://pypi.io/packages/source/p/pytest/pytest-${{ version }}.tar.gz
+  sha256: f4efe70cc14e511565ac476b57c279e12a855b11f48f212af1080ef2263d3845
 
 build:
   number: 0
 
 requirements:
   build:
-    - python
-    - cross-python_emscripten-32
-    - pip
+  - cross-python_emscripten-wasm32
+  - pip
   host:
-    - python
+  - python
   run:
-    - atomicwrites
-    - attrs
-    - more-itertools
-    - pluggy
-    - py
-    - six
-    - iniconfig
+  - atomicwrites
+  - attrs
+  - more-itertools
+  - pluggy
+  - py
+  - six
+  - iniconfig
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pytest.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://docs.pytest.org/en/latest/
   license: MIT
   license_file: LICENSE
   summary: Simple and powerful testing with Python.
   description: |
     The pytest framework makes it easy to write small tests, yet scales to
     support complex functional testing for applications and libraries.
-  doc_url: https://docs.pytest.org/en/latest/
-  dev_url: https://github.com/pytest-dev/pytest/
-
+  homepage: https://docs.pytest.org/en/latest/
 extra:
   recipe-maintainers:
-    - DerThorsten
-
+  - DerThorsten

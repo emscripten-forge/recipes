@@ -1,62 +1,34 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-set -e -x
-shopt -s extglob
+#this build script is adapted from the libffi repo at `testsuite/emscripten/build.sh`
+set -e
 
+# Working directories
+SOURCE_DIR=$PWD
+TARGET=$SOURCE_DIR/build
+mkdir -p "$TARGET"
 
-if [[ "$target_platform" != emscripten-* ]]; then
+# Common compiler flags
+export CFLAGS="-O3 -fPIC"
+export CFLAGS+=" -DWASM_BIGINT" # We need to detect WASM_BIGINT support at compile time, if bigint is not wanted simply remove
+export CXXFLAGS="$CFLAGS"
 
-  export CFLAGS="${CFLAGS//-fvisibility=+([! ])/}"
-  export CXXFLAGS="${CXXFLAGS//-fvisibility=+([! ])/}"
+# Build paths
+export CPATH="$TARGET/include"
+export PKG_CONFIG_PATH="$TARGET/lib/pkgconfig"
+export EM_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 
-  configure_args=(
-      --disable-debug
-      --disable-dependency-tracking
-      --prefix="${PREFIX}"
-      --includedir="${PREFIX}/include"
-      --disable-exec-static-tramp
-  )
+# Specific variables for cross-compilation
+export CHOST="wasm32-unknown-linux" # wasm32-unknown-emscripten
 
-  if [[ "$target_platform" != win-* ]]; then
-    configure_args+=(--build=$BUILD --host=$HOST)
-  else
-    configure_args+=(--disable-static)
-    export CPPFLAGS="$CPPFLAGS -DFFI_BUILDING_DLL"
-  fi
+autoreconf -fiv
+emconfigure ./configure --host=$CHOST --prefix="$TARGET" --enable-static --disable-shared --disable-dependency-tracking \
+  --disable-builddir --disable-multi-os-directory --disable-raw-api --disable-docs 
+make install
+cp fficonfig.h build/include/
+cp include/ffi_common.h build/include/
 
-  autoreconf -vfi
+cp -r build/* $PREFIX/
 
-  if [[ "$target_platform" == linux* ]]; then
-    # this changes the install dir from ${PREFIX}/lib64 to ${PREFIX}/lib
-    sed -i 's:@toolexeclibdir@:$(libdir):g' Makefile.in */Makefile.in
-    sed -i 's:@toolexeclibdir@:${libdir}:g' libffi.pc.in
-  fi
-
-  ./configure "${configure_args[@]}" || { cat config.log; exit 1;}
-  if [[ "$target_platform" == win-64 ]]; then
-    pushd x86_64-pc-mingw64
-      patch_libtool
-      sed -i.bak 's/|-fuse-ld/|-Xclang|-fuse-ld/g' libtool
-    popd
-  fi
-
-  make -j${CPU_COUNT} ${VERBOSE_AT}
-  make check
-  make install
-
-  # This overlaps with libgcc-ng:
-  rm -rf ${PREFIX}/share/info/dir
-
-  if [[ "$target_platform" == win-64 ]]; then
-    mv $PREFIX/lib/ffi.dll.lib $PREFIX/lib/libffi.dll.lib
-  fi
-else
-  echo "emscripten build"
-  ./build.sh 
-  make install
-  mkdir -p ${PREFIX}/lib
-  mkdir -p ${PREFIX}/include
-  cp target/include/*.h ${PREFIX}/include/
-  cp target/lib/libffi.a ${PREFIX}/lib/
-
-fi
+# delete broken pkg-config files
+rm -rf $PREFIX/lib/pkgconfig

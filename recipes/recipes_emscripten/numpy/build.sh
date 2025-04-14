@@ -1,17 +1,21 @@
 #!/bin/bash
-ls $BUILD_PREFIX/venv/bin/
+
 echo "PYTHON"
 
 rm -r -f branding
 
+export CFLAGS="$CFLAGS -Wno-return-type -Wno-implicit-function-declaration"
+export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
 
-cp $RECIPE_DIR/config/site.cfg .
+cp $RECIPE_DIR/config/config.h.in  numpy/_core/config.h.in
+# 
 
-# export EMCC_DEBUG=1
-export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1  -s WASM=1  -std=c++14  -s LZ4=1 -s SIDE_MODULE=1 -sWASM_BIGINT"
-LDFLAGS="$LDFLAGS" CFLAGS="-fno-asm -Wno-error=unknown-attributes" python -m pip  install .
+# otherwise "cython" is not properly executable
+echo "add shebang to cython file"
+sed -i '1i#!/usr/bin/env python' $BUILD_PREFIX/bin/cython
 
 
-
-# export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1  -s WASM=1  std=c++14  -s LZ4=1 -s SIDE_MODULE=1"
-# LDFLAGS="$LDFLAGS" CFLAGS="-fno-asm -Wno-error=unknown-attributes" python setup.py build -j 4 install --prefix $PREFIX
+MESON_ARGS="-Dhave_backtrace=false" ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="-Dallow-noblas=true" \
+    -Csetup-args="--cross-file=$MESON_CROSS_FILE"

@@ -2,7 +2,7 @@
 mkdir build
 cd build
 
-if [[ $target_platform == "emscripten-32" ]]; then
+if [[ $target_platform == "emscripten-wasm32" ]]; then
     export USE_WASM=ON
 else
     export USE_WASM=OFF

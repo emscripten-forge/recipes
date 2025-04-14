@@ -1,55 +1,62 @@
 context:
-  version: 5.4.4
+  version: 5.4.6
 
 package:
   name: lua
-  version: '{{ version }}'
+  version: ${{ version }}
 
 
 source:
-  - url: http://www.lua.org/ftp/lua-{{ version }}.tar.gz
-    sha256: 164c7849653b80ae67bec4b7473b884bf5cc8d2dca05653475ec2ed27b9ebf61
-    patches:
-      # Enables Lua to look for packages on a relative path
-      - luaconf.patch
-      # Build as a shared library
-      - liblua.so.patch
-      # Enables readline on linux
-      - Makefile.patch
-  - path: CMakeLists.txt
+- url: http://www.lua.org/ftp/lua-${{ version }}.tar.gz
+  sha256: 7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88
+  patches:
+    # Enables Lua to look for packages on a relative path
+    - luaconf.patch
+        # Build as a shared library
+    - liblua.so.patch
+    #     # Enables readline on linux
+    # - Makefile.patch
+
+
+- path: CMakeLists.txt
 
 build:
-  number: 0
-  detect_binary_files_with_prefix: true
-  run_exports:
-    # http://www.lua.org/versions.html#numbering
-    - "{{ pin_subpackage('lua', max_pin='x.x') }}"
+  number: 14
 
-    
 requirements:
   build:
-    - sel(not win): "{{ compiler('c') }}"  
-    - sel(win64):   vs2017_win-64  
-    - sel(win32):   vs2017_win-32  
-    - sel(win or emscripten):     ninja          
-    - sel(win or emscripten):     cmake          
-    - sel(unix and not emscripten):    sed            
-    - sel(unix and not emscripten):    make           
-  host:
-    - sel(not win and not emscripten): readline
-    - sel(not win and not emscripten): ncurses 
-  run:
-    - sel(not win and not emscripten): readline
-    - sel(not win and not emscripten): ncurses 
+  - ${{ compiler('c') }}
+  - cmake
+  - make
 
+
+tests:
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/lua.js -e "a=1+1;print(a)")
+      if [[ "$OUTPUT" != "2" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/luac.js -v)
+      if [[ "$OUTPUT" != "Lua 5.4.6  Copyright (C) 1994-2023 Lua.org, PUC-Rio" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
 
 about:
-  home: http://www.lua.org/
   summary: Lua is a powerful, fast, lightweight, embeddable scripting language
   license: MIT
   license_file: doc/readme.html
 
+  homepage: http://www.lua.org/
 extra:
   recipe-maintainers:
-    - DerThorsten
-    - JohanMabille
+  - DerThorsten
+  - JohanMabille

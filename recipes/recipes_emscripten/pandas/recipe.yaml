@@ -1,38 +1,49 @@
 context:
-  version: '1.4.3'
+  version: 2.2.3
 
 package:
   name: pandas
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-- url: https://github.com/pandas-dev/pandas/releases/download/v{{ version }}/pandas-{{ version }}.tar.gz
-  sha256: 2ff7788468e75917574f080cd4681b27e1a7bf36461fe968b49a87b5a54d007c
-  patches:
-    - patches/fix_json_signature.patch
+- url: https://github.com/pandas-dev/pandas/releases/download/v${{ version }}/pandas-${{
+    version }}.tar.gz
+  sha256: 4f18ba62b61d7e192368b84517265a99b4d7ee8912f8708660fb4a366cc82667
+    #patches:
+    #  - patches/fix_json_signature.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    - cross-python_emscripten-32
-    - numpy
-    - cython
-    - pip
+  - "${{compiler('cxx')}}"
+  - python
+  - cross-python_emscripten-wasm32
+  - numpy
+  - cython
+  - pip
+  - versioneer
+  - tomli
+  - meson-python
 
   host:
-    - python
-    - numpy
-    
+  - python
+  - numpy
+
   run:
-    - numpy
-    - python-dateutil
-    - pytz
+  - numpy
+  - python-dateutil
+  - pytz
+  - python-tzdata
 
-
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_pandas.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pandas.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

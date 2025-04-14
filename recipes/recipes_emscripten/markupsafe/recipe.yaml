@@ -1,49 +1,51 @@
 context:
-  version: '2.1.1'
+  version: 3.0.2
 
 package:
   name: markupsafe
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  url: https://github.com/pallets/markupsafe/archive/refs/tags/{{ version }}.tar.gz
-  sha256: 0f83b6d1bf6fa65546221d42715034e7e654845583a84906c5936590f9a7ad8f
+  url: https://github.com/pallets/markupsafe/archive/refs/tags/${{ version }}.tar.gz
+  sha256: cd182103704bfafefce25369fd27f14a5f578f078b7f3ddd1ce2cb940b86403a
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - python
-    - cross-python_emscripten-32
-    - pip
+  - ${{ compiler("c") }}
+  - python
+  - cross-python_emscripten-wasm32
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_markupsafe.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://www.palletsprojects.com/p/markupsafe
   license: BSD-3-Clause
   license_family: BSD
-  license_file: LICENSE.rst
+  license_file: LICENSE.txt
   summary: Safely add untrusted strings to HTML/XML markup.
   description: |
-      MarkupSafe implements a text object that escapes characters so it is
-      safe to use in HTML and XML. Characters that have special meanings are
-      replaced so that they display as the actual characters. This mitigates
-      injection attacks, meaning untrusted user input can safely be displayed
-      on a page.
-  dev_url: https://github.com/pallets/markupsafe
-  doc_url: https://markupsafe.palletsprojects.com/
-
+    MarkupSafe implements a text object that escapes characters so it is
+    safe to use in HTML and XML. Characters that have special meanings are
+    replaced so that they display as the actual characters. This mitigates
+    injection attacks, meaning untrusted user input can safely be displayed
+    on a page.
+  homepage: https://www.palletsprojects.com/p/markupsafe
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_markupsafe.py
 
   recipe-maintainers:
-    - DerThorsten
-
+  - DerThorsten

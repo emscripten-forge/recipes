@@ -1,32 +1,38 @@
 context:
-  version: '1.11'
+  version: '1.12'
 
 package:
   name: sympy
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/s/sympy/sympy-{{ version }}.tar.gz
-    sha256: 1fe96b4c56bb7a7630cdf150a6cd98bc97a79e6be233e30502aba1cf54dee33d
+- url: https://pypi.io/packages/source/s/sympy/sympy-${{ version }}.tar.gz
+  sha256: ebf595c8dac3e0fdc4152c51878b498396ec7f30e7a914d6071e674d49420fb8
 
 build:
-  number: 0
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir
+    -vvv
 
 requirements:
   build:
-    - python                                 # [build_platform != target_platform]
-    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
-    - pip
+  - python                                   # [build_platform != target_platform]
+  - cross-python_${{ target_platform }}      # [build_platform != target_platform]
+  - pip
   host:
-    - mpmath
-    - python
+  - mpmath
+  - python
   run:
-    - mpmath
-    - python
+  - mpmath
+  - python
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_sympy.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_sympy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

@@ -1,43 +1,50 @@
 context:
-  version: '1.24.2'
-  cross_target_plattform: emscripten-32
-  target_plattform: emscripten-32
+  version: 2.2.4
+  cross_target_plattform: emscripten-wasm32
+  target_plattform: emscripten-wasm32
+  default_abi_level: 2.2
 
 package:
   name: numpy
-  version:  '{{ version }}'
+  version: ${{ version }}
 source:
-  url: https://github.com/numpy/numpy/releases/download/v{{ version }}/numpy-{{ version }}.tar.gz
-  sha256: 003a9f530e880cb2cd177cba1af7220b9aa42def9c4afc2a2fc3ee6be7eb2b22
+  url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{
+    version }}.tar.gz
+  sha256: 9ba03692a45d3eef66559efe1d1096c4b9b75c0986b5dff5530c378fb8331d4f
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - cross-python_emscripten-32
-    - python
-    - cython
-    - setuptools <60.0
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_${{target_platform}}
+  - cython
+  - meson-python
+  - ninja >=1.8.2
+  - pip >=24.0
+  - pkg-config
+  - python
   host:
-    - python
-  run:
-    - python
+  - python
+  run_exports:
+  - numpy >=${{ default_abi_level }},<3
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_numpy.py
 
 about:
-  home: http://numpy.org/
+  homepage: http://numpy.org/
   license: BSD-3-Clause
   license_file: LICENSE.txt
   summary: The fundamental package for scientific computing with Python.
-  doc_url: https://numpy.org/doc/stable/reference/
-  dev_url: https://github.com/numpy/numpy
 
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_numpy.py
-
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

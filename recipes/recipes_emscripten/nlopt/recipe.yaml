@@ -1,32 +1,38 @@
 context:
-  version: '2.7.0'
+  version: 2.7.1
 
 package:
   name: nlopt
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://github.com/stevengj/nlopt/archive/v{{ version }}.tar.gz
-    sha256: b881cc2a5face5139f1c5a30caf26b7d3cb43d69d5e423c9d78392f99844499f
-  - path: src/setup.py
+- url: https://github.com/stevengj/nlopt/archive/v${{ version }}.tar.gz
+  sha256: db88232fa5cef0ff6e39943fc63ab6074208831dc0031cf1545f6ecd31ae2a1a
+- path: src/setup.py
 
 build:
   number: 0
 
 requirements:
   build:
-    - cross-python_emscripten-32
-    - python
-    - swig
-    - pip
+  - cross-python_emscripten-wasm32
+  - python
+  - swig
+  - pip
+  - numpy
   host:
-    - numpy
-    - python
+  - numpy
+  - python
   run:
-    - numpy
+  - numpy
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_nlopt.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_nlopt.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

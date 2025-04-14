@@ -1,39 +1,54 @@
 context:
   name: numcodecs
-  version: '0.9.1'
+  version: 0.16.0
 
 package:
   name: numcodecs
-  version: '{{ version }}'
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-    sha256: 35adbcc746b95e3ac92e949a161811f5aa2602b9eb1ef241b5ea6f09bb220997
-    patches:
-      - patches/fixblosc.patch
-      - patches/fixsetup.patch
-      - patches/fixzlib.patch
-  - path: setup.py
+# - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{version
+#     }}.tar.gz
+#   sha256: f71229a951c4991ab226df4147f3780c988d1cecf1309e388d9e57bcba827387
+#   patches:
+#   # - patches/fixblosc.patch
+#   - patches/fixzlib.patch'
+
+# change to pypi sources if and when https://github.com/zarr-developers/numcodecs/pull/737
+# is merged
+- git: https://github.com/DerThorsten/numcodecs/
+  branch: emscripten
+
 
 build:
   number: 0
 
 requirements:
   build:
-    - '{{ compiler("c") }}'
-    - cross-python_emscripten-32
-    - cython
-    - python
-    - pip
-    - setuptools_scm
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - cython
+  - python
+  - pip
+  - setuptools_scm
+  - numpy
   host:
-    - python
+  - numpy
+  - python
   run:
-    - numpy
-    - msgpack
+  - numpy
+  - msgpack
+  - deprecated
+  - typing_extensions
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_numcodecs.py
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_numcodecs.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run

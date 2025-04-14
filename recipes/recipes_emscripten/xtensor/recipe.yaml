@@ -1,0 +1,48 @@
+context:
+  name: xtensor
+  version: 0.26.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/xtensor-stack/xtensor/archive/${{ version }}.tar.gz
+  sha256: f5f42267d850f781d71097b50567a480a82cd6875a5ec3e6238555e0ef987dc6
+
+build:
+  number: 1
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - xtl
+  run:
+  - xtl
+  run_constraints:
+  - xsimd >=13.0.0,<14
+
+tests:
+- script:
+  - if: unix or emscripten
+    then:
+    - test -d ${PREFIX}/include/xtensor
+    - test -f ${PREFIX}/include/xtensor/containers/xarray.hpp
+    - test -f ${PREFIX}/share/cmake/xtensor/xtensorConfig.cmake
+    - test -f ${PREFIX}/share/cmake/xtensor/xtensorConfigVersion.cmake
+
+about:
+  homepage: https://github.com/xtensor-stack/xtensor
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The C++ tensor algebra library
+  description: Multi dimensional arrays with broadcasting and lazy computing
+  documentation: https://xtensor.readthedocs.io
+  repository: https://github.com/xtensor-stack/xtensor
+
+extra:
+  recipe-maintainers:
+  - anutosh491

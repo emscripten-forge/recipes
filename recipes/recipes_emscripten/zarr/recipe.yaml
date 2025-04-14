@@ -1,36 +1,50 @@
 context:
   name: zarr
-  version: '2.10.3'
+  version: 3.0.6
 
 package:
-  name: zarr
-  version: 2.10.3
+  name: ${{ name }}
+  version: ${{ version }}
+
 
 source:
-- url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 76932665c2146ebdf15f6dba254f9e0030552fbfcf9322dea822bff96fbce693
-  patches:
-    - patches/fix-zarrsync.patch
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: 6ef23c740e34917a2a1099471361537732942e49f0cabe95c9b7124cd0d6d84f
+  # patches:
+  # - patches/fix-zarrsync.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    - cross-python_emscripten-32
-    - python
-    - pip
+  - ${{ compiler('cxx') }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  - hatchling
+  - hatch-vcs
   host:
-    - python
+  - python
     # - setuptools >=38.6.0
     # - setuptools_scm >1.5.4
   run:
-    - numpy
-    - asciitree
-    - numcodecs
+  - numpy
+  - asciitree
+  - numcodecs
+  - typing-extensions
+  - donfig
+  - crc32c
+  - packaging
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_zarr.py
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_zarr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
