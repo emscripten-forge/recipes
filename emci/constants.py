@@ -12,11 +12,10 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_ROOT = Path(THIS_DIR).parents[0].resolve()
 RECIPES_ROOT = REPO_ROOT / "recipes"
 RECIPES_EMSCRIPTEN_DIR = RECIPES_ROOT / "recipes_emscripten"
-CONFIG_PATH = os.path.join(REPO_ROOT, "empack_config.yaml")
 
 
 # rattler build related
-RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "conda_build_config.yaml")
+RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "variant.yaml")
 
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
 if CONDA_PREFIX is None:

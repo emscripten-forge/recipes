@@ -1,80 +1,33 @@
+<img src="assets/banner.svg" alt="Emscripten-forge Banner" style="width: 90%;">
+
+#
+
 # Introduction
 
-<!-- conda-forge does not (yet) support emscripten was a plattform. emscripten forge fills this gap -->
 
 Emscripten-forge is a GitHub [organization](https://github.com/emscripten-forge)/[repository](https://github.com/emscripten-forge/recipes) containing  [conda recipes](https://github.com/emscripten-forge/recipes) for the `emscripten-wasm32` platform.
 Conda-forge does not (yet) support the `emscripten-wasm32` platform. `emscripten-forge` fills this gap by providing a channel with conda packages for the `emscripten-wasm32` platform.
+The recipes repository not only stores the recipe files for multiple packages, but it also builds and uploads these packages to the `emscripten-forge` channel on [Quetz](https://beta.mamba.pm/channels/emscripten-forge)
 
+##
 
-The recipe repository not only stores the recipe, but also builds and upload the recipe 
-with github actions to the `emscripten-forge` channel on [quetz](https://beta.mamba.pm/channels/emscripten-forge)
+### Development
 
+  * [Adding packages](development/adding_packages)
+  * [Recipe format](development/recipe_format)
+  * [Local builds](development/local_builds)
+  * [Conda build config](development/conda_build_config)
+  * [Troubleshooting](development/troubleshooting)
 
-## Recipe format
+### Usage
 
-Typically, a recipe is directory with a `recipe.yaml` file that contains the information needed to build a package
-and optionally an additonal `build.sh` script that is executed during the build process.
+  * [Installing packages](usage/installing_packages)
+  * [JupyterLite](usage/jupyterlite)
+  * [Package server](usage/package_server)
 
-#### recipe.yaml
+### Project
 
-The recipe.yaml file may look like this:
-```yaml
-context:
-  version: "2022.1.18" # the version of the package
-  name: "regex"        # the name of the package
-
-package:
-  name: ${{ name }}          # use the context variables defined above
-  version: ${{ version }}    # use the context variables defined above
-
-source:
-  # the url is formed from a "template" with the context variables
-  url: https://pypi.io/packages/source/r/${{name}}/${{name}}-${{ version }}.tar.gz
-  sha256: 97f32dc03a8054a4c4a5ab5d761ed4861e828b2c200febd4e46857069a483916
-
-build:
-  number: 0
-
-requirements:
-  build:
-    - python
-    - cross-python_${{target_platform}}
-    - ${{ compiler("c") }}
-    - pip
-  host:
-    - python
-  run:
-    - python
-
-# to test a python package, we need to use the pytester package.
-# this will run pytests in a headless browser
-tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_regex.py
-
-
-about:
-  homepage: https://bitbucket.org/mrabarnett/mrab-regex
-  license: Apache-2.0
-  summary: Alternative regular expression module, to replace re
-
-extra:
-  recipe-maintainers:
-    - DerThorsten
-
-```
-### build.sh
-The bash script may look like this:
-```bash
-#!/bin/bash
-
-export LDFLAGS="-s MODULARIZE=1  -s LINKABLE=1  -s EXPORT_ALL=1 -s WASM=1 -std=c++14 -s SIDE_MODULE=1 -sWASM_BIGINT"
-${PYTHON} -m pip install .
-```
+  * [Blog](blog)
+  * [Related projects](project/related_projects)
+  * [FAQ](project/faq)
+  * [Credits](project/credits)

@@ -21,3 +21,6 @@ emmake make -j8
 
 # Install step
 emmake make install
+
+cp src/lfortran/tests/test_lfortran.js $PREFIX/bin/test_lfortran.js
+cp src/lfortran/tests/test_lfortran.wasm $PREFIX/bin/test_lfortran.wasm

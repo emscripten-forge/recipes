@@ -1,2 +1,10 @@
 #!/bin/bash
-${PYTHON} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+
+
+cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
+echo "python = '${PYTHON}'" >> $SRC_DIR/emscripten.meson.cross
+
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"

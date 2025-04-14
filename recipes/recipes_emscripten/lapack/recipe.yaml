@@ -1,0 +1,69 @@
+context:
+  version: 3.12.1
+  name: lapack
+
+source:
+  url: https://github.com/Reference-LAPACK/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422
+  patches:
+  - patches/0001_Disable_fortran_compiler_check.patch
+
+build:
+  number: 0
+
+# TODO: Use cache output once it's not experimental
+
+outputs:
+- package:
+    name: libblas
+    version: ${{ version }}
+  build:
+    files:
+    - lib/libblas.a
+    - lib/pkgconfig/blas.pc
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ninja
+  tests:
+  - script: test -f $PREFIX/lib/libblas.a
+
+- package:
+    name: libcblas
+    version: ${{ version }}
+  build:
+    files:
+    - lib/libcblas.a
+    - lib/pkgconfig/cblas.pc
+    - lib/cmake/cblas-${{ version }}/cblas*
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ninja
+  tests:
+  - script: test -f $PREFIX/lib/libcblas.a
+
+- package:
+    name: liblapack
+    version: ${{ version }}
+  build:
+    files:
+    - lib/liblapack.a
+    - lib/pkgconfig/lapack.pc
+    - lib/cmake/lapack-${{ version }}/lapack*
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ninja
+  tests:
+  - script: test -f $PREFIX/lib/liblapack.a
+
+about:
+  homepage: http://www.netlib.org/lapack
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Linear Algebra PACKage
+
+extra:
+  maintainers:
+  - IsabelParedes
