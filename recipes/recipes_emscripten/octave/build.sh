@@ -12,10 +12,10 @@ emconfigure ./configure \
    --disable-dependency-tracking \
    --enable-fortran-calling-convention="f2c" \
    --enable-shared \
+   --enable-threads=no \
    --disable-dl \
    --disable-rpath \
    --disable-openmp \
-   --disable-threads \
    --disable-fftw-threads \
    --disable-readline \
    --disable-docs \
