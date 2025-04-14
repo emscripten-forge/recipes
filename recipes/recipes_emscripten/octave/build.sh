@@ -1,4 +1,6 @@
 export FFLAGS="${FFLAGS} -g --target=wasm32-unknown-emscripten"
+# --disable-threads does not seem to disable parallelism, so we ignore undefined symbols for now
+export LDFLAGS="${LDFLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0"
 
 export FLIBS="-lFortranRuntime"
 
@@ -12,10 +14,10 @@ emconfigure ./configure \
    --disable-dependency-tracking \
    --enable-fortran-calling-convention="f2c" \
    --enable-shared \
-   --enable-threads=no \
    --disable-dl \
    --disable-rpath \
    --disable-openmp \
+   --disable-threads \
    --disable-fftw-threads \
    --disable-readline \
    --disable-docs \
