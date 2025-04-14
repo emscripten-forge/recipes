@@ -1,0 +1,50 @@
+context:
+  name: r-nlme
+  version: 3.1-167
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: dadc9ccb9b2089a533547437edd256a29a0e059365f11a81e7390bf48f2a8a49
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - flang_${{ target_platform }}
+  - cross-r-base_${{ target_platform }}
+  - r-lattice
+  host:
+  - r-base >= ${{ r_base_version }}
+  - r-lattice
+  - libflang                  # FIXME: FortranRuntime
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-lattice
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://svn.r-project.org/R-packages/trunk/nlme
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  summary: Linear and Nonlinear Mixed Effects Models
+  description: |
+    Fit and compare Gaussian linear and nonlinear mixed-effects models.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

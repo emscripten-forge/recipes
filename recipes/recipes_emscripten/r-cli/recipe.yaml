@@ -1,0 +1,49 @@
+context:
+  version: 3.6.4
+  name: r-cli
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 0c39539ce173bcbf7abaca64e8d2c87ffec8257c144c31b793c4cf2dd9cf7620
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - r-base >= ${{ r_base_version }}
+  run:
+    - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://cli.r-lib.org
+  repository: https://github.com/r-lib/cli
+  license: MIT
+  license_family: MIT
+  summary: Helpers for Developing Command Line Interfaces
+  description: |
+   A suite of tools to build attractive command line interfaces ('CLIs'), from semantic elements:
+   headings, lists, alerts, paragraphs, etc. Supports custom themes via a 'CSS'-like language.
+   It also contains a number of lower level 'CLI' elements: rules, boxes, trees, and 'Unicode'
+   symbols with 'ASCII' alternatives. It support ANSI colors and text styles as well.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
+    - anutosh491

@@ -1,16 +1,16 @@
 context:
-  version: 2.1.0
+  version: 2.7.3
   name: pyjs
 package:
   name: ${{name}}
   version: ${{ version }}
-    
+
 source:
   url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
-  sha256:   8633dfd8b5bf9403e6b9c02c582557dcc49226034689032939b547c7dc431000
-build:
-  number: 7
+  sha256: 142da86c6c9bc4a2080c887d4a0192b7a591ae5c788fcaeb4ebc870c5378c5c6
 
+build:
+  number: 0
 
 requirements:
   build:
@@ -20,54 +20,49 @@ requirements:
   - make
   host:
   - python
-  - sqlite
   - zlib
-  - bzip2
+  - zstd
+  - sqlite
   - libffi
+  - bzip2
   - pybind11
+  - openssl
+  - liblzma
 
 tests:
-  - script: |
-      echo "install playwright"
-      playwright install
-      echo "test in browser (main thread)"
-      pyjs_code_runner run script \
-          browser-main \
-          --conda-env     $PREFIX \
-          --mount         $(pwd)/tests:/tests \
-          --script        main.py \
-          --work-dir      /tests \
-          --headless \
-          --async-main \
-          --no-cache
-      # worker
-      echo "test in browser (worker thread)"
-      pyjs_code_runner run script \
-          browser-worker \
-          --conda-env     $PREFIX \
-          --mount         $(pwd)/tests:/tests \
-          --script        main.py \
-          --work-dir      /tests \
-          --headless \
-          --async-main \
-          --no-cache
+- script: |
+    echo "install playwright"
+    playwright install
+    echo "test in browser (main thread)"
+    pyjs_code_runner run script \
+        browser-main \
+        --conda-env     $PREFIX \
+        --mount         $(pwd)/tests:/tests \
+        --script        main.py \
+        --work-dir      /tests \
+        --headless \
+        --async-main \
+        --no-cache
+    # worker
+    echo "test in browser (worker thread)"
+    pyjs_code_runner run script \
+        browser-worker \
+        --conda-env     $PREFIX \
+        --mount         $(pwd)/tests:/tests \
+        --script        main.py \
+        --work-dir      /tests \
+        --headless \
+        --async-main \
+        --no-cache
 
-    requirements:
-      build:      
-          - pytester
-          - if: build_platform == "linux-64"
-            then:
-              - pyjs_code_runner >=3.0.0
-              - microsoft::playwright <1.42
-            else:
-              - pyjs_code_runner >=3.0.0
-              - microsoft::playwright
-      run:
-        - pytest
-        - numpy
-    files:
-      source:
-        - tests/**/*
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    source:
+    - tests/**/*
 
 
 about:
