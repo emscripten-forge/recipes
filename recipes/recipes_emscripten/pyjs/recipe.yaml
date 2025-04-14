@@ -1,17 +1,16 @@
 context:
-  version: 2.0.0
+  version: 2.7.3
   name: pyjs
 package:
   name: ${{name}}
   version: ${{ version }}
 
 source:
-- url: 
-    https://github.com/emscripten-forge/${{name}}/archive/refs/tags/${{version}}.tar.gz
-  sha256: 668f36da03ab81d35850205c47e96e1c08afc20559d72dc3c734bba2c678b826
+  url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 142da86c6c9bc4a2080c887d4a0192b7a591ae5c788fcaeb4ebc870c5378c5c6
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
@@ -21,11 +20,50 @@ requirements:
   - make
   host:
   - python
-  - sqlite
   - zlib
-  - bzip2
+  - zstd
+  - sqlite
   - libffi
+  - bzip2
   - pybind11
+  - openssl
+  - liblzma
+
+tests:
+- script: |
+    echo "install playwright"
+    playwright install
+    echo "test in browser (main thread)"
+    pyjs_code_runner run script \
+        browser-main \
+        --conda-env     $PREFIX \
+        --mount         $(pwd)/tests:/tests \
+        --script        main.py \
+        --work-dir      /tests \
+        --headless \
+        --async-main \
+        --no-cache
+    # worker
+    echo "test in browser (worker thread)"
+    pyjs_code_runner run script \
+        browser-worker \
+        --conda-env     $PREFIX \
+        --mount         $(pwd)/tests:/tests \
+        --script        main.py \
+        --work-dir      /tests \
+        --headless \
+        --async-main \
+        --no-cache
+
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    source:
+    - tests/**/*
+
 
 about:
   license: BSD-3-Clause

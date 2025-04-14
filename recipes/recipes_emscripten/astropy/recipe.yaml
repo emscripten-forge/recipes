@@ -1,5 +1,5 @@
 context:
-  version: 6.1.0
+  version: 7.0.1
 
 package:
   name: astropy
@@ -7,15 +7,16 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/a/astropy/astropy-${{ version }}.tar.gz
-  sha256: 6c3b915f10b1576190730ddce45f6245f9927dda3de6e3f692db45779708950f
+  sha256: 392feeb443b2437cd4c2e0641a65e0f15ba791e148e9b1e5ed7de7dfcb38e460
   # patches:
   # - patches/skip_ep.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
+  - ${{ compiler("cxx") }}
   - cross-python_emscripten-wasm32
   - python
   - cython
@@ -32,14 +33,15 @@ requirements:
   - pyerfa
   - pyyaml
   - packaging
-  
+  - astropy-iers-data>=0.2024.7.1.0.34.3
+
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester >= 0.9.0
-      run:
-        - pytester-run >= 0.9.0
-    files:
-      recipe:
-        - test_astropy.py
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_astropy.py

@@ -10,6 +10,23 @@ The recipe format is described in the [rattler-build recipe format](https://gith
 Adding cmake based packages is easy. Usually it is enough to replace the `cmake` command with the `emcmake` command and
 `make` with `emmake` (see the [emscripten documentation](https://emscripten.org/docs/compiling/Building-Projects.html#integrating-with-a-build-system) for more details).
 
+To build a shared library with CMake, one needs  flags.
+These flags can be put into a `.cmake` file:
+```CMake
+# overwriteProp.cmake
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE) # does not need to be global :)
+set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
+set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
+set(CMAKE_STRIP FALSE)  # used by default in pybind11 on .so modules # only for needed when using pybind11
+```
+
+This can be passed to the as command line argument to cmake
+```
+# CLI
+... -DCMAKE_PROJECT_INCLUDE=overwriteProp.cmake
+```
+
+
 **Example recipes**:
 
 * [xeus](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/xeus)

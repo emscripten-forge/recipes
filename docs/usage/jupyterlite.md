@@ -29,8 +29,8 @@ To load a xeus-python kernel with a custom environment, create an environment.ya
 ```yaml
 name: xeus-lite-wasm
 channels:
-  - https://repo.mamba.pm/emscripten-forge
-  - conda-forge
+  - https://repo.prefix.dev/emscripten-forge-dev
+  - https://repo.prefix.dev/conda-forge
 dependencies:
   - xeus-python
   - numpy
