@@ -1,2 +1,2 @@
 #!/bin/bash
-${PYTHON} setup.py install
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation 

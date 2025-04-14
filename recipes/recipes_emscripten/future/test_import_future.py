@@ -1,4 +1,3 @@
 
 def test_import_future():
-    import future
-    
+    import __future__

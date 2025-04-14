@@ -1,38 +1,47 @@
 context:
   name: pyerfa
-  version: '2.0.0.1'
+  version: 2.0.1.5
 
 package:
   name: pyerfa
-  version: "{{ version }}"
+  version: ${{ version }}
 
 source:
-- url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 2fd4637ffe2c1e6ede7482c13f583ba7c73119d78bef90175448ce506a0ede30
-  patches:
-    - patches/0001-Fix-compilation-with-Wincompatible-function-pointer-.patch
-- path: ./setup.py
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{version }}.tar.gz
+  sha256: 17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0
+
 
 build:
   number: 1
 
 requirements:
   build:
-    - cross-python_emscripten-wasm32
-    - python
-    - "{{ compiler('c') }}"
-    - pip
-    - packaging
-    - jinja2
+  - cross-python_emscripten-wasm32
+  - python
+  - ${{ compiler('c') }}
+  - pip
+  - packaging
+  - jinja2
+  - numpy
+  - setuptools
   host:
-    - python
-    - numpy
+  - python
+  - numpy
   run:
-    - python
-    - numpy
+  - python
+  - numpy
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyerfa.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://pyerfa.readthedocs.io/
   license: BSD-3-Clause
   license_family: BSD
   license_file: LICENSE.rst
@@ -47,11 +56,4 @@ about:
     Astropy project, into a standalone package. It contains the ERFA C source
     code as a git submodule. The wrapping is done with help of the Jinja2
     template engine.
-  doc_url: https://pyerfa.readthedocs.io/
-  dev_url: https://github.com/liberfa/pyerfa
-
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_import_pyerfa.py
+  homepage: https://pyerfa.readthedocs.io/

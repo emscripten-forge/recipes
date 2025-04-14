@@ -1,0 +1,54 @@
+context:
+  name: r-matrix
+  version: 1.7-3
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version|replace('-', '_') }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/Matrix_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/Matrix_${{ version }}.tar.gz
+  sha256: 6642e9db8cddf32a051972fd5a634bf7edbdc925c5c2d139bf71e92df00fb44e
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - r-lattice
+  host:
+  - r-base >= ${{ r_base_version }}
+  - r-lattice
+  - libblas>=3.12
+  - liblapack>=3.12
+  - libflang                  # for FortranRuntime
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-lattice
+
+tests:
+- package_contents:
+    lib:
+    - R/library/Matrix/libs/Matrix.so
+
+about:
+  homepage: http://Matrix.R-forge.R-project.org/
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  summary: Sparse and Dense Matrix Classes and Methods
+  description: |
+    A rich hierarchy of sparse and dense matrix classes, including general,
+    symmetric, triangular, and diagonal matrices with numeric, logical, or
+    pattern entries. Efficient methods for operating on such matrices, often
+    wrapping the 'BLAS', 'LAPACK', and 'SuiteSparse' libraries.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

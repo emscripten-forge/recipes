@@ -1,21 +1,21 @@
 context:
   name: freesasa
-  version: "2.2.0"
+  version: 2.2.1
 
 package:
   name: freesasa
-  version: "{{ version }}"
+  version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/1e/99/6b7d3684738a16ab6d799ede9d81165e0bad8ae7ce2616896640ca82301f/freesasa-2.2.0.post3.tar.gz
-  sha256: db7e5c8a1deae051198d5c7e1a54f2d001b22a945b524d81cb26cacb7d6bb54f
+  url: https://files.pythonhosted.org/packages/52/fc/1b28f7973952934737387172ef0a40c0ea7cb9a6132264c3e731760f8efa/freesasa-2.2.1.tar.gz
+  sha256: 5630e65d619cf6a062028d7c6297afe8c5b18c677c75f1c32a0938399f4f6850
 
 build:
   number: 1
 
 requirements:
   build:
-  - "{{ compiler('c') }}"
+  - ${{ compiler('c') }}
   - cython
   - python
   - cross-python_emscripten-wasm32
@@ -24,14 +24,19 @@ requirements:
   # - cython
   - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_freesasa.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: http://freesasa.github.io/
   summary: Calculate solvent accessible surface areas of proteins
   license: MIT
   license_file: LICENSE.txt
 
-extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_import_freesasa.py
+  homepage: http://freesasa.github.io/

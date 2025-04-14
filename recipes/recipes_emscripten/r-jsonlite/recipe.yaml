@@ -1,0 +1,55 @@
+context:
+  name: r-jsonlite
+  version: 1.9.1
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: a7c204449a1432b845628b3e408492a3345a4fdbc1a9aba962a96a22ae0ade2e
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - r-base >= ${{ r_base_version }}
+  run:
+  - r-base >= ${{ r_base_version }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://arxiv.org/abs/1403.2805, https://www.opencpu.org/posts/jsonlite-a-smarter-json-encoder
+  repository: https://github.com/jeroen/jsonlite
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary:  A Simple and Robust JSON Parser and Generator for R
+  description: |
+    A reasonably fast JSON parser and generator, optimized for statistical data
+    and the web. Offers simple, flexible tools for working with JSON in R, and
+    is particularly powerful for building pipelines and interacting with a web
+    API. The implementation is based on the mapping described in the vignette
+    (Ooms, 2014). In addition to converting JSON data from/to R objects,
+    'jsonlite' contains functions to stream, validate, and prettify JSON data.
+    The unit tests included with the package verify that all edge cases are
+    encoded and decoded consistently for use with dynamic data in systems and
+    applications.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

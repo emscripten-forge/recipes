@@ -1,46 +1,52 @@
 context:
-  name: "cftime"
-  version: "1.6.3"
+  name: cftime
+  version: 1.6.4
 
 package:
-  name: "{{ name }}"
-  version: "{{ version }}"
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: d0a6b29f72a13f08e008b9becff247cc75c84acb213332ede18879c5b6aa4dfd
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
+  sha256: e325406193758a7ed67308deb52e727782a19e384e183378e7ff62098be0aedc
 
 build:
-  script: "{{ PYTHON }} -m pip install . -vv"
+  script: $PYTHON -m pip install . -vv
   number: 0
 
 requirements:
   build:
-    - "{{ compiler('c') }}"
-    - cython
-    - cross-python_emscripten-wasm32
-    - python
-    - numpy
-    - pip
+  - ${{ compiler('c') }}
+  - cython
+  - cross-python_emscripten-wasm32
+  - python
+  - numpy
+  - pip
   host:
     # overwrite the numpy version here so we don't get pinnings / run export
-    - numpy
-    - python
+  - numpy
+  - python
   run:
-    - python
-    - numpy
+  - python
+  - numpy
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cftime.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://pypi.org/project/cftime/
   summary: Time-handling functionality from netcdf4-python
   license: MIT
   license_file: LICENSE
 
+  homepage: https://pypi.org/project/cftime/
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-        - test_cftime.py
-
   recipe-maintainers:
-    - wolfv
+  - wolfv

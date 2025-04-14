@@ -1,0 +1,59 @@
+context:
+  name: r-purrr
+  version: 1.0.4
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 6c013724651c5daae56a7b8e126baef958d30d4c01dd0dda3d17fc43409b8e54
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - r-cli >=3.6.3
+  - r-lifecycle >=1.0.4
+  - r-magrittr
+  - r-rlang
+  - r-vctrs
+  host:
+  - r-base >= ${{ r_base_version }}
+  - r-cli >=3.6.3
+  - r-lifecycle >=1.0.4
+  - r-magrittr
+  - r-rlang
+  - r-vctrs
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-cli >=3.6.3
+  - r-lifecycle >=1.0.4
+  - r-magrittr
+  - r-rlang
+  - r-vctrs
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://purrr.tidyverse.org
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A complete and consistent functional programming toolkit for R.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

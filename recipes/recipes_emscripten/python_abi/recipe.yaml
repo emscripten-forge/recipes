@@ -1,23 +1,26 @@
 context:
   name: python_abi
-  version: "3.11"
+  version: "3.13.1" # keep sync with python
+  ver2nd: ${{ version | version_to_buildstring}}
+  python_abi_tag: "cp${{ ver2nd }}"
+  build_num: 0
 
 package:
-  name: '{{ name|lower }}'
-  version: '{{ version }}'
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 build:
-  number:  
-  string: "0_cp311"
+  number: ${{ build_num }}
+  string: ${{ build_num }}_${{ python_abi_tag }}
+
+requirements:
+  run_constraints:
+    python ${{ version }}.* *_${{ python_abi_tag }}
 
 about:
-  home: python_abi
   license: BSD-3-Clause
   summary: python_abi
   description: python_abi
-  doc_url: python_abi
-  dev_url: python_abi
-
 extra:
   recipe-maintainers:
     - DerThorsten

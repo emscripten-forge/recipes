@@ -1,0 +1,54 @@
+context:
+  name: pyproj
+  version: 3.7.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pyproj/pyproj-${{ version }}.tar.gz
+  sha256: 60d72facd7b6b79853f19744779abcd3f804c4e0d4fa8815469db20c9f640a47
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython
+  - ${{ compiler('c') }}
+  host:
+  - python
+  - pip
+  - proj
+  run:
+  - python
+  - proj
+  - certifi
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pyproj.py
+
+
+about:
+  homepage: https://github.com/pyproj4/pyproj
+  license: MIT
+  license_file:
+  - LICENSE
+  - LICENSE_proj
+  summary: Python interface to PROJ library
+
+extra:
+  recipe-maintainers:
+  - KGB99
+  - DerThorsten

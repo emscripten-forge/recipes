@@ -1,0 +1,57 @@
+context:
+  name: r-htmltools
+  version: 0.5.8.1
+  r_base_version: 4.4.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: f9f62293ec06c353c4584db6ccedb06a2da12e485208bd26b856f17dd013f176
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - r-base64enc
+  - r-digest
+  - r-fastmap
+  - r-rlang
+  host:
+  - r-base >= ${{ r_base_version }}
+  - r-base64enc
+  - r-digest
+  - r-fastmap
+  - r-rlang
+  run:
+  - r-base >= ${{ r_base_version }}
+  - r-base64enc
+  - r-digest
+  - r-fastmap
+  - r-rlang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://rstudio.github.io/htmltools/
+  repository: https://github.com/rstudio/htmltools
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  summary: Tools for HTML
+  description: Tools for creating, manipulating, and writing HTML from R.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

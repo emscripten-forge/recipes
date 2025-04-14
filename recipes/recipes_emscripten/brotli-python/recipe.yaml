@@ -1,0 +1,49 @@
+context:
+  version: 1.1.0
+
+package:
+  name: brotli-python
+  version: ${{ version }}
+
+source:
+- url: https://github.com/google/brotli/archive/v${{ version }}.tar.gz
+  sha256: e720a6ca29428b803f4ad165371771f5398faba397edf6778837a18599ea13ff
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cross-python_emscripten-wasm32
+  - cmake
+  - ninja
+  - pip
+  host:
+  - brotli ==${{ version }}
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_brotli.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Brotli compression format
+  homepage: https://github.com/google/brotli
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_brotli.py
+  recipe-maintainers:
+  - DerThorsten

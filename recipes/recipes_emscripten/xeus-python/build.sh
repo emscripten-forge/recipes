@@ -25,8 +25,8 @@ cmake ${CMAKE_ARGS} ..                                \
 # Build step
 ninja
 
-cd ..
-${PYTHON} wasm_patches/patch_it.py
-cd build
-
 ninja install
+
+# remove raw-kernel
+rm -rf $PREFIX/share/jupyter/kernels/xpython-raw/
+

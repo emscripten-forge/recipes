@@ -1,33 +1,40 @@
 context:
-  version: "0.41.2"
+  version: 0.46.1
   name: wheel
 
 package:
-  name: "{{name}}"
-  version: "{{ version }}"
+  name: ${{name}}
+  version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/w/{{name}}/{{name}}-{{ version }}.tar.gz
-    sha256: 0c5ac5ff2afb79ac23ab82bab027a0be7b5dbcf2e54dc50efe4bf507de1f7985
+- url: https://pypi.io/packages/source/w/${{name}}/${{name}}-${{ version }}.tar.gz
+  sha256: fd477efb5da0f7df1d3c76c73c14394002c844451bd63229d8570f376f5e6a38
 
 build:
-  number: 1
+  number: 0
 
 requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
   host:
-    - python
-    - flit-core
+  - python
+  - flit-core
   run:
-    - python
+  - python
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_wheel.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 about:
-  home: https://github.com/pypa/wheel
   license: MIT
   license_file: LICENSE.txt
   summary: A built-package format for Python.
-
-# extra:
-#   emscripten_tests:
-#     python:
-#       pytest_files:
-#         - test_import_wheel.py
+  homepage: https://github.com/pypa/wheel
