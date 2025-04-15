@@ -21,6 +21,7 @@ emconfigure ./configure \
    --disable-fftw-threads \
    --disable-readline \
    --disable-docs \
+   --disable-java \
    --with-blas \
    --with-lapack \
    --with-pcre2 \
@@ -30,7 +31,6 @@ emconfigure ./configure \
    --without-qt \
    --without-qrupdate \
    --without-framework-carbon \
-   --without-java \
 
 emmake make --jobs 1  # OOM
 
