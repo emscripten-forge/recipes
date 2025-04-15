@@ -1,0 +1,45 @@
+context:
+  build: 0
+  version: 6.4.2
+
+package:
+  name: tornado
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/t/tornado/tornado-${{ version }}.tar.gz
+  sha256: 92bad5b4746e9879fd7bf1eb21dce4e3fc5128d71601f80005afa39237ad620b
+
+build:
+  number: ${{ build }}
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - pip
+  - python
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_tornado.py
+about:
+  homepage: https://www.tornadoweb.org/
+  license: Apache-2.0
+  license_file: LICENSE
+
+
+extra:
+  recipe-maintainers:
+  - ukukas

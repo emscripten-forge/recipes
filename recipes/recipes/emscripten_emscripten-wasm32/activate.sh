@@ -1,9 +1,18 @@
 if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
+    export EM_OLD_LDFLAGS=$LDFLAGS
+    export EM_OLD_CFLAGS=$CFLAGS
+
+
     export CONDA_FORGE_EMSCRIPTEN_ACTIVATED=1
 
-    export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
-    export PYTHON=${BUILD_PREFIX}/bin/python3
+    if [ -z ${BUILD_PREFIX+x} ]; then
+        export EMSDK_PYTHON=${CONDA_PREFIX}/bin/python3
+        export PYTHON=${CONDA_PREFIX}/bin/python3
+    else
+        export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python3
+        export PYTHON=${BUILD_PREFIX}/bin/python3
+    fi
 
     CONDA_EMSDK_DIR=$CONDA_PREFIX/opt/emsdk
  
@@ -37,15 +46,13 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
         emcmake cmake "$@"
     }
 
-    # usefull variables
-    export PY_SIDE_LD_FLAGV
 
     # basics
     export EM_FORGE_OPTFLAGS="-O2"
     export EM_FORGE_DBGFLAGS="-g0"
 
     # basics ld
-    export EM_FORGE_LDFLAGS_BASE="-s MODULARIZE=1 -s LINKABLE=1 -s EXPORT_ALL=1 -s WASM=1 -std=c++14 -s LZ4=1"
+    export EM_FORGE_LDFLAGS_BASE="-s WASM=1 -sWASM_BIGINT -L${PREFIX}/lib"
     export EM_FORGE_LDFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_LDFLAGS_BASE}"
 
     # basics cflags
@@ -53,10 +60,11 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EM_FORGE_CFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_CFLAGS_BASE}"
 
     # side module
-    export EM_FORGE_SIDE_MODULE_LDFLAGS="${LDFLAGS_BASE} -s SIDE_MODULE=1"
+    export EM_FORGE_SIDE_MODULE_LDFLAGS="${EM_FORGE_LDFLAGS_BASE} -s SIDE_MODULE=1"
     export EM_FORGE_SIDE_MODULE_CFLAGS="${EM_FORGE_CFLAGS_BASE} -I${PREFIX}/include"
 
-    # wasm bigint
-    export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+
+    export LDFLAGS="${EM_FORGE_LDFLAGS_BASE} ${LDFLAGS}"
+    export CFLAGS="${EM_FORGE_CFLAGS_BASE} ${CFLAGS}"
 
 fi

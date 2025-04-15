@@ -1,3 +1,7 @@
+<img src="assets/banner.svg" alt="Emscripten-forge Banner" style="width: 90%;">
+
+#
+
 # Introduction
 
 

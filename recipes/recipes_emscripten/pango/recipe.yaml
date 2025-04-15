@@ -1,7 +1,7 @@
 context:
-  name: "pango"
-  version: "1.54.0"
-  version_major_minor: "1.54"
+  name: pango
+  version: 1.54.0
+  version_major_minor: 1.54
 
 package:
   name: ${{ name }}
@@ -12,7 +12,7 @@ source:
   sha256: 8a9eed75021ee734d7fc0fdf3a65c3bba51dfefe4ae51a9b414a60c70b2d1ed8
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -25,8 +25,7 @@ requirements:
     - fontconfig
     - freetype
   host:
-    # TODO: enable cairo
-    # - cairo >=1.18
+    - cairo >=1.18
     - fribidi
     - glib
     - harfbuzz >=10.0.0
@@ -36,12 +35,26 @@ requirements:
     - graphite2
     - libffi
     - expat
+    - pixman
+    - zlib
 
 tests:
+- package_contents:
+    bin:
+    - pango-view.js
+    - pango-list.wasm
+    - pango-segmentation.worker.js
+    lib:
+    - libpango-1.0.a
+    - libpangoft2-1.0.a
+    - libpangocairo-1.0.a
+    include:
+    - pango-1.0/pango/pango.h
 - script:
-    - test -f $PREFIX/lib/libpango-1.0.a
-    - test -f $PREFIX/lib/libpangoft2-1.0.a
-    - test -f $PREFIX/include/pango-1.0/pango/pango.h
+    - node $PREFIX/bin/pango-view.js --help
+  requirements:
+    build:
+      - nodejs
 
 about:
   homepage: http://www.pango.org/
