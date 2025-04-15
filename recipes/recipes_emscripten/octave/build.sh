@@ -14,7 +14,7 @@ emconfigure ./configure \
    --disable-dependency-tracking \
    --enable-fortran-calling-convention="f2c" \
    --enable-shared \
-   --disable-dl \
+   --disable-dlopen \
    --disable-rpath \
    --disable-openmp \
    --disable-threads \
