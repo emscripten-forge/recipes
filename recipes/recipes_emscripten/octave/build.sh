@@ -1,7 +1,25 @@
 export FLIBS="-lFortranRuntime"
 export FFLAGS="${FFLAGS} -g --target=wasm32-unknown-emscripten"
 # flang-new does not support emscripten flags.
-export FFLAGS="${FFLAGS} -Wno-error=unused-command-line-argument"
+#
+# Future solution when flang is more mature:
+# export FFLAGS="${FFLAGS} -Wno-error=unused-command-line-argument -Qunused-arguments"
+#
+# Current wrapper to remove all -s CLI otions passed to flang-new
+(
+   echo '#!/usr/bin/env bash'
+   echo 'args=()'
+   echo 'for arg in "$@"; do'
+   echo '  if [[ "${arg}" != -s* ]]; then'
+   echo '    args+=("${arg}")'
+   echo '  fi'
+   echo 'done'
+   echo 'exec' "\"${F77}\"" '"${args[@]}"'
+) > flang-new-wrap
+chmod +x flang-new-wrap
+export F77="${PWD}/flang-new-wrap"
+
+cat flang-new-wrap
 
 # Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
 export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
