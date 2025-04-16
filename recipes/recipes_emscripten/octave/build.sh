@@ -1,7 +1,7 @@
 export FLIBS="-lFortranRuntime"
 export FFLAGS="${FFLAGS} -g --target=wasm32-unknown-emscripten"
 # flang-new does not support emscripten flags.
-export FFLAGS="${FFLAGS} -Wno-error=unused-command-line-argument -Qunused-arguments"
+export FFLAGS="${FFLAGS} -Wno-error=unused-command-line-argument"
 
 # Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
 export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
