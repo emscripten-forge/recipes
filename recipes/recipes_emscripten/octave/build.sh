@@ -39,6 +39,7 @@ emconfigure ./configure \
    --without-qt \
    --without-qrupdate \
    --without-framework-carbon \
+   || cat config.log || exit 1
 
 emmake make --jobs 1  # OOM
 
