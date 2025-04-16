@@ -23,7 +23,6 @@ cat flang-new-wrap
 
 # Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
 export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
-export LDFLAGS="${LDFLAGS} -sERROR_ON_UNDEFINED_SYMBOLS=0"
 
 # Forcing autotools to NOT rerun after patches
 find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
