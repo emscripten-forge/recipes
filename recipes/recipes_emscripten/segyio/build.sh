@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# mkdir build
-# cd build
+mkdir build
+cd build
 
 
 # # copy includes of python from host to build dir
