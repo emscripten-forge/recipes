@@ -12,6 +12,7 @@ configure_args=(
   --prefix=${PREFIX}
   --disable-debug
   --disable-dependency-tracking
+  --disable-openmp
 )
 
 emconfigure ./configure "${configure_args[@]}" --with-ngshared LDFLAGS="${LDFLAGS}"
