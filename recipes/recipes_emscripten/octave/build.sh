@@ -32,10 +32,14 @@ export ac_cv_header_pthread_h=no
 # Forcing autotools to NOT rerun after patches
 find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
 
+BUILD="x86_64-unknown-linux-gnu"
+# Pretend to build for linux because autotools does not know about emscripten
+HOST="wasm32-unknown-linux-gnu"
+
 emconfigure ./configure \
    --prefix="${PREFIX}" \
-   --build="x86_64-conda-linux-gnu" \
-   --host="wasm32-unknown-emscripten" \
+   --build="${BUILD}"\
+   --host="${HOST}" \
    --disable-dependency-tracking \
    --enable-fortran-calling-convention="f2c" \
    --enable-shared \
