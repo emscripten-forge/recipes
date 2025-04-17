@@ -1,5 +1,6 @@
 export FLIBS="-lFortranRuntime"
 export FFLAGS="${FFLAGS} -g --target=wasm32-unknown-emscripten"
+
 # flang-new does not support emscripten flags.
 #
 # Future solution when flang is more mature:
@@ -23,6 +24,10 @@ cat flang-new-wrap
 
 # Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
 export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
+
+# Try force disable pthread
+sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
+export ac_cv_header_pthread_h=no
 
 # Forcing autotools to NOT rerun after patches
 find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
