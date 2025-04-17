@@ -9,6 +9,7 @@ cd build
 # cp -r $PREFIX/include/python3.13/ $BUILD_PREFIX/include/
 
 emcmake cmake .. \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
     -DHAVE_FSTATI64=0 \
