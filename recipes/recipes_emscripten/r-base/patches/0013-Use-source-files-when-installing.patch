@@ -1,0 +1,33 @@
+From 94a8e2b5165dfa06979d18c53cf5719d4ee4a3eb Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 17 Apr 2025 16:43:38 +0200
+Subject: [PATCH 13/13] Use source files when installing
+
+---
+ src/library/Makefile.in | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/library/Makefile.in b/src/library/Makefile.in
+index 92f74676a7..ca32da0b25 100644
+--- a/src/library/Makefile.in
++++ b/src/library/Makefile.in
+@@ -8,6 +8,8 @@ top_srcdir = @top_srcdir@
+ top_builddir = ../..
+ subdir = src/library
+ 
++utilsdir = $(srcdir)/utils
++
+ include $(top_builddir)/Makeconf
+ 
+ distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+@@ -129,7 +131,9 @@ install: installdirs
+ 	  (cd $(top_builddir)/library; \
+ 	    $(TAR) cf - . | (cd "$(DESTDIR)$(rhome)/library"; $(TAR) xmof -))
+ 	@$(ECHO) "  building HTML index ..."
+-	@$(ECHO) "utils:::make.packages.html(.Library, verbose=FALSE, docdir=\"$(DESTDIR)${rdocdir}\")" | \
++	@(cat $(utilsdir)/R/linkhtml.R; \
++	  cat $(utilsdir)/R/indices.R; \
++	  $(ECHO) "make.packages.html(.Library, verbose=FALSE, docdir=\"$(DESTDIR)${rdocdir}\")") | \
+           R_DEFAULT_PACKAGES=NULL LC_ALL=C ${R_EXE} >/dev/null
+ installdirs:
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(rhome)/library"

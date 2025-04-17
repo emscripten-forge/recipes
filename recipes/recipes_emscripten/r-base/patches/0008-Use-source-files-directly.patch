@@ -1,15 +1,15 @@
-From 6b2d42bbb8895cb321124814b526fca8aca36433 Mon Sep 17 00:00:00 2001
+From ba76cd2f752f47c109da2a5d68c23f8c3420d1cd Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Fri, 22 Nov 2024 16:57:55 +0100
-Subject: [PATCH] Use source files directly
+Date: Wed, 16 Apr 2025 17:07:05 +0200
+Subject: [PATCH 08/13] Use source files directly
 
 ---
  share/make/basepkg.mk         | 19 ++++++++++++++-----
- src/library/tools/Makefile.in | 11 ++++++++---
- 2 files changed, 22 insertions(+), 8 deletions(-)
+ src/library/tools/Makefile.in | 10 +++++++---
+ 2 files changed, 21 insertions(+), 8 deletions(-)
 
 diff --git a/share/make/basepkg.mk b/share/make/basepkg.mk
-index c0a69c8..cf1bdd2 100644
+index c0a69c8a0a..cf1bdd236d 100644
 --- a/share/make/basepkg.mk
 +++ b/share/make/basepkg.mk
 @@ -1,5 +1,6 @@
@@ -61,10 +61,10 @@ index c0a69c8..cf1bdd2 100644
  
  
 diff --git a/src/library/tools/Makefile.in b/src/library/tools/Makefile.in
-index 786a6d7..7299435 100644
+index 08bbda3410..897216f7a3 100644
 --- a/src/library/tools/Makefile.in
 +++ b/src/library/tools/Makefile.in
-@@ -39,7 +39,10 @@ all: Makefile DESCRIPTION
+@@ -42,7 +42,10 @@ all: Makefile DESCRIPTION
  	  fi \
  	fi
  	@$(MAKE) sysdata
@@ -76,13 +76,12 @@ index 786a6d7..7299435 100644
  	  R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null
  
  mkR: mkR1
-@@ -61,9 +64,11 @@ Rsimple: mkR mkRsimple
+@@ -68,9 +71,10 @@ Rsimple: mkR mkRsimple
  
  Rlazy: mkR mkRsimple
  	@$(INSTALL_DATA) all.R $(top_builddir)/library/$(pkg)/R/$(pkg)
 -	@(cat $(srcdir)/R/makeLazyLoad.R; \
 +	R_SYSTEM_ABI='@R_SYSTEM_ABI@'
-+	$(ECHO) "R_SYSTEM_ABI is ${R_SYSTEM_ABI}"
 +	(cat $(srcdir)/R/makeLazyLoad.R; \
  	  $(ECHO) "makeLazyLoading(\"$(pkg)\")") | \
  	  R_SYSTEM_ABI='@R_SYSTEM_ABI@' \
