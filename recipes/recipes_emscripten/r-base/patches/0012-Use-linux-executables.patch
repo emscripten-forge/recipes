@@ -1,0 +1,74 @@
+From 496f0ca3cc9b71aee369d49ad0a13cae491294da Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 17 Apr 2025 16:09:46 +0200
+Subject: [PATCH 12/13] Use linux executables
+
+---
+ doc/Makefile.in         | 11 ++++++++++-
+ src/library/Makefile.in |  6 ++++++
+ src/scripts/R.sh.in     |  6 ++++++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/doc/Makefile.in b/doc/Makefile.in
+index 9405f35079..e3c56f4371 100644
+--- a/doc/Makefile.in
++++ b/doc/Makefile.in
+@@ -25,6 +25,15 @@ HELP2MAN = perl $(top_srcdir)/tools/help2man.pl
+ 
+ R_EXE = $(top_builddir)/bin/R --vanilla --no-echo
+ 
++R_SCRIPT_EXE = $(top_builddir)/bin/Rscript
++
++ifdef CROSS_COMPILING
++R_SCRIPT_EXE = $(R_SCRIPT_EXECUTABLE)
++R_EXE = R_HOME=$(top_builddir) \
++	    LD_LIBRARY_PATH=${LINUX_BUILD_DIR}/lib:${LD_LIBRARY_PATH} \
++	    R_DEFAULT_PACKAGES=NULL $(R_EXECUTABLE) --vanilla --no-echo
++endif
++
+ all: Makefile R docs
+ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
+ 	@cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+@@ -52,7 +61,7 @@ R.1:
+ Rscript.1:
+ 	@$(HELP2MAN) --no-info --output=Rscript.1 \
+ 	  --name="front end for scripting with R" \
+-	  $(top_builddir)/bin/Rscript
++	  $(R_SCRIPT_EXE)
+ 
+ NEWS.rds: $(srcdir)/NEWS.Rd
+ 	@$(ECHO) "options(warn=1);saveRDS(tools:::prepare_Rd(tools::parse_Rd(\"$(srcdir)/NEWS.Rd\", \
+diff --git a/src/library/Makefile.in b/src/library/Makefile.in
+index 7278fdae2a..92f74676a7 100644
+--- a/src/library/Makefile.in
++++ b/src/library/Makefile.in
+@@ -17,6 +17,12 @@ SUBDIRS = profile $(R_PKGS_BASE) translations Recommended
+ 
+ R_EXE = $(top_builddir)/bin/R --vanilla --no-echo
+ 
++ifdef CROSS_COMPILING
++R_EXE = R_HOME=$(top_builddir) \
++	    LD_LIBRARY_PATH=${LINUX_BUILD_DIR}/lib:${LD_LIBRARY_PATH} \
++	    R_DEFAULT_PACKAGES=NULL $(R_EXECUTABLE) --vanilla --no-echo
++endif
++
+ .SUFFIXES: .inn .Rdts .Rdh
+ 
+ all: Makefile R
+diff --git a/src/scripts/R.sh.in b/src/scripts/R.sh.in
+index cdbac8bcd7..4010d91c91 100644
+--- a/src/scripts/R.sh.in
++++ b/src/scripts/R.sh.in
+@@ -252,6 +252,12 @@ done
+ R_binary="${R_HOME}/bin/exec${R_ARCH}/R"
+ export R_ARCH
+ 
++if [ "${CROSS_COMPILING}" = "true" ] && [ -n "${RECIPE_DIR}" ] && [ -n "${WASM_BUILD_DIR}" ]; then
++  LD_LIBRARY_PATH="${LINUX_BUILD_DIR}/lib:${LD_LIBRARY_PATH}"
++  R_binary="${R_EXECUTABLE}"
++  ${RECIPE_DIR}/cross_libraries.sh --setup ${WASM_BUILD_DIR}
++fi
++
+ case "${gui}" in
+ Tk|tk|X11|x11)
+   ;;
