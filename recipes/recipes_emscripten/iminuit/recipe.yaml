@@ -1,0 +1,63 @@
+context:
+  name: iminuit
+  version: "2.31.1"
+
+package:
+  name: '${{ name|lower }}'
+  version: '${{ version }}'
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d5e004f1ffd83d2a076409fbf4a79691e7a17c9d73950bb63465af32e104de18
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - python
+    - pybind11
+    - "${{ compiler('cxx') }}"
+    - cmake >=3.15
+    - pip
+    - scikit-build-core
+  host:
+    - python
+    - pybind11
+  run:
+    - python
+    - typing_extensions
+    - numpy
+
+about:
+  homepage: https://github.com/scikit-hep/iminuit
+  license: LGPL-2.0-or-later
+  license_family: LGPL
+  license_file: LICENSE
+  summary: Interactive Minimization Tools based on MINUIT
+  description: |
+    iminuit is designed from ground up to be fast, interactive and cython
+    friendly. iminuit extract function signature very permissively starting
+    from checking func_code down to last resort of parsing docstring (or you
+    could tell iminuit to stop looking and take your answer). The interface is
+    inspired heavily by PyMinuit and the status printout is inspired by ROOT
+    Minuit. iminuit is mostly compatible with PyMinuit (with few exceptions).
+    Existing PyMinuit code can be ported to iminuit by just changing the
+    import statement.
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - scipy
+  files:
+    recipe:
+    - test_import_iminuit.py
+    
+extra:
+  recipe-maintainers:
+    - agoose77
