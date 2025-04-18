@@ -30,6 +30,8 @@ sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
 export ac_cv_header_pthread_h=no
 # Force shared libraries to build as static
 sed -i 's/SH_LDFLAGS=.*/SH_LDFLAGS=/' configure
+# Shared libraries that are dlopened are buit as side modules
+sed -i 's/DL_LDFLAGS=.*/DL_LDFLAGS=-sSIDE_MODULE=1/' configure
 
 # Forcing autotools to NOT rerun after patches
 find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
@@ -43,7 +45,7 @@ emconfigure ./configure \
    --build="${BUILD}"\
    --host="${HOST}" \
    --disable-dependency-tracking \
-   --enable-fortran-calling-convention="f2c" \
+   --enable-fortran-calling-convention="gfortran" \
    --enable-shared \
    --disable-dlopen \
    --disable-rpath \
