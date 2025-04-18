@@ -1,7 +1,7 @@
 export FLIBS="-lFortranRuntime"
-export FFLAGS="${FFLAGS} -target=wasm32-unknown-emscripten"
-export CFLAGS="${CFLAGS} -target=wasm32-unknown-emscripten"
-export CXXFLAGS="${CXXFLAGS} -target=wasm32-unknown-emscripten"
+export FFLAGS="${FFLAGS} --target=wasm32-unknown-emscripten"
+export CFLAGS="${CFLAGS} --target=wasm32-unknown-emscripten"
+export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
 
 # flang-new does not support emscripten flags.
 #
