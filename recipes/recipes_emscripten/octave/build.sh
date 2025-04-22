@@ -30,6 +30,7 @@ sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
 export ac_cv_header_pthread_h=no
 # Force shared libraries to build as static
 sed -i 's/SH_LDFLAGS=.*/SH_LDFLAGS=/' configure
+sed -i 's/shrext_cmds=.*/shrext_cmds=.wasm/' configure
 sed -i -E 's/(^|[^a-zA-Z0-9-])-shared($|[^a-zA-Z0-9-])/\1\2/g' configure
 # Shared libraries that are dlopened are buit as side modules
 sed -i 's/DL_LDFLAGS=.*/DL_LDFLAGS=-sSIDE_MODULE=1/' configure
