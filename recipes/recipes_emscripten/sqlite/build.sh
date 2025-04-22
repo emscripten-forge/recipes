@@ -6,7 +6,8 @@ echo "#!/usr/bin/env bash" > ldconfig
 chmod +x ldconfig
 export PATH=${PWD}:$PATH
 
-export EMSDK_HOME=${BUILD_PREFIX}/opt/emsdk
+export EMSDK_HOME=${BUILD_PREFIX}/opt/emsdk\
+export EMSDK=$EMSDK_HOME
 
 echo "HOST" $HOST
 echo "BUILD" $BUILD
