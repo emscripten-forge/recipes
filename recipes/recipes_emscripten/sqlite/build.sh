@@ -12,6 +12,7 @@ echo "HOST" $HOST
 echo "BUILD" $BUILD
 
 emconfigure  ./configure --prefix=${PREFIX} \
+    --host="" \
     --enable-all \
     CFLAGS="${CFLAGS} -I${PREFIX}/include -fPIC" \
     LDFLAGS="${LDFLAGS} -L${PREFIX}/lib" \
