@@ -20,6 +20,8 @@ echo "BUILD" $BUILD
 emconfigure  ./configure --prefix=${PREFIX} \
     --host="" \
     --enable-all \
+    --disable-shared \
+    --enable-static \
     CFLAGS="${CFLAGS} -I${PREFIX}/include -fPIC" \
     LDFLAGS="${LDFLAGS} -L${PREFIX}/lib" \
     CPPFLAGS="-DSQLITE_OMIT_POPEN"; \
