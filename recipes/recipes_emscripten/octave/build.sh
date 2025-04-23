@@ -4,11 +4,13 @@ export CFLAGS="${CFLAGS} --target=wasm32-unknown-emscripten"
 export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
 
 # Octave overrides xerbla
-objcopy --strip-symbol=xerbla_ "${PREFIX}/lib/liblapack.a"
+llvm-objcopy --strip-symbol=xerbla_ "${PREFIX}/lib/liblapack.a"
 # Blas should not define the following symbols
-for sym in lsame_ xerbla_ xerbla_array_; do
-    objcopy --strip-symbol="${sym}" "${PREFIX}/lib/libblas.a"
-done
+llvm-objcopy \
+    --strip-symbol=lsame_ \
+    --strip-symbol=xerbla_ \
+    --strip-symbol=xerbla_array_ \
+    "${PREFIX}/lib/libblas.a"
 
 # flang-new does not support emscripten flags.
 #
