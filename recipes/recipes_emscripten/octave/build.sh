@@ -1,17 +1,3 @@
-export FLIBS="-lFortranRuntime"
-export FFLAGS="${FFLAGS} --target=wasm32-unknown-emscripten"
-export CFLAGS="${CFLAGS} --target=wasm32-unknown-emscripten"
-export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
-
-# Octave overrides xerbla
-llvm-objcopy --strip-symbol=xerbla_ "${PREFIX}/lib/liblapack.a"
-# Blas should not define the following symbols
-llvm-objcopy \
-    --strip-symbol=lsame_ \
-    --strip-symbol=xerbla_ \
-    --strip-symbol=xerbla_array_ \
-    "${PREFIX}/lib/libblas.a"
-
 # flang-new does not support emscripten flags.
 #
 # Future solution when flang is more mature:
@@ -33,6 +19,15 @@ export F77="${PWD}/flang-new-wrap"
 
 # Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
 export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
+
+export FLIBS="-lFortranRuntime"
+export FFLAGS="${FFLAGS} --target=wasm32-unknown-emscripten"
+export CFLAGS="${CFLAGS} --target=wasm32-unknown-emscripten"
+export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
+
+# Octave overrides xerbla from Lapack.
+# Both Blas and Lapack define xerbla zerbla_array lsame.
+export LDFLAGS="${LDFLAGS} -Wl,--allow-multiple-definition"
 
 # Force disable pthread
 sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
