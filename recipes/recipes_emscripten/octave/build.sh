@@ -3,6 +3,13 @@ export FFLAGS="${FFLAGS} --target=wasm32-unknown-emscripten"
 export CFLAGS="${CFLAGS} --target=wasm32-unknown-emscripten"
 export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
 
+# Octave overrides xerbla
+objcopy --strip-symbol=xerbla_ "${PREFIX}/lib/liblapack.a"
+# Blas should not define the following symbols
+for sym in lsame_ xerbla_ xerbla_array_; do
+    objcopy --strip-symbol="${sym}" "${PREFIX}/lib/libblas.a"
+done
+
 # flang-new does not support emscripten flags.
 #
 # Future solution when flang is more mature:
@@ -31,7 +38,7 @@ export ac_cv_header_pthread_h=no
 # Force shared libraries to build as side modules
 sed -i 's/SH_LDFLAGS=.*/SH_LDFLAGS=-sSIDE_MODULE=1/' configure
 sed -i -E 's/(^|[^a-zA-Z0-9-])-shared($|[^a-zA-Z0-9-])/\1-sSIDE_MODULE=1\2/g' configure
-# Shared libraries that are dlopened are buit as side modules
+# Shared libraries that are dlopened are built as side modules
 sed -i 's/DL_LDFLAGS=.*/DL_LDFLAGS=-sSIDE_MODULE=1/' configure
 
 # Forcing autotools to NOT rerun after patches
