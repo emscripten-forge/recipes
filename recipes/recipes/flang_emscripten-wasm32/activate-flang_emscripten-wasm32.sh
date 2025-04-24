@@ -14,10 +14,8 @@ export F95=flang-new
 export F18=flang-new
 export FLANG=flang-new
 
+export FFLAGS="--target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-
-rm $PREFIX/lib/libFortranRuntime.a || true
-cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
 
 rm $BUILD_PREFIX/bin/clang || true
 ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
