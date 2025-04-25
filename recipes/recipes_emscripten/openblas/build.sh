@@ -1,6 +1,4 @@
-chmod u+x c_check
-chmod u+x f_check
-chmod u+x exports/gensymbol
+#!/bin/bash
 
 set -ex
 
