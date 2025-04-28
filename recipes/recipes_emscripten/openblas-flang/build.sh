@@ -2,7 +2,7 @@
 
 set -ex
 
-emmake make libs \
+emmake make libs netlib \
     NO_SHARED=1 \
     TARGET=RISCV64_GENERIC \
     CC=$CC \
@@ -10,7 +10,9 @@ emmake make libs \
     HOSTCC=gcc \
     USE_THREAD=0 \
     BINARY=64 \
-    LDFLAGS="${SIDE_MODULE_LDFLAGS}"
+    NO_LAPACK=0 \
+    NO_LAPACKE=0 \
+    USE_OPENMP=0
 
 emmake make install PREFIX=$PREFIX NO_SHARED=1
 
