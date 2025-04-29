@@ -1,8 +1,16 @@
 #!/bin/bash
-OLD_PYTHON=$PYTHON
-unset PYTHON
-MYPYTHON=$BUILD_PREFIX/bin/python
-PY_VER_MAJOR_MINOR=$($MYPYTHON -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))')
+
+set -ex
+
+# PYTHON_BUILD is the python executable from the build platform
+# PYTHON_HOST is the python executable from the host platform (wasm)
+# NOTE: bin/python, bin/python3, bin/python3.1, etc are symlinks to
+# bin/python3.13 or the corresponding python version
+unset PYTHON # this is PYTHON_HOST
+PYTHON_BUILD=$BUILD_PREFIX/bin/python
+PYTHON_HOST=$PREFIX/bin/python
+
+PY_VER_MAJOR_MINOR=$($PYTHON_BUILD -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))')
 
 export EMSDK_PYTHON=$BUILD_PREFIX/bin/python3
 
@@ -59,7 +67,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
     # For recipes using {{ PYTHON }}
     cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
 
-    export PYTHON=$MYPYTHON
+    export PYTHON=$PYTHON_BUILD
 
     # don't set LIBRARY_PATH
     # See https://github.com/conda-forge/matplotlib-feedstock/pull/309#issuecomment-972213735
@@ -88,7 +96,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
     fi
     rm -rf $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
     ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
-    sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $OLD_PYTHON
+    sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
     rm -f $PYTHON.bak
 
     if [[ "${PYTHONPATH}" != "" ]]; then
@@ -104,3 +112,7 @@ if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
 
 export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
+
+echo "🧿🧿🧿"
+printenv
+echo "🧿🧿🧿"
