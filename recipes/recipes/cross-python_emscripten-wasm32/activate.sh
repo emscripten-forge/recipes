@@ -10,7 +10,8 @@ unset PYTHON # this is PYTHON_HOST
 PYTHON_BUILD=$BUILD_PREFIX/bin/python
 PYTHON_HOST=$PREFIX/bin/python
 
-PY_VER_MAJOR_MINOR=$($PYTHON_BUILD -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))')
+# major.minor
+PY_VER=$($PYTHON_BUILD -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 
 # create fake python3 wasm binary
 mkdir -p $PREFIX/bin
@@ -22,14 +23,13 @@ source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.
 
 
 echo "Setting up cross-python"
-PY_VER=$($BUILD_PREFIX/bin/python -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 
 sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
 sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
 
 
-sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER_MAJOR_MINOR}/ctypes/__init__.py
+sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER}/ctypes/__init__.py
 
 
 unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
