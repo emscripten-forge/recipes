@@ -1,0 +1,21 @@
+#!/bin/bash
+
+args=()
+for arg in "$@"; do
+    if [[ "${arg}" == "-Wl,--start-group" ]]; then
+        echo "♥️♥️♥️ Skipping start groups"
+        continue
+    fi
+        if [[ "${arg}" == "-Wl,--end-group" ]]; then
+        echo "♥️♥️♥️ Skipping end groups"
+        continue
+    fi
+    if [[ "${arg}" != -s* ]]; then
+        args+=("${arg}")
+    else
+        args+=("-Wl,${arg}")
+    fi
+done
+
+# exec "echo" "NEW ARGS ${args[@]}"
+exec "flang-new" "-v" "${args[@]}"

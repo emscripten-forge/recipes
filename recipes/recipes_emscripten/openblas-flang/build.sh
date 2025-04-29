@@ -2,17 +2,14 @@
 
 set -ex
 
-emmake make libs netlib \
-    NO_SHARED=1 \
-    TARGET=RISCV64_GENERIC \
-    CC=$CC \
-    FC=$FC \
+emmake make libs shared \
+    CC=emcc \
     HOSTCC=gcc \
+    TARGET=RISCV64_GENERIC \
+    NOFORTRAN=1 \
+    NO_LAPACKE=1 \
     USE_THREAD=0 \
-    BINARY=64 \
-    NO_LAPACK=0 \
-    NO_LAPACKE=0 \
-    USE_OPENMP=0
+    LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 
 emmake make install PREFIX=$PREFIX NO_SHARED=1
 
