@@ -23,16 +23,11 @@ source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.
 
 echo "Setting up cross-python"
 PY_VER=$($BUILD_PREFIX/bin/python -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
-if [ -d "$PREFIX/lib_pypy" ]; then
-  sysconfigdata_fn=$(find "$PREFIX/lib_pypy/" -name "_sysconfigdata_*.py" -type f)
-elif [ -d "$PREFIX/lib/pypy$PY_VER" ]; then
-  sysconfigdata_fn=$(find "$PREFIX/lib/pypy$PY_VER/" -name "_sysconfigdata_*.py" -type f)
-else
-  # find "$PREFIX/lib/" -name "_sysconfigdata*.py" -not -name ${_CONDA_PYTHON_SYSCONFIGDATA_NAME}.py -type f -exec rm -f {} +
-  sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
-  envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
-  sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
-fi
+
+sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
+sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
+
 
 sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER_MAJOR_MINOR}/ctypes/__init__.py
 
@@ -65,11 +60,6 @@ echo "#!/bin/bash" > $BUILD_PREFIX/bin/python
 echo "exec $PREFIX/bin/python \"\$@\"" >> $BUILD_PREFIX/bin/python
 chmod +x $BUILD_PREFIX/bin/python
 
-if [[ -f "$PREFIX/bin/pypy" ]]; then
-  rm -rf $BUILD_PREFIX/venv/lib/pypy$PY_VER
-  mkdir -p $BUILD_PREFIX/venv/lib/python$PY_VER
-  ln -s $BUILD_PREFIX/venv/lib/python$PY_VER $BUILD_PREFIX/venv/lib/pypy$PY_VER
-fi
 
 rm -rf $BUILD_PREFIX/venv/cross
 if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
@@ -92,7 +82,3 @@ export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 
 export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
-
-echo "🧿🧿🧿"
-printenv
-echo "🧿🧿🧿"
