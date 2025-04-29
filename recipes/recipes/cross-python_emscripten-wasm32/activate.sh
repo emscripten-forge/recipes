@@ -12,14 +12,9 @@ PYTHON_HOST=$PREFIX/bin/python
 
 PY_VER_MAJOR_MINOR=$($PYTHON_BUILD -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))')
 
-export EMSDK_PYTHON=$BUILD_PREFIX/bin/python3
-
 # create fake python3 wasm binary
 mkdir -p $PREFIX/bin
 cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
-
-
-
 
 
 # this will activate emscripten in case it has not yet been activated
