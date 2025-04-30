@@ -60,8 +60,8 @@ emconfigure ./configure \
    --disable-readline \
    --disable-docs \
    --disable-java \
-   --with-blas \
-   --with-lapack \
+   --with-blas="-lopenblas" \
+   --with-lapack="-lopenblas" \
    --with-pcre2 \
    --with-pcre2-includedir="${PREFIX}/include" \
    --with-pcre2-libdir="${PREFIX}/lib" \
