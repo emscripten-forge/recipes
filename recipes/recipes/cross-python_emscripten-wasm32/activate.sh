@@ -21,15 +21,13 @@ cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
 # this will activate emscripten in case it has not yet been activated
 source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
 
+sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER}/ctypes/__init__.py
 
 echo "Setting up cross-python"
 
 sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
 sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
-
-
-sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER}/ctypes/__init__.py
 
 
 unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
