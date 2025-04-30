@@ -13,10 +13,6 @@ PYTHON_HOST=$PREFIX/bin/python
 # major.minor
 PY_VER=$($PYTHON_BUILD -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 
-# create fake python3 wasm binary
-mkdir -p $PREFIX/bin
-cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
-
 
 # this will activate emscripten in case it has not yet been activated
 source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
