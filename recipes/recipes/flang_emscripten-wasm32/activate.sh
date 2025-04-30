@@ -4,7 +4,7 @@
 # # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # # https://github.com/conda-forge/flang-feedstock/pull/69
 micromamba install -p $BUILD_PREFIX \
-    conda-forge/label/emscripten::flang==19.1.7 \
+    conda-forge/label/emscripten::flang==$PKG_VERSION \
     -y --no-channel-priority
 
 export FC=flang-new
