@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PYMAJOR_VERSION=3.13
+PY_VERSION=3.13
 
 set -euxo pipefail
 
@@ -22,7 +22,7 @@ cp ${BUILD}/LICENSE .
 # since the python build script overwrites the env variable PYTHON to python.js
 # as it assumes this is the correct name for the python binary when building for emscripten.
 # But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python<version_major>.<version_minor>
-ln -s $BUILD_PREFIX/bin/python${PYMAJOR_VERSION} $BUILD_PREFIX/bin/python.js
+ln -s $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.js
 
 # create an empty emsdk_env.sh in CONDA_EMSDK_DIR
 echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
@@ -36,7 +36,7 @@ cp ${RECIPE_DIR}/Setup.local .
 cp ${RECIPE_DIR}/adjust_sysconfig.py .
 
 # The actual build
-make 
+make
 
 # (TODO move in recipe) install libmpdec and libexpat
 cp ${BUILD}/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
@@ -44,27 +44,28 @@ cp ${BUILD}/Modules/expat/libexpat.a     $PREFIX/lib
 
 # a fake wheel command
 touch $PREFIX/bin/wheel
-# append #!/bin/bash
-
 echo "#!/bin/bash" >> $PREFIX/bin/wheel
-echo "echo \"wheel is not a supported on this platform.\"" >> $PREFIX/bin/wheel
+echo "echo \"wheel is not supported on this platform.\"" >> $PREFIX/bin/wheel
+echo "exit 1" >> $PREFIX/bin/wheel
 chmod +x $PREFIX/bin/wheel
 
 # a fake pip command
 touch $PREFIX/bin/pip
 echo "#!/bin/bash" >> $PREFIX/bin/pip
-echo "echo \"pip is not a supported on this platform.\"" >> $PREFIX/bin/pip
+echo "echo \"pip is not supported on this platform.\"" >> $PREFIX/bin/pip
+echo "exit 1" >> $PREFIX/bin/pip
 chmod +x $PREFIX/bin/pip
 
-# a fake python3 command
-touch $PREFIX/bin/python${PYMAJOR_VERSION}
-echo "#!/bin/bash" >> $PREFIX/bin/python${PYMAJOR_VERSION}
-echo "echo \"python3 is not a supported on this platform.\"" >> $PREFIX/bin/python${PYMAJOR_VERSION}
-chmod +x $PREFIX/bin/python${PYMAJOR_VERSION}
+# a fake python3.XY command
+touch $PREFIX/bin/python${PY_VERSION}
+echo "#!/bin/bash" >> $PREFIX/bin/python${PY_VERSION}
+echo "echo \"python3 is not supported on this platform.\"" >> $PREFIX/bin/python${PY_VERSION}
+echo "exit 1" >> $PREFIX/bin/python${PY_VERSION}
+chmod +x $PREFIX/bin/python${PY_VERSION}
 
-# create symlink st. all possible python3.11 commands are available
-ln -s $PREFIX/bin/python${PYMAJOR_VERSION} $PREFIX/bin/python
-ln -s $PREFIX/bin/python${PYMAJOR_VERSION} $PREFIX/bin/python3
+# create symlink st. all possible python3.XY commands are available
+ln -s $PREFIX/bin/python${PY_VERSION} $PREFIX/bin/python
+ln -s $PREFIX/bin/python${PY_VERSION} $PREFIX/bin/python3
 
 # copy sysconfigdata
 cp $PREFIX/sysconfigdata/_sysconfigdata__emscripten_wasm32-emscripten.py  $PREFIX/etc/conda/
