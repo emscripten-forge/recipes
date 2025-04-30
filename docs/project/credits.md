@@ -14,5 +14,5 @@ Many recipes, build scripts, and patches are heavily inspired by the conda-forge
 ## Contributors
 
 This project has been started by [Thorsten Beier](https://github.com/derthorsten/) and [Wolf Vollprecht](https://github.com/wolfv).
-Since then many contributors have joined the project.
+Many other have contributed to the project.
 Many thanks to [all the contributors](https://github.com/emscripten-forge/recipes/graphs/contributors) of the emscripten-forge project.
