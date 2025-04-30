@@ -26,8 +26,6 @@ sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BU
 echo "Setting up cross-python"
 
 sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
-envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
-sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
 
 
 unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
