@@ -55,20 +55,18 @@ echo "exec $PREFIX/bin/python \"\$@\"" >> $BUILD_PREFIX/bin/python
 chmod +x $BUILD_PREFIX/bin/python
 
 
-rm -rf $BUILD_PREFIX/venv/cross
+rm -r $BUILD_PREFIX/venv/cross
 if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
   rsync -a --exclude="*.so" --exclude="*.dylib" -I $PREFIX/lib/python$PY_VER/site-packages/ $BUILD_PREFIX/lib/python$PY_VER/site-packages/
 fi
-rm -rf $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
+rm -r $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
-rm -f $PYTHON.bak
 
 if [[ "${PYTHONPATH}" != "" ]]; then
   _CONDA_BACKUP_PYTHONPATH=${PYTHONPATH}
 fi
 
-unset sysconfigdata_fn
 export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 
 
