@@ -27,8 +27,6 @@ echo "Setting up cross-python"
 
 sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 
-
-unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
 $BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \
     --sysroot $PREFIX \
     --without-pip $BUILD_PREFIX/venv \
