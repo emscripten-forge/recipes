@@ -9,7 +9,7 @@ export LDFLAGS=""
 
 # Configure step
 emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
-    -DCMAKE_BUILD_TYPE=MinSizeRel                   \
+    -DCMAKE_BUILD_TYPE=Release                      \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
     -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten    \
