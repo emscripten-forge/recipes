@@ -15,7 +15,7 @@ cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
 
 
 # this will activate emscripten in case it has not yet been activated
-source $CONDA_PREFIX/etc/conda/activate.d/emscripten_emscripten-wasm32_activate.sh
+source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
 
 
 if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
