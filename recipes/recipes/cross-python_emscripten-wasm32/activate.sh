@@ -19,13 +19,8 @@ if [ -z ${EMSCRIPTEN_FORGE_PYTHON_ACTIVATED+x} ]; then
   # major.minor
   PY_VER=$($PYTHON_BUILD -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 
-
-  # this will activate emscripten in case it has not yet been activated
+  # Activate emscripten in case it has not yet been activated
   source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
-
-  # NOTE: Restore if needed
-  # sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' \
-  #   $BUILD_PREFIX/lib/python${PY_VER}/ctypes/__init__.py
 
   sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 
@@ -36,11 +31,6 @@ if [ -z ${EMSCRIPTEN_FORGE_PYTHON_ACTIVATED+x} ]; then
       --cc emcc \
       --cxx emcc
 
-  # # Undo cross-python's changes
-  # # See https://github.com/conda-forge/h5py-feedstock/pull/104
-  # rm -rf $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
-  # cp $sysconfigdata_fn $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
-
   # NOTE: cross/bin/python is a shell script that sets up the cross environment
   # For recipes using {{ PYTHON }}
   cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
@@ -50,14 +40,6 @@ if [ -z ${EMSCRIPTEN_FORGE_PYTHON_ACTIVATED+x} ]; then
   rm $BUILD_PREFIX/venv/build/bin/python
   cp $BUILD_PREFIX/bin/python $BUILD_PREFIX/venv/build/bin/python
 
-  # # For recipes looking at python on PATH
-  # rm $BUILD_PREFIX/bin/python
-  # echo "#!/bin/bash" > $BUILD_PREFIX/bin/python
-  # echo "exec $PREFIX/bin/python \"\$@\"" >> $BUILD_PREFIX/bin/python
-  # chmod +x $BUILD_PREFIX/bin/python
-
-
-  # rm -r $BUILD_PREFIX/venv/cross
   if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
     rsync -a -I --exclude="*.so" --exclude="*.dylib" \
       $PREFIX/lib/python$PY_VER/site-packages/ \
