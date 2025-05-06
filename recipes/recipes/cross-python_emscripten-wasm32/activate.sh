@@ -11,15 +11,13 @@ PYTHON_HOST=$PREFIX/bin/python
 # major.minor
 PY_VER=$($PYTHON_BUILD -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 
-# Activate emscripten in case it has not yet been activated
-source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
-
-SYSCONFIG_FILE=$PREFIX/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
-
 # NOTE: this makes changes to prefix, build_prefix, and the virtual cross env.
 # It should only be run once.
 if [[ ! -d "$BUILD_PREFIX/venv" ]]; then
   echo "⭐⭐⭐ Setting up cross-python"
+
+  SYSCONFIG_FILE=$PREFIX/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+
   $PYTHON_BUILD -m crossenv $PYTHON_HOST \
       --sysroot $PREFIX \
       --without-pip $BUILD_PREFIX/venv \
