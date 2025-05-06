@@ -24,7 +24,7 @@ source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.
 
 sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 
-$BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \
+$PYTHON_BUILD -m crossenv $PYTHON_HOST \
     --sysroot $PREFIX \
     --without-pip $BUILD_PREFIX/venv \
     --sysconfigdata-file "$sysconfigdata_fn" \
@@ -72,6 +72,5 @@ export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 
 
 # setting up flags
-
 export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
