@@ -37,6 +37,7 @@ $PYTHON_BUILD -m crossenv $PYTHON_HOST \
 # cp $sysconfigdata_fn $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
 
 # For recipes using {{ PYTHON }}
+# cross/bin/python is a shell script that sets up the environment
 cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
 
 export PYTHON=$PYTHON_BUILD
