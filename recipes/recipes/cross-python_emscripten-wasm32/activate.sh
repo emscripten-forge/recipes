@@ -7,7 +7,7 @@ set -ex # REMOVE
 # PYTHON_HOST is the python executable from the host platform (wasm)
 # NOTE: bin/python, bin/python3, bin/python3.1, etc are symlinks to
 # bin/python3.13 or the corresponding python version
-unset PYTHON # this is PYTHON_HOST
+unset PYTHON
 PYTHON_BUILD=$BUILD_PREFIX/bin/python
 PYTHON_HOST=$PREFIX/bin/python
 
@@ -52,10 +52,10 @@ cp $BUILD_PREFIX/bin/python $BUILD_PREFIX/venv/build/bin/python
 # chmod +x $BUILD_PREFIX/bin/python
 
 
-rm -r $BUILD_PREFIX/venv/cross
+# rm -r $BUILD_PREFIX/venv/cross
 if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
-  rsync -a --exclude="*.so" --exclude="*.dylib" \
-    -I $PREFIX/lib/python$PY_VER/site-packages/ \
+  rsync -a -I --exclude="*.so" --exclude="*.dylib" \
+    $PREFIX/lib/python$PY_VER/site-packages/ \
     $BUILD_PREFIX/lib/python$PY_VER/site-packages/
 fi
 
