@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Setting up the cross-python environment should only occur once
-if [ -z ${EMSCRIPTEN_FORGE_PYTHON_ACTIVATED+x} ]; then
+if [ -z ${EM_FORGE_PYTHON_ACTIVATED+x} ]; then
 
   echo "Setting up cross-python"
   set -ex # REMOVE
 
-  export EMSCRIPTEN_FORGE_PYTHON_ACTIVATED=1
+  export EM_FORGE_PYTHON_ACTIVATED=1
 
   # PYTHON_BUILD is the python executable from the build platform
   # PYTHON_HOST is the python executable from the host platform (wasm)
@@ -54,12 +54,9 @@ if [ -z ${EMSCRIPTEN_FORGE_PYTHON_ACTIVATED+x} ]; then
   if [[ "${PYTHONPATH}" != "" ]]; then
     _CONDA_BACKUP_PYTHONPATH=${PYTHONPATH}
   fi
-
   export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 
-
-  # setting up flags
+  # Set up flags
   export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
   export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
-
 fi
