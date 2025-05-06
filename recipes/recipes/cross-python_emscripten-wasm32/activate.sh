@@ -31,10 +31,10 @@ $PYTHON_BUILD -m crossenv $PYTHON_HOST \
     --cc emcc \
     --cxx emcc
 
-# Undo cross-python's changes
-# See https://github.com/conda-forge/h5py-feedstock/pull/104
-rm -rf $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
-cp $sysconfigdata_fn $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
+# # Undo cross-python's changes
+# # See https://github.com/conda-forge/h5py-feedstock/pull/104
+# rm -rf $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
+# cp $sysconfigdata_fn $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
 
 # For recipes using {{ PYTHON }}
 cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
