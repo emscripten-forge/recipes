@@ -22,12 +22,12 @@ if [ -z ${EMSCRIPTEN_FORGE_PYTHON_ACTIVATED+x} ]; then
   # Activate emscripten in case it has not yet been activated
   source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
 
-  sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+  SYSCONFIG_FILE=$PREFIX/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 
   $PYTHON_BUILD -m crossenv $PYTHON_HOST \
       --sysroot $PREFIX \
       --without-pip $BUILD_PREFIX/venv \
-      --sysconfigdata-file "$sysconfigdata_fn" \
+      --sysconfigdata-file $SYSCONFIG_FILE \
       --cc emcc \
       --cxx emcc
 
