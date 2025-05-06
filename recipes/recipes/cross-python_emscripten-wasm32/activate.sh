@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -ex
+echo "Setting up cross-python"
+set -ex # REMOVE
 
 # PYTHON_BUILD is the python executable from the build platform
 # PYTHON_HOST is the python executable from the host platform (wasm)
@@ -17,9 +18,9 @@ PY_VER=$($PYTHON_BUILD -c "import sys; print('{}.{}'.format(*sys.version_info[:2
 # this will activate emscripten in case it has not yet been activated
 source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
 
-sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER}/ctypes/__init__.py
-
-echo "Setting up cross-python"
+# NOTE: Restore if needed
+# sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' \
+#   $BUILD_PREFIX/lib/python${PY_VER}/ctypes/__init__.py
 
 sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 
@@ -53,10 +54,14 @@ chmod +x $BUILD_PREFIX/bin/python
 
 rm -r $BUILD_PREFIX/venv/cross
 if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
-  rsync -a --exclude="*.so" --exclude="*.dylib" -I $PREFIX/lib/python$PY_VER/site-packages/ $BUILD_PREFIX/lib/python$PY_VER/site-packages/
+  rsync -a --exclude="*.so" --exclude="*.dylib" \
+    -I $PREFIX/lib/python$PY_VER/site-packages/ \
+    $BUILD_PREFIX/lib/python$PY_VER/site-packages/
 fi
+
 rm -r $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
-ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
+ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages \
+      $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
 
 if [[ "${PYTHONPATH}" != "" ]]; then
