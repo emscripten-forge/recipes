@@ -36,21 +36,20 @@ $PYTHON_BUILD -m crossenv $PYTHON_HOST \
 # rm -rf $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
 # cp $sysconfigdata_fn $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
 
+# NOTE: cross/bin/python is a shell script that sets up the cross environment
 # For recipes using {{ PYTHON }}
-# cross/bin/python is a shell script that sets up the environment
 cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
-
-export PYTHON=$PYTHON_BUILD
+export PYTHON=$PYTHON_HOST
 
 # undo symlink
 rm $BUILD_PREFIX/venv/build/bin/python
 cp $BUILD_PREFIX/bin/python $BUILD_PREFIX/venv/build/bin/python
 
-# For recipes looking at python on PATH
-rm $BUILD_PREFIX/bin/python
-echo "#!/bin/bash" > $BUILD_PREFIX/bin/python
-echo "exec $PREFIX/bin/python \"\$@\"" >> $BUILD_PREFIX/bin/python
-chmod +x $BUILD_PREFIX/bin/python
+# # For recipes looking at python on PATH
+# rm $BUILD_PREFIX/bin/python
+# echo "#!/bin/bash" > $BUILD_PREFIX/bin/python
+# echo "exec $PREFIX/bin/python \"\$@\"" >> $BUILD_PREFIX/bin/python
+# chmod +x $BUILD_PREFIX/bin/python
 
 
 rm -r $BUILD_PREFIX/venv/cross
