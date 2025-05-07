@@ -50,7 +50,7 @@ emconfigure ./configure \
    --build="${BUILD}"\
    --host="${HOST}" \
    --disable-dependency-tracking \
-   --enable-fortran-calling-convention="gfortran" \
+   --enable-fortran-calling-convention="f2c" \
    --enable-shared \
    --disable-dlopen \
    --disable-rpath \
