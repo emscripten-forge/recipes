@@ -38,6 +38,10 @@ sed -i -E 's/(^|[^a-zA-Z0-9-])-shared($|[^a-zA-Z0-9-])/\1-sSIDE_MODULE=1\2/g' co
 # Shared libraries that are dlopened are built as side modules
 sed -i 's/DL_LDFLAGS=.*/DL_LDFLAGS=-sSIDE_MODULE=1/' configure
 
+# We mix F2C calling convention with void return to try to match OpenBlas
+sed -i 's/#define F77_RET_T.*/#define F77_RET_T void/' liboctave/util/f77-fcn.h
+sed -i 's/#define F77_RETURN.*/#define F77_RETURN(retval) return;/' liboctave/util/f77-fcn.h
+
 # Forcing autotools to NOT rerun after patches
 find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
 
