@@ -8,7 +8,7 @@ emcmake cmake       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DXWIDGETS_BUILD_SHARED_LIBS=ON \
     -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_FIND_ROOT_PATH=$PREFIX \ 
+    -DCMAKE_FIND_ROOT_PATH=$PREFIX \
     ..
 
 # Build step
