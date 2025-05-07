@@ -52,6 +52,7 @@ emconfigure ./configure \
    --disable-dependency-tracking \
    --enable-fortran-calling-convention="f2c" \
    --enable-shared \
+   --disable-64 \
    --disable-dlopen \
    --disable-rpath \
    --disable-openmp \
