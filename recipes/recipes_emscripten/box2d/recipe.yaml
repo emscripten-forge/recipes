@@ -2,25 +2,60 @@ context:
   name: box2d
   version: 3.1
 
-package:
-  name: ${{ name|lower }}
-  version: ${{ version }}
+recipe:
+  name: box2d-split
 
 source:
   # url: https://github.com/erincatto/box2d/archive/refs/tags/v${{ version }}.tar.gz
   # sha256: 7fac19801485efb31ee3745b2284d9d4601f9e8138a3383a7b0df6d788ea5785
   git: https://github.com/erincatto/box2d
-  branch: main
+  rev: 0f2b0246f39594e93fcc8dde0fe0bb1b20b403f9
+
 
 build:
   number: 0
 
-requirements:
-  build:
-  - ${{ compiler('cxx') }}
-  - cmake
-  - ninja
+outputs:
+  - package:
+      name: ${{ name|lower }}-static
+      version: ${{ version }}
 
+    build:
+      script: build_static.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+      - cmake
+      - ninja
+    
+    tests:
+      - package_contents:
+          include:
+            - box2d/box2d.h
+          lib:
+            - libbox2d.a
+          files:
+            - lib/cmake/box2d/box2dConfig.cmake
+  - package:
+      name: ${{ name|lower }}
+      version: ${{ version }}
+
+    build:
+      script: build_shared.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+      - cmake
+      - ninja
+    
+    tests:
+      - package_contents:
+          include:
+            - box2d/box2d.h
+          lib:
+            - libbox2d.so
+          files:
+            - lib/cmake/box2d/box2dConfig.cmake
 about:
   homepage: https://box2d.org/
   license: MIT
