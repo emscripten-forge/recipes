@@ -10,6 +10,7 @@ cmake ${CMAKE_ARGS} ..             \
     -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DBOX2D_SAMPLES=OFF            \
+    -DBUILD_SHARED_LIBS=OFF        \
     -DBOX2D_UNIT_TESTS=OFF                       
 
 # Build step
