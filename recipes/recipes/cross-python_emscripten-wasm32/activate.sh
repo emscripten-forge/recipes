@@ -38,6 +38,11 @@ if [[ ! -d "$BUILD_PREFIX/venv" ]]; then
       $BUILD_PREFIX/lib/python$PY_VER/site-packages/
   fi
 
+  # Sync python headers from prefix into build_prefix
+  if [[ -d "$PREFIX/include/python$PY_VER" ]]; then
+    rsync -a -I -r $PREFIX/include/python$PY_VER $BUILD_PREFIX/include/python$PY_VER
+  fi
+
   # Point the cross env to the freshly synced packages in build_prefix
   rm -r $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
   ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages \
