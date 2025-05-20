@@ -1,0 +1,71 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8886cda..49519fe 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -18,9 +18,12 @@ set(XTENSOR_BLAS_INCLUDE_DIR ${INCLUDE_DIR})
+ 
+ # TODO: use the library directory of the found BLAS implementation instead of
+ # CMAKE_INSTALL_LIBDIR
+-set(XTENSOR_BLAS_CLING_LIBRARY_DIR_64 "\"${CMAKE_INSTALL_PREFIX}/lib64\"")
+-set(XTENSOR_BLAS_CLING_LIBRARY_DIR_32 "\"${CMAKE_INSTALL_PREFIX}/lib32\"")
+-set(XTENSOR_BLAS_CLING_LIBRARY_DIR "\"${CMAKE_INSTALL_PREFIX}/lib\"")
++# set(XTENSOR_BLAS_CLING_LIBRARY_DIR_64 "\"${CMAKE_INSTALL_PREFIX}/lib64\"")
++# set(XTENSOR_BLAS_CLING_LIBRARY_DIR_32 "\"${CMAKE_INSTALL_PREFIX}/lib32\"")
++# set(XTENSOR_BLAS_CLING_LIBRARY_DIR "\"${CMAKE_INSTALL_PREFIX}/lib\"")
++
++set(OPENBLAS_CPPINTEROP_LIBRARY_PATH "\"/lib/${CMAKE_SHARED_LIBRARY_PREFIX}openblas${CMAKE_SHARED_LIBRARY_SUFFIX}\"")
++message(STATUS "OPENBLAS_CPPINTEROP_LIBRARY_PATH = ${OPENBLAS_CPPINTEROP_LIBRARY_PATH}")
+ 
+ configure_file (
+     "${INCLUDE_DIR}/xtensor-blas/xblas_config_cling.hpp.in"
+@@ -85,7 +88,7 @@ OPTION(XTENSOR_USE_FLENS_BLAS "use FLENS generic implementation instead of cblas
+ # would be enough to detect OpenBLAS.
+ # If that is not the case, one can pass OpenBLAS_DIR without the boolean
+ # toggle.
+-OPTION(USE_OPENBLAS "use OpenBLAS (requires suitable OpenBLASConfig.cmake)" OFF)
++OPTION(USE_OPENBLAS "use OpenBLAS (requires suitable OpenBLASConfig.cmake)" ON)
+ if(OpenBLAS_DIR)
+   set(USE_OPENBLAS ON)
+ endif()
+diff --git a/include/xtensor-blas/xblas_config.hpp b/include/xtensor-blas/xblas_config.hpp
+index a7e319b..b53e291 100644
+--- a/include/xtensor-blas/xblas_config.hpp
++++ b/include/xtensor-blas/xblas_config.hpp
+@@ -26,7 +26,7 @@
+ #define BLAS_IDX int
+ #endif
+ 
+-#ifdef __CLING__
++#if defined(__CLANG_REPL__)
+ #include "xtensor-blas/xblas_config_cling.hpp"
+ #endif
+ 
+diff --git a/include/xtensor-blas/xblas_config_cling.hpp.in b/include/xtensor-blas/xblas_config_cling.hpp.in
+index 85b496a..323ed3c 100644
+--- a/include/xtensor-blas/xblas_config_cling.hpp.in
++++ b/include/xtensor-blas/xblas_config_cling.hpp.in
+@@ -10,16 +10,19 @@
+ #ifndef XBLAS_CONFIG_CLING_HPP
+ #define XBLAS_CONFIG_CLING_HPP
+ 
+-#pragma cling add_library_path(@XTENSOR_BLAS_CLING_LIBRARY_DIR_64@)
+-#pragma cling add_library_path(@XTENSOR_BLAS_CLING_LIBRARY_DIR_32@)
+-#pragma cling add_library_path(@XTENSOR_BLAS_CLING_LIBRARY_DIR@)
++// #pragma cling add_library_path(@XTENSOR_BLAS_CLING_LIBRARY_DIR_64@)
++// #pragma cling add_library_path(@XTENSOR_BLAS_CLING_LIBRARY_DIR_32@)
++// #pragma cling add_library_path(@XTENSOR_BLAS_CLING_LIBRARY_DIR@)
+ 
+ #ifndef XTENSOR_USE_FLENS_BLAS
+ 
+ #define HAVE_CBLAS 1
+ 
+-#pragma cling load("libblas")
+-#pragma cling load("liblapack")
++#include "clang/Interpreter/CppInterOp.h"
++static bool _openblas_loaded = []() {
++    Cpp::LoadLibrary(@OPENBLAS_CPPINTEROP_LIBRARY_PATH@, false);
++    return true;
++}();
+ 
+ #endif
+ 
