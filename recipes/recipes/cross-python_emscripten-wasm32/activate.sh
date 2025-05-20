@@ -49,7 +49,14 @@ if [[ ! -d "$BUILD_PREFIX/venv" ]]; then
         $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
   sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
 
+  # Copy the sysconfigdata file
+  rm $BUILD_PREFIX/venv/lib/_sysconfigdata__emscripten_wasm32-emscripten.py
+  cp $SYSCONFIG_FILE $BUILD_PREFIX/venv/lib
+  cp $SYSCONFIG_FILE $BUILD_PREFIX/lib/python$PY_VER
+
 fi
+
+export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata__emscripten_wasm32-emscripten"
 
 if [[ "${PYTHONPATH}" != "" ]]; then
   _CONDA_BACKUP_PYTHONPATH=${PYTHONPATH}
