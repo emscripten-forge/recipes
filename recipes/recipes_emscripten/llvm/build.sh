@@ -1,18 +1,19 @@
-(
-    mkdir native_build
-    cd native_build
-    unset CMAKE_TOOLCHAIN_FILE
-    cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD=host -DCMAKE_BUILD_TYPE=Release ../llvm/
-    cmake --build . --target llvm-tblgen clang-tblgen --parallel $(nproc --all)
-    export NATIVE_DIR=$PWD/bin/
-    cd ..
-)
+mkdir native_build
+cd native_build
+export TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE
+export CMAKE_TOOLCHAIN_FILE = ""
+cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD=host -DCMAKE_BUILD_TYPE=Release ../llvm/
+cmake --build . --target llvm-tblgen clang-tblgen --parallel $(nproc --all)
+export NATIVE_DIR=$PWD/bin/
+cd ..
+
 
 mkdir build
 cd build
 
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
+export CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE
 
 # clear LDFLAGS flags because they contain sWASM_BIGINT
 export LDFLAGS=""
