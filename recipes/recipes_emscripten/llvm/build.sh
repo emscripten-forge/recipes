@@ -1,7 +1,9 @@
 mkdir native_build
 cd native_build
 export TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE
+export CROSSCOMPILING_EMULATOR=$CMAKE_CROSSCOMPILING_EMULATOR
 export CMAKE_TOOLCHAIN_FILE=""
+export CMAKE_CROSSCOMPILING_EMULATOR=""
 cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD=host -DCMAKE_BUILD_TYPE=Release ../llvm/
 cmake --build . --target llvm-tblgen clang-tblgen --parallel $(nproc --all)
 export NATIVE_DIR=$PWD/bin/
@@ -14,6 +16,7 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 export CMAKE_TOOLCHAIN_FILE=$TOOLCHAIN_FILE
+export CMAKE_CROSSCOMPILING_EMULATOR=$CROSSCOMPILING_EMULATOR
 
 # clear LDFLAGS flags because they contain sWASM_BIGINT
 export LDFLAGS=""
