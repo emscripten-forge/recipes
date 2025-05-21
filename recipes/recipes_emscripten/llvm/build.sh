@@ -1,7 +1,7 @@
 mkdir native_build
 cd native_build
 export TOOLCHAIN_FILE=$CMAKE_TOOLCHAIN_FILE
-export CMAKE_TOOLCHAIN_FILE = ""
+export CMAKE_TOOLCHAIN_FILE=""
 cmake -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD=host -DCMAKE_BUILD_TYPE=Release ../llvm/
 cmake --build . --target llvm-tblgen clang-tblgen --parallel $(nproc --all)
 export NATIVE_DIR=$PWD/bin/
