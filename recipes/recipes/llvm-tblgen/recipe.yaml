@@ -2,36 +2,27 @@ context:
   version: 20.1.5
 
 package:
-  name: llvm
+  name: llvm-tblgen
   version: ${{ version }}
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version
     }}.tar.gz
   sha256: 205c436f93a7e185cf9d63ae57e645f23561a4d1bf854f2c5bd78995a43a5c05
-  patches:
-  - patches/shift_temporary_files_to_tmp_dir.patch
-  - patches/enable_exception_handling.patch
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
-  - ${{ compiler("c") }}
-  - ${{ compiler("cxx") }}
   - cmake
   - make    # [unix]
-  - llvm-tblgen
   
 tests:
 - package_contents:
     files:
-    - lib/cmake/llvm/LLVMConfig.cmake
-    - lib/cmake/clang/ClangConfig.cmake
-    - lib/cmake/lld/LLDConfig.cmake
-    - lib/liblldWasm.a
-    - lib/libclangInterpreter.a
+    - bin/llvm-tblgen
+    - bin/clang-tblgen
 
 about:
   license: Apache-2.0 WITH LLVM-exception
@@ -40,6 +31,7 @@ about:
   summary: The LLVM Project is a collection of modular and reusable compiler and toolchain
     technologies.
   homepage: https://llvm.org
+
 extra:
   recipe-maintainers:
   - DerThorsten
