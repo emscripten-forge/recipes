@@ -2,9 +2,8 @@
 
 # deactivation script
 TASK="deactivate"
-ls $RECIPE_DIR
 chmod +x ${RECIPE_DIR}/${TASK}.sh
-.${RECIPE_DIR}/${TASK}.sh
+bash ${RECIPE_DIR}/${TASK}.sh
 
 mkdir native_build
 cd native_build
@@ -20,7 +19,7 @@ cd ..
 # activation script
 TASK="activate"
 chmod +x ${RECIPE_DIR}/${TASK}.sh
-.${RECIPE_DIR}/${TASK}.sh
+bash ${RECIPE_DIR}/${TASK}.sh
 
 mkdir build
 cd build
