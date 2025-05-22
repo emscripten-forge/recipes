@@ -2,6 +2,7 @@
 
 # deactivation script
 TASK="deactivate"
+ls $RECIPE_DIR
 chmod +x ${RECIPE_DIR}/${TASK}.sh
 .${RECIPE_DIR}/${TASK}.sh
 
