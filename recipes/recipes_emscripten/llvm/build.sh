@@ -9,8 +9,6 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 # clear LDFLAGS flags because they contain sWASM_BIGINT
 export LDFLAGS=""
 
-ls -la $BUILD_PREFIX/bin
-
 # Configure step
 emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCMAKE_BUILD_TYPE=Release                      \
