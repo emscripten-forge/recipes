@@ -1,0 +1,48 @@
+From d3041181bb95c94bb6569fffc5bf1fedfabcdf8f Mon Sep 17 00:00:00 2001
+From: Sylvain Corlay <sylvain.corlay@gmail.com>
+Date: Fri, 23 May 2025 20:28:10 -0400
+Subject: [PATCH] Update rich rendering of symengine
+
+---
+ symengine/expression.h | 13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/symengine/expression.h b/symengine/expression.h
+index 5d0c63e73..bfdc26398 100644
+--- a/symengine/expression.h
++++ b/symengine/expression.h
+@@ -341,16 +341,14 @@ struct print_coefficient_impl<U, typename std::enable_if<std::is_same<
+ } // namespace piranha
+ #endif // HAVE_SYMENGINE_PIRANHA
+ 
+-// Utility functions for xeus-cling
+-namespace SymEngine
+-{
+-
+-#ifdef __CLING__
++// Utility functions for xeus-cpp
++#ifdef defined(__CLANG_REPL__)
+ // clang-format off
+ #if defined(__has_include) && __has_include(<nlohmann/json.hpp>)
+ // clang-format on
+ #include <nlohmann/json.hpp>
+-
++namespace SymEngine
++{
+ inline nlohmann::json mime_bundle_repr(const Expression &i)
+ {
+     auto bundle = nlohmann::json::object();
+@@ -358,9 +356,8 @@ inline nlohmann::json mime_bundle_repr(const Expression &i)
+     bundle["text/latex"] = "$" + latex(i) + "$";
+     return bundle;
+ }
++} // namespace SymEngine
+ #endif
+ #endif
+ 
+-} // namespace SymEngine
+-
+ #endif // SYMENGINE_EXPRESSION_H
+-- 
+2.39.3 (Apple Git-145)
+
