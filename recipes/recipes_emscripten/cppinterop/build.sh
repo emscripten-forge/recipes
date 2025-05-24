@@ -12,6 +12,7 @@ emcmake cmake -DCMAKE_BUILD_TYPE=Release               \
     -DClang_DIR=$PREFIX/lib/cmake/clang                \
     -DBUILD_SHARED_LIBS=ON                             \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                     \
+    -DCPPINTEROP_ENABLE_TESTING=OFF                    \
     ../
 
 # Build step
