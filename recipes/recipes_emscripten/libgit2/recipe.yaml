@@ -1,0 +1,38 @@
+context:
+  name: libgit2
+  version: 1.9.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ name }}/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 75b27d4d6df44bd34e2f70663cfd998f5ec41e680e1e593238bbe517a84c7ed2
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+    - pkg-config
+
+tests:
+  - script:
+    - test -f ${PREFIX}/bin/git2.js
+    - test -f ${PREFIX}/bin/git2.wasm
+    - test -f ${PREFIX}/include/git2.h
+    - test -f ${PREFIX}/lib/libgit2.a
+    - test -f ${PREFIX}/lib/pkgconfig/libgit2.pc
+
+about:
+  homepage: https://github.com/libgit2/libgit2
+  license: GPL-2.0
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - ianthomas23
