@@ -15,7 +15,8 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
     -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=ON                    \
     -DCMAKE_FIND_ROOT_PATH=$PREFIX                         \
-    -DSYSROOT_PATH=$SYSROOT_PATH
+    -DSYSROOT_PATH=$SYSROOT_PATH                           \
+    -DXEUS_CPP_BUILD_TESTS=OFF
 
 # Build step with emmake
 emmake make -j1
