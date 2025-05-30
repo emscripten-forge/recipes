@@ -8,21 +8,24 @@ package:
 source:
   url: https://github.com/jupyter-xeus/xeus/archive/refs/tags/${{ version }}.tar.gz
   sha256: c94008416ae5a54b1fee80a004ecea70cd041e6bd5942e6acebcb878b96c1ec1
+  patches:
+  - patches/shared.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - cmake
-  - ninja
+  - make
   host:
   - nlohmann_json
 
 tests:
 - script:
   - test -f $PREFIX/lib/libxeus.a
+  - test -f $PREFIX/lib/libxeus.so
   - test -f $PREFIX/include/xeus/xeus.hpp
 about:
   license: BSD-3-Clause
