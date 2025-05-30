@@ -1,0 +1,27 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index a8147d3..f3a99c6 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -59,8 +59,12 @@ option(XEUS_BUILD_TESTS "xeus test suite" OFF)
+ # ===================================
+ 
+ if(EMSCRIPTEN)
+-    SET(XEUS_BUILD_SHARED_LIBS OFF)
+-    SET(XEUS_BUILD_STATIC_LIBS ON)
++    SET(XEUS_BUILD_SHARED_LIBS ON)
++    SET(XEUS_BUILD_STATIC_LIBS OFF)
++    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++    set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_STRIP FALSE)
+ endif()
+ 
+ # Print build configuration
+@@ -173,6 +177,7 @@ macro(xeus_create_target target_name linkage output_name)
+         ${target_name}
+         PUBLIC nlohmann_json::nlohmann_json
+     )
++    set_target_properties(${target_name} PROPERTIES NO_SONAME 1)
+ 
+     if (NOT MSVC AND NOT EMSCRIPTEN)
+         if (APPLE)
