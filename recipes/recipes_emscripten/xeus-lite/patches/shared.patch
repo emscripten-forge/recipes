@@ -1,0 +1,56 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index aade34c..76f8613 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -33,6 +33,7 @@ message(STATUS "xeus-lite version: v${XEUS_LITE_VERSION}")
+ 
+ # Build options
+ # =============
++option(XEUS_LITE_USE_SHARED_XEUS "Link with the xeus shared library (instead of the static library)" ON)
+ 
+ # Test options
+ option(XEUS_LITE_BUILD_NODE_TESTS          "xeus-lite test suite (node)" OFF)
+@@ -49,11 +50,16 @@ endif()
+ # Print build configuration
+ # ==========================
+ 
+-message(STATUS "XEUS_LITE_BUILD_NODE_TESTS:                ${XEUS_LITE_BUILD_NODE_TESTS}")  
++message(STATUS "XEUS_LITE_USE_SHARED_XEUS:                ${XEUS_LITE_USE_SHARED_XEUS}")
++message(STATUS "XEUS_LITE_BUILD_NODE_TESTS:                ${XEUS_LITE_BUILD_NODE_TESTS}")
+ 
+ # Dependencies
+ # ============
+ 
++if(EMSCRIPTEN AND XEUS_LITE_USE_SHARED_XEUS)
++    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++endif()
++
+ set(xeus_REQUIRED_VERSION 5.0.0)
+ 
+ if (NOT TARGET xeus)
+@@ -86,10 +92,21 @@ target_include_directories(
+     PUBLIC $<BUILD_INTERFACE:${XEUS_LITE_INCLUDE_DIR}>
+     $<INSTALL_INTERFACE:include>
+ )
+-target_link_libraries(
+-    xeus-lite
+-    PUBLIC xeus-static
+-)
++if(XEUS_LITE_USE_SHARED_XEUS)
++    message(STATUS "Linking xeus-lite with shared xeus target")
++    if(TARGET xeus)
++        target_link_libraries(xeus-lite PRIVATE xeus)
++    else()
++        message(FATAL_ERROR "XEUS_LITE_USE_SHARED_XEUS is ON but 'xeus' target not found")
++    endif()
++else()
++    message(STATUS "Linking xeus-lite with static xeus target")
++    if(TARGET xeus-static)
++        target_link_libraries(xeus-lite PRIVATE xeus-static)
++    else()
++        message(FATAL_ERROR "XEUS_LITE_USE_SHARED_XEUS is OFF but 'xeus-static' target not found")
++    endif()
++endif()
+ 
+ set_target_properties(
+     xeus-lite
