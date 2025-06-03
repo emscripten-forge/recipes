@@ -1,106 +1,69 @@
 #!/bin/bash
-OLD_PYTHON=$PYTHON
+
+# bin/python, bin/python3, bin/python3.1, etc are symlinks to bin/python3.13
+# or the corresponding python version
 unset PYTHON
-MYPYTHON=$BUILD_PREFIX/bin/python
-PY_VER_MAJOR_MINOR=$($MYPYTHON -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))')
+PYTHON_BUILD=$BUILD_PREFIX/bin/python
+PYTHON_HOST=$PREFIX/bin/python
 
-export EMSDK_PYTHON=$BUILD_PREFIX/bin/python3
+# major.minor
+PY_VER=$($PYTHON_BUILD -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 
-# create fake python3 wasm binary
-mkdir -p $PREFIX/bin
-cp $BUILD_PREFIX/bin/python3 $PREFIX/bin
+# WARNING: this makes changes to prefix, build_prefix, and the virtual cross env.
+# It should only be run once.
+if [[ ! -d "$BUILD_PREFIX/venv" ]]; then
+  echo "Setting up cross-python environment"
 
+  SYSCONFIG_FILE=$PREFIX/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
 
+  $PYTHON_BUILD -m crossenv $PYTHON_HOST \
+      --sysroot $PREFIX \
+      --without-pip $BUILD_PREFIX/venv \
+      --sysconfigdata-file $SYSCONFIG_FILE \
+      --cc emcc \
+      --cxx emcc
 
+  # cross/bin/python is a shell script that sets up the cross environment
+  # This becomes the ${PYTHON} executable used in package recipes
+  cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
 
+  # Undo symlink to build_prefix python
+  rm $BUILD_PREFIX/venv/build/bin/python
+  cp $BUILD_PREFIX/bin/python $BUILD_PREFIX/venv/build/bin/python
 
-# this will activate emscripten in case it has not yet been activated
-source $CONDA_PREFIX/etc/conda/activate.d/activate_emscripten_emscripten-wasm32.sh
-
-
-if [[ "${CONDA_BUILD:-0}" == "1" && "${CONDA_BUILD_STATE}" != "TEST" ]]; then
-  echo "Setting up cross-python"
-  PY_VER=$($BUILD_PREFIX/bin/python -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
-  if [ -d "$PREFIX/lib_pypy" ]; then
-    sysconfigdata_fn=$(find "$PREFIX/lib_pypy/" -name "_sysconfigdata_*.py" -type f)
-  elif [ -d "$PREFIX/lib/pypy$PY_VER" ]; then
-    sysconfigdata_fn=$(find "$PREFIX/lib/pypy$PY_VER/" -name "_sysconfigdata_*.py" -type f)
-  else
-    # find "$PREFIX/lib/" -name "_sysconfigdata*.py" -not -name ${_CONDA_PYTHON_SYSCONFIGDATA_NAME}.py -type f -exec rm -f {} +
-    sysconfigdata_fn=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
-    envsubst < $sysconfigdata_fn >${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
-    sysconfigdata_fn=${BUILD_PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten_new.py
+  # Sync wasm packages from prefix into build_prefix
+  if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
+    rsync -a -I --exclude="*.so" --exclude="*.dylib" \
+      $PREFIX/lib/python$PY_VER/site-packages/ \
+      $BUILD_PREFIX/lib/python$PY_VER/site-packages/
   fi
-  # decho "build_time_vars['LDFLAGS'] = build_time_vars['LDSHARED'] " >> $sysconfigdata_fn 
 
-  # sed -i 's/-lffi/ /g' $sysconfigdata_fn
-  # sed -i 's/-lz/ /g' $sysconfigdata_fn
-  # sed -i 's/-fdiagnostics-color=always/ /g' $sysconfigdata_fn
-  # tail -3 $sysconfigdata_fn
-
-  sed -i 's/if _os.name == "posix" and _sys.platform == "darwin":/if False:/g' $BUILD_PREFIX/lib/python${PY_VER_MAJOR_MINOR}/ctypes/__init__.py
-
-
-  unset _CONDA_PYTHON_SYSCONFIGDATA_NAME
-  # if [[ ! -d $BUILD_PREFIX/venv ]]; then
-    $BUILD_PREFIX/bin/python3 -m crossenv $PREFIX/bin/python3 \
-        --sysroot $PREFIX \
-        --without-pip $BUILD_PREFIX/venv \
-        --sysconfigdata-file "$sysconfigdata_fn" \
-        --cc emcc \
-        --cxx emcc
-    # CONDA_BUILD_SYSROOT
-
-    # Undo cross-python's changes
-    # See https://github.com/conda-forge/h5py-feedstock/pull/104
-    rm -rf $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
-    cp $sysconfigdata_fn $BUILD_PREFIX/venv/lib/$(basename $sysconfigdata_fn)
-
-    # For recipes using {{ PYTHON }}
-    cp $BUILD_PREFIX/venv/cross/bin/python $PREFIX/bin/python
-
-    export PYTHON=$MYPYTHON
-
-    # don't set LIBRARY_PATH
-    # See https://github.com/conda-forge/matplotlib-feedstock/pull/309#issuecomment-972213735
-    # sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python        || true
-    # sed -i 's/extra_envs = .*/extra_envs = []/g' $PREFIX/bin/python$PY_VER || true
-
-    # undo symlink
-    rm $BUILD_PREFIX/venv/build/bin/python
-    cp $BUILD_PREFIX/bin/python $BUILD_PREFIX/venv/build/bin/python
-
-    # For recipes looking at python on PATH
-    rm $BUILD_PREFIX/bin/python
-    echo "#!/bin/bash" > $BUILD_PREFIX/bin/python
-    echo "exec $PREFIX/bin/python \"\$@\"" >> $BUILD_PREFIX/bin/python
-    chmod +x $BUILD_PREFIX/bin/python
-
-    if [[ -f "$PREFIX/bin/pypy" ]]; then
-      rm -rf $BUILD_PREFIX/venv/lib/pypy$PY_VER
-      mkdir -p $BUILD_PREFIX/venv/lib/python$PY_VER
-      ln -s $BUILD_PREFIX/venv/lib/python$PY_VER $BUILD_PREFIX/venv/lib/pypy$PY_VER
-    fi
-
-    rm -rf $BUILD_PREFIX/venv/cross
-    if [[ -d "$PREFIX/lib/python$PY_VER/site-packages/" ]]; then
-      rsync -a --exclude="*.so" --exclude="*.dylib" -I $PREFIX/lib/python$PY_VER/site-packages/ $BUILD_PREFIX/lib/python$PY_VER/site-packages/
-    fi
-    rm -rf $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
-    ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
-    sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $OLD_PYTHON
-    rm -f $PYTHON.bak
-
-    if [[ "${PYTHONPATH}" != "" ]]; then
-      _CONDA_BACKUP_PYTHONPATH=${PYTHONPATH}
-    fi
+  # Sync python headers from prefix into build_prefix
+  if [[ -d "$PREFIX/include/python$PY_VER" ]]; then
+    rsync -a -I -r $PREFIX/include/python$PY_VER $BUILD_PREFIX/include/python$PY_VER
   fi
-  unset sysconfigdata_fn
-  export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 
-# fi
+  # Point the cross env to the freshly synced packages in build_prefix
+  rm -r $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
+  ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages \
+        $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
+  sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
 
-# setting up flags
+  # Copy the sysconfigdata file
+  rm $BUILD_PREFIX/venv/lib/_sysconfigdata__emscripten_wasm32-emscripten.py
+  cp $SYSCONFIG_FILE $BUILD_PREFIX/venv/lib
+  cp $SYSCONFIG_FILE $BUILD_PREFIX/lib/python$PY_VER
 
+fi
+
+export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata__emscripten_wasm32-emscripten"
+
+if [[ "${PYTHONPATH}" != "" ]]; then
+  _CONDA_BACKUP_PYTHONPATH=${PYTHONPATH}
+fi
+export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
+export PYTHON=$PYTHON_HOST # This should be a script to set up the cross env
+
+# Set up flags
 export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
