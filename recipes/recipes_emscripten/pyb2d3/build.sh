@@ -36,8 +36,5 @@ ninja
 
 
 
-# make python side-package pyb2d
-mkdir -p $PREFIX/lib/python3.13/site-packages/pyb2d
-
-# copy $SRC_DIR/src/module/pyb2d to $PREFIX/lib/python3.13/site-packages/pyb2d
-cp -r $SRC_DIR/src/module/pyb2d         $PREFIX/lib/python3.13/site-packages/
+mkdir -p $PREFIX/lib/python3.13/site-packages/pyb2d3
+cp -r $SRC_DIR/src/module/pyb2d3 $PREFIX/lib/python3.13/site-packages/
