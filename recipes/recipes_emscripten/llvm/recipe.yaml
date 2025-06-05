@@ -1,5 +1,5 @@
 context:
-  version: 20.1.4
+  version: 20.1.6
 
 package:
   name: llvm
@@ -8,15 +8,16 @@ package:
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version
     }}.tar.gz
-  sha256: 65e3a582c4c684fa707a56ff643427bce3633eceaceae3295d81c0e830f44b89
+  sha256: afa487c401613f5e4a35935b2abfb5d07e6ebfa20df32787e34a5c7e97c6ea4b
   patches:
-  - patches/cross_compile.patch
   - patches/shift_temporary_files_to_tmp_dir.patch
-  - patches/wasm-ld.patch
   - patches/enable_exception_handling.patch
+  - patches/fix_initialization_logs.patch
+  - patches/fix_transitive_headers.patch
+  - patches/fix_clang_keywords.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -24,6 +25,7 @@ requirements:
   - ${{ compiler("cxx") }}
   - cmake
   - make    # [unix]
+  - llvm-tblgen
 
 tests:
 - package_contents:
