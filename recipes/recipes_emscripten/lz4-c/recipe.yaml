@@ -1,0 +1,52 @@
+context:
+  pkg_name: lz4-c
+  name: lz4
+  version: 1.10.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/{{ name }}/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: 537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - make
+    - patch
+  script: build.sh
+  host:
+    - {{ pin_subpackage('lz4-c', exact=True) }}
+  run:
+    - {{ pin_subpackage('lz4-c', exact=True) }}
+
+tests:
+  files:
+    - test_static_cmake
+  commands:
+    - test -f ${PREFIX}/lib/liblz4.a
+
+about:
+  home: https://www.lz4.org
+  dev_url: https://github.com/lz4/lz4
+  license: BSD-2-Clause
+  license_file: lib/LICENSE
+  summary: Extremely Fast Compression algorithm
+  description: |
+    LZ4 is lossless compression algorithm, providing compression speed at 400
+    MB/s per core (0.16 Bytes/cycle). It features an extremely fast decoder,
+    with speed in multiple GB/s per core (0.71 Bytes/cycle). A high compression
+    derivative, called LZ4_HC, is available, trading customizable CPU time for
+    compression ratio. LZ4 library is provided as open source software using a
+    BSD license.
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
