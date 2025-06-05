@@ -10,8 +10,6 @@ package:
 source:
   url: https://github.com/${{ name }}/${{ name }}/archive/v${{ version }}.tar.gz
   sha256: 537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b
-  #patches:
-  #- patches/CVE-2021-3520.patch
 
 build:
   number: 1
@@ -19,20 +17,17 @@ build:
 requirements:
   build:
     - ${{ compiler('c') }}
-    #- ${{ stdlib("c") }}
     - ${{ compiler('cxx') }}
     - make
     - patch
-  #host:
-  #  - ${{ pin_subpackage('lz4-c', exact=True) }}
   run:
     - ${{ pin_subpackage('lz4-c', exact=True) }}
 
 tests:
-#  files:
-#    - test_static_cmake
-- script:
-  - test -f ${PREFIX}/lib/liblz4.a
+- package_contents:
+    files:
+      - lib/liblz4.a
+      - include/lz4.h
 
 about:
   homepage: https://github.com/lz4/lz4
