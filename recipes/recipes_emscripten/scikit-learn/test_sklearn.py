@@ -17,7 +17,7 @@ def test_scikit_learn():
     X = rng.rand(100, 20)
     y = rng.randint(5, size=100)
     print("1.3")
-    estimator = LogisticRegression(solver='liblinear')
+    estimator = LogisticRegression(solver='newton-cholesky')
     print("1.4")
     estimator.fit(X, y)
     print(estimator.predict(X))
