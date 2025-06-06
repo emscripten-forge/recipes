@@ -1,10 +1,7 @@
-# This is your custom FindPython.cmake
-
 set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
 set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
 set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
 set(CMAKE_STRIP FALSE)  # used by default in pybind11 on .so modules
-
 
 # Indicate that Python and its components are found
 set(Python_FOUND TRUE)
@@ -13,13 +10,10 @@ set(Python_Development_FOUND TRUE)
 
 
 set(PY_VER "$ENV{PY_VER}") # This should be set to the Python version you are using, e.g., "3.13"
-
 set(MY_PYTHON_PREFIX "$ENV{PREFIX}") 
 
 # Hardcode the Python interpreter path
 set(Python_EXECUTABLE "$ENV{PYTHON}") 
-
-
 
 execute_process(
   COMMAND "${Python_EXECUTABLE}" -c "import sys; print(sys.version_info[0])"
@@ -42,27 +36,18 @@ execute_process(
   RESULT_VARIABLE PYTHON_VERSION_PATCH
 )
 
+set(Python_VERSION_STRING "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}.${Python_VERSION_PATCH}")
 
-# Hardcode the Python development library path
-# This often points to the shared library. Adjust for your OS (e.g., .so, .dylib, .lib)
-# You might need to specify the exact version, e.g., libpython3.10.so
+
 set(Python_LIBRARIES "${MY_PYTHON_PREFIX}/lib/libpython${PY_VER}.a")
 set(Python_Development_LIBRARIES "${MY_PYTHON_PREFIX}/lib/libpython${PY_VER}.a") # Often the same as Python_LIBRARIES for development
 
-# Hardcode the Python include directories
-# This typically includes two paths: one for the base include and one for the specific version
 set(Python_INCLUDE_DIRS
-    "${MY_PYTHON_PREFIX}/include/python${PY_VER}" # Adjust for your Python version, e.g., python3.10
-    # "${MY_PYTHON_PREFIX}/include/python3/pyconfig.h" # This often contains architecture-specific definitions
+    "${MY_PYTHON_PREFIX}/include/python${PY_VER}"
 )
 set(Python_Development_INCLUDE_DIRS ${Python_INCLUDE_DIRS}) # Often the same as Python_INCLUDE_DIRS for development
 
-# # --- Optional: Set Python Version Variables (Highly Recommended) ---
-# # Many projects check these variables. Adjust based on your Python version.
-# set(Python_VERSION_MAJOR 3)
-# set(Python_VERSION_MINOR 13) # Example: Adjust to your actual minor version
-# set(Python_VERSION_PATCH 1) # Example: Adjust to your actual patch version
-set(Python_VERSION_STRING "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}.${Python_VERSION_PATCH}")
+
 
 # --- Optional: Set other commonly used variables if needed ---
 # For instance, if you need the site-packages directory
@@ -88,15 +73,6 @@ mark_as_advanced(
     Python_VERSION_STRING
 )
 
-
-
-
-# To satisfy the if (NOT TARGET Python::Module) check, you need to create an ALIAS target named Python::Module in your custom FindPython.cmake. This is a common pattern in CMake for exporting discovered libraries and executables as well-defined targets.
-
-
-
-
-# --- NEW ADDITIONS FOR TARGETS ---
 
 # Create an imported INTERFACE library target for Python development
 # This makes Python::Python and Python::Module available for linking and includes
