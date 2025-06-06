@@ -16,8 +16,8 @@ def test_pandas_series():
 def test_pandas_dataframe():
     from pandas import DataFrame
 
-    df = pd.DataFrame()
+    df = DataFrame()
     print("Pandas DataFrame:", df)
     data = ['emscripten', 'forge', 'packages', 'python']
-    df = pd.DataFrame(data)
+    df = DataFrame(data)
     print("Pandas DataFrame:", df)
