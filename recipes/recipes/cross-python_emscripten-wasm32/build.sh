@@ -7,3 +7,7 @@ do
     mkdir -p "${PREFIX}/etc/conda/${TASK}.d"
     cp "${RECIPE_DIR}/${TASK}.sh" "${PREFIX}/etc/conda/${TASK}.d/${TASK}_z-${PKG_NAME}.sh"
 done
+
+
+mkdir -p "${PREFIX}/share/cross-python"
+cp $RECIPE_DIR/FindPython.cmake "${PREFIX}/share/cross-python/FindPython.cmake"
