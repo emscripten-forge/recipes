@@ -71,7 +71,7 @@ export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
 
 # is cmake installed in the build prefix?
 # check the conda-meta.yaml file for the cmake dependency
-if [[ -f "$BUILD_PREFIX/conda-meta/cmake-*.json" ]]; then
+if compgen -G "${BUILD_PREFIX}/conda-meta/cmake-*.json" > /dev/null; then
 
   echo "CMake is installed, setting up custom FindPython.cmake"
 
