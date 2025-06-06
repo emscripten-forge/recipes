@@ -1,31 +1,31 @@
 context:
-  version: 8.3.5
+  name: pytest
+  version: 8.4.0
 
 package:
-  name: pytest
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://pypi.io/packages/source/p/pytest/pytest-${{ version }}.tar.gz
-  sha256: f4efe70cc14e511565ac476b57c279e12a855b11f48f212af1080ef2263d3845
+  sha256: 14d920b48472ea0dbf68e45b96cd1ffda4705f33307dcc86c676c1b5104838a6
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . --no-deps
 
 requirements:
   build:
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
+  - python
   - pip
   host:
   - python
   run:
-  - atomicwrites
-  - attrs
-  - more-itertools
-  - pluggy
-  - py
-  - six
   - iniconfig
+  - packaging
+  - pluggy
+  - pygments
 
 tests:
 - script: pytester
@@ -37,6 +37,7 @@ tests:
     - pytester
     run:
     - pytester-run
+
 about:
   license: MIT
   license_file: LICENSE
@@ -45,6 +46,8 @@ about:
     The pytest framework makes it easy to write small tests, yet scales to
     support complex functional testing for applications and libraries.
   homepage: https://docs.pytest.org/en/latest/
+  repository: https://github.com/pytest-dev/pytest
+
 extra:
   recipe-maintainers:
   - DerThorsten
