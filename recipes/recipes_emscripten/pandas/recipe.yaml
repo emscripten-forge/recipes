@@ -1,36 +1,32 @@
 context:
-  version: 2.2.3
+  name: pandas
+  version: 2.3.0
 
 package:
-  name: pandas
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://github.com/pandas-dev/pandas/releases/download/v${{ version }}/pandas-${{
-    version }}.tar.gz
-  sha256: 4f18ba62b61d7e192368b84517265a99b4d7ee8912f8708660fb4a366cc82667
-    #patches:
-    #  - patches/fix_json_signature.patch
+- url: https://github.com/pandas-dev/pandas/releases/download/v${{ version }}/pandas-${{ version }}.tar.gz
+  sha256: 34600ab34ebf1131a7613a260a61dbe8b62c188ec0ea4c296da7c9a06b004133
 
 build:
   number: 0
 
 requirements:
   build:
-  - "${{compiler('cxx')}}"
+  - ${{compiler('cxx')}}
   - python
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - numpy
   - cython
   - pip
   - versioneer
   - tomli
   - meson-python
-
   host:
   - python
   - numpy
-
   run:
   - numpy
   - python-dateutil
@@ -47,3 +43,16 @@ tests:
     - pytester
     run:
     - pytester-run
+
+about:
+  homepage: http://pandas.pydata.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: |
+    Powerful data structures for data analysis, time series, and statistics
+  documentation: https://pandas.pydata.org/docs/
+  repository: https://github.com/pandas-dev/pandas
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
