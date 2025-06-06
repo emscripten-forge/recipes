@@ -67,3 +67,23 @@ export PYTHON=$PYTHON_HOST # This should be a script to set up the cross env
 # Set up flags
 export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
+
+
+# is cmake installed?
+if  command -v cmake &> /dev/null; then
+  echo "CMake is installed, setting up custom FindPython.cmake"
+
+  # we overwrite the FindPython.cmake **IN THE BUILD PREFIX**
+  CUSTOM_FIND_PYTHON=$BUILD_PREFIX/share/cross-python/FindPython.cmake
+
+  # guess the cmake version (ie 4.0.1)
+  CMAKE_VERSION=$(cmake --version | head -n 1 | cut -d ' ' -f 3)
+
+  # remove the patch version
+  CMAKE_VERSION=$(echo $CMAKE_VERSION | cut -d '.' -f 1-2)
+
+  CMAKE_MODULE_DIR="$BUILD_PREFIX/share/cmake-$CMAKE_VERSION/Modules"
+
+  cp $CUSTOM_FIND_PYTHON $CMAKE_MODULE_DIR/FindPython.cmake
+
+fi
