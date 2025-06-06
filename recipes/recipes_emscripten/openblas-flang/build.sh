@@ -2,8 +2,14 @@
 
 set -ex
 
+find lapack-netlib/BLAS/SRC \
+    -type f \
+    -name "*.f" \
+    -exec sed -ir 's/^([^*]*)CHARACTER([^*].*)/\1CHARACTER*(*)\2/' '{}' \;
+
 emmake make libs netlib \
     NO_SHARED=1 \
+    NO_FORTRAN=0 \
     TARGET=RISCV64_GENERIC \
     CC=$CC \
     FC=$FC \
