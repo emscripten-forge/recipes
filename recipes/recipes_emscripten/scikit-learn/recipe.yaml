@@ -1,29 +1,29 @@
 context:
-  version: 1.6.1
+  name: scikit-learn
+  version: 1.7.0
 
 package:
-  name: scikit-learn
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/scikit-learn/scikit-learn/archive/${{ version }}.tar.gz
-  sha256: 88c1816c89d2b27f2506d155e1195d71fc9d935bbe1968ce02b0e9ddd659b2ff
-  # patches:
-  # - patches/patch_away_urllib.patch
+  url: https://github.com/${{ name }}/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: 60f3e08038f7395e040254a543948be738c41081c1d3bcf3a56a8116d64fd616
+  patches:
+  - patches/0001-Patch-away-urllib.patch
 
 build:
   number: 0
 
 requirements:
   build:
-  - python
-  - cross-python_${{ target_platform }}
-  - cython 
-  - numpy
-  - meson-python
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
-
+  - cross-python_${{ target_platform }}
+  - python
+  - cython
+  - numpy
+  - meson-python
   - pip
   - setuptools
   host:
@@ -40,8 +40,6 @@ requirements:
   - threadpoolctl >=2.0.0
   - requests
 
-
-
 tests:
 - script: pytester
   files:
@@ -50,14 +48,17 @@ tests:
   requirements:
     build:
     - pytester
-    # - playwright <= 1.50
     run:
     - pytester-run
+
 about:
   license: BSD-3-Clause
   license_file: COPYING
   summary: A set of python modules for machine learning and data mining
   homepage: http://scikit-learn.org/
+  repository: https://github.com/scikit-learn/scikit-learn
+
 extra:
   recipe-maintainers:
   - wolfv
+  - IsabelParedes
