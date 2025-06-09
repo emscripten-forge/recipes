@@ -1,5 +1,6 @@
 import os
 import lz4
+import lz4.frame
 
 def test_lz4():
     input_data = 20 * 128 * os.urandom(1024)  # Read 20 * 128kb
