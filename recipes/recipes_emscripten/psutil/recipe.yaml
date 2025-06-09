@@ -1,0 +1,46 @@
+context:
+  name: psutil
+  version: 7.0.0
+
+package:
+  name: ${{ pkg_name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7be9c3eba38beccb6495ea33afd982a44074b78f28c434a1f51cc07fd315c456
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-python_emscripten-wasm32
+    - ${{ compiler('c') }}
+    - python
+    - pip
+    - setuptools >=43
+    - wheel
+  run:
+    - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_psutil.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/giampaolo/psutil
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A cross-platform process and system utilities module for Python
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
