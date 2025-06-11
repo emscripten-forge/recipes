@@ -8,23 +8,27 @@ package:
 source:
   url: https://github.com/jupyter-xeus/xcanvas/archive/refs/tags/${{ version }}.tar.gz
   sha256: 08ca0adc86cfd4e326c0541eea293392f256d715e6ad8b143dbaf64773338f8a
+  patches:
+  - patches/shared.patch
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - cmake
-  - ninja
+  - make
   host:
   - xproperty >=0.12.0,<0.13
-  - nlohmann_json >=3.11
+  - nlohmann_json >=3.12
   - xwidgets >=0.29.0,<0.30
 
 tests:
 - script:
   - test -f $PREFIX/include/xcanvas/xcanvas.hpp
+  - test -f $PREFIX/lib/libxcanvas.a
+  - test -f $PREFIX/lib/libxcanvas.so
 
 about:
   license: BSD-3-Clause
