@@ -8,15 +8,17 @@ package:
 source:
   url: https://github.com/jupyter-xeus/xwidgets/archive/refs/tags/${{ version }}.tar.gz
   sha256: 07c789b7936b19a123f37ac1edfd0598a89f23e02d4eeffc9976817be68bee42
+  patches:
+  - patches/shared.patch
 
 build:
-  number: 3
+  number: 4
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - cmake
-  - ninja
+  - make
   host:
   - nlohmann_json >=3.11
   - xeus >=5,<6
@@ -31,6 +33,7 @@ tests:
     - test -d $PREFIX/include/xwidgets
     - test -f $PREFIX/include/xwidgets/xtransport.hpp
     - test -f $PREFIX/lib/libxwidgets.a
+    - test -f $PREFIX/lib/libxwidgets.so
 
 about:
   license: BSD-3-Clause
