@@ -1,0 +1,119 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index cb7868d..a558b79 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,6 +9,13 @@
+ cmake_minimum_required(VERSION 3.8)
+ project(xleaflet)
+ 
++if(EMSCRIPTEN)
++    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++    set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_STRIP FALSE)
++endif()
++
+ message(STATUS "Forcing tests build type to Release")
+ set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+ 
+@@ -24,12 +31,18 @@ include(CMakePackageConfigHelpers)
+ 
+ set(XLEAFLET_INSTALL_LIBRARY_DIR "\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}\"")
+ 
++set(XLEAFLET_CPPINTEROP_LIBRARY_PATH "\"/lib/${CMAKE_SHARED_LIBRARY_PREFIX}xleaflet${CMAKE_SHARED_LIBRARY_SUFFIX}\"")
++message(STATUS "XLEAFLET_CPPINTEROP_LIBRARY_PATH = ${XLEAFLET_CPPINTEROP_LIBRARY_PATH}")
++
+ configure_file (
+     "${XLEAFLET_INCLUDE_DIR}/xleaflet/xleaflet_config_cling.hpp.in"
+     "${XLEAFLET_INCLUDE_DIR}/xleaflet/xleaflet_config_cling.hpp"
+ )
+ 
+ set(XLEAFLET_BASEMAPS_PATH "\"${CMAKE_INSTALL_PREFIX}/share/xleaflet/basemaps.json\"")
++if(EMSCRIPTEN)
++    set(XLEAFLET_BASEMAPS_PATH "\"/share/xleaflet/basemaps.json\"")
++endif()
+ 
+ configure_file (
+     "${XLEAFLET_INCLUDE_DIR}/xleaflet/xget_basemaps_path.hpp.in"
+@@ -171,6 +184,8 @@ target_link_libraries(xleaflet
+     PUBLIC xproperty
+     PUBLIC xwidgets)
+ 
++set_target_properties(xleaflet PROPERTIES NO_SONAME 1)
++
+ set_target_properties(xleaflet PROPERTIES
+                       PUBLIC_HEADER "${XLEAFLET_HEADERS}"
+                       COMPILE_DEFINITIONS "XLEAFLET_EXPORTS"
+@@ -193,6 +208,11 @@ target_compile_features(xleaflet PRIVATE cxx_std_17)
+ 
+ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+     target_compile_options(xleaflet PUBLIC -Wunused-parameter -Wextra -Wreorder)
++    if (EMSCRIPTEN)
++        target_compile_options(xleaflet PRIVATE -fPIC)
++    else ()
++        target_compile_options(xleaflet PUBLIC -Wunused-parameter -Wextra -Wreorder)
++    endif()
+ 
+     # Enable link time optimization and set the default symbol
+     # visibility to hidden (very important to obtain small binaries)
+diff --git a/include/xleaflet/xheatmap.hpp b/include/xleaflet/xheatmap.hpp
+index 102cffc..5d26c17 100644
+--- a/include/xleaflet/xheatmap.hpp
++++ b/include/xleaflet/xheatmap.hpp
+@@ -10,7 +10,7 @@
+ #ifndef XLEAFLET_HEATMAP_HPP
+ #define XLEAFLET_HEATMAP_HPP
+ 
+-#include "xtensor/xexpression_holder.hpp"
++#include "xtensor/misc/xexpression_holder.hpp"
+ 
+ #include "xwidgets/xmaterialize.hpp"
+ #include "xwidgets/xwidget.hpp"
+diff --git a/include/xleaflet/xleaflet_config.hpp b/include/xleaflet/xleaflet_config.hpp
+index 889d727..ad854d4 100644
+--- a/include/xleaflet/xleaflet_config.hpp
++++ b/include/xleaflet/xleaflet_config.hpp
+@@ -52,7 +52,7 @@ inline std::string jupyter_leaflet_semver()
+     return std::string("^") + XJUPYTER_LEAFLET_VERSION;
+ }
+ 
+-#ifdef __CLING__
++#if defined(__CLANG_REPL__) && defined(__EMSCRIPTEN__)
+ #include "xleaflet_config_cling.hpp"
+ #endif
+ 
+diff --git a/include/xleaflet/xleaflet_config_cling.hpp.in b/include/xleaflet/xleaflet_config_cling.hpp.in
+index 5b71744..bda96cb 100644
+--- a/include/xleaflet/xleaflet_config_cling.hpp.in
++++ b/include/xleaflet/xleaflet_config_cling.hpp.in
+@@ -9,7 +9,15 @@
+ #ifndef XLEAFLET_CONFIG_CLING_HPP
+ #define XLEAFLET_CONFIG_CLING_HPP
+ 
+-#pragma cling add_library_path(@XLEAFLET_INSTALL_LIBRARY_DIR@)
+-#pragma cling load("libxleaflet")
++// #pragma cling add_library_path(@XLEAFLET_INSTALL_LIBRARY_DIR@)
++// #pragma cling load("libxleaflet")
++
++#pragma once
++#ifdef __EMSCRIPTEN__
++static bool _xleaflet_loaded = []() {
++    Cpp::LoadLibrary(@XLEAFLET_CPPINTEROP_LIBRARY_PATH@, false);
++    return true;
++}();
++#endif
+ 
+ #endif
+diff --git a/include/xleaflet/xpolyline.hpp b/include/xleaflet/xpolyline.hpp
+index 343876f..5e11438 100644
+--- a/include/xleaflet/xpolyline.hpp
++++ b/include/xleaflet/xpolyline.hpp
+@@ -10,7 +10,7 @@
+ #ifndef XLEAFLET_POLYLINE_HPP
+ #define XLEAFLET_POLYLINE_HPP
+ 
+-#include "xtensor/xexpression_holder.hpp"
++#include "xtensor/misc/xexpression_holder.hpp"
+ 
+ #include "xwidgets/xmaterialize.hpp"
+ #include "xwidgets/xwidget.hpp"
