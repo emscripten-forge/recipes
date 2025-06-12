@@ -1,0 +1,40 @@
+context:
+  version: 0.18.0
+
+package:
+  name: xleaflet
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/xleaflet/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 1bc85797f12195c35d2c4d31c1fd78c8e4625151e7cea62ec085491c9f89754b
+  patches:
+  - patches/shared.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  host:
+  - xproperty >=0.12.0,<0.13
+  - xwidgets >=0.29.0,<0.30
+  - xtensor <0.26.0
+
+tests:
+- script:
+  - test -f $PREFIX/share/xleaflet/basemaps.json
+  - test -f $PREFIX/lib/libxleaflet.so
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: C++ backend for the jupyter leaflet widget
+  homepage: https://github.com/jupyter-xeus/xleaflet
+extra:
+  recipe-maintainers:
+  - anutosh491
