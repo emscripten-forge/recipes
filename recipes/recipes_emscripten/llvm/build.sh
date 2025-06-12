@@ -6,12 +6,8 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
-# clear LDFLAGS flags because they contain sWASM_BIGINT
-export LDFLAGS=""
-
 # Configure step
-emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
-    -DCMAKE_BUILD_TYPE=Release                      \
+emcmake cmake -DCMAKE_BUILD_TYPE=Release            \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
     -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten    \
@@ -32,7 +28,8 @@ emcmake cmake ${CMAKE_ARGS} -S ../llvm -B .         \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
     -DCLANG_BUILD_TOOLS=OFF                         \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions"
+    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions" \
+    ../llvm
 
 # Build and Install step
 emmake make clangInterpreter lldWasm -j16 install
