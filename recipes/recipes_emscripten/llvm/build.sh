@@ -29,7 +29,6 @@ emcmake cmake -S ../llvm -B .         \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
     -DCLANG_BUILD_TOOLS=OFF                         \
-    -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions" \
     -DLLVM_TABLEGEN=$BUILD_PREFIX/bin/llvm-tblgen \
     -DCLANG_TABLEGEN=$BUILD_PREFIX/bin/clang-tblgen 
