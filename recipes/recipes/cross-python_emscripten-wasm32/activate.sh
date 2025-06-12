@@ -47,7 +47,7 @@ if [[ ! -d "$BUILD_PREFIX/venv" ]]; then
   rm -r $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
   ln -s $BUILD_PREFIX/lib/python$PY_VER/site-packages \
         $BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
-  sed -i.bak "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
+  sed -i "s@$BUILD_PREFIX/venv/lib@$BUILD_PREFIX/venv/lib', '$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages@g" $PYTHON_HOST
 
   # Copy the sysconfigdata file
   rm $BUILD_PREFIX/venv/lib/_sysconfigdata__emscripten_wasm32-emscripten.py
