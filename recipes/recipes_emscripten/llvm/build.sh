@@ -7,7 +7,8 @@ export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # Configure step
-emcmake cmake -DCMAKE_BUILD_TYPE=Release            \
+emcmake cmake -S ../llvm -B .         \
+    -DCMAKE_BUILD_TYPE=Release                      \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
     -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten    \
@@ -28,8 +29,10 @@ emcmake cmake -DCMAKE_BUILD_TYPE=Release            \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
     -DCLANG_BUILD_TOOLS=OFF                         \
+    -DCMAKE_VERBOSE_MAKEFILE=ON                     \
     -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4 -fexceptions" \
-    ../llvm
+    -DLLVM_TABLEGEN=$BUILD_PREFIX/bin/llvm-tblgen \
+    -DCLANG_TABLEGEN=$BUILD_PREFIX/bin/clang-tblgen 
 
 # Build and Install step
 emmake make clangInterpreter lldWasm -j16 install
