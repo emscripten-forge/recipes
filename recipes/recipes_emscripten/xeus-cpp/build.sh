@@ -10,16 +10,14 @@ cd build
 export SYSROOT_PATH=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cache/sysroot
 
 # Configure step with Emscripten's emcmake
-emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
-    -DCMAKE_BUILD_TYPE=Release                             \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
-    -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=ON                    \
-    -DCMAKE_FIND_ROOT_PATH=$PREFIX                         \
-    -DSYSROOT_PATH=$SYSROOT_PATH                           \
-    -DXEUS_CPP_BUILD_TESTS=OFF
+emcmake cmake \
+    -DCMAKE_BUILD_TYPE=Release                        \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
+    -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=ON               \
+    -DCMAKE_FIND_ROOT_PATH=$PREFIX                    \
+    -DSYSROOT_PATH=$SYSROOT_PATH                      \
+    -DXEUS_CPP_BUILD_TESTS=OFF                        \
+    ..
 
-# Build step with emmake
-emmake make -j1
-
-# Install step
-emmake make install
+# Build & Install step
+emmake make -j8 install
