@@ -11,7 +11,7 @@ emmake make libs shared \
     USE_THREAD=0 \
     LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
 
-emmake make install PREFIX=$PREFIX NO_SHARED=1
+emmake make install PREFIX=$PREFIX
 
 mkdir -p $PREFIX/lib
 cp libopenblas.a $PREFIX/lib
