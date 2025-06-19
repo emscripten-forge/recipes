@@ -11,7 +11,6 @@ cmake \
     -DBUILD_STATIC_LIBS=ON \
     -DOPENEXR_LIB_SUFFIX="" \
     -DOPENEXR_ENABLE_THREADING=OFF \
-    -DHAVE_LIBC_PTHREAD=OFF \
     ..
 
 make -j2
