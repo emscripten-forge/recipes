@@ -10,25 +10,26 @@ source:
   url: https://github.com/OpenMathLib/OpenBLAS/archive/v${{ version }}.tar.gz
   sha256: 38240eee1b29e2bde47ebb5d61160207dc68668a54cac62c076bb5032013b1eb
   patches:
-  # - patches/0001-Add-no-implicit-function-declaration-flag.patch
-  - patches/0002-Remove-march-flags.patch
+  - patches/0001-Remove-march-flags.patch
+  - patches/0002-Skip-linktest.patch
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - flang_${{ target_platform }}
   - cmake
   - make
-  host:
-  - libflang                  # for FortranRuntime
 
 tests:
 - package_contents:
     lib:
     - libopenblas.a
+    - libopenblas.so
+    include:
+    - cblas.h
+    - lapack.h
 
 about:
   homepage: http://www.openblas.net/
