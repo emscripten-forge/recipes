@@ -80,6 +80,9 @@ popd
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
 
+# FIXME: this should come from libflang
+cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
+
 mkdir -p _build_wasm
 pushd _build_wasm
 (
