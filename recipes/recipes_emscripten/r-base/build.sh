@@ -59,6 +59,8 @@ pushd _build_linux
     export LINUX_BUILD_DIR=$(pwd)
 
     unset CROSS_COMPILING
+    unset FFLAGS
+    unset FPICFLAGS
 
     ../configure \
         --prefix=$BUILD_PREFIX \
@@ -77,6 +79,9 @@ popd
 # libz.so has an invalid ELF header which causes an error when looking for
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
+
+# FIXME: this should come from libflang
+cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
 
 mkdir -p _build_wasm
 pushd _build_wasm
@@ -106,3 +111,5 @@ pushd _build_wasm
 
 )
 popd
+
+rm $PREFIX/lib/libFortranRuntime.a
