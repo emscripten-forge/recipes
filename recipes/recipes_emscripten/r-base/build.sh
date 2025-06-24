@@ -111,3 +111,5 @@ pushd _build_wasm
 
 )
 popd
+
+rm $PREFIX/lib/libFortranRuntime.a
