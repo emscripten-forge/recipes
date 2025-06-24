@@ -59,6 +59,8 @@ pushd _build_linux
     export LINUX_BUILD_DIR=$(pwd)
 
     unset CROSS_COMPILING
+    unset FFLAGS
+    unset FPICFLAGS
 
     ../configure \
         --prefix=$BUILD_PREFIX \
