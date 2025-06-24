@@ -16,7 +16,7 @@ import json
 # custom error derived from Exception
 # to say that the recipe cannot be handled
 class CannotHandleRecipeException(Exception):
-    
+
     def __init__(self, recipe_dir, msg):
         self.recipe_dir = recipe_dir
         self.msg = msg
@@ -28,7 +28,7 @@ def get_new_version(recipe_file):
     with open(recipe_file) as file:
         recipe = YAML().load(file)
 
-    # get context 
+    # get context
     try:
         context = recipe['context']
     except KeyError:
@@ -40,7 +40,7 @@ def get_new_version(recipe_file):
         version = context['version']
     except KeyError:
         raise CannotHandleRecipeException(recipe_file, "No version in context")
-            
+
     # get the url from the source
     try:
         source = recipe['source']
@@ -52,19 +52,22 @@ def get_new_version(recipe_file):
             raise CannotHandleRecipeException(recipe_file, "Multiple sources")
         source = source[0]
 
+    # make sure sha256 is in source
+    if 'sha256' not in source:
+        raise CannotHandleRecipeException(recipe_file, "No sha256 in source")
+
     try:
         url_template = source['url']
     except KeyError:
         raise CannotHandleRecipeException(recipe_file, "No url in source")
 
-    # make sure sha256 is in source
-    if 'sha256' not in source:
-        raise CannotHandleRecipeException(recipe_file, "No sha256 in source")
-    
+    # only check the first url, the others are backups
+    if isinstance(url_template, list):
+        url_template = url_template[0]
 
     if "${{" not in url_template or "}}" not in url_template:
             raise CannotHandleRecipeException(recipe_file, "url is not a template")
- 
+
     environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
 
     # get name from dir
@@ -84,7 +87,7 @@ def get_new_version(recipe_file):
             print(f"- new sha256: {new_sha256}")
 
             return version, new_version, new_sha256
-    
+
     return None, None,None
 
 
