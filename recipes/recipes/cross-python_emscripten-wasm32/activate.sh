@@ -83,7 +83,7 @@ if compgen -G "${BUILD_PREFIX}/conda-meta/cmake-*.json" > /dev/null; then
   CMAKE_VERSION=""
   if command -v cmake &> /dev/null; then
       # cmake is found, try to get the version
-      if CMAKE_VERSION_OUTPUT=$(cmake --version 2>&1); then
+      if CMAKE_VERSION_OUTPUT=$($BUILD_PREFIX/bin/cmake --version 2>&1); then
           # Command succeeded
           CMAKE_VERSION=$(echo "$CMAKE_VERSION_OUTPUT" | head -n 1 | cut -d ' ' -f 3)
           echo "CMake version: $CMAKE_VERSION"
