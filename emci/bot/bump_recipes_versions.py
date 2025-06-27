@@ -48,7 +48,8 @@ def get_new_version(recipe_file):
         raise CannotHandleRecipeException(recipe_file, "No source in recipe")
 
     if isinstance(source, list):
-        if len(source) > 1:
+        # some recipes have paths listed under sources, these are excluded
+        if len(source) > 1 and len(source[1]) > 1:
             raise CannotHandleRecipeException(recipe_file, "Multiple sources")
         source = source[0]
 
