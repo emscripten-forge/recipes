@@ -104,7 +104,8 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_ratler):
     # update sha256 in source
     source = recipe['source']
     if isinstance(source, list):
-        if len(source) > 1:
+        # some recipes have paths listed under sources, these are excluded
+        if len(source) > 1 and len(source[1]) > 1:
             raise CannotHandleRecipeException(recipe_file, "Multiple sources")
         source = source[0]
     source['sha256'] = new_sha256
