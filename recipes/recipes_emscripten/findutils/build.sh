@@ -1,10 +1,8 @@
 export CONFIG_CFLAGS="\
-    $NCURSES_CFLAGS \
     -Os \
     "
 
 export CONFIG_LDFLAGS="\
-    $NCURSES_LDFLAGS \
     -Os \
     --minify=0 \
     -sALLOW_MEMORY_GROWTH=1 \
