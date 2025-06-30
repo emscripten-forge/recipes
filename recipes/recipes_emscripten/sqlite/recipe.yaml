@@ -1,22 +1,24 @@
 context:
-  version: 3.47.2
+  version: 3.49.1
+  year: 2025
+  version_major: ${{ (version | split('.'))[0:1] | first }}
+  version_minor: ${{ (version | split('.'))[1:2] | first }}
+  version_patch: ${{ (version | split('.'))[2:3] | first }}
+  version_url: "${{ version_major }}${{ version_minor }}0${{ version_patch }}00"
+
 
 package:
   name: sqlite
   version: ${{ version }}
 
-
 source:
-  url: https://www.sqlite.org/2024/sqlite-autoconf-3470200.tar.gz
-  sha256: f1b2ee412c28d7472bc95ba996368d6f0cdcf00362affdadb27ed286c179540b
+  url: https://www.sqlite.org/2025/sqlite-src-3490100.zip
+  # url: https://www.sqlite.org/${{year}}/sqlite-autoconf-${{version_url}}.tar.gz
+  sha256: 4404d93cbce818b1b98ca7259d0ba9b45db76f2fdd9373e56f2d29b519f4d43b
 
 
 build:
   number: 0
-  # run_exports:
-  #   # sometimes adds new symbols.  Default behavior is OK.
-  #   #    https://abi-laboratory.pro/tracker/timeline/sqlite/
-  #   - "{{ pin_subpackage('sqlite') }}"
 
 requirements:
   build:
@@ -29,14 +31,9 @@ requirements:
 
 tests:
 - script:
-  - sqlite3 --version
-  - if not exist %PREFIX%\\Library\bin\sqlite3.dll exit 1
-  - if not exist %PREFIX%\\Library\lib\sqlite3.lib exit 1
-  - test -f $PREFIX/lib/libsqlite3${SHLIB_EXT}
+  - sqlite3 --version  - test -f $PREFIX/lib/libsqlite3${SHLIB_EXT}
   - test ! -f $PREFIX/lib/libsqlite3.a
   - test -f $PREFIX/lib/libsqlite3.a
-  - if not exist %PREFIX%\\Library\include\sqlite3.h exit 1
-  - if not exist %PREFIX%\\Library\include\sqlite3ext.h exit 1
   - test -f $PREFIX/include/sqlite3.h
   - test -f $PREFIX/include/sqlite3ext.h
 about:
