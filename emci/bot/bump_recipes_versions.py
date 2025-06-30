@@ -102,6 +102,9 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
     context = recipe['context']
     context['version'] = new_version
 
+    # reset build number
+    recipe['build']['number'] = 0
+
     # update sha256 in source
     source = recipe['source']
     if isinstance(source, list):
@@ -111,9 +114,13 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
         source = source[0]
     source['sha256'] = new_sha256
 
+    # custom yaml to avoid line wrapping long urls
+    yaml = YAML()
+    yaml.width = 120
+
     # write the file
     with open(recipe_file, 'w') as file:
-        YAML().dump(recipe, file)
+        yaml.dump(recipe, file)
 
 def make_pr_title(name, old_version, new_version, target_pr_branch_name):
     if target_pr_branch_name == "main":
