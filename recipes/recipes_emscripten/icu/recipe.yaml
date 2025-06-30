@@ -1,16 +1,13 @@
 context:
   name: icu
-  version: '73.7'
-  version_under: '73_2'
-  version_hyphen: 73-2
+  version: 73.7
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://github.com/unicode-org/icu/releases/download/release-${{ version_hyphen }}/icu4c-${{ version_under 
-    }}-src.tgz
+- url: https://github.com/unicode-org/icu/releases/download/release-${{ version | replace('.','-') }}/icu4c-${{ version | replace('.','_' }}-src.tgz
   sha256: 818a80712ed3caacd9b652305e01afc7fa167e6f2e94996da44b90c2ab604ce1
 
 build:
@@ -24,13 +21,15 @@ requirements:
   - make
 
 tests:
+- package_contents:
+    files:
+    - lib/libicudata.a
+    - lib/libicui18n.a
+    - lib/libicuio.a
+    - lib/libicutest.a
+    - lib/libicutu.a
+    - lib/libicuuc.a
 - script:
-  - test -f $PREFIX/lib/libicudata.a
-  - test -f $PREFIX/lib/libicui18n.a
-  - test -f $PREFIX/lib/libicuio.a
-  - test -f $PREFIX/lib/libicutest.a
-  - test -f $PREFIX/lib/libicutu.a
-  - test -f $PREFIX/lib/libicuuc.a
   - node $PREFIX/bin/genbrk --help
   - node $PREFIX/bin/gencfu --help
   - node $PREFIX/bin/gencnval --help
