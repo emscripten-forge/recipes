@@ -9,7 +9,9 @@ RECIPES_SUBDIR_MAPPING = OrderedDict(
 
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
+print('TEST: THIS_DIR=', THIS_DIR)
 REPO_ROOT = Path(THIS_DIR).parents[0].resolve()
+print('TEST: REPO_ROOT=', REPO_ROOT)
 RECIPES_ROOT = REPO_ROOT / "recipes"
 RECIPES_EMSCRIPTEN_DIR = RECIPES_ROOT / "recipes_emscripten"
 
