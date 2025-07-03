@@ -20,7 +20,7 @@ RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "conda_build_config.ya
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
 if CONDA_PREFIX is None:
     raise RuntimeError(
-        "environment varialbe `CONDA_PREFIX` is not set but needed to run this script"
+        "environment variable `CONDA_PREFIX` is not set but needed to run this script"
     )
 CONDA_BLD_DIR = os.path.join(CONDA_PREFIX, "conda-bld")
 Path(CONDA_BLD_DIR).mkdir(exist_ok=True)
