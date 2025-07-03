@@ -16,6 +16,7 @@ RECIPES_EMSCRIPTEN_DIR = RECIPES_ROOT / "recipes_emscripten"
 
 # rattler build related
 RATTLER_CONDA_BUILD_CONFIG_PATH = os.path.join(REPO_ROOT, "conda_build_config.yaml")
+print('TEST: RATTLER_CONDA_BUILD_CONFIG_PATH=', RATTLER_CONDA_BUILD_CONFIG_PATH)
 
 CONDA_PREFIX = os.environ.get("CONDA_PREFIX")
 if CONDA_PREFIX is None:
