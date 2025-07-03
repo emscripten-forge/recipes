@@ -1,5 +1,5 @@
 context:
-  version: 5.4.6
+  version: 5.4.7
 
 package:
   name: lua
@@ -8,12 +8,12 @@ package:
 
 source:
 - url: http://www.lua.org/ftp/lua-${{ version }}.tar.gz
-  sha256: 7d5ea1b9cb6aa0b59ca3dde1c6adcb57ef83a1ba8e5432c0ecd06bf439b3ad88
+  sha256: 9fbf5e28ef86c69858f6d3d34eccc32e911c1a28b4120ff3e84aaa70cfbf1e30
   patches:
     # Enables Lua to look for packages on a relative path
-    - luaconf.patch
+  - luaconf.patch
         # Build as a shared library
-    - liblua.so.patch
+  - liblua.so.patch
     #     # Enables readline on linux
     # - Makefile.patch
 
@@ -31,24 +31,25 @@ requirements:
 
 
 tests:
-  - script: |
-      OUTPUT=$(run_modularized $PREFIX/bin/lua.js -e "a=1+1;print(a)")
-      if [[ "$OUTPUT" != "2" ]]; then
-        echo "Unexpected output: $OUTPUT"
-        exit 1
-      fi
-    requirements:
-      build:
-        - run_modularized >= 0.1.2
-  - script: |
-      OUTPUT=$(run_modularized $PREFIX/bin/luac.js -v)
-      if [[ "$OUTPUT" != "Lua 5.4.6  Copyright (C) 1994-2023 Lua.org, PUC-Rio" ]]; then
-        echo "Unexpected output: $OUTPUT"
-        exit 1
-      fi
-    requirements:
-      build:
-        - run_modularized >= 0.1.2
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/lua.js -e "a=1+1;print(a)")
+    if [[ "$OUTPUT" != "2" ]]; then
+      echo "Unexpected output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/luac.js -v)
+    echo $OUTPUT
+    if [[ "$OUTPUT" != *"${{ version }}"* ]]; then
+      echo "Unexpected output."
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
 
 about:
   summary: Lua is a powerful, fast, lightweight, embeddable scripting language
