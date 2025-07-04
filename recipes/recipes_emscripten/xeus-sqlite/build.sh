@@ -20,7 +20,7 @@ cmake ${CMAKE_ARGS} ..                                \
     -DXSQL_BUILD_XSQLITE_EXECUTABLE=OFF               \
     -DXSQL_BUILD_SHARED=OFF                           \
     -DXSQL_BUILD_STATIC=ON                            \
-    -DXSQL_USE_SHARED_XEUS=OFF                        \
+    -DXSQL_USE_SHARED_XEUS=ON                         \
     -DXSQL_USE_SHARED_XEUS_SQLITE=OFF                 \
     -DXVEGA_STATIC_LIBRARY=$PREFIX/lib/libxvega.a     \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON 
