@@ -23,6 +23,14 @@ set(CMAKE_FIND_APPBUNDLE NEVER)
 set(CMAKE_PROGRAM_PATH ${CMAKE_PREFIX_PATH})
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+message(STATUS "using custom cmakelists")
+
+set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE) # does not need to be global :)
+set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
+set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
+set(CMAKE_STRIP FALSE)  # used by default in pybind11 on .so modules # only for needed when using pybind11
+
+
 # Versioning
 # ==========
 
@@ -77,10 +85,8 @@ set(tabulate_REQUIRED_VERSION 1.5)
 find_package(SQLite3 REQUIRED)
 find_package(SQLiteCpp REQUIRED)
 find_package(Threads REQUIRED)
-find_package(xvega REQUIRED)
 find_package(xvega-bindings ${xvega_bindings_REQUIRED_VERSION} REQUIRED)
 find_package(tabulate ${tabulate_REQUIRED_VERSION} REQUIRED)
-find_package(nlohmann_json REQUIRED)
 
 add_definitions(-DSQLITE_ENABLE_EXPLAIN_COMMENTS=1 -DSQLITE_DEBUG=1 -DSQLITE_MEMDEBUG=1)
 
@@ -215,12 +221,10 @@ macro(xsql_create_target target_name linkage output_name)
         set(XSQL_XEUS_TARGET xeus-static)
     endif ()
 
-    message("XVEGA_STATIC_LIBRARY= ${XVEGA_STATIC_LIBRARY}")
     target_link_libraries(${target_name} PUBLIC 
       ${XSQL_XEUS_TARGET}
-      ${XVEGA_STATIC_LIBRARY}
+      xvega
       SQLiteCpp
-      nlohmann_json::nlohmann_json
     )
 
     if(NOT EMSCRIPTEN)
@@ -290,18 +294,24 @@ if(EMSCRIPTEN)
     find_package(xeus-lite REQUIRED)
     include(WasmBuildOptions)
     add_executable(xsqlite src/main_emscripten_kernel.cpp )
-    target_link_libraries(xsqlite PRIVATE xeus-sqlite-static xeus-lite  nlohmann_json::nlohmann_json)
+    target_link_libraries(xsqlite PRIVATE xeus-sqlite-static xeus-lite)
     target_compile_features(xsqlite PRIVATE cxx_std_17)
 
     xeus_wasm_compile_options(xsqlite)
     xeus_wasm_link_options(xsqlite "web,worker")
+
+    target_compile_options(xsqlite
+        PUBLIC "SHELL: -s MAIN_MODULE=1"
+    )
     
     target_link_options(xsqlite
         PUBLIC "SHELL: -s FETCH=1"
         PUBLIC "SHELL: -s NO_EXIT_RUNTIME=1"
         PUBLIC "SHELL: -s 'ASYNCIFY_IMPORTS=[\"async_ems_init_idbfs\", \"async_ems_sync_db\"]'"
         PUBLIC "SHELL: -s FORCE_FILESYSTEM=1"
+        PUBLIC "SHELL: -s MAIN_MODULE=1"
     )
+    # target_link_libraries(xsqlite idbfs.js)
 endif()
 
 # Installation
@@ -382,5 +392,4 @@ if(EMSCRIPTEN)
             "$<TARGET_FILE_DIR:xsqlite>/xsqlite.js"
             "$<TARGET_FILE_DIR:xsqlite>/xsqlite.wasm"
             DESTINATION ${CMAKE_INSTALL_BINDIR})
-
 endif()
