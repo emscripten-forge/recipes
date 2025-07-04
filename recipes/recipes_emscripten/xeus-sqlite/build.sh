@@ -5,7 +5,7 @@ export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # # todo move to xeus-sqlite itself
-cp $RECIPE_DIR/CMakeLists.txt . 
+#cp $RECIPE_DIR/CMakeLists.txt . 
 
 ls $PREFIX/lib
 echo "BUILDING"
