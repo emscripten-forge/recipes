@@ -1,8 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-
-if [[ $target_platform == "emscripten-wasm32" ]]; then
-    emconfigure ./configure --prefix="${PREFIX}"
-    make 
-    make install
-fi
+emconfigure ./configure --prefix="${PREFIX}" --disable-shared
+make
+make install
