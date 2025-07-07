@@ -12,7 +12,8 @@ emcmake cmake .. \
     -LAH \
     -DNLOPT_GUILE=OFF \
     -DNLOPT_MATLAB=OFF \
-    -DNLOPT_OCTAVE=OFF
+    -DNLOPT_OCTAVE=OFF \
+    -DNLOPT_TESTS=OFF
 
 emmake make install
 
