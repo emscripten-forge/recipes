@@ -1,5 +1,6 @@
 #!/bin/bash
 export CFLAGS="${CFLAGS} -DHAVE_UINT32_T"
+export CXXFLAGS="${CXXFLAGS} -fPIC"
 
 mkdir -p build
 cd build
