@@ -1,0 +1,39 @@
+From 703b5fa8bd61289c8664ef603da8c502cb595ac7 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Tue, 8 Jul 2025 17:02:04 +0200
+Subject: [PATCH 5/5] Simulate common symbols as weak
+
+---
+ llvm/lib/MC/MCWasmStreamer.cpp | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/llvm/lib/MC/MCWasmStreamer.cpp b/llvm/lib/MC/MCWasmStreamer.cpp
+index 8560f0ebe..f8a83e01a 100644
+--- a/llvm/lib/MC/MCWasmStreamer.cpp
++++ b/llvm/lib/MC/MCWasmStreamer.cpp
+@@ -150,7 +150,11 @@ bool MCWasmStreamer::emitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
+ 
+ void MCWasmStreamer::emitCommonSymbol(MCSymbol *S, uint64_t Size,
+                                       Align ByteAlignment) {
+-  llvm_unreachable("Common symbols are not yet implemented for Wasm");
++  // llvm_unreachable("Common symbols are not yet implemented for Wasm");
++  auto *Symbol = cast<MCSymbolWasm>(S);
++  getAssembler().registerSymbol(*Symbol);
++  Symbol->setWeak(true);
++  Symbol->setExternal(true);
+ }
+ 
+ void MCWasmStreamer::emitELFSize(MCSymbol *Symbol, const MCExpr *Value) {
+@@ -159,7 +163,11 @@ void MCWasmStreamer::emitELFSize(MCSymbol *Symbol, const MCExpr *Value) {
+ 
+ void MCWasmStreamer::emitLocalCommonSymbol(MCSymbol *S, uint64_t Size,
+                                            Align ByteAlignment) {
+-  llvm_unreachable("Local common symbols are not yet implemented for Wasm");
++  // llvm_unreachable("Local common symbols are not yet implemented for Wasm");
++  auto *Symbol = cast<MCSymbolWasm>(S);
++  getAssembler().registerSymbol(*Symbol);
++  Symbol->setWeak(true);
++  Symbol->setExternal(true);
+ }
+ 
+ void MCWasmStreamer::emitIdent(StringRef IdentString) {
