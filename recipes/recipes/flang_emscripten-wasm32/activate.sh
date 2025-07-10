@@ -6,7 +6,6 @@
 if [ ! -f "$BUILD_PREFIX/bin/flang-new" ]; then
     micromamba install -p $BUILD_PREFIX \
         conda-forge/label/emscripten::flang==$PKG_VERSION \
-        llvm20==$PKG_VERSION \
         -y --no-channel-priority
 fi
 
