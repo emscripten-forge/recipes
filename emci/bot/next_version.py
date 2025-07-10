@@ -97,13 +97,23 @@ def next_version(ver: str, increment_alpha: bool = False) -> Iterator[str]:
         try:
             t = int(ver_split[k])
             is_num = True
+            is_patch_ver = (k == len(ver_split) - 1) # the last element
+            is_major_ver = (k == 0) # the first element
         except Exception:
             is_num = False
 
         if is_num:
-            ver_split[k] = str(t + 1)
-            yield "".join(ver_split)
-            ver_split[k] = "0"
+            n_bumps = 1 if is_major_ver else 3
+            for ver_bump in range(1, n_bumps + 1):
+                ver_split[k] = str(t + ver_bump)
+                if not is_patch_ver and k + 2 < len(ver_split):
+                    for i_bump in range(0, 3):
+                        ver_split[k + 2] = str(i_bump)
+                        yield "".join(ver_split)
+                        ver_split[k + 2] = "0"
+                else:
+                    yield "".join(ver_split)
+                    ver_split[k] = "0"
         elif increment_alpha and ver_split[k].isalpha() and len(ver_split[k]) == 1:
             ver_split[k] = chr(ord(ver_split[k]) + 1)
             yield "".join(ver_split)
