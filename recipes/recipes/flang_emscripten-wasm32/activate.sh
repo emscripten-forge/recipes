@@ -18,7 +18,7 @@ export FLANG=flang-new
 
 export FFLAGS="--target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-export FCLIBS="-lFortranRuntime"
+export FLIBS="-lFortranRuntime"
 
 rm $BUILD_PREFIX/bin/clang || true
 ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
