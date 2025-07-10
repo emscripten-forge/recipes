@@ -8,3 +8,4 @@ unset F18
 unset FLANG
 unset FFLAGS
 unset FPICFLAGS
+unset FCLIBS
