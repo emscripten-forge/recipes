@@ -2,11 +2,6 @@
 
 set -ex
 
-find lapack-netlib/BLAS/SRC \
-    -type f \
-    -name "*.f" \
-    -exec sed -ir 's/^([^*]*)CHARACTER([^*].*)/\1CHARACTER*(*)\2/' '{}' \;
-
 emmake make libs netlib \
     CC=emcc \
     HOSTCC=gcc \
