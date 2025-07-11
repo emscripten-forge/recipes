@@ -1,3 +1,23 @@
+#!/bin/bash
+
+set -eux
+
+jjj
+
+export FC=flang-new
+export F77=flang-new
+export F90=flang-new
+export F95=flang-new
+export F18=flang-new
+export FLANG=flang-new
+
+export FFLAGS="--target=wasm32-unknown-emscripten"
+export FPICFLAGS="-fPIC"
+
+# rm $BUILD_PREFIX/bin/clang || true
+# ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
+
+
 # flang-new does not support emscripten flags.
 #
 # Future solution when flang is more mature:
@@ -16,6 +36,7 @@
 ) > flang-new-wrap
 chmod +x flang-new-wrap
 export F77="${PWD}/flang-new-wrap"
+export EM_LLVM_ROOT=$LOLOLOL
 
 # Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
 export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
