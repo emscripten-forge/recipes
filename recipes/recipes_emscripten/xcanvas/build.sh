@@ -11,7 +11,7 @@ emcmake cmake       \
   -DCMAKE_FIND_ROOT_PATH=$PREFIX \
   ..
 
-# Build stpe
+# Build step
 emmake make -j8
 
 emcc libxcanvas.a $EM_FORGE_SIDE_MODULE_LDFLAGS -o libxcanvas.so
