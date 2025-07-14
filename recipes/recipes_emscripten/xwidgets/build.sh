@@ -7,10 +7,17 @@ emcmake cmake       \
   -DCMAKE_BUILD_TYPE=Release     \
   -DCMAKE_PREFIX_PATH=$PREFIX   \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
-  -DXWIDGETS_BUILD_SHARED_LIBS=ON \
+  -DXWIDGETS_BUILD_SHARED_LIBS=OFF \
   -DXWIDGETS_BUILD_STATIC_LIBS=ON \
   -DCMAKE_FIND_ROOT_PATH=$PREFIX \
   ..
 
-# Build & Install step
+# Build stpe
+emmake make -j8
+
+emcc libxwidgets.a $EM_FORGE_SIDE_MODULE_LDFLAGS -o libxwidgets.so
+
+# Install step
 emmake make -j8 install
+
+cp libxwidgets.so $PREFIX/lib/
