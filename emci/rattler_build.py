@@ -1,4 +1,4 @@
-import platform 
+import platform
 import os
 import subprocess
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
@@ -6,7 +6,7 @@ from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, skip_existing="local"):
 
-    cmd = ["rattler-build", "build", "--package-format", "tar-bz2"]
+    cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "plain"]
 
     # build single recipe or all recipes in a directory ?
     if recipe is not None and recipes_dir is not None:
@@ -17,7 +17,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         cmd.extend(["--recipe", str(recipe)])
     elif recipes_dir is not None:
         cmd.extend(["--recipe-dir", str(recipes_dir)])
-    
+
     cmd.extend(["--skip-existing", skip_existing])
 
     # build for emscripten-wasm32?
@@ -26,7 +26,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         # cmd.extend(["--variant-config", str(VARIANT_CONFIG_PATH)]) 
 
     cmd.extend(["-m", RATTLER_CONDA_BUILD_CONFIG_PATH])
-    
+
     # add conda forge and emscripten-forge channels
     cmd.extend([
         "-c", "https://repo.prefix.dev/emscripten-forge-dev",
@@ -41,6 +41,4 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
     ret = subprocess.run(' '.join(cmd), check=False, shell=True)#, env=os.environ)
     if ret.returncode != 0:
         raise RuntimeError(f"rattler-build failed with return code {ret.returncode}")
-    
-
 
