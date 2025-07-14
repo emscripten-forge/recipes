@@ -12,9 +12,12 @@ emcmake cmake       \
   -DCMAKE_FIND_ROOT_PATH=$PREFIX \
   ..
 
+# Build stpe
+emmake make -j8
+
 emcc libxwidgets.a $EM_FORGE_SIDE_MODULE_LDFLAGS -o libxwidgets.so
 
-# Build & Install step
+# Install step
 emmake make -j8 install
 
 cp libxwidgets.so $PREFIX/lib/
