@@ -16,5 +16,12 @@ emcmake cmake .. \
   -DBUILD_TESTS=OFF \
   -DBUILD_DOCS=OFF
 
+emcc bin/Release/libsparrow.a \
+  $EM_FORGE_SIDE_MODULE_LDFLAGS \
+  -o libsparrow.so
+
 # Build and install
 emmake make install -j8
+
+# Manually install the shared library
+cp libsparrow.so "$PREFIX/lib/"
