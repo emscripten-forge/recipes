@@ -1,0 +1,49 @@
+context:
+  name: fps-kernel-web-worker
+  version: 0.1.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fps_kernel_web_worker-${{ version }}.tar.gz
+  sha256: 6560c3f0c0c5cd2f2d807da3a98792ba28931481a72817990a7733a622856494
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+    - pip != 25.1
+    - cross-python_${{ target_platform }}
+    - hatchling
+  host:
+    - python
+  run:
+    - python
+    - jupyverse-api >=0.10.1,<0.11.0
+    - anyio
+    - pyjs >=3
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_kernelwebworker.py
+
+about:
+  homepage: https://github.com/jupyter-server/jupyverse/tree/main/plugins/kernel_web_worker
+  license: BSD-3-Clause
+  license_file: COPYING.md
+  summary: An FPS plugin for the kernel web worker API
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
