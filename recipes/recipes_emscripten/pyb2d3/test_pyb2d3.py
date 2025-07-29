@@ -1,12 +1,7 @@
 import pytest
 
-
-
-
-
 def  test_import():
     import pyb2d3 as b2d
-
 
 def test_world_cls():
     import pyb2d3 as b2d
