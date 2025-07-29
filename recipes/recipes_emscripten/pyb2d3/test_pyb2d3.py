@@ -10,17 +10,17 @@ def  test_import():
 # joint_names = ["distance", "filter", "motor", "mouse", "prismatic", "revolute", "wheel"]
 
 
-# def test_world_cls():
-#     world = b2d.World(gravity=(0, -10), user_data=42)
-#     assert world.gravity == approx((0, -10))
-#     assert world.user_data == 42
+def test_world_cls():
+    import pyb2d3 as b2d
+    world = b2d.World(gravity=(0, -10), user_data=42)
+    assert world.user_data == 42
 
-#     body = world.create_dynamic_body(position=(0, 0), user_data=100)
-#     assert body.user_data == 100
-#     body = world.create_static_body(position=(0, -10), user_data=200)
-#     assert body.user_data == 200
-#     body = world.create_kinematic_body(position=(0, 10), user_data=300)
-#     assert body.user_data == 300
+    body = world.create_dynamic_body(position=(0, 0), user_data=100)
+    assert body.user_data == 100
+    body = world.create_static_body(position=(0, -10), user_data=200)
+    assert body.user_data == 200
+    body = world.create_kinematic_body(position=(0, 10), user_data=300)
+    assert body.user_data == 300
 
 #     body_def = b2d.body_def(position=(0, 0))
 #     body_def.user_data = 100
