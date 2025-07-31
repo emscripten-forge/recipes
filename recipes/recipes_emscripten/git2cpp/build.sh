@@ -1,11 +1,6 @@
-cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
-cat $SRC_DIR/emscripten.meson.cross
-
-# CLI11's pkgconfig file is installed here:
-export PKG_CONFIG_PATH=$BUILD_PREFIX/share/pkgconfig
-
-export CONFIG_CFLAGS="\
+export CONFIG_CXXFLAGS="\
     -Os \
+    -I$BUILD_PREFIX/include \
     "
 export CONFIG_LDFLAGS="\
     -Os \
@@ -17,13 +12,16 @@ export CONFIG_LDFLAGS="\
     -sMODULARIZE=1 \
     "
 
-export CFLAGS="$CFLAGS $CONFIG_CFLAGS"
+export CXXFLAGS="$CXXFLAGS $CONFIG_CXXFLAGS"
 export LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS"
 
-meson setup build --cross-file emscripten.meson.cross
+emcmake cmake \
+    -Bbuild \
+    -DCMAKE_PREFIX_PATH=$PREFIX \
+    -Dlibgit2_DIR=$PREFIX/lib/cmake/libgit2
 
 cd build
-meson compile
+emmake make -j$CPU_COUNT
 
 mkdir -p $PREFIX/bin
 cp git2cpp.{js,wasm} $PREFIX/bin/
