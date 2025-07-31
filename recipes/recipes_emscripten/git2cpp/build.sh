@@ -1,6 +1,7 @@
 export CONFIG_CXXFLAGS="\
     -Os \
     -I$BUILD_PREFIX/include \
+    -fexceptions \
     "
 export CONFIG_LDFLAGS="\
     -Os \
@@ -10,6 +11,7 @@ export CONFIG_LDFLAGS="\
     -sEXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY \
     -sFORCE_FILESYSTEM=1 \
     -sMODULARIZE=1 \
+    -fexceptions \
     "
 
 export CXXFLAGS="$CXXFLAGS $CONFIG_CXXFLAGS"
