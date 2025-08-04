@@ -1,16 +1,19 @@
 context:
   name: yarl
   version: 1.9.4
+
 package:
   name: ${{ name }}
   version: ${{ version }}
+
 source:
-  url: 
-    https://files.pythonhosted.org/packages/e0/ad/bedcdccbcbf91363fd425a948994f3340924145c2bc8ccb296f4a1e52c28/yarl-${{
-    version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 566db86717cf8080b99b58b083b773a908ae40f06681e87e589a976faf8246bf
+
 build:
-  number: 0
+  number: 1
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
 requirements:
   build:
   - ${{ compiler('cxx')}}
@@ -23,6 +26,7 @@ requirements:
   run:
   - multidict
   - idna
+
 tests:
 - script: pytester
   requirements:
@@ -33,7 +37,12 @@ tests:
   files:
     recipe:
     - test_yarl.py
+
 about:
-  summary: Yet another URL library
-  homepage: https://github.com/aio-libs/yarl/
+  homepage: https://github.com/aio-libs/yarl
   license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Yet another URL library
+  documentation: http://yarl.readthedocs.io
+  repository: https://github.com/aio-libs/yarl
