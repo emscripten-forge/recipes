@@ -6,29 +6,24 @@ package:
   name: ${{ name }}
   version: ${{ version }}
 
-
 source:
-- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
-    version }}.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 88505d095af899a88ae8ac4db02f4650ef0801d2ff6f65b6d1f0a45dcf760a6d
-  # patches:
-  # - patches/fix-zarrsync.patch
 
 build:
   number: 1
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
 requirements:
   build:
   - ${{ compiler('cxx') }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - pip
   - hatchling
   - hatch-vcs
   host:
   - python
-    # - setuptools >=38.6.0
-    # - setuptools_scm >1.5.4
   run:
   - numpy
   - asciitree
