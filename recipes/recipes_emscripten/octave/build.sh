@@ -10,8 +10,8 @@ set -eux
 LLVM_DIR="./llvm_dir"
 LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
 mkdir -p $LLVM_DIR
-wget https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG
-tar -xvf $LLVM_PKG --directory $LLVM_DIR
+wget --quiet https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG
+tar -xf $LLVM_PKG --directory $LLVM_DIR
 
 # Check install
 $LLVM_DIR/bin/flang --version
