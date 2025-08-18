@@ -2,8 +2,6 @@
 
 set -eux
 
-jjj
-
 export FC=flang-new
 export F77=flang-new
 export F90=flang-new
@@ -23,6 +21,7 @@ export FPICFLAGS="-fPIC"
 # Future solution when flang is more mature:
 # export FFLAGS="${FFLAGS} -Wno-error=unused-command-line-argument -Qunused-arguments"
 #
+
 # Current wrapper to remove all -s CLI otions passed to flang-new
 (
    echo '#!/usr/bin/env bash'
@@ -94,8 +93,7 @@ emconfigure ./configure \
    --without-pcre \
    --without-qt \
    --without-qrupdate \
-   --without-framework-carbon \
-   || cat config.log || exit 1
+   --without-framework-carbon
 
 emmake make --jobs 1  # OOM
 

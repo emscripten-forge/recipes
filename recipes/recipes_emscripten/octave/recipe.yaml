@@ -1,6 +1,6 @@
 context:
   name: octave
-  version: 9.4.0
+  version: 10.2.0
 
 package:
   name: ${{ name }}
@@ -8,11 +8,7 @@ package:
 
 source:
   url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: da9481205bfa717660b7d4a16732d8b2d58aadceab4993d41242a8e2848ea6c1
-  patches:
-    - 0001-Force-detection-of-shared-libs.patch
-    - 0002-Remove-COMMON.patch
-    - 0003-Delete-odepack.patch
+  sha256: 07fb6d9339d2f350735c91671be8e874d160018cc6b688f9efd9d558d237f69f
 
 build:
   number: 0
@@ -21,9 +17,9 @@ requirements:
   build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - micromamba  # flang activation script
+    # - micromamba  # flang activation script
     # - flang_${{ target_platform }}
-    # - llvm_${{ target_platform }} >= 20.1
+    - llvm_${{ target_platform }} >= 20.1
     - make
     - libtool>=2.5.4
     - pkg-config
@@ -37,6 +33,7 @@ requirements:
     - libflang
     - openblas-flang  # libblas, libcblas, liblapack
     - pcre2>=10.43
+    - freetype
   run_exports:
     - ${{ pin_subpackage('octave', upper_bound='x') }}
 
