@@ -17,59 +17,38 @@ tar -xf $LLVM_PKG --directory $LLVM_DIR
 $LLVM_DIR/bin/flang --version
 $LLVM_DIR/bin/llvm-nm --version
 
+# Set flags
+export EM_LLVM_ROOT=$LLVM_DIR
+export FLANG=$LLVM_DIR/bin/flang
+export FC=$FLANG
+export F77=$FLANG
+export F90=$FLANG
+export F95=$FLANG
+export F18=$FLANG
 
-fail here
-
-export FC=flang-new
-export F77=flang-new
-export F90=flang-new
-export F95=flang-new
-export F18=flang-new
-export FLANG=flang-new
-
-export FFLAGS="--target=wasm32-unknown-emscripten"
+export FFLAGS="-fPIC --target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-
-# rm $BUILD_PREFIX/bin/clang || true
-# ln -s $BUILD_PREFIX/bin/clang-20 $BUILD_PREFIX/bin/clang # links to emsdk clang
-
-
-# flang-new does not support emscripten flags.
-#
-# Future solution when flang is more mature:
-# export FFLAGS="${FFLAGS} -Wno-error=unused-command-line-argument -Qunused-arguments"
-#
-
-# Current wrapper to remove all -s CLI otions passed to flang-new
-(
-   echo '#!/usr/bin/env bash'
-   echo 'args=()'
-   echo 'for arg in "$@"; do'
-   echo '  if [[ "${arg}" != -s* ]]; then'
-   echo '    args+=("${arg}")'
-   echo '  fi'
-   echo 'done'
-   echo 'exec' "\"${F77}\"" '"${args[@]}"'
-) > flang-new-wrap
-chmod +x flang-new-wrap
-export F77="${PWD}/flang-new-wrap"
-export EM_LLVM_ROOT=$LOLOLOL
-
-# Remove spaces in `-s OPTION` from emscripten to avoid confusion in flang
-export LDFLAGS="$(echo "${LDFLAGS}" |  sed -E 's/-s +/-s/g')"
-
 export FLIBS="-lFortranRuntime"
-export FFLAGS="${FFLAGS} --target=wasm32-unknown-emscripten"
-export CFLAGS="${CFLAGS} --target=wasm32-unknown-emscripten"
-export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
+export FCLIBS="-lFortranRuntime"
 
-# Octave overrides xerbla from Lapack.
-# Both Blas and Lapack define xerbla zerbla_array lsame.
-export LDFLAGS="${LDFLAGS} -Wl,--allow-multiple-definition"
+export LDFLAGS="-fPIC -sWASM_BIGINT=1 -Wl,--allow-multiple-definition -L$PREFIX/lib"
+export LD_STATIC_FLAG="-static"
+export SH_LDFLAGS="-sSIDE_MODULE=1"
+export DL_LDFLAGS="-sSIDE_MODULE=1"
+export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1"
+
+export EMCC_CFLAGS="-fPIC -sWASM_BIGINT=1"
+export CFLAGS="-O2 -g0 -fPIC -sWASM_BIGINT=1"
+export CXXFLAGS="-g0 -fPIC -sWASM_BIGINT=1"
+
+export EXEEXT=".js"
+export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
 
 ####################
 # CONFIGURE OCTAVE #
 ####################
+
+fail here
 
 # Force disable pthread
 sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
