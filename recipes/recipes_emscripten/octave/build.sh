@@ -2,6 +2,24 @@
 
 set -eux
 
+###############################
+# CONFIGURE BUILD ENVIRONMENT #
+###############################
+
+# Install custom LLVM and flang which includes patch for common symbols
+LLVM_DIR="./llvm_dir"
+LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
+mkdir -p $LLVM_DIR
+wget https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG
+tar -xvf $LLVM_PKG --directory $LLVM_DIR
+
+# Check install
+$LLVM_DIR/bin/flang --version
+$LLVM_DIR/bin/llvm-nm --version
+
+
+fail here
+
 export FC=flang-new
 export F77=flang-new
 export F90=flang-new
@@ -48,6 +66,10 @@ export CXXFLAGS="${CXXFLAGS} --target=wasm32-unknown-emscripten"
 # Octave overrides xerbla from Lapack.
 # Both Blas and Lapack define xerbla zerbla_array lsame.
 export LDFLAGS="${LDFLAGS} -Wl,--allow-multiple-definition"
+
+####################
+# CONFIGURE OCTAVE #
+####################
 
 # Force disable pthread
 sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
