@@ -48,54 +48,78 @@ export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/l
 # CONFIGURE OCTAVE #
 ####################
 
-fail here
+BUILD="x86_64-unknown-linux-gnu"
+HOST="wasm32-unknown-emscripten"
 
-# Force disable pthread
-sed -i 's/ax_pthread_ok=yes/ax_pthread_ok=no/' configure
-export ac_cv_header_pthread_h=no
-# Force shared libraries to build as side modules
-sed -i 's/SH_LDFLAGS=.*/SH_LDFLAGS=-sSIDE_MODULE=1/' configure
-sed -i -E 's/(^|[^a-zA-Z0-9-])-shared($|[^a-zA-Z0-9-])/\1-sSIDE_MODULE=1\2/g' configure
-# Shared libraries that are dlopened are built as side modules
-sed -i 's/DL_LDFLAGS=.*/DL_LDFLAGS=-sSIDE_MODULE=1/' configure
-
-# We mix F2C calling convention with void return to try to match OpenBlas
-sed -i 's/#define F77_RET_T.*/#define F77_RET_T void/' liboctave/util/f77-fcn.h
-sed -i 's/#define F77_RETURN.*/#define F77_RETURN(retval) return;/' liboctave/util/f77-fcn.h
+BUILD_DIR="_build"
+mkdir -p $BUILD_DIR
+cd $BUILD_DIR
 
 # Forcing autotools to NOT rerun after patches
-find . -exec touch -t $(date +%Y%m%d%H%M) {} \;
+find . -name "_build*" -prune -o -exec touch -t $(date +%Y%m%d%H%M) {} \;
 
-BUILD="x86_64-unknown-linux-gnu"
-# Pretend to build for linux because autotools does not know about emscripten
-HOST="wasm32-unknown-linux-gnu"
+# Overriding some tests
+export ac_octave_suitesparseconfig_pkg_check=no
+export gl_cv_func_setlocale_null_all_mtsafe=no
+export gl_cv_func_setlocale_null_one_mtsafe=no
+export ac_octave_spqr_check_for_lib=no
+export ac_cv_func_pthread_sigmask=no
+export ac_cv_header_pthread_h=no
+export ac_cv_header_threads_h=no
+export ac_cv_type_pthread_t=no
+export ac_cv_type_pthread_spinlock_t=no
+export gl_cv_const_PTHREAD_CREATE_DETACHED=no
+export gl_cv_const_PTHREAD_MUTEX_RECURSIVE=no
+export gl_cv_const_PTHREAD_MUTEX_ROBUST=no
+export gl_cv_const_PTHREAD_PROCESS_SHARED=no
 
-emconfigure ./configure \
+# Assume putenv is compatible
+export gl_cv_func_svid_putenv=yes
+
+emconfigure ../configure \
    --prefix="${PREFIX}" \
    --build="${BUILD}"\
    --host="${HOST}" \
-   --disable-dependency-tracking \
-   --enable-fortran-calling-convention="f2c" \
-   --enable-shared \
-   --disable-64 \
-   --disable-dlopen \
-   --disable-rpath \
-   --disable-openmp \
+   --srcdir=".." \
+   --enable-static \
+   --enable-fortran-calling-convention="gfortran" \
+   --disable-docs \
+   --disable-readline \
+   --enable-threads=no \
    --disable-threads \
    --disable-fftw-threads \
-   --disable-readline \
-   --disable-docs \
-   --disable-java \
-   --with-blas="-lopenblas" \
-   --with-lapack="-lopenblas" \
-   --with-pcre2 \
-   --with-pcre2-includedir="${PREFIX}/include" \
-   --with-pcre2-libdir="${PREFIX}/lib" \
-   --without-pcre \
-   --without-qt \
+   --disable-rpath \
+   --without-amd \
+   --without-camd \
+   --without-colamd \
+   --without-ccolamd \
+   --without-cholmod \
+   --without-curl \
+   --without-cxsparse \
+   --without-suitesparseconfig \
+   --without-spqr \
+   --without-fftw3 \
+   --without-fftw3f \
+   --without-glpk \
+   --without-glpk \
+   --without-hdf5 \
+   --without-klu \
+   --without-opengl \
+   --without-qhull_r \
    --without-qrupdate \
-   --without-framework-carbon
+   --without-umfpack \
+   --without-z \
+   --without-framework-carbon \
+   --without-framework-opengl \
+   --without-qt
+
+
+#####################
+# BUILD AND INSTALL #
+#####################
 
 emmake make --jobs 1  # OOM
 
 emmake make install
+
+cp src/octave*.wasm $PREFIX/bin/
