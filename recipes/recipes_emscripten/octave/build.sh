@@ -111,7 +111,8 @@ emconfigure ../configure \
    --without-z \
    --without-framework-carbon \
    --without-framework-opengl \
-   --without-qt
+   --without-qt \
+|| cat config.log
 
 
 #####################
