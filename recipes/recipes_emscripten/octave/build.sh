@@ -22,6 +22,7 @@ emlibs=(
    libc++abi-debug-noexcept
    libc-asan-debug
    libstubs-debug
+   libcompiler_rt
 )
 pushd $EMSDK_DIR/emscripten/cache/sysroot/lib/wasm32-emscripten/
    for lib in "${emlibs[@]}"; do
