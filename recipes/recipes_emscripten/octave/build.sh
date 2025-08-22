@@ -14,7 +14,22 @@ mv $EMSDK_DIR/bin/wasm-opt $EMSDK_DIR/bin/wasm-opt-original
 cp $RECIPE_DIR/patches/wasm-opt-wrapper $EMSDK_DIR/bin/wasm-opt
 chmod +x $EMSDK_DIR/bin/wasm-opt
 
-cat $(which wasm-opt)
+# FIXME: There should be a better way to prioritize Emscripten's PIC libs
+emlibs=(
+   libc-debug
+   libdlmalloc
+   libc++-noexcept
+   libc++abi-debug-noexcept
+   libc-asan-debug
+   libstubs-debug
+)
+pushd $EMSDK_DIR/emscripten/cache/sysroot/lib/wasm32-emscripten/
+   for lib in "${emlibs[@]}"; do
+      rm ./$lib || true
+      embuilder build $lib --pic
+   done
+   cp ./pic/* . -v
+popd
 
 ###############################
 # CONFIGURE BUILD ENVIRONMENT #
