@@ -61,9 +61,31 @@ requirements:
   run_exports:
     - ${{ pin_subpackage('octave', upper_bound='x') }}
 
+tests:
+- package_contents:
+    files:
+    - lib/octave/${{ version }}/liboctave.so
+    - lib/octave/${{ version }}/liboctinterp.so
+    - lib/octave/${{ version }}/liboctmex.so
+    - bin/octave-cli.wasm
+- script:
+  - node ${PREFIX}/bin/octave-cli --version
+  - node ${PREFIX}/bin/octave-cli --help
+  - node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
+  requirements:
+    build:
+    - nodejs
+
 about:
   homepage: https://www.gnu.org/software/octave/
   license: GPL-3.0-or-later
   license_file: COPYING
   documentation: https://www.gnu.org/software/octave/doc/interpreter/
-  summary: GNU Octave is a high-level language, primarily intended for numerical computations
+  summary: Scientific Programming Language
+  description: |
+    GNU Octave is a high-level language, primarily intended for numerical
+    computations.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
