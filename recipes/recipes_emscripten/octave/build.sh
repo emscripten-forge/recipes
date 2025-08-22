@@ -48,6 +48,14 @@ $LLVM_DIR/bin/flang --version
 $LLVM_DIR/bin/llvm-nm --version
 
 # Set flags
+export EM_LLVM_ROOT=$LLVM_DIR
+export FLANG=$LLVM_DIR/bin/flang
+export FC=$FLANG
+export F77=$FLANG
+export F90=$FLANG
+export F95=$FLANG
+export F18=$FLANG
+
 export FFLAGS="-fPIC --target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
 export FLIBS="-lFortranRuntime"
