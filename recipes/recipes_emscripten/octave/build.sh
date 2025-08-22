@@ -45,18 +45,17 @@ export FPICFLAGS="-fPIC"
 export FLIBS="-lFortranRuntime"
 export FCLIBS="-lFortranRuntime"
 
-export LDFLAGS="-fPIC -sWASM_BIGINT=1 -Wl,--allow-multiple-definition -L$PREFIX/lib"
+export LDFLAGS="-fPIC -L$PREFIX/lib"
 export LD_STATIC_FLAG="-static"
 export SH_LDFLAGS="-sSIDE_MODULE=1"
 export DL_LDFLAGS="-sSIDE_MODULE=1"
 export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1"
 
-export EMCC_CFLAGS="-fPIC -sWASM_BIGINT=1"
-export CFLAGS="-O2 -g0 -fPIC -sWASM_BIGINT=1"
-export CXXFLAGS="-g0 -fPIC -sWASM_BIGINT=1"
+export CFLAGS="-O2 -g0 -fPIC"
+export CXXFLAGS="-g0 -fPIC"
 
 export EXEEXT=".js"
-export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
+export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -static -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
 
 ####################
 # CONFIGURE OCTAVE #
