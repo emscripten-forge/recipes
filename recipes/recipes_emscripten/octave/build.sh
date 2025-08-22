@@ -84,10 +84,10 @@ BUILD_DIR="_build"
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
-# Forcing autotools to NOT rerun after patches
+# Force autotools to NOT rerun after patches
 find . -name "_build*" -prune -o -exec touch -t $(date +%Y%m%d%H%M) {} \;
 
-# Overriding some tests
+# Override some tests
 export ac_octave_suitesparseconfig_pkg_check=no
 export gl_cv_func_setlocale_null_all_mtsafe=no
 export gl_cv_func_setlocale_null_one_mtsafe=no
@@ -148,7 +148,7 @@ emconfigure ../configure \
 # BUILD AND INSTALL #
 #####################
 
-emmake make --jobs 1  # OOM
+emmake make --jobs 1
 
 emmake make install
 
