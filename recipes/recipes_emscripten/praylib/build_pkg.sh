@@ -16,7 +16,7 @@ CMAKE_ARGS="${CMAKE_ARGS} -DBUILD_WASM_HOST=OFF"
 
 export CFLAGS="$CFLAGS -sWASM_BIGINT -fexceptions"
 export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -fexceptions"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fexceptions --allow-multiple-definition"
 
 export CMAKE_ARGS
 
