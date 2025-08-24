@@ -1,0 +1,93 @@
+context:
+  version: 0.7.0
+  name: praylib
+
+source:
+  sha256: 86bb0a59ebe4aae82a90c76bd57f88ad3c24e30ddf41a5bb09eea97e391ca45e
+  path: https://github.com/DerThorsten/praylib/archive/refs/tags/${{version}}.tar.gz
+
+build:
+  number: 0
+
+
+outputs:
+  - package:
+      name: praylib-host
+      version: ${{ version }}
+
+    build:
+      script: build_host.sh
+
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cross-python_emscripten-wasm32
+      - cmake>=4.0
+      - ninja
+      - numpy
+      - python
+      host:
+      - python
+      - pybind11 <3
+      - pyjs
+      - numpy
+      - pyjs
+      - libpython
+      - zstd
+      - openssl
+      - xz
+
+      run:
+      - numpy
+      - python
+      - pyjs
+
+
+
+  - package:
+      name: praylib
+      version: ${{ version }}
+
+    build:
+      script: build_pkg.sh
+
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cross-python_emscripten-wasm32
+      - cmake>=4.0
+      - ninja
+      - numpy
+      - nanobind
+      - scikit-build-core
+      - python
+      - pip
+      host:
+      - python
+      - numpy
+      - raylib
+
+      run:
+      - numpy
+      - python
+
+    tests:
+      - script: pytester
+        files:
+          recipe:
+          - test_praylib.py
+        requirements:
+          build:
+          - pytester
+          run:
+          - pytester-run
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: python bindings for raylib
+  homepage: https://github.com/DerThorsten/pyb2d3
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
