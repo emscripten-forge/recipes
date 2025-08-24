@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+
+export CFLAGS=""
+export CXXFLAGS=""
+export LDFLAGS=""
+
+
+
+
 mkdir -p build
 cd build
 emcmake cmake .. \
