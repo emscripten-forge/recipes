@@ -1,0 +1,1620 @@
+From 68d8f21c081b7d3cd84fe9ef4018ca3857d4f36c Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 19 Aug 2025 18:03:58 +0200
+Subject: [PATCH 10/19] Remove redundant headers
+
+Use the pthread and signal headers already provided by emscripten.
+---
+ libgnu/Makefile.am |  418 +++++++++---------
+ libgnu/Makefile.in | 1035 ++++++++++++++++++++++----------------------
+ 2 files changed, 727 insertions(+), 726 deletions(-)
+
+diff --git a/libgnu/Makefile.am b/libgnu/Makefile.am
+index 5909a8a..de4827d 100644
+--- a/libgnu/Makefile.am
++++ b/libgnu/Makefile.am
+@@ -2518,150 +2518,150 @@ endif
+ 
+ ## begin gnulib module pthread-h
+ 
+-BUILT_SOURCES += pthread.h
+-
+-# We need the following in order to create <pthread.h> when the system
+-# doesn't have one that works with the given compiler.
+-pthread.h: pthread.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(_NORETURN_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
+-	$(gl_V_at)$(SED_HEADER_STDOUT) \
+-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+-	      -e 's|@''HAVE_PTHREAD_H''@|$(HAVE_PTHREAD_H)|g' \
+-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
+-	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
+-	      -e 's|@''NEXT_PTHREAD_H''@|$(NEXT_PTHREAD_H)|g' \
+-	      -e 's/@''GNULIB_PTHREAD_THREAD''@/$(GL_GNULIB_PTHREAD_THREAD)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_ONCE''@/$(GL_GNULIB_PTHREAD_ONCE)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_MUTEX''@/$(GL_GNULIB_PTHREAD_MUTEX)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_RWLOCK''@/$(GL_GNULIB_PTHREAD_RWLOCK)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_COND''@/$(GL_GNULIB_PTHREAD_COND)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_TSS''@/$(GL_GNULIB_PTHREAD_TSS)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_SPIN''@/$(GL_GNULIB_PTHREAD_SPIN)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_MUTEX_TIMEDLOCK''@/$(GL_GNULIB_PTHREAD_MUTEX_TIMEDLOCK)/g' \
+-	      -e 's|@''HAVE_PTHREAD_T''@|$(HAVE_PTHREAD_T)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPINLOCK_T''@|$(HAVE_PTHREAD_SPINLOCK_T)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CREATE_DETACHED''@|$(HAVE_PTHREAD_CREATE_DETACHED)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_RECURSIVE''@|$(HAVE_PTHREAD_MUTEX_RECURSIVE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_ROBUST''@|$(HAVE_PTHREAD_MUTEX_ROBUST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_PROCESS_SHARED''@|$(HAVE_PTHREAD_PROCESS_SHARED)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CREATE''@|$(HAVE_PTHREAD_CREATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_INIT''@|$(HAVE_PTHREAD_ATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_GETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_SETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_DESTROY''@|$(HAVE_PTHREAD_ATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SELF''@|$(HAVE_PTHREAD_SELF)|g' \
+-	      -e 's|@''HAVE_PTHREAD_EQUAL''@|$(HAVE_PTHREAD_EQUAL)|g' \
+-	      -e 's|@''HAVE_PTHREAD_DETACH''@|$(HAVE_PTHREAD_DETACH)|g' \
+-	      -e 's|@''HAVE_PTHREAD_JOIN''@|$(HAVE_PTHREAD_JOIN)|g' \
+-	      -e 's|@''HAVE_PTHREAD_EXIT''@|$(HAVE_PTHREAD_EXIT)|g' \
+-	      < $(srcdir)/pthread.in.h > $@-t1
+-	$(AM_V_at)sed \
+-	      -e 's|@''HAVE_PTHREAD_ONCE''@|$(HAVE_PTHREAD_ONCE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_INIT''@|$(HAVE_PTHREAD_MUTEX_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_INIT''@|$(HAVE_PTHREAD_MUTEXATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_DESTROY''@|$(HAVE_PTHREAD_MUTEXATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_LOCK''@|$(HAVE_PTHREAD_MUTEX_LOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_TRYLOCK''@|$(HAVE_PTHREAD_MUTEX_TRYLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_TIMEDLOCK''@|$(HAVE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_UNLOCK''@|$(HAVE_PTHREAD_MUTEX_UNLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_DESTROY''@|$(HAVE_PTHREAD_MUTEX_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_INIT''@|$(HAVE_PTHREAD_RWLOCK_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_INIT''@|$(HAVE_PTHREAD_RWLOCKATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_DESTROY''@|$(HAVE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_RDLOCK''@|$(HAVE_PTHREAD_RWLOCK_RDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_WRLOCK''@|$(HAVE_PTHREAD_RWLOCK_WRLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_UNLOCK''@|$(HAVE_PTHREAD_RWLOCK_UNLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_DESTROY''@|$(HAVE_PTHREAD_RWLOCK_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_INIT''@|$(HAVE_PTHREAD_COND_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CONDATTR_INIT''@|$(HAVE_PTHREAD_CONDATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CONDATTR_DESTROY''@|$(HAVE_PTHREAD_CONDATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_WAIT''@|$(HAVE_PTHREAD_COND_WAIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_TIMEDWAIT''@|$(HAVE_PTHREAD_COND_TIMEDWAIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_SIGNAL''@|$(HAVE_PTHREAD_COND_SIGNAL)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_BROADCAST''@|$(HAVE_PTHREAD_COND_BROADCAST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_DESTROY''@|$(HAVE_PTHREAD_COND_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_KEY_CREATE''@|$(HAVE_PTHREAD_KEY_CREATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SETSPECIFIC''@|$(HAVE_PTHREAD_SETSPECIFIC)|g' \
+-	      -e 's|@''HAVE_PTHREAD_GETSPECIFIC''@|$(HAVE_PTHREAD_GETSPECIFIC)|g' \
+-	      -e 's|@''HAVE_PTHREAD_KEY_DELETE''@|$(HAVE_PTHREAD_KEY_DELETE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_INIT''@|$(HAVE_PTHREAD_SPIN_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_LOCK''@|$(HAVE_PTHREAD_SPIN_LOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_TRYLOCK''@|$(HAVE_PTHREAD_SPIN_TRYLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_UNLOCK''@|$(HAVE_PTHREAD_SPIN_UNLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_DESTROY''@|$(HAVE_PTHREAD_SPIN_DESTROY)|g' \
+-	      < $@-t1 > $@-t2
+-	$(AM_V_at)sed \
+-	      -e 's|@''REPLACE_PTHREAD_CREATE''@|$(REPLACE_PTHREAD_CREATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_INIT''@|$(REPLACE_PTHREAD_ATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_GETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_SETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_DESTROY''@|$(REPLACE_PTHREAD_ATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SELF''@|$(REPLACE_PTHREAD_SELF)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_EQUAL''@|$(REPLACE_PTHREAD_EQUAL)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_DETACH''@|$(REPLACE_PTHREAD_DETACH)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_JOIN''@|$(REPLACE_PTHREAD_JOIN)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_EXIT''@|$(REPLACE_PTHREAD_EXIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ONCE''@|$(REPLACE_PTHREAD_ONCE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_INIT''@|$(REPLACE_PTHREAD_MUTEX_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_INIT''@|$(REPLACE_PTHREAD_MUTEXATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_DESTROY''@|$(REPLACE_PTHREAD_MUTEXATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_LOCK''@|$(REPLACE_PTHREAD_MUTEX_LOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_TRYLOCK''@|$(REPLACE_PTHREAD_MUTEX_TRYLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_TIMEDLOCK''@|$(REPLACE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_UNLOCK''@|$(REPLACE_PTHREAD_MUTEX_UNLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_DESTROY''@|$(REPLACE_PTHREAD_MUTEX_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_INIT''@|$(REPLACE_PTHREAD_RWLOCK_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_INIT''@|$(REPLACE_PTHREAD_RWLOCKATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_DESTROY''@|$(REPLACE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_RDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_RDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_WRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_WRLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_UNLOCK''@|$(REPLACE_PTHREAD_RWLOCK_UNLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_DESTROY''@|$(REPLACE_PTHREAD_RWLOCK_DESTROY)|g' \
+-	      < $@-t2 > $@-t3
+-	$(AM_V_at)sed \
+-	      -e 's|@''REPLACE_PTHREAD_COND_INIT''@|$(REPLACE_PTHREAD_COND_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_CONDATTR_INIT''@|$(REPLACE_PTHREAD_CONDATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_CONDATTR_DESTROY''@|$(REPLACE_PTHREAD_CONDATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_WAIT''@|$(REPLACE_PTHREAD_COND_WAIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_TIMEDWAIT''@|$(REPLACE_PTHREAD_COND_TIMEDWAIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_SIGNAL''@|$(REPLACE_PTHREAD_COND_SIGNAL)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_BROADCAST''@|$(REPLACE_PTHREAD_COND_BROADCAST)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_DESTROY''@|$(REPLACE_PTHREAD_COND_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_KEY_CREATE''@|$(REPLACE_PTHREAD_KEY_CREATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SETSPECIFIC''@|$(REPLACE_PTHREAD_SETSPECIFIC)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_GETSPECIFIC''@|$(REPLACE_PTHREAD_GETSPECIFIC)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_KEY_DELETE''@|$(REPLACE_PTHREAD_KEY_DELETE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_INIT''@|$(REPLACE_PTHREAD_SPIN_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_LOCK''@|$(REPLACE_PTHREAD_SPIN_LOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_TRYLOCK''@|$(REPLACE_PTHREAD_SPIN_TRYLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_UNLOCK''@|$(REPLACE_PTHREAD_SPIN_UNLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_DESTROY''@|$(REPLACE_PTHREAD_SPIN_DESTROY)|g' \
+-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+-	      -e '/definition of _Noreturn/r $(_NORETURN_H)' \
+-	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
+-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+-	      < $@-t3 > $@-t4
+-	$(AM_V_at)rm -f $@-t1 $@-t2 $@-t3
+-	$(AM_V_at)mv $@-t4 $@
+-MOSTLYCLEANFILES += pthread.h pthread.h-t1 pthread.h-t2 pthread.h-t3 pthread.h-t4
+-
+-EXTRA_DIST += pthread.in.h
++# BUILT_SOURCES += pthread.h
++
++# # We need the following in order to create <pthread.h> when the system
++# # doesn't have one that works with the given compiler.
++# pthread.h: pthread.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(_NORETURN_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
++# 	$(gl_V_at)$(SED_HEADER_STDOUT) \
++# 	      -e 's|@''GUARD_PREFIX''@|GL|g' \
++# 	      -e 's|@''HAVE_PTHREAD_H''@|$(HAVE_PTHREAD_H)|g' \
++# 	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++# 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++# 	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++# 	      -e 's|@''NEXT_PTHREAD_H''@|$(NEXT_PTHREAD_H)|g' \
++# 	      -e 's/@''GNULIB_PTHREAD_THREAD''@/$(GL_GNULIB_PTHREAD_THREAD)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_ONCE''@/$(GL_GNULIB_PTHREAD_ONCE)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_MUTEX''@/$(GL_GNULIB_PTHREAD_MUTEX)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_RWLOCK''@/$(GL_GNULIB_PTHREAD_RWLOCK)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_COND''@/$(GL_GNULIB_PTHREAD_COND)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_TSS''@/$(GL_GNULIB_PTHREAD_TSS)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_SPIN''@/$(GL_GNULIB_PTHREAD_SPIN)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_MUTEX_TIMEDLOCK''@/$(GL_GNULIB_PTHREAD_MUTEX_TIMEDLOCK)/g' \
++# 	      -e 's|@''HAVE_PTHREAD_T''@|$(HAVE_PTHREAD_T)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPINLOCK_T''@|$(HAVE_PTHREAD_SPINLOCK_T)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CREATE_DETACHED''@|$(HAVE_PTHREAD_CREATE_DETACHED)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_RECURSIVE''@|$(HAVE_PTHREAD_MUTEX_RECURSIVE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_ROBUST''@|$(HAVE_PTHREAD_MUTEX_ROBUST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_PROCESS_SHARED''@|$(HAVE_PTHREAD_PROCESS_SHARED)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CREATE''@|$(HAVE_PTHREAD_CREATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_INIT''@|$(HAVE_PTHREAD_ATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_GETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_SETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_DESTROY''@|$(HAVE_PTHREAD_ATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SELF''@|$(HAVE_PTHREAD_SELF)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_EQUAL''@|$(HAVE_PTHREAD_EQUAL)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_DETACH''@|$(HAVE_PTHREAD_DETACH)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_JOIN''@|$(HAVE_PTHREAD_JOIN)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_EXIT''@|$(HAVE_PTHREAD_EXIT)|g' \
++# 	      < $(srcdir)/pthread.in.h > $@-t1
++# 	$(AM_V_at)sed \
++# 	      -e 's|@''HAVE_PTHREAD_ONCE''@|$(HAVE_PTHREAD_ONCE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_INIT''@|$(HAVE_PTHREAD_MUTEX_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_INIT''@|$(HAVE_PTHREAD_MUTEXATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_DESTROY''@|$(HAVE_PTHREAD_MUTEXATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_LOCK''@|$(HAVE_PTHREAD_MUTEX_LOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_TRYLOCK''@|$(HAVE_PTHREAD_MUTEX_TRYLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_TIMEDLOCK''@|$(HAVE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_UNLOCK''@|$(HAVE_PTHREAD_MUTEX_UNLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_DESTROY''@|$(HAVE_PTHREAD_MUTEX_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_INIT''@|$(HAVE_PTHREAD_RWLOCK_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_INIT''@|$(HAVE_PTHREAD_RWLOCKATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_DESTROY''@|$(HAVE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_RDLOCK''@|$(HAVE_PTHREAD_RWLOCK_RDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_WRLOCK''@|$(HAVE_PTHREAD_RWLOCK_WRLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_UNLOCK''@|$(HAVE_PTHREAD_RWLOCK_UNLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_DESTROY''@|$(HAVE_PTHREAD_RWLOCK_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_INIT''@|$(HAVE_PTHREAD_COND_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CONDATTR_INIT''@|$(HAVE_PTHREAD_CONDATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CONDATTR_DESTROY''@|$(HAVE_PTHREAD_CONDATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_WAIT''@|$(HAVE_PTHREAD_COND_WAIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_TIMEDWAIT''@|$(HAVE_PTHREAD_COND_TIMEDWAIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_SIGNAL''@|$(HAVE_PTHREAD_COND_SIGNAL)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_BROADCAST''@|$(HAVE_PTHREAD_COND_BROADCAST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_DESTROY''@|$(HAVE_PTHREAD_COND_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_KEY_CREATE''@|$(HAVE_PTHREAD_KEY_CREATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SETSPECIFIC''@|$(HAVE_PTHREAD_SETSPECIFIC)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_GETSPECIFIC''@|$(HAVE_PTHREAD_GETSPECIFIC)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_KEY_DELETE''@|$(HAVE_PTHREAD_KEY_DELETE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_INIT''@|$(HAVE_PTHREAD_SPIN_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_LOCK''@|$(HAVE_PTHREAD_SPIN_LOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_TRYLOCK''@|$(HAVE_PTHREAD_SPIN_TRYLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_UNLOCK''@|$(HAVE_PTHREAD_SPIN_UNLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_DESTROY''@|$(HAVE_PTHREAD_SPIN_DESTROY)|g' \
++# 	      < $@-t1 > $@-t2
++# 	$(AM_V_at)sed \
++# 	      -e 's|@''REPLACE_PTHREAD_CREATE''@|$(REPLACE_PTHREAD_CREATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_INIT''@|$(REPLACE_PTHREAD_ATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_GETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_SETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_DESTROY''@|$(REPLACE_PTHREAD_ATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SELF''@|$(REPLACE_PTHREAD_SELF)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_EQUAL''@|$(REPLACE_PTHREAD_EQUAL)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_DETACH''@|$(REPLACE_PTHREAD_DETACH)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_JOIN''@|$(REPLACE_PTHREAD_JOIN)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_EXIT''@|$(REPLACE_PTHREAD_EXIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ONCE''@|$(REPLACE_PTHREAD_ONCE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_INIT''@|$(REPLACE_PTHREAD_MUTEX_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_INIT''@|$(REPLACE_PTHREAD_MUTEXATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_DESTROY''@|$(REPLACE_PTHREAD_MUTEXATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_LOCK''@|$(REPLACE_PTHREAD_MUTEX_LOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_TRYLOCK''@|$(REPLACE_PTHREAD_MUTEX_TRYLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_TIMEDLOCK''@|$(REPLACE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_UNLOCK''@|$(REPLACE_PTHREAD_MUTEX_UNLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_DESTROY''@|$(REPLACE_PTHREAD_MUTEX_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_INIT''@|$(REPLACE_PTHREAD_RWLOCK_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_INIT''@|$(REPLACE_PTHREAD_RWLOCKATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_DESTROY''@|$(REPLACE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_RDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_RDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_WRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_WRLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_UNLOCK''@|$(REPLACE_PTHREAD_RWLOCK_UNLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_DESTROY''@|$(REPLACE_PTHREAD_RWLOCK_DESTROY)|g' \
++# 	      < $@-t2 > $@-t3
++# 	$(AM_V_at)sed \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_INIT''@|$(REPLACE_PTHREAD_COND_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_CONDATTR_INIT''@|$(REPLACE_PTHREAD_CONDATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_CONDATTR_DESTROY''@|$(REPLACE_PTHREAD_CONDATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_WAIT''@|$(REPLACE_PTHREAD_COND_WAIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_TIMEDWAIT''@|$(REPLACE_PTHREAD_COND_TIMEDWAIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_SIGNAL''@|$(REPLACE_PTHREAD_COND_SIGNAL)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_BROADCAST''@|$(REPLACE_PTHREAD_COND_BROADCAST)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_DESTROY''@|$(REPLACE_PTHREAD_COND_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_KEY_CREATE''@|$(REPLACE_PTHREAD_KEY_CREATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SETSPECIFIC''@|$(REPLACE_PTHREAD_SETSPECIFIC)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_GETSPECIFIC''@|$(REPLACE_PTHREAD_GETSPECIFIC)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_KEY_DELETE''@|$(REPLACE_PTHREAD_KEY_DELETE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_INIT''@|$(REPLACE_PTHREAD_SPIN_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_LOCK''@|$(REPLACE_PTHREAD_SPIN_LOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_TRYLOCK''@|$(REPLACE_PTHREAD_SPIN_TRYLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_UNLOCK''@|$(REPLACE_PTHREAD_SPIN_UNLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_DESTROY''@|$(REPLACE_PTHREAD_SPIN_DESTROY)|g' \
++# 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++# 	      -e '/definition of _Noreturn/r $(_NORETURN_H)' \
++# 	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
++# 	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++# 	      < $@-t3 > $@-t4
++# 	$(AM_V_at)rm -f $@-t1 $@-t2 $@-t3
++# 	$(AM_V_at)mv $@-t4 $@
++# MOSTLYCLEANFILES += pthread.h pthread.h-t1 pthread.h-t2 pthread.h-t3 pthread.h-t4
++
++# EXTRA_DIST += pthread.in.h
+ 
+ ## end   gnulib module pthread-h
+ 
+@@ -2675,9 +2675,9 @@ endif
+ 
+ ## begin gnulib module pthread_sigmask
+ 
+-if GL_COND_OBJ_PTHREAD_SIGMASK
+-libgnu_la_SOURCES += pthread_sigmask.c
+-endif
++# if GL_COND_OBJ_PTHREAD_SIGMASK
++# libgnu_la_SOURCES += pthread_sigmask.c
++# endif
+ 
+ ## end   gnulib module pthread_sigmask
+ 
+@@ -2785,30 +2785,30 @@ EXTRA_DIST += save-cwd.h
+ 
+ ## begin gnulib module sched-h
+ 
+-BUILT_SOURCES += sched.h
+-
+-# We need the following in order to create a replacement for <sched.h> when
+-# the system doesn't have one.
+-sched.h: sched.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(WARN_ON_USE_H)
+-	$(gl_V_at)$(SED_HEADER_STDOUT) \
+-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+-	      -e 's|@''HAVE_SCHED_H''@|$(HAVE_SCHED_H)|g' \
+-	      -e 's|@''HAVE_SYS_CDEFS_H''@|$(HAVE_SYS_CDEFS_H)|g' \
+-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
+-	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
+-	      -e 's|@''NEXT_SCHED_H''@|$(NEXT_SCHED_H)|g' \
+-	      -e 's|@''HAVE_STRUCT_SCHED_PARAM''@|$(HAVE_STRUCT_SCHED_PARAM)|g' \
+-	      -e 's/@''GNULIB_SCHED_YIELD''@/$(GL_GNULIB_SCHED_YIELD)/g' \
+-	      -e 's|@''HAVE_SCHED_YIELD''@|$(HAVE_SCHED_YIELD)|g' \
+-	      -e 's|@''REPLACE_SCHED_YIELD''@|$(REPLACE_SCHED_YIELD)|g' \
+-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+-	      $(srcdir)/sched.in.h > $@-t
+-	$(AM_V_at)mv $@-t $@
+-MOSTLYCLEANFILES += sched.h sched.h-t
+-
+-EXTRA_DIST += sched.in.h
++# BUILT_SOURCES += sched.h
++
++# # We need the following in order to create a replacement for <sched.h> when
++# # the system doesn't have one.
++# sched.h: sched.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(WARN_ON_USE_H)
++# 	$(gl_V_at)$(SED_HEADER_STDOUT) \
++# 	      -e 's|@''GUARD_PREFIX''@|GL|g' \
++# 	      -e 's|@''HAVE_SCHED_H''@|$(HAVE_SCHED_H)|g' \
++# 	      -e 's|@''HAVE_SYS_CDEFS_H''@|$(HAVE_SYS_CDEFS_H)|g' \
++# 	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++# 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++# 	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++# 	      -e 's|@''NEXT_SCHED_H''@|$(NEXT_SCHED_H)|g' \
++# 	      -e 's|@''HAVE_STRUCT_SCHED_PARAM''@|$(HAVE_STRUCT_SCHED_PARAM)|g' \
++# 	      -e 's/@''GNULIB_SCHED_YIELD''@/$(GL_GNULIB_SCHED_YIELD)/g' \
++# 	      -e 's|@''HAVE_SCHED_YIELD''@|$(HAVE_SCHED_YIELD)|g' \
++# 	      -e 's|@''REPLACE_SCHED_YIELD''@|$(REPLACE_SCHED_YIELD)|g' \
++# 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++# 	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++# 	      $(srcdir)/sched.in.h > $@-t
++# 	$(AM_V_at)mv $@-t $@
++# MOSTLYCLEANFILES += sched.h sched.h-t
++
++# EXTRA_DIST += sched.in.h
+ 
+ ## end   gnulib module sched-h
+ 
+@@ -2868,44 +2868,44 @@ EXTRA_DIST += sig-handler.h
+ 
+ ## begin gnulib module signal-h
+ 
+-BUILT_SOURCES += signal.h
+-
+-# We need the following in order to create <signal.h> when the system
+-# doesn't have a complete one.
+-signal.h: signal.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
+-	$(gl_V_at)$(SED_HEADER_STDOUT) \
+-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
+-	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
+-	      -e 's|@''NEXT_SIGNAL_H''@|$(NEXT_SIGNAL_H)|g' \
+-	      -e 's/@''GNULIB_PTHREAD_SIGMASK''@/$(GL_GNULIB_PTHREAD_SIGMASK)/g' \
+-	      -e 's/@''GNULIB_RAISE''@/$(GL_GNULIB_RAISE)/g' \
+-	      -e 's/@''GNULIB_SIG2STR''@/$(GL_GNULIB_SIG2STR)/g' \
+-	      -e 's/@''GNULIB_SIGNAL_H_SIGPIPE''@/$(GL_GNULIB_SIGNAL_H_SIGPIPE)/g' \
+-	      -e 's/@''GNULIB_SIGPROCMASK''@/$(GL_GNULIB_SIGPROCMASK)/g' \
+-	      -e 's/@''GNULIB_SIGACTION''@/$(GL_GNULIB_SIGACTION)/g' \
+-	      -e 's|@''HAVE_POSIX_SIGNALBLOCKING''@|$(HAVE_POSIX_SIGNALBLOCKING)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SIGMASK''@|$(HAVE_PTHREAD_SIGMASK)|g' \
+-	      -e 's|@''HAVE_RAISE''@|$(HAVE_RAISE)|g' \
+-	      -e 's|@''HAVE_SIG2STR''@|$(HAVE_SIG2STR)|g' \
+-	      -e 's|@''HAVE_SIGSET_T''@|$(HAVE_SIGSET_T)|g' \
+-	      -e 's|@''HAVE_SIGINFO_T''@|$(HAVE_SIGINFO_T)|g' \
+-	      -e 's|@''HAVE_SIGACTION''@|$(HAVE_SIGACTION)|g' \
+-	      -e 's|@''HAVE_STR2SIG''@|$(HAVE_STR2SIG)|g' \
+-	      -e 's|@''HAVE_STRUCT_SIGACTION_SA_SIGACTION''@|$(HAVE_STRUCT_SIGACTION_SA_SIGACTION)|g' \
+-	      -e 's|@''HAVE_TYPE_VOLATILE_SIG_ATOMIC_T''@|$(HAVE_TYPE_VOLATILE_SIG_ATOMIC_T)|g' \
+-	      -e 's|@''HAVE_SIGHANDLER_T''@|$(HAVE_SIGHANDLER_T)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SIGMASK''@|$(REPLACE_PTHREAD_SIGMASK)|g' \
+-	      -e 's|@''REPLACE_RAISE''@|$(REPLACE_RAISE)|g' \
+-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+-	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
+-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+-	      $(srcdir)/signal.in.h > $@-t
+-	$(AM_V_at)mv $@-t $@
+-MOSTLYCLEANFILES += signal.h signal.h-t
+-
+-EXTRA_DIST += signal.in.h
++# BUILT_SOURCES += signal.h
++
++# # We need the following in order to create <signal.h> when the system
++# # doesn't have a complete one.
++# signal.h: signal.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
++# 	$(gl_V_at)$(SED_HEADER_STDOUT) \
++# 	      -e 's|@''GUARD_PREFIX''@|GL|g' \
++# 	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++# 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++# 	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++# 	      -e 's|@''NEXT_SIGNAL_H''@|$(NEXT_SIGNAL_H)|g' \
++# 	      -e 's/@''GNULIB_PTHREAD_SIGMASK''@/$(GL_GNULIB_PTHREAD_SIGMASK)/g' \
++# 	      -e 's/@''GNULIB_RAISE''@/$(GL_GNULIB_RAISE)/g' \
++# 	      -e 's/@''GNULIB_SIG2STR''@/$(GL_GNULIB_SIG2STR)/g' \
++# 	      -e 's/@''GNULIB_SIGNAL_H_SIGPIPE''@/$(GL_GNULIB_SIGNAL_H_SIGPIPE)/g' \
++# 	      -e 's/@''GNULIB_SIGPROCMASK''@/$(GL_GNULIB_SIGPROCMASK)/g' \
++# 	      -e 's/@''GNULIB_SIGACTION''@/$(GL_GNULIB_SIGACTION)/g' \
++# 	      -e 's|@''HAVE_POSIX_SIGNALBLOCKING''@|$(HAVE_POSIX_SIGNALBLOCKING)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SIGMASK''@|$(HAVE_PTHREAD_SIGMASK)|g' \
++# 	      -e 's|@''HAVE_RAISE''@|$(HAVE_RAISE)|g' \
++# 	      -e 's|@''HAVE_SIG2STR''@|$(HAVE_SIG2STR)|g' \
++# 	      -e 's|@''HAVE_SIGSET_T''@|$(HAVE_SIGSET_T)|g' \
++# 	      -e 's|@''HAVE_SIGINFO_T''@|$(HAVE_SIGINFO_T)|g' \
++# 	      -e 's|@''HAVE_SIGACTION''@|$(HAVE_SIGACTION)|g' \
++# 	      -e 's|@''HAVE_STR2SIG''@|$(HAVE_STR2SIG)|g' \
++# 	      -e 's|@''HAVE_STRUCT_SIGACTION_SA_SIGACTION''@|$(HAVE_STRUCT_SIGACTION_SA_SIGACTION)|g' \
++# 	      -e 's|@''HAVE_TYPE_VOLATILE_SIG_ATOMIC_T''@|$(HAVE_TYPE_VOLATILE_SIG_ATOMIC_T)|g' \
++# 	      -e 's|@''HAVE_SIGHANDLER_T''@|$(HAVE_SIGHANDLER_T)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SIGMASK''@|$(REPLACE_PTHREAD_SIGMASK)|g' \
++# 	      -e 's|@''REPLACE_RAISE''@|$(REPLACE_RAISE)|g' \
++# 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++# 	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
++# 	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++# 	      $(srcdir)/signal.in.h > $@-t
++# 	$(AM_V_at)mv $@-t $@
++# MOSTLYCLEANFILES += signal.h signal.h-t
++
++# EXTRA_DIST += signal.in.h
+ 
+ ## end   gnulib module signal-h
+ 
+diff --git a/libgnu/Makefile.in b/libgnu/Makefile.in
+index 187443b..4e714ce 100644
+--- a/libgnu/Makefile.in
++++ b/libgnu/Makefile.in
+@@ -313,105 +313,317 @@ host_triplet = @host@
+ @GL_COND_OBJ_OPENDIR_TRUE@am__append_72 = opendir.c
+ @GL_COND_OBJ_PIPE_TRUE@am__append_73 = pipe.c
+ @GL_COND_OBJ_PSELECT_TRUE@am__append_74 = pselect.c
++
++# BUILT_SOURCES += pthread.h
++
++# # We need the following in order to create <pthread.h> when the system
++# # doesn't have one that works with the given compiler.
++# pthread.h: pthread.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(_NORETURN_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
++# 	$(gl_V_at)$(SED_HEADER_STDOUT) \
++# 	      -e 's|@''GUARD_PREFIX''@|GL|g' \
++# 	      -e 's|@''HAVE_PTHREAD_H''@|$(HAVE_PTHREAD_H)|g' \
++# 	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++# 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++# 	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++# 	      -e 's|@''NEXT_PTHREAD_H''@|$(NEXT_PTHREAD_H)|g' \
++# 	      -e 's/@''GNULIB_PTHREAD_THREAD''@/$(GL_GNULIB_PTHREAD_THREAD)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_ONCE''@/$(GL_GNULIB_PTHREAD_ONCE)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_MUTEX''@/$(GL_GNULIB_PTHREAD_MUTEX)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_RWLOCK''@/$(GL_GNULIB_PTHREAD_RWLOCK)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_COND''@/$(GL_GNULIB_PTHREAD_COND)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_TSS''@/$(GL_GNULIB_PTHREAD_TSS)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_SPIN''@/$(GL_GNULIB_PTHREAD_SPIN)/g' \
++# 	      -e 's/@''GNULIB_PTHREAD_MUTEX_TIMEDLOCK''@/$(GL_GNULIB_PTHREAD_MUTEX_TIMEDLOCK)/g' \
++# 	      -e 's|@''HAVE_PTHREAD_T''@|$(HAVE_PTHREAD_T)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPINLOCK_T''@|$(HAVE_PTHREAD_SPINLOCK_T)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CREATE_DETACHED''@|$(HAVE_PTHREAD_CREATE_DETACHED)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_RECURSIVE''@|$(HAVE_PTHREAD_MUTEX_RECURSIVE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_ROBUST''@|$(HAVE_PTHREAD_MUTEX_ROBUST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_PROCESS_SHARED''@|$(HAVE_PTHREAD_PROCESS_SHARED)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CREATE''@|$(HAVE_PTHREAD_CREATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_INIT''@|$(HAVE_PTHREAD_ATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_GETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_SETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_ATTR_DESTROY''@|$(HAVE_PTHREAD_ATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SELF''@|$(HAVE_PTHREAD_SELF)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_EQUAL''@|$(HAVE_PTHREAD_EQUAL)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_DETACH''@|$(HAVE_PTHREAD_DETACH)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_JOIN''@|$(HAVE_PTHREAD_JOIN)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_EXIT''@|$(HAVE_PTHREAD_EXIT)|g' \
++# 	      < $(srcdir)/pthread.in.h > $@-t1
++# 	$(AM_V_at)sed \
++# 	      -e 's|@''HAVE_PTHREAD_ONCE''@|$(HAVE_PTHREAD_ONCE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_INIT''@|$(HAVE_PTHREAD_MUTEX_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_INIT''@|$(HAVE_PTHREAD_MUTEXATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_DESTROY''@|$(HAVE_PTHREAD_MUTEXATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_LOCK''@|$(HAVE_PTHREAD_MUTEX_LOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_TRYLOCK''@|$(HAVE_PTHREAD_MUTEX_TRYLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_TIMEDLOCK''@|$(HAVE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_UNLOCK''@|$(HAVE_PTHREAD_MUTEX_UNLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_MUTEX_DESTROY''@|$(HAVE_PTHREAD_MUTEX_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_INIT''@|$(HAVE_PTHREAD_RWLOCK_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_INIT''@|$(HAVE_PTHREAD_RWLOCKATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_DESTROY''@|$(HAVE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_RDLOCK''@|$(HAVE_PTHREAD_RWLOCK_RDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_WRLOCK''@|$(HAVE_PTHREAD_RWLOCK_WRLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_UNLOCK''@|$(HAVE_PTHREAD_RWLOCK_UNLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_RWLOCK_DESTROY''@|$(HAVE_PTHREAD_RWLOCK_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_INIT''@|$(HAVE_PTHREAD_COND_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CONDATTR_INIT''@|$(HAVE_PTHREAD_CONDATTR_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_CONDATTR_DESTROY''@|$(HAVE_PTHREAD_CONDATTR_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_WAIT''@|$(HAVE_PTHREAD_COND_WAIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_TIMEDWAIT''@|$(HAVE_PTHREAD_COND_TIMEDWAIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_SIGNAL''@|$(HAVE_PTHREAD_COND_SIGNAL)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_BROADCAST''@|$(HAVE_PTHREAD_COND_BROADCAST)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_COND_DESTROY''@|$(HAVE_PTHREAD_COND_DESTROY)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_KEY_CREATE''@|$(HAVE_PTHREAD_KEY_CREATE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SETSPECIFIC''@|$(HAVE_PTHREAD_SETSPECIFIC)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_GETSPECIFIC''@|$(HAVE_PTHREAD_GETSPECIFIC)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_KEY_DELETE''@|$(HAVE_PTHREAD_KEY_DELETE)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_INIT''@|$(HAVE_PTHREAD_SPIN_INIT)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_LOCK''@|$(HAVE_PTHREAD_SPIN_LOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_TRYLOCK''@|$(HAVE_PTHREAD_SPIN_TRYLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_UNLOCK''@|$(HAVE_PTHREAD_SPIN_UNLOCK)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SPIN_DESTROY''@|$(HAVE_PTHREAD_SPIN_DESTROY)|g' \
++# 	      < $@-t1 > $@-t2
++# 	$(AM_V_at)sed \
++# 	      -e 's|@''REPLACE_PTHREAD_CREATE''@|$(REPLACE_PTHREAD_CREATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_INIT''@|$(REPLACE_PTHREAD_ATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_GETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_SETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ATTR_DESTROY''@|$(REPLACE_PTHREAD_ATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SELF''@|$(REPLACE_PTHREAD_SELF)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_EQUAL''@|$(REPLACE_PTHREAD_EQUAL)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_DETACH''@|$(REPLACE_PTHREAD_DETACH)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_JOIN''@|$(REPLACE_PTHREAD_JOIN)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_EXIT''@|$(REPLACE_PTHREAD_EXIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_ONCE''@|$(REPLACE_PTHREAD_ONCE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_INIT''@|$(REPLACE_PTHREAD_MUTEX_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_INIT''@|$(REPLACE_PTHREAD_MUTEXATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_DESTROY''@|$(REPLACE_PTHREAD_MUTEXATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_LOCK''@|$(REPLACE_PTHREAD_MUTEX_LOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_TRYLOCK''@|$(REPLACE_PTHREAD_MUTEX_TRYLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_TIMEDLOCK''@|$(REPLACE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_UNLOCK''@|$(REPLACE_PTHREAD_MUTEX_UNLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_MUTEX_DESTROY''@|$(REPLACE_PTHREAD_MUTEX_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_INIT''@|$(REPLACE_PTHREAD_RWLOCK_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_INIT''@|$(REPLACE_PTHREAD_RWLOCKATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_DESTROY''@|$(REPLACE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_RDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_RDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_WRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_WRLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_UNLOCK''@|$(REPLACE_PTHREAD_RWLOCK_UNLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_RWLOCK_DESTROY''@|$(REPLACE_PTHREAD_RWLOCK_DESTROY)|g' \
++# 	      < $@-t2 > $@-t3
++# 	$(AM_V_at)sed \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_INIT''@|$(REPLACE_PTHREAD_COND_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_CONDATTR_INIT''@|$(REPLACE_PTHREAD_CONDATTR_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_CONDATTR_DESTROY''@|$(REPLACE_PTHREAD_CONDATTR_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_WAIT''@|$(REPLACE_PTHREAD_COND_WAIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_TIMEDWAIT''@|$(REPLACE_PTHREAD_COND_TIMEDWAIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_SIGNAL''@|$(REPLACE_PTHREAD_COND_SIGNAL)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_BROADCAST''@|$(REPLACE_PTHREAD_COND_BROADCAST)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_COND_DESTROY''@|$(REPLACE_PTHREAD_COND_DESTROY)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_KEY_CREATE''@|$(REPLACE_PTHREAD_KEY_CREATE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SETSPECIFIC''@|$(REPLACE_PTHREAD_SETSPECIFIC)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_GETSPECIFIC''@|$(REPLACE_PTHREAD_GETSPECIFIC)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_KEY_DELETE''@|$(REPLACE_PTHREAD_KEY_DELETE)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_INIT''@|$(REPLACE_PTHREAD_SPIN_INIT)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_LOCK''@|$(REPLACE_PTHREAD_SPIN_LOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_TRYLOCK''@|$(REPLACE_PTHREAD_SPIN_TRYLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_UNLOCK''@|$(REPLACE_PTHREAD_SPIN_UNLOCK)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SPIN_DESTROY''@|$(REPLACE_PTHREAD_SPIN_DESTROY)|g' \
++# 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++# 	      -e '/definition of _Noreturn/r $(_NORETURN_H)' \
++# 	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
++# 	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++# 	      < $@-t3 > $@-t4
++# 	$(AM_V_at)rm -f $@-t1 $@-t2 $@-t3
++# 	$(AM_V_at)mv $@-t4 $@
++# MOSTLYCLEANFILES += pthread.h pthread.h-t1 pthread.h-t2 pthread.h-t3 pthread.h-t4
++
++# EXTRA_DIST += pthread.in.h
+ @GL_COND_OBJ_PTHREAD_ONCE_TRUE@am__append_75 = pthread-once.c
+-@GL_COND_OBJ_PTHREAD_SIGMASK_TRUE@am__append_76 = pthread_sigmask.c
+-@GL_COND_OBJ_PUTENV_TRUE@am__append_77 = putenv.c
+-@GL_COND_OBJ_RAISE_TRUE@am__append_78 = raise.c
+-@GL_COND_OBJ_RAWMEMCHR_TRUE@am__append_79 = rawmemchr.c
+-@GL_COND_OBJ_READDIR_TRUE@am__append_80 = readdir.c
+-@GL_COND_OBJ_READLINE_TRUE@am__append_81 = readline.c
+-@GL_COND_OBJ_READLINK_TRUE@am__append_82 = readlink.c
+-@GL_COND_OBJ_REALLOC_POSIX_TRUE@am__append_83 = realloc.c
+-@GL_COND_OBJ_REALLOCARRAY_TRUE@am__append_84 = reallocarray.c
+-@GL_COND_OBJ_REWINDDIR_TRUE@am__append_85 = rewinddir.c
+-@GL_COND_OBJ_RMDIR_TRUE@am__append_86 = rmdir.c
+-@GL_COND_OBJ_SELECT_TRUE@am__append_87 = select.c
+-@GL_COND_OBJ_SETENV_TRUE@am__append_88 = setenv.c
+-@GL_COND_OBJ_SETLOCALE_TRUE@am__append_89 = setlocale.c
+-@GL_COND_OBJ_SETLOCALE_LOCK_TRUE@am__append_90 = setlocale-lock.c
+-@GL_COND_OBJ_SIGACTION_TRUE@am__append_91 = sigaction.c
+-@GL_COND_OBJ_SIGPROCMASK_TRUE@am__append_92 = sigprocmask.c
+-@GL_COND_OBJ_STAT_TRUE@am__append_93 = stat.c
+-@GL_COND_OBJ_STDIO_READ_TRUE@am__append_94 = stdio-read.c
+-@GL_COND_OBJ_STDIO_WRITE_TRUE@am__append_95 = stdio-write.c
+-@GL_COND_OBJ_STPCPY_TRUE@am__append_96 = stpcpy.c
+-@GL_COND_OBJ_STRCASECMP_TRUE@am__append_97 = strcasecmp.c
+-@GL_COND_OBJ_STRNCASECMP_TRUE@am__append_98 = strncasecmp.c
+-@GL_COND_OBJ_STRDUP_TRUE@am__append_99 = strdup.c
+-@GL_COND_OBJ_STRERROR_TRUE@am__append_100 = strerror.c
+-@GL_COND_OBJ_STRERROR_OVERRIDE_TRUE@am__append_101 = strerror-override.c
+-@GL_COND_OBJ_STRNLEN_TRUE@am__append_102 = strnlen.c
+-@GL_COND_OBJ_STRPTIME_TRUE@am__append_103 = strptime.c
+-@GL_COND_OBJ_STRSIGNAL_TRUE@am__append_104 = strsignal.c
+-@GL_COND_OBJ_SYMLINK_TRUE@am__append_105 = symlink.c
+-@GL_COND_OBJ_TIME_R_TRUE@am__append_106 = time_r.c
+-@GL_COND_OBJ_TIME_RZ_TRUE@am__append_107 = time_rz.c
+-@GL_COND_OBJ_TIMEGM_TRUE@am__append_108 = timegm.c
+-@GL_COND_OBJ_TZSET_TRUE@am__append_109 = tzset.c
+-@GL_COND_OBJ_UNAME_TRUE@am__append_110 = uname.c
+-@LIBUNISTRING_COMPILE_UNICASE_EMPTY_PREFIX_CONTEXT_TRUE@am__append_111 = unicase/empty-prefix-context.c
+-@LIBUNISTRING_COMPILE_UNICASE_EMPTY_SUFFIX_CONTEXT_TRUE@am__append_112 = unicase/empty-suffix-context.c
+-@LIBUNISTRING_COMPILE_UNICASE_TOLOWER_TRUE@am__append_113 = unicase/tolower.c
+-@LIBUNISTRING_COMPILE_UNICASE_TOUPPER_TRUE@am__append_114 = unicase/toupper.c
+-@LIBUNISTRING_COMPILE_UNICASE_U8_TOLOWER_TRUE@am__append_115 = unicase/u8-tolower.c
+-@LIBUNISTRING_COMPILE_UNICASE_U8_TOUPPER_TRUE@am__append_116 = unicase/u8-toupper.c
+-@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_FROM_ENC_TRUE@am__append_117 = uniconv/u16-conv-from-enc.c
+-@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_TO_ENC_TRUE@am__append_118 = uniconv/u16-conv-to-enc.c
+-@LIBUNISTRING_COMPILE_UNICONV_U32_CONV_TO_ENC_TRUE@am__append_119 = uniconv/u32-conv-to-enc.c
+-@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_FROM_ENC_TRUE@am__append_120 = uniconv/u8-conv-from-enc.c
+-@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_TO_ENC_TRUE@am__append_121 = uniconv/u8-conv-to-enc.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_COMBINING_CLASS_TRUE@am__append_122 = unictype/combiningclass.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALNUM_TRUE@am__append_123 = unictype/ctype_alnum.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALPHA_TRUE@am__append_124 = unictype/ctype_alpha.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_BLANK_TRUE@am__append_125 = unictype/ctype_blank.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_CNTRL_TRUE@am__append_126 = unictype/ctype_cntrl.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_DIGIT_TRUE@am__append_127 = unictype/ctype_digit.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_GRAPH_TRUE@am__append_128 = unictype/ctype_graph.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_LOWER_TRUE@am__append_129 = unictype/ctype_lower.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PRINT_TRUE@am__append_130 = unictype/ctype_print.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PUNCT_TRUE@am__append_131 = unictype/ctype_punct.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_SPACE_TRUE@am__append_132 = unictype/ctype_space.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_UPPER_TRUE@am__append_133 = unictype/ctype_upper.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_XDIGIT_TRUE@am__append_134 = unictype/ctype_xdigit.c
+-@LIBUNISTRING_COMPILE_UNICTYPE_PROPERTY_SOFT_DOTTED_TRUE@am__append_135 = unictype/pr_soft_dotted.c
+-@LIBUNISTRING_COMPILE_UNINORM_U8_NORMALIZE_TRUE@am__append_136 = uninorm/u8-normalize.c
+-@LIBUNISTRING_COMPILE_UNISTR_U16_MBLEN_TRUE@am__append_137 = unistr/u16-mblen.c
+-@LIBUNISTRING_COMPILE_UNISTR_U16_MBTOUCR_TRUE@am__append_138 = unistr/u16-mbtoucr.c
+-@LIBUNISTRING_COMPILE_UNISTR_U16_TO_U8_TRUE@am__append_139 = unistr/u16-to-u8.c
+-@LIBUNISTRING_COMPILE_UNISTR_U16_UCTOMB_TRUE@am__append_140 = unistr/u16-uctomb.c unistr/u16-uctomb-aux.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_CHR_TRUE@am__append_141 = unistr/u32-chr.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_CPY_TRUE@am__append_142 = unistr/u32-cpy.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_MBLEN_TRUE@am__append_143 = unistr/u32-mblen.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_PCPY_TRUE@am__append_144 = unistr/u32-pcpy.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_STRCAT_TRUE@am__append_145 = unistr/u32-strcat.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_STRLEN_TRUE@am__append_146 = unistr/u32-strlen.c
+-@LIBUNISTRING_COMPILE_UNISTR_U32_TO_U8_TRUE@am__append_147 = unistr/u32-to-u8.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_CHECK_TRUE@am__append_148 = unistr/u8-check.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_CPY_TRUE@am__append_149 = unistr/u8-cpy.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBLEN_TRUE@am__append_150 = unistr/u8-mblen.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBSNLEN_TRUE@am__append_151 = unistr/u8-mbsnlen.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_TRUE@am__append_152 = unistr/u8-mbtouc.c unistr/u8-mbtouc-aux.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_UNSAFE_TRUE@am__append_153 = unistr/u8-mbtouc-unsafe.c unistr/u8-mbtouc-unsafe-aux.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUCR_TRUE@am__append_154 = unistr/u8-mbtoucr.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_PREV_TRUE@am__append_155 = unistr/u8-prev.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBLEN_TRUE@am__append_156 = unistr/u8-strmblen.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBTOUC_TRUE@am__append_157 = unistr/u8-strmbtouc.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U16_TRUE@am__append_158 = unistr/u8-to-u16.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U32_TRUE@am__append_159 = unistr/u8-to-u32.c
+-@LIBUNISTRING_COMPILE_UNISTR_U8_UCTOMB_TRUE@am__append_160 = unistr/u8-uctomb.c unistr/u8-uctomb-aux.c
+-@GL_COND_OBJ_UNLINK_TRUE@am__append_161 = unlink.c
+-@GL_COND_OBJ_UNSETENV_TRUE@am__append_162 = unsetenv.c
+-@GL_COND_OBJ_WAITPID_TRUE@am__append_163 = waitpid.c
+-@GL_COND_OBJ_WCTYPE_TRUE@am__append_164 = wctype.c
+-@GL_COND_OBJ_WINDOWS_MUTEX_TRUE@am__append_165 = windows-mutex.c
+-@GL_COND_OBJ_WINDOWS_ONCE_TRUE@am__append_166 = windows-once.c
+-@GL_COND_OBJ_WINDOWS_RECMUTEX_TRUE@am__append_167 = windows-recmutex.c
+-@GL_COND_OBJ_WINDOWS_RWLOCK_TRUE@am__append_168 = windows-rwlock.c
+-@GL_COND_OBJ_WINDOWS_PATH_TRUE@am__append_169 = windows-path.c
+-@GL_COND_OBJ_WINDOWS_SPAWN_TRUE@am__append_170 = windows-spawn.c
+-@GL_COND_OBJ_WINDOWS_TLS_TRUE@am__append_171 = windows-tls.c
+-@GL_COND_OBJ_WMEMCHR_TRUE@am__append_172 = wmemchr.c
+-@GL_COND_OBJ_WMEMPCPY_TRUE@am__append_173 = wmempcpy.c
++
++# if GL_COND_OBJ_PTHREAD_SIGMASK
++# libgnu_la_SOURCES += pthread_sigmask.c
++# endif
++@GL_COND_OBJ_PUTENV_TRUE@am__append_76 = putenv.c
++@GL_COND_OBJ_RAISE_TRUE@am__append_77 = raise.c
++@GL_COND_OBJ_RAWMEMCHR_TRUE@am__append_78 = rawmemchr.c
++@GL_COND_OBJ_READDIR_TRUE@am__append_79 = readdir.c
++@GL_COND_OBJ_READLINE_TRUE@am__append_80 = readline.c
++@GL_COND_OBJ_READLINK_TRUE@am__append_81 = readlink.c
++@GL_COND_OBJ_REALLOC_POSIX_TRUE@am__append_82 = realloc.c
++@GL_COND_OBJ_REALLOCARRAY_TRUE@am__append_83 = reallocarray.c
++@GL_COND_OBJ_REWINDDIR_TRUE@am__append_84 = rewinddir.c
++@GL_COND_OBJ_RMDIR_TRUE@am__append_85 = rmdir.c
++
++# BUILT_SOURCES += sched.h
++
++# # We need the following in order to create a replacement for <sched.h> when
++# # the system doesn't have one.
++# sched.h: sched.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(WARN_ON_USE_H)
++# 	$(gl_V_at)$(SED_HEADER_STDOUT) \
++# 	      -e 's|@''GUARD_PREFIX''@|GL|g' \
++# 	      -e 's|@''HAVE_SCHED_H''@|$(HAVE_SCHED_H)|g' \
++# 	      -e 's|@''HAVE_SYS_CDEFS_H''@|$(HAVE_SYS_CDEFS_H)|g' \
++# 	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++# 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++# 	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++# 	      -e 's|@''NEXT_SCHED_H''@|$(NEXT_SCHED_H)|g' \
++# 	      -e 's|@''HAVE_STRUCT_SCHED_PARAM''@|$(HAVE_STRUCT_SCHED_PARAM)|g' \
++# 	      -e 's/@''GNULIB_SCHED_YIELD''@/$(GL_GNULIB_SCHED_YIELD)/g' \
++# 	      -e 's|@''HAVE_SCHED_YIELD''@|$(HAVE_SCHED_YIELD)|g' \
++# 	      -e 's|@''REPLACE_SCHED_YIELD''@|$(REPLACE_SCHED_YIELD)|g' \
++# 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++# 	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++# 	      $(srcdir)/sched.in.h > $@-t
++# 	$(AM_V_at)mv $@-t $@
++# MOSTLYCLEANFILES += sched.h sched.h-t
++
++# EXTRA_DIST += sched.in.h
++@GL_COND_OBJ_SELECT_TRUE@am__append_86 = select.c
++@GL_COND_OBJ_SETENV_TRUE@am__append_87 = setenv.c
++@GL_COND_OBJ_SETLOCALE_TRUE@am__append_88 = setlocale.c
++@GL_COND_OBJ_SETLOCALE_LOCK_TRUE@am__append_89 = setlocale-lock.c
++@GL_COND_OBJ_SIGACTION_TRUE@am__append_90 = sigaction.c
++
++# BUILT_SOURCES += signal.h
++
++# # We need the following in order to create <signal.h> when the system
++# # doesn't have a complete one.
++# signal.h: signal.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
++# 	$(gl_V_at)$(SED_HEADER_STDOUT) \
++# 	      -e 's|@''GUARD_PREFIX''@|GL|g' \
++# 	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
++# 	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
++# 	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
++# 	      -e 's|@''NEXT_SIGNAL_H''@|$(NEXT_SIGNAL_H)|g' \
++# 	      -e 's/@''GNULIB_PTHREAD_SIGMASK''@/$(GL_GNULIB_PTHREAD_SIGMASK)/g' \
++# 	      -e 's/@''GNULIB_RAISE''@/$(GL_GNULIB_RAISE)/g' \
++# 	      -e 's/@''GNULIB_SIG2STR''@/$(GL_GNULIB_SIG2STR)/g' \
++# 	      -e 's/@''GNULIB_SIGNAL_H_SIGPIPE''@/$(GL_GNULIB_SIGNAL_H_SIGPIPE)/g' \
++# 	      -e 's/@''GNULIB_SIGPROCMASK''@/$(GL_GNULIB_SIGPROCMASK)/g' \
++# 	      -e 's/@''GNULIB_SIGACTION''@/$(GL_GNULIB_SIGACTION)/g' \
++# 	      -e 's|@''HAVE_POSIX_SIGNALBLOCKING''@|$(HAVE_POSIX_SIGNALBLOCKING)|g' \
++# 	      -e 's|@''HAVE_PTHREAD_SIGMASK''@|$(HAVE_PTHREAD_SIGMASK)|g' \
++# 	      -e 's|@''HAVE_RAISE''@|$(HAVE_RAISE)|g' \
++# 	      -e 's|@''HAVE_SIG2STR''@|$(HAVE_SIG2STR)|g' \
++# 	      -e 's|@''HAVE_SIGSET_T''@|$(HAVE_SIGSET_T)|g' \
++# 	      -e 's|@''HAVE_SIGINFO_T''@|$(HAVE_SIGINFO_T)|g' \
++# 	      -e 's|@''HAVE_SIGACTION''@|$(HAVE_SIGACTION)|g' \
++# 	      -e 's|@''HAVE_STR2SIG''@|$(HAVE_STR2SIG)|g' \
++# 	      -e 's|@''HAVE_STRUCT_SIGACTION_SA_SIGACTION''@|$(HAVE_STRUCT_SIGACTION_SA_SIGACTION)|g' \
++# 	      -e 's|@''HAVE_TYPE_VOLATILE_SIG_ATOMIC_T''@|$(HAVE_TYPE_VOLATILE_SIG_ATOMIC_T)|g' \
++# 	      -e 's|@''HAVE_SIGHANDLER_T''@|$(HAVE_SIGHANDLER_T)|g' \
++# 	      -e 's|@''REPLACE_PTHREAD_SIGMASK''@|$(REPLACE_PTHREAD_SIGMASK)|g' \
++# 	      -e 's|@''REPLACE_RAISE''@|$(REPLACE_RAISE)|g' \
++# 	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
++# 	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
++# 	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
++# 	      $(srcdir)/signal.in.h > $@-t
++# 	$(AM_V_at)mv $@-t $@
++# MOSTLYCLEANFILES += signal.h signal.h-t
++
++# EXTRA_DIST += signal.in.h
++@GL_COND_OBJ_SIGPROCMASK_TRUE@am__append_91 = sigprocmask.c
++@GL_COND_OBJ_STAT_TRUE@am__append_92 = stat.c
++@GL_COND_OBJ_STDIO_READ_TRUE@am__append_93 = stdio-read.c
++@GL_COND_OBJ_STDIO_WRITE_TRUE@am__append_94 = stdio-write.c
++@GL_COND_OBJ_STPCPY_TRUE@am__append_95 = stpcpy.c
++@GL_COND_OBJ_STRCASECMP_TRUE@am__append_96 = strcasecmp.c
++@GL_COND_OBJ_STRNCASECMP_TRUE@am__append_97 = strncasecmp.c
++@GL_COND_OBJ_STRDUP_TRUE@am__append_98 = strdup.c
++@GL_COND_OBJ_STRERROR_TRUE@am__append_99 = strerror.c
++@GL_COND_OBJ_STRERROR_OVERRIDE_TRUE@am__append_100 = strerror-override.c
++@GL_COND_OBJ_STRNLEN_TRUE@am__append_101 = strnlen.c
++@GL_COND_OBJ_STRPTIME_TRUE@am__append_102 = strptime.c
++@GL_COND_OBJ_STRSIGNAL_TRUE@am__append_103 = strsignal.c
++@GL_COND_OBJ_SYMLINK_TRUE@am__append_104 = symlink.c
++@GL_COND_OBJ_TIME_R_TRUE@am__append_105 = time_r.c
++@GL_COND_OBJ_TIME_RZ_TRUE@am__append_106 = time_rz.c
++@GL_COND_OBJ_TIMEGM_TRUE@am__append_107 = timegm.c
++@GL_COND_OBJ_TZSET_TRUE@am__append_108 = tzset.c
++@GL_COND_OBJ_UNAME_TRUE@am__append_109 = uname.c
++@LIBUNISTRING_COMPILE_UNICASE_EMPTY_PREFIX_CONTEXT_TRUE@am__append_110 = unicase/empty-prefix-context.c
++@LIBUNISTRING_COMPILE_UNICASE_EMPTY_SUFFIX_CONTEXT_TRUE@am__append_111 = unicase/empty-suffix-context.c
++@LIBUNISTRING_COMPILE_UNICASE_TOLOWER_TRUE@am__append_112 = unicase/tolower.c
++@LIBUNISTRING_COMPILE_UNICASE_TOUPPER_TRUE@am__append_113 = unicase/toupper.c
++@LIBUNISTRING_COMPILE_UNICASE_U8_TOLOWER_TRUE@am__append_114 = unicase/u8-tolower.c
++@LIBUNISTRING_COMPILE_UNICASE_U8_TOUPPER_TRUE@am__append_115 = unicase/u8-toupper.c
++@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_FROM_ENC_TRUE@am__append_116 = uniconv/u16-conv-from-enc.c
++@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_TO_ENC_TRUE@am__append_117 = uniconv/u16-conv-to-enc.c
++@LIBUNISTRING_COMPILE_UNICONV_U32_CONV_TO_ENC_TRUE@am__append_118 = uniconv/u32-conv-to-enc.c
++@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_FROM_ENC_TRUE@am__append_119 = uniconv/u8-conv-from-enc.c
++@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_TO_ENC_TRUE@am__append_120 = uniconv/u8-conv-to-enc.c
++@LIBUNISTRING_COMPILE_UNICTYPE_COMBINING_CLASS_TRUE@am__append_121 = unictype/combiningclass.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALNUM_TRUE@am__append_122 = unictype/ctype_alnum.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALPHA_TRUE@am__append_123 = unictype/ctype_alpha.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_BLANK_TRUE@am__append_124 = unictype/ctype_blank.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_CNTRL_TRUE@am__append_125 = unictype/ctype_cntrl.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_DIGIT_TRUE@am__append_126 = unictype/ctype_digit.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_GRAPH_TRUE@am__append_127 = unictype/ctype_graph.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_LOWER_TRUE@am__append_128 = unictype/ctype_lower.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PRINT_TRUE@am__append_129 = unictype/ctype_print.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PUNCT_TRUE@am__append_130 = unictype/ctype_punct.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_SPACE_TRUE@am__append_131 = unictype/ctype_space.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_UPPER_TRUE@am__append_132 = unictype/ctype_upper.c
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_XDIGIT_TRUE@am__append_133 = unictype/ctype_xdigit.c
++@LIBUNISTRING_COMPILE_UNICTYPE_PROPERTY_SOFT_DOTTED_TRUE@am__append_134 = unictype/pr_soft_dotted.c
++@LIBUNISTRING_COMPILE_UNINORM_U8_NORMALIZE_TRUE@am__append_135 = uninorm/u8-normalize.c
++@LIBUNISTRING_COMPILE_UNISTR_U16_MBLEN_TRUE@am__append_136 = unistr/u16-mblen.c
++@LIBUNISTRING_COMPILE_UNISTR_U16_MBTOUCR_TRUE@am__append_137 = unistr/u16-mbtoucr.c
++@LIBUNISTRING_COMPILE_UNISTR_U16_TO_U8_TRUE@am__append_138 = unistr/u16-to-u8.c
++@LIBUNISTRING_COMPILE_UNISTR_U16_UCTOMB_TRUE@am__append_139 = unistr/u16-uctomb.c unistr/u16-uctomb-aux.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_CHR_TRUE@am__append_140 = unistr/u32-chr.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_CPY_TRUE@am__append_141 = unistr/u32-cpy.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_MBLEN_TRUE@am__append_142 = unistr/u32-mblen.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_PCPY_TRUE@am__append_143 = unistr/u32-pcpy.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_STRCAT_TRUE@am__append_144 = unistr/u32-strcat.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_STRLEN_TRUE@am__append_145 = unistr/u32-strlen.c
++@LIBUNISTRING_COMPILE_UNISTR_U32_TO_U8_TRUE@am__append_146 = unistr/u32-to-u8.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_CHECK_TRUE@am__append_147 = unistr/u8-check.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_CPY_TRUE@am__append_148 = unistr/u8-cpy.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBLEN_TRUE@am__append_149 = unistr/u8-mblen.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBSNLEN_TRUE@am__append_150 = unistr/u8-mbsnlen.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_TRUE@am__append_151 = unistr/u8-mbtouc.c unistr/u8-mbtouc-aux.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_UNSAFE_TRUE@am__append_152 = unistr/u8-mbtouc-unsafe.c unistr/u8-mbtouc-unsafe-aux.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUCR_TRUE@am__append_153 = unistr/u8-mbtoucr.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_PREV_TRUE@am__append_154 = unistr/u8-prev.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBLEN_TRUE@am__append_155 = unistr/u8-strmblen.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBTOUC_TRUE@am__append_156 = unistr/u8-strmbtouc.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U16_TRUE@am__append_157 = unistr/u8-to-u16.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U32_TRUE@am__append_158 = unistr/u8-to-u32.c
++@LIBUNISTRING_COMPILE_UNISTR_U8_UCTOMB_TRUE@am__append_159 = unistr/u8-uctomb.c unistr/u8-uctomb-aux.c
++@GL_COND_OBJ_UNLINK_TRUE@am__append_160 = unlink.c
++@GL_COND_OBJ_UNSETENV_TRUE@am__append_161 = unsetenv.c
++@GL_COND_OBJ_WAITPID_TRUE@am__append_162 = waitpid.c
++@GL_COND_OBJ_WCTYPE_TRUE@am__append_163 = wctype.c
++@GL_COND_OBJ_WINDOWS_MUTEX_TRUE@am__append_164 = windows-mutex.c
++@GL_COND_OBJ_WINDOWS_ONCE_TRUE@am__append_165 = windows-once.c
++@GL_COND_OBJ_WINDOWS_RECMUTEX_TRUE@am__append_166 = windows-recmutex.c
++@GL_COND_OBJ_WINDOWS_RWLOCK_TRUE@am__append_167 = windows-rwlock.c
++@GL_COND_OBJ_WINDOWS_PATH_TRUE@am__append_168 = windows-path.c
++@GL_COND_OBJ_WINDOWS_SPAWN_TRUE@am__append_169 = windows-spawn.c
++@GL_COND_OBJ_WINDOWS_TLS_TRUE@am__append_170 = windows-tls.c
++@GL_COND_OBJ_WMEMCHR_TRUE@am__append_171 = wmemchr.c
++@GL_COND_OBJ_WMEMPCPY_TRUE@am__append_172 = wmempcpy.c
+ subdir = libgnu
+ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
+ am__aclocal_m4_deps = $(top_srcdir)/m4/00gnulib.m4 \
+@@ -609,15 +821,14 @@ am__libgnu_la_SOURCES_DIST = access.c allocator.c areadlink.c \
+ 	mkdir.c mkfifo.c mkostemp.c mkostemps.c msvc-inval.c \
+ 	msvc-nothrow.c nanosleep.c nproc.c nstrftime.c glthread/once.h \
+ 	glthread/once.c open.c openat.c openat-die.c opendir.c pipe.c \
+-	progname.h progname.c pselect.c pthread-once.c \
+-	pthread_sigmask.c putenv.c raise.c rawmemchr.c readdir.c \
+-	readline.c readlink.c realloc.c reallocarray.c rewinddir.c \
+-	rmdir.c same-inode.h same-inode.c save-cwd.c select.c setenv.c \
+-	setlocale.c setlocale_null.c setlocale-lock.c \
+-	setlocale_null-unlocked.c sigaction.c sig-handler.c \
+-	sigprocmask.c size_max.h sockets.h sockets.c stat.c \
+-	stat-time.c stdio-read.c stdio-write.c stdlib.c stpcpy.c \
+-	strcasecmp.c strncasecmp.c strdup.c strerror.c \
++	progname.h progname.c pselect.c pthread-once.c putenv.c \
++	raise.c rawmemchr.c readdir.c readline.c readlink.c realloc.c \
++	reallocarray.c rewinddir.c rmdir.c same-inode.h same-inode.c \
++	save-cwd.c select.c setenv.c setlocale.c setlocale_null.c \
++	setlocale-lock.c setlocale_null-unlocked.c sigaction.c \
++	sig-handler.c sigprocmask.c size_max.h sockets.h sockets.c \
++	stat.c stat-time.c stdio-read.c stdio-write.c stdlib.c \
++	stpcpy.c strcasecmp.c strncasecmp.c strdup.c strerror.c \
+ 	strerror-override.c striconveh.h striconveh.c striconveha.h \
+ 	striconveha.c strnlen.c strnlen1.h strnlen1.c strptime.c \
+ 	strsignal.c symlink.c sys_socket.c tempname.c \
+@@ -739,119 +950,118 @@ am__dirstamp = $(am__leading_dot)dirstamp
+ @GL_COND_OBJ_PSELECT_TRUE@am__objects_74 = libgnu_la-pselect.lo
+ @GL_COND_OBJ_PTHREAD_ONCE_TRUE@am__objects_75 =  \
+ @GL_COND_OBJ_PTHREAD_ONCE_TRUE@	libgnu_la-pthread-once.lo
+-@GL_COND_OBJ_PTHREAD_SIGMASK_TRUE@am__objects_76 = libgnu_la-pthread_sigmask.lo
+-@GL_COND_OBJ_PUTENV_TRUE@am__objects_77 = libgnu_la-putenv.lo
+-@GL_COND_OBJ_RAISE_TRUE@am__objects_78 = libgnu_la-raise.lo
+-@GL_COND_OBJ_RAWMEMCHR_TRUE@am__objects_79 = libgnu_la-rawmemchr.lo
+-@GL_COND_OBJ_READDIR_TRUE@am__objects_80 = libgnu_la-readdir.lo
+-@GL_COND_OBJ_READLINE_TRUE@am__objects_81 = libgnu_la-readline.lo
+-@GL_COND_OBJ_READLINK_TRUE@am__objects_82 = libgnu_la-readlink.lo
+-@GL_COND_OBJ_REALLOC_POSIX_TRUE@am__objects_83 = libgnu_la-realloc.lo
+-@GL_COND_OBJ_REALLOCARRAY_TRUE@am__objects_84 =  \
++@GL_COND_OBJ_PUTENV_TRUE@am__objects_76 = libgnu_la-putenv.lo
++@GL_COND_OBJ_RAISE_TRUE@am__objects_77 = libgnu_la-raise.lo
++@GL_COND_OBJ_RAWMEMCHR_TRUE@am__objects_78 = libgnu_la-rawmemchr.lo
++@GL_COND_OBJ_READDIR_TRUE@am__objects_79 = libgnu_la-readdir.lo
++@GL_COND_OBJ_READLINE_TRUE@am__objects_80 = libgnu_la-readline.lo
++@GL_COND_OBJ_READLINK_TRUE@am__objects_81 = libgnu_la-readlink.lo
++@GL_COND_OBJ_REALLOC_POSIX_TRUE@am__objects_82 = libgnu_la-realloc.lo
++@GL_COND_OBJ_REALLOCARRAY_TRUE@am__objects_83 =  \
+ @GL_COND_OBJ_REALLOCARRAY_TRUE@	libgnu_la-reallocarray.lo
+-@GL_COND_OBJ_REWINDDIR_TRUE@am__objects_85 = libgnu_la-rewinddir.lo
+-@GL_COND_OBJ_RMDIR_TRUE@am__objects_86 = libgnu_la-rmdir.lo
+-@GL_COND_OBJ_SELECT_TRUE@am__objects_87 = libgnu_la-select.lo
+-@GL_COND_OBJ_SETENV_TRUE@am__objects_88 = libgnu_la-setenv.lo
+-@GL_COND_OBJ_SETLOCALE_TRUE@am__objects_89 = libgnu_la-setlocale.lo
+-@GL_COND_OBJ_SETLOCALE_LOCK_TRUE@am__objects_90 =  \
++@GL_COND_OBJ_REWINDDIR_TRUE@am__objects_84 = libgnu_la-rewinddir.lo
++@GL_COND_OBJ_RMDIR_TRUE@am__objects_85 = libgnu_la-rmdir.lo
++@GL_COND_OBJ_SELECT_TRUE@am__objects_86 = libgnu_la-select.lo
++@GL_COND_OBJ_SETENV_TRUE@am__objects_87 = libgnu_la-setenv.lo
++@GL_COND_OBJ_SETLOCALE_TRUE@am__objects_88 = libgnu_la-setlocale.lo
++@GL_COND_OBJ_SETLOCALE_LOCK_TRUE@am__objects_89 =  \
+ @GL_COND_OBJ_SETLOCALE_LOCK_TRUE@	libgnu_la-setlocale-lock.lo
+-@GL_COND_OBJ_SIGACTION_TRUE@am__objects_91 = libgnu_la-sigaction.lo
+-@GL_COND_OBJ_SIGPROCMASK_TRUE@am__objects_92 =  \
++@GL_COND_OBJ_SIGACTION_TRUE@am__objects_90 = libgnu_la-sigaction.lo
++@GL_COND_OBJ_SIGPROCMASK_TRUE@am__objects_91 =  \
+ @GL_COND_OBJ_SIGPROCMASK_TRUE@	libgnu_la-sigprocmask.lo
+-@GL_COND_OBJ_STAT_TRUE@am__objects_93 = libgnu_la-stat.lo
+-@GL_COND_OBJ_STDIO_READ_TRUE@am__objects_94 = libgnu_la-stdio-read.lo
+-@GL_COND_OBJ_STDIO_WRITE_TRUE@am__objects_95 =  \
++@GL_COND_OBJ_STAT_TRUE@am__objects_92 = libgnu_la-stat.lo
++@GL_COND_OBJ_STDIO_READ_TRUE@am__objects_93 = libgnu_la-stdio-read.lo
++@GL_COND_OBJ_STDIO_WRITE_TRUE@am__objects_94 =  \
+ @GL_COND_OBJ_STDIO_WRITE_TRUE@	libgnu_la-stdio-write.lo
+-@GL_COND_OBJ_STPCPY_TRUE@am__objects_96 = libgnu_la-stpcpy.lo
+-@GL_COND_OBJ_STRCASECMP_TRUE@am__objects_97 = libgnu_la-strcasecmp.lo
+-@GL_COND_OBJ_STRNCASECMP_TRUE@am__objects_98 =  \
++@GL_COND_OBJ_STPCPY_TRUE@am__objects_95 = libgnu_la-stpcpy.lo
++@GL_COND_OBJ_STRCASECMP_TRUE@am__objects_96 = libgnu_la-strcasecmp.lo
++@GL_COND_OBJ_STRNCASECMP_TRUE@am__objects_97 =  \
+ @GL_COND_OBJ_STRNCASECMP_TRUE@	libgnu_la-strncasecmp.lo
+-@GL_COND_OBJ_STRDUP_TRUE@am__objects_99 = libgnu_la-strdup.lo
+-@GL_COND_OBJ_STRERROR_TRUE@am__objects_100 = libgnu_la-strerror.lo
+-@GL_COND_OBJ_STRERROR_OVERRIDE_TRUE@am__objects_101 = libgnu_la-strerror-override.lo
+-@GL_COND_OBJ_STRNLEN_TRUE@am__objects_102 = libgnu_la-strnlen.lo
+-@GL_COND_OBJ_STRPTIME_TRUE@am__objects_103 = libgnu_la-strptime.lo
+-@GL_COND_OBJ_STRSIGNAL_TRUE@am__objects_104 = libgnu_la-strsignal.lo
+-@GL_COND_OBJ_SYMLINK_TRUE@am__objects_105 = libgnu_la-symlink.lo
+-@GL_COND_OBJ_TIME_R_TRUE@am__objects_106 = libgnu_la-time_r.lo
+-@GL_COND_OBJ_TIME_RZ_TRUE@am__objects_107 = libgnu_la-time_rz.lo
+-@GL_COND_OBJ_TIMEGM_TRUE@am__objects_108 = libgnu_la-timegm.lo
+-@GL_COND_OBJ_TZSET_TRUE@am__objects_109 = libgnu_la-tzset.lo
+-@GL_COND_OBJ_UNAME_TRUE@am__objects_110 = libgnu_la-uname.lo
+-@LIBUNISTRING_COMPILE_UNICASE_EMPTY_PREFIX_CONTEXT_TRUE@am__objects_111 = unicase/libgnu_la-empty-prefix-context.lo
+-@LIBUNISTRING_COMPILE_UNICASE_EMPTY_SUFFIX_CONTEXT_TRUE@am__objects_112 = unicase/libgnu_la-empty-suffix-context.lo
+-@LIBUNISTRING_COMPILE_UNICASE_TOLOWER_TRUE@am__objects_113 = unicase/libgnu_la-tolower.lo
+-@LIBUNISTRING_COMPILE_UNICASE_TOUPPER_TRUE@am__objects_114 = unicase/libgnu_la-toupper.lo
+-@LIBUNISTRING_COMPILE_UNICASE_U8_TOLOWER_TRUE@am__objects_115 = unicase/libgnu_la-u8-tolower.lo
+-@LIBUNISTRING_COMPILE_UNICASE_U8_TOUPPER_TRUE@am__objects_116 = unicase/libgnu_la-u8-toupper.lo
+-@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_FROM_ENC_TRUE@am__objects_117 = uniconv/libgnu_la-u16-conv-from-enc.lo
+-@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_TO_ENC_TRUE@am__objects_118 = uniconv/libgnu_la-u16-conv-to-enc.lo
+-@LIBUNISTRING_COMPILE_UNICONV_U32_CONV_TO_ENC_TRUE@am__objects_119 = uniconv/libgnu_la-u32-conv-to-enc.lo
+-@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_FROM_ENC_TRUE@am__objects_120 = uniconv/libgnu_la-u8-conv-from-enc.lo
+-@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_TO_ENC_TRUE@am__objects_121 = uniconv/libgnu_la-u8-conv-to-enc.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_COMBINING_CLASS_TRUE@am__objects_122 = unictype/libgnu_la-combiningclass.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALNUM_TRUE@am__objects_123 = unictype/libgnu_la-ctype_alnum.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALPHA_TRUE@am__objects_124 = unictype/libgnu_la-ctype_alpha.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_BLANK_TRUE@am__objects_125 = unictype/libgnu_la-ctype_blank.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_CNTRL_TRUE@am__objects_126 = unictype/libgnu_la-ctype_cntrl.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_DIGIT_TRUE@am__objects_127 = unictype/libgnu_la-ctype_digit.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_GRAPH_TRUE@am__objects_128 = unictype/libgnu_la-ctype_graph.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_LOWER_TRUE@am__objects_129 = unictype/libgnu_la-ctype_lower.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PRINT_TRUE@am__objects_130 = unictype/libgnu_la-ctype_print.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PUNCT_TRUE@am__objects_131 = unictype/libgnu_la-ctype_punct.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_SPACE_TRUE@am__objects_132 = unictype/libgnu_la-ctype_space.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_UPPER_TRUE@am__objects_133 = unictype/libgnu_la-ctype_upper.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_XDIGIT_TRUE@am__objects_134 = unictype/libgnu_la-ctype_xdigit.lo
+-@LIBUNISTRING_COMPILE_UNICTYPE_PROPERTY_SOFT_DOTTED_TRUE@am__objects_135 = unictype/libgnu_la-pr_soft_dotted.lo
+-@LIBUNISTRING_COMPILE_UNINORM_U8_NORMALIZE_TRUE@am__objects_136 = uninorm/libgnu_la-u8-normalize.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U16_MBLEN_TRUE@am__objects_137 = unistr/libgnu_la-u16-mblen.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U16_MBTOUCR_TRUE@am__objects_138 = unistr/libgnu_la-u16-mbtoucr.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U16_TO_U8_TRUE@am__objects_139 = unistr/libgnu_la-u16-to-u8.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U16_UCTOMB_TRUE@am__objects_140 = unistr/libgnu_la-u16-uctomb.lo \
++@GL_COND_OBJ_STRDUP_TRUE@am__objects_98 = libgnu_la-strdup.lo
++@GL_COND_OBJ_STRERROR_TRUE@am__objects_99 = libgnu_la-strerror.lo
++@GL_COND_OBJ_STRERROR_OVERRIDE_TRUE@am__objects_100 = libgnu_la-strerror-override.lo
++@GL_COND_OBJ_STRNLEN_TRUE@am__objects_101 = libgnu_la-strnlen.lo
++@GL_COND_OBJ_STRPTIME_TRUE@am__objects_102 = libgnu_la-strptime.lo
++@GL_COND_OBJ_STRSIGNAL_TRUE@am__objects_103 = libgnu_la-strsignal.lo
++@GL_COND_OBJ_SYMLINK_TRUE@am__objects_104 = libgnu_la-symlink.lo
++@GL_COND_OBJ_TIME_R_TRUE@am__objects_105 = libgnu_la-time_r.lo
++@GL_COND_OBJ_TIME_RZ_TRUE@am__objects_106 = libgnu_la-time_rz.lo
++@GL_COND_OBJ_TIMEGM_TRUE@am__objects_107 = libgnu_la-timegm.lo
++@GL_COND_OBJ_TZSET_TRUE@am__objects_108 = libgnu_la-tzset.lo
++@GL_COND_OBJ_UNAME_TRUE@am__objects_109 = libgnu_la-uname.lo
++@LIBUNISTRING_COMPILE_UNICASE_EMPTY_PREFIX_CONTEXT_TRUE@am__objects_110 = unicase/libgnu_la-empty-prefix-context.lo
++@LIBUNISTRING_COMPILE_UNICASE_EMPTY_SUFFIX_CONTEXT_TRUE@am__objects_111 = unicase/libgnu_la-empty-suffix-context.lo
++@LIBUNISTRING_COMPILE_UNICASE_TOLOWER_TRUE@am__objects_112 = unicase/libgnu_la-tolower.lo
++@LIBUNISTRING_COMPILE_UNICASE_TOUPPER_TRUE@am__objects_113 = unicase/libgnu_la-toupper.lo
++@LIBUNISTRING_COMPILE_UNICASE_U8_TOLOWER_TRUE@am__objects_114 = unicase/libgnu_la-u8-tolower.lo
++@LIBUNISTRING_COMPILE_UNICASE_U8_TOUPPER_TRUE@am__objects_115 = unicase/libgnu_la-u8-toupper.lo
++@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_FROM_ENC_TRUE@am__objects_116 = uniconv/libgnu_la-u16-conv-from-enc.lo
++@LIBUNISTRING_COMPILE_UNICONV_U16_CONV_TO_ENC_TRUE@am__objects_117 = uniconv/libgnu_la-u16-conv-to-enc.lo
++@LIBUNISTRING_COMPILE_UNICONV_U32_CONV_TO_ENC_TRUE@am__objects_118 = uniconv/libgnu_la-u32-conv-to-enc.lo
++@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_FROM_ENC_TRUE@am__objects_119 = uniconv/libgnu_la-u8-conv-from-enc.lo
++@LIBUNISTRING_COMPILE_UNICONV_U8_CONV_TO_ENC_TRUE@am__objects_120 = uniconv/libgnu_la-u8-conv-to-enc.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_COMBINING_CLASS_TRUE@am__objects_121 = unictype/libgnu_la-combiningclass.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALNUM_TRUE@am__objects_122 = unictype/libgnu_la-ctype_alnum.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_ALPHA_TRUE@am__objects_123 = unictype/libgnu_la-ctype_alpha.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_BLANK_TRUE@am__objects_124 = unictype/libgnu_la-ctype_blank.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_CNTRL_TRUE@am__objects_125 = unictype/libgnu_la-ctype_cntrl.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_DIGIT_TRUE@am__objects_126 = unictype/libgnu_la-ctype_digit.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_GRAPH_TRUE@am__objects_127 = unictype/libgnu_la-ctype_graph.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_LOWER_TRUE@am__objects_128 = unictype/libgnu_la-ctype_lower.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PRINT_TRUE@am__objects_129 = unictype/libgnu_la-ctype_print.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_PUNCT_TRUE@am__objects_130 = unictype/libgnu_la-ctype_punct.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_SPACE_TRUE@am__objects_131 = unictype/libgnu_la-ctype_space.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_UPPER_TRUE@am__objects_132 = unictype/libgnu_la-ctype_upper.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_CTYPE_XDIGIT_TRUE@am__objects_133 = unictype/libgnu_la-ctype_xdigit.lo
++@LIBUNISTRING_COMPILE_UNICTYPE_PROPERTY_SOFT_DOTTED_TRUE@am__objects_134 = unictype/libgnu_la-pr_soft_dotted.lo
++@LIBUNISTRING_COMPILE_UNINORM_U8_NORMALIZE_TRUE@am__objects_135 = uninorm/libgnu_la-u8-normalize.lo
++@LIBUNISTRING_COMPILE_UNISTR_U16_MBLEN_TRUE@am__objects_136 = unistr/libgnu_la-u16-mblen.lo
++@LIBUNISTRING_COMPILE_UNISTR_U16_MBTOUCR_TRUE@am__objects_137 = unistr/libgnu_la-u16-mbtoucr.lo
++@LIBUNISTRING_COMPILE_UNISTR_U16_TO_U8_TRUE@am__objects_138 = unistr/libgnu_la-u16-to-u8.lo
++@LIBUNISTRING_COMPILE_UNISTR_U16_UCTOMB_TRUE@am__objects_139 = unistr/libgnu_la-u16-uctomb.lo \
+ @LIBUNISTRING_COMPILE_UNISTR_U16_UCTOMB_TRUE@	unistr/libgnu_la-u16-uctomb-aux.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_CHR_TRUE@am__objects_141 = unistr/libgnu_la-u32-chr.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_CPY_TRUE@am__objects_142 = unistr/libgnu_la-u32-cpy.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_MBLEN_TRUE@am__objects_143 = unistr/libgnu_la-u32-mblen.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_PCPY_TRUE@am__objects_144 = unistr/libgnu_la-u32-pcpy.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_STRCAT_TRUE@am__objects_145 = unistr/libgnu_la-u32-strcat.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_STRLEN_TRUE@am__objects_146 = unistr/libgnu_la-u32-strlen.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U32_TO_U8_TRUE@am__objects_147 = unistr/libgnu_la-u32-to-u8.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_CHECK_TRUE@am__objects_148 = unistr/libgnu_la-u8-check.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_CPY_TRUE@am__objects_149 = unistr/libgnu_la-u8-cpy.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBLEN_TRUE@am__objects_150 = unistr/libgnu_la-u8-mblen.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBSNLEN_TRUE@am__objects_151 = unistr/libgnu_la-u8-mbsnlen.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_TRUE@am__objects_152 = unistr/libgnu_la-u8-mbtouc.lo \
++@LIBUNISTRING_COMPILE_UNISTR_U32_CHR_TRUE@am__objects_140 = unistr/libgnu_la-u32-chr.lo
++@LIBUNISTRING_COMPILE_UNISTR_U32_CPY_TRUE@am__objects_141 = unistr/libgnu_la-u32-cpy.lo
++@LIBUNISTRING_COMPILE_UNISTR_U32_MBLEN_TRUE@am__objects_142 = unistr/libgnu_la-u32-mblen.lo
++@LIBUNISTRING_COMPILE_UNISTR_U32_PCPY_TRUE@am__objects_143 = unistr/libgnu_la-u32-pcpy.lo
++@LIBUNISTRING_COMPILE_UNISTR_U32_STRCAT_TRUE@am__objects_144 = unistr/libgnu_la-u32-strcat.lo
++@LIBUNISTRING_COMPILE_UNISTR_U32_STRLEN_TRUE@am__objects_145 = unistr/libgnu_la-u32-strlen.lo
++@LIBUNISTRING_COMPILE_UNISTR_U32_TO_U8_TRUE@am__objects_146 = unistr/libgnu_la-u32-to-u8.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_CHECK_TRUE@am__objects_147 = unistr/libgnu_la-u8-check.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_CPY_TRUE@am__objects_148 = unistr/libgnu_la-u8-cpy.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBLEN_TRUE@am__objects_149 = unistr/libgnu_la-u8-mblen.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBSNLEN_TRUE@am__objects_150 = unistr/libgnu_la-u8-mbsnlen.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_TRUE@am__objects_151 = unistr/libgnu_la-u8-mbtouc.lo \
+ @LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_TRUE@	unistr/libgnu_la-u8-mbtouc-aux.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_UNSAFE_TRUE@am__objects_153 = unistr/libgnu_la-u8-mbtouc-unsafe.lo \
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_UNSAFE_TRUE@am__objects_152 = unistr/libgnu_la-u8-mbtouc-unsafe.lo \
+ @LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUC_UNSAFE_TRUE@	unistr/libgnu_la-u8-mbtouc-unsafe-aux.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUCR_TRUE@am__objects_154 = unistr/libgnu_la-u8-mbtoucr.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_PREV_TRUE@am__objects_155 = unistr/libgnu_la-u8-prev.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBLEN_TRUE@am__objects_156 = unistr/libgnu_la-u8-strmblen.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBTOUC_TRUE@am__objects_157 = unistr/libgnu_la-u8-strmbtouc.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U16_TRUE@am__objects_158 = unistr/libgnu_la-u8-to-u16.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U32_TRUE@am__objects_159 = unistr/libgnu_la-u8-to-u32.lo
+-@LIBUNISTRING_COMPILE_UNISTR_U8_UCTOMB_TRUE@am__objects_160 = unistr/libgnu_la-u8-uctomb.lo \
++@LIBUNISTRING_COMPILE_UNISTR_U8_MBTOUCR_TRUE@am__objects_153 = unistr/libgnu_la-u8-mbtoucr.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_PREV_TRUE@am__objects_154 = unistr/libgnu_la-u8-prev.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBLEN_TRUE@am__objects_155 = unistr/libgnu_la-u8-strmblen.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_STRMBTOUC_TRUE@am__objects_156 = unistr/libgnu_la-u8-strmbtouc.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U16_TRUE@am__objects_157 = unistr/libgnu_la-u8-to-u16.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_TO_U32_TRUE@am__objects_158 = unistr/libgnu_la-u8-to-u32.lo
++@LIBUNISTRING_COMPILE_UNISTR_U8_UCTOMB_TRUE@am__objects_159 = unistr/libgnu_la-u8-uctomb.lo \
+ @LIBUNISTRING_COMPILE_UNISTR_U8_UCTOMB_TRUE@	unistr/libgnu_la-u8-uctomb-aux.lo
+-@GL_COND_OBJ_UNLINK_TRUE@am__objects_161 = libgnu_la-unlink.lo
+-@GL_COND_OBJ_UNSETENV_TRUE@am__objects_162 = libgnu_la-unsetenv.lo
+-@GL_COND_OBJ_WAITPID_TRUE@am__objects_163 = libgnu_la-waitpid.lo
+-@GL_COND_OBJ_WCTYPE_TRUE@am__objects_164 = libgnu_la-wctype.lo
+-@GL_COND_OBJ_WINDOWS_MUTEX_TRUE@am__objects_165 =  \
++@GL_COND_OBJ_UNLINK_TRUE@am__objects_160 = libgnu_la-unlink.lo
++@GL_COND_OBJ_UNSETENV_TRUE@am__objects_161 = libgnu_la-unsetenv.lo
++@GL_COND_OBJ_WAITPID_TRUE@am__objects_162 = libgnu_la-waitpid.lo
++@GL_COND_OBJ_WCTYPE_TRUE@am__objects_163 = libgnu_la-wctype.lo
++@GL_COND_OBJ_WINDOWS_MUTEX_TRUE@am__objects_164 =  \
+ @GL_COND_OBJ_WINDOWS_MUTEX_TRUE@	libgnu_la-windows-mutex.lo
+-@GL_COND_OBJ_WINDOWS_ONCE_TRUE@am__objects_166 =  \
++@GL_COND_OBJ_WINDOWS_ONCE_TRUE@am__objects_165 =  \
+ @GL_COND_OBJ_WINDOWS_ONCE_TRUE@	libgnu_la-windows-once.lo
+-@GL_COND_OBJ_WINDOWS_RECMUTEX_TRUE@am__objects_167 = libgnu_la-windows-recmutex.lo
+-@GL_COND_OBJ_WINDOWS_RWLOCK_TRUE@am__objects_168 =  \
++@GL_COND_OBJ_WINDOWS_RECMUTEX_TRUE@am__objects_166 = libgnu_la-windows-recmutex.lo
++@GL_COND_OBJ_WINDOWS_RWLOCK_TRUE@am__objects_167 =  \
+ @GL_COND_OBJ_WINDOWS_RWLOCK_TRUE@	libgnu_la-windows-rwlock.lo
+-@GL_COND_OBJ_WINDOWS_PATH_TRUE@am__objects_169 =  \
++@GL_COND_OBJ_WINDOWS_PATH_TRUE@am__objects_168 =  \
+ @GL_COND_OBJ_WINDOWS_PATH_TRUE@	libgnu_la-windows-path.lo
+-@GL_COND_OBJ_WINDOWS_SPAWN_TRUE@am__objects_170 =  \
++@GL_COND_OBJ_WINDOWS_SPAWN_TRUE@am__objects_169 =  \
+ @GL_COND_OBJ_WINDOWS_SPAWN_TRUE@	libgnu_la-windows-spawn.lo
+-@GL_COND_OBJ_WINDOWS_TLS_TRUE@am__objects_171 =  \
++@GL_COND_OBJ_WINDOWS_TLS_TRUE@am__objects_170 =  \
+ @GL_COND_OBJ_WINDOWS_TLS_TRUE@	libgnu_la-windows-tls.lo
+-@GL_COND_OBJ_WMEMCHR_TRUE@am__objects_172 = libgnu_la-wmemchr.lo
+-@GL_COND_OBJ_WMEMPCPY_TRUE@am__objects_173 = libgnu_la-wmempcpy.lo
++@GL_COND_OBJ_WMEMCHR_TRUE@am__objects_171 = libgnu_la-wmemchr.lo
++@GL_COND_OBJ_WMEMPCPY_TRUE@am__objects_172 = libgnu_la-wmempcpy.lo
+ am_libgnu_la_OBJECTS = $(am__objects_1) libgnu_la-allocator.lo \
+ 	libgnu_la-areadlink.lo libgnu_la-openat-proc.lo \
+ 	libgnu_la-base64.lo libgnu_la-basename-lgpl.lo \
+@@ -912,48 +1122,48 @@ am_libgnu_la_OBJECTS = $(am__objects_1) libgnu_la-allocator.lo \
+ 	$(am__objects_76) $(am__objects_77) $(am__objects_78) \
+ 	$(am__objects_79) $(am__objects_80) $(am__objects_81) \
+ 	$(am__objects_82) $(am__objects_83) $(am__objects_84) \
+-	$(am__objects_85) $(am__objects_86) libgnu_la-same-inode.lo \
+-	libgnu_la-save-cwd.lo $(am__objects_87) $(am__objects_88) \
+-	$(am__objects_89) libgnu_la-setlocale_null.lo \
+-	$(am__objects_90) libgnu_la-setlocale_null-unlocked.lo \
+-	$(am__objects_91) libgnu_la-sig-handler.lo $(am__objects_92) \
+-	libgnu_la-sockets.lo $(am__objects_93) libgnu_la-stat-time.lo \
+-	$(am__objects_94) $(am__objects_95) libgnu_la-stdlib.lo \
+-	$(am__objects_96) $(am__objects_97) $(am__objects_98) \
+-	$(am__objects_99) $(am__objects_100) $(am__objects_101) \
++	$(am__objects_85) libgnu_la-same-inode.lo \
++	libgnu_la-save-cwd.lo $(am__objects_86) $(am__objects_87) \
++	$(am__objects_88) libgnu_la-setlocale_null.lo \
++	$(am__objects_89) libgnu_la-setlocale_null-unlocked.lo \
++	$(am__objects_90) libgnu_la-sig-handler.lo $(am__objects_91) \
++	libgnu_la-sockets.lo $(am__objects_92) libgnu_la-stat-time.lo \
++	$(am__objects_93) $(am__objects_94) libgnu_la-stdlib.lo \
++	$(am__objects_95) $(am__objects_96) $(am__objects_97) \
++	$(am__objects_98) $(am__objects_99) $(am__objects_100) \
+ 	libgnu_la-striconveh.lo libgnu_la-striconveha.lo \
+-	$(am__objects_102) libgnu_la-strnlen1.lo $(am__objects_103) \
+-	$(am__objects_104) $(am__objects_105) libgnu_la-sys_socket.lo \
++	$(am__objects_101) libgnu_la-strnlen1.lo $(am__objects_102) \
++	$(am__objects_103) $(am__objects_104) libgnu_la-sys_socket.lo \
+ 	libgnu_la-tempname.lo glthread/libgnu_la-threadlib.lo \
+-	$(am__objects_106) $(am__objects_107) $(am__objects_108) \
++	$(am__objects_105) $(am__objects_106) $(am__objects_107) \
+ 	libgnu_la-timespec.lo glthread/libgnu_la-tls.lo \
+-	$(am__objects_109) libgnu_la-u64.lo $(am__objects_110) \
+-	unicase/libgnu_la-cased.lo $(am__objects_111) \
+-	$(am__objects_112) unicase/libgnu_la-ignorable.lo \
+-	unicase/libgnu_la-special-casing.lo $(am__objects_113) \
+-	$(am__objects_114) unicase/libgnu_la-u8-casemap.lo \
+-	$(am__objects_115) $(am__objects_116) $(am__objects_117) \
+-	$(am__objects_118) $(am__objects_119) $(am__objects_120) \
+-	$(am__objects_121) $(am__objects_122) $(am__objects_123) \
+-	$(am__objects_124) $(am__objects_125) $(am__objects_126) \
+-	$(am__objects_127) $(am__objects_128) $(am__objects_129) \
+-	$(am__objects_130) $(am__objects_131) $(am__objects_132) \
+-	$(am__objects_133) $(am__objects_134) $(am__objects_135) \
+-	uninorm/libgnu_la-decompose-internal.lo $(am__objects_136) \
+-	libgnu_la-unistd.lo $(am__objects_137) $(am__objects_138) \
+-	$(am__objects_139) $(am__objects_140) $(am__objects_141) \
+-	$(am__objects_142) $(am__objects_143) $(am__objects_144) \
+-	$(am__objects_145) $(am__objects_146) $(am__objects_147) \
+-	$(am__objects_148) $(am__objects_149) $(am__objects_150) \
+-	$(am__objects_151) $(am__objects_152) $(am__objects_153) \
+-	$(am__objects_154) $(am__objects_155) $(am__objects_156) \
+-	$(am__objects_157) $(am__objects_158) $(am__objects_159) \
+-	$(am__objects_160) $(am__objects_161) $(am__objects_162) \
+-	libgnu_la-vsnzprintf.lo $(am__objects_163) $(am__objects_164) \
+-	libgnu_la-wctype-h.lo $(am__objects_165) $(am__objects_166) \
+-	$(am__objects_167) $(am__objects_168) $(am__objects_169) \
+-	$(am__objects_170) $(am__objects_171) $(am__objects_172) \
+-	$(am__objects_173) libgnu_la-xmalloc.lo \
++	$(am__objects_108) libgnu_la-u64.lo $(am__objects_109) \
++	unicase/libgnu_la-cased.lo $(am__objects_110) \
++	$(am__objects_111) unicase/libgnu_la-ignorable.lo \
++	unicase/libgnu_la-special-casing.lo $(am__objects_112) \
++	$(am__objects_113) unicase/libgnu_la-u8-casemap.lo \
++	$(am__objects_114) $(am__objects_115) $(am__objects_116) \
++	$(am__objects_117) $(am__objects_118) $(am__objects_119) \
++	$(am__objects_120) $(am__objects_121) $(am__objects_122) \
++	$(am__objects_123) $(am__objects_124) $(am__objects_125) \
++	$(am__objects_126) $(am__objects_127) $(am__objects_128) \
++	$(am__objects_129) $(am__objects_130) $(am__objects_131) \
++	$(am__objects_132) $(am__objects_133) $(am__objects_134) \
++	uninorm/libgnu_la-decompose-internal.lo $(am__objects_135) \
++	libgnu_la-unistd.lo $(am__objects_136) $(am__objects_137) \
++	$(am__objects_138) $(am__objects_139) $(am__objects_140) \
++	$(am__objects_141) $(am__objects_142) $(am__objects_143) \
++	$(am__objects_144) $(am__objects_145) $(am__objects_146) \
++	$(am__objects_147) $(am__objects_148) $(am__objects_149) \
++	$(am__objects_150) $(am__objects_151) $(am__objects_152) \
++	$(am__objects_153) $(am__objects_154) $(am__objects_155) \
++	$(am__objects_156) $(am__objects_157) $(am__objects_158) \
++	$(am__objects_159) $(am__objects_160) $(am__objects_161) \
++	libgnu_la-vsnzprintf.lo $(am__objects_162) $(am__objects_163) \
++	libgnu_la-wctype-h.lo $(am__objects_164) $(am__objects_165) \
++	$(am__objects_166) $(am__objects_167) $(am__objects_168) \
++	$(am__objects_169) $(am__objects_170) $(am__objects_171) \
++	$(am__objects_172) libgnu_la-xmalloc.lo \
+ 	libgnu_la-xalloc-die.lo libgnu_la-xsize.lo
+ libgnu_la_OBJECTS = $(am_libgnu_la_OBJECTS)
+ AM_V_lt = $(am__v_lt_@AM_V@)
+@@ -1128,7 +1338,6 @@ am__depfiles_remade = ./$(DEPDIR)/alloca.Plo \
+ 	./$(DEPDIR)/libgnu_la-progname.Plo \
+ 	./$(DEPDIR)/libgnu_la-pselect.Plo \
+ 	./$(DEPDIR)/libgnu_la-pthread-once.Plo \
+-	./$(DEPDIR)/libgnu_la-pthread_sigmask.Plo \
+ 	./$(DEPDIR)/libgnu_la-putenv.Plo \
+ 	./$(DEPDIR)/libgnu_la-raise.Plo \
+ 	./$(DEPDIR)/libgnu_la-rawmemchr.Plo \
+@@ -3682,15 +3891,14 @@ EXTRA_DIST = alloca.c alloca.in.h allocator.h areadlink.h \
+ 	mbsrtowcs-state.c mbtowc-impl.h memchr.valgrind \
+ 	mktime-internal.h mktime.c mktime-internal.h mktime.c \
+ 	msvc-inval.h msvc-nothrow.h nproc.h strftime.c strftime.h \
+-	openat.h dirent-private.h pathmax.h pthread.in.h \
+-	rawmemchr.valgrind dirent-private.h readline.h \
+-	dirent-private.h save-cwd.h sched.in.h setlocale_null.h \
+-	windows-initguard.h setlocale_null.h sig-handler.h signal.in.h \
+-	_Noreturn.h arg-nonnull.h c++defs.h warn-on-use.h snprintf.c \
+-	w32sock.h stat-w32.c stat-w32.h stat-time.h \
+-	intprops-internal.h stdckdint.in.h stddef.in.h stdint.in.h \
+-	stdio.in.h stdlib.in.h streq.h strerror-override.h iconveh.h \
+-	string.in.h strings.in.h siglist.h sys_random.in.h \
++	openat.h dirent-private.h pathmax.h rawmemchr.valgrind \
++	dirent-private.h readline.h dirent-private.h save-cwd.h \
++	setlocale_null.h windows-initguard.h setlocale_null.h \
++	sig-handler.h _Noreturn.h arg-nonnull.h c++defs.h \
++	warn-on-use.h snprintf.c w32sock.h stat-w32.c stat-w32.h \
++	stat-time.h intprops-internal.h stdckdint.in.h stddef.in.h \
++	stdint.in.h stdio.in.h stdlib.in.h streq.h strerror-override.h \
++	iconveh.h string.in.h strings.in.h siglist.h sys_random.in.h \
+ 	sys_resource.in.h sys_select.in.h sys_socket.in.h \
+ 	sys_stat.in.h sys_time.in.h sys_times.in.h sys_types.in.h \
+ 	sys_uio.in.h sys_utsname.in.h sys_wait.in.h tempname.h \
+@@ -3737,15 +3945,15 @@ BUILT_SOURCES = $(ALLOCA_H) $(ASSERT_H) $(BYTESWAP_H) ctype.h dirent.h \
+ 	glob-libc.gl.h $(ICONV_H) iconv_open-aix.h iconv_open-hpux.h \
+ 	iconv_open-irix.h iconv_open-osf.h iconv_open-solaris.h \
+ 	iconv_open-zos.h inttypes.h langinfo.h $(LIMITS_H) locale.h \
+-	math.h pthread.h sched.h signal.h $(STDCKDINT_H) $(STDDEF_H) \
+-	$(STDINT_H) stdio.h stdlib.h string.h strings.h sys/random.h \
+-	sys/resource.h sys/select.h sys/socket.h sys/stat.h sys/time.h \
+-	sys/times.h sys/types.h sys/uio.h sys/utsname.h sys/wait.h \
+-	time.h uchar.h $(LIBUNISTRING_UNICASE_H) \
+-	unicase/special-casing-table.h unicase/special-casing.h \
+-	$(LIBUNISTRING_UNICONV_H) $(LIBUNISTRING_UNICTYPE_H) \
+-	$(LIBUNISTRING_UNINORM_H) unistd.h $(LIBUNISTRING_UNISTR_H) \
+-	$(LIBUNISTRING_UNITYPES_H) wchar.h wctype.h
++	math.h $(STDCKDINT_H) $(STDDEF_H) $(STDINT_H) stdio.h stdlib.h \
++	string.h strings.h sys/random.h sys/resource.h sys/select.h \
++	sys/socket.h sys/stat.h sys/time.h sys/times.h sys/types.h \
++	sys/uio.h sys/utsname.h sys/wait.h time.h uchar.h \
++	$(LIBUNISTRING_UNICASE_H) unicase/special-casing-table.h \
++	unicase/special-casing.h $(LIBUNISTRING_UNICONV_H) \
++	$(LIBUNISTRING_UNICTYPE_H) $(LIBUNISTRING_UNINORM_H) unistd.h \
++	$(LIBUNISTRING_UNISTR_H) $(LIBUNISTRING_UNITYPES_H) wchar.h \
++	wctype.h
+ SUFFIXES = 
+ MOSTLYCLEANFILES = core *.stackdump alloca.h alloca.h-t assert.h \
+ 	assert.h-t byteswap.h byteswap.h-t ctype.h ctype.h-t dirent.h \
+@@ -3761,19 +3969,17 @@ MOSTLYCLEANFILES = core *.stackdump alloca.h alloca.h-t assert.h \
+ 	iconv_open-zos.h-t1 iconv_open-zos.h-t2 inttypes.h \
+ 	inttypes.h-t langinfo.h langinfo.h-t limits.h limits.h-t \
+ 	locale.h locale.h-t math.h math.h-t1 math.h-t2 math.h-t3 \
+-	math.h-t4 math.h-t5 math.h-t6 pthread.h pthread.h-t1 \
+-	pthread.h-t2 pthread.h-t3 pthread.h-t4 sched.h sched.h-t \
+-	signal.h signal.h-t stdckdint.h stdckdint.h-t stddef.h \
+-	stddef.h-t stdint.h stdint.h-t stdio.h stdio.h-t1 stdio.h-t2 \
+-	stdio.h-t3 stdlib.h stdlib.h-t1 stdlib.h-t2 stdlib.h-t3 \
+-	string.h string.h-t1 string.h-t2 strings.h strings.h-t \
+-	sys/random.h sys/random.h-t sys/resource.h sys/resource.h-t \
+-	sys/select.h sys/select.h-t sys/socket.h sys/socket.h-t \
+-	sys/stat.h sys/stat.h-t sys/time.h sys/time.h-t sys/times.h \
+-	sys/times.h-t sys/types.h sys/types.h-t sys/uio.h sys/uio.h-t \
+-	sys/utsname.h sys/utsname.h-t sys/wait.h sys/wait.h-t time.h \
+-	time.h-t uchar.h uchar.h-t unicase.h unicase.h-t \
+-	unicase/special-casing-table.h-t1 \
++	math.h-t4 math.h-t5 math.h-t6 stdckdint.h stdckdint.h-t \
++	stddef.h stddef.h-t stdint.h stdint.h-t stdio.h stdio.h-t1 \
++	stdio.h-t2 stdio.h-t3 stdlib.h stdlib.h-t1 stdlib.h-t2 \
++	stdlib.h-t3 string.h string.h-t1 string.h-t2 strings.h \
++	strings.h-t sys/random.h sys/random.h-t sys/resource.h \
++	sys/resource.h-t sys/select.h sys/select.h-t sys/socket.h \
++	sys/socket.h-t sys/stat.h sys/stat.h-t sys/time.h sys/time.h-t \
++	sys/times.h sys/times.h-t sys/types.h sys/types.h-t sys/uio.h \
++	sys/uio.h-t sys/utsname.h sys/utsname.h-t sys/wait.h \
++	sys/wait.h-t time.h time.h-t uchar.h uchar.h-t unicase.h \
++	unicase.h-t unicase/special-casing-table.h-t1 \
+ 	unicase/special-casing-table.h-t2 unicase/special-casing.h \
+ 	unicase/special-casing.h-t uniconv.h uniconv.h-t unictype.h \
+ 	unictype.h-t1 unictype.h-t2 unictype.h-t3 unictype.h-t4 \
+@@ -3843,43 +4049,42 @@ libgnu_la_SOURCES = $(am__append_1) allocator.c areadlink.c \
+ 	$(am__append_77) $(am__append_78) $(am__append_79) \
+ 	$(am__append_80) $(am__append_81) $(am__append_82) \
+ 	$(am__append_83) $(am__append_84) $(am__append_85) \
+-	$(am__append_86) same-inode.h same-inode.c save-cwd.c \
+-	$(am__append_87) $(am__append_88) $(am__append_89) \
+-	setlocale_null.c $(am__append_90) setlocale_null-unlocked.c \
+-	$(am__append_91) sig-handler.c $(am__append_92) size_max.h \
+-	sockets.h sockets.c $(am__append_93) stat-time.c \
+-	$(am__append_94) $(am__append_95) stdlib.c $(am__append_96) \
+-	$(am__append_97) $(am__append_98) $(am__append_99) \
+-	$(am__append_100) $(am__append_101) striconveh.h striconveh.c \
+-	striconveha.h striconveha.c $(am__append_102) strnlen1.h \
+-	strnlen1.c $(am__append_103) $(am__append_104) \
+-	$(am__append_105) sys_socket.c tempname.c glthread/threadlib.c \
+-	$(am__append_106) $(am__append_107) $(am__append_108) \
+-	timespec.c glthread/tls.h glthread/tls.c $(am__append_109) \
+-	u64.c $(am__append_110) unicase/cased.c $(am__append_111) \
+-	$(am__append_112) unicase/ignorable.c unicase/special-casing.c \
+-	$(am__append_113) $(am__append_114) unicase/u8-casemap.c \
+-	$(am__append_115) $(am__append_116) $(am__append_117) \
+-	$(am__append_118) $(am__append_119) $(am__append_120) \
+-	$(am__append_121) $(am__append_122) $(am__append_123) \
+-	$(am__append_124) $(am__append_125) $(am__append_126) \
+-	$(am__append_127) $(am__append_128) $(am__append_129) \
+-	$(am__append_130) $(am__append_131) $(am__append_132) \
+-	$(am__append_133) $(am__append_134) $(am__append_135) \
+-	uninorm/decompose-internal.c $(am__append_136) unistd.c \
+-	$(am__append_137) $(am__append_138) $(am__append_139) \
+-	$(am__append_140) $(am__append_141) $(am__append_142) \
+-	$(am__append_143) $(am__append_144) $(am__append_145) \
+-	$(am__append_146) $(am__append_147) $(am__append_148) \
+-	$(am__append_149) $(am__append_150) $(am__append_151) \
+-	$(am__append_152) $(am__append_153) $(am__append_154) \
+-	$(am__append_155) $(am__append_156) $(am__append_157) \
+-	$(am__append_158) $(am__append_159) $(am__append_160) \
+-	$(am__append_161) $(am__append_162) vsnzprintf.c \
+-	$(am__append_163) $(am__append_164) wctype-h.c \
+-	$(am__append_165) $(am__append_166) $(am__append_167) \
+-	$(am__append_168) $(am__append_169) $(am__append_170) \
+-	$(am__append_171) $(am__append_172) $(am__append_173) \
++	same-inode.h same-inode.c save-cwd.c $(am__append_86) \
++	$(am__append_87) $(am__append_88) setlocale_null.c \
++	$(am__append_89) setlocale_null-unlocked.c $(am__append_90) \
++	sig-handler.c $(am__append_91) size_max.h sockets.h sockets.c \
++	$(am__append_92) stat-time.c $(am__append_93) $(am__append_94) \
++	stdlib.c $(am__append_95) $(am__append_96) $(am__append_97) \
++	$(am__append_98) $(am__append_99) $(am__append_100) \
++	striconveh.h striconveh.c striconveha.h striconveha.c \
++	$(am__append_101) strnlen1.h strnlen1.c $(am__append_102) \
++	$(am__append_103) $(am__append_104) sys_socket.c tempname.c \
++	glthread/threadlib.c $(am__append_105) $(am__append_106) \
++	$(am__append_107) timespec.c glthread/tls.h glthread/tls.c \
++	$(am__append_108) u64.c $(am__append_109) unicase/cased.c \
++	$(am__append_110) $(am__append_111) unicase/ignorable.c \
++	unicase/special-casing.c $(am__append_112) $(am__append_113) \
++	unicase/u8-casemap.c $(am__append_114) $(am__append_115) \
++	$(am__append_116) $(am__append_117) $(am__append_118) \
++	$(am__append_119) $(am__append_120) $(am__append_121) \
++	$(am__append_122) $(am__append_123) $(am__append_124) \
++	$(am__append_125) $(am__append_126) $(am__append_127) \
++	$(am__append_128) $(am__append_129) $(am__append_130) \
++	$(am__append_131) $(am__append_132) $(am__append_133) \
++	$(am__append_134) uninorm/decompose-internal.c \
++	$(am__append_135) unistd.c $(am__append_136) $(am__append_137) \
++	$(am__append_138) $(am__append_139) $(am__append_140) \
++	$(am__append_141) $(am__append_142) $(am__append_143) \
++	$(am__append_144) $(am__append_145) $(am__append_146) \
++	$(am__append_147) $(am__append_148) $(am__append_149) \
++	$(am__append_150) $(am__append_151) $(am__append_152) \
++	$(am__append_153) $(am__append_154) $(am__append_155) \
++	$(am__append_156) $(am__append_157) $(am__append_158) \
++	$(am__append_159) $(am__append_160) $(am__append_161) \
++	vsnzprintf.c $(am__append_162) $(am__append_163) wctype-h.c \
++	$(am__append_164) $(am__append_165) $(am__append_166) \
++	$(am__append_167) $(am__append_168) $(am__append_169) \
++	$(am__append_170) $(am__append_171) $(am__append_172) \
+ 	xmalloc.c xalloc-die.c xsize.h xsize.c
+ libgnu_la_CFLAGS = $(AM_CFLAGS) $(GL_CFLAG_GNULIB_WARNINGS)
+ libgnu_la_LIBADD = $(gl_LTLIBOBJS) @LTALLOCA@
+@@ -4342,7 +4547,6 @@ distclean-compile:
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-progname.Plo@am__quote@ # am--include-marker
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-pselect.Plo@am__quote@ # am--include-marker
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-pthread-once.Plo@am__quote@ # am--include-marker
+-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-pthread_sigmask.Plo@am__quote@ # am--include-marker
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-putenv.Plo@am__quote@ # am--include-marker
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-raise.Plo@am__quote@ # am--include-marker
+ @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgnu_la-rawmemchr.Plo@am__quote@ # am--include-marker
+@@ -5533,13 +5737,6 @@ libgnu_la-pthread-once.lo: pthread-once.c
+ @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+ @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgnu_la_CFLAGS) $(CFLAGS) -c -o libgnu_la-pthread-once.lo `test -f 'pthread-once.c' || echo '$(srcdir)/'`pthread-once.c
+ 
+-libgnu_la-pthread_sigmask.lo: pthread_sigmask.c
+-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgnu_la_CFLAGS) $(CFLAGS) -MT libgnu_la-pthread_sigmask.lo -MD -MP -MF $(DEPDIR)/libgnu_la-pthread_sigmask.Tpo -c -o libgnu_la-pthread_sigmask.lo `test -f 'pthread_sigmask.c' || echo '$(srcdir)/'`pthread_sigmask.c
+-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgnu_la-pthread_sigmask.Tpo $(DEPDIR)/libgnu_la-pthread_sigmask.Plo
+-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pthread_sigmask.c' object='libgnu_la-pthread_sigmask.lo' libtool=yes @AMDEPBACKSLASH@
+-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgnu_la_CFLAGS) $(CFLAGS) -c -o libgnu_la-pthread_sigmask.lo `test -f 'pthread_sigmask.c' || echo '$(srcdir)/'`pthread_sigmask.c
+-
+ libgnu_la-putenv.lo: putenv.c
+ @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgnu_la_CFLAGS) $(CFLAGS) -MT libgnu_la-putenv.lo -MD -MP -MF $(DEPDIR)/libgnu_la-putenv.Tpo -c -o libgnu_la-putenv.lo `test -f 'putenv.c' || echo '$(srcdir)/'`putenv.c
+ @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgnu_la-putenv.Tpo $(DEPDIR)/libgnu_la-putenv.Plo
+@@ -7014,7 +7211,6 @@ distclean: distclean-recursive
+ 	-rm -f ./$(DEPDIR)/libgnu_la-progname.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-pselect.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-pthread-once.Plo
+-	-rm -f ./$(DEPDIR)/libgnu_la-pthread_sigmask.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-putenv.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-raise.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-rawmemchr.Plo
+@@ -7358,7 +7554,6 @@ maintainer-clean: maintainer-clean-recursive
+ 	-rm -f ./$(DEPDIR)/libgnu_la-progname.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-pselect.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-pthread-once.Plo
+-	-rm -f ./$(DEPDIR)/libgnu_la-pthread_sigmask.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-putenv.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-raise.Plo
+ 	-rm -f ./$(DEPDIR)/libgnu_la-rawmemchr.Plo
+@@ -8316,200 +8511,6 @@ math.h: math.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(
+ 	$(AM_V_at)rm -f $@-t1 $@-t2 $@-t3 $@-t4 $@-t5
+ 	$(AM_V_at)mv $@-t6 $@
+ 
+-# We need the following in order to create <pthread.h> when the system
+-# doesn't have one that works with the given compiler.
+-pthread.h: pthread.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(_NORETURN_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
+-	$(gl_V_at)$(SED_HEADER_STDOUT) \
+-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+-	      -e 's|@''HAVE_PTHREAD_H''@|$(HAVE_PTHREAD_H)|g' \
+-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
+-	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
+-	      -e 's|@''NEXT_PTHREAD_H''@|$(NEXT_PTHREAD_H)|g' \
+-	      -e 's/@''GNULIB_PTHREAD_THREAD''@/$(GL_GNULIB_PTHREAD_THREAD)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_ONCE''@/$(GL_GNULIB_PTHREAD_ONCE)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_MUTEX''@/$(GL_GNULIB_PTHREAD_MUTEX)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_RWLOCK''@/$(GL_GNULIB_PTHREAD_RWLOCK)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_COND''@/$(GL_GNULIB_PTHREAD_COND)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_TSS''@/$(GL_GNULIB_PTHREAD_TSS)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_SPIN''@/$(GL_GNULIB_PTHREAD_SPIN)/g' \
+-	      -e 's/@''GNULIB_PTHREAD_MUTEX_TIMEDLOCK''@/$(GL_GNULIB_PTHREAD_MUTEX_TIMEDLOCK)/g' \
+-	      -e 's|@''HAVE_PTHREAD_T''@|$(HAVE_PTHREAD_T)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPINLOCK_T''@|$(HAVE_PTHREAD_SPINLOCK_T)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CREATE_DETACHED''@|$(HAVE_PTHREAD_CREATE_DETACHED)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_RECURSIVE''@|$(HAVE_PTHREAD_MUTEX_RECURSIVE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_ROBUST''@|$(HAVE_PTHREAD_MUTEX_ROBUST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_PROCESS_SHARED''@|$(HAVE_PTHREAD_PROCESS_SHARED)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CREATE''@|$(HAVE_PTHREAD_CREATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_INIT''@|$(HAVE_PTHREAD_ATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_GETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_SETDETACHSTATE''@|$(HAVE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_ATTR_DESTROY''@|$(HAVE_PTHREAD_ATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SELF''@|$(HAVE_PTHREAD_SELF)|g' \
+-	      -e 's|@''HAVE_PTHREAD_EQUAL''@|$(HAVE_PTHREAD_EQUAL)|g' \
+-	      -e 's|@''HAVE_PTHREAD_DETACH''@|$(HAVE_PTHREAD_DETACH)|g' \
+-	      -e 's|@''HAVE_PTHREAD_JOIN''@|$(HAVE_PTHREAD_JOIN)|g' \
+-	      -e 's|@''HAVE_PTHREAD_EXIT''@|$(HAVE_PTHREAD_EXIT)|g' \
+-	      < $(srcdir)/pthread.in.h > $@-t1
+-	$(AM_V_at)sed \
+-	      -e 's|@''HAVE_PTHREAD_ONCE''@|$(HAVE_PTHREAD_ONCE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_INIT''@|$(HAVE_PTHREAD_MUTEX_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_INIT''@|$(HAVE_PTHREAD_MUTEXATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETTYPE''@|$(HAVE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_GETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_SETROBUST''@|$(HAVE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEXATTR_DESTROY''@|$(HAVE_PTHREAD_MUTEXATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_LOCK''@|$(HAVE_PTHREAD_MUTEX_LOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_TRYLOCK''@|$(HAVE_PTHREAD_MUTEX_TRYLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_TIMEDLOCK''@|$(HAVE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_UNLOCK''@|$(HAVE_PTHREAD_MUTEX_UNLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_MUTEX_DESTROY''@|$(HAVE_PTHREAD_MUTEX_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_INIT''@|$(HAVE_PTHREAD_RWLOCK_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_INIT''@|$(HAVE_PTHREAD_RWLOCKATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCKATTR_DESTROY''@|$(HAVE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_RDLOCK''@|$(HAVE_PTHREAD_RWLOCK_RDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_WRLOCK''@|$(HAVE_PTHREAD_RWLOCK_WRLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(HAVE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_UNLOCK''@|$(HAVE_PTHREAD_RWLOCK_UNLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_RWLOCK_DESTROY''@|$(HAVE_PTHREAD_RWLOCK_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_INIT''@|$(HAVE_PTHREAD_COND_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CONDATTR_INIT''@|$(HAVE_PTHREAD_CONDATTR_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_CONDATTR_DESTROY''@|$(HAVE_PTHREAD_CONDATTR_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_WAIT''@|$(HAVE_PTHREAD_COND_WAIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_TIMEDWAIT''@|$(HAVE_PTHREAD_COND_TIMEDWAIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_SIGNAL''@|$(HAVE_PTHREAD_COND_SIGNAL)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_BROADCAST''@|$(HAVE_PTHREAD_COND_BROADCAST)|g' \
+-	      -e 's|@''HAVE_PTHREAD_COND_DESTROY''@|$(HAVE_PTHREAD_COND_DESTROY)|g' \
+-	      -e 's|@''HAVE_PTHREAD_KEY_CREATE''@|$(HAVE_PTHREAD_KEY_CREATE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SETSPECIFIC''@|$(HAVE_PTHREAD_SETSPECIFIC)|g' \
+-	      -e 's|@''HAVE_PTHREAD_GETSPECIFIC''@|$(HAVE_PTHREAD_GETSPECIFIC)|g' \
+-	      -e 's|@''HAVE_PTHREAD_KEY_DELETE''@|$(HAVE_PTHREAD_KEY_DELETE)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_INIT''@|$(HAVE_PTHREAD_SPIN_INIT)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_LOCK''@|$(HAVE_PTHREAD_SPIN_LOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_TRYLOCK''@|$(HAVE_PTHREAD_SPIN_TRYLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_UNLOCK''@|$(HAVE_PTHREAD_SPIN_UNLOCK)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SPIN_DESTROY''@|$(HAVE_PTHREAD_SPIN_DESTROY)|g' \
+-	      < $@-t1 > $@-t2
+-	$(AM_V_at)sed \
+-	      -e 's|@''REPLACE_PTHREAD_CREATE''@|$(REPLACE_PTHREAD_CREATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_INIT''@|$(REPLACE_PTHREAD_ATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_GETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_GETDETACHSTATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_SETDETACHSTATE''@|$(REPLACE_PTHREAD_ATTR_SETDETACHSTATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ATTR_DESTROY''@|$(REPLACE_PTHREAD_ATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SELF''@|$(REPLACE_PTHREAD_SELF)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_EQUAL''@|$(REPLACE_PTHREAD_EQUAL)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_DETACH''@|$(REPLACE_PTHREAD_DETACH)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_JOIN''@|$(REPLACE_PTHREAD_JOIN)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_EXIT''@|$(REPLACE_PTHREAD_EXIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_ONCE''@|$(REPLACE_PTHREAD_ONCE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_INIT''@|$(REPLACE_PTHREAD_MUTEX_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_INIT''@|$(REPLACE_PTHREAD_MUTEXATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_GETTYPE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETTYPE''@|$(REPLACE_PTHREAD_MUTEXATTR_SETTYPE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_GETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_GETROBUST)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_SETROBUST''@|$(REPLACE_PTHREAD_MUTEXATTR_SETROBUST)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEXATTR_DESTROY''@|$(REPLACE_PTHREAD_MUTEXATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_LOCK''@|$(REPLACE_PTHREAD_MUTEX_LOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_TRYLOCK''@|$(REPLACE_PTHREAD_MUTEX_TRYLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_TIMEDLOCK''@|$(REPLACE_PTHREAD_MUTEX_TIMEDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_UNLOCK''@|$(REPLACE_PTHREAD_MUTEX_UNLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_MUTEX_DESTROY''@|$(REPLACE_PTHREAD_MUTEX_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_INIT''@|$(REPLACE_PTHREAD_RWLOCK_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_INIT''@|$(REPLACE_PTHREAD_RWLOCKATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCKATTR_DESTROY''@|$(REPLACE_PTHREAD_RWLOCKATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_RDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_RDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_WRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_WRLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYRDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TRYWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TRYWRLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDRDLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK''@|$(REPLACE_PTHREAD_RWLOCK_TIMEDWRLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_UNLOCK''@|$(REPLACE_PTHREAD_RWLOCK_UNLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_RWLOCK_DESTROY''@|$(REPLACE_PTHREAD_RWLOCK_DESTROY)|g' \
+-	      < $@-t2 > $@-t3
+-	$(AM_V_at)sed \
+-	      -e 's|@''REPLACE_PTHREAD_COND_INIT''@|$(REPLACE_PTHREAD_COND_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_CONDATTR_INIT''@|$(REPLACE_PTHREAD_CONDATTR_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_CONDATTR_DESTROY''@|$(REPLACE_PTHREAD_CONDATTR_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_WAIT''@|$(REPLACE_PTHREAD_COND_WAIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_TIMEDWAIT''@|$(REPLACE_PTHREAD_COND_TIMEDWAIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_SIGNAL''@|$(REPLACE_PTHREAD_COND_SIGNAL)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_BROADCAST''@|$(REPLACE_PTHREAD_COND_BROADCAST)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_COND_DESTROY''@|$(REPLACE_PTHREAD_COND_DESTROY)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_KEY_CREATE''@|$(REPLACE_PTHREAD_KEY_CREATE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SETSPECIFIC''@|$(REPLACE_PTHREAD_SETSPECIFIC)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_GETSPECIFIC''@|$(REPLACE_PTHREAD_GETSPECIFIC)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_KEY_DELETE''@|$(REPLACE_PTHREAD_KEY_DELETE)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_INIT''@|$(REPLACE_PTHREAD_SPIN_INIT)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_LOCK''@|$(REPLACE_PTHREAD_SPIN_LOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_TRYLOCK''@|$(REPLACE_PTHREAD_SPIN_TRYLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_UNLOCK''@|$(REPLACE_PTHREAD_SPIN_UNLOCK)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SPIN_DESTROY''@|$(REPLACE_PTHREAD_SPIN_DESTROY)|g' \
+-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+-	      -e '/definition of _Noreturn/r $(_NORETURN_H)' \
+-	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
+-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+-	      < $@-t3 > $@-t4
+-	$(AM_V_at)rm -f $@-t1 $@-t2 $@-t3
+-	$(AM_V_at)mv $@-t4 $@
+-
+-# We need the following in order to create a replacement for <sched.h> when
+-# the system doesn't have one.
+-sched.h: sched.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(WARN_ON_USE_H)
+-	$(gl_V_at)$(SED_HEADER_STDOUT) \
+-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+-	      -e 's|@''HAVE_SCHED_H''@|$(HAVE_SCHED_H)|g' \
+-	      -e 's|@''HAVE_SYS_CDEFS_H''@|$(HAVE_SYS_CDEFS_H)|g' \
+-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
+-	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
+-	      -e 's|@''NEXT_SCHED_H''@|$(NEXT_SCHED_H)|g' \
+-	      -e 's|@''HAVE_STRUCT_SCHED_PARAM''@|$(HAVE_STRUCT_SCHED_PARAM)|g' \
+-	      -e 's/@''GNULIB_SCHED_YIELD''@/$(GL_GNULIB_SCHED_YIELD)/g' \
+-	      -e 's|@''HAVE_SCHED_YIELD''@|$(HAVE_SCHED_YIELD)|g' \
+-	      -e 's|@''REPLACE_SCHED_YIELD''@|$(REPLACE_SCHED_YIELD)|g' \
+-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+-	      $(srcdir)/sched.in.h > $@-t
+-	$(AM_V_at)mv $@-t $@
+-
+-# We need the following in order to create <signal.h> when the system
+-# doesn't have a complete one.
+-signal.h: signal.in.h $(top_builddir)/config.status $(CXXDEFS_H) $(ARG_NONNULL_H) $(WARN_ON_USE_H)
+-	$(gl_V_at)$(SED_HEADER_STDOUT) \
+-	      -e 's|@''GUARD_PREFIX''@|GL|g' \
+-	      -e 's|@''INCLUDE_NEXT''@|$(INCLUDE_NEXT)|g' \
+-	      -e 's|@''PRAGMA_SYSTEM_HEADER''@|@PRAGMA_SYSTEM_HEADER@|g' \
+-	      -e 's|@''PRAGMA_COLUMNS''@|@PRAGMA_COLUMNS@|g' \
+-	      -e 's|@''NEXT_SIGNAL_H''@|$(NEXT_SIGNAL_H)|g' \
+-	      -e 's/@''GNULIB_PTHREAD_SIGMASK''@/$(GL_GNULIB_PTHREAD_SIGMASK)/g' \
+-	      -e 's/@''GNULIB_RAISE''@/$(GL_GNULIB_RAISE)/g' \
+-	      -e 's/@''GNULIB_SIG2STR''@/$(GL_GNULIB_SIG2STR)/g' \
+-	      -e 's/@''GNULIB_SIGNAL_H_SIGPIPE''@/$(GL_GNULIB_SIGNAL_H_SIGPIPE)/g' \
+-	      -e 's/@''GNULIB_SIGPROCMASK''@/$(GL_GNULIB_SIGPROCMASK)/g' \
+-	      -e 's/@''GNULIB_SIGACTION''@/$(GL_GNULIB_SIGACTION)/g' \
+-	      -e 's|@''HAVE_POSIX_SIGNALBLOCKING''@|$(HAVE_POSIX_SIGNALBLOCKING)|g' \
+-	      -e 's|@''HAVE_PTHREAD_SIGMASK''@|$(HAVE_PTHREAD_SIGMASK)|g' \
+-	      -e 's|@''HAVE_RAISE''@|$(HAVE_RAISE)|g' \
+-	      -e 's|@''HAVE_SIG2STR''@|$(HAVE_SIG2STR)|g' \
+-	      -e 's|@''HAVE_SIGSET_T''@|$(HAVE_SIGSET_T)|g' \
+-	      -e 's|@''HAVE_SIGINFO_T''@|$(HAVE_SIGINFO_T)|g' \
+-	      -e 's|@''HAVE_SIGACTION''@|$(HAVE_SIGACTION)|g' \
+-	      -e 's|@''HAVE_STR2SIG''@|$(HAVE_STR2SIG)|g' \
+-	      -e 's|@''HAVE_STRUCT_SIGACTION_SA_SIGACTION''@|$(HAVE_STRUCT_SIGACTION_SA_SIGACTION)|g' \
+-	      -e 's|@''HAVE_TYPE_VOLATILE_SIG_ATOMIC_T''@|$(HAVE_TYPE_VOLATILE_SIG_ATOMIC_T)|g' \
+-	      -e 's|@''HAVE_SIGHANDLER_T''@|$(HAVE_SIGHANDLER_T)|g' \
+-	      -e 's|@''REPLACE_PTHREAD_SIGMASK''@|$(REPLACE_PTHREAD_SIGMASK)|g' \
+-	      -e 's|@''REPLACE_RAISE''@|$(REPLACE_RAISE)|g' \
+-	      -e '/definitions of _GL_FUNCDECL_RPL/r $(CXXDEFS_H)' \
+-	      -e '/definition of _GL_ARG_NONNULL/r $(ARG_NONNULL_H)' \
+-	      -e '/definition of _GL_WARN_ON_USE/r $(WARN_ON_USE_H)' \
+-	      $(srcdir)/signal.in.h > $@-t
+-	$(AM_V_at)mv $@-t $@
+-
+ # We need the following in order to create <stdckdint.h> when the system
+ # doesn't have one that works with the given compiler.
+ @GL_GENERATE_STDCKDINT_H_TRUE@stdckdint.h: stdckdint.in.h $(top_builddir)/config.status
+-- 
+2.50.1
+

@@ -1,0 +1,105 @@
+From 61878b93318663dad6917407f65ed565caba89db Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 19 Aug 2025 14:27:32 +0200
+Subject: [PATCH 09/19] Fix Fortran calling convention
+
+---
+ libinterp/corefcn/ordschur.cc       | 12 ++++++++----
+ liboctave/numeric/lo-lapack-proto.h | 16 ++++++++++++----
+ 2 files changed, 20 insertions(+), 8 deletions(-)
+
+diff --git a/libinterp/corefcn/ordschur.cc b/libinterp/corefcn/ordschur.cc
+index 54a7598..27a135c 100644
+--- a/libinterp/corefcn/ordschur.cc
++++ b/libinterp/corefcn/ordschur.cc
+@@ -134,7 +134,8 @@ is in the upper left corner, by doing:
+                      F77_DBLE_CMPLX_ARG (U.rwdata ()), n,
+                      F77_DBLE_CMPLX_ARG (w.rwdata ()), m, cond1, cond2,
+                      F77_DBLE_CMPLX_ARG (work.rwdata ()), n,
+-                     info));
++                     info
++                     F77_CHAR_ARG_LEN (1) F77_CHAR_ARG_LEN (1)));
+ 
+           PREPARE_OUTPUT()
+         }
+@@ -148,7 +149,8 @@ is in the upper left corner, by doing:
+                     (F77_CONST_CHAR_ARG ("N"), F77_CONST_CHAR_ARG ("V"),
+                      sel.data (), n, S.rwdata (), n, U.rwdata (), n,
+                      w.rwdata (), wi.rwdata (), m, cond1, cond2,
+-                     work.rwdata (), n, iwork.rwdata (), n, info));
++                     work.rwdata (), n, iwork.rwdata (), n, info
++                     F77_CHAR_ARG_LEN (1) F77_CHAR_ARG_LEN (1)));
+ 
+           PREPARE_OUTPUT ()
+         }
+@@ -165,7 +167,8 @@ is in the upper left corner, by doing:
+                      F77_CMPLX_ARG (U.rwdata ()), n,
+                      F77_CMPLX_ARG (w.rwdata ()), m, cond1, cond2,
+                      F77_CMPLX_ARG (work.rwdata ()), n,
+-                     info));
++                     info
++                     F77_CHAR_ARG_LEN (1) F77_CHAR_ARG_LEN (1)));
+ 
+           PREPARE_OUTPUT ()
+         }
+@@ -179,7 +182,8 @@ is in the upper left corner, by doing:
+                     (F77_CONST_CHAR_ARG ("N"), F77_CONST_CHAR_ARG ("V"),
+                      sel.data (), n, S.rwdata (), n, U.rwdata (), n,
+                      w.rwdata (), wi.rwdata (), m, cond1, cond2,
+-                     work.rwdata (), n, iwork.rwdata (), n, info));
++                     work.rwdata (), n, iwork.rwdata (), n, info
++                     F77_CHAR_ARG_LEN (1) F77_CHAR_ARG_LEN (1)));
+ 
+           PREPARE_OUTPUT ()
+         }
+diff --git a/liboctave/numeric/lo-lapack-proto.h b/liboctave/numeric/lo-lapack-proto.h
+index 5fafd86..bc8847a 100644
+--- a/liboctave/numeric/lo-lapack-proto.h
++++ b/liboctave/numeric/lo-lapack-proto.h
+@@ -1921,7 +1921,9 @@ extern "C"
+                              F77_CMPLX *, const F77_INT&, F77_CMPLX *,
+                              const F77_INT&, F77_CMPLX *, F77_INT&,
+                              F77_REAL&, F77_REAL&, F77_CMPLX *,
+-                             const F77_INT&, F77_INT&);
++                             const F77_INT&, F77_INT&
++                             F77_CHAR_ARG_LEN_DECL
++                             F77_CHAR_ARG_LEN_DECL);
+ 
+   F77_RET_T
+   F77_FUNC (dtrsen, DTRSEN) (F77_CONST_CHAR_ARG_DECL, F77_CONST_CHAR_ARG_DECL,
+@@ -1930,7 +1932,9 @@ extern "C"
+                              const F77_INT&, F77_DBLE *, F77_DBLE *,
+                              F77_INT&, F77_DBLE&, F77_DBLE&, F77_DBLE *,
+                              const F77_INT&, F77_INT *,
+-                             const F77_INT&, F77_INT&);
++                             const F77_INT&, F77_INT&
++                             F77_CHAR_ARG_LEN_DECL
++                             F77_CHAR_ARG_LEN_DECL);
+ 
+   F77_RET_T
+   F77_FUNC (strsen, STRSEN) (F77_CONST_CHAR_ARG_DECL, F77_CONST_CHAR_ARG_DECL,
+@@ -1939,7 +1943,9 @@ extern "C"
+                              const F77_INT&, F77_REAL *, F77_REAL *,
+                              F77_INT&, F77_REAL&, F77_REAL&, F77_REAL *,
+                              const F77_INT&, F77_INT *,
+-                             const F77_INT&, F77_INT&);
++                             const F77_INT&, F77_INT&
++                             F77_CHAR_ARG_LEN_DECL
++                             F77_CHAR_ARG_LEN_DECL);
+ 
+   F77_RET_T
+   F77_FUNC (ztrsen, ZTRSEN) (F77_CONST_CHAR_ARG_DECL, F77_CONST_CHAR_ARG_DECL,
+@@ -1948,7 +1954,9 @@ extern "C"
+                              F77_DBLE_CMPLX *, const F77_INT&,
+                              F77_DBLE_CMPLX *, F77_INT&, F77_DBLE&,
+                              F77_DBLE&, F77_DBLE_CMPLX *,
+-                             const F77_INT&, F77_INT&);
++                             const F77_INT&, F77_INT&
++                             F77_CHAR_ARG_LEN_DECL
++                             F77_CHAR_ARG_LEN_DECL);
+ 
+   // TRSYL
+ 
+-- 
+2.50.1
+
