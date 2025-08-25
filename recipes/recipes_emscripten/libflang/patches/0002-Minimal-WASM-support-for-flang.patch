@@ -1,7 +1,7 @@
-From 50a109a4f3a37b27daf5b05503edc5a918f6a826 Mon Sep 17 00:00:00 2001
+From 25e9a751d7ec4cfb99a90446b3c4fbca570ffd67 Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
 Date: Tue, 18 Jun 2024 22:19:09 +0200
-Subject: [PATCH 2/7] Minimal WASM support for flang
+Subject: [PATCH 2/5] Minimal WASM support for flang
 
 Original patch from https://gws.phd/posts/fortran_wasm/
 ---
@@ -9,10 +9,10 @@ Original patch from https://gws.phd/posts/fortran_wasm/
  1 file changed, 41 insertions(+)
 
 diff --git a/flang/lib/Optimizer/CodeGen/Target.cpp b/flang/lib/Optimizer/CodeGen/Target.cpp
-index 25141102a8c4..715daefc0ba5 100644
+index 2a1eb0bc3..726ce9dc5 100644
 --- a/flang/lib/Optimizer/CodeGen/Target.cpp
 +++ b/flang/lib/Optimizer/CodeGen/Target.cpp
-@@ -1055,6 +1055,44 @@ struct TargetLoongArch64 : public GenericTarget<TargetLoongArch64> {
+@@ -1656,6 +1656,44 @@ struct TargetLoongArch64 : public GenericTarget<TargetLoongArch64> {
  };
  } // namespace
  
@@ -57,7 +57,7 @@ index 25141102a8c4..715daefc0ba5 100644
  // Instantiate the overloaded target instance based on the triple value.
  // TODO: Add other targets to this file as needed.
  std::unique_ptr<fir::CodeGenSpecifics>
-@@ -1110,6 +1148,9 @@ fir::CodeGenSpecifics::get(mlir::MLIRContext *ctx, llvm::Triple &&trp,
+@@ -1711,6 +1749,9 @@ fir::CodeGenSpecifics::get(mlir::MLIRContext *ctx, llvm::Triple &&trp,
    case llvm::Triple::ArchType::loongarch64:
      return std::make_unique<TargetLoongArch64>(
          ctx, std::move(trp), std::move(kindMap), targetCPU, targetFeatures, dl);

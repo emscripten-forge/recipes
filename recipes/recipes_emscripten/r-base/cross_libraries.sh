@@ -12,7 +12,7 @@ libraries=("tools" "grDevices" "graphics" "utils" "stats" "methods") # "lapack"
 setup() {
     for lib in "${libraries[@]}"; do
     if [ -d "${TARGET_PATH}/library/$lib/libs/" ]; then
-        if [ ! -f "${TARGET_PATH}/library/$lib/libs/$lib.so.bak" ]; then
+        if [ ! -f "${TARGET_PATH}/library/$lib/libs/$lib.so.bak" ] && [ -f "${TARGET_PATH}/library/$lib/libs/$lib.so" ]; then
             echo "Backing up $lib.so"
             mv "${TARGET_PATH}/library/$lib/libs/$lib.so" "${TARGET_PATH}/library/$lib/libs/$lib.so.bak"
         fi
@@ -22,11 +22,11 @@ setup() {
     fi
     done
 
-    if [ ! -f "${TARGET_PATH}/modules/lapack.so.bak" ]; then
+    if [ ! -f "${TARGET_PATH}/modules/lapack.so.bak" ] && [ -f "${TARGET_PATH}/modules/lapack.so" ]; then
         mv "${TARGET_PATH}/modules/lapack.so" "${TARGET_PATH}/modules/lapack.so.bak"
     fi
     if [ -f "${TARGET_PATH}/modules/lapack.so.bak" ]; then
-        cp ${LINUX_BUILD_DIR}/modules/lapack.so "${TARGET_PATH}/modules/lapack.so"
+        cp ${LINUX_BUILD_DIR}/modules/lapack.so ${TARGET_PATH}/modules/lapack.so
     fi
 }
 

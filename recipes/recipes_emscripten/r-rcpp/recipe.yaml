@@ -1,5 +1,5 @@
 context:
-  version: 1.0.14
+  version: 1.1.0
   name: r-Rcpp
   r_base_version: 4.4.3
 
@@ -9,11 +9,11 @@ package:
 
 source:
   url:
-    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 74e84a52efb0e3e2713cdbbef5234b5ae1d44b33d32c3c337993e7fc423a8002
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 84211c2520ba68c839b2e75761e97afc90baeebccbaf216ac8534fa2076cfb4d
   patches:
-    - patches/0001-Disable-demangler.patch
+  - patches/0001-Disable-demangler.patch
 
 build:
   number: 0
@@ -21,12 +21,13 @@ build:
 
 requirements:
   build:
-    - cross-r-base_${{ target_platform }}
-    - ${{ compiler('cxx') }}
+  - cross-r-base_${{ target_platform }}
+  - r-base == ${{ r_base_version }}
+  - ${{ compiler('cxx') }}
   host:
-    - r-base >= ${{ r_base_version }}
+  - r-base == ${{ r_base_version }}
   run:
-    - r-base >= ${{ r_base_version }}
+  - r-base == ${{ r_base_version }}
 
 tests:
 - package_contents:
@@ -38,11 +39,11 @@ about:
   repository: https://github.com/RcppCore/Rcpp
   license: GPL-2.0-or-later
   license_file: GPL-2
-  summary:  Seamless R and C++ Integration
+  summary: Seamless R and C++ Integration
   description: |
-   Executes arbitrary R or C functions some time after the current time, after
-   the R execution stack has emptied. The functions are scheduled in an event loop.
+    Executes arbitrary R or C functions some time after the current time, after
+    the R execution stack has emptied. The functions are scheduled in an event loop.
 
 extra:
   recipe-maintainers:
-    - IsabelParedes
+  - IsabelParedes

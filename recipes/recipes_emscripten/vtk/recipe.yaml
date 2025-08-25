@@ -1,16 +1,18 @@
 context:
-  version: 9.4.2
+  name: vtk
+  version: 9.5.0
+  major_minor: ${{ version[0:3] }}
 
 package:
-  name: vtk
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://github.com/Kitware/VTK/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: b2e1a2a9a0f8d839f26fc023853db0466f7651dbcf0654575319df5376d8f438
+  sha256: 3d311ff2608e971d40222ae01016d404fb07d746292f77edd86786912767a9c1
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
@@ -23,14 +25,22 @@ requirements:
   - rapidjson
   - boost-cpp
 
+tests:
+- package_contents:
+    files:
+    - include/vtk-${{ major_minor }}/vtkVersion.h
+    - lib/libvtkCommonCore-${{ major_minor }}.a
+    - lib/libvtkCommonMath-${{ major_minor }}.a
+    - lib/libvtkFiltersCore-${{ major_minor }}.a
 
 about:
   license: BSD-3-Clause
   license_family: BSD-3-Clause
   license_file: Copyright.txt
   summary: VTK is The Visualization Toolkit (VTK)
-  homepage: https://github.com/Kitware/VTK
+  homepage: https://vtk.org/
+  repository: https://gitlab.kitware.com/vtk/vtk
+
 extra:
   recipe-maintainers:
   - DerThorsten
-

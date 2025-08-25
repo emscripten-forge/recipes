@@ -1,9 +1,10 @@
-mkdir -p ${PREFIX}/etc/conda/activate.d
-mkdir -p ${PREFIX}/etc/conda/deactivate.d
-
-
-cp "${RECIPE_DIR}"/activate-rust.sh   ${PREFIX}/etc/conda/activate.d/activate_z-${PKG_NAME}.sh
-cp "${RECIPE_DIR}"/deactivate-rust.sh ${PREFIX}/etc/conda/deactivate.d/deactivate_z-${PKG_NAME}.sh
+# Copy the [de]activate scripts to $PREFIX/etc/conda/[de]activate.d.
+# This will allow them to be run on environment activation.
+for TASK in "activate" "deactivate"
+do
+    mkdir -p "${PREFIX}/etc/conda/${TASK}.d"
+    cp "${RECIPE_DIR}/${TASK}.sh" "${PREFIX}/etc/conda/${TASK}.d/${TASK}_${PKG_NAME}.sh"
+done
 
 export RUSTUP_HOME=$HOME/.rustup_emscripten_forge
 export CARGO_HOME=$HOME/.cargo_emscripten_forge

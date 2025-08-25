@@ -1,5 +1,5 @@
 context:
-  version: 9.0.2
+  version: 9.4.0
 
 package:
   name: ipython
@@ -7,17 +7,18 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/i/ipython/ipython-${{ version }}.tar.gz
-  sha256: ec7b479e3e5656bf4f58c652c120494df1820f4f28f522fb7ca09e213c2aab52
+  sha256: c033c6d4e7914c3d9768aabe76bbe87ba1dc66a92a05db6bfa1125d81f2ee270
   patches:
   - patches/0001-Patch-asyncio-tornado.patch
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
   - python
-  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
   - pip
   host:
   - python
@@ -25,7 +26,6 @@ requirements:
   - python
   - backcall
   - decorator
-  - jedi >=0.16
   - matplotlib-inline
   - pickleshare
   - prompt-toolkit >=2.0.0,<3.1.0,!=3.0.0,!=3.0.1
@@ -45,6 +45,7 @@ tests:
     - pytester
     run:
     - pytester-run
+
 about:
   license: BSD-3-Clause
   license_family: BSD
@@ -55,6 +56,7 @@ about:
     a powerful interactive shell, a kernel for Jupyter, high performance
     tools for parallel computing, and more.
   homepage: https://ipython.org
+
 extra:
   recipe-maintainers:
   - DerThorsten

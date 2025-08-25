@@ -1,0 +1,87 @@
+From a1de2b4cc829d005f7e1e4bae13d8e2828b70a5c Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Tue, 8 Jul 2025 16:57:20 +0200
+Subject: [PATCH 4/5] Disable float128 math
+
+---
+ flang/runtime/CMakeLists.txt | 60 ++++++++++++++++++------------------
+ 1 file changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/flang/runtime/CMakeLists.txt b/flang/runtime/CMakeLists.txt
+index bf27a121e..e0fd195d4 100644
+--- a/flang/runtime/CMakeLists.txt
++++ b/flang/runtime/CMakeLists.txt
+@@ -113,7 +113,7 @@ append(${NO_LTO_FLAGS} CMAKE_CXX_FLAGS)
+ add_definitions(-U_GLIBCXX_ASSERTIONS)
+ add_definitions(-U_LIBCPP_ENABLE_ASSERTIONS)
+ 
+-add_subdirectory(Float128Math)
++# add_subdirectory(Float128Math)
+ 
+ set(sources
+   ISO_Fortran_binding.cpp
+@@ -242,35 +242,35 @@ set(supported_files
+ enable_cuda_compilation(FortranRuntime "${supported_files}")
+ enable_omp_offload_compilation("${supported_files}")
+ 
+-if (NOT TARGET FortranFloat128Math)
+-  # If FortranFloat128Math is not defined, then we are not building
+-  # standalone FortranFloat128Math library. Instead, include
+-  # the relevant sources into FortranRuntime itself.
+-  # The information is provided via FortranFloat128MathILib
+-  # interface library.
+-  get_target_property(f128_sources
+-    FortranFloat128MathILib INTERFACE_SOURCES
+-    )
+-  if (f128_sources)
+-    # The interface may define special macros for Float128Math files,
+-    # so we need to propagate them.
+-    get_target_property(f128_defs
+-      FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
+-      )
+-    set_property(SOURCE ${f128_sources}
+-      APPEND PROPERTY COMPILE_DEFINITIONS
+-      ${f128_defs}
+-      )
+-    get_target_property(f128_include_dirs
+-      FortranFloat128MathILib INTERFACE_INCLUDE_DIRECTORIES
+-      )
+-    set_property(SOURCE ${f128_sources}
+-      APPEND PROPERTY INCLUDE_DIRECTORIES
+-      ${f128_include_dirs}
+-      )
+-    list(APPEND sources ${f128_sources})
+-  endif()
+-endif()
++# if (NOT TARGET FortranFloat128Math)
++#   # If FortranFloat128Math is not defined, then we are not building
++#   # standalone FortranFloat128Math library. Instead, include
++#   # the relevant sources into FortranRuntime itself.
++#   # The information is provided via FortranFloat128MathILib
++#   # interface library.
++#   get_target_property(f128_sources
++#     FortranFloat128MathILib INTERFACE_SOURCES
++#     )
++#   if (f128_sources)
++#     # The interface may define special macros for Float128Math files,
++#     # so we need to propagate them.
++#     get_target_property(f128_defs
++#       FortranFloat128MathILib INTERFACE_COMPILE_DEFINITIONS
++#       )
++#     set_property(SOURCE ${f128_sources}
++#       APPEND PROPERTY COMPILE_DEFINITIONS
++#       ${f128_defs}
++#       )
++#     get_target_property(f128_include_dirs
++#       FortranFloat128MathILib INTERFACE_INCLUDE_DIRECTORIES
++#       )
++#     set_property(SOURCE ${f128_sources}
++#       APPEND PROPERTY INCLUDE_DIRECTORIES
++#       ${f128_include_dirs}
++#       )
++#     list(APPEND sources ${f128_sources})
++#   endif()
++# endif()
+ 
+ if (NOT DEFINED MSVC)
+   add_flang_library(FortranRuntime

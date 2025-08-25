@@ -1,0 +1,42 @@
+context:
+  name: rustworkx
+  version: 0.17.0a3
+
+package:
+  name: ${{name}}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/IvanIsCoding/rustworkx/releases/download/v0.17.0a3/rustworkx-0.17.0a3.tar.gz
+  sha256: 8bd0c295134e2b0c03808d4e69428b41153849db6488839084a78793c337f191
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{target_platform}}
+  - ${{ compiler("c") }}
+  - cffi
+  - setuptools-rust
+  - rust
+  - rust-src
+  - maturin
+
+  host:
+  - python
+  - openssl
+  - cffi
+  run:
+  - cffi
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_rustworkx.py

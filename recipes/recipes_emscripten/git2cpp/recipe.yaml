@@ -1,0 +1,45 @@
+context:
+  name: git2cpp
+  version: 0.0.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/QuantStack/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 3f1d7db6107a1425a1ff0dcb2c53a33eeedf882d24cfe25045f28dcb35474c14
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cli11
+    - cmake
+  host:
+    - libgit2>=1.9.0
+
+tests:
+  - script:
+    - test -f $PREFIX/bin/git2cpp.js
+    - test -f $PREFIX/bin/git2cpp.wasm
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/git2cpp.js --version | cut -c -15)
+      if [[ "$OUTPUT" != "git2cpp version" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+
+about:
+  homepage: https://github.com/QuantStack/git2cpp
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ianthomas23

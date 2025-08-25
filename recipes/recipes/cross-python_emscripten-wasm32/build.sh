@@ -1,6 +1,13 @@
-mkdir -p ${PREFIX}/etc/conda/activate.d
-mkdir -p ${PREFIX}/etc/conda/deactivate.d
+#!/bin/bash
+
+# Copy the [de]activate scripts to $PREFIX/etc/conda/[de]activate.d.
+# This will allow them to be run on environment activation.
+for TASK in "activate" "deactivate"
+do
+    mkdir -p "${PREFIX}/etc/conda/${TASK}.d"
+    cp "${RECIPE_DIR}/${TASK}.sh" "${PREFIX}/etc/conda/${TASK}.d/${TASK}_z-${PKG_NAME}.sh"
+done
 
 
-cp "${RECIPE_DIR}"/activate-cross-python.sh ${PREFIX}/etc/conda/activate.d/activate_z-${PKG_NAME}.sh
-cp "${RECIPE_DIR}"/deactivate-cross-python.sh ${PREFIX}/etc/conda/deactivate.d/deactivate_z-${PKG_NAME}.sh
+mkdir -p "${PREFIX}/share/cross-python"
+cp $RECIPE_DIR/FindPython.cmake "${PREFIX}/share/cross-python/FindPython.cmake"
