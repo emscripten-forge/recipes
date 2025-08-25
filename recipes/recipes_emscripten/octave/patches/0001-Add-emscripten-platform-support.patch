@@ -1,0 +1,143 @@
+From 14ad3ff9ba7313e037eb6463be2d097d9b72edb1 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 22 Jul 2025 17:43:19 +0200
+Subject: [PATCH 01/19] Add emscripten platform support
+
+---
+ configure | 35 +++++++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
+
+diff --git a/configure b/configure
+index c575c5f..d22c854 100755
+--- a/configure
++++ b/configure
+@@ -19168,6 +19168,11 @@ ax_pthread_flags="pthreads none -Kthread -pthread -pthreads -mthreads pthread --
+ 
+ case $host_os in
+ 
++        emscripten*)
++        # No pthreads
++        ax_pthread_flags=""
++        ;;
++
+         freebsd*)
+ 
+         # -kthread: FreeBSD kernel threads (preferred to -pthread since SMP-able)
+@@ -21389,7 +21394,7 @@ irix5* | irix6* | nonstopux*)
+   ;;
+ 
+ # This must be glibc/ELF.
+-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten* )
+   lt_cv_deplibs_check_method=pass_all
+   ;;
+ 
+@@ -24824,7 +24829,7 @@ lt_prog_compiler_static=
+       lt_prog_compiler_static='-non_shared'
+       ;;
+ 
+-    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten* )
+       case $cc_basename in
+       # old Intel for x86_64, which still supported -KPIC.
+       ecc*)
+@@ -25331,7 +25336,7 @@ printf %s "checking whether the $compiler linker ($LD) supports shared libraries
+     # we just hope/assume this is gcc and not c89 (= MSVC++ or ICC)
+     with_gnu_ld=yes
+     ;;
+-  linux* | k*bsd*-gnu | gnu*)
++  linux* | k*bsd*-gnu | gnu* | emscripten* )
+     link_all_deplibs=no
+     ;;
+   esac
+@@ -25800,7 +25805,7 @@ _LT_EOF
+ 	  fi
+ 	  ;;
+ 	esac
+-	shared_flag='-shared'
++	shared_flag='-sSIDE_MODULE=1'
+ 	if test yes = "$aix_use_runtimelinking"; then
+ 	  shared_flag="$shared_flag "'$wl-G'
+ 	fi
+@@ -27401,7 +27406,7 @@ linux*android*)
+   hardcode_libdir_flag_spec='$wl-rpath $wl$libdir'
+   ;;
+ 
+-# This must be glibc/ELF.
++# This must be glibc/ELF. NOTE: not emscripten
+ linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+   version_type=linux # correct to gnu/linux during the next big refactor
+   need_lib_prefix=no
+@@ -30934,8 +30939,14 @@ lt_prog_compiler_static_CXX=
+ 	    ;;
+ 	esac
+ 	;;
+-      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+ 	case $cc_basename in
++    emcc* | em++*)
++      # Emscripten C++ compiler
++      lt_prog_compiler_wl_CXX='-Wl'
++      lt_prog_compiler_pic_CXX='-fPIC'
++      lt_prog_compiler_static_CXX='-static'
++      ;;
+ 	  KCC*)
+ 	    # KAI C++ Compiler
+ 	    lt_prog_compiler_wl_CXX='--backend -Wl,'
+@@ -31382,7 +31393,7 @@ printf %s "checking whether the $compiler linker ($LD) supports shared libraries
+       ;;
+     esac
+     ;;
+-  linux* | k*bsd*-gnu | gnu*)
++  linux* | k*bsd*-gnu | gnu* | emscripten* )
+     link_all_deplibs_CXX=no
+     ;;
+   *)
+@@ -32045,7 +32056,7 @@ linux*android*)
+   hardcode_libdir_flag_spec_CXX='$wl-rpath $wl$libdir'
+   ;;
+ 
+-# This must be glibc/ELF.
++# This must be glibc/ELF. NOTE: not emscripten
+ linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+   version_type=linux # correct to gnu/linux during the next big refactor
+   need_lib_prefix=no
+@@ -32549,7 +32560,7 @@ lt_prog_compiler_static_CXX=
+ 	    ;;
+ 	esac
+ 	;;
+-      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++      linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+ 	case $cc_basename in
+ 	  KCC*)
+ 	    # KAI C++ Compiler
+@@ -33784,7 +33795,7 @@ printf %s "checking whether the $compiler linker ($LD) supports shared libraries
+     # we just hope/assume this is gcc and not c89 (= MSVC++ or ICC)
+     with_gnu_ld=yes
+     ;;
+-  linux* | k*bsd*-gnu | gnu*)
++  linux* | k*bsd*-gnu | gnu* | emscripten* )
+     link_all_deplibs_F77=no
+     ;;
+   esac
+@@ -35614,7 +35625,7 @@ linux*android*)
+   hardcode_libdir_flag_spec_F77='$wl-rpath $wl$libdir'
+   ;;
+ 
+-# This must be glibc/ELF.
++# This must be glibc/ELF. NOTE: not emscripten
+ linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+   version_type=linux # correct to gnu/linux during the next big refactor
+   need_lib_prefix=no
+@@ -36104,7 +36115,7 @@ lt_prog_compiler_static_F77=
+       lt_prog_compiler_static_F77='-non_shared'
+       ;;
+ 
+-    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
++    linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | emscripten*)
+       case $cc_basename in
+       # old Intel for x86_64, which still supported -KPIC.
+       ecc*)
+-- 
+2.50.1
+

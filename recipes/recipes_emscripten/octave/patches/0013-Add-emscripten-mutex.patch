@@ -1,0 +1,50 @@
+From 4afa8be74f08461c0be59b8c39b55ba9895199aa Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 19 Aug 2025 18:20:53 +0200
+Subject: [PATCH 13/19] Add emscripten mutex
+
+---
+ liboctave/util/oct-mutex.cc | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/liboctave/util/oct-mutex.cc b/liboctave/util/oct-mutex.cc
+index 69e476d..808b7fc 100644
+--- a/liboctave/util/oct-mutex.cc
++++ b/liboctave/util/oct-mutex.cc
+@@ -107,6 +107,22 @@ thread::is_thread ()
+   return (GetCurrentThreadId () == thread_id);
+ }
+ 
++#elif defined (__EMSCRIPTEN__)
++
++class emscripten_mutex : public base_mutex
++{
++public:
++  emscripten_mutex () : base_mutex () {}
++
++  ~emscripten_mutex () {}
++
++  void lock () { /* no-op: single thread */}
++
++  void unlock () { /* no-op: single thread */ }
++
++  bool try_lock () { return true; } // always succeeds in single-threaded mode
++};
++
+ #elif defined (HAVE_PTHREAD_H)
+ 
+ class pthread_mutex : public base_mutex
+@@ -169,7 +185,9 @@ thread::is_thread ()
+ static base_mutex *
+ init_rep ()
+ {
+-#if defined (OCTAVE_USE_WINDOWS_API)
++#if defined (__EMSCRIPTEN__)
++  return new emscripten_mutex ();
++#elif defined (OCTAVE_USE_WINDOWS_API)
+   return new w32_mutex ();
+ #elif defined (HAVE_PTHREAD_H)
+   return new pthread_mutex ();
+-- 
+2.50.1
+
