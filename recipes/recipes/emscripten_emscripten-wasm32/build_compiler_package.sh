@@ -48,3 +48,9 @@ for file in $PREFIX/opt/emsdk/upstream/emscripten/*; do
     ln -sf $file $PREFIX/bin/
   fi
 done
+
+# Add wasm-opt wrapper. See NOTE in patches/wasm-opt-wrapper.
+EMSDK_DIR=$PREFIX/opt/emsdk/upstream
+mv $EMSDK_DIR/bin/wasm-opt $EMSDK_DIR/bin/wasm-opt-original
+cp $RECIPE_DIR/patches/wasm-opt-wrapper $EMSDK_DIR/bin/wasm-opt
+chmod +x $EMSDK_DIR/bin/wasm-opt
