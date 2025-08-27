@@ -2,8 +2,6 @@
 # python3 dependency does not find the right headers: it must be added when calling meson
 # pybind11 dependency is not found, due to the lack of pybind11-config: it is also added in meson call
 
-thread_dep = dependency('threads')
-
 py3_inst = import('python').find_installation('python')
 python3 = py3_inst.dependency()
 
@@ -71,6 +69,8 @@ preprocessor_src = [ 'ComputingTasks.cc',
 	             'ModelEquationBlock.cc',
 	             'WarningConsolidation.cc',
 	             'SubModel.cc',
+                     'HeterogeneityTable.cc',
+                     'HeterogeneousModel.cc',
                      'macro/Driver.cc',
 	             'macro/Environment.cc',
 	             'macro/Expressions.cc',
@@ -93,6 +93,6 @@ endif
 #           install : true)
 
 py3_inst.extension_module('dynare_preprocessor', preprocessor_src, flex_src, flexlexer_h, bison_src, 'DynLib.cc', include_directories : preprocessor_incdir,
-	dependencies : [boost_dep, thread_dep, python3, pybind11],
+	dependencies : [boost_dep, python3, pybind11],
 	#dependencies : [boost_dep, python3, pybind11],
     link_args : preprocessor_link_args, install: true)
