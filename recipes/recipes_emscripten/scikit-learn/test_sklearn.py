@@ -17,7 +17,7 @@ def test_scikit_learn():
     X = rng.rand(100, 20)
     y = rng.randint(5, size=100)
     print("1.3")
-    estimator = LogisticRegression(solver='liblinear')
+    estimator = LogisticRegression(solver='newton-cholesky')
     print("1.4")
     estimator.fit(X, y)
     print(estimator.predict(X))
@@ -33,12 +33,12 @@ def test_logistic_regression():
     print("2.3")
     X, y = load_iris(return_X_y=True)
     print("2.4")
-    # clf = LogisticRegression(random_state=0).fit(X, y)
-    # print(clf.predict(X[:2, :]))
-    # print("2.5")
-    # print(clf.predict_proba(X[:2, :]))
-    # print("2.6")
-    # print(clf.score(X, y))
+    clf = LogisticRegression(random_state=0, max_iter=1000).fit(X, y)
+    print(clf.predict(X[:2, :]))
+    print("2.5")
+    print(clf.predict_proba(X[:2, :]))
+    print("2.6")
+    print(clf.score(X, y))
 
 
 

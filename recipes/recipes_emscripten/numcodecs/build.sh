@@ -8,4 +8,4 @@ export DISABLE_NUMCODECS_AVX2=1
 
 
 export CFLAGS="$CFLAGS -I$NUMPY_INCLUDE_DIR"
-${PYTHON} -m pip install .
+${PYTHON} -m pip install . -vvv

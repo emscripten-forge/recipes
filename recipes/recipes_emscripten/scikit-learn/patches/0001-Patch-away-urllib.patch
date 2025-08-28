@@ -1,0 +1,44 @@
+From 3ae863dbc2af8a758681b2ea2263d1291cd7434f Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 6 Jun 2025 12:05:09 +0200
+Subject: [PATCH] Patch away urllib
+
+---
+ sklearn/datasets/_base.py | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/sklearn/datasets/_base.py b/sklearn/datasets/_base.py
+index e6e6939..bcc0ea0 100644
+--- a/sklearn/datasets/_base.py
++++ b/sklearn/datasets/_base.py
+@@ -23,8 +23,8 @@ from pathlib import Path
+ from tempfile import NamedTemporaryFile
+ from urllib.error import URLError
+ from urllib.parse import urlparse
+-from urllib.request import urlretrieve
+-
++# from urllib.request import urlretrieve
++import requests
+ import numpy as np
+ 
+ from ..preprocessing import scale
+@@ -1509,7 +1509,11 @@ def _fetch_remote(remote, dirname=None, n_retries=3, delay=1):
+         temp_file_path = Path(temp_file.name)
+         while True:
+             try:
+-                urlretrieve(remote.url, temp_file_path)
++                # urlretrieve(remote.url, temp_file_path)
++                response = requests.get(remote.url)
++                txt = response.content
++                with open(temp_file_path, "wb") as f:
++                    f.write(txt)
+                 break
+             except (URLError, TimeoutError):
+                 if n_retries == 0:
+@@ -1633,4 +1637,4 @@ def fetch_file(
+     )
+     return _fetch_remote(
+         remote_metadata, dirname=folder, n_retries=n_retries, delay=delay
+-    )
++    )
+\ No newline at end of file

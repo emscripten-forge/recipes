@@ -1,26 +1,39 @@
 context:
-  version: 2.13.6
+  name: pybind11
+  version: 3.0.1
 
 package:
-  name: pybind11
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/pybind/pybind11/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20
-  patches:
-  - patches/0001-no-bitsize-check.patch
+  url: https://github.com/pybind/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 741633da746b7c738bb71f1854f957b9da660bcd2dce68d71949037f0969d0ca
+
 build:
-  number: 1
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
   - cmake
   - ninja
   host:
   - python
+  - scikit-build-core
 
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pybind11.py
 
 about:
   license: BSD-3-Clause

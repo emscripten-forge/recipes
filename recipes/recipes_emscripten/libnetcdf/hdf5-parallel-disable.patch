@@ -1,0 +1,60 @@
+From 4957785c768d6f2816ae989a6acf6e6e84055da8 Mon Sep 17 00:00:00 2001
+From: Sam Gardner <sam@wx4stg.com>
+Date: Mon, 17 Mar 2025 03:27:16 -0500
+Subject: [PATCH] disable hdf5 parallelism
+
+---
+ libhdf5/hdf5create.c | 16 ++++++++--------
+ libhdf5/hdf5open.c   | 12 ++++++------
+ 2 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/libhdf5/hdf5create.c b/libhdf5/hdf5create.c
+index 02cd1b92ed..9a46c5192c 100644
+--- a/libhdf5/hdf5create.c
++++ b/libhdf5/hdf5create.c
+@@ -198,14 +198,14 @@ nc4_create_file(const char *path, int cmode, size_t initialsz,
+ 					       H5P_CRT_ORDER_INDEXED)) < 0)
+         BAIL(NC_EHDFERR);
+     }
+-#ifdef HDF5_HAS_COLL_METADATA_OPS
+-    /* If HDF5 supports collective metadata operations, turn them
+-     * on. This is only relevant for parallel I/O builds of HDF5. */
+-    if (H5Pset_all_coll_metadata_ops(fapl_id, 1) < 0)
+-        BAIL(NC_EHDFERR);
+-    if (H5Pset_coll_metadata_write(fapl_id, 1) < 0)
+-        BAIL(NC_EHDFERR);
+-#endif
++// #ifdef HDF5_HAS_COLL_METADATA_OPS
++//     /* If HDF5 supports collective metadata operations, turn them
++//      * on. This is only relevant for parallel I/O builds of HDF5. */
++//     if (H5Pset_all_coll_metadata_ops(fapl_id, 1) < 0)
++//         BAIL(NC_EHDFERR);
++//     if (H5Pset_coll_metadata_write(fapl_id, 1) < 0)
++//         BAIL(NC_EHDFERR);
++// #endif
+ 
+     if (cmode & NC_NODIMSCALE_ATTACH) {
+       /* See https://github.com/Unidata/netcdf-c/issues/2128 */
+diff --git a/libhdf5/hdf5open.c b/libhdf5/hdf5open.c
+index 082d528a0a..e2126cf4c6 100644
+--- a/libhdf5/hdf5open.c
++++ b/libhdf5/hdf5open.c
+@@ -810,12 +810,12 @@ nc4_open_file(const char *path, int mode, void* parameters, int ncid)
+         }
+     }
+ 
+-#ifdef HDF5_HAS_COLL_METADATA_OPS
+-    /* If collective metadata operations are available in HDF5, turn
+-     * them on. */
+-    if (H5Pset_all_coll_metadata_ops(fapl_id, 1) < 0)
+-        BAIL(NC_EPARINIT);
+-#endif /* HDF5_HAS_COLL_METADATA_OPS */
++// #ifdef HDF5_HAS_COLL_METADATA_OPS
++//     /* If collective metadata operations are available in HDF5, turn
++//      * them on. */
++//     if (H5Pset_all_coll_metadata_ops(fapl_id, 1) < 0)
++//         BAIL(NC_EPARINIT);
++// #endif /* HDF5_HAS_COLL_METADATA_OPS */
+ #endif /* USE_PARALLEL4 */
+ 
+     /* Only set cache for non-parallel opens. */

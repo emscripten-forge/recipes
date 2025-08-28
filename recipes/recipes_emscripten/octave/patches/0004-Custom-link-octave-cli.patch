@@ -1,0 +1,38 @@
+From 3914ced81f0d6b843a80505ba4707492ff076c5c Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 29 Jul 2025 13:30:46 +0200
+Subject: [PATCH 04/19] Custom link octave-cli
+
+---
+ Makefile.in | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index b460a81..b73da23 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -2478,10 +2478,9 @@ src_octave_cli_OBJECTS = $(am_src_octave_cli_OBJECTS) \
+ 	$(nodist_src_octave_cli_OBJECTS)
+ src_octave_cli_DEPENDENCIES = $(OCTAVE_CORE_LIBS) \
+ 	$(am__DEPENDENCIES_1)
+-src_octave_cli_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
++src_octave_cli_LINK = $(CXXLD) \
+ 	$(AM_CXXFLAGS) $(CXXFLAGS) $(src_octave_cli_LDFLAGS) \
+-	$(LDFLAGS) -o $@
++	$(LDFLAGS) -Wl,--allow-multiple-definition -o $@
+ am_src_octave_config_OBJECTS =
+ nodist_src_octave_config_OBJECTS =  \
+ 	src/octave_config-octave-config.$(OBJEXT)
+@@ -16510,7 +16509,7 @@ src/octave_cli-octave-build-info.$(OBJEXT): src/$(am__dirstamp) \
+ 
+ src/octave-cli$(EXEEXT): $(src_octave_cli_OBJECTS) $(src_octave_cli_DEPENDENCIES) $(EXTRA_src_octave_cli_DEPENDENCIES) src/$(am__dirstamp)
+ 	@rm -f src/octave-cli$(EXEEXT)
+-	$(AM_V_CXXLD)$(src_octave_cli_LINK) $(src_octave_cli_OBJECTS) $(src_octave_cli_LDADD) $(LIBS)
++	$(AM_V_CXXLD)$(src_octave_cli_LINK) $(src_octave_cli_OBJECTS) libmex/.libs/liboctmex.a libinterp/.libs/liboctinterp.a liboctave/.libs/liboctave.a libgnu/.libs/libgnu.a $(LIBS) -lpcre2-8 -lopenblas -lfreetype
+ src/octave_config-octave-config.$(OBJEXT): src/$(am__dirstamp) \
+ 	src/$(DEPDIR)/$(am__dirstamp)
+ 
+-- 
+2.50.1
+

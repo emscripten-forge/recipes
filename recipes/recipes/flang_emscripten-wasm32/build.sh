@@ -7,8 +7,10 @@ set -ex
 # See: https://github.com/emscripten-forge/recipes/pull/2046
 cp $RECIPE_DIR/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/
 
-mkdir -p $PREFIX/etc/conda/activate.d
-mkdir -p $PREFIX/etc/conda/deactivate.d
-
-cp $RECIPE_DIR/activate-flang_emscripten-wasm32.sh $PREFIX/etc/conda/activate.d/
-cp $RECIPE_DIR/deactivate-flang_emscripten-wasm32.sh $PREFIX/etc/conda/deactivate.d/
+# Copy the [de]activate scripts to $PREFIX/etc/conda/[de]activate.d.
+# This will allow them to be run on environment activation.
+for TASK in "activate" "deactivate"
+do
+    mkdir -p "${PREFIX}/etc/conda/${TASK}.d"
+    envsubst '$PKG_VERSION' < "${RECIPE_DIR}/${TASK}.sh" > "${PREFIX}/etc/conda/${TASK}.d/${TASK}_${PKG_NAME}.sh"
+done

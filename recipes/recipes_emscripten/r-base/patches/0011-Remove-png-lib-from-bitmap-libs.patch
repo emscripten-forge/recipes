@@ -1,0 +1,27 @@
+From 0397dbd6ad3a1ba210af3eef2089c37aeb7513ac Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 2 Dec 2024 14:18:18 +0100
+Subject: [PATCH 11/13] Remove png lib from bitmap libs
+
+Multiple duplicate symbol errors come from png.o when -lpng16 is added twice.
+This patch removes one of the instances but cairo.so is still linked with the
+png library.
+---
+ configure | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index ea3e3f0ba7..29be9f7784 100755
+--- a/configure
++++ b/configure
+@@ -57274,8 +57274,8 @@ fi
+       fi
+     fi
+     if test "${have_png}" = yes; then
+-      BITMAP_CPPFLAGS="${BITMAP_CPPFLAGS} ${PNG_CPPFLAGS}"
+-      BITMAP_LIBS="${BITMAP_LIBS} ${PNG_LIBS}"
++      BITMAP_CPPFLAGS="${BITMAP_CPPFLAGS}"
++      BITMAP_LIBS="${BITMAP_LIBS}"
+ 
+ printf "%s\n" "#define HAVE_PNG 1" >>confdefs.h
+ 

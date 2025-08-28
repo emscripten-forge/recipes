@@ -1,18 +1,16 @@
-From a15e14e27fdbb7e874f51d02e06b4c6c9349f798 Mon Sep 17 00:00:00 2001
+From 59e40d7ecf81c152d9c710891eef84a53038888e Mon Sep 17 00:00:00 2001
 From: serge-sans-paille <sguelton@mozilla.com>
-Date: Wed, 10 Jul 2024 22:42:19 +0200
-Subject: [PATCH 3/7] Specialize Flang to target WASM
+Date: Tue, 8 Jul 2025 14:09:21 +0200
+Subject: [PATCH 3/5] Specialize Flang to target WASM
 
-Many values were explicitly encoded under the assumation that host and target have
-the same architecture.
 ---
- .../Optimizer/Builder/Runtime/RTBuilder.h     | 31 ++++++++++---------
- .../flang/Optimizer/Support/DataLayout.h      | 16 ++++++++++
- flang/lib/Optimizer/CodeGen/CodeGen.cpp       |  8 +++--
- 3 files changed, 38 insertions(+), 17 deletions(-)
+ .../Optimizer/Builder/Runtime/RTBuilder.h     | 37 ++++++++++---------
+ .../flang/Optimizer/Support/DataLayout.h      | 18 +++++++++
+ flang/lib/Optimizer/CodeGen/CodeGen.cpp       |  8 +++-
+ 3 files changed, 43 insertions(+), 20 deletions(-)
 
 diff --git a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
-index 845ba385918d..adc6479f9cbf 100644
+index eaa1de761..2c776d4ea 100644
 --- a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 +++ b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 @@ -22,6 +22,7 @@
@@ -134,33 +132,63 @@ index 845ba385918d..adc6479f9cbf 100644
    };
  }
  template <>
-@@ -434,13 +435,13 @@ constexpr TypeBuilderFunc getModel<const std::complex<double> *>() {
- template <>
- constexpr TypeBuilderFunc getModel<c_float_complex_t>() {
+@@ -343,7 +344,7 @@ constexpr TypeBuilderFunc getModel<long double>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
--    return fir::ComplexType::get(context, sizeof(float));
-+    return fir::ComplexType::get(context, FLANG_TARGET_SIZEOF_FLOAT);
+     // See TODO at the top of the file. This is configuring for the host system
+     // - it might be incorrect when cross-compiling!
+-    constexpr size_t size = sizeof(long double);
++    constexpr size_t size = FLANG_TARGET_SIZEOF_LONGDOUBLE;
+     static_assert(size == 16 || size == 10 || size == 8,
+                   "unsupported long double size");
+     if constexpr (size == 16)
+@@ -404,7 +405,7 @@ template <>
+ constexpr TypeBuilderFunc getModel<unsigned short>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+     return mlir::IntegerType::get(
+-        context, 8 * sizeof(unsigned short),
++        context, 8 * FLANG_TARGET_SIZEOF_USHORT,
+         mlir::IntegerType::SignednessSemantics::Unsigned);
+   };
+ }
+@@ -422,7 +423,7 @@ template <>
+ constexpr TypeBuilderFunc getModel<unsigned short *>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+     return fir::ReferenceType::get(
+-        mlir::IntegerType::get(context, 8 * sizeof(unsigned short)));
++        mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_USHORT));
    };
  }
  template <>
- constexpr TypeBuilderFunc getModel<c_double_complex_t>() {
+@@ -441,7 +442,7 @@ template <>
+ constexpr TypeBuilderFunc getModel<unsigned long *>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
--    return fir::ComplexType::get(context, sizeof(double));
-+    return fir::ComplexType::get(context, FLANG_TARGET_SIZEOF_DOUBLE);
+     return fir::ReferenceType::get(
+-        mlir::IntegerType::get(context, 8 * sizeof(unsigned long)));
++        mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_ULONG));
+   };
+ }
+ template <>
+@@ -452,7 +453,7 @@ template <>
+ constexpr TypeBuilderFunc getModel<unsigned long long *>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+     return fir::ReferenceType::get(
+-        mlir::IntegerType::get(context, 8 * sizeof(unsigned long long)));
++        mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_ULONGLONG));
    };
  }
  template <>
 diff --git a/flang/include/flang/Optimizer/Support/DataLayout.h b/flang/include/flang/Optimizer/Support/DataLayout.h
-index d21576bb95f7..5372039d8702 100644
+index 6072425b7..a252dc3af 100644
 --- a/flang/include/flang/Optimizer/Support/DataLayout.h
 +++ b/flang/include/flang/Optimizer/Support/DataLayout.h
-@@ -23,6 +23,22 @@ namespace llvm {
+@@ -23,6 +23,24 @@ namespace llvm {
  class DataLayout;
  }
  
 +constexpr size_t FLANG_TARGET_SIZEOF_UINT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_INT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_SHORT = 2;
++constexpr size_t FLANG_TARGET_SIZEOF_USHORT = 2;
 +constexpr size_t FLANG_TARGET_SIZEOF_CHAR = 1;
 +constexpr size_t FLANG_TARGET_SIZEOF_SCHAR = 1;
 +constexpr size_t FLANG_TARGET_SIZEOF_UCHAR = 1;
@@ -173,25 +201,26 @@ index d21576bb95f7..5372039d8702 100644
 +constexpr size_t FLANG_TARGET_SIZEOF_SIZE_T = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_FLOAT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_DOUBLE = 8;
++constexpr size_t FLANG_TARGET_SIZEOF_LONGDOUBLE = 8;
 +
  namespace fir::support {
  /// Create an mlir::DataLayoutSpecInterface attribute from an llvm::DataLayout
  /// and set it on the provided mlir::ModuleOp.
 diff --git a/flang/lib/Optimizer/CodeGen/CodeGen.cpp b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
-index f9ea92a843b2..ca72d67400b0 100644
+index 1b078be7b..40f84e3fb 100644
 --- a/flang/lib/Optimizer/CodeGen/CodeGen.cpp
 +++ b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
-@@ -909,7 +909,8 @@ getMalloc(fir::AllocMemOp op, mlir::ConversionPatternRewriter &rewriter) {
+@@ -949,7 +949,8 @@ getMallocInModule(ModuleOp mod, fir::AllocMemOp op,
      return mlir::SymbolRefAttr::get(userMalloc);
-   mlir::OpBuilder moduleBuilder(
-       op->getParentOfType<mlir::ModuleOp>().getBodyRegion());
+ 
+   mlir::OpBuilder moduleBuilder(mod.getBodyRegion());
 -  auto indexType = mlir::IntegerType::get(op.getContext(), 64);
 +  auto indexType =
 +      mlir::IntegerType::get(op.getContext(), 8 * FLANG_TARGET_SIZEOF_SIZE_T);
    auto mallocDecl = moduleBuilder.create<mlir::LLVM::LLVMFuncOp>(
        op.getLoc(), mallocName,
        mlir::LLVM::LLVMFunctionType::get(getLlvmPtrType(op.getContext()),
-@@ -976,8 +977,11 @@ struct AllocMemOpConversion : public fir::FIROpConversion<fir::AllocMemOp> {
+@@ -1025,8 +1026,11 @@ struct AllocMemOpConversion : public fir::FIROpConversion<fir::AllocMemOp> {
        size = rewriter.create<mlir::LLVM::MulOp>(
            loc, ity, size, integerCast(loc, rewriter, ity, opnd));
      heap->setAttr("callee", getMalloc(heap, rewriter));
@@ -199,8 +228,8 @@ index f9ea92a843b2..ca72d67400b0 100644
 +                                         8 * FLANG_TARGET_SIZEOF_SIZE_T);
 +    auto size_szt = integerCast(loc, rewriter, szt_ty, size);
      rewriter.replaceOpWithNewOp<mlir::LLVM::CallOp>(
--        heap, ::getLlvmPtrType(heap.getContext()), size, heap->getAttrs());
-+        heap, ::getLlvmPtrType(heap.getContext()), size_szt, heap->getAttrs());
+-        heap, ::getLlvmPtrType(heap.getContext()), size,
++        heap, ::getLlvmPtrType(heap.getContext()), size_szt,
+         addLLVMOpBundleAttrs(rewriter, heap->getAttrs(), 1));
      return mlir::success();
    }
- 

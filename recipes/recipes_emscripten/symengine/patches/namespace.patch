@@ -1,0 +1,36 @@
+diff --git a/symengine/expression.h b/symengine/expression.h
+index 5d0c63e7..c67ffab7 100644
+--- a/symengine/expression.h
++++ b/symengine/expression.h
+@@ -341,16 +341,14 @@ struct print_coefficient_impl<U, typename std::enable_if<std::is_same<
+ } // namespace piranha
+ #endif // HAVE_SYMENGINE_PIRANHA
+ 
+-// Utility functions for xeus-cling
+-namespace SymEngine
+-{
+-
+-#ifdef __CLING__
++// Utility functions for xeus-cpp
++#if defined(__CLANG_REPL__)
+ // clang-format off
+ #if defined(__has_include) && __has_include(<nlohmann/json.hpp>)
+ // clang-format on
+ #include <nlohmann/json.hpp>
+-
++namespace SymEngine
++{
+ inline nlohmann::json mime_bundle_repr(const Expression &i)
+ {
+     auto bundle = nlohmann::json::object();
+@@ -358,9 +356,8 @@ inline nlohmann::json mime_bundle_repr(const Expression &i)
+     bundle["text/latex"] = "$" + latex(i) + "$";
+     return bundle;
+ }
++} // namespace SymEngine
+ #endif
+ #endif
+ 
+-} // namespace SymEngine
+-
+ #endif // SYMENGINE_EXPRESSION_H

@@ -1,18 +1,21 @@
 context:
   name: clarabel
-  version: 0.8.1
+  version: 0.11.1
 
 package:
-  name: ${{ name|lower }}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.python.org/packages/source/${{ name[0] }}/${{ name }}/${{ name
-    }}-${{ version }}.tar.gz
-  sha256: d3718417396fccb79e74a55e0e891d1c602bc23ba7877666f1c2502fdd2623ea
+  url: https://pypi.python.org/packages/source/${{ name[0] }}/${{ name }}/${{ 
+    name }}-${{ version }}.tar.gz
+  sha256: e7c41c47f0e59aeab99aefff9e58af4a8753ee5269bbeecbd5526fc6f41b9598
+  patches:
+  - patches/0001-Update-faer-and-faer-traits-versions.patch
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
@@ -22,16 +25,14 @@ requirements:
   - ${{ compiler('c') }}
   - cargo-bundle-licenses
   - rust
-  - cffi == 1.15.1
   - setuptools-rust
   - maturin
   host:
   - python
-  - pip
-  - cffi == 1.15.1
+  - pip !=25.1.1
   run:
   - python
-  - cffi == 1.15.1
+  - numpy
 
 tests:
 - script: pytester
@@ -44,6 +45,7 @@ tests:
     run:
     - pytester-run
     - scipy
+    - openblas
 
 about:
   homepage: https://oxfordcontrol.github.io/ClarabelDocs/
@@ -55,7 +57,7 @@ about:
   summary: 'Python interface for Clarabel: Interior Point Conic Optimization Solver'
   description: |
     Clarabel is an interior point numerical solver for convex optimization problems implemented
-    in Rust.  It solves linear programs (LPs), quadratic programs (QPs), second-order cone programs 
+    in Rust.  It solves linear programs (LPs), quadratic programs (QPs), second-order cone programs
     (SOCPs) and semidefinite programs (SDPs). It also solves problems with exponential, power
     cone and generalized power cone constraints.
   documentation: https://oxfordcontrol.github.io/ClarabelDocs/
@@ -63,4 +65,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - KGB99
+  - IsabelParedes
