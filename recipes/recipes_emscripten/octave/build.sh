@@ -6,14 +6,6 @@ set -eux
 # CONFIGURE EMSCRIPTEN #
 ########################
 
-# Filter out unrecognized arguments (--enable-bulk-memory-opt and
-# --enable-call-indirect-overlong) when calling `wasm-opt`
-
-EMSDK_DIR=$BUILD_PREFIX/opt/emsdk/upstream
-mv $EMSDK_DIR/bin/wasm-opt $EMSDK_DIR/bin/wasm-opt-original
-cp $RECIPE_DIR/patches/wasm-opt-wrapper $EMSDK_DIR/bin/wasm-opt
-chmod +x $EMSDK_DIR/bin/wasm-opt
-
 # FIXME: There should be a better way to prioritize Emscripten's PIC libs
 emlibs=(
    libc-debug
