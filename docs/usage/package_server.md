@@ -1,4 +1,4 @@
-# Packagve Server
+# Package Server
 
 Emscripten-forge packages are hosted on  [prefix.dev](https://prefix.dev/channels/emscripten-forge-dev).
 

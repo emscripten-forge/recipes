@@ -8,6 +8,7 @@ export r_cv_have_bzlib=yes
 export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_size_max=yes
+export r_cv_has_pangocairo=no # Fails locally, problem with pkg-config
 
 # Not supported
 export ac_cv_have_decl_getrusage=no
@@ -55,8 +56,11 @@ pushd _build_linux
     export CPPFLAGS="-I$BUILD_PREFIX/include"
     export LDFLAGS="-L$BUILD_PREFIX/lib"
     export FC_LEN_T=size_t
+    export LINUX_BUILD_DIR=$(pwd)
 
     unset CROSS_COMPILING
+    unset FFLAGS
+    unset FPICFLAGS
 
     ../configure \
         --prefix=$BUILD_PREFIX \
@@ -76,6 +80,9 @@ popd
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
 
+# FIXME: this should come from libflang
+cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
+
 mkdir -p _build_wasm
 pushd _build_wasm
 (
@@ -85,6 +92,7 @@ pushd _build_wasm
     export R_EXECUTABLE=$(realpath ..)/_build_linux/bin/exec/R # binary not shell wrapper
     export R_SCRIPT_EXECUTABLE=$(realpath ..)/_build_linux/bin/Rscript
     export LINUX_BUILD_DIR=$(realpath ..)/_build_linux
+    export WASM_BUILD_DIR=$(pwd)
 
     # NOTE: the host and build systems are explicitly set to enable the cross-
     # compiling options even though it's not fully supported.
@@ -103,3 +111,5 @@ pushd _build_wasm
 
 )
 popd
+
+rm $PREFIX/lib/libFortranRuntime.a

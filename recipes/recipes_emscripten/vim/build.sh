@@ -35,12 +35,16 @@ emconfigure ./configure \
     ac_cv_sizeof_int=4 \
     ac_cv_sizeof_long=8 \
     ac_cv_sizeof_off_t=4 \
-    ac_cv_sizeof_time_t=4
+    ac_cv_sizeof_time_t=4 \
+    ac_cv_func_ftruncate=no
 
-# Use /etc/vimrc for system vimrc file and turn some features on.
+# Use /etc/vimrc for system vimrc file and turn some features on and off.
 sed -ri "s/.*(#define SYS_VIMRC_FILE\s.*)/\1/" src/feature.h
 echo "syntax on" > $VIMRC
 echo "set termguicolors" >> $VIMRC
+echo "set nobackup" >> $VIMRC
+echo "set noswapfile" >> $VIMRC
+echo "set nowritebackup" >> $VIMRC
 
 # Installs runtime config files under $PWD/usr/local/share/vim
 DESTDIR=$PWD make -C src installruntime

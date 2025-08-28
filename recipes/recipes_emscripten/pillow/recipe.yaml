@@ -1,25 +1,24 @@
 context:
-  version: 10.3.0
+  name: pillow
+  version: 11.3.0
 
 package:
-  name: pillow
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
 - url: https://github.com/python-pillow/Pillow/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 5a2f1a812237bf9bd57f283422f46ca97a1c3d43d5f67b9bf8a0d499c4b97c85
-  patches:
-  - patches/setitup.patch
+  sha256: fa4aca745b1e1c733589ebf0ef19491b145dd4225c4aa06958963b4e7f0734cf
 - path: src/setup.cfg
 - path: setup.py
 
 build:
-  number: 2
+  number: 0
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - pip
   host:
   - python
@@ -35,3 +34,14 @@ tests:
     - pytester
     run:
     - pytester-run
+
+about:
+  homepage: https://pillow.readthedocs.io
+  license: HPND
+  license_file: LICENSE
+  summary: Pillow is the friendly PIL fork by Alex Clark and Contributors
+  repository: https://github.com/python-pillow/Pillow/
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

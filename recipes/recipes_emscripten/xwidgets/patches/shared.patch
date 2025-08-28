@@ -1,0 +1,86 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f9124dc..1dec0b3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,6 +9,13 @@
+ cmake_minimum_required(VERSION 3.8)
+ project(xwidgets)
+ 
++if(EMSCRIPTEN)
++    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++    set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_STRIP FALSE)
++endif()
++
+ set(XWIDGETS_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+ set(XWIDGETS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+ 
+@@ -20,6 +27,10 @@ include(CMakePackageConfigHelpers)
+ 
+ set(XWIDGETS_INSTALL_LIBRARY_DIR "\"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}\"")
+ 
++# Define the path to the shared library for use with CppInterOp dynamic loading
++set(XWIDGETS_CPPINTEROP_LIBRARY_PATH "\"/lib/${CMAKE_SHARED_LIBRARY_PREFIX}xwidgets${CMAKE_SHARED_LIBRARY_SUFFIX}\"")
++message(STATUS "XWIDGETS_CPPINTEROP_LIBRARY_PATH = ${XWIDGETS_CPPINTEROP_LIBRARY_PATH}")
++
+ configure_file(
+     "${XWIDGETS_INCLUDE_DIR}/xwidgets/xwidgets_config_cling.hpp.in"
+     "${XWIDGETS_INCLUDE_DIR}/xwidgets/xwidgets_config_cling.hpp"
+@@ -157,6 +168,7 @@ macro(xwidgets_create_target target_name linkage output_name)
+     )
+ 
+     target_link_libraries(${target_name} PUBLIC ${XEUS_TARGET_NAME} xproperty)
++    set_target_properties(${target_name} PROPERTIES NO_SONAME 1)
+ 
+     set_target_properties(
+         ${target_name}
+@@ -182,7 +194,11 @@ macro(xwidgets_create_target target_name linkage output_name)
+         OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"
+         OR CMAKE_CXX_COMPILER_ID MATCHES "Intel"
+     )
+-        target_compile_options(${target_name} PUBLIC -Wunused-parameter -Wextra -Wreorder)
++        if (EMSCRIPTEN)
++            target_compile_options(${target_name} PRIVATE -fPIC)
++        else ()
++            target_compile_options(${target_name} PUBLIC -Wunused-parameter -Wextra -Wreorder)
++        endif()
+ 
+         message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+     endif()
+diff --git a/include/xwidgets/xwidgets_config.hpp b/include/xwidgets/xwidgets_config.hpp
+index eee5149..a4aec7c 100644
+--- a/include/xwidgets/xwidgets_config.hpp
++++ b/include/xwidgets/xwidgets_config.hpp
+@@ -102,7 +102,7 @@
+     ))
+ 
+ // Load libxwidgets runtime.
+-#ifdef __CLING__
++#if defined(__CLANG_REPL__) && defined(__EMSCRIPTEN__)
+ #include "xwidgets_config_cling.hpp"
+ #endif
+ 
+diff --git a/include/xwidgets/xwidgets_config_cling.hpp.in b/include/xwidgets/xwidgets_config_cling.hpp.in
+index cbac2cd..3c0fc1f 100644
+--- a/include/xwidgets/xwidgets_config_cling.hpp.in
++++ b/include/xwidgets/xwidgets_config_cling.hpp.in
+@@ -9,7 +9,16 @@
+ #ifndef XWIDGETS_CONFIG_CLING_HPP
+ #define XWIDGETS_CONFIG_CLING_HPP
+ 
+-#pragma cling add_library_path(@XWIDGETS_INSTALL_LIBRARY_DIR@)
+-#pragma cling load("libxwidgets")
++// #pragma cling add_library_path(@XWIDGETS_INSTALL_LIBRARY_DIR@)
++// #pragma cling load("libxwidgets")
++
++#pragma once
++#ifdef __EMSCRIPTEN__
++#  include <clang/Interpreter/CppInterOp.h>
++static bool _xwidgets_loaded = []() {
++    Cpp::LoadLibrary(@XWIDGETS_CPPINTEROP_LIBRARY_PATH@, false);
++    return true;
++}();
++#endif
+ 
+ #endif

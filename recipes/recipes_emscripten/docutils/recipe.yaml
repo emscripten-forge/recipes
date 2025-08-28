@@ -1,24 +1,25 @@
 context:
   name: docutils
-  version: 0.18.1
+  version: 0.21.2
 
 package:
-  name: docutils
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/docutils-${{ version
-    }}.tar.gz
-  sha256: 679987caf361a7539d76e584cbeddc311e3aee937877c87346f31debc63e9d06
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/docutils-${{ version }}.tar.gz
+  sha256: 3a6b18732edf182daa3cd12775bbb338cf5691468f91eeeb109deff6ebfa986f
 
 build:
   number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
 requirements:
   build:
-  - python                                   # [build_platform != target_platform]
-  - cross-python_${{ target_platform }}      # [build_platform != target_platform]
+  - python
+  - cross-python_${{ target_platform }}
   - pip
+  - flit-core
   host:
   - python
   run:
@@ -34,3 +35,19 @@ tests:
     - pytester
     run:
     - pytester-run
+
+about:
+  homepage: http://docutils.sourceforge.net/
+  license: CC-PDDC AND BSD-3-Clause AND BSD-2-Clause AND ZPL-2.1
+  license_file: COPYING.txt
+  summary: Docutils -- Python Documentation Utilities
+  description: |
+    Docutils is an open-source text processing system for processing plaintext
+    documentation into useful formats, such as HTML, LaTeX, man-pages, open-
+    document, or XML.
+  documentation: http://docutils.sourceforge.net/docs/index.html
+  repository: http://svn.code.sf.net/p/docutils/code
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

@@ -1,0 +1,116 @@
+From 61f9da0e697010ef181a6ba86e53556d7d6feab8 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 31 Jul 2025 14:10:28 +0200
+Subject: [PATCH 06/19] Assume little endian
+
+---
+ liboctave/system/cmach-info.c | 93 ++++++++++++++++++-----------------
+ 1 file changed, 47 insertions(+), 46 deletions(-)
+
+diff --git a/liboctave/system/cmach-info.c b/liboctave/system/cmach-info.c
+index 6541841..b6c0b48 100644
+--- a/liboctave/system/cmach-info.c
++++ b/liboctave/system/cmach-info.c
+@@ -78,52 +78,53 @@ octave_get_float_format (void)
+ {
+   int retval = 0;
+ 
+-  float_params fp[3];
+-
+-  INIT_FLT_PAR (fp[0], 1,
+-                0,    1048576,
+-                -1, 2146435071,
+-                0, 1017118720,
+-                0, 1018167296);
+-
+-  INIT_FLT_PAR (fp[1], 2,
+-                1048576,  0,
+-                2146435071, -1,
+-                1017118720,  0,
+-                1018167296,  0);
+-
+-  INIT_FLT_PAR (fp[2], 0,
+-                0, 0,
+-                0, 0,
+-                0, 0,
+-                0, 0);
+-
+-  equiv mach_fp_par[4];
+-
+-  F77_INT opt;
+-
+-  opt = 1;
+-  mach_fp_par[0].d = F77_FUNC (d1mach, D1MACH) (&opt);
+-
+-  opt = 2;
+-  mach_fp_par[1].d = F77_FUNC (d1mach, D1MACH) (&opt);
+-
+-  opt = 3;
+-  mach_fp_par[2].d = F77_FUNC (d1mach, D1MACH) (&opt);
+-
+-  opt = 4;
+-  mach_fp_par[3].d = F77_FUNC (d1mach, D1MACH) (&opt);
+-
+-  int i = 0;
+-  do
+-    {
+-      if (equiv_compare (fp[i].fp_par, mach_fp_par, 4))
+-        {
+-          retval = fp[i].fp_fmt;
+-          break;
+-        }
+-    }
+-  while (fp[++i].fp_fmt != 0);
++  // float_params fp[3];
++
++  // INIT_FLT_PAR (fp[0], 1,
++  //               0,    1048576,
++  //               -1, 2146435071,
++  //               0, 1017118720,
++  //               0, 1018167296);
++
++  // INIT_FLT_PAR (fp[1], 2,
++  //               1048576,  0,
++  //               2146435071, -1,
++  //               1017118720,  0,
++  //               1018167296,  0);
++
++  // INIT_FLT_PAR (fp[2], 0,
++  //               0, 0,
++  //               0, 0,
++  //               0, 0,
++  //               0, 0);
++
++  // equiv mach_fp_par[4];
++
++  // F77_INT opt;
++
++  // opt = 1;
++  // mach_fp_par[0].d = F77_FUNC (d1mach, D1MACH) (&opt);
++
++  // opt = 2;
++  // mach_fp_par[1].d = F77_FUNC (d1mach, D1MACH) (&opt);
++
++  // opt = 3;
++  // mach_fp_par[2].d = F77_FUNC (d1mach, D1MACH) (&opt);
++
++  // opt = 4;
++  // mach_fp_par[3].d = F77_FUNC (d1mach, D1MACH) (&opt);
++
++  // int i = 0;
++  // do
++  //   {
++  //     if (equiv_compare (fp[i].fp_par, mach_fp_par, 4))
++  //       {
++  //         retval = fp[i].fp_fmt;
++  //         break;
++  //       }
++  //   }
++  // while (fp[++i].fp_fmt != 0);
++  retval = 1; // Assume IEEE little endian for now.
+ 
+   return retval;
+ }
+-- 
+2.50.1
+

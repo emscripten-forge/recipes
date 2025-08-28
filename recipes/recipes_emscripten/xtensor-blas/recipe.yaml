@@ -1,0 +1,44 @@
+context:
+  name: xtensor-blas
+  version: 0.23.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/xtensor-stack/xtensor-blas/archive/${{ version }}.tar.gz
+  sha256: 3411f56d243b92a22fe3a259bc8b414d851ab167b9d30700a1776c9908e0b595
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  host:
+  - xtensor
+  run:
+  - xtensor
+  - openblas
+
+tests:
+- script:
+  - if: unix or emscripten
+    then:
+    - test -f ${PREFIX}/include/xtensor-blas/xblas.hpp
+    - test -f ${PREFIX}/lib/cmake/xtensor-blas/xtensor-blasConfig.cmake
+
+about:
+  homepage: https://github.com/xtensor-stack/xtensor-blas
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: BLAS extension to xtensor
+  description: xtensor-blas is an extension to the xtensor library, offering bindings to BLAS and LAPACK libraries through cxxblas and cxxlapack from the FLENS project.
+  documentation: https://xtensor-blas.readthedocs.io
+  repository: https://github.com/xtensor-stack/xtensor-blas
+
+extra:
+  recipe-maintainers:
+  - anutosh491

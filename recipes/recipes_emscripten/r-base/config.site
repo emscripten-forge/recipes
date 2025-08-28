@@ -53,7 +53,7 @@ CC=emcc
 ## and '-g' in all other cases except icc (for which see R-admin.html).
 ## Be wary of aggressive settings such as -ffast-math, -Ofast and
 ## -Werror (which is likely to cause configure to fail).
-# CFLAGS=
+CFLAGS="-fPIC"
 
 ## Ditto for a compiler that supports C17 features and not C23 ones.
 ## For example, 'CC17=gcc -std=gnu17', omit -Wstrict-prototypes from C17FLAGS.
@@ -69,7 +69,9 @@ CC=emcc
 
 ## Ditto for a compiler that supports C23 features.
 ## For example 'CC23=clang-15 -std=gnu2x'
-## Eventually -std=gnu23 will be supported and preferred.
+## -std=gnu2x is supported by at least GCC >= 12, LLVM clang >= 15 and Apple clang >= 16
+## Eventually -std=gnu23 will be supported and preferred
+## (and is by GCC >= 14 and LLVM >= 18).
 ## Default to CC and CFLAGS with any -std options removed, then
 ## -std=gmu2x appended to CC.
 ## CC23=
@@ -86,19 +88,27 @@ CC=emcc
 
 ## Defines for C compilation.
 ## Use this to specify defines to be used in the compilation of R,
+## (but not packages).  Can be used to override e.g.
+## DEFS="-DC99_INLINE_SEMANTICS=0"
 ## DEFS=
+
+## no-return flag
+## Header R-exts/Error.h contains alternative definitions for the NORET
+## macro, depending on the C standard found.  If the compiler does not
+## comply (and GCC pre=15 did not in 2024-12), use this to pick one of the
+## others, or even define to be empty.
+## NORET=
 
 ## The following additional CFLAGS to be used only in the main
 ## compilation and only in building shared objects respectively.
 ## For example, on some systems one needs 'MAIN_CFLAGS=-pg' when
 ## profiling.
-## NOTE: These apply to Rscript
-# MAIN_CFLAGS=
-SHLIB_CFLAGS="-sSIDE_MODULE=1"
+## MAIN_CFLAGS=
+## SHLIB_CFLAGS=
 
 ## Header file search directory ('-IDIR') and any other miscellaneous
 ## options (such as defines) for the C preprocessor and compiler.
-## If unset defaults to '-I/usr/local/include', with '-I/ssw/include'
+## If unset defaults to '-I/usr/local/include', with '-I/sw/include'
 ## prepended on systems using Fink with root '/sw'.
 CPPFLAGS="-I$PREFIX/include"
 
@@ -108,8 +118,8 @@ CPPFLAGS="-I$PREFIX/include"
 FC=flang-new
 
 ## Options for the Fortran compiler.
-## Use this to specify comilation flags for fixed-form Fortran.
-FFLAGS="-g --target=wasm32-unknown-emscripten"
+## Use this to specify compilation flags for fixed-form Fortran.
+FFLAGS="-g --target=wasm32-unknown-emscripten -fPIC"
 ## Ditto for free-form Fortran.
 ## FCFLAGS=
 ## If just one of these is set, it is used for both.
@@ -125,7 +135,11 @@ FFLAGS="-g --target=wasm32-unknown-emscripten"
 
 ## Additional libraries needed to link a shared object with FC,
 ## e.g. on x86 Solaris
-# FCLIBS_XTRA=
+## FCLIBS_XTRA=
+
+## NOTE: Required, otherwise it tries to link against libclang_rt.builtins.a
+## which doesn't exist.
+FCLIBS="-lFortranRuntime"
 
 ## Options for safe compilation under the Fortran compiler.
 ## Use this to specify FFLAGS for the version of the compiler specified
@@ -175,7 +189,7 @@ FPICFLAGS="-fPIC"
 
 ## The following variable can be used to provide any PIE flags for the
 ## Fortran compiler.  Currently only needed when using gfortran on
-## Linux in conjuunction with a default build of clang 15 where it needs
+## Linux in conjunction with a default build of clang 15 where it needs
 ## to be set to -fPIE: configure tries that value if unset.
 ## FPIEFLAGS=
 
@@ -229,7 +243,7 @@ CXXFLAGS="-sWASM_BIGINT"
 ## Any special flags which must be used when compiling C++ code to be
 ## turned into a shared object.  If this variable is left unspecified
 ## an attempt is made to automatically detect the correct value.
-CXXPICFLAGS="-sSIDE_MODULE=1"
+CXXPICFLAGS="-fPIC"
 
 ## Option to specify the default C++ standard,
 ## e.g. -std=c++14 or -std=gnu++14
@@ -277,7 +291,7 @@ SHLIB_CXXLDFLAGS="-sSIDE_MODULE=1"
 ## BLAS and LAPACK settings
 ## Use BLAS_LIBS for all '-L' and '-l' options needed for linking
 ## against an external BLAS implementation.
-# BLAS_LIBS=
+## BLAS_LIBS=
 ## Use LAPACK_LIBS for all '-L' and '-l' options needed for linking
 ## against an external LAPACK implementation.
 ## Note that (see R-admin) that our main intention is to allow a
@@ -379,7 +393,7 @@ SHLIB_CXXLDFLAGS="-sSIDE_MODULE=1"
 
 ## C++23 compiler, optional for use in packages.
 ## Introduced in R 4.3.0
-## The command which runs the C++23 compiler: defaults to $(CXX17), but
+## The command which runs the C++23 compiler: defaults to $(CXX20), but
 ## empty if that (plus standard) cannot compile the tested C++23 code.
 ## CXX23=
 
@@ -395,11 +409,29 @@ SHLIB_CXXLDFLAGS="-sSIDE_MODULE=1"
 ## SHLIB_CXX23LD=
 ## SHLIB_CXX23LDFLAGS=
 
+## C++26 compiler, optional for use in packages.
+## Introduced in R 4.5.0
+## The command which runs the C++26 compiler: defaults to $(CXX20), but
+## empty if that (plus standard) cannot compile the tested C++26 code.
+## CXX26=
+
+## The 'standard' for the C++26 compiler, which is invoked as
+## $(CXX26) $(CXX26STD) for both compiling and linking DSOs/DLLs.
+## '-std=gnu++26' and '-std=gnu++2a" are tried by configure, also
+## '-std=c++26' and '-std=c++2a"
+## CXX26STD=
+
+## Analogues for the C++26 compiler: default to the settings for C++17
+## CXX26FLAGS=
+## CXX26PICFLAGS=
+## SHLIB_CXX26LD=
+## SHLIB_CXX26LDFLAGS=
+
 ## Additional libraries to link the internet module against.
 ## Some claim Solaris needs -lsocket -lnsl
 ## INTERNET_LIBS=
 
-## Script from texinfo 5.1 or later.
+## Script from Texinfo 6.1 or later.
 ## Usually the full path to texi2any.
 ## TEXI2ANY=
 
@@ -426,7 +458,7 @@ SHLIB_CXXLDFLAGS="-sSIDE_MODULE=1"
 ## The configure code is conservative about enabling OpenMP
 ## so use can be forced here (or non-use if set but empty).
 ## For packages (note that SHLIB_OPENMP_CXXFLAGS is for CXX, not
-## necessarily for CXX11/14/17/20/23).
+## necessarily for CXX11/14/17/20/23/26).
 ## SHLIB_OPENMP_CFLAGS=
 ## SHLIB_OPENMP_CXXFLAGS=
 ## SHLIB_OPENMP_FFLAGS=
@@ -481,6 +513,10 @@ RANLIB=emranlib
 ##   -O0 and -O1 seem to work with 2023.2.0
 ## INTEL_ICX_FIX=-O0
 
+## Additional INSTALL_opts for recommended packages.
+##  Can be used for --dsym on macOS.
+## REC_INSTALL_OPT=
+
 ## Programs which configure will look for on the path
 ## AR
 ## GETWD=pwd
@@ -524,7 +560,3 @@ RANLIB=emranlib
 ## The exception, looked for in /usr/xpg4/bin before the path
 ## SED=sed
 
-## Additional
-## NOTE: Required, otherwise it tries to link against libclang_rt.builtins.a
-## which doesn't exist.
-FCLIBS="-lFortranRuntime"
