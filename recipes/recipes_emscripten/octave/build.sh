@@ -16,7 +16,7 @@ emlibs=(
    libstubs-debug
    libcompiler_rt
 )
-pushd $EMSDK_DIR/emscripten/cache/sysroot/lib/wasm32-emscripten/
+pushd $BUILD_PREFIX/opt/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/
    for lib in "${emlibs[@]}"; do
       rm ./$lib || true
       embuilder build $lib --pic
