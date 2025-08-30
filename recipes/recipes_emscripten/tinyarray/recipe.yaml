@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tinyarray
+  version: 1.2.5
+  sha256: 5d47b3d475a30478ee72d6afe238c3d3683b3a3f9d425bb2f6384270b2c8799b
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  script: CFLAGS="-fPIC" CXXFLAGS="-fPIC" ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+    - python
+    - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - script: pytester
+    files:
+      recipe:
+        - test_import_tinyarray.py
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.rst
+  summary: Arrays of numbers for Python, optimized for small sizes
+  description: |
+    Tinyarrays are similar to NumPy arrays, but optimized for small sizes.
+    Common operations on very small arrays are to 3-7 times faster than
+    with NumPy (with NumPy 1.6 it used to be up to 35 times), and 3 times
+    less memory is used to store them. Tinyarrays are useful if you need
+    many small arrays of numbers, and cannot combine them into a few
+    large ones.
+  homepage: http://git.kwant-project.org/tinyarray/about/
+  documentation: https://gitlab.kwant-project.org/kwant/tinyarray
