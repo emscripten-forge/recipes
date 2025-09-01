@@ -1,0 +1,56 @@
+context:
+  name: pyclipper
+  version: 1.3.0.post6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pyclipper-${{ version }}.tar.gz
+  sha256: 42bff0102fa7a7f2abdd795a2594654d62b786d0c6cd67b72d469114fdeb608c
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cython
+  host:
+    - python
+    - pip
+    - setuptools_scm
+  run:
+    - python
+
+tests:
+  - script: pytester
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+    files:
+      recipe:
+        - test_pyclipper.py
+
+about:
+  homepage: https://github.com/fonttools/pyclipper
+  repository: https://github.com/fonttools/pyclipper
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |
+    Cython wrapper for the C++ translation of the Angus Johnson's Clipper
+    library (ver. 6.4.2)
+  description: |
+    Pyclipper is a Cython wrapper exposing public functions and classes of the
+    C++ translation of the Angus Johnson’s Clipper library (ver. 6.4.2)."
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
