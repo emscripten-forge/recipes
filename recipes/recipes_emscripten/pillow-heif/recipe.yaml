@@ -1,0 +1,52 @@
+context:
+  name: pillow-heif
+  version: 1.1.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/6f/d4/597cf8c54d1ed494a46cc12e358d2f73a993b5f139402b35681f56beffde/pillow_heif-${{ version }}.tar.gz
+  sha256: 6c0c5f81a780185bbddc56e0d5537c53aa6cb5fb6018f5a60534a47c53f5455d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  host:
+  - python
+  - pillow >=11.1.0
+  run:
+  - python
+  - pillow >=11.1.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pillow_heif.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/bigcat88/pillow_heif
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python interface for libheif library
+  description: |
+    pillow-heif is a Python interface to libheif library on macOS, Linux and Windows.
+    It allows to read and write HEIF/HEIC images in Python using Pillow.
+
+extra:
+  recipe-maintainers:
+  - emscripten-forge
