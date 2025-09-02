@@ -1,0 +1,62 @@
+context:
+  version: 5.13.0
+  name: suitesparse
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/v${{ version }}.tar.gz
+  sha256: 59c6ca2959623f0c69226cf9afb9a018d12a37fab3a8869db5f6d7f83b6b147d
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - make
+  host:
+    - libblas
+    - libcblas
+    - liblapack
+  run:
+    - libblas
+    - libcblas
+    - liblapack
+
+tests:
+  - package_contents:
+      lib:
+        - libsuitesparseconfig.*
+        - libamd.*
+        - libbtf.*
+        - libcolamd.*
+        - libccolamd.*
+        - libcamd.*
+        - libcholmod.*
+        - libumfpack.*
+        - libklu.*
+        - libcxsparse.*
+      include:
+        - suitesparse/SuiteSparse_config.h
+        - suitesparse/amd.h
+        - suitesparse/umfpack.h
+        - suitesparse/cholmod.h
+
+about:
+  homepage: https://people.engr.tamu.edu/davis/suitesparse.html
+  license: LGPL-2.1-or-later AND GPL-2.0-or-later AND Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+  summary: A suite of sparse matrix algorithms
+  description: |
+    SuiteSparse is a single archive that contains most packages authored or 
+    co-authored by Tim Davis. SuiteSparse contains the following packages:
+    UMFPACK, CHOLMOD, SPQR, KLU, BTF, Ordering packages (AMD, CAMD, COLAMD, CCOLAMD),
+    CSparse, CXSparse, ssget, GraphBLAS, Mongoose, and other packages.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
