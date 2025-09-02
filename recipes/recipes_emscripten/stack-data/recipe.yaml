@@ -1,0 +1,46 @@
+context:
+  version: 0.6.3
+
+package:
+  name: stack-data
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/s/stack-data/stack_data-${{ version }}.tar.gz
+  sha256: 7f73c59897c134acf6b037f5a28a58cf0ede29e3f7eacc75b8acc91f6a434055
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - python
+  - pip
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  host:
+  - python
+  run:
+  - executing >=1.2.0
+  - asttokens >=2.1.0
+  - pure-eval
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_stack_data.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/alexmojaki/stack_data
+  repository: https://github.com/alexmojaki/stack_data
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Extract data from python stack frames and tracebacks for informative displays
