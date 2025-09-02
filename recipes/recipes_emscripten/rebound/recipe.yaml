@@ -1,0 +1,46 @@
+context:
+  name: rebound
+  version: 4.4.10
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/85/8d/6fac961b4fc5303e362a07e74477e9fc41f62b419aa32250e2e7d3dc03f9/rebound-${{ version }}.tar.gz
+  sha256: d8ed4ad8ae33e5a8454be4965033b8a154602cd09776ed17c193aa7c55c65819
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_rebound.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: An open-source multi-purpose N-body code
+  homepage: https://github.com/hannorein/rebound/
+  documentation: https://rebound.readthedocs.io/
