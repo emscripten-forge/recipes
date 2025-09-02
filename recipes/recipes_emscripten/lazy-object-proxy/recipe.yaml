@@ -1,0 +1,53 @@
+context:
+  name: lazy-object-proxy
+  version: "1.10.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name|replace("-", "_") }}/${{ name|replace("-", "_") }}-${{ version }}.tar.gz
+  sha256: 632e2e0e2d7b7a0af8c8a7e5aba01ad50e07a4e3fdc0f74b14b6b08b36b5e41d
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - python
+    - "${{ compiler('c') }}"
+    - setuptools
+    - setuptools-scm
+    - pip
+  host:
+    - python
+  run:
+    - python
+
+about:
+  homepage: https://github.com/ionelmc/python-lazy-object-proxy
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: A fast and thorough lazy object proxy
+  description: |
+    lazy-object-proxy is a simple lazy object proxy. When you create a proxy,
+    no evaluation of the proxied object occurs. Instead, evaluation is deferred
+    until an operation is performed on the proxy.
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_lazy_object_proxy.py
+    
+extra:
+  recipe-maintainers:
+    - copilot
