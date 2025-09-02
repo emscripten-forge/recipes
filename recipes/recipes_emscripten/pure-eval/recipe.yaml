@@ -1,0 +1,42 @@
+context:
+  name: pure-eval
+  version: 0.2.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f6bdf8a5ce70cc1cb04e7d5dc7f2f82dab1b4d711b2c5e5f8a7d8092c6e2dd92
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pure_eval.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: MIT
+  summary: Safely evaluate AST nodes without side effects
+  homepage: http://github.com/alexmojaki/pure_eval
+  documentation: https://github.com/alexmojaki/pure_eval
