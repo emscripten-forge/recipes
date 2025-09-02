@@ -1,0 +1,57 @@
+context:
+  version: 1.4.1
+
+package:
+  name: sparseqr
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/0b/5a/032078d1c456b679f1d1d3f654a6c7392e215c3f6e2479cf1bec14f7469c/sparseqr-${{ version }}.tar.gz
+  sha256: 3c1f0ad101f601f780af9ddb0d06e78d4ffe8dd9605f5fd2c73e4cbf4de9b6b9
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - pip
+    - setuptools
+    - cffi >=1.0
+  host:
+    - python
+    - cffi >=1.0
+    - setuptools
+    - pip
+  run:
+    - python
+    - numpy >1.2
+    - scipy >=1.0
+    - cffi >=1.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_sparseqr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/yig/PySPQR
+  license: CC0-1.0
+  license_file: LICENSE.md
+  summary: Python wrapper for SuiteSparseQR
+  description: |
+    Python wrapper for SuiteSparseQR decomposition function for use with SciPy.
+    This is Matlab's sparse [Q,R,E] = qr(). Also wrapped are the SuiteSparseQR 
+    solvers for sparse overdetermined linear systems in the least-squares sense.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
