@@ -1,0 +1,46 @@
+context:
+  name: lakers-python
+  version: 0.5.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/l/lakers-python/lakers_python-${{ version }}.tar.gz
+  sha256: 19059fde5572409f061c3dfcaa12f1634572ff3622b45f81853d05bb67a37bc5
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - cffi == 1.17.1
+  - setuptools-rust
+  - rust
+  - maturin
+  host:
+  - python
+  - cffi == 1.17.1
+  run:
+  - cffi == 1.17.1
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_lakers.py
+
+about:
+  summary: Python wrapper for the lakers crate (EDHOC implementation in Rust)
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/openwsn-berkeley/lakers/
+  repository: https://github.com/openwsn-berkeley/lakers/
+  documentation: https://github.com/openwsn-berkeley/lakers/
