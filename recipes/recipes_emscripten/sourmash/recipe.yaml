@@ -1,0 +1,62 @@
+context:
+  name: sourmash
+  version: 4.9.4
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/ad/14/07265bede73653a2bd786b6ca9b5b1eb604e581e247505c8894401001487/sourmash-4.9.4.tar.gz
+  sha256: 28889d11041e398831875c7d17a367e3e5937b095d006752e45c7f2302f4626d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  host:
+  - python
+  - cffi >=1.14.0
+  run:
+  - python
+  - cffi >=1.14.0
+  - numpy
+  - matplotlib
+  - scipy
+  # Note: The following dependencies are not yet available in emscripten-forge
+  # and will need to be added in future PRs:
+  # - screed >=1.1.3,<2
+  # - deprecation >=2.0.6
+  # - cachetools >=4,<7
+  # - bitstring >=3.1.9,<5
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_sourmash.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: tools for comparing biological sequences with k-mer sketches
+  homepage: https://github.com/sourmash-bio/sourmash
+  documentation: https://sourmash.readthedocs.io/
+  description: |
+    sourmash is a command-line tool and Python library for computing hash 
+    sketches from DNA sequences, comparing them to each other, and plotting 
+    the results. This allows you to estimate sequence similarity between 
+    even very large DNA datasets.
