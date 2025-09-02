@@ -1,0 +1,53 @@
+context:
+  name: igraph
+  version: 0.10.15
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/igraph/igraph/releases/download/${{ version }}/igraph-${{ version }}.tar.gz
+  sha256: 65def5b9cad7e77d51b7a4d60fbebaf6cb87b83c91a7eb07fa88ff2b4e09de48
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cmake
+  - make
+  - ninja
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - openblas
+  - gmp
+  - libxml2
+  - zlib
+  run:
+  - openblas
+  - gmp
+  - libxml2
+  - zlib
+
+tests:
+- script:
+  - test -f ${PREFIX}/include/igraph/igraph.h
+  - test -f ${PREFIX}/lib/libigraph.a
+
+about:
+  homepage: https://igraph.org/
+  license: GPL-2.0-or-later
+  license_file: COPYING
+  summary: C library for complex network analysis and graph theory
+  description: |
+    igraph is a collection of network analysis tools with the emphasis on
+    efficiency, portability and ease of use. igraph is open source and free.
+    igraph can be programmed in R, Python, Mathematica and C/C++.
+  documentation: https://igraph.org/c/doc/
+  repository: https://github.com/igraph/igraph
+
+extra:
+  recipe-maintainers:
+  - copilot
