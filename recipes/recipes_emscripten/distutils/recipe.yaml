@@ -1,0 +1,49 @@
+context:
+  version: "1.0"
+  name: distutils
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/d/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef  # placeholder - will be updated
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  host:
+  - python
+  - setuptools
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_distutils.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Python Distribution Utilities
+  description: |
+    The distutils package provides support for building and installing 
+    additional modules into a Python installation. This package provides 
+    the distutils functionality that was removed from Python 3.12+.
+  homepage: https://pypi.org/project/distutils/
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
