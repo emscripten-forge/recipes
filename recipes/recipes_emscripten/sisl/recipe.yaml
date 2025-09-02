@@ -1,0 +1,63 @@
+context:
+  version: 0.16.2
+
+package:
+  name: sisl
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/s/sisl/sisl-${{ version }}.tar.gz
+  sha256: 21cc2575ca1d3dc7821757765bc84dbe288d11e1216618216c56fd759aecb79d
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . -vv
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - python
+    - pip
+    - cython >=3.0.8
+    - scikit-build-core >=0.8
+    - setuptools-scm
+    - numpy
+    - cmake
+    - make
+  host:
+    - python
+    - numpy
+  run:
+    - python
+    - numpy >=1.21
+    - scipy >=1.6
+    - pyparsing >=2.2.1
+    - xarray >=0.21
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_sisl.py
+
+about:
+  homepage: https://github.com/zerothi/sisl
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: Manipulation and post-processing of DFT output and creating tight-binding models for NEGF transport
+  description: |
+    sisl is a tool to manipulate density functional theory (DFT) output and create tight-binding models
+    for non-equilibrium Green's function (NEGF) transport calculations. It provides a comprehensive
+    framework for analyzing and processing electronic structure data.
+  repository: https://github.com/zerothi/sisl
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
