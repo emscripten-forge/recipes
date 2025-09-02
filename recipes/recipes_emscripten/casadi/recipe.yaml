@@ -1,0 +1,52 @@
+context:
+  version: 3.6.7
+
+package:
+  name: casadi
+  version: ${{ version }}
+
+source:
+  url: https://github.com/casadi/casadi/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 47602bab2aa187bfa8280cc4fa7d68ee19abbbdfeb90991e9eb3dd88465fd18b
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - swig
+  host:
+  - python
+  - numpy
+  run:
+  - python
+  - numpy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_casadi.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: LICENSE.txt
+  summary: CasADi is a symbolic framework for automatic differentiation and numeric optimization
+  homepage: https://casadi.org/
+  documentation: https://casadi.org/docs/
+  repository: https://github.com/casadi/casadi
+
+extra:
+  recipe-maintainers:
+  - copilot
