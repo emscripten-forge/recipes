@@ -1,0 +1,49 @@
+context:
+  name: yt
+  version: 4.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2df36425b48321ca236ea638f64fbe834f5d3b47c948cd519a7b048686253c25
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  host:
+  - python
+  run:
+  - numpy >=1.21.3
+  - matplotlib >=3.5
+  - pillow >=8.3.2
+  - packaging >=20.9
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_yt.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: An analysis and visualization toolkit for volumetric data
+  homepage: https://yt-project.org/
+  documentation: https://yt-project.org/doc/
