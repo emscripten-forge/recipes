@@ -1,0 +1,59 @@
+context:
+  version: 4.5.5
+
+package:
+  name: opencv-python
+  version: ${{ version }}
+
+source:
+  url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
+  sha256: a1cfdcf6619387ca9e232687504da996aaa9f7b5689986b8331ec02cb61d28ad
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - cmake
+  - ninja
+  - numpy
+  host:
+  - python
+  - numpy
+  - zlib
+  run:
+  - python
+  - numpy
+
+tests:
+- package_contents:
+    lib:
+    - libopencv_core.a
+    - libopencv_imgproc.a
+    include:
+    - opencv2/opencv.hpp
+- script: pytester
+  files:
+    recipe:
+    - test_import_cv2.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenCV Python bindings for emscripten
+  description: |
+    OpenCV (Open Source Computer Vision Library) Python bindings built for WebAssembly.
+    OpenCV is an open source computer vision and machine learning software library.
+  homepage: https://opencv.org/
+
+extra:
+  recipe-maintainers:
+  - copilot
