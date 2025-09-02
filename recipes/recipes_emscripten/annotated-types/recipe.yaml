@@ -1,0 +1,46 @@
+context:
+  name: annotated-types
+  version: 0.7.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name.replace("-", "_") }}-${{ version }}.tar.gz
+  sha256: aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - python
+  - pip
+  - hatchling
+  - cross-python_${{ target_platform }}
+  host:
+  - python
+  run:
+  - python
+  - typing-extensions >=4.0.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_annotated_types.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: MIT
+  license_family: MIT
+  summary: Reusable constraint types to use with typing.Annotated
+  homepage: https://github.com/annotated-types/annotated-types
+  repository: https://github.com/annotated-types/annotated-types
+  documentation: https://github.com/annotated-types/annotated-types
