@@ -1,0 +1,69 @@
+context:
+  name: fiona
+  version: 1.10.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/51/e0/71b63839cc609e1d62cea2fc9774aa605ece7ea78af823ff7a8f1c560e72/fiona-${{ version }}.tar.gz
+  sha256: b00ae357669460c6491caba29c2022ff0acfcbde86a95361ea8ff5cd14a86b68
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython
+  - numpy
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - python
+  - pip
+  - setuptools
+  - cython
+  - numpy
+  # - gdal  # TODO: Add when GDAL recipe is available
+  run:
+  - python
+  - attrs >=19.2.0
+  - certifi
+  - click >=8.0
+  - click-plugins >=1.0
+  - cligj >=0.5
+  # - gdal  # TODO: Add when GDAL recipe is available
+  # - shapely  # Available but depends on working GDAL for fiona
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_fiona.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  
+about:
+  homepage: https://github.com/Toblerity/Fiona
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Fiona reads and writes spatial data files
+  description: |
+    Fiona is a Python wrapper for OGR (part of GDAL). It reads and writes
+    geographic data files and provides a more Pythonic interface to OGR.
+    
+    Note: This recipe requires GDAL which is not yet available in emscripten-forge.
+    The recipe structure is provided for when GDAL becomes available.
+  repository: https://github.com/Toblerity/Fiona
+  documentation: https://fiona.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - copilot
