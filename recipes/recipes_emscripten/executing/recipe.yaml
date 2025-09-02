@@ -1,0 +1,42 @@
+context:
+  version: 2.2.1
+
+package:
+  name: executing
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/e/executing/executing-${{ version }}.tar.gz
+  sha256: ad3bce1ce4a4e3a90a5e3f5b9ffbc6c13a13e1b99bd7ad9c4b8c8d78e5eee4f2
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - python
+  - pip
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  host:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_executing.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/alexmojaki/executing
+  repository: https://github.com/alexmojaki/executing
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Get the currently executing AST node of a frame, and other information

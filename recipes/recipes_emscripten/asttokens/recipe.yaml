@@ -1,0 +1,42 @@
+context:
+  version: 3.0.0
+
+package:
+  name: asttokens
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/a/asttokens/asttokens-${{ version }}.tar.gz
+  sha256: 0dcd8d45681469ece2c5f318e18ab2cd51381114832013b32ccf9bd0ad01e8da
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - python
+  - pip
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  host:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_asttokens.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/gristlabs/asttokens
+  repository: https://github.com/gristlabs/asttokens
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Annotate AST trees with source code positions
