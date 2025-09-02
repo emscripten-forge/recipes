@@ -2,15 +2,13 @@
 # python3 dependency does not find the right headers: it must be added when calling meson
 # pybind11 dependency is not found, due to the lack of pybind11-config: it is also added in meson call
 
-# thread_dep = dependency('threads')
-
 py3_inst = import('python').find_installation('python')
 python3 = py3_inst.dependency()
 
 # pybind11_inc = include_directories(meson.project_build_root() + '/include/pybind11')
 # pybind11 = declare_dependency(include_directories : pybind11_inc)
 
-#pybind11 = dependency('pybind11')
+pybind11 = dependency('pybind11')
 #pybind11_inc = include_directories('/home/pablo/.local/opt/micromamba/envs/emscripten-forge/conda-bld/dynare-preprocessor-pylib-0_1701688424528/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_/include/pybind11')
 #pybind11 = declare_dependency(include_directories : pybind11_inc)
 
@@ -60,7 +58,7 @@ preprocessor_src = [ 'ComputingTasks.cc',
 	             'ParsingDriver.cc',
 	             'DataTree.cc',
 	             'ModFile.cc',
-	             'ConfigFile.cc',
+	             'Configuration.cc',
 	             'Statement.cc',
 	             'ExprNode.cc',
 	             'VariableDependencyGraph.cc',
@@ -71,6 +69,8 @@ preprocessor_src = [ 'ComputingTasks.cc',
 	             'ModelEquationBlock.cc',
 	             'WarningConsolidation.cc',
 	             'SubModel.cc',
+                     'HeterogeneityTable.cc',
+                     'HeterogeneousModel.cc',
                      'macro/Driver.cc',
 	             'macro/Environment.cc',
 	             'macro/Expressions.cc',
@@ -93,6 +93,6 @@ endif
 #           install : true)
 
 py3_inst.extension_module('dynare_preprocessor', preprocessor_src, flex_src, flexlexer_h, bison_src, 'DynLib.cc', include_directories : preprocessor_incdir,
-	dependencies : [boost_dep, python3],
+	dependencies : [boost_dep, python3, pybind11],
 	#dependencies : [boost_dep, python3, pybind11],
     link_args : preprocessor_link_args, install: true)
