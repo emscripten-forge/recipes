@@ -1,0 +1,58 @@
+context:
+  name: gensim
+  version: 4.3.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/ec/bc/36ce4d510085cf150f17d79bb5e88cde942aeba2a894aed5893812ea1e6d/gensim-${{ version }}.tar.gz
+  sha256: 84852076a6a3d88d7dac5be245e24c21c3b819b565e14c1b61fa3e5ee76dcf57
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  - numpy
+  - cython
+  host:
+  - python
+  - numpy
+  - scipy
+  run:
+  - python
+  - numpy >=1.18.5,<2.0
+  - scipy >=1.7.0,<1.14.0
+  - smart-open >=1.8.1
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_gensim.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: LGPL-2.1-only
+  license_file: COPYING
+  summary: Python framework for fast Vector Space Modelling
+  homepage: https://radimrehurek.com/gensim/
+  repository: https://github.com/piskvorky/gensim
+
+extra:
+  recipe-maintainers:
+  - wolfv
+  - IsabelParedes
