@@ -42,7 +42,8 @@ emcmake cmake ${CMAKE_ARGS} \
 # Build step
 emmake ninja install
 
-# Install Python bindings
-if [ -f lib/python3/cv2.so ]; then
-    cp lib/python3/cv2.so ${PREFIX}/lib/python${PY_VER}/site-packages/
+# Install Python bindings manually if they weren't installed automatically
+if [ -f lib/python3/cv2*.so ]; then
+    mkdir -p ${PREFIX}/lib/python${PY_VER}/site-packages/
+    cp lib/python3/cv2*.so ${PREFIX}/lib/python${PY_VER}/site-packages/
 fi
