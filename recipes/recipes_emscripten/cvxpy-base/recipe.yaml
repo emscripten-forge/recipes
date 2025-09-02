@@ -1,0 +1,65 @@
+context:
+  name: cvxpy-base
+  version: 1.7.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/c/cvxpy/cvxpy-${{ version }}.tar.gz
+  sha256: 63b9b6e77e1bccb5b97bbdcf8a0f6e1d0e8bb4c2f82b80ab0efba92374c27e0c
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - python                                   # [build_platform != target_platform]
+  - cross-python_${{ target_platform }}      # [build_platform != target_platform]
+  - pip
+  - setuptools
+  - wheel
+  - numpy                                    # [build_platform != target_platform]
+  host:
+  - python
+  - pip
+  - setuptools
+  - wheel
+  - numpy
+  run:
+  - python
+  - numpy >=1.22.4
+  - scipy >=1.13.0
+  - osqp >=0.6.2
+  - clarabel >=0.5.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_cvxpy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://cvxpy.org
+  repository: https://github.com/cvxpy/cvxpy
+  documentation: https://www.cvxpy.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A domain-specific language for modeling convex optimization problems in Python.
+  description: |
+    CVXPY is a Python-embedded modeling language for convex optimization problems.
+    It lets you express your problem in a natural way that follows the math,
+    rather than in the restrictive standard form required by solvers.
+
+extra:
+  recipe-maintainers:
+  - copilot
