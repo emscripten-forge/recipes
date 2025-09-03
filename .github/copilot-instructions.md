@@ -47,10 +47,7 @@ tests:
 
 to build the recipe you worked on follow the following steps:
 
-* install pixi with:
-
-   curl -fsSL https://pixi.sh/install.sh | sh
-
+* pixi is installed on the system
 * build the recipe with (YOUR_RECIPE_NAME is the name of the directory you created) for the recipe:
 
   pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/YOUR_RECIPE_NAME
