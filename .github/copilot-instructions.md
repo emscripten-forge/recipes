@@ -45,12 +45,20 @@ tests:
 
 ## Check if the recipe is working
 
-to build the recipe you worked on follow the following steps:
+to build the recipe you worked on with rattler-build with:
+(where YOUR_RECIPE_NAME is the name of the directory you created):
 
-* pixi is installed on the system
-* build the recipe with (YOUR_RECIPE_NAME is the name of the directory you created) for the recipe:
 
-  pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/YOUR_RECIPE_NAME
+  rattler-build build \
+  --package-format tar-bz2 \
+  -c https://repo.prefix.dev/emscripten-forge-dev \
+  -c microsoft \
+  -c conda-forge \
+  --target-platform emscripten-wasm32 \
+  --skip-existing none \
+  -m variant.yaml \
+  --recipe recipes/recipes_emscripten/YOUR_RECIPE_NAME
+
 
 * this will build the recipe and run tests 
 * check the output for any errors or warnings and try to resolve them
