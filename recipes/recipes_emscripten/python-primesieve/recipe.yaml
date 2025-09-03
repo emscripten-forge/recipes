@@ -1,0 +1,46 @@
+context:
+  version: 2.3.2
+
+package:
+  name: python-primesieve
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/primesieve/primesieve-${{ version }}.tar.gz
+  sha256: a24b31af1296ee1d2893b30886900a3d21c97819c9b18d1b0a2f9ec52b21a0b5
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
+    - pip
+  host:
+    - python
+    - primesieve
+    - pybind11
+  run:
+    - python
+
+tests:
+  - script: pytester
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+    files:
+      recipe:
+        - test_import_primesieve.py
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Fast prime number generator (Python bindings)
+  homepage: https://github.com/kimwalisch/primesieve-python
+
+extra:
+  recipe-maintainers:
+    - wolfv
