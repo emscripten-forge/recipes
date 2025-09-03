@@ -1,0 +1,47 @@
+context:
+  version: 1.2
+
+package:
+  name: ppl
+  version: ${{ version }}
+
+source:
+  url: http://bugseng.com/products/ppl/download/ftp/releases/${{ version }}/ppl-${{ version }}.tar.gz
+  sha256: 6bc36dd4a87abc429d8f9c00c53e334e5041a9b0857cfc00dbad6ef14294aac8
+
+build:
+  number: 0
+  run_exports:
+    - ${{ pin_subpackage("ppl", max_pin="x.x") }}
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - m4
+    - make
+    - gnuconfig
+    - libtool
+    - autoconf
+  host:
+    - gmp
+    - glpk
+  run:
+    - gmp
+    - glpk
+
+tests:
+  - script:
+    - test -f ${PREFIX}/include/ppl.hh
+    - test -f ${PREFIX}/lib/libppl.a
+    - ppl-config --ldflags | grep "\-lppl"
+
+about:
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: The Parma Polyhedra Library (PPL) provides numerical abstractions for static analysis.
+  homepage: http://bugseng.com/products/ppl/
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
