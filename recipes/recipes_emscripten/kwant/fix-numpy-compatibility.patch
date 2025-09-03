@@ -1,0 +1,39 @@
+From 610db3fccdb7299ba12dee19d2978b0ef2a32cd1 Mon Sep 17 00:00:00 2001
+From: Anton Akhmerov <anton.akhmerov@gmail.com>
+Date: Sat, 27 Jul 2024 23:23:48 +0200
+Subject: [PATCH] fix numpy compatibility
+
+---
+ kwant/_plotter.py | 2 +-
+ kwant/plotter.py  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kwant/_plotter.py b/kwant/_plotter.py
+index e5dd02fc..603af56f 100644
+--- a/kwant/_plotter.py
++++ b/kwant/_plotter.py
+@@ -475,7 +475,7 @@ if mpl_available:
+                 proj = mplot3d.proj3d.proj_transform_clip
+                 cz = proj(*(list(np.dot(corners, bbox)) + [self.axes.M]))[2]
+ 
+-                return -self.zorder3d + vs[2].mean() / cz.ptp()
++                return -self.zorder3d + vs[2].mean() / np.ptp(cz)
+ 
+             def draw(self, renderer):
+                 if self.reflen:
+diff --git a/kwant/plotter.py b/kwant/plotter.py
+index ed169c6f..5f3a870b 100644
+--- a/kwant/plotter.py
++++ b/kwant/plotter.py
+@@ -2165,7 +2165,7 @@ def _spectrum_matplotlib(syst, x, y=None, params=None, mask=None, file=None,
+             raise TypeError(msg)
+         # plot_surface cannot directly handle rank-3 values, so we
+         # explicitly loop over the last axis
+-        grid = np.meshgrid(*array_values)
++        grid = list(np.meshgrid(*array_values))
+         with warnings.catch_warnings():
+             warnings.filterwarnings('ignore', message='Z contains NaN values')
+             for i in range(spectrum.shape[-1]):
+-- 
+2.45.2
+
