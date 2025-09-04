@@ -6,8 +6,11 @@ cd build
 # Configure with CMake for emscripten with minimal dependencies
 emcmake cmake .. \
   -GNinja \
+  -DCMAKE_PREFIX_PATH=$PREFIX \
+  -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX \
   -DCMAKE_INSTALL_PREFIX=${PREFIX} \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_FIND_ROOT_PATH="$PREFIX" \
   -DBUILD_SHARED_LIBS=OFF \
   -DBUILD_TESTING=OFF \
   -DENABLE_PLUGIN_LOADING=OFF \
