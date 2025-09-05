@@ -14,6 +14,10 @@ $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/embuilder build sdl2_ttf --pic
 # Set environment variables for pygame build
 export SDL_VERSION=2.0
 
-# Install pygame-ce using pip which will invoke meson-python
+# Set up cross compilation with meson
+export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross
+
+# Install pygame-ce using pip which will invoke meson-python with cross-compilation
 echo "Installing pygame-ce..."
-python -m pip install . -vv --no-deps --no-build-isolation
+python -m pip install . -vv --no-deps --no-build-isolation \
+    -Csetup-args="--cross-file=$MESON_CROSS_FILE"
