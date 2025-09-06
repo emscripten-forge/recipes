@@ -6,7 +6,9 @@ rm -r -f branding
 
 export CFLAGS="$CFLAGS -Wno-return-type -Wno-implicit-function-declaration"
 export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -sEXPORTED_FUNCTIONS=['_init_numpy']"
+
+
 
 cp $RECIPE_DIR/config/config.h.in  numpy/_core/config.h.in
 # 
