@@ -24,7 +24,8 @@ export LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS"
 emcmake cmake \
     -Bbuild \
     -DCMAKE_PREFIX_PATH=$PREFIX \
-    -Dlibgit2_DIR=$PREFIX/lib/cmake/libgit2
+    -Dlibgit2_DIR=$PREFIX/lib/cmake/libgit2 \
+    -Dtermcolor_DIR=$BUILD_PREFIX/lib/cmake/termcolor
 
 cd build
 emmake make -j$CPU_COUNT
