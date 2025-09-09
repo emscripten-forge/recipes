@@ -71,6 +71,17 @@ tests:
     - lib/package.so
 ```
 
+### Recipe extra section
+
+The extra section in recipe.yaml should be this
+```yaml
+extra:
+  recipe-maintainers:
+  - copilot
+```
+
+Do not add other recipe maintainers.
+
 ## Check if the recipe is working
 
 To build the recipe you worked on with rattler-build with:
