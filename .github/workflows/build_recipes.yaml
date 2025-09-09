@@ -2,18 +2,61 @@ name: build recipes
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-      - 'recipes/**'
+      - "recipes/**"
   pull_request:
     paths:
-      - 'recipes/**'
-
+      - "recipes/**"
 
 jobs:
+  lint_recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install yq
+        run: sudo apt-get update && sudo apt-get install -y yq
+
+      - name: Lint recipes for license fields
+        run: |
+          set -e
+          changed_recipes=$(python -m emci.find_recipes_with_changes origin/main HEAD)
+
+          if [ -z "$changed_recipes" ]; then
+            echo "No recipes modified."
+            exit 0
+          fi
+
+          failed=0
+          for recipe in $changed_recipes; do
+            meta="$recipe/meta.yaml"
+            if [ ! -f "$meta" ]; then
+              continue
+            fi
+
+            license=$(yq -r '.about.license // empty' "$meta")
+            license_family=$(yq -r '.about.license_family // empty' "$meta")
+
+            if [ -z "$license" ] || [ -z "$license_family" ]; then
+              echo "❌ $meta is missing license or license_family"
+              failed=1
+            else
+              echo "✅ $meta has license=$license, license_family=$license_family"
+            fi
+          done
+
+          if [ $failed -ne 0 ]; then
+            echo "One or more recipes are missing required license metadata"
+            exit 1
+          fi
 
   build_recipes:
     runs-on: ubuntu-latest
+    needs: lint_recipes
     env:
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
@@ -38,19 +81,19 @@ jobs:
 
       - name: apt-install playwright dependencies
         run: |
-            sudo apt-get update -y && sudo apt-get install -y  \
-            libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
-            libgstreamer-gl1.0-0 \
-            libgstreamer-plugins-bad1.0-0 \
-            libflite1 \
-            libavif16 \
-            libharfbuzz-icu0 \
-            libsecret-1-0 \
-            libhyphen0 \
-            libmanette-0.2-0 \
-            libgles2 \
-            gstreamer1.0-libav \
-            libgtk-4-1
+          sudo apt-get update -y && sudo apt-get install -y  \
+          libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
+          libgstreamer-gl1.0-0 \
+          libgstreamer-plugins-bad1.0-0 \
+          libflite1 \
+          libavif16 \
+          libharfbuzz-icu0 \
+          libsecret-1-0 \
+          libhyphen0 \
+          libmanette-0.2-0 \
+          libgles2 \
+          gstreamer1.0-libav \
+          libgtk-4-1
       ################################################################
       # CONFIG
       ################################################################
@@ -64,12 +107,12 @@ jobs:
       - name: Install micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          micromamba-version: '1.5.8-0'
+          micromamba-version: "1.5.8-0"
           environment-file: ci_env.yml
           environment-name: ci
           init-shell: bash
           cache-environment: false
-          post-cleanup: 'all'
+          post-cleanup: "all"
 
       ################################################################
       # PUSH
@@ -113,7 +156,7 @@ jobs:
                     --channel emscripten-forge-dev \
                     -a $PREFIX_DEV_API_KEY \
                     ${package}
-                  
+
                   RETURNCODE=$?
 
                   # Check the RETURN CODE
