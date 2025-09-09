@@ -54,7 +54,7 @@ def changed(
                     shutil.copytree(recipe_dir, tmp_recipe_dir)
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
-           
+
             # delete all potential "recipe_legacy.yaml" files
             for root, dirs, files in os.walk(tmp_recipes_root_str):
                 for file in files:
@@ -72,6 +72,17 @@ def bump_recipes_versions(target_branch_name: str):
     from .bot.bump_recipes_versions import bump_recipe_versions
 
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+
+@build_app.command()
+def list_changed(
+    root_dir,
+    old,
+    new
+):
+    """Print changed recipes between two refs as JSON"""
+    recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
+    import json
+    print(json.dumps(recipes_with_changes_per_subdir))
 
 if __name__ == "__main__":
     app()
