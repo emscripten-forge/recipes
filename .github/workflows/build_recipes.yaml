@@ -17,6 +17,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Fetch main branch
+        run: |
+          git fetch origin main
 
       - name: Install micromamba
         uses: mamba-org/setup-micromamba@v1
@@ -35,7 +40,12 @@ jobs:
         shell: bash -el {0}
         run: |
           set -e
-          changed_recipes_json=$(python -m emci.find_recipes_with_changes origin/main HEAD)
+          BASE_REF=${{ github.base_ref }}
+          HEAD_REF=${{ github.sha }}
+
+          echo "Comparing changes between origin/$BASE_REF and $HEAD_REF"
+
+          changed_recipes_json=$(python -m emci.find_recipes_with_changes origin/$BASE_REF $HEAD_REF)
 
           changed_recipes=$(echo "$changed_recipes_json" | yq -r 'to_entries | .[] | .key as $subdir | .value[] | "recipes/\($subdir)/\(. )"')
 
