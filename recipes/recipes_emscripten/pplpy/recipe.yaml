@@ -12,6 +12,9 @@ source:
 
 build:
   number: 0
+  # Note: This recipe requires PPL (Parma Polyhedra Library) and cysignals
+  # which are not yet available for emscripten-wasm32
+  skip: true  # [target_platform == "emscripten-wasm32"]
 
 requirements:
   build:
@@ -21,14 +24,21 @@ requirements:
     - "${{ compiler('cxx') }}"
     - pip
     - cython
+    - setuptools
   host:
     - python
     - gmpy2
     - cffi
+    # TODO: Add when available for emscripten-wasm32:
+    # - ppl  # Parma Polyhedra Library
+    # - cysignals
   run:
     - python
     - gmpy2
     - cffi
+    # TODO: Add when available for emscripten-wasm32:
+    # - ppl
+    # - cysignals
 
 tests:
 - script: pytester
@@ -45,7 +55,12 @@ about:
   homepage: https://github.com/sagemath/pplpy
   license: GPL-3.0
   license_file: COPYING
-  summary: Python PPL wrapper
+  summary: Python PPL wrapper - Python interface to the Parma Polyhedra Library
+  description: |
+    pplpy is a Python wrapper for the Parma Polyhedra Library (PPL).
+    It provides Python bindings to manipulate convex polyhedra and other 
+    numerical abstractions. This package requires PPL and cysignals libraries
+    which need to be ported to emscripten-wasm32 first.
 
 extra:
   recipe-maintainers:
