@@ -74,7 +74,7 @@ def bump_recipes_versions(target_branch_name: str):
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
 @build_app.command()
-def list_changed(
+def recipe(
     old,
     new
 ):
