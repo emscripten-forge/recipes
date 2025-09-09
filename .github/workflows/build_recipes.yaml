@@ -39,13 +39,13 @@ jobs:
 
           changed_recipes=$(echo "$changed_recipes_json" | yq -r 'to_entries | .[] | .key as $subdir | .value[] | "recipes/\($subdir)/\(. )"')
 
+          echo "Changed recipes:"
+          echo "$changed_recipes"
+
           if [ -z "$changed_recipes" ]; then
             echo "No recipes modified."
             exit 0
           fi
-
-          echo "Changed recipes:"
-          echo "$changed_recipes"
 
           failed=0
           for recipe in $changed_recipes; do
