@@ -14,6 +14,7 @@ To add new recipes follow these steps:
 * add a `recipe.yaml` file with the necessary metadata and build instructions
 * include any additional files (e.g., patches, scripts) as needed
 * test the recipe using the appropriate testing framework
+* the title of the PR that adds a new recipe should be "Add [package-name]"
 
 ### Recipe source section
 
