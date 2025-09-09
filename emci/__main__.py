@@ -75,7 +75,6 @@ def bump_recipes_versions(target_branch_name: str):
 
 @build_app.command()
 def list_changed(
-    root_dir,
     old,
     new
 ):
