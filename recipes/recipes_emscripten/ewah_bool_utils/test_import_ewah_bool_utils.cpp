@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        EWAHBoolArray<> bitmap;
+        ewah::EWAHBoolArray<> bitmap;
         bitmap.set(0);
         bitmap.set(100);
         std::cout << "EWAH bool utils import test passed" << std::endl;
