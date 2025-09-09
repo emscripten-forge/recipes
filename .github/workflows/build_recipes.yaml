@@ -41,9 +41,22 @@ jobs:
         run: |
           set -e
 
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="origin/${{ github.base_ref }}"
+            HEAD_REF="HEAD"
+          else
+            BASE_REF="HEAD^"
+            HEAD_REF="HEAD"
+          fi
+
           echo "Comparing changes between origin/$BASE_REF and $HEAD_REF"
 
-          changed_recipes=$(python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD)
+          changed_recipes_json=$(python -m emci.find_recipes_with_changes origin/$BASE_REF $HEAD_REF)
+
+          changed_recipes=$(echo "$changed_recipes_json" | yq -r 'to_entries | .[] | .key as $subdir | .value[] | "recipes/\($subdir)/\(. )"')
+
+          echo "Changed Recipes JSON:"
+          echo "$changed_recipes_json"
 
           echo "Changed recipes:"
           echo "$changed_recipes"
