@@ -40,8 +40,14 @@ jobs:
         shell: bash -el {0}
         run: |
           set -e
-          BASE_REF=${{ github.base_ref }}
-          HEAD_REF=${{ github.sha }}
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="origin/${{ github.base_ref }}"
+            HEAD_REF="HEAD"
+          else
+            BASE_REF="HEAD^"
+            HEAD_REF="HEAD"
+          fi
 
           echo "Comparing changes between origin/$BASE_REF and $HEAD_REF"
 
