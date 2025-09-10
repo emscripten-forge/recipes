@@ -88,7 +88,7 @@ def lint(
     failed = False
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         for recipe in recipe_with_changes:
-            meta_path = Path("recipes") / subdir / recipe / "meta.yaml"
+            meta_path = Path("recipes") / subdir / recipe / "recipe.yaml"
             if not meta_path.exists():
                 print(f"⚠️ Skipping {meta_path}, file not found")
                 continue
