@@ -1,0 +1,51 @@
+context:
+  version: 0.18.15
+
+package:
+  name: ruamel.yaml
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/3e/db/f3950f5e5031b618aae9f423a39bf81a55c148aecd15a34527898e752cf4/ruamel.yaml-${{ version }}.tar.gz
+  sha256: dbfca74b018c4c3fba0b9cc9ee33e53c371194a9000e694995e620490fd40700
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - python
+  run:
+  - ruamel.yaml.clib
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_ruamel_yaml.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/ruamel/ruamel.yaml
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order
+  description: |
+    ruamel.yaml is a YAML parser/emitter that supports roundtrip preservation of comments, 
+    seq/map flow style, and map key order. This package provides full YAML 1.2 support 
+    and preserves comments, flow style, and map key order when round-tripping.
+  repository: https://github.com/ruamel/ruamel.yaml
+
+extra:
+  recipe-maintainers:
+  - Copilot
