@@ -1,0 +1,43 @@
+context:
+  version: 3.2.2
+
+package:
+  name: libflint
+  version: ${{ version }}
+
+source:
+  url: https://github.com/flintlib/flint/releases/download/v${{ version }}/flint-${{ version }}.tar.gz
+  sha256: 577d7729e4c2e79ca1e894ad2ce34bc73516a92f623d42562694817f888a17eb
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - libtool
+    - m4
+    - make
+    - gnuconfig
+  host:
+    - gmp
+    - mpfr
+
+tests:
+  - script:
+    - if: unix or emscripten
+      then:
+        - test -f ${PREFIX}/include/flint/flint.h
+        - test -f ${PREFIX}/lib/libflint.a || test -f ${PREFIX}/lib/libflint.so
+
+about:
+  homepage: http://flintlib.org
+  license: LGPL-3.0-or-later
+  license_file:
+    - COPYING
+    - COPYING.LESSER  
+  summary: Fast Library for Number Theory
+
+extra:
+  recipe-maintainers:
+    - copilot
