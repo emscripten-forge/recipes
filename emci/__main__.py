@@ -95,6 +95,8 @@ def lint(old: str, new: str):
             try:
                 with open(meta_path) as f:
                     meta = yaml.safe_load(f)
+                if isinstance(meta.get('source'), list):
+                    meta['source'] = meta['source'][0]
             except Exception as e:
                 print(f"❌ Failed to parse {meta_path}: {e}")
                 failed = True
