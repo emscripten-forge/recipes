@@ -1,0 +1,56 @@
+context:
+  name: pyxel
+  version: "2.5.4"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- git: https://github.com/kitao/pyxel.git
+  tag: v${{ version }}
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - ${{ compiler("c") }}
+    - setuptools-rust
+    - rust
+    - rust-src
+    - maturin
+  host:
+    - python
+    - openssl
+  run:
+    - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+      - pytester
+    run:
+      - pytester-run
+  files:
+    recipe:
+      - test_import_pyxel.py
+
+about:
+  summary: A retro game engine for Python
+  description: |
+    Pyxel is a retro game engine for Python. Thanks to its simple specifications 
+    inspired by retro gaming consoles, such as only 16 colors can be displayed 
+    and only 4 sounds can be played back at the same time, you can feel free to 
+    enjoy making pixel art style games.
+  homepage: https://github.com/kitao/pyxel
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/kitao/pyxel
+  documentation: https://github.com/kitao/pyxel
+
+extra:
+  recipe-maintainers:
+    - Copilot
