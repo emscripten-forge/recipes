@@ -17,12 +17,20 @@ export EMSDK_PYTHON=${BUILD_PREFIX}/bin/python
 
 export EMSDK=.
 
-echo "emsdk patching"
+# echo "emsdk patching"
+# pushd upstream/emscripten
+# cat $RECIPE_DIR/patches/*.patch | patch -p1 --verbose
+# popd
+# echo "...done"
+
+# applying each patch individually to get better error messages
 pushd upstream/emscripten
-cat $RECIPE_DIR/patches/*.patch | patch -p1 --verbose
+for patch in $RECIPE_DIR/patches/*.patch; do
+    echo "Applying patch $patch"
+    patch -p1 --verbose < $patch
+done
 popd
 echo "...done"
-
 
 mkdir -p $PREFIX/opt/emsdk/
 cp -r $EMSDK/upstream $PREFIX/opt/emsdk/upstream
@@ -49,7 +57,9 @@ for file in $PREFIX/opt/emsdk/upstream/emscripten/*; do
   fi
 done
 
-# Add wasm-opt wrapper. See NOTE in patches/wasm-opt-wrapper.
+# THIS CAN PROBABLY BE REMOVED SINCE WE ARE AT 4.x
+
+#Add wasm-opt wrapper. See NOTE in patches/wasm-opt-wrapper.
 EMSDK_DIR=$PREFIX/opt/emsdk/upstream
 mv $EMSDK_DIR/bin/wasm-opt $EMSDK_DIR/bin/wasm-opt-original
 cp $RECIPE_DIR/patches/wasm-opt-wrapper $EMSDK_DIR/bin/wasm-opt
