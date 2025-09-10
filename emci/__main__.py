@@ -140,9 +140,9 @@ def lint(old: str, new: str):
 
             try:
                 Recipe.model_validate(meta)  # ✅ v2 style
-                print(f"✅ {meta_path} passed validation")
+                print(f"✅ {recipe} passed validation")
             except Exception as e:
-                print(f"❌ {meta_path} failed validation: {e}")
+                print(f"❌ {recipe} failed validation: {e}")
                 failed = True
 
     if failed:
