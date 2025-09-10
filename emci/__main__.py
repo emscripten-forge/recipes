@@ -80,7 +80,7 @@ def lint(
     new: str,
 ):
     """
-    Check that all changed recipes have 'license' and 'license_family' fields in meta.yaml.
+    Check that all changed recipes have 'license' and 'license_file' fields in meta.yaml.
     Exits with code 1 if any recipe is missing these.
     """
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
@@ -102,13 +102,13 @@ def lint(
                     continue
 
             license_field = meta.get("about", {}).get("license")
-            license_family_field = meta.get("about", {}).get("license_family")
+            license_file_field = meta.get("about", {}).get("license_file")
 
-            if not license_field or not license_family_field:
-                print(f"❌ {meta_path} is missing license or license_family")
+            if not license_field or not license_file_field:
+                print(f"❌ {meta_path} is missing license or license_file")
                 failed = True
             else:
-                print(f"✅ {meta_path} has license={license_field}, license_family={license_family_field}")
+                print(f"✅ {meta_path} has license={license_field}, license_file={license_file_field}")
 
     if failed:
         print("One or more recipes are missing required license metadata")
