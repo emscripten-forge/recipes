@@ -1,0 +1,45 @@
+context:
+  name: lazy-object-proxy
+  version: 1.12.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+  sha256: 1f5a462d92fd0cfb82f1fab28b51bfb209fabbe6aabf7f0d51472c0c124c0c61
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_lazy_object_proxy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A fast and thorough lazy object proxy.
+  description: |
+    A fast and thorough lazy object proxy library.
+  homepage: https://github.com/ionelmc/python-lazy-object-proxy
