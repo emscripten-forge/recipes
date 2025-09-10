@@ -78,7 +78,7 @@ The extra section in recipe.yaml should be this
 ```yaml
 extra:
   recipe-maintainers:
-  - copilot
+  - Copilot
 ```
 
 Do not add other recipe maintainers.
