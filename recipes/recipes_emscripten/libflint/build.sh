@@ -2,18 +2,18 @@
 
 set -ex
 
-# Configure FLINT with minimal dependencies for emscripten
+# Configure FLINT for emscripten target
 ./configure \
     --prefix=$PREFIX \
-    --host=$HOST \
     --disable-shared \
     --enable-static \
     --with-gmp=$PREFIX \
     --with-mpfr=$PREFIX \
     --disable-pthread \
-    --disable-tls \
-    --disable-doc \
-    --disable-examples
+    --disable-thread-safe \
+    --disable-reentrant \
+    --disable-assembly \
+    --enable-gmp-internals
 
 # Build
 make -j${CPU_COUNT}
