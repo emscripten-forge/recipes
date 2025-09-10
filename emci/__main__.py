@@ -10,6 +10,7 @@ from pathlib import Path
 
 from typing import Optional
 import typer
+import yaml
 
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
@@ -74,14 +75,47 @@ def bump_recipes_versions(target_branch_name: str):
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
 @build_app.command()
-def recipe(
-    old,
-    new
+def lint(
+    old: str,
+    new: str,
 ):
-    """Print changed recipes between two refs as JSON"""
+    """
+    Check that all changed recipes have 'license' and 'license_family' fields in meta.yaml.
+    Exits with code 1 if any recipe is missing these.
+    """
+
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
-    import json
-    print(json.dumps(recipes_with_changes_per_subdir))
+
+    failed = False
+    for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
+        for recipe in recipe_with_changes:
+            meta_path = Path("recipes") / subdir / recipe / "meta.yaml"
+            if not meta_path.exists():
+                print(f"⚠️ Skipping {meta_path}, file not found")
+                continue
+
+            with open(meta_path) as f:
+                try:
+                    meta = yaml.safe_load(f)
+                except Exception as e:
+                    print(f"❌ Failed to parse {meta_path}: {e}")
+                    failed = True
+                    continue
+
+            license_field = meta.get("about", {}).get("license")
+            license_family_field = meta.get("about", {}).get("license_family")
+
+            if not license_field or not license_family_field:
+                print(f"❌ {meta_path} is missing license or license_family")
+                failed = True
+            else:
+                print(f"✅ {meta_path} has license={license_field}, license_family={license_family_field}")
+
+    if failed:
+        print("One or more recipes are missing required license metadata")
+        sys.exit(1)
+    else:
+        print("✅ All changed recipes have license metadata")
 
 if __name__ == "__main__":
     app()

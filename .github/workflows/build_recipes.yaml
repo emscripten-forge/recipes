@@ -33,9 +33,6 @@ jobs:
           cache-environment: false
           post-cleanup: "all"
 
-      - name: Install yq
-        run: sudo apt-get update && sudo apt-get install -y yq
-
       - name: Lint recipes for license fields
         shell: bash -el {0}
         run: |
@@ -50,43 +47,7 @@ jobs:
           fi
 
           echo "Comparing changes between $BASE_REF and $HEAD_REF"
-
-          changed_recipes_json=$(python -m emci build recipe $BASE_REF $HEAD_REF)
-          changed_recipes=$(echo "$changed_recipes_json" | yq -r 'to_entries | .[] | .key as $subdir | .value[] | "'$GITHUB_WORKSPACE'/\($subdir)/\(. )"')
-
-          echo "Changed Recipes JSON:"
-          echo "$changed_recipes_json"
-
-          echo "Changed recipes:"
-          echo "$changed_recipes"
-
-          if [ -z "$changed_recipes" ]; then
-            echo "No recipes modified."
-            exit 0
-          fi
-
-          failed=0
-          for recipe in $changed_recipes; do
-            meta="$recipe/meta.yaml"
-            if [ ! -f "$meta" ]; then
-              continue
-            fi
-
-            license=$(yq -r '.about.license // empty' "$meta")
-            license_family=$(yq -r '.about.license_family // empty' "$meta")
-
-            if [ -z "$license" ] || [ -z "$license_family" ]; then
-              echo "❌ $meta is missing license or license_family"
-              failed=1
-            else
-              echo "✅ $meta has license=$license, license_family=$license_family"
-            fi
-          done
-
-          if [ $failed -ne 0 ]; then
-            echo "One or more recipes are missing required license metadata"
-            exit 1
-          fi
+          python -m emci build lint_licenses $BASE_REF $HEAD_REF
 
   build_recipes:
     runs-on: ubuntu-latest
