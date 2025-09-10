@@ -1,0 +1,59 @@
+context:
+  name: msgspec
+  version: 0.19.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 604037e7cd475345848116e89c553aa9a233259733ab51986ac924ab1b976f8e
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_msgspec.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: |
+    A fast serialization and validation library, with builtin support for
+    JSON, MessagePack, YAML, and TOML.
+  description: |
+    msgspec is a fast serialization and validation library, with builtin 
+    support for JSON, MessagePack, YAML, and TOML. It features:
+    - High performance JSON, MessagePack, YAML & TOML de/serialization
+    - Flexible schema validation and type coercion  
+    - Support for dataclasses, NamedTuple, Struct, and other types
+    - JSON Schema generation
+    - Detailed error messages
+  homepage: https://jcristharif.com/msgspec/
+  repository: https://github.com/jcrist/msgspec
+
+extra:
+  recipe-maintainers:
+  - copilot
