@@ -83,7 +83,6 @@ def lint(
     Check that all changed recipes have 'license' and 'license_family' fields in meta.yaml.
     Exits with code 1 if any recipe is missing these.
     """
-
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
 
     failed = False
