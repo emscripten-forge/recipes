@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 import typer
 import yaml
+from pydantic import BaseModel, constr, field_validator
 
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
@@ -74,14 +75,39 @@ def bump_recipes_versions(target_branch_name: str):
 
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
+# --------------------------
+# Pydantic schema definitions
+# --------------------------
+
+class Source(BaseModel):
+    url: constr(pattern=r"^https://.*\.(tar\.gz|zip)$")
+    sha256: constr(pattern=r"^[0-9a-f]{64}$")
+
+    @field_validator("url")
+    @classmethod
+    def no_template(cls, v: str) -> str:
+        if "${" in v or "{{" in v or "}}" in v:
+            raise ValueError("source.url must not contain templating")
+        return v
+
+
+class About(BaseModel):
+    license: str
+    license_file: str
+    license_family: Optional[str] = None
+
+
+class Recipe(BaseModel):
+    about: About
+    source: Source
+
+
 @build_app.command()
-def lint(
-    old: str,
-    new: str,
-):
+def lint(old: str, new: str):
     """
-    Check that all changed recipes have 'license' and 'license_file' fields in meta.yaml.
-    Exits with code 1 if any recipe is missing these.
+    Validate that all changed recipes have valid metadata using Pydantic schema.
+    Checks license fields and source formatting.
+    Exits with code 1 if any recipe fails validation.
     """
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
 
@@ -93,28 +119,27 @@ def lint(
                 print(f"⚠️ Skipping {meta_path}, file not found")
                 continue
 
-            with open(meta_path) as f:
-                try:
+            try:
+                with open(meta_path) as f:
                     meta = yaml.safe_load(f)
-                except Exception as e:
-                    print(f"❌ Failed to parse {meta_path}: {e}")
-                    failed = True
-                    continue
-
-            license_field = meta.get("about", {}).get("license")
-            license_file_field = meta.get("about", {}).get("license_file")
-
-            if not license_field or not license_file_field:
-                print(f"❌ {meta_path} is missing license or license_file")
+            except Exception as e:
+                print(f"❌ Failed to parse {meta_path}: {e}")
                 failed = True
-            else:
-                print(f"✅ {meta_path} has license={license_field}, license_file={license_file_field}")
+                continue
+
+            try:
+                Recipe.model_validate(meta)  # ✅ v2 style
+                print(f"✅ {meta_path} passed validation")
+            except Exception as e:
+                print(f"❌ {meta_path} failed validation: {e}")
+                failed = True
 
     if failed:
-        print("One or more recipes are missing required license metadata")
+        print("❌ One or more recipes failed validation")
         sys.exit(1)
     else:
-        print("✅ All changed recipes have license metadata")
+        print("✅ All changed recipes passed validation")
+
 
 if __name__ == "__main__":
     app()
