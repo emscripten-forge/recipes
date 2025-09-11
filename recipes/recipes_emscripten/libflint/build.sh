@@ -2,8 +2,11 @@
 
 set -ex
 
-# Configure FLINT for emscripten target
-./configure \
+# Get updated config files for cross-compilation
+cp $BUILD_PREFIX/share/gnuconfig/config.* . || true
+
+# Configure FLINT for emscripten target using emconfigure for cross-compilation
+emconfigure ./configure \
     --prefix=$PREFIX \
     --disable-shared \
     --enable-static \
