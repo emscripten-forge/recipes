@@ -26,7 +26,7 @@ class Source(BaseModel):
 
 class About(BaseModel):
     license: str
-    license_file: str
+    license_file: str | list[str]
     license_family: Optional[str] = None
 
 
