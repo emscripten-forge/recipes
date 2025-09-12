@@ -7,7 +7,7 @@ export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # Configure step
-emcmake ${CMAKE_ARGS} ..              \
+cmake ${CMAKE_ARGS} ..              \
     -GNinja                         \
     -DCMAKE_BUILD_TYPE=Release      \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
@@ -23,4 +23,5 @@ emcmake ${CMAKE_ARGS} ..              \
 ninja install
 
 
-cp $PREFIX/lib/libz_static.a  $PREFIX/lib/libz.a
+cp $PREFIX/lib/libz.so.${VERSION} $PREFIX/lib/libz.so
+cp $PREFIX/lib/libz_static.a $PREFIX/lib/libz.a
