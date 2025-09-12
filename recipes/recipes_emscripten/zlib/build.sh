@@ -3,8 +3,8 @@ cp $RECIPE_DIR/patches/CMakeLists.txt .
 mkdir build
 cd build
 
-export CMAKE_PREFIX_PATH=$PREFIX 
-export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
+export CMAKE_PREFIX_PATH=$PREFIX
+export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # Configure step
 cmake ${CMAKE_ARGS} ..              \
@@ -23,4 +23,5 @@ cmake ${CMAKE_ARGS} ..              \
 ninja install
 
 
-cp $PREFIX/lib/libz_static.a  $PREFIX/lib/libz.a
+cp $PREFIX/lib/libz.so.${VERSION} $PREFIX/lib/libz.so
+cp $PREFIX/lib/libz_static.a $PREFIX/lib/libz.a
