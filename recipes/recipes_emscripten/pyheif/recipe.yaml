@@ -1,0 +1,60 @@
+context:
+  name: pyheif
+  version: 0.8.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e9b4c11ebad482fc25a0804ce295b44b660cbf7829a228f56b071f325f9e0de4
+  patches:
+  - patches/0001-Use-prefix-dirs.patch
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - python
+  - pip
+  - setuptools
+  - cffi
+  - pkg-config
+  host:
+  - python
+  - cffi
+  - libheif
+  - pycparser
+  run:
+  - python
+  - cffi
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyheif.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/carsales/pyheif
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python 3.6+ interface to libheif library using CFFI
+  description: |
+    pyheif is a Python 3.6+ interface to libheif library using CFFI.
+    It allows reading HEIF/HEIC images in Python.
+    Note: currently only reading is supported.
+
+extra:
+  recipe-maintainers:
+  - Copilot
