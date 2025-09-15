@@ -8,6 +8,7 @@ cp $BUILD_PREFIX/share/gnuconfig/config.* . || true
 # Configure FLINT for emscripten target using emconfigure for cross-compilation
 emconfigure ./configure \
     --prefix=$PREFIX \
+    --host="wasm32-unknown-emscripten" \
     --disable-shared \
     --enable-static \
     --with-gmp=$PREFIX \
