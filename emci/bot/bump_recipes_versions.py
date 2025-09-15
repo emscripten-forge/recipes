@@ -200,7 +200,7 @@ def try_to_merge_pr(pr, recipe_dir=None):
     if passed.returncode == 0 and automerge_is_enabled(pr):
         # PR passed and automerge is enabled, let's merge it
         subprocess.check_output(['gh', 'pr', 'comment', str(pr), '--body', 'CI passed! I\'m merging'])
-        subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--rebase', '--delete-branch', '--admin'])
+        subprocess.check_output(['gh', 'pr', 'merge', str(pr), '--squash', '--delete-branch', '--admin'])
     else:
         # Pin recipe maintainer? Or add assignee?
         subprocess.check_output(['gh', 'pr', 'edit', str(pr), '--add-label', 'Needs Human Review'])
