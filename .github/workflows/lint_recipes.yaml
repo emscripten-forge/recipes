@@ -1,0 +1,47 @@
+name: Lint Recipes
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "recipes/**"
+  pull_request:
+    paths:
+      - "recipes/**"
+
+jobs:
+  lint_recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Fetch main branch
+        run: git fetch origin main
+
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: ci_env.yml
+          init-shell: bash
+          post-cleanup: "all"
+
+      - name: Lint recipes
+        shell: bash -el {0}
+        run: |
+          set -e
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="origin/main"
+            HEAD_REF="HEAD"
+          else
+            BASE_REF="HEAD~1"
+            HEAD_REF="HEAD"
+          fi
+
+          echo "Comparing changes between $BASE_REF and $HEAD_REF"
+          python -m emci build lint $BASE_REF $HEAD_REF
