@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# Configure cross-compilation for bundled libsodium
-# PyNaCl will build its bundled libsodium during pip install
-# We need to set environment variables that will be passed to libsodium's configure script
+# Configure cross-compilation for PyNaCl's bundled libsodium
+# PyNaCl builds its bundled libsodium and needs to know about cross-compilation
 
-# Set the configure arguments for the bundled libsodium
-export LIBSODIUM_CONFIGURE_ARGS="--host=wasm32-unknown-emscripten"
-
-# Alternative environment variables that PyNaCl might use
-export CONFIGURE_ARGS="--host=wasm32-unknown-emscripten"
+# Set environment variables that autotools/configure scripts recognize
 export CHOST="wasm32-unknown-emscripten"
+
+# PyNaCl specific environment variables for bundled libsodium
+export LIBSODIUM_MAKE_ARGS=""
+export LIBSODIUM_CONFIGURE_ARGS="--host=wasm32-unknown-emscripten"
 
 # Build PyNaCl
 $PYTHON -m pip install . $PIP_ARGS
