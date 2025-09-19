@@ -1,0 +1,51 @@
+context:
+  name: fastcan
+  version: 0.4.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a4d3b285671920ed413462a4a3536794f494cd4373501a68f6820e1ecb151fbe
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - cython
+    - meson-python
+    - pip
+  host:
+    - python
+    - scikit-learn >=1.7.0
+  run:
+    - python
+    - scikit-learn >=1.7.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_fastcan.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A fast canonical-correlation-based greedy search algorithm
+  homepage: https://fastcan.readthedocs.io/en/latest/
+  repository: https://github.com/scikit-learn-contrib/fastcan/
+
+extra:
+  recipe-maintainers:
+    - MatthewSZhang
