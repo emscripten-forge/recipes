@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export CFLAGS="$CFLAGS -fPIC -I$PREFIX/include"
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+export CFLAGS="$CFLAGS -fPIC -fwasm-exceptions -I$PREFIX/include"
+export LDFLAGS="$LDFLAGS -fwasm-exceptions -L$PREFIX/lib"
 
 ./autogen.sh
 emconfigure ./configure \
