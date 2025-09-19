@@ -1,13 +1,11 @@
-# FIXME: libz.so has the wrong magic bytes
 rm $PREFIX/lib/libz.so*
 
 # Get an updated config.sub and config.guess
 cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
 
-# atomics and bulk-memory are required for cairo
-export CFLAGS="-I$PREFIX/include -matomics -mbulk-memory -fPIC"
-export CPPFLAGS="-I$PREFIX/include"
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+export CFLAGS="-I$PREFIX/include -fPIC -fwasm-exceptions"
+export CPPFLAGS="-I$PREFIX/include -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib -fwasm-exceptions"
 
 mkdir -p build
 cd build
