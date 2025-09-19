@@ -1,5 +1,9 @@
 #!/bin/bash
 
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export CXXFLAGS="$CXXFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -fwasm-exceptions"
+
 mkdir bld
 cd bld
 
