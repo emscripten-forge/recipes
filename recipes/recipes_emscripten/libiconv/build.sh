@@ -5,8 +5,12 @@ set -eux
 mkdir _build
 cd _build
 
+export CFLAGS="$CFLAGS -fPIC -fwasm-exceptions"
+export CXXFLAGS="$CXXFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -fwasm-exceptions"
+
 emconfigure ../configure \
-    CFLAGS="-fPIC" \
+    CFLAGS="$CFLAGS" \
     --prefix=$PREFIX \
     --build="x86_64-conda-linux-gnu" \
     --host="wasm32-unknown-emscripten" \
