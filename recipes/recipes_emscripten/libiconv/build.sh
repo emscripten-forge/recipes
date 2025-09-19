@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux
+set -ex
 
 mkdir _build
 cd _build
