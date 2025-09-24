@@ -1,0 +1,35 @@
+context:
+  version: 12.5
+
+package:
+  name: primesieve
+  version: ${{ version }}
+
+source:
+  url: https://github.com/kimwalisch/primesieve/archive/v${{ version }}.tar.gz
+
+build:
+  number: 0
+  run_exports:
+    - ${{ pin_subpackage('primesieve', upper_bound='x.x.x') }}
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+
+tests:
+  - script:
+    - test -f ${PREFIX}/lib/libprimesieve.a
+    - test -d ${PREFIX}/include/primesieve
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Fast C++ prime number generator
+  homepage: https://github.com/kimwalisch/primesieve
+
+extra:
+  recipe-maintainers:
+    - wolfv
