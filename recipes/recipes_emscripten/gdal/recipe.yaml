@@ -1,0 +1,72 @@
+context:
+  name: gdal
+  version: 3.8.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://download.osgeo.org/gdal/${{ version }}/gdal-${{ version }}.tar.xz
+  sha256: 48b09c6e1bb3a65c3d85abd2a55c8c5a2b1d6ba2b0e86e4bf0fce9c4b79e7eb8
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cmake
+  - make
+  - ninja
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - zlib
+  - libtiff
+  - sqlite
+  - proj
+  - geos
+  - hdf5
+  - libnetcdf
+  - libjpeg-turbo
+  - libpng
+  - expat
+  - libxml2
+  run:
+  - zlib
+  - libtiff
+  - sqlite
+  - proj
+  - geos
+  - hdf5
+  - libnetcdf
+  - libjpeg-turbo
+  - libpng
+  - expat
+  - libxml2
+
+tests:
+- script:
+  - test -f ${PREFIX}/include/gdal.h
+  - test -f ${PREFIX}/include/gdal_alg.h
+  - test -f ${PREFIX}/include/ogr_api.h
+  - test -f ${PREFIX}/lib/libgdal.a
+
+about:
+  homepage: https://gdal.org/
+  license: MIT
+  license_file: LICENSE.TXT
+  summary: Geospatial Data Abstraction Library
+  description: |
+    GDAL is a translator library for raster and vector geospatial data formats
+    that is released under an X/MIT style Open Source License by the Open
+    Source Geospatial Foundation. As a library, it presents a single raster
+    abstract data model and single vector abstract data model to the calling
+    application for all supported formats. It also comes with a variety of
+    useful command line utilities for data translation and processing.
+  documentation: https://gdal.org/
+  repository: https://github.com/OSGeo/gdal
+
+extra:
+  recipe-maintainers:
+  - KGB99
