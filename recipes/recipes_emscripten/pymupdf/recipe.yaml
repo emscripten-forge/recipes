@@ -1,372 +1,35 @@
-package:
+context:
   name: pymupdf
   version: "1.26.3"
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
-- url: https://files.pythonhosted.org/packages/source/p/pymupdf/pymupdf-1.26.3.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
   sha256: b7d2c3ffa9870e1e4416d18862f5ccd356af5fe337b4511093bbbce2ca73b7e5
 
 build:
   number: 0
   script: |
-    - |
-      git clone --depth=1 --branch 1.26.3 https://github.com/ArtifexSoftware/mupdf.git $SRC_DIR/mupdf-patched
-      cd $SRC_DIR/mupdf-patched
-      # Fix TOFU_BASE14 filter missing implementation in Makefile
-      awk '/TOFU_CJK_LANG\|}/{ if (/}/) { print "\t@sed -i -e \"s/TOFU_BASE14=/TOFU_BASE14=1/g\" $$@"; print $0 } else print }; !/TOFU_CJK_LANG\|}/' Makefile > Makefile.tmp && mv Makefile.tmp Makefile
-      # Disable ZXing C++ barcode support by changing barcode=yes to barcode=no in scripts/mupdfwrap.py 
-      sed -i 's/barcode=yes/barcode=no/g' scripts/mupdfwrap.py
-      # Complete Brotli removal - examine Makefile structure and remove all dependencies systematically
-      cp Makefile Makefile.orig
-      # Debug: Examine current Makefile structure
-      echo "=== BROTLI DEPENDENCIES BEFORE PATCHING ==="
-      grep -n "brotli\|BROTLI" Makefile || echo "No Brotli found"
-      echo "=== LIBRARY TARGET LINES ==="
-      grep -n "libmupdf.*\.so" Makefile || echo "No shared library targets found"
-      
-      # Try a more comprehensive removal approach
-      # First remove all variable definitions containing BROTLI
-      sed -i '/^.*BROTLI.*:=/d' Makefile
-      sed -i '/^.*BROTLI.*=/d' Makefile
-      # Remove any lines that reference BROTLI variables
-      sed -i '/$(BROTLI/d' Makefile
-      # Remove source file paths containing brotli
-      sed -i '/thirdparty\/brotli/d' Makefile
-      # Remove include paths containing brotli
-      sed -i '/-Ithirdparty\/brotli/d' Makefile
-      # Remove any remaining brotli references (case insensitive)
-      sed -i '/[Bb][Rr][Oo][Tt][Ll][Ii]/d' Makefile
-      
-      # Debug: Check what's left
-      echo "=== AFTER COMPREHENSIVE CLEANUP ==="
-      grep -n "brotli\|BROTLI\|Brotli" Makefile || echo "Brotli completely removed"
-      
-      # Create minimal stub Brotli source files instead of trying to remove all references
-      mkdir -p thirdparty/brotli/c/common thirdparty/brotli/c/dec thirdparty/brotli/c/enc
-      
-      # Create stub constants.c
-      cat > thirdparty/brotli/c/common/constants.c << 'BROTEOF'
-      /* Stub implementation for WebAssembly build */
-      const unsigned char kBrotliUTF8Table[256] = {0};
-      const unsigned char kBrotliContextLookupTable[256] = {0};
-      const unsigned char kBrotliPrefixCodeRanges[256] = {0};
-      BROTEOF
-      
-      # Create stub context.c  
-      cat > thirdparty/brotli/c/common/context.c << 'BROTEOF'
-      /* Stub implementation for WebAssembly build */
-      #include "mupdf/fitz.h"
-      const unsigned char* BrotliGetContext(int mode, const unsigned char* data, int mask) { return data; }
-      BROTEOF
-      
-      # Create stub dictionary.c
-      cat > thirdparty/brotli/c/common/dictionary.c << 'BROTEOF'
-      /* Stub implementation for WebAssembly build */
-      const unsigned char kBrotliDictionary[122784] = {0};
-      const unsigned int kBrotliDictionaryOffsetsByLength[256] = {0};
-      const unsigned char kBrotliDictionarySizeBitsByLength[256] = {0};
-      BROTEOF
-      
-      # Create other common stub files
-      echo "void stub_function(void) {}" > thirdparty/brotli/c/common/platform.c
-      echo "void stub_function(void) {}" > thirdparty/brotli/c/common/transform.c
-      
-      # Create decoder stubs
-      echo "void stub_function(void) {}" > thirdparty/brotli/c/dec/bit_reader.c
-      echo "void stub_function(void) {}" > thirdparty/brotli/c/dec/decode.c
-      echo "void stub_function(void) {}" > thirdparty/brotli/c/dec/huffman.c
-      echo "void stub_function(void) {}" > thirdparty/brotli/c/dec/state.c
-    
-    # Disable barcode support in mupdfwrap.py for WebAssembly compatibility
-    sed -i 's/barcode=yes/barcode=no/g' scripts/wrap/__main__.py
-    
-    # Create complete stub implementations for missing libraries
-        # Replace filter-dct.c with stub implementation (matching correct signature)
-    cat > source/fitz/filter-dct.c << 'DCTEOF'
-    #include "mupdf/fitz.h"
-    /* Stub implementation when jpeg library is not available */
-    fz_stream *fz_open_dctd(fz_context *ctx, fz_stream *chain, int color_transform, int invert_cmyk, int l2factor, fz_stream *jpegtables)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "DCT decoding not supported in WebAssembly build");
-    	return NULL;
-    }
-    
-    fz_stream *fz_open_dcte(fz_context *ctx, fz_stream *chain, int color_transform, int effort, int invert_cmyk)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "DCT encoding not supported in WebAssembly build");
-    	return NULL;
-    }
-    DCTEOF
-    
-    # Replace filter-jbig2.c with stub implementation  
-    cat > source/fitz/filter-jbig2.c << 'JBIGEOF'
-    #include "mupdf/fitz.h"
-    /* Stub implementation when jbig2lib is not available */
-    fz_stream *fz_open_jbig2d(fz_context *ctx, fz_stream *chain, fz_jbig2_globals *globals, int embedded)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "JBIG2 decoding not supported in WebAssembly build");
-    	return NULL;
-    }
-    
-    void fz_drop_jbig2_globals(fz_context *ctx, fz_jbig2_globals *globals)
-    {
-    	/* No-op stub for WebAssembly build */
-    }
-    
-    fz_jbig2_globals *fz_load_jbig2_globals(fz_context *ctx, fz_buffer *buf)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "JBIG2 globals not supported in WebAssembly build");
-    	return NULL;
-    }
-    JBIGEOF
-    
-    # Replace encode-jpx.c with stub implementation to handle openjpeg dependency
-    cat > source/fitz/encode-jpx.c << 'JPXEOF'
-    #include "mupdf/fitz.h"
-    /* Stub implementation when openjpeg library is not available */
-    fz_buffer *fz_new_buffer_from_image_as_jpx(fz_context *ctx, fz_image *image, fz_color_params color_params, int quality)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "JPX encoding not supported in WebAssembly build");
-    	return NULL;
-    }
-    JPXEOF
-    
-    # Replace font.c with minimal stub implementation to avoid freetype dependency
-    cat > source/fitz/font.c << 'FONTEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal font stub implementation for WebAssembly build without freetype */
-    fz_font *fz_new_font_from_buffer(fz_context *ctx, const char *name, fz_buffer *buffer, int index, int use_glyph_bbox)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "Font loading not supported in WebAssembly build");
-    	return NULL;
-    }
-    fz_font *fz_new_font_from_file(fz_context *ctx, const char *name, const char *path, int index, int use_glyph_bbox)
-    {
-    	fz_throw(ctx, FZ_ERROR_GENERIC, "Font loading not supported in WebAssembly build");
-    	return NULL;
-    }
-    FONTEOF
-    
-    # Replace harfbuzz.c with minimal stub implementation
-    cat > source/fitz/harfbuzz.c << 'HBEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal harfbuzz stub implementation for WebAssembly build */
-    int fz_use_harfbuzz(void)
-    {
-    	return 0;  // Harfbuzz disabled
-    }
-    void fz_hb_lock(fz_context *ctx)
-    {
-    	/* No-op stub */
-    }
-    void fz_hb_unlock(fz_context *ctx)
-    {
-    	/* No-op stub */
-    }
-    HBEOF
-    
-    # Replace jmemcust.c with minimal stub implementation to avoid JPEG dependency
-    cat > source/fitz/jmemcust.c << 'JMEMEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal JPEG memory stub implementation for WebAssembly build */
-    /* This file would normally provide custom memory management for JPEG library */
-    /* Since we're avoiding JPEG dependencies, provide minimal stub */
-    JMEMEOF
-    
-    # Replace load-jbig2.c with minimal stub implementation to avoid JBIG2 dependency  
-    cat > source/fitz/load-jbig2.c << 'JBIG2EOF'
-    #include "mupdf/fitz.h"
-    /* Minimal JBIG2 loader stub implementation for WebAssembly build */
-    fz_pixmap *fz_load_jbig2(fz_context *ctx, const unsigned char *data, size_t size)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "JBIG2 loading not supported in WebAssembly build");
-        return NULL;
-    }
-    JBIG2EOF
-    
-    # Replace output-docx.c with minimal stub implementation to avoid extract library dependency
-    cat > source/fitz/output-docx.c << 'DOCXEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal DOCX output stub implementation for WebAssembly build */
-    void fz_save_document_as_docx(fz_context *ctx, fz_document *doc, const char *filename, const char *options)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "DOCX export not supported in WebAssembly build");
-    }
-    fz_output *fz_new_output_with_docx(fz_context *ctx, fz_output *chain, const char *options)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "DOCX output not supported in WebAssembly build");
-        return NULL;
-    }
-    DOCXEOF
-    
-    # Replace stext-output.c with minimal stub to avoid freetype dependencies
-    cat > source/fitz/stext-output.c << 'STEXTEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal stext output stub implementation for WebAssembly build */
-    void fz_print_stext_page_as_html(fz_context *ctx, fz_output *out, fz_stext_page *page, int id)
-    {
-        fz_write_string(ctx, out, "<html><body>Text extraction not supported in WebAssembly build</body></html>");
-    }
-    void fz_print_stext_page_as_xml(fz_context *ctx, fz_output *out, fz_stext_page *page, int id)
-    {
-        fz_write_string(ctx, out, "<xml>Text extraction not supported in WebAssembly build</xml>");
-    }
-    void fz_print_stext_page_as_text(fz_context *ctx, fz_output *out, fz_stext_page *page)
-    {
-        fz_write_string(ctx, out, "Text extraction not supported in WebAssembly build");
-    }
-    void fz_print_stext_page_as_json(fz_context *ctx, fz_output *out, fz_stext_page *page, float scale)
-    {
-        fz_write_string(ctx, out, "{\"error\": \"Text extraction not supported in WebAssembly build\"}");
-    }
-    STEXTEOF
-    
-    # Replace xml.c with minimal stub to avoid gumbo-parser dependency
-    cat > source/fitz/xml.c << 'XMLEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal XML parser stub implementation for WebAssembly build */
-    fz_xml_doc *fz_parse_xml(fz_context *ctx, fz_buffer *buf, int preserve_white)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "XML parsing not supported in WebAssembly build");
-        return NULL;
-    }
-    void fz_detach_xml(fz_context *ctx, fz_xml *node)
-    {
-        // Stub - no operation
-    }
-    fz_xml *fz_xml_find(fz_xml *item, const char *tag)
-    {
-        return NULL;
-    }
-    fz_xml *fz_xml_find_next(fz_xml *item, const char *tag)
-    {
-        return NULL;
-    }
-    char *fz_xml_att(fz_xml *item, const char *att)
-    {
-        return NULL;
-    }
-    char *fz_xml_text(fz_xml *item)
-    {
-        return NULL;
-    }
-    fz_xml *fz_xml_down(fz_xml *item)
-    {
-        return NULL;
-    }
-    fz_xml *fz_xml_next(fz_xml *item)
-    {
-        return NULL;
-    }
-    void fz_drop_xml(fz_context *ctx, fz_xml_doc *doc)
-    {
-        // Stub - no operation
-    }
-    XMLEOF
-    
-    # Replace xps-glyphs.c with minimal stub to avoid FreeType dependency in XPS module  
-    cat > source/xps/xps-glyphs.c << 'XPSEOF'
-    #include "mupdf/fitz.h"
-    /* Minimal XPS glyph stub implementation for WebAssembly build without FreeType */
-    void xps_parse_glyphs_impl(fz_context *ctx, void *doc, void *matrix, void *resource, void *node, void **args)
-    {
-        // Stub - no operation
-    }
-    void xps_parse_glyphs(fz_context *ctx, void *doc, void *matrix, void *node)
-    {
-        // Stub - no operation
-    }
-    void xps_debug_path(fz_context *ctx)
-    {
-        // Stub - no operation
-    }
-    XPSEOF
-    
-    # Replace html-layout.c with minimal stub to avoid harfbuzz dependency in HTML module
-    cat > source/html/html-layout.c << 'HTMLEOF'
-    // WebAssembly stub for html-layout.c - harfbuzz dependency eliminated
-    #include "mupdf/fitz.h"
-    
-    // Completely empty stub to avoid all harfbuzz dependencies
-    // Original html-layout.c includes hb.h which we cannot provide in WebAssembly
-    HTMLEOF
-    
-    # Replace PDF module FreeType and JavaScript dependencies with stubs
-    cat > source/pdf/pdf-js.c << 'PDFJSEOF'
-    #include "mupdf/fitz.h"
-    #include "mupdf/pdf.h"
-    /* Minimal PDF JavaScript stub implementation for WebAssembly build - no MuJS */
-    void pdf_enable_js(fz_context *ctx, pdf_document *doc)
-    {
-        // Stub - JavaScript support disabled in WebAssembly build
-    }
-    
-    void pdf_disable_js(fz_context *ctx, pdf_document *doc)
-    {
-        // Stub - JavaScript support disabled in WebAssembly build
-    }
-    
-    int pdf_js_supported(fz_context *ctx, pdf_document *doc)
-    {
-        return 0; // JavaScript not supported
-    }
-    
-    void pdf_event_issue(fz_context *ctx, pdf_document *doc, pdf_obj *target, char *js)
-    {
-        // Stub - JavaScript events not supported in WebAssembly build
-    }
-    PDFJSEOF
-    
-    cat > source/pdf/pdf-device.c << 'PDFDEVEOF'
-    #include "mupdf/fitz.h"
-    #include "mupdf/pdf.h"
-    /* Minimal PDF device stub implementation for WebAssembly build */
-    fz_device *pdf_new_pdf_device(fz_context *ctx, pdf_document *doc, fz_matrix topctm, pdf_obj *resources, fz_buffer *contents)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "PDF device not supported in WebAssembly build");
-        return NULL;
-    }
-    PDFDEVEOF
-    
-    cat > source/pdf/pdf-font.c << 'PDFFONTEOF'
-    #include "mupdf/fitz.h"
-    #include "mupdf/pdf.h"
-    /* Minimal PDF font stub implementation for WebAssembly build */
-    pdf_font_desc *pdf_load_font(fz_context *ctx, pdf_document *doc, pdf_obj *rdb, pdf_obj *obj)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "PDF font loading not supported in WebAssembly build");
-        return NULL;
-    }
-    PDFFONTEOF
-    
-    cat > source/pdf/pdf-font-add.c << 'PDFFONTADDEOF'
-    #include "mupdf/fitz.h"
-    #include "mupdf/pdf.h"
-    /* Minimal PDF font add stub implementation for WebAssembly build */
-    pdf_obj *pdf_add_simple_font(fz_context *ctx, pdf_document *doc, fz_font *font, int encoding)
-    {
-        fz_throw(ctx, FZ_ERROR_GENERIC, "PDF font addition not supported in WebAssembly build");
-        return NULL;
-    }
-    PDFFONTADDEOF
-    
-    cd ..
-    
-    # Set PyMuPDF to use our patched MuPDF
-    export PYMUPDF_SETUP_MUPDF_BUILD="$(pwd)/mupdf-patched"
-    export PYMUPDF_SETUP_FLAVOUR="pb"
+    # Configure PyMuPDF for WebAssembly build
+    export PYMUPDF_SETUP_FLAVOUR=pb
     export PYMUPDF_SETUP_MUPDF_TESSERACT=0
     export HAVE_LIBCRYPTO=no
-    
-    # Disable barcode support for WebAssembly (patched in mupdfwrap.py)
     export USE_ZXINGCPP=0
+    export PYMUPDF_SETUP_MUPDF_BARCODE=0
     
-    # Set comprehensive TOFU flags with disabled ICC, Brotli, JPX, and text shaping libraries
+    # Patch PyMuPDF to disable barcode support for WebAssembly
+    find . -name "*.py" -type f -exec sed -i 's/barcode=yes/barcode=no/g' {} \;
+    find . -name "*wrap*" -type f -exec sed -i 's/barcode=yes/barcode=no/g' {} \;
+    find . -name "setup.py" -type f -exec sed -i 's/barcode=yes/barcode=no/g' {} \;
+    
+    # Set TOFU flags to disable external dependencies  
     export XCFLAGS="-DTOFU -DTOFU_CJK -DTOFU_CJK_EXT -DTOFU_CJK_LANG -DTOFU_EMOJI -DTOFU_HISTORIC -DTOFU_SYMBOL -DTOFU_SIL -DTOFU_BASE14 -DTOFU_NOTO -DFZ_ENABLE_ICC=0 -DFZ_ENABLE_BROTLI=0 -DFZ_ENABLE_JPX=0 -DNO_HARFBUZZ"
     export XCXXFLAGS="-DTOFU -DTOFU_CJK -DTOFU_CJK_EXT -DTOFU_CJK_LANG -DTOFU_EMOJI -DTOFU_HISTORIC -DTOFU_SYMBOL -DTOFU_SIL -DTOFU_BASE14 -DTOFU_NOTO -DFZ_ENABLE_ICC=0 -DFZ_ENABLE_BROTLI=0 -DFZ_ENABLE_JPX=0 -DNO_HARFBUZZ"
     
-    # Install PyMuPDF with patched MuPDF
-    $PYTHON -m pip install . $PIP_ARGS -v
+    ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }} -v
 
 requirements:
   build:
@@ -375,22 +38,21 @@ requirements:
     - python
     - pip
     - git
-    - freetype
   host:
     - python ${{ python }}
     - pip ${{ pip }}
     - setuptools
     - zlib
     - freetype
-
     - libjpeg-turbo
   run:
     - python
 
 tests:
-- script:
-  - python -c "import pymupdf; print('PyMuPDF import successful')"
-  - python -c "import fitz; print('Fitz import successful')"
+- script: pytester
+  files:
+    recipe:
+    - test_import_pymupdf.py
 
 about:
   homepage: https://github.com/pymupdf/PyMuPDF
