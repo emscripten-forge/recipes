@@ -1,8 +1,6 @@
-def test_import_pymupdf():def test_import_pymupdf():
-
-    """Test importing PyMuPDF package."""    import fitz
-
-    import pymupdf    # PyMuPDF package provides the fitz module
+def test_import_pymupdf():
+    """Test importing PyMuPDF package."""
+    import pymupdf
     import fitz
     
     # Basic functionality test
