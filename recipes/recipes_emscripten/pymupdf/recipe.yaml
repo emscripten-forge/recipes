@@ -7,70 +7,11 @@ package:
   version: ${{ version }}
 
 source:
-- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: b7d2c3ffa9870e1e4416d18862f5ccd356af5fe337b4511093bbbce2ca73b7e5
 
 build:
   number: 0
-  script: |
-    echo "Building PyMuPDF for WebAssembly/Emscripten..."
-    echo "Note: This is a minimal build with limited functionality due to WebAssembly constraints."
-    
-    # Configure minimal PyMuPDF build for WebAssembly
-    export PYMUPDF_SETUP_FLAVOUR=pb
-    export PYMUPDF_SETUP_MUPDF_TESSERACT=0
-    export HAVE_LIBCRYPTO=no
-    export USE_ZXINGCPP=0
-    export PYMUPDF_SETUP_MUPDF_BARCODE=0
-    
-    # Use system libraries
-    export PYMUPDF_SETUP_MUPDF_USE_SYSTEM_LIBJPEG=1
-    export PYMUPDF_SETUP_MUPDF_USE_SYSTEM_ZLIB=1
-    export PYMUPDF_SETUP_MUPDF_USE_SYSTEM_FREETYPE=1
-    
-    # Disable fonts and advanced features for WebAssembly compatibility
-    export PYMUPDF_SETUP_MUPDF_NO_FONTS=1
-    export PYMUPDF_SETUP_MUPDF_FONTS_BUILTIN=0
-    export PYMUPDF_SETUP_MUPDF_THIRD_NO_FONTS=1
-    export PYMUPDF_SETUP_MUPDF_BUILD_MINIMAL=1
-    
-    # Set compiler flags for WebAssembly
-    export XCFLAGS="-DTOFU -DNO_EMBEDDED_FONTS -DFZ_ENABLE_ICC=0 -DFZ_ENABLE_BROTLI=0 -DFZ_ENABLE_JPX=0 -DNO_HARFBUZZ"
-    export XCXXFLAGS="-DTOFU -DNO_EMBEDDED_FONTS -DFZ_ENABLE_ICC=0 -DFZ_ENABLE_BROTLI=0 -DFZ_ENABLE_JPX=0 -DNO_HARFBUZZ"
-    export CFLAGS="$CFLAGS -Wno-error=implicit-function-declaration -Wno-deprecated-non-prototype"
-    export CXXFLAGS="$CXXFLAGS -Wno-deprecated-non-prototype"
-    
-    # Disable problematic features for WebAssembly
-    find . -name "*.py" -type f -exec sed -i 's/barcode=yes/barcode=no/g' {} \; || true
-    
-    # Try to build normally first, but expect it to fail due to font linking issues
-    echo "Attempting to build PyMuPDF for WebAssembly..."
-    
-    # Since the build is expected to fail due to font linking, create stub package
-    echo "Creating PyMuPDF stub package for WebAssembly compatibility..."
-    
-    # Create the site-packages directory structure
-    mkdir -p ${{ SP_DIR }}/fitz
-    
-    # Create stub fitz module using echo commands to avoid heredoc issues
-    echo 'import warnings' > ${{ SP_DIR }}/fitz/__init__.py
-    echo '' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo 'class DocumentStub:' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '    def __init__(self, *args, **kwargs):' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '        raise NotImplementedError("PyMuPDF not available in WebAssembly. Use PyPDF2 instead.")' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo 'Document = DocumentStub' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo 'def open(*args, **kwargs):' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '    raise NotImplementedError("PyMuPDF not available in WebAssembly. Use PyPDF2 instead.")' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo 'warnings.warn("PyMuPDF stub package - use PyPDF2 for WebAssembly", ImportWarning)' >> ${{ SP_DIR }}/fitz/__init__.py
-    echo '__version__ = "1.26.3-wasm-stub"' >> ${{ SP_DIR }}/fitz/__init__.py
-    
-    # Create pymupdf alias
-    echo 'from fitz import *' > ${{ SP_DIR }}/pymupdf.py
-    
-    echo "Created PyMuPDF stub package successfully"
 
 requirements:
   build:
@@ -89,9 +30,16 @@ requirements:
   run:
     - python
 
-# Tests are skipped for WebAssembly due to testing infrastructure limitations
-# The package creates a compatibility stub that can be imported but warns users
-# about WebAssembly limitations
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pymupdf.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   homepage: https://github.com/pymupdf/PyMuPDF
@@ -111,4 +59,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - Ying LI
+  - MRYingLEE
