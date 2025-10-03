@@ -1,0 +1,62 @@
+context:
+  name: pymupdf
+  version: "1.26.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b7d2c3ffa9870e1e4416d18862f5ccd356af5fe337b4511093bbbce2ca73b7e5
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - pip
+    - git
+  host:
+    - python ${{ python }}
+    - pip ${{ pip }}
+    - setuptools
+    - zlib
+    - freetype
+    - libjpeg-turbo
+  run:
+    - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pymupdf.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/pymupdf/PyMuPDF
+  summary: 'Python bindings for MuPDF PDF library (WebAssembly compatible stub)'
+  description: |
+    PyMuPDF is a Python binding for the MuPDF PDF and XPS library.
+    
+    Note: This WebAssembly build provides a compatibility stub due to 
+    limitations with embedded font resources in the MuPDF library.
+    For full PDF functionality in WebAssembly environments, consider
+    using PyPDF2/PyPDF4 or server-side processing.
+  license: AGPL-3.0-or-later
+  license_family: GPL
+  license_file: COPYING
+  documentation: https://pymupdf.readthedocs.io/
+  repository: https://github.com/pymupdf/PyMuPDF
+
+extra:
+  recipe-maintainers:
+  - MRYingLEE
