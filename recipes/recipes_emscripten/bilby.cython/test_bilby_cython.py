@@ -1,6 +1,3 @@
-from pytest_pyodide import run_in_pyodide
-
-
 def test_time_delay_from_geocenter():
     import bilby_cython
     import numpy as np
