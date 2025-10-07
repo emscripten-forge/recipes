@@ -7,9 +7,8 @@ emcmake cmake ${CMAKE_ARGS} ..      \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCLI11_BUILD_TESTS=OFF \
     -DCLI11_BUILD_EXAMPLES=OFF \
-    -DCMAKE_INSTALL_LIBDIR=lib \
-    ${CMAKE_ARGS} \
-    -DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/overwriteProp.cmake
+    -DCMAKE_INSTALL_LIBDIR=lib
 
 # Build step
-ninja install
+emmake ninja
+emmake ninja install
