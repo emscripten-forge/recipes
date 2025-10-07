@@ -11,8 +11,8 @@ emcmake cmake ${CMAKE_ARGS} ..      \
     -DHIGHFIVE_UNIT_TESTS=OFF \
     -DHIGHFIVE_EXAMPLES=OFF \
     -DHIGHFIVE_USE_BOOST=OFF \
-    -DHIGHFIVE_USE_INSTALL_DEPS=OFF \
-    -DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/overwriteProp.cmake
+    -DHIGHFIVE_USE_INSTALL_DEPS=OFF
 
 # Build step
-make install
+emmake make
+emmake make install
