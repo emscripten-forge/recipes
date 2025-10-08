@@ -9,9 +9,11 @@ TARGET=$SOURCE_DIR/build
 mkdir -p "$TARGET"
 
 # Common compiler flags
-export CFLAGS="-O3 -fPIC"
+export CFLAGS="-O3 -fPIC 	-s WASM_BIGINT -fwasm-exceptions -sSUPPORT_LONGJMP"
 export CFLAGS+=" -DWASM_BIGINT" # We need to detect WASM_BIGINT support at compile time, if bigint is not wanted simply remove
 export CXXFLAGS="$CFLAGS"
+
+export LDFLAGS="-O3 -s WASM_BIGINT -fwasm-exceptions -sSUPPORT_LONGJMP"
 
 # Build paths
 export CPATH="$TARGET/include"
