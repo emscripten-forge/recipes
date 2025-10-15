@@ -1,0 +1,67 @@
+context:
+  version: 0.2.6
+
+package:
+  name: xeus-ocaml
+  version: ${{ version }}
+
+source:
+  url: https://github.com/davy39/xeus-ocaml/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 70d66f0148079353686312f5e261eb6ffbc3f0b01c5b6b0d452f94df80b53863
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  - ninja
+  - opam
+  host:
+  - nlohmann_json
+  - xeus
+  - xeus-lite
+
+
+
+build:
+  number: 0
+
+  script:
+  # =========================================================================
+  # PHASE 1: Build Js_of_ocaml bundle
+  # =========================================================================
+  - |
+    (
+      unset CC CXX CFLAGS CXXFLAGS LDFLAGS # Need nativ builders
+      cd ocaml
+      opam init --disable-sandboxing --no --compiler=5.3.0
+      opam install dune 
+      opam exec -- dune pkg lock
+      opam exec -- dune build --profile release
+    )
+  - mkdir -p ocaml-build
+  - cp -r ocaml/_build/default/src/* ocaml-build/
+  # =========================================================================
+  # PHASE 2: Build Xeus WASM kernel
+  # =========================================================================
+  - mkdir -p build
+  - cd build
+  - |
+    cmake -S $SRC_DIR -GNinja ${CMAKE_ARGS}    \
+        -DCMAKE_BUILD_TYPE=Release             \
+        -DCMAKE_PREFIX_PATH=$PREFIX            \
+        -DCMAKE_INSTALL_PREFIX=$PREFIX
+  - ninja install
+
+tests:
+- script:
+  - test -f $PREFIX/bin/xocaml.wasm
+  - test -f $PREFIX/bin/xocaml.js
+about:
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Ocaml kernel for Jupyter based on xeus
+  homepage: https://github.com/davy39/xeus-ocaml
+extra:
+  recipe-maintainers:
+  - Davy39
