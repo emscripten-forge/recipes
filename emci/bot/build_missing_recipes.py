@@ -5,7 +5,7 @@ import yaml
 from ruamel.yaml import YAML
 import os
 import contextlib
-
+import subprocess
 from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
 
 
