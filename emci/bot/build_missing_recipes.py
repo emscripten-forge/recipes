@@ -151,7 +151,7 @@ def build_missing_recipes(recipes_dir, pr_target_branch, use_bot=True, pr_limit=
                     
 
                     # commit the changes and make a PR
-                    pr_title =f"Inital build for {recipe_name} for {pr_target_branch}"
+                    pr_title =f"Build {recipe_name} for {pr_target_branch}"
                     print(f"Build {recipe_name} with title: {pr_title} with target branch {pr_target_branch}")
                     make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
                         target_branch_name=pr_target_branch,
