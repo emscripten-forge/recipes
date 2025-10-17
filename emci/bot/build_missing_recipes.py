@@ -97,6 +97,10 @@ def build_missing_recipes(recipes_dir, pr_target_branch, use_bot=True, pr_limit=
         response.raise_for_status()
         repodata = response.json()
 
+        exisiting_pkgs = set()
+        for package in repodata["packages"].values():
+            # print package names
+            existing_pkgs.add(package["name"])
 
         # get all existing PRs from the bot to avoid duplicates
         command = ["gh","pr","list","--author","emscripten-forge-bot","--base",pr_target_branch,"--json","number,title"]
@@ -124,7 +128,7 @@ def build_missing_recipes(recipes_dir, pr_target_branch, use_bot=True, pr_limit=
 
 
                 print(f"Checking recipe: {recipe_name}")
-                if recipe_name in repodata["packages"]:
+                if recipe_name in exisiting_pkgs:
                     print(f"Recipe {recipe_name} already in repodata, skipping")
                     continue
 
