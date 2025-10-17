@@ -50,7 +50,7 @@ def get_name(recipe_dir):
     except KeyError:
         raise ValueError(f"Recipe {recipe_dir} does not have a name in context")
 
-def build_missing_recipes(recipes_dir, pr_target_branch, use_bot=True, pr_limit=5):
+def build_missing_recipes(recipes_dir, pr_target_branch, use_bot=True, pr_limit=20):
     print(f"Create PRs for missing recipes in {recipes_dir} for target branch {pr_target_branch}")
 
     # empty context manager
