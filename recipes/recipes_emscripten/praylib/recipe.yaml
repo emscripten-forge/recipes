@@ -9,80 +9,80 @@ source:
   # branch: main
 
 build:
-  number: 0
+  number: 1
 
 
 outputs:
-  - package:
-      name: praylib-host
-      version: ${{ version }}
+- package:
+    name: praylib-host
+    version: ${{ version }}
 
+  build:
+    script: build_host.sh
+
+  requirements:
     build:
-      script: build_host.sh
+    - ${{ compiler("cxx") }}
+    - cmake>=4.0
+    - ninja
+    - numpy
+    - python
+    host:
+    - python
+    - pybind11 <3
+    - pyjs
+    - numpy
+    - pyjs
+    - libpython
+    - zstd
+    - openssl
+    - xz
 
+    run:
+    - numpy
+    - python
+    - pyjs
+
+
+
+- package:
+    name: praylib
+    version: ${{ version }}
+
+  build:
+    script: build_pkg.sh
+
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - cmake>=4.0
+    - ninja
+    - numpy
+    - nanobind
+    - scikit-build-core
+    - python
+    - pip
+    host:
+    - python
+    - numpy
+    - raylib
+
+    run:
+    - numpy
+    - python
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_praylib.py
     requirements:
       build:
-      - ${{ compiler("cxx") }}
-      - cmake>=4.0
-      - ninja
-      - numpy
-      - python
-      host:
-      - python
-      - pybind11 <3
-      - pyjs
-      - numpy
-      - pyjs
-      - libpython
-      - zstd
-      - openssl
-      - xz
-
+      - pytester
       run:
-      - numpy
-      - python
-      - pyjs
-
-
-
-  - package:
-      name: praylib
-      version: ${{ version }}
-
-    build:
-      script: build_pkg.sh
-
-    requirements:
-      build:
-      - ${{ compiler("cxx") }}
-      - cross-python_emscripten-wasm32
-      - cmake>=4.0
-      - ninja
-      - numpy
-      - nanobind
-      - scikit-build-core
-      - python
-      - pip
-      host:
-      - python
-      - numpy
-      - raylib
-
-      run:
-      - numpy
-      - python
-
-    tests:
-      - script: pytester
-        files:
-          recipe:
-          - test_praylib.py
-        requirements:
-          build:
-          - pytester
-          run:
-          - pytester-run
-          - pyjs >=3
+      - pytester-run
+      - pyjs >=3
 
 about:
   license: MIT
