@@ -5,6 +5,12 @@ set -exuo pipefail
 mkdir -p build
 cd build
 
+
+
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross 
+export LDFLAGS="$LDFLAGS -fwasm-exceptions"
+
 emcmake cmake -GNinja \
     ${CMAKE_ARGS} \
     -DCMAKE_BUILD_TYPE=Release \
