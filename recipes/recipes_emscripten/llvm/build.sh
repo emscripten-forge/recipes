@@ -16,6 +16,10 @@ unset EM_FORGE_SIDE_MODULE_CFLAGS
 unset CFLAGS
 unset LDFLAGS
 
+export CXXFLAGS="$CFLAGS-fwasm-exceptions"
+export CFLAGS="$CFLAGS-fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -fwasm-exceptions"
+
 # Configure step
 emcmake cmake -S ../llvm -B .         \
     -DCMAKE_BUILD_TYPE=Release                      \
