@@ -1,0 +1,43 @@
+context:
+  version: 25.9.23
+  name: "flatbuffers"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9102253214dea6ae10c2ac966ea1ed2155d22202390b532d1dea64935c518ada
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    lib:
+    - libflatbuffers.a
+    include:
+    - flatbuffers/flatbuffers.h
+- script:
+  - test -f $PREFIX/bin/flatc.js
+  - test -f $PREFIX/bin/flatc.wasm
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: 'FlatBuffers: Memory Efficient Serialization Library'
+  description: |
+    FlatBuffers is a cross platform serialization library architected for maximum memory efficiency.
+    It allows you to directly access serialized data without parsing/unpacking it first, while still having great forwards/backwards compatibility.
+  homepage: https://flatbuffers.dev
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
+
