@@ -17,4 +17,4 @@ emcmake cmake ${CMAKE_ARGS} ..              \
 emmake ninja install
 
 # Copy wasm file also
-# cp ./bin/flatc.wasm $PREFIX/bin/
+cp ./flatc.wasm $PREFIX/bin/
