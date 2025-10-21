@@ -28,6 +28,7 @@ emmake cmake ${CMAKE_ARGS} ..  \
     -DWITH_NODE_TESTS=OFF \
     -DZLIB_INCLUDE_DIR=$PREFIX/include \
     -DZLIB_LIBRARY=$PREFIX/lib/libz.a  \
+    -Dpybind11_DIR=$PREFIX/lib/python3.13/site-packages/pybind11/share \
     -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 
