@@ -33,7 +33,7 @@ emmake cmake ${CMAKE_ARGS} ..  \
     -DWITH_NODE_TESTS=OFF \
     -DZLIB_INCLUDE_DIR=$PREFIX/include \
     -DZLIB_LIBRARY=$PREFIX/lib/libz.a  \
-    -DPYBIND11_FINDPYTHON=ON \
+    -DPYBIND11_FINDPYTHON=OFF \
     -DPython_INCLUDE_DIRS=$PREFIX/include/python3.13 \
     -Dpybind11_DIR=$PREFIX/lib/python3.13/site-packages/pybind11/share/cmake/pybind11 \
     -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
