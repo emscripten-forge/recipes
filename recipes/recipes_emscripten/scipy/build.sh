@@ -73,6 +73,12 @@ export FC=$BUILD_PREFIX/bin/gfortran
 export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
+
+# SHOW THE CONTENT OF THE emcc.py AFTER INJECTION
+echo "EMCC AFTER INJECTION"
+cat $EMBIN/emcc.py
+echo "END EMCC AFTER INJECTION"
+
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77 -s WASM_BIGINT"
 export LDFLAGS="$LDFLAGS -s WASM_BIGINT"
