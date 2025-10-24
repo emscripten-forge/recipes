@@ -9,7 +9,7 @@ set -ex
   unset CC CXX CFLAGS CXXFLAGS LDFLAGS
 
   cd ocaml
-  opam init --disable-sandboxing --no --compiler=5.3.0
+  opam init --disable-sandboxing --no --compiler=5.4.0
   opam install dune
   opam exec -- dune pkg lock
   opam exec -- dune build --profile release
