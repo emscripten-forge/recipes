@@ -96,6 +96,9 @@ echo "END CROSS FILE"
 export PKG_CONFIG_PATH=$SRC_DIR=openblas.pc
 
 
+sed -i "s|subdir('matlab')|#subdir('matlab')|" scipy/io/meson.build
+
+
 MESON_ARGS="-Dfortran_std=none" ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"\
     -Csetup-args="-Dfortran_std=none"
