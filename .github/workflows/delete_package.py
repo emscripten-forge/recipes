@@ -6,14 +6,14 @@ def main():
     parser = argparse.ArgumentParser(description='Delete a package from prefix.dev')
     parser.add_argument('--token', required=True, help='API token')
     parser.add_argument('--package', required=True, help='Package file name')
-
+    parser.add_argument('--channel', required=True, help='Package file name')
     args = parser.parse_args()
 
     token = args.token
     package_file_name = args.package
+    channel = args.channel
 
     base_url = "https://prefix.dev/api/v1"
-    channel = "emscripten-forge-dev"
     subdir = "emscripten-wasm32"
     headers = {"Authorization": f"Bearer {token}"}
     delete_url = f"{base_url}/delete/{channel}/{subdir}/{package_file_name}"
