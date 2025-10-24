@@ -2,8 +2,8 @@ export F2C_PATH=$BUILD_PREFIX/bin/f2c
 
 set -ex
 
-export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS"
-export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS"
+export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS -Wno-incompatible-function-pointer-types"
+export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS -Wno-incompatible-function-pointer-types"
 
 echo F2C_PATH: $F2C_PATH
 export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
