@@ -2,8 +2,8 @@ export F2C_PATH=$BUILD_PREFIX/bin/f2c
 
 set -ex
 
-export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS"
-export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS"
+export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS -Wno-incompatible-function-pointer-types"
+export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS -Wno-incompatible-function-pointer-types"
 
 echo F2C_PATH: $F2C_PATH
 export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
@@ -73,6 +73,12 @@ export FC=$BUILD_PREFIX/bin/gfortran
 export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
+
+# SHOW THE CONTENT OF THE emcc.py AFTER INJECTION
+echo "EMCC AFTER INJECTION"
+cat $EMBIN/emcc.py
+echo "END EMCC AFTER INJECTION"
+
 # add BUILD_PREFIX/include for f2c.h file
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77 -s WASM_BIGINT"
 export LDFLAGS="$LDFLAGS -s WASM_BIGINT"
@@ -94,6 +100,9 @@ echo "END CROSS FILE"
 
 
 export PKG_CONFIG_PATH=$SRC_DIR=openblas.pc
+
+
+sed -i "s|subdir('matlab')|#subdir('matlab')|" scipy/io/meson.build
 
 
 MESON_ARGS="-Dfortran_std=none" ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
