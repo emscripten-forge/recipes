@@ -1,5 +1,9 @@
 #!/bin/bash
 
+
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS  -fwasm-exceptions"
+
 mkdir -p build && cd build
 
 emcmake cmake ${CMAKE_ARGS} \
