@@ -2,6 +2,8 @@
 mkdir build
 cd build
 
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS  -fwasm-exceptions"
 # Configure step
 cmake ${CMAKE_ARGS} ..             \
     -GNinja                        \
