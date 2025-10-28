@@ -4,6 +4,8 @@ set -ex
 
 export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS"
 export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS"
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS  -fwasm-exceptions"
 
 echo F2C_PATH: $F2C_PATH
 export NPY_BLAS_LIBS="-I$PREFIX/include $PREFIX/lib/libopenblas.so"
