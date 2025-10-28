@@ -2,6 +2,10 @@ export F2C_PATH=$BUILD_PREFIX/bin/f2c
 
 set -ex
 
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS  -fwasm-exceptions"
+
+
 export CFLAGS="-I$PREFIX/include/python3.13 $CFLAGS -Wno-incompatible-function-pointer-types"
 export CXXFLAGS="-I$PREFIX/include/python3.13 $CXXFLAGS -Wno-incompatible-function-pointer-types"
 
