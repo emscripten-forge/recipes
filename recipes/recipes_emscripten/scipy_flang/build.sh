@@ -35,39 +35,8 @@ export FCLIBS="-lFortranRuntime"
 
 
 
-# Change many functions that return void into functions that return int
-find scipy -name "*.c*" -type f | xargs sed -i 's/extern void F_FUNC/extern int F_FUNC/g'
-
-sed -i 's/void F_FUNC/int F_FUNC/g' scipy/odr/__odrpack.c
-sed -i 's/^void/int/g' scipy/odr/odrpack.h
-sed -i 's/^void/int/g' scipy/odr/__odrpack.c
-
-sed -i 's/void BLAS_FUNC/int BLAS_FUNC/g' scipy/special/lapack_defs.h
-# sed -i 's/void F_FUNC/int F_FUNC/g' scipy/linalg/_lapack_subroutines.h
-sed -i 's/extern void/extern int/g' scipy/optimize/__minpack.h
 sed -i 's/void/int/g' scipy/linalg/cython_blas_signatures.txt
 sed -i 's/void/int/g' scipy/linalg/cython_lapack_signatures.txt
-sed -i 's/^void/int/g' scipy/interpolate/src/_fitpackmodule.c
-
-sed -i 's/double z_abs(/double my_z_abs(/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcomplex.c
-
-sed -i 's/extern void/extern int/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}
-sed -i 's/PUBLIC void/PUBLIC int/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}
-sed -i 's/^void/int/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}
-sed -i 's/^void/int/g' scipy/sparse/linalg/_dsolve/*.{c,h}
-sed -i 's/void \(.\)print/int \1/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}
-sed -i 's/TYPE_GENERIC_FUNC(\(.*\), void)/TYPE_GENERIC_FUNC(\1, int)/g' scipy/sparse/linalg/_dsolve/_superluobject.h
-
-sed -i 's/^void/int/g' scipy/optimize/_trlib/trlib_private.h
-sed -i 's/^void/int/g' scipy/optimize/_trlib/trlib/trlib_private.h
-sed -i 's/^void/int/g' scipy/_build_utils/src/wrap_dummy_g77_abi.c
-sed -i 's/, int)/)/g' scipy/optimize/_trlib/trlib_private.h
-sed -i 's/, 1)/)/g' scipy/optimize/_trlib/trlib_private.h
-
-sed -i 's/^void/int/g' scipy/spatial/qhull_misc.h
-sed -i 's/, size_t)/)/g' scipy/spatial/qhull_misc.h
-sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
-
 
 
 
