@@ -1,0 +1,162 @@
+diff --git a/scipy/_lib/array_api_compat b/scipy/_lib/array_api_compat
+index 498f086568..fbf66e0f66 160000
+--- a/scipy/_lib/array_api_compat
++++ b/scipy/_lib/array_api_compat
+@@ -1 +1 @@
+-Subproject commit 498f086568362002185b005a0a7f38ad136ca8bb
++Subproject commit fbf66e0f668d2aa0c91d3fb41730ccac93ab9eb7
+diff --git a/scipy/_lib/array_api_extra b/scipy/_lib/array_api_extra
+index 8e1c8fa42d..c23ac0127d 160000
+--- a/scipy/_lib/array_api_extra
++++ b/scipy/_lib/array_api_extra
+@@ -1 +1 @@
+-Subproject commit 8e1c8fa42df403231d65b3690e73098cfc52674a
++Subproject commit c23ac0127d866b93cc89caa4937810d3011fce87
+diff --git a/scipy/integrate/odepack/blkdta000.f b/scipy/integrate/odepack/blkdta000.f
+index 7885277768..befb8638d2 100644
+--- a/scipy/integrate/odepack/blkdta000.f
++++ b/scipy/integrate/odepack/blkdta000.f
+@@ -16,9 +16,8 @@ c            messages.
+ c-----------------------------------------------------------------------
+       integer illin, iduma, ntrep, idumb, iowns, icomm, mesflg, lunit
+       double precision rowns, rcomm
+-      common /ls0001/ rowns(209), rcomm(9),
+-     1   illin, iduma(10), ntrep, idumb(2), iowns(6), icomm(19)
+-      common /eh0001/ mesflg, lunit
++
++
+       data illin/0/, ntrep/0/
+       data mesflg/1/, lunit/6/
+ c
+diff --git a/scipy/linalg/_matfuncs_expm.h b/scipy/linalg/_matfuncs_expm.h
+index 134c2958cf..396755e19d 100644
+--- a/scipy/linalg/_matfuncs_expm.h
++++ b/scipy/linalg/_matfuncs_expm.h
+@@ -24,8 +24,8 @@ void saxpy_(int* n, float* sa, float* sx, int* incx, float* sy, int* incy);
+ void scopy_(int* n, float* dx, int* incx, float* dy, int* incy);
+ void sgemm_(char* transa, char* transb, int* m, int* n, int* k, float* alpha, float* a, int* lda, float* b, int* ldb, float* beta, float* c, int* ldc);
+ void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy);
+-void sgetrf_(int* m, int* n, float* a, int* lda, int* ipiv, int* info);
+-void sgetrs_(char* trans, int* n, int* nrhs, float* a, int* lda, int* ipiv, float* b, int* ldb, int* info);
++int  sgetrf_(int* m, int* n, float* a, int* lda, int* ipiv, int* info);
++int  sgetrs_(char* trans, int* n, int* nrhs, float* a, int* lda, int* ipiv, float* b, int* ldb, int* info);
+ void slacn2_(int* n, float* v, float* x, int* isgn, float* est, int* kase, int* isave);
+ void sscal_(int* n, float* sa, float* sx, int* incx);
+ 
+diff --git a/scipy/linalg/cython_lapack_signatures.txt b/scipy/linalg/cython_lapack_signatures.txt
+index 5aa59d96ea..31a40df06b 100644
+--- a/scipy/linalg/cython_lapack_signatures.txt
++++ b/scipy/linalg/cython_lapack_signatures.txt
+@@ -404,15 +404,15 @@ void dgerq2(int *m, int *n, d *a, int *lda, d *tau, d *work, int *info)
+ void dgerqf(int *m, int *n, d *a, int *lda, d *tau, d *work, int *lwork, int *info)
+ void dgesc2(int *n, d *a, int *lda, d *rhs, int *ipiv, int *jpiv, d *scale)
+ void dgesdd(char *jobz, int *m, int *n, d *a, int *lda, d *s, d *u, int *ldu, d *vt, int *ldvt, d *work, int *lwork, int *iwork, int *info)
+-void dgesv(int *n, int *nrhs, d *a, int *lda, int *ipiv, d *b, int *ldb, int *info)
++int dgesv(int *n, int *nrhs, d *a, int *lda, int *ipiv, d *b, int *ldb, int *info)
+ void dgesvd(char *jobu, char *jobvt, int *m, int *n, d *a, int *lda, d *s, d *u, int *ldu, d *vt, int *ldvt, d *work, int *lwork, int *info)
+ void dgesvj(char *joba, char *jobu, char *jobv, int *m, int *n, d *a, int *lda, d *sva, int *mv, d *v, int *ldv, d *work, int *lwork, int *info)
+ void dgesvx(char *fact, char *trans, int *n, int *nrhs, d *a, int *lda, d *af, int *ldaf, int *ipiv, char *equed, d *r, d *c, d *b, int *ldb, d *x, int *ldx, d *rcond, d *ferr, d *berr, d *work, int *iwork, int *info)
+ void dgetc2(int *n, d *a, int *lda, int *ipiv, int *jpiv, int *info)
+-void dgetf2(int *m, int *n, d *a, int *lda, int *ipiv, int *info)
+-void dgetrf(int *m, int *n, d *a, int *lda, int *ipiv, int *info)
++int dgetf2(int *m, int *n, d *a, int *lda, int *ipiv, int *info)
++int dgetrf(int *m, int *n, d *a, int *lda, int *ipiv, int *info)
+ void dgetri(int *n, d *a, int *lda, int *ipiv, d *work, int *lwork, int *info)
+-void dgetrs(char *trans, int *n, int *nrhs, d *a, int *lda, int *ipiv, d *b, int *ldb, int *info)
++int dgetrs(char *trans, int *n, int *nrhs, d *a, int *lda, int *ipiv, d *b, int *ldb, int *info)
+ void dggbak(char *job, char *side, int *n, int *ilo, int *ihi, d *lscale, d *rscale, int *m, d *v, int *ldv, int *info)
+ void dggbal(char *job, int *n, d *a, int *lda, d *b, int *ldb, int *ilo, int *ihi, d *lscale, d *rscale, d *work, int *info)
+ void dgges(char *jobvsl, char *jobvsr, char *sort, dselect3 *selctg, int *n, d *a, int *lda, d *b, int *ldb, int *sdim, d *alphar, d *alphai, d *beta, d *vsl, int *ldvsl, d *vsr, int *ldvsr, d *work, int *lwork, bint *bwork, int *info)
+@@ -560,7 +560,7 @@ void dlasr(char *side, char *pivot, char *direct, int *m, int *n, d *c, d *s, d
+ void dlasrt(char *id, int *n, d *d, int *info)
+ void dlassq(int *n, d *x, int *incx, d *scale, d *sumsq)
+ void dlasv2(d *f, d *g, d *h, d *ssmin, d *ssmax, d *snr, d *csr, d *snl, d *csl)
+-void dlaswp(int *n, d *a, int *lda, int *k1, int *k2, int *ipiv, int *incx)
++int dlaswp(int *n, d *a, int *lda, int *k1, int *k2, int *ipiv, int *incx)
+ void dlasy2(bint *ltranl, bint *ltranr, int *isgn, int *n1, int *n2, d *tl, int *ldtl, d *tr, int *ldtr, d *b, int *ldb, d *scale, d *x, int *ldx, d *xnorm, int *info)
+ void dlasyf(char *uplo, int *n, int *nb, int *kb, d *a, int *lda, int *ipiv, d *w, int *ldw, int *info)
+ void dlat2s(char *uplo, int *n, d *a, int *lda, s *sa, int *ldsa, int *info)
+@@ -570,7 +570,7 @@ void dlatps(char *uplo, char *trans, char *diag, char *normin, int *n, d *ap, d
+ void dlatrd(char *uplo, int *n, int *nb, d *a, int *lda, d *e, d *tau, d *w, int *ldw)
+ void dlatrs(char *uplo, char *trans, char *diag, char *normin, int *n, d *a, int *lda, d *x, d *scale, d *cnorm, int *info)
+ void dlatrz(int *m, int *n, int *l, d *a, int *lda, d *tau, d *work)
+-void dlauu2(char *uplo, int *n, d *a, int *lda, int *info)
++int dlauu2(char *uplo, int *n, d *a, int *lda, int *info)
+ void dlauum(char *uplo, int *n, d *a, int *lda, int *info)
+ void dopgtr(char *uplo, int *n, d *ap, d *tau, d *q, int *ldq, d *work, int *info)
+ void dopmtr(char *side, char *uplo, char *trans, int *m, int *n, d *ap, d *tau, d *c, int *ldc, d *work, int *info)
+@@ -618,8 +618,8 @@ void dpoequb(int *n, d *a, int *lda, d *s, d *scond, d *amax, int *info)
+ void dporfs(char *uplo, int *n, int *nrhs, d *a, int *lda, d *af, int *ldaf, d *b, int *ldb, d *x, int *ldx, d *ferr, d *berr, d *work, int *iwork, int *info)
+ void dposv(char *uplo, int *n, int *nrhs, d *a, int *lda, d *b, int *ldb, int *info)
+ void dposvx(char *fact, char *uplo, int *n, int *nrhs, d *a, int *lda, d *af, int *ldaf, char *equed, d *s, d *b, int *ldb, d *x, int *ldx, d *rcond, d *ferr, d *berr, d *work, int *iwork, int *info)
+-void dpotf2(char *uplo, int *n, d *a, int *lda, int *info)
+-void dpotrf(char *uplo, int *n, d *a, int *lda, int *info)
++int dpotf2(char *uplo, int *n, d *a, int *lda, int *info)
++int dpotrf(char *uplo, int *n, d *a, int *lda, int *info)
+ void dpotri(char *uplo, int *n, d *a, int *lda, int *info)
+ void dpotrs(char *uplo, int *n, int *nrhs, d *a, int *lda, d *b, int *ldb, int *info)
+ void dppcon(char *uplo, int *n, d *ap, d *anorm, d *rcond, d *work, int *iwork, int *info)
+@@ -650,7 +650,7 @@ void dsbgvd(char *jobz, char *uplo, int *n, int *ka, int *kb, d *ab, int *ldab,
+ void dsbgvx(char *jobz, char *range, char *uplo, int *n, int *ka, int *kb, d *ab, int *ldab, d *bb, int *ldbb, d *q, int *ldq, d *vl, d *vu, int *il, int *iu, d *abstol, int *m, d *w, d *z, int *ldz, d *work, int *iwork, int *ifail, int *info)
+ void dsbtrd(char *vect, char *uplo, int *n, int *kd, d *ab, int *ldab, d *d, d *e, d *q, int *ldq, d *work, int *info)
+ void dsfrk(char *transr, char *uplo, char *trans, int *n, int *k, d *alpha, d *a, int *lda, d *beta, d *c)
+-void dsgesv(int *n, int *nrhs, d *a, int *lda, int *ipiv, d *b, int *ldb, d *x, int *ldx, d *work, s *swork, int *iter, int *info)
++int  dsgesv(int *n, int *nrhs, d *a, int *lda, int *ipiv, d *b, int *ldb, d *x, int *ldx, d *work, s *swork, int *iter, int *info)
+ void dspcon(char *uplo, int *n, d *ap, int *ipiv, d *anorm, d *rcond, d *work, int *iwork, int *info)
+ void dspev(char *jobz, char *uplo, int *n, d *ap, d *w, d *z, int *ldz, d *work, int *info)
+ void dspevd(char *jobz, char *uplo, int *n, d *ap, d *w, d *z, int *ldz, d *work, int *lwork, int *iwork, int *liwork, int *info)
+@@ -814,8 +814,8 @@ void sgesvd(char *jobu, char *jobvt, int *m, int *n, s *a, int *lda, s *s, s *u,
+ void sgesvj(char *joba, char *jobu, char *jobv, int *m, int *n, s *a, int *lda, s *sva, int *mv, s *v, int *ldv, s *work, int *lwork, int *info)
+ void sgesvx(char *fact, char *trans, int *n, int *nrhs, s *a, int *lda, s *af, int *ldaf, int *ipiv, char *equed, s *r, s *c, s *b, int *ldb, s *x, int *ldx, s *rcond, s *ferr, s *berr, s *work, int *iwork, int *info)
+ void sgetc2(int *n, s *a, int *lda, int *ipiv, int *jpiv, int *info)
+-void sgetf2(int *m, int *n, s *a, int *lda, int *ipiv, int *info)
+-void sgetrf(int *m, int *n, s *a, int *lda, int *ipiv, int *info)
++int sgetf2(int *m, int *n, s *a, int *lda, int *ipiv, int *info)
++int  sgetrf(int *m, int *n, s *a, int *lda, int *ipiv, int *info)
+ void sgetri(int *n, s *a, int *lda, int *ipiv, s *work, int *lwork, int *info)
+ void sgetrs(char *trans, int *n, int *nrhs, s *a, int *lda, int *ipiv, s *b, int *ldb, int *info)
+ void sggbak(char *job, char *side, int *n, int *ilo, int *ihi, s *lscale, s *rscale, int *m, s *v, int *ldv, int *info)
+@@ -963,7 +963,7 @@ void slasr(char *side, char *pivot, char *direct, int *m, int *n, s *c, s *s, s
+ void slasrt(char *id, int *n, s *d, int *info)
+ void slassq(int *n, s *x, int *incx, s *scale, s *sumsq)
+ void slasv2(s *f, s *g, s *h, s *ssmin, s *ssmax, s *snr, s *csr, s *snl, s *csl)
+-void slaswp(int *n, s *a, int *lda, int *k1, int *k2, int *ipiv, int *incx)
++int slaswp(int *n, s *a, int *lda, int *k1, int *k2, int *ipiv, int *incx)
+ void slasy2(bint *ltranl, bint *ltranr, int *isgn, int *n1, int *n2, s *tl, int *ldtl, s *tr, int *ldtr, s *b, int *ldb, s *scale, s *x, int *ldx, s *xnorm, int *info)
+ void slasyf(char *uplo, int *n, int *nb, int *kb, s *a, int *lda, int *ipiv, s *w, int *ldw, int *info)
+ void slatbs(char *uplo, char *trans, char *diag, char *normin, int *n, int *kd, s *ab, int *ldab, s *x, s *scale, s *cnorm, int *info)
+@@ -972,8 +972,8 @@ void slatps(char *uplo, char *trans, char *diag, char *normin, int *n, s *ap, s
+ void slatrd(char *uplo, int *n, int *nb, s *a, int *lda, s *e, s *tau, s *w, int *ldw)
+ void slatrs(char *uplo, char *trans, char *diag, char *normin, int *n, s *a, int *lda, s *x, s *scale, s *cnorm, int *info)
+ void slatrz(int *m, int *n, int *l, s *a, int *lda, s *tau, s *work)
+-void slauu2(char *uplo, int *n, s *a, int *lda, int *info)
+-void slauum(char *uplo, int *n, s *a, int *lda, int *info)
++int slauu2(char *uplo, int *n, s *a, int *lda, int *info)
++int slauum(char *uplo, int *n, s *a, int *lda, int *info)
+ void sopgtr(char *uplo, int *n, s *ap, s *tau, s *q, int *ldq, s *work, int *info)
+ void sopmtr(char *side, char *uplo, char *trans, int *m, int *n, s *ap, s *tau, s *c, int *ldc, s *work, int *info)
+ void sorbdb(char *trans, char *signs, int *m, int *p, int *q, s *x11, int *ldx11, s *x12, int *ldx12, s *x21, int *ldx21, s *x22, int *ldx22, s *theta, s *phi, s *taup1, s *taup2, s *tauq1, s *tauq2, s *work, int *lwork, int *info)
+@@ -1020,8 +1020,8 @@ void spoequb(int *n, s *a, int *lda, s *s, s *scond, s *amax, int *info)
+ void sporfs(char *uplo, int *n, int *nrhs, s *a, int *lda, s *af, int *ldaf, s *b, int *ldb, s *x, int *ldx, s *ferr, s *berr, s *work, int *iwork, int *info)
+ void sposv(char *uplo, int *n, int *nrhs, s *a, int *lda, s *b, int *ldb, int *info)
+ void sposvx(char *fact, char *uplo, int *n, int *nrhs, s *a, int *lda, s *af, int *ldaf, char *equed, s *s, s *b, int *ldb, s *x, int *ldx, s *rcond, s *ferr, s *berr, s *work, int *iwork, int *info)
+-void spotf2(char *uplo, int *n, s *a, int *lda, int *info)
+-void spotrf(char *uplo, int *n, s *a, int *lda, int *info)
++int spotf2(char *uplo, int *n, s *a, int *lda, int *info)
++int spotrf(char *uplo, int *n, s *a, int *lda, int *info)
+ void spotri(char *uplo, int *n, s *a, int *lda, int *info)
+ void spotrs(char *uplo, int *n, int *nrhs, s *a, int *lda, s *b, int *ldb, int *info)
+ void sppcon(char *uplo, int *n, s *ap, s *anorm, s *rcond, s *work, int *iwork, int *info)
+@@ -1135,9 +1135,9 @@ void strrfs(char *uplo, char *trans, char *diag, int *n, int *nrhs, s *a, int *l
+ void strsen(char *job, char *compq, bint *select, int *n, s *t, int *ldt, s *q, int *ldq, s *wr, s *wi, int *m, s *s, s *sep, s *work, int *lwork, int *iwork, int *liwork, int *info)
+ void strsna(char *job, char *howmny, bint *select, int *n, s *t, int *ldt, s *vl, int *ldvl, s *vr, int *ldvr, s *s, s *sep, int *mm, int *m, s *work, int *ldwork, int *iwork, int *info)
+ void strsyl(char *trana, char *tranb, int *isgn, int *m, int *n, s *a, int *lda, s *b, int *ldb, s *c, int *ldc, s *scale, int *info)
+-void strti2(char *uplo, char *diag, int *n, s *a, int *lda, int *info)
+-void strtri(char *uplo, char *diag, int *n, s *a, int *lda, int *info)
+-void strtrs(char *uplo, char *trans, char *diag, int *n, int *nrhs, s *a, int *lda, s *b, int *ldb, int *info)
++int strti2(char *uplo, char *diag, int *n, s *a, int *lda, int *info)
++int strtri(char *uplo, char *diag, int *n, s *a, int *lda, int *info)
++int strtrs(char *uplo, char *trans, char *diag, int *n, int *nrhs, s *a, int *lda, s *b, int *ldb, int *info)
+ void strttf(char *transr, char *uplo, int *n, s *a, int *lda, s *arf, int *info)
+ void strttp(char *uplo, int *n, s *a, int *lda, s *ap, int *info)
+ void stzrzf(int *m, int *n, s *a, int *lda, s *tau, s *work, int *lwork, int *info)
