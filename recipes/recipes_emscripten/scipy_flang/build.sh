@@ -1,9 +1,5 @@
 set -ex
 
-# make sure we see all errors -error-limit=0
-
-export LDFLAGS="-Wl,-error-limit=0"
-
 
 LLVM_PKG_URL="https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
 LLVM_PKG="llvm.tar.bz2"
