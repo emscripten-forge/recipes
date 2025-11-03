@@ -1024,8 +1024,8 @@ class WASMDynamicLinker(GnuLikeDynamicLinkerMixin, PosixDynamicLinkerMixin, Dyna
         return []
 
     def build_rpath_args(self, env: 'Environment', build_dir: str, from_dir: str,
-                         rpath_paths: T.Tuple[str, ...], build_rpath: str,
-                         install_rpath: str) -> T.Tuple[T.List[str], T.Set[bytes]]:
+                         rpath_paths: T.Tuple[str, ...], build_rpath: str="",
+                         install_rpath: str="") -> T.Tuple[T.List[str], T.Set[bytes]]:
         return ([], set())
 
 
