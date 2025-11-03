@@ -1,0 +1,78 @@
+From 88d9f88a40ae0aee5db0d5318a6a1abe42e2bb14 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 5 Jun 2025 14:11:26 +0200
+Subject: [PATCH 4/4] Replace dtype with numpy int32
+
+---
+ scipy/integrate/_ode.py            | 8 ++++----
+ scipy/interpolate/_fitpack2.py     | 4 ++--
+ scipy/interpolate/_fitpack_impl.py | 4 ++--
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/scipy/integrate/_ode.py b/scipy/integrate/_ode.py
+index 72d9da2..86ed061 100644
+--- a/scipy/integrate/_ode.py
++++ b/scipy/integrate/_ode.py
+@@ -84,16 +84,16 @@ import re
+ import threading
+ import warnings
+ 
+-from numpy import asarray, array, zeros, isscalar, real, imag, vstack
++from numpy import asarray, array, zeros, isscalar, real, imag, vstack, int32
+ 
+ from . import _vode
+ from . import _dop
+ from . import _lsoda
+ 
+ 
+-_dop_int_dtype = _dop.types.intvar.dtype
+-_vode_int_dtype = _vode.types.intvar.dtype
+-_lsoda_int_dtype = _lsoda.types.intvar.dtype
++_dop_int_dtype = int32  # _dop.types.intvar.dtype
++_vode_int_dtype = int32  # _vode.types.intvar.dtype
++_lsoda_int_dtype = int32  # _lsoda.types.intvar.dtype
+ 
+ 
+ # lsoda, vode and zvode are not thread-safe. VODE_LOCK protects both vode and
+diff --git a/scipy/interpolate/_fitpack2.py b/scipy/interpolate/_fitpack2.py
+index daa7773..5514a0e 100644
+--- a/scipy/interpolate/_fitpack2.py
++++ b/scipy/interpolate/_fitpack2.py
+@@ -22,14 +22,14 @@ __all__ = [
+ import warnings
+ from threading import Lock
+ 
+-from numpy import zeros, concatenate, ravel, diff, array
++from numpy import zeros, concatenate, ravel, diff, array, int32
+ import numpy as np
+ 
+ from . import _fitpack_impl
+ from . import _dfitpack as dfitpack
+ 
+ 
+-dfitpack_int = dfitpack.types.intvar.dtype
++dfitpack_int = int32 # dfitpack.types.intvar.dtype
+ FITPACK_LOCK = Lock()
+ 
+ 
+diff --git a/scipy/interpolate/_fitpack_impl.py b/scipy/interpolate/_fitpack_impl.py
+index a00ca10..9b4d0f6 100644
+--- a/scipy/interpolate/_fitpack_impl.py
++++ b/scipy/interpolate/_fitpack_impl.py
+@@ -28,14 +28,14 @@ import warnings
+ import numpy as np
+ from . import _fitpack
+ from numpy import (atleast_1d, array, ones, zeros, sqrt, ravel, transpose,
+-                   empty, iinfo, asarray)
++                   empty, iinfo, asarray, int32)
+ 
+ # Try to replace _fitpack interface with
+ #  f2py-generated version
+ from . import _dfitpack as dfitpack
+ 
+ 
+-dfitpack_int = dfitpack.types.intvar.dtype
++dfitpack_int = int32 # dfitpack.types.intvar.dtype
+ 
+ 
+ def _int_overflow(x, exception, msg=None):
