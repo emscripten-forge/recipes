@@ -40,7 +40,11 @@ export FCLIBS="-lFortranRuntime"
 
 
 
-for name in dlauu2 slauu2 clauu2 zlauu2 \
+for name in sgetf2 spotf2 slaswp strti2 \
+            dgetf2 dpotf2 dlaswp dtrti2 \
+            cgetf2 cpotf2 claswp ctrti2 \
+            zgetf2 zpotf2 zlaswp ztrti2 \
+            dlauu2 slauu2 clauu2 zlauu2 \
             dlauum slauum clauum zlauum \
             dgetrf sgetrf cgetrf zgetrf \
             dgetri sgetri cgetri zgetri \
