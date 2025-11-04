@@ -6,8 +6,6 @@ emmake make libs netlib \
     CC=emcc \
     HOSTCC=gcc \
     TARGET=RISCV64_GENERIC \
-    NO_LAPACKE=0 \
-    NO_CBLAS=0 \
     USE_THREAD=0
 
 emmake make install PREFIX=$PREFIX NO_SHARED=1
