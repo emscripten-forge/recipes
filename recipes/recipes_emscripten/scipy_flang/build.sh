@@ -35,8 +35,8 @@ export FCLIBS="-lFortranRuntime"
 
 
 
-sed -i 's/void/int/g' scipy/linalg/cython_blas_signatures.txt
-sed -i 's/void/int/g' scipy/linalg/cython_lapack_signatures.txt
+# sed -i 's/void/int/g' scipy/linalg/cython_blas_signatures.txt
+# sed -i 's/void/int/g' scipy/linalg/cython_lapack_signatures.txt
 
 
 
