@@ -40,6 +40,25 @@ export FCLIBS="-lFortranRuntime"
 
 
 
+for name in dlauu2 slauu2 clauu2 zlauu2 \
+            dlauum slauum clauum zlauum \
+            dgetrf sgetrf cgetrf zgetrf \
+            dgetri sgetri cgetri zgetri \
+            dpotrf spotrf cpotrf zpotrf \
+            dpotri spotri cpotri zpotri \
+            dtrtri strtri ctrtri ztrtri \
+            dtrtrs strtrs ctrtrs ztrtrs \
+            dgeqrf sgeqrf cgeqrf zgeqrf \
+            dgeqr2 sgeqr2 cgeqr2 zgeqr2 \
+            dgeqrfp sgeqrfp cgeqrfp zgeqrfp \
+            dgelqf sgelqf cgelqf zgelqf \
+            dgesv sgesv cgesv zgesv \
+            dgesvx sgesvx cgesvx zgesvx \
+            dgetrs sgetrs cgetrs zgetrs; do
+  sed -i "s/^void ${name}(/int ${name}(/" scipy/linalg/cython_lapack_signatures.txt
+done
+
+
 
 
 
