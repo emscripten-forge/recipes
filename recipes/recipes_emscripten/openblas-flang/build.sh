@@ -28,7 +28,7 @@ export FCLIBS="-lFortranRuntime"
 
 # create an empty make.inc in the "interfaces" directory to
 
-touch interfaces/make.inc
+touch interface/make.inc
 
 
 
