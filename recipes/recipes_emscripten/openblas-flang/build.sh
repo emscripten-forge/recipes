@@ -7,6 +7,7 @@ emmake make libs netlib \
     HOSTCC=gcc \
     TARGET=RISCV64_GENERIC \
     NO_LAPACKE=0 \
+    NO_LAPACK=1 \
     USE_THREAD=0 \
     INTERFACE64=0
     
