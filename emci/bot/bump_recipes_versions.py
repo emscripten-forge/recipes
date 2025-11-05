@@ -284,7 +284,6 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
 
-        # run command and get the output as json
         command = [
             "gh", "pr", "list",
             "--author", "emscripten-forge-bot",
@@ -293,6 +292,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
             "--limit", 200 # default is only 30
         ]
 
+        # run command and get the output as json
         all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
