@@ -26,6 +26,12 @@ export FCLIBS="-lFortranRuntime"
 
 
 
+# create an empty make.inc in the "interfaces" directory to
+
+touch interfaces/make.inc
+
+
+
 emmake make libs netlib \
     CC=emcc \
     HOSTCC=gcc \
