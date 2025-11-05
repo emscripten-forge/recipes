@@ -289,7 +289,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
             "--author", "emscripten-forge-bot",
             "--base", pr_target_branch,
             "--json", "number,title",
-            "--limit", 200 # default is only 30
+            "--limit", "200" # default is only 30
         ]
 
         # run command and get the output as json
