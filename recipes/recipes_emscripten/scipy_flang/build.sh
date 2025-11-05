@@ -64,8 +64,8 @@ cp $RECIPE_DIR/cython_lapack_signatures.txt scipy/linalg/cython_lapack_signature
 ${PYTHON} -m pip install . ${PIP_ARGS} --no-build-isolation \
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" \
     -Csetup-args="-Duse-g77-abi=true" \
-    -Csetup-args="-Dblas=blas" \
-    -Csetup-args="-Dlapack=lapack" \
+    -Csetup-args="-Dblas=openblas" \
+    -Csetup-args="-Dlapack=openblas" \
     -Csetup-args="-Dfortran_std=none" \
     -Csetup-args="-Duse-pythran=false" \
     -Cbuild-dir="_build" \
