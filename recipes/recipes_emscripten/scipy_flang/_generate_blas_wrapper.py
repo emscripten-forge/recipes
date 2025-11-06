@@ -61,23 +61,27 @@ def generate_decl_wrapper(name, return_type, argnames, argtypes, accelerate):
     # special care for character arguments
     extra_c_args = []
     extra_call_args = []
+    extended_arg_names = []
     for c_argtype, argname in zip(c_argtypes, argnames):
         if c_argtype == 'char':
             extra_c_args.append('int')
             extra_call_args.append('1')  # length of character arguments is always 1
-    
+            extended_arg_names.append(f'{argname}_len')
+
     extended_c_argtypes = c_argtypes + extra_c_args
-    extended_argnames = argnames + extra_call_args
+    extended_call_args = argnames + extra_call_args
+    extended_argnames = argnames + extended_arg_names
 
     param_list = ', '.join(f'{t} *{n}' for t, n in zip(c_argtypes, argnames))
     extended_param_list = ', '.join(f'{t} *{n}' for t, n in zip(extended_c_argtypes, extended_argnames))
 
-    argnames = ', '.join(extended_argnames)
+    # call arguments will be padded / filled with 1's for character lengths 
+    call_arguments = ', '.join(extended_call_args)
     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
     return f"""
-{c_return_type} {blas_macro}({blas_name})({param_list});
+{c_return_type} {blas_macro}({blas_name})({extended_param_list});
 {c_return_type} F_FUNC({name},{name.upper()})({param_list}){{
-    return {blas_macro}({blas_name})({argnames});
+    return {blas_macro}({blas_name})({call_arguments});
 }}
 """
 
