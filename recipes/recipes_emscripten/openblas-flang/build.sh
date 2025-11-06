@@ -8,7 +8,7 @@ emmake make libs netlib \
     TARGET=RISCV64_GENERIC \
     NO_LAPACKE=0 \
     USE_THREAD=0
-    
+
 emmake make install PREFIX=$PREFIX NO_SHARED=1
 
 mkdir -p $PREFIX/lib
