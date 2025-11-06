@@ -78,13 +78,14 @@ def generate_decl_wrapper(name, return_type, argnames, argtypes, accelerate):
     # call arguments will be padded / filled with 1's for character lengths 
     call_arguments = ', '.join(extended_call_args)
     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
-    return f"""
-{c_return_type} {blas_macro}({blas_name})({extended_param_list});
-{c_return_type} F_FUNC({name},{name.upper()})({param_list}){{
-    return {blas_macro}({blas_name})({call_arguments});
-}}
-"""
-
+    ret = f"""
+        {c_return_type} {blas_macro}({blas_name})({extended_param_list});
+        {c_return_type} F_FUNC({name},{name.upper()})({param_list}){{
+            return {blas_macro}({blas_name})({call_arguments});
+        }}
+        """
+    print(ret)
+    return ret
 
 def generate_file_wrapper(sigs, accelerate):
     """
