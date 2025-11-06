@@ -32,8 +32,7 @@ export FCLIBS="-lFortranRuntime"
 
 
 
-# copy scipy/_build_utils/_generate_blas_wrapper.py to the source dir
-cp $RECIPE_DIR/_generate_blas_wrapper.py scipy/_build_utils/_generate_blas_wrapper.py
+cp $RECIPE_DIR/_generate_pyx.py  scipy/linalg/_generate_pyx.py
 
 
 
