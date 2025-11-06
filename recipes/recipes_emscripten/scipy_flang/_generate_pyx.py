@@ -421,7 +421,7 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
     for argtypes in argtypes:
         if argtypes == 'char':
             c_proto += ', int '
-            pyx_call_args += ', 1
+            pyx_call_args += ', 1'
     
 
     return f"""
