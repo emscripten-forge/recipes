@@ -534,9 +534,20 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate):
         argnames = ['out'] + argnames
         c_argtypes = [c_return_type] + c_argtypes
         c_return_type = 'void'
+
+    extra_c_argtypes = []
+    extra_arg_names = []
+    for c_arg_type,arg_name in zip(c_argtypes, argnames):
+        if c_arg_type == "char":
+            extra_c_argtypes.append("int")
+            extra_arg_names.append(f"len_{arg_name}")
+    c_argtypes = extra_c_argtypes + c_argtypes
+    argnames = extra_arg_names + argnames
+
     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
     c_args = ', '.join(f'{t} *{n}' for t, n in zip(c_argtypes, argnames))
     return f"{c_return_type} {blas_macro}({blas_name})({c_args});\n"
+
 
 
 def generate_file_c(sigs, lib_name, accelerate):
