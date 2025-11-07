@@ -385,7 +385,7 @@ def arg_casts(argtype):
     return ''
 
 
-def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_name):
+def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_name, extra_arg_for_chars):
     """Create Cython declaration for BLAS/LAPACK function."""
     pyx_input_args = ', '.join([' *'.join(arg) for arg in zip(argtypes, argnames)])
     # By default, nothing is returned
@@ -412,17 +412,18 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
     pyx_call_args = ', '.join(pyx_call_args)
     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
 
-    # We need to fix stuff when there are character arguments.
-    # For each of these we need to add an int argument at the end.
-    # When calling, we need to add a '1' for each of these arguments.
-    # Therefore we need to create an:
-    # - extended c_proto
-    # - extended pyx_call_args
-    for argtypes in argtypes:
-        if argtypes == 'char':
-            c_proto += ', int '
-            pyx_call_args += ', 1'
-    
+    if extra_arg_for_chars:
+        # We need to fix stuff when there are character arguments.
+        # For each of these we need to add an int argument at the end.
+        # When calling, we need to add a '1' for each of these arguments.
+        # Therefore we need to create an:
+        # - extended c_proto
+        # - extended pyx_call_args
+        for argtypes in argtypes:
+            if argtypes == 'char':
+                c_proto += ', int '
+                pyx_call_args += ', 1'
+        
 
     return f"""
 cdef extern from "{header_name}":
@@ -448,7 +449,7 @@ def generate_file_pyx(sigs, lib_name, header_name, accelerate):
     comment = ['# ' + c for c in COMMENT_TEXT]
     preamble = comment + [preamble_template.format(names)]
     decls = [
-        generate_decl_pyx(**sig, accelerate=accelerate, header_name=header_name)
+        generate_decl_pyx(**sig, extra_arg_for_chars=lib_name!="BLAS", accelerate=accelerate, header_name=header_name)
         for sig in sigs]
     content = preamble + decls + [epilog]
     return ''.join(content)
@@ -524,7 +525,7 @@ def generate_file_pxd(sigs, lib_name):
     return ''.join(content)
 
 
-def generate_decl_c(name, return_type, argnames, argtypes, accelerate):
+def generate_decl_c(name, return_type, argnames, argtypes, accelerate, extra_arg_for_chars):
     """Create C header declarations for Cython to import."""
     c_return_type = C_TYPES[return_type]
     c_argtypes = [C_TYPES[t] for t in argtypes]
@@ -537,10 +538,12 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate):
 
     extra_c_argtypes = []
     extra_arg_names = []
-    for c_arg_type,arg_name in zip(c_argtypes, argnames):
-        if c_arg_type == "char":
-            extra_c_argtypes.append("int")
-            extra_arg_names.append(f"len_{arg_name}")
+    
+    if extra_arg_for_chars:
+        for c_arg_type,arg_name in zip(c_argtypes, argnames):
+            if c_arg_type == "char":
+                extra_c_argtypes.append("int")
+                extra_arg_names.append(f"len_{arg_name}")
     c_argtypes = extra_c_argtypes + c_argtypes
     argnames = extra_arg_names + argnames
 
@@ -559,7 +562,7 @@ def generate_file_c(sigs, lib_name, accelerate):
     else:
         raise RuntimeError(f'Unrecognized lib_name: {lib_name}.')
     preamble = ['/*\n', *COMMENT_TEXT, '*/\n'] + preamble + [CPP_GUARD_BEGIN]
-    decls = [generate_decl_c(**sig, accelerate=accelerate) for sig in sigs]
+    decls = [generate_decl_c(**sig, accelerate=accelerate, extra_arg_for_chars=lib_name!="BLAS") for sig in sigs]
     content = preamble + decls + [CPP_GUARD_END]
     return ''.join(content)
 

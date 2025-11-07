@@ -47,18 +47,6 @@ cp $RECIPE_DIR/cython_lapack_signatures.txt scipy/linalg/cython_lapack_signature
 
 
 
-# # wasm-ld: error: function signature mismatch: slamch_
-#   >>> defined as (i32) -> f32 in scipy/linalg/cython_lapack.cpython-313-wasm32-emscripten.so.p/meson-generated_cython_lapack.c.o
-#   >>> defined as (i32, i32) -> f32 in $PREFIX/lib/libopenblas.so
-
-#   wasm-ld: error: function signature mismatch: sgbbrd_
-#   >>> defined as (i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32) -> void in scipy/linalg/cython_lapack.cpython-313-wasm32-emscripten.so.p/meson-generated_cython_lapack.c.o
-#   >>> defined as (i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32, i32) -> void in $PREFIX/lib/libopenblas.so
-
-#   wasm-ld: error: function signature mismatch: slaset_
-#   >>> defined as (i32, i32, i32, i32, i32, i32, i32) -> void in scipy/linalg/cython_lapack.cpython-313-wasm32-emscripten.so.p/meson-generated_cython_lapack.c.o
-#   >>> defined as (i32, i32, i32, i32, i32, i32, i32, i32) -> void in $PREFIX/lib/libopenblas.so
-
 
 
 # export MESON_FORCE_BACKTRACE=1
