@@ -1,44 +1,47 @@
 context:
   name: tree-sitter
-  version: 0.23.2
-  cross_target_plattform: emscripten-wasm32
-  target_plattform: emscripten-wasm32
+  version: 0.24.0
 
 package:
-  name: ${{ name|lower }}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/0f/50/fd5fafa42b884f741b28d9e6fd366c3f34e15d2ed3aa9633b34e388379e2/${{ name }}-${{ version }}.tar.gz
-  sha256: 66bae8dd47f1fed7bdef816115146d3a41c39b5c482d7bad36d9ba1def088450
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name|replace('-','_') }}/${{ name }}-${{ version }}.tar.gz
+  sha256: abd95af65ca2f4f7eca356343391ed669e764f37748b5352946f00f7fc78e734
 
 build:
   number: 0
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
 requirements:
   build:
-    - cross-python_${{ target_platform }}
-    - python
-    - pip
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
+  - python
 
 tests:
-  - script: pytester
-    files:
-      recipe:
-        - test_tree_sitter.py
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
+- script: pytester
+  files:
+    recipe:
+    - test_tree_sitter.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   homepage: https://tree-sitter.github.io/tree-sitter
+  repository: https://github.com/tree-sitter/py-tree-sitter
   license: MIT
   license_file: LICENSE
   summary: Python bindings to the Tree-sitter parsing library
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
