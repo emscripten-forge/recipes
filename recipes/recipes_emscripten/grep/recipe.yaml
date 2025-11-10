@@ -7,8 +7,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://mirrors.kernel.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.xz
-  sha256: 2649b27c0e90e632eadcd757be06c6e9a4f48d941de51e7c0f83ff76408a07b9
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: badda546dfc4b9d97e992e2c35f3b5c7f20522ffcbe2f01ba1e9cdcbe7644cdc
 
 build:
   number: 0
@@ -30,6 +30,15 @@ tests:
     files:
     - bin/grep.js
     - bin/grep.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/grep.js --version | head -1)
+    if [[ ! "$OUTPUT" != "grep (GNU grep) 3.12" ]]; then
+      echo "Incorrect output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+      - run_modularized
 
 about:
   license: GPL-3.0-only
