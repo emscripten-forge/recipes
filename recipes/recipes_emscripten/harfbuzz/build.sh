@@ -2,11 +2,14 @@
 
 set -ex
 
+export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$BUILD_PREFIX/lib/pkgconfig
+export PKG_CONFIG=$BUILD_PREFIX/bin/pkg-config
+
 meson_config_args=(
     -Dglib=enabled
     -Dicu=enabled
     -Dfreetype=enabled
-    -Dcairo=disabled
+    -Dcairo=enabled
     -Dchafa=disabled
     -Dgraphite=enabled
     -Dintrospection=disabled # requires gobject-introspection as run-time dep
