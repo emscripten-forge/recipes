@@ -32,7 +32,6 @@ export CONFIG_ARGS="--enable-R-static-lib \
 --enable-java=no \
 --enable-R-profiling=no \
 --enable-byte-compiled-packages=no \
---disable-rpath \
 --disable-openmp \
 --disable-nls \
 --with-internal-tzcode \
@@ -79,9 +78,6 @@ popd
 # libz.so has an invalid ELF header which causes an error when looking for
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
-
-# FIXME: this should come from libflang
-cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
 
 mkdir -p _build_wasm
 pushd _build_wasm
