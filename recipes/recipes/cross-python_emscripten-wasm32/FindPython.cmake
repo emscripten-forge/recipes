@@ -110,7 +110,7 @@ endif()
                     # <source1> [<source2> ...])
 
 function(python_add_library name)
-    cmake_parse_arguments(PYLIB "" "TYPE;USE_SABI;WITH_SOABI" "SOURCES" ${ARGN})
+    cmake_parse_arguments(PYLIB "WITH_SOABI" "TYPE;USE_SABI" "SOURCES" ${ARGN})
 
     # Default type
     if(NOT PYLIB_TYPE)
