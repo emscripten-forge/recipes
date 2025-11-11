@@ -102,3 +102,29 @@ if (NOT TARGET Python::Interpreter)
     )
     message(STATUS "Created Python::Interpreter IMPORTED executable target.")
 endif()
+
+
+
+# create python_add_library impl. 
+# Python_add_library (<name> [STATIC | SHARED | MODULE [USE_SABI <version>] [WITH_SOABI]]
+                    # <source1> [<source2> ...])
+
+function(python_add_library name)
+    cmake_parse_arguments(PYLIB "" "TYPE;USE_SABI;WITH_SOABI" "SOURCES" ${ARGN})
+    if(NOT PYLIB_TYPE)
+        set(PYLIB_TYPE MODULE)
+    endif() 
+    if(PYLIB_TYPE STREQUAL "MODULE")
+        set(options MODULE)
+    elseif(PYLIB_TYPE STREQUAL "SHARED")
+        set(options SHARED)
+    elseif(PYLIB_TYPE STREQUAL "STATIC")
+        set(options STATIC)
+    else()
+        message(FATAL_ERROR "Invalid library type specified: ${PYLIB_TYPE}. Must be MODULE, SHARED, or STATIC.")
+    endif()
+
+    add_library(${name} ${options} ${PYLIB_SOURCES})
+    target_include_directories(${name} PRIVATE ${Python_INCLUDE_DIRS})
+    target_link_libraries(${name} PRIVATE ${Python_LIBRARIES})
+endfunction()
