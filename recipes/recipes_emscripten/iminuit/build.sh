@@ -8,4 +8,4 @@ toolchain_path="${emscripten_root}/cmake/Modules/Platform/Emscripten.cmake"
 export CMAKE_BUILD_PARALLEL_LEVEL="${CPU_COUNT}"   
 export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path} -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake"
 
-${PYTHON} -m pip install . -vv
+python -m pip install . -vv
