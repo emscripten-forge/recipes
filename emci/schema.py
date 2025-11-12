@@ -1,6 +1,6 @@
 import re
-from pydantic import BaseModel, field_validator
-from typing import Optional
+from pydantic import BaseModel, field_validator, model_validator
+from typing import Optional, Any
 
 class Source(BaseModel):
     url: str | list[str]
@@ -40,3 +40,18 @@ class About(BaseModel):
 class Recipe(BaseModel):
     about: About
     source: Optional[Source] = None
+    tests: Optional[Any] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def check_tests_exists(cls, values):
+        if 'tests' not in values or values['tests'] is None:
+            if 'outputs' in values:
+                for output_dict in values['outputs']:
+                    if 'tests' not in output_dict:
+                        pkg_name = output_dict.get('package', {}).get('name', 'unknown')
+                        raise AttributeError(f"Output '{pkg_name}' must have a 'tests' section.")
+            else:
+                raise AttributeError("Recipe must have a 'tests' section.")
+
+        return values
