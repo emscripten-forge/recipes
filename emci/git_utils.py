@@ -115,7 +115,7 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
             '--label', 'Automerge' if automerge else 'Needs Tests'
     ]
 
-    if target_branch_name == "emscripten-4x"
+    if target_branch_name == "emscripten-4x":
         args.extend(['--label', '4.X'])
 
     # call gh to create a PR
