@@ -18,7 +18,8 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_BUILD_TYPE=Release                             \
     -DCMAKE_PREFIX_PATH=$PREFIX                            \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
-    -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON
+    -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON                      \
+    -DCMAKE_VERBOSE_MAKEFILE=ON
 
 # Build step with emmake
 emmake make -j1
