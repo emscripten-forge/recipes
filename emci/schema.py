@@ -39,4 +39,4 @@ class About(BaseModel):
 
 class Recipe(BaseModel):
     about: About
-    source: Source
+    source: Optional[Source] = None
