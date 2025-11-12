@@ -13,6 +13,50 @@ import importlib.util
 import os
 
 
+no_extra_args_needed_for = set([
+"cgetrs",
+"clauu2",
+"clauum",
+"cpotf2",
+"cpotrf",
+"cspmv",
+"cspr",
+"csymv",
+"csyr",
+"ctrti2",
+"ctrtri",
+"ctrtrs",
+"dgetrs",
+"dlauu2",
+"dlauum",
+"dpotf2",
+"dpotrf",
+"dtrti2",
+"dtrtri",
+"dtrtrs",
+"sgetrs",
+"slauu2",
+"slauum",
+"spotf2",
+"spotrf",
+"strti2",
+"strtri",
+"strtrs",
+"zgetrs",
+"zlauu2",
+"zlauum",
+"zpotf2",
+"zpotrf",
+"zspmv",
+"zspr",
+"zsymv",
+"zsyr",
+"ztrti2",
+"ztrtri",
+"ztrtrs",
+])
+
+
 def import_wrappers_common():
     # Convoluted because we can't import at build time
     _wrappers_common_path = os.path.join(
@@ -412,7 +456,7 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
     pyx_call_args = ', '.join(pyx_call_args)
     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
 
-    if extra_arg_for_chars:
+    if extra_arg_for_chars and name not in no_extra_args_needed_for:
         # We need to fix stuff when there are character arguments.
         # For each of these we need to add an int argument at the end.
         # When calling, we need to add a '1' for each of these arguments.
@@ -539,7 +583,7 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate, extra_arg
     extra_c_argtypes = []
     extra_arg_names = []
     
-    if extra_arg_for_chars:
+    if extra_arg_for_chars and name not in no_extra_args_needed_for:
         for c_arg_type,arg_name in zip(c_argtypes, argnames):
             if c_arg_type == "char":
                 extra_c_argtypes.append("int")
