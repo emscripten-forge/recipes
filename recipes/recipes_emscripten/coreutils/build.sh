@@ -15,8 +15,6 @@ export CONFIG_LDFLAGS="\
     "
 
 emconfigure ./configure \
-    --build=x86_64-linux-gnu \
-    --host=wasm32-unknown-emscripten \
     --disable-acl \
     --disable-nls \
     --disable-threads \
@@ -27,7 +25,12 @@ emconfigure ./configure \
     FORCE_UNSAFE_CONFIGURE=1 \
     TIME_T_32_BIT_OK=yes \
     ac_cv_have_decl_alarm=no \
-    gl_cv_func_sleep_works=yes
+    gl_cv_func_sleep_works=yes \
+    gl_cv_bitsizeof_ptrdiff_t=32 \
+    gl_cv_bitsizeof_sig_atomic_t=32 \
+    gl_cv_bitsizeof_size_t=32 \
+    gl_cv_bitsizeof_wchar_t=16 \
+    gl_cv_bitsizeof_wint_t=32
 
 echo "sed"
 sed -i 's|$(MAKE) src/make-prime-list$(EXEEXT)|gcc src/make-prime-list.c -o src/make-prime-list$(EXEEXT) -Ilib/|' Makefile

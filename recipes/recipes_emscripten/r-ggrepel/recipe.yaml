@@ -1,7 +1,7 @@
 context:
   version: 0.9.6
   name: r-ggrepel
-  r_base_version: 4.4.3
+  r_base_version: 4.5.2
 
 package:
   name: ${{ name }}
@@ -14,28 +14,47 @@ source:
   sha256: 268a6eda6377d27b403af40423cdf6dce30b2fe1460f771377dc68ce3e4e7212
 
 build:
-  number: 0
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
     - cross-r-base_${{ target_platform }}
     - ${{ compiler('cxx') }}
+    - r-base == ${{ r_base_version }}
     - r-ggplot2
     - r-rcpp
     - r-rlang
     - r-scales
     - r-withr
+    # nested dependencies
+    - r-magrittr
+    - r-tibble
   host:
-    - r-base >= ${{ r_base_version }}
+    - r-base == ${{ r_base_version }}
     - r-ggplot2
+    - r-magrittr
     - r-rcpp
     - r-rlang
     - r-scales
     - r-withr
+    # NOTE: these are only needed so that rattler-build can build all R packages
+    # in the correct order.
+    # nested dependencies of r-ggplot2
+    - r-cli
+    - r-glue
+    - r-isoband
+    - r-vctrs
+    - r-mass
+    - r-mgcv
+    - r-tibble
+    # nested dependencies of r-scales
+    - r-farver
+    - r-colorspace
   run:
-    - r-base >= ${{ r_base_version }}
+    - r-base == ${{ r_base_version }}
     - r-ggplot2
+    - r-magrittr
     - r-rcpp
     - r-rlang
     - r-scales
@@ -49,7 +68,7 @@ tests:
 about:
   homepage: https://ggrepel.slowkow.com/
   repository: https://github.com/slowkow/ggrepel
-  license: GPL-3.0
+  license: GPL-3.0-only
   license_file: LICENSE
   summary: |
     Repel overlapping text labels away from each other in your ggplot2 figures.
