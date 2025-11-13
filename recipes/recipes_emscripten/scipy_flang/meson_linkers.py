@@ -1019,7 +1019,7 @@ class WASMDynamicLinker(GnuLikeDynamicLinkerMixin, PosixDynamicLinkerMixin, Dyna
     def get_soname_args(self, env: 'Environment', prefix: str, shlib_name: str,
                         suffix: str, soversion: str, darwin_versions: T.Tuple[str, str]) -> T.List[str]:
         # raise MesonException(f'{self.id} WHO does not support shared libraries.')
-        return ['-sSIDE_MODULE=1']
+        return ['-sSIDE_MODULE=1','--no-fatal-warnings']
 
     def get_asneeded_args(self) -> T.List[str]:
         return []
