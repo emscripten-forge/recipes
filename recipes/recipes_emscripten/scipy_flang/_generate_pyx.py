@@ -469,7 +469,7 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
                 pyx_call_args += ', 1'
         if return_type == 'char':
             return_type = 'void'
-            c_proto += ', int32_t *mistery_arg_0, int64_t *mistery_arg_1, int32_t *mistery_arg_2'
+            c_proto += ', int *mistery_arg_0, int64_t *mistery_arg_1, int *mistery_arg_2'
             pyx_call_args += ', 0, 0, 0'
         
 
