@@ -46,6 +46,10 @@ cp $RECIPE_DIR/_generate_pyx.py  scipy/linalg/_generate_pyx.py
 cp $RECIPE_DIR/cython_lapack_signatures.txt scipy/linalg/cython_lapack_signatures.txt
 
 
+# add -Wl,--fatal-warnings to flags
+
+export LDFLAGS="$LDFLAGS -Wl,--fatal-warnings"
+
 
 
 
