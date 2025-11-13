@@ -45,6 +45,9 @@ cp $RECIPE_DIR/_generate_pyx.py  scipy/linalg/_generate_pyx.py
 
 cp $RECIPE_DIR/cython_lapack_signatures.txt scipy/linalg/cython_lapack_signatures.txt
 
+# recipes/recipes_emscripten/scipy_flang/_matfuncs_expm.h
+cp $RECIPE_DIR/_matfuncs_expm.h scipy/linalg/_matfuncs_expm.h
+
 
 # add -Wl,--fatal-warnings to flags
 

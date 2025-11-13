@@ -467,6 +467,9 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
             if argtypes == 'char':
                 c_proto += ', int '
                 pyx_call_args += ', 1'
+        if return_type == 'char':
+            c_proto += ', int64_t, int32_t '
+            pyx_call_args += ', 0, 0'
         
 
     return f"""
@@ -588,6 +591,12 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate, extra_arg
             if c_arg_type == "char":
                 extra_c_argtypes.append("int")
                 extra_arg_names.append(f"len_{arg_name}")
+        if c_return_type == "char":
+            extra_c_argtypes.append("int64_t")
+            extra_c_argtypes.append("int32_t")
+            extra_arg_names.append(f"char_ret")
+            extra_arg_names.append(f"len_char_ret")
+        
     c_argtypes = extra_c_argtypes + c_argtypes
     argnames = extra_arg_names + argnames
 
