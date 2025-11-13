@@ -469,8 +469,8 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
                 pyx_call_args += ', 1'
         if return_type == 'char':
             return_type = 'void'
-            c_proto += ', int64_t, int32_t '
-            pyx_call_args += ', 0, 0'
+            c_proto += ', int32_t , int64_t, int32_t '
+            pyx_call_args += ', 0, 0, 0'
         
 
     return f"""
@@ -594,8 +594,10 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate, extra_arg
                 extra_arg_names.append(f"len_{arg_name}")
         if c_return_type == "char":
             c_return_type = "void"
+            extra_c_argtypes.append("int32_t")
             extra_c_argtypes.append("int64_t")
             extra_c_argtypes.append("int32_t")
+            extra_arg_names.append(f"char_whatever")
             extra_arg_names.append(f"char_ret")
             extra_arg_names.append(f"len_char_ret")
         
