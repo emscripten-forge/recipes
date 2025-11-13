@@ -463,9 +463,9 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
         # Therefore we need to create an:
         # - extended c_proto
         # - extended pyx_call_args
-        for argtypes in argtypes:
-            if argtypes == 'char':
-                c_proto += ', int '
+        for argtype,argname in zip(argtypes,argnames):
+            if argtype == 'char':
+                c_proto += f', int *{argname}_len'
                 pyx_call_args += ', 1'
         if return_type == 'char':
             return_type = 'void'
