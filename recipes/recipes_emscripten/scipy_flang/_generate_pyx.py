@@ -553,9 +553,20 @@ ctypedef bint zselect2(z*, z*)
 """
 
 
-def generate_decl_pxd(name, return_type, argnames, argtypes):
+def generate_decl_pxd(name, return_type, argnames, argtypes, extra_arg_for_chars):
     """Create Cython header declaration for BLAS/LAPACK function."""
     args = ', '.join([' *'.join(arg) for arg in zip(argtypes, argnames)])
+
+    
+    if extra_arg_for_chars and name not in no_extra_args_needed_for:
+        for argtype,argname in zip(argtypes,argnames):
+            if argtype == 'char':
+                args += f', int *len_{argname}'
+        
+        if return_type == 'char':
+            args += ', int *mistery_arg_0, long long *mistery_arg_1, int *mistery_arg_2'
+
+
     return f"cdef {return_type} {name}({args}) noexcept nogil\n"
 
 
@@ -568,7 +579,7 @@ def generate_file_pxd(sigs, lib_name):
     else:
         raise RuntimeError(f'Unrecognized lib_name: {lib_name}.')
     preamble = ['"""\n', *COMMENT_TEXT, '"""\n', preamble]
-    decls = [generate_decl_pxd(**sig)for sig in sigs]
+    decls = [generate_decl_pxd(**sig, extra_arg_for_chars=lib_name!="BLAS")for sig in sigs]
     content = preamble + decls
     return ''.join(content)
 
@@ -594,9 +605,9 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate, extra_arg
                 extra_arg_names.append(f"len_{arg_name}")
         if c_return_type == "char":
             c_return_type = "void"
-            extra_c_argtypes.append("int32_t")
-            extra_c_argtypes.append("int64_t")
-            extra_c_argtypes.append("int32_t")
+            extra_c_argtypes.append("int")
+            extra_c_argtypes.append("long long")
+            extra_c_argtypes.append("int")
             extra_arg_names.append(f"char_whatever")
             extra_arg_names.append(f"char_ret")
             extra_arg_names.append(f"len_char_ret")
