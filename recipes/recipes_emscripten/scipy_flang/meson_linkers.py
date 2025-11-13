@@ -692,7 +692,8 @@ class GnuLikeDynamicLinkerMixin(DynamicLinkerBase):
         return self._apply_prefix('--no-undefined')
 
     def fatal_warnings(self) -> T.List[str]:
-        return self._apply_prefix('--fatal-warnings')
+        # return self._apply_prefix('--fatal-warnings')
+        return []
 
     def get_soname_args(self, env: 'Environment', prefix: str, shlib_name: str,
                         suffix: str, soversion: str, darwin_versions: T.Tuple[str, str]) -> T.List[str]:
