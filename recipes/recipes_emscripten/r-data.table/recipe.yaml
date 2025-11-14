@@ -1,31 +1,30 @@
 context:
-  version: 1.17.0
+  version: 1.17.8
   name: r-data.table
-  r_base_version: 4.4.3
+  r_base_version: 4.5.2
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url:
-    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 82a7dd54fa583c20895b2d28fe07922f8f8aeb0ffbd94d1c143e79983bb9bcea
+  url: https://github.com/Rdatatable/${{ name[2:] }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: c8471e3f51339ad8f765bc25bad8ff69c9bf6157c09c64a25907066e8b172fdf
 
 build:
-  number: 0
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
     - cross-r-base_${{ target_platform }}
     - ${{ compiler('c') }}
+    - r-base == ${{ r_base_version }}
   host:
-    - r-base >= ${{ r_base_version }}
+    - r-base == ${{ r_base_version }}
     - zlib
   run:
-    - r-base >= ${{ r_base_version }}
+    - r-base == ${{ r_base_version }}
 
 tests:
 - package_contents:
