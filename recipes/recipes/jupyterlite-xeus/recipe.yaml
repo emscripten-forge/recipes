@@ -1,0 +1,60 @@
+context:
+  name: jupyterlite-xeus
+  version: 4.3.0_a1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- git: https://github.com/DerThorsten/jupyterlite-xeus-loader
+  branch: emscripten4x
+  target_directory: jupyterlite-xeus
+- git: https://github.com/DerThorsten/mambajs
+  branch: em4x
+  target_directory: mambajs
+
+build:
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+    - jupyterlab >=3,<5
+    - empack >=5.1.1,<7
+    - hatchling
+    - hatch-jupyter-builder
+    - hatch-nodejs-version
+    - yarn
+    - nodejs
+    - mamba
+    - black
+    - requests
+    - ruff
+    - traitlets
+    - typer
+  run:
+    - python
+    - empack >=5.1.1,<7
+    - traitlets
+    - jupyterlite-core >=0.6,<0.7
+    - pyyaml
+    - requests
+    # This is a hard-dependency now (cannot be for PyPi)
+    # https://github.com/jupyterlite/xeus/issues/248 for the hard pin
+    - micromamba =2.0.5
+
+about:
+  homepage: https://github.com/jupyterlite/xeus
+  summary: JupyterLite loader for Xeus kernels
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  repository: https://github.com/jupyterlite/xeus
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - trungleduc
