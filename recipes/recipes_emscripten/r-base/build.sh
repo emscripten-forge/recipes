@@ -97,6 +97,7 @@ pushd _build_wasm
         --prefix=$PREFIX    \
         --build="x86_64-conda-linux-gnu" \
         --host="wasm32-unknown-emscripten" \
+        --enable-R-shlib \
         $CONFIG_ARGS
 
     emmake make -j${CPU_COUNT}
