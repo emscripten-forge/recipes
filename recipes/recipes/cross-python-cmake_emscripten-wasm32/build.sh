@@ -9,4 +9,5 @@ do
 done
 
 
-mkdir -p "${PREFIX}/share/cross-python"
+mkdir -p "${PREFIX}/share/cross-python-cmake"
+cp $RECIPE_DIR/FindPython.cmake "${PREFIX}/share/cross-python-cmake/FindPython.cmake"

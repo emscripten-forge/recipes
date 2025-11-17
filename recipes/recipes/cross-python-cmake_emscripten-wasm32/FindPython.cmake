@@ -102,3 +102,41 @@ if (NOT TARGET Python::Interpreter)
     )
     message(STATUS "Created Python::Interpreter IMPORTED executable target.")
 endif()
+
+
+
+
+
+function(python_add_library name)
+    cmake_parse_arguments(PYLIB "WITH_SOABI" "TYPE;USE_SABI" "SOURCES" ${ARGN})
+
+    # Default type
+    if(NOT PYLIB_TYPE)
+        set(PYLIB_TYPE MODULE)
+    endif()
+
+    # Allow positional sources (anything not parsed as a keyword)
+    if(NOT PYLIB_SOURCES)
+        set(PYLIB_SOURCES ${PYLIB_UNPARSED_ARGUMENTS})
+    endif()
+
+    # Validate sources
+    if(NOT PYLIB_SOURCES)
+        message(FATAL_ERROR "No source files provided to python_add_library(${name})")
+    endif()
+
+    # Library type handling
+    if(PYLIB_TYPE STREQUAL "MODULE")
+        set(options MODULE)
+    elseif(PYLIB_TYPE STREQUAL "SHARED")
+        set(options SHARED)
+    elseif(PYLIB_TYPE STREQUAL "STATIC")
+        set(options STATIC)
+    else()
+        message(FATAL_ERROR "Invalid library type specified: ${PYLIB_TYPE}")
+    endif()
+
+    add_library(${name} ${options} ${PYLIB_SOURCES})
+    target_include_directories(${name} PRIVATE ${Python_INCLUDE_DIRS})
+    target_link_libraries(${name} PRIVATE ${Python_LIBRARIES})
+endfunction()
