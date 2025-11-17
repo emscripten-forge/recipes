@@ -20,4 +20,5 @@ EOF
 
 
 
-maturin build --target wasm32-unknown-unknown
+export MATURIN_TARGET=wasm32-unknown-emscripten
+${PYTHON} -m pip  install . -vvv ${PIP_ARGS} 
