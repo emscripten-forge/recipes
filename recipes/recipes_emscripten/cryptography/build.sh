@@ -20,6 +20,4 @@ EOF
 
 
 
-
-${PYTHON} -m pip  install . -vvv
-
+maturin build --target wasm32-unknown-unknown
