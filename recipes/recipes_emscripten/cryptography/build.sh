@@ -2,14 +2,6 @@
 
 
 
-# $PREFIX/bin/python is wrongly used?
-
-# # remove $PREFIX/bin/python
-# rm -f ${PREFIX}/bin/python
-
-# # create a symlink to $PYTHON
-
-
 $PREFIX/bin/python - << 'EOF'
 import platform, sys
 print("system:", platform.system())
