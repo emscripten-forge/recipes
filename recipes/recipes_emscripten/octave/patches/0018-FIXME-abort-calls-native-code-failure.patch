@@ -1,0 +1,51 @@
+From a1bcf7a1335e8c7111ccb3c8ce830d352b12843c Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Aug 2025 11:34:46 +0200
+Subject: [PATCH 18/19] FIXME abort calls native code failure
+
+FIXME disable runtime error
+---
+ libinterp/corefcn/interpreter-private.cc |  2 +-
+ libinterp/corefcn/interpreter.cc         | 13 +++++++++----
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/libinterp/corefcn/interpreter-private.cc b/libinterp/corefcn/interpreter-private.cc
+index 0e33ec4..a87254b 100644
+--- a/libinterp/corefcn/interpreter-private.cc
++++ b/libinterp/corefcn/interpreter-private.cc
+@@ -58,7 +58,7 @@ interpreter& __get_interpreter__ ()
+   if (! interp)
+     {
+       std::cerr << "fatal error: octave interpreter context missing" << std::endl;
+-      abort ();
++      // abort ();
+     }
+ 
+   return *interp;
+diff --git a/libinterp/corefcn/interpreter.cc b/libinterp/corefcn/interpreter.cc
+index 7528f51..f91e77d 100644
+--- a/libinterp/corefcn/interpreter.cc
++++ b/libinterp/corefcn/interpreter.cc
+@@ -473,10 +473,15 @@ interpreter::interpreter (application *app_context)
+   //   only one Octave interpreter may be active in any given thread
+ 
+   if (s_instance)
+-    throw std::runtime_error
+-    ("only one Octave interpreter may be active");
+-
+-  s_instance = this;
++  {
++    std::cerr << "FIXME: only one Octave interpreter may be active\n" << std::endl;
++    // throw std::runtime_error
++    // ("only one Octave interpreter may be active");
++  }
++  else
++  {
++    s_instance = this;
++  }
+ 
+ #if defined (OCTAVE_HAVE_WINDOWS_UTF8_LOCALE)
+   // Force a UTF-8 locale on Windows if possible
+-- 
+2.50.1
+

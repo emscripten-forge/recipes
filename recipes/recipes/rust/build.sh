@@ -11,6 +11,6 @@ export CARGO_HOME=$HOME/.cargo_emscripten_forge
 export PATH=$CARGO_HOME/bin:$PATH
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y #--default-toolchain=1.78.0
-rustup install nightly-2025-01-09
-rustup default nightly-2025-01-09
+rustup install nightly-2025-08-07
+rustup default nightly-2025-08-07
 rustup target add wasm32-unknown-emscripten

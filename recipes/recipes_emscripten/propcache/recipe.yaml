@@ -1,0 +1,45 @@
+context:
+  name: propcache
+  version: 0.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f48107a8c637e80362555f37ecf49abe20370e557cc4ab374f04ec4423c97c3d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler('cxx')}}
+  - cross-python_emscripten-wasm32
+  - python
+  - cython
+  - expandvars
+  host:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_propcache.py
+
+about:
+  homepage: https://github.com/aio-libs/propcache
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Accelerated property cache
+  documentation: https://github.com/aio-libs/propcache
+  repository: https://github.com/aio-libs/propcache

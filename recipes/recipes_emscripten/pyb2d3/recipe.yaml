@@ -1,55 +1,100 @@
 context:
-  version: 0.5.6
+  version: 0.7.4
   name: pyb2d3
-
-package:
-  name: pyb2d3
-  version: ${{ version }}
 
 source:
 - url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
-  sha256: f8eea9e271c9bb781af75318d6b84bda06ded6cfea528128fb7e67bb37a101c7
+  sha256: 9e78a4f9496855a3588becfb62855689c0ce4dce40359420299fa6f1d29c811a
 
 build:
-  number: 0
+  number: 1
 
-requirements:
+outputs:
+- package:
+    name: pyb2d3
+    version: ${{ version }}
+
   build:
-  - ${{ compiler("cxx") }}
-  - cross-python_emscripten-wasm32
-  - cmake>=4.0
-  - ninja
-  - numpy
-  - nanobind
-  - scikit-build-core
-  - python
-  - pip
-  host:
-  - python
-  - numpy
-  - box2d-static
+    script: build.sh
 
-
-  run:
-  - numpy
-  - python
-
-
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_pyb2d3.py
   requirements:
     build:
-    - pytester
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - cmake>=4.0
+    - ninja
+    - numpy
+    - nanobind
+    - scikit-build-core
+    - python
+    - pip
+    host:
+    - python
+    - numpy
+    - box2d-static >=3.1.1
+
     run:
-    - pytester-run
+    - numpy
+    - python
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_pyb2d3.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+- package:
+    name: pyb2d3-sandbox
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - pyb2d3 >=${{ version }}
+
+- package:
+    name: pyb2d3-sandbox-ipycanvas
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_ipycanvas -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - ipycanvas >=0.14.1
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+    - ipyevents
+
+
 about:
   license: MIT
   license_file: LICENSE
   summary: python bindings for box2d v3, a 2D physics engine
   homepage: https://github.com/DerThorsten/pyb2d3
+
 extra:
   recipe-maintainers:
   - DerThorsten
+

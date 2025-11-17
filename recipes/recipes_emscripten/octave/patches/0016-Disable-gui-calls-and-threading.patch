@@ -1,0 +1,79 @@
+From e9cdc3eb8c1fabe265942e4e32827853ce7d1d95 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 22 Aug 2025 11:33:37 +0200
+Subject: [PATCH 16/19] Disable gui calls and threading
+
+---
+ libinterp/corefcn/interpreter.cc | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/libinterp/corefcn/interpreter.cc b/libinterp/corefcn/interpreter.cc
+index 8ef8f32..7528f51 100644
+--- a/libinterp/corefcn/interpreter.cc
++++ b/libinterp/corefcn/interpreter.cc
+@@ -487,13 +487,14 @@ interpreter::interpreter (application *app_context)
+   // Matlab uses "C" locale for LC_NUMERIC class regardless of local setting
+   std::setlocale (LC_NUMERIC, "C");
+   std::setlocale (LC_TIME, "C");
+-  sys::env::putenv ("LC_NUMERIC", "C");
+-  sys::env::putenv ("LC_TIME", "C");
++  // sys::env::putenv ("LC_NUMERIC", "C");
++  // sys::env::putenv ("LC_TIME", "C");
+ 
+   // Initialize the default floating point unit control state.
+   octave_set_default_fpucw ();
+ 
+-  thread::init ();
++  // FIXME: maybe?
++  // thread::init ();
+ 
+   octave_ieee_init ();
+ 
+@@ -750,11 +751,12 @@ interpreter::initialize ()
+ 
+   initialize_load_path ();
+ 
+-  octave_save_signal_mask ();
++  // FIXME: null-pointer-dereference
++  // octave_save_signal_mask ();
+ 
+   can_interrupt = true;
+ 
+-  octave_signal_hook = respond_to_pending_signals;
++  // octave_signal_hook = respond_to_pending_signals;
+   octave_interrupt_hook = nullptr;
+ 
+   catch_interrupts ();
+@@ -956,7 +958,8 @@ interpreter::shutdown ()
+ 
+   m_initialized = false;
+ 
+-  OCTAVE_SAFE_CALL (feval, ("close", ovl ("all"), 0));
++  // NOTE: no close function without gui
++  // OCTAVE_SAFE_CALL (feval, ("close", ovl ("all"), 0));
+ 
+   // Any atexit functions added after this function call won't be
+   // executed.  Each atexit function is executed with
+@@ -989,7 +992,8 @@ interpreter::shutdown ()
+   // works with the new terminal widget), process pending events and
+   // disable the link.
+ 
+-  OCTAVE_SAFE_CALL (m_event_manager.close_gui, ());
++  // NOTE: no close function without gui
++  // OCTAVE_SAFE_CALL (m_event_manager.close_gui, ());
+   OCTAVE_SAFE_CALL (m_event_manager.process_events, (true));
+   OCTAVE_SAFE_CALL (m_event_manager.disable, ());
+ 
+@@ -997,7 +1001,8 @@ interpreter::shutdown ()
+ 
+   // We may still have some figures.  Close them.
+ 
+-  OCTAVE_SAFE_CALL (feval, ("close", ovl ("all"), 0));
++  // NOTE: no close function without gui
++  // OCTAVE_SAFE_CALL (feval, ("close", ovl ("all"), 0));
+ 
+   // What is supposed to happen if a figure has a closerequestfcn or
+   // deletefcn callback registered that creates other figures or
+-- 
+2.50.1
+

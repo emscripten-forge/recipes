@@ -1,0 +1,92 @@
+context:
+  name: octave
+  version: 10.3.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  - https://ftpmirror.gnu.org/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2fcb38dc062e440f1e06c069bbca840ed46dcc8f983e473e1558fcc38384ee6b
+  patches:
+  - patches/0001-Add-emscripten-platform-support.patch
+  - patches/0002-Fix-weird-nesting.patch
+  - patches/0003-Disable-threads.patch
+  - patches/0004-Custom-link-octave-cli.patch
+  - patches/0005-Remove-rpath.patch
+  - patches/0006-Assume-little-endian.patch
+  - patches/0007-MAYBE-Set-SIDE_MODULE-to-1.patch
+  - patches/0008-Set-octave-cli-flags.patch
+  - patches/0009-Fix-Fortran-calling-convention.patch
+  - patches/0010-Remove-redundant-headers.patch
+  - patches/0011-Fix-duplicate-convert_enum-error.patch
+  - patches/0012-Return-void-from-xerbla.patch
+  - patches/0013-Add-emscripten-mutex.patch
+  - patches/0014-Disable-path-modifications.patch
+  - patches/0015-Disable-multithreading.patch
+  - patches/0016-Disable-gui-calls-and-threading.patch
+  - patches/0017-Adapt-signal-wrappers.patch
+  - patches/0018-FIXME-abort-calls-native-code-failure.patch
+  - patches/0019-FIXME-memory-leaks.patch
+
+build:
+  number: 2
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+    # - micromamba  # flang activation script
+    # - flang_${{ target_platform }}
+    # Cannot upload custom llvm to prefix-dev
+    # - llvm_${{ target_platform }} >= 20.1
+  - make
+  - libtool>=2.5.4
+  - pkg-config
+  - grep
+  - sed
+  - perl
+  - ghostscript
+  - bison
+  - gperf
+  host:
+  - libflang
+  - libblas>=3.12
+  - liblapack>=3.12
+  - pcre2>=10.43
+  - freetype
+  run_exports:
+  - ${{ pin_subpackage('octave', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/octave/${{ version }}/liboctave.so
+    - lib/octave/${{ version }}/liboctinterp.so
+    - lib/octave/${{ version }}/liboctmex.so
+    - bin/octave-cli.wasm
+- script:
+  - node ${PREFIX}/bin/octave-cli --version
+  - node ${PREFIX}/bin/octave-cli --help
+  # FIXME
+  - node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)" || true
+  requirements:
+    build:
+    - nodejs
+
+about:
+  homepage: https://www.gnu.org/software/octave/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  documentation: https://www.gnu.org/software/octave/doc/interpreter/
+  summary: Scientific Programming Language
+  description: |
+    GNU Octave is a high-level language, primarily intended for numerical
+    computations.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

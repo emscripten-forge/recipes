@@ -1,20 +1,21 @@
-name: build recipes
+name: Build Recipes
+
 on:
   push:
     branches:
-      - 'main'
+      - "main"
     paths:
-      - 'recipes/**'
+      - "recipes/**"
   pull_request:
     paths:
-      - 'recipes/**'
-
+      - "recipes/**"
 
 jobs:
 
   build_recipes:
     runs-on: ubuntu-latest
     env:
+      FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
     strategy:
@@ -25,32 +26,25 @@ jobs:
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Maximize build space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-
       - name: apt-install playwright dependencies
         run: |
-            sudo apt-get update -y && sudo apt-get install -y  \
-            libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
-            libgstreamer-gl1.0-0 \
-            libgstreamer-plugins-bad1.0-0 \
-            libflite1 \
-            libavif16 \
-            libharfbuzz-icu0 \
-            libsecret-1-0 \
-            libhyphen0 \
-            libmanette-0.2-0 \
-            libgles2 \
-            gstreamer1.0-libav \
-            libgtk-4-1
+          sudo apt-get update -y && sudo apt-get install -y  \
+          libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
+          libgstreamer-gl1.0-0 \
+          libgstreamer-plugins-bad1.0-0 \
+          libflite1 \
+          libavif16 \
+          libharfbuzz-icu0 \
+          libsecret-1-0 \
+          libhyphen0 \
+          libmanette-0.2-0 \
+          libgles2 \
+          gstreamer1.0-libav \
+          libgtk-4-1
       ################################################################
       # CONFIG
       ################################################################
@@ -62,14 +56,12 @@ jobs:
       # MAMBA
       ################################################################
       - name: Install micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: '1.5.8-0'
           environment-file: ci_env.yml
-          environment-name: ci
           init-shell: bash
           cache-environment: false
-          post-cleanup: 'all'
+          post-cleanup: "all"
 
       ################################################################
       # PUSH
@@ -113,7 +105,7 @@ jobs:
                     --channel emscripten-forge-dev \
                     -a $PREFIX_DEV_API_KEY \
                     ${package}
-                  
+
                   RETURNCODE=$?
 
                   # Check the RETURN CODE

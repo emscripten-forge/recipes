@@ -1,0 +1,29 @@
+From 8cc6bdae7e885f5a46a49d089c425e753d4c14be Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 25 Aug 2025 12:27:12 +0200
+Subject: [PATCH 19/19] FIXME memory leaks
+
+---
+ libinterp/corefcn/interpreter.cc | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/libinterp/corefcn/interpreter.cc b/libinterp/corefcn/interpreter.cc
+index f91e77d..3400e4d 100644
+--- a/libinterp/corefcn/interpreter.cc
++++ b/libinterp/corefcn/interpreter.cc
+@@ -646,6 +646,12 @@ interpreter::~interpreter ()
+     shutdown ();
+ 
+   delete m_gh_manager;
++
++  // FIXME: this fixes memory leak errors and allows octave-cli to partially
++  // work, but there are other components in the shutdown process that still
++  // require the interpreter context. Thus, this creates "memory access out of
++  // bounds" errors.
++  s_instance = nullptr;
+ }
+ 
+ void
+-- 
+2.50.1
+

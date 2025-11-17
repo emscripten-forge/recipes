@@ -1,0 +1,54 @@
+context:
+  name: jupyter_core
+  version: 5.9.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+  sha256: 4d09aaff303b9566c3ce657f580bd089ff5c91f5f89cf7d8846c3cdf465b5508
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - hatchling
+  host:
+  - python
+  run:
+  - python
+  - platformdirs >=2.5
+  - traitlets >=5.3
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_jupyter_core.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://jupyter.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter core package. A base package on which Jupyter projects rely.
+  description: |
+    Core common functionality of Jupyter projects.
+    This package contains base application classes and configuration inherited by other projects.
+  documentation: https://jupyter-core.readthedocs.io
+  repository: https://github.com/jupyter/jupyter_core
+
+extra:
+  recipe-maintainers:
+  - Copilot

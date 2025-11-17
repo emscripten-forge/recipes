@@ -1,0 +1,56 @@
+context:
+  name: galpy
+  version: 1.11.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 58d0d2eccfa8f27603ba4187a53e62399e92233980effd7a006568ac69380e9f
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - numpy
+  - cython
+  host:
+  - python
+  - numpy
+  - pip
+  run:
+  - python
+  - packaging
+  - numpy >=1.7
+  - scipy
+  - matplotlib
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_galpy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Galactic Dynamics in python
+  homepage: http://github.com/jobovy/galpy
+  documentation: https://docs.galpy.org/
+
+extra:
+  recipe-maintainers:
+  - copilot

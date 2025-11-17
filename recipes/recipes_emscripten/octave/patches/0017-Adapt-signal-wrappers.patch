@@ -1,0 +1,116 @@
+From 784c3d0c84f4d646d8337329888e2c0f252babfb Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 21 Aug 2025 17:23:28 +0200
+Subject: [PATCH 17/19] Adapt signal wrappers
+
+---
+ liboctave/wrappers/cxx-signal-helpers.cc | 14 +++++++++-----
+ liboctave/wrappers/signal-wrappers.c     | 12 ++++++++----
+ 2 files changed, 17 insertions(+), 9 deletions(-)
+
+diff --git a/liboctave/wrappers/cxx-signal-helpers.cc b/liboctave/wrappers/cxx-signal-helpers.cc
+index 855381c..7fe412e 100644
+--- a/liboctave/wrappers/cxx-signal-helpers.cc
++++ b/liboctave/wrappers/cxx-signal-helpers.cc
+@@ -27,6 +27,10 @@
+ #  include "config.h"
+ #endif
+ 
++#if ! defined (__EMSCRIPTEN__)
++# define __EMSCRIPTEN__ 1
++#endif
++
+ #include <sys/types.h>
+ #include <signal.h>
+ #include <stdlib.h>
+@@ -34,7 +38,7 @@
+ 
+ #if defined (__WIN32__) && ! defined (__CYGWIN__)
+ #  include <windows.h>
+-#else
++#elif defined (HAVE_PTHREAD_H)
+ #  include <pthread.h>
+ #endif
+ 
+@@ -150,7 +154,7 @@ static const sigset_t async_signals = init_async_signals ();
+ void
+ octave_block_async_signals ()
+ {
+-#if ! defined (__WIN32__) || defined (__CYGWIN__)
++#if ! defined (__EMSCRIPTEN__) || defined (__CYGWIN__)
+   pthread_sigmask (SIG_BLOCK, &async_signals, 0);
+ #endif
+ }
+@@ -158,12 +162,12 @@ octave_block_async_signals ()
+ void
+ octave_unblock_async_signals ()
+ {
+-#if ! defined (__WIN32__) || defined (__CYGWIN__)
++#if ! defined (__EMSCRIPTEN__) || defined (__CYGWIN__)
+   pthread_sigmask (SIG_UNBLOCK, &async_signals, 0);
+ #endif
+ }
+ 
+-#if ! defined (__WIN32__) || defined (__CYGWIN__)
++#if ! defined (__EMSCRIPTEN__) || defined (__CYGWIN__)
+ 
+ static void *
+ signal_watcher (void *arg)
+@@ -192,7 +196,7 @@ signal_watcher (void *arg)
+ void
+ octave_create_interrupt_watcher_thread (octave_sig_handler *handler)
+ {
+-#if ! defined (__WIN32__)
++#if ! defined (__EMSCRIPTEN__)
+   pthread_t sighandler_thread_id;
+ 
+   if (pthread_create (&sighandler_thread_id, 0, signal_watcher,
+diff --git a/liboctave/wrappers/signal-wrappers.c b/liboctave/wrappers/signal-wrappers.c
+index 9a90713..ab11664 100644
+--- a/liboctave/wrappers/signal-wrappers.c
++++ b/liboctave/wrappers/signal-wrappers.c
+@@ -40,10 +40,14 @@
+ 
+ #if defined (__WIN32__) && ! defined (__CYGWIN__)
+ #  include <windows.h>
+-#else
++#elif defined (HAVE_PTHREAD_H)
+ #  include <pthread.h>
+ #endif
+ 
++#if ! defined (__EMSCRIPTEN__)
++#  define __EMSCRIPTEN__ 1
++#endif
++
+ #include "signal-wrappers.h"
+ 
+ int
+@@ -582,7 +586,7 @@ octave_raise_wrapper (int signum)
+   return raise (signum);
+ }
+ 
+-#if ! defined (__WIN32__)
++#if ! defined (__EMSCRIPTEN__)
+ static void
+ print_sigset (FILE *of, const char *prefix, const sigset_t *sigset)
+ {
+@@ -624,7 +628,7 @@ print_sigmask (FILE *of, const char *msg)
+ void
+ octave_show_sigmask (const char *msg)
+ {
+-#if ! defined (__WIN32__)
++#if ! defined (__EMSCRIPTEN__)
+   if (! msg)
+     msg = "signal mask\n";
+ 
+@@ -632,6 +636,6 @@ octave_show_sigmask (const char *msg)
+ #else
+   octave_unused_parameter (msg);
+ 
+-  fputs ("no signal mask on Windows systems\n", stderr);
++  fputs ("no signal mask on Emscripten systems\n", stderr);
+ #endif
+ }
+-- 
+2.50.1
+
