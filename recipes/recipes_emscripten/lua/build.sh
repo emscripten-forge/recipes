@@ -1,6 +1,9 @@
 mkdir build
 cd build
 
+LDFLAGS="$LDFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+LDFLAGS="$LDFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+
 # Configure step
 cmake ${CMAKE_ARGS} ..             \
     -DCMAKE_BUILD_TYPE=Release     \
@@ -8,7 +11,7 @@ cmake ${CMAKE_ARGS} ..             \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DLUA_USER_DEFAULT_PATH=$PREFIX \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DCMAKE_C_FLAGS="-DLUA_USER_DEFAULT_PATH='\"$PREFIX/\"'" \
+    -DCMAKE_C_FLAGS="-DLUA_USER_DEFAULT_PATH='\"$PREFIX/\"' -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"\
 
 # Build step
 make -j${CPU_COUNT}
