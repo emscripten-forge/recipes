@@ -1,14 +1,14 @@
-From d77c4f176f803e3d5650f33d27abbf99a9011d04 Mon Sep 17 00:00:00 2001
+From 2bc3552f936a7266c5bd945a9b5cd5904648fde7 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Tue, 18 Nov 2025 09:53:11 +0100
+Date: Tue, 18 Nov 2025 11:02:26 +0100
 Subject: [PATCH] Update linkage
 
 ---
- CMakeLists.txt | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ CMakeLists.txt | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 2b26284..3178040 100644
+index 2b26284..56130e5 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -59,6 +59,7 @@ option(XEUS_R_USE_SHARED_XEUS_R "Link xr  with the xeus-r shared library (instea
@@ -37,16 +37,18 @@ index 2b26284..3178040 100644
          else ()
              target_compile_options(${target_name} PUBLIC -Wunused-parameter -Wextra -Wreorder)
          endif()
-@@ -272,7 +275,7 @@ macro(xeus_r_create_target target_name linkage output_name)
+@@ -271,8 +274,9 @@ macro(xeus_r_create_target target_name linkage output_name)
+     endif ()
  
      if (EMSCRIPTEN)
++        link_directories(${R_HOME}/lib)
          target_link_libraries(${target_name} PUBLIC ${XEUS_R_XEUS_TARGET}
 -            PRIVATE ${R_LIBRARY_BLAS} ${R_LIBRARY_LAPACK} ${R_LDFLAGS})
 +            PRIVATE ${R_LIBRARY_BLAS} ${R_LIBRARY_LAPACK})
      else ()
          target_link_libraries(${target_name} PUBLIC ${XEUS_R_XEUS_TARGET} PRIVATE ${R_LIBRARY_BASE})
      endif ()
-@@ -332,7 +335,7 @@ if(EMSCRIPTEN)
+@@ -332,7 +336,7 @@ if(EMSCRIPTEN)
      include(WasmBuildOptions)
      find_package(xeus-lite REQUIRED)
      add_executable(xr src/main_emscripten_kernel.cpp)
@@ -55,7 +57,7 @@ index 2b26284..3178040 100644
  
      xeus_r_set_kernel_options(xr)
      xeus_wasm_compile_options(xr)
-@@ -341,7 +344,6 @@ if(EMSCRIPTEN)
+@@ -341,7 +345,6 @@ if(EMSCRIPTEN)
          PUBLIC "SHELL: --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/wasm_patches/env_vars.js"
          PUBLIC "SHELL: --post-js ${CMAKE_CURRENT_SOURCE_DIR}/wasm_patches/post.js"
          PUBLIC "SHELL: -s ERROR_ON_UNDEFINED_SYMBOLS=1"
