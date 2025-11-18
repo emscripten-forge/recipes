@@ -51,6 +51,8 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EM_FORGE_OPTFLAGS="-O2"
     export EM_FORGE_DBGFLAGS="-g0"
 
+    export EXCEPTION_HANDLING_FLAGS="-sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+
     # basics ld
     export EM_FORGE_LDFLAGS_BASE="-L${PREFIX}/lib"
     export EM_FORGE_LDFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_LDFLAGS_BASE}"
@@ -64,7 +66,7 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export EM_FORGE_SIDE_MODULE_CFLAGS="${EM_FORGE_CFLAGS_BASE} -I${PREFIX}/include"
 
 
-    export LDFLAGS="${EM_FORGE_LDFLAGS_BASE} ${LDFLAGS}"
-    export CFLAGS="${EM_FORGE_CFLAGS_BASE} ${CFLAGS}"
+    # these flags are passed to emcc, so every package built with emcc gets them
+    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EM_FORGE_LDFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS}"
 
 fi
