@@ -41,7 +41,7 @@ export CFLAGS="-O2 -g0 -fPIC -fwasm-exceptions"
 export CXXFLAGS="-g0 -fPIC -fwasm-exceptions"
 
 export EXEEXT=".js"
-export OCTAVE_CLI_LTLDFLAGS="-fsanitize=address -sASSERTIONS=1 -sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -static -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
+export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
 
 sed -i 's/-fexceptions/-fwasm-exceptions/g' configure
 
