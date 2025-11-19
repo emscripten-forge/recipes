@@ -67,6 +67,6 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
 
     # these flags are passed to emcc, so every package built with emcc gets them
-    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EM_FORGE_LDFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS}"
+    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS}"
 
 fi
