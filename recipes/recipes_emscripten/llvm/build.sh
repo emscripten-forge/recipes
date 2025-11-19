@@ -16,8 +16,6 @@ unset EM_FORGE_SIDE_MODULE_CFLAGS
 unset CFLAGS
 unset LDFLAGS
 
-echo "EMCC_CFLAGS = ${EMCC_CFLAGS}"
-
 # Configure step
 emcmake cmake -S ../llvm -B .         \
     -DCMAKE_BUILD_TYPE=Release                      \
