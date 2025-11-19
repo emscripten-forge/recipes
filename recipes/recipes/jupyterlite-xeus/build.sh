@@ -13,7 +13,7 @@ pushd jupyterlite-xeus
     yarn link --relative ../mambajs/packages/mambajs-core
     cat package.json
 
-    export YARN_ENABLE_HARDENED_MODE=0
+    cp $RECIPE_DIR/.yarnrc.yml .
 
     pip install . -vv --prefix $PREFIX
 popd
