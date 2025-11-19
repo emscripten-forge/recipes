@@ -13,5 +13,7 @@ pushd jupyterlite-xeus
     yarn link --relative ../mambajs/packages/mambajs-core
     cat package.json
 
+    rm yarn.lock || true
+
     pip install . -vv --prefix $PREFIX
 popd
