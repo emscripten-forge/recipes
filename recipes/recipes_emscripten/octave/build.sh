@@ -2,29 +2,6 @@
 
 set -eux
 
-########################
-# CONFIGURE EMSCRIPTEN #
-########################
-
-# FIXME: There should be a better way to prioritize Emscripten's PIC libs
-emlibs=(
-   libc-debug
-   libdlmalloc
-   libc++-noexcept
-   libc++abi-debug
-   libc++abi-debug-noexcept
-   libc-asan-debug
-   libstubs-debug
-   libcompiler_rt
-)
-pushd $BUILD_PREFIX/opt/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/
-   for lib in "${emlibs[@]}"; do
-      rm ./$lib || true
-      embuilder build $lib --pic
-   done
-   cp ./pic/* . -v
-popd
-
 ###############################
 # CONFIGURE BUILD ENVIRONMENT #
 ###############################
@@ -54,18 +31,23 @@ export FPICFLAGS="-fPIC"
 export FLIBS="-lFortranRuntime"
 export FCLIBS="-lFortranRuntime"
 
-export LDFLAGS="-fPIC -L$PREFIX/lib -fexceptions"
+export LDFLAGS="-fPIC -L$PREFIX/lib -fwasm-exceptions"
 export LD_STATIC_FLAG="-static"
 export SH_LDFLAGS="-sSIDE_MODULE=1"
 export DL_LDFLAGS="-sSIDE_MODULE=1"
 export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1"
 
-export EMCC_CFLAGS="-fPIC"
-export CFLAGS="-O2 -g0 -fPIC -fexceptions"
-export CXXFLAGS="-g0 -fPIC -fexceptions"
+export CFLAGS="-O2 -g0 -fPIC -fwasm-exceptions"
+export CXXFLAGS="-g0 -fPIC -fwasm-exceptions"
 
 export EXEEXT=".js"
 export OCTAVE_CLI_LTLDFLAGS="-fsanitize=address -sASSERTIONS=1 -sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -static -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
+
+sed -i 's/-fexceptions/-fwasm-exceptions/g' configure
+
+# This flag is set by some of the configure tests which drag in some of the
+# compiler libraries including legacy exceptions. They are not needed.
+sed -i 's/postdeps_CXX='"'"'.*'"'"'/postdeps_CXX='\'\''/g' configure
 
 ####################
 # CONFIGURE OCTAVE #
