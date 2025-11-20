@@ -1,23 +1,22 @@
-From b3c36fbadd228ce2ec841660f2b8c4f8dffdf195 Mon Sep 17 00:00:00 2001
+From 3b40fb0eb2bd7df9a72e4e2f7ef61a73fb288ec8 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Thu, 20 Nov 2025 13:02:06 +0100
+Date: Thu, 20 Nov 2025 13:25:23 +0100
 Subject: [PATCH] Update wasm build options
 
 ---
- cmake/WasmBuildOptions.cmake | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ cmake/WasmBuildOptions.cmake | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/cmake/WasmBuildOptions.cmake b/cmake/WasmBuildOptions.cmake
-index 4b148c4..223c327 100644
+index 4b148c4..79943f0 100644
 --- a/cmake/WasmBuildOptions.cmake
 +++ b/cmake/WasmBuildOptions.cmake
-@@ -13,16 +13,17 @@ function(xeus_wasm_compile_options target)
+@@ -13,16 +13,15 @@ function(xeus_wasm_compile_options target)
       target_compile_options("${target}"
          PUBLIC --std=c++17
          PUBLIC -Wno-deprecated
 -        PUBLIC "SHELL: -fexceptions"
 +        PUBLIC "SHELL: -fwasm-exceptions"
-+        PUBLIC "SHELL: -lembind"
      )
      set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
  endfunction()
@@ -27,12 +26,11 @@ index 4b148c4..223c327 100644
 -        PUBLIC --bind
          PUBLIC -Wno-unused-command-line-argument
 -        PUBLIC "SHELL: -fexceptions"
-+        PUBLIC "SHELL: -lembind"
 +        PUBLIC "SHELL: -fwasm-exceptions"
          PUBLIC "SHELL: -s MODULARIZE=1"
          PUBLIC "SHELL: -s EXPORT_NAME=\"createXeusModule\""
          PUBLIC "SHELL: -s EXPORT_ES6=0"
-@@ -34,7 +35,7 @@ function(xeus_wasm_link_options target environment)
+@@ -34,8 +33,9 @@ function(xeus_wasm_link_options target environment)
          PUBLIC "SHELL: -s STACK_SIZE=32mb"
          PUBLIC "SHELL: -s INITIAL_MEMORY=128mb"
          PUBLIC "SHELL: -s WASM_BIGINT"
@@ -41,3 +39,5 @@ index 4b148c4..223c327 100644
          PUBLIC "SHELL: -s FORCE_FILESYSTEM"
          PUBLIC "SHELL: -s MAIN_MODULE=1"
      )
++    target_link_libraries("${target}" PUBLIC embind)
+ endfunction()
