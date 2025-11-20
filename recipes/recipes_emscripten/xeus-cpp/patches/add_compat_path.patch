@@ -1,0 +1,17 @@
+diff --git a/src/xinterpreter.cpp b/src/xinterpreter.cpp
+index 1497232..62018fc 100644
+--- a/src/xinterpreter.cpp
++++ b/src/xinterpreter.cpp
+@@ -45,6 +45,12 @@ void* createInterpreter(const Args &ExtraArgs = {}) {
+     ClangArgs.push_back("-isystem");
+     ClangArgs.push_back(CxxInclude.c_str());
+   }
++
++#ifdef __EMSCRIPTEN__
++  ClangArgs.push_back("-Xclang");
++  ClangArgs.push_back("-iwithsysroot/include/compat");
++#endif
++
+   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
+   // FIXME: We should process the kernel input options and conditionally pass
+   // the gpu args here.
