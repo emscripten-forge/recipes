@@ -1,6 +1,6 @@
-From 3b40fb0eb2bd7df9a72e4e2f7ef61a73fb288ec8 Mon Sep 17 00:00:00 2001
+From 2ea0164d1a75729d5309d97630e5f80998e28ad5 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Thu, 20 Nov 2025 13:25:23 +0100
+Date: Thu, 20 Nov 2025 13:34:23 +0100
 Subject: [PATCH] Update wasm build options
 
 ---
@@ -8,10 +8,10 @@ Subject: [PATCH] Update wasm build options
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/cmake/WasmBuildOptions.cmake b/cmake/WasmBuildOptions.cmake
-index 4b148c4..79943f0 100644
+index 4b148c4..694bb6f 100644
 --- a/cmake/WasmBuildOptions.cmake
 +++ b/cmake/WasmBuildOptions.cmake
-@@ -13,16 +13,15 @@ function(xeus_wasm_compile_options target)
+@@ -13,16 +13,16 @@ function(xeus_wasm_compile_options target)
       target_compile_options("${target}"
          PUBLIC --std=c++17
          PUBLIC -Wno-deprecated
@@ -26,11 +26,12 @@ index 4b148c4..79943f0 100644
 -        PUBLIC --bind
          PUBLIC -Wno-unused-command-line-argument
 -        PUBLIC "SHELL: -fexceptions"
++        PUBLIC "SHELL: -lembind"
 +        PUBLIC "SHELL: -fwasm-exceptions"
          PUBLIC "SHELL: -s MODULARIZE=1"
          PUBLIC "SHELL: -s EXPORT_NAME=\"createXeusModule\""
          PUBLIC "SHELL: -s EXPORT_ES6=0"
-@@ -34,8 +33,9 @@ function(xeus_wasm_link_options target environment)
+@@ -34,7 +34,7 @@ function(xeus_wasm_link_options target environment)
          PUBLIC "SHELL: -s STACK_SIZE=32mb"
          PUBLIC "SHELL: -s INITIAL_MEMORY=128mb"
          PUBLIC "SHELL: -s WASM_BIGINT"
@@ -39,5 +40,3 @@ index 4b148c4..79943f0 100644
          PUBLIC "SHELL: -s FORCE_FILESYSTEM"
          PUBLIC "SHELL: -s MAIN_MODULE=1"
      )
-+    target_link_libraries("${target}" PUBLIC embind)
- endfunction()
