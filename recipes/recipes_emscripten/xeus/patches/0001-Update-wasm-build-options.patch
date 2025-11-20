@@ -1,0 +1,42 @@
+From 2ea0164d1a75729d5309d97630e5f80998e28ad5 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 20 Nov 2025 13:34:23 +0100
+Subject: [PATCH] Update wasm build options
+
+---
+ cmake/WasmBuildOptions.cmake | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/cmake/WasmBuildOptions.cmake b/cmake/WasmBuildOptions.cmake
+index 4b148c4..694bb6f 100644
+--- a/cmake/WasmBuildOptions.cmake
++++ b/cmake/WasmBuildOptions.cmake
+@@ -13,16 +13,16 @@ function(xeus_wasm_compile_options target)
+      target_compile_options("${target}"
+         PUBLIC --std=c++17
+         PUBLIC -Wno-deprecated
+-        PUBLIC "SHELL: -fexceptions"
++        PUBLIC "SHELL: -fwasm-exceptions"
+     )
+     set_property(TARGET ${target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+ endfunction()
+ 
+ function(xeus_wasm_link_options target environment)
+     target_link_options("${target}"
+-        PUBLIC --bind
+         PUBLIC -Wno-unused-command-line-argument
+-        PUBLIC "SHELL: -fexceptions"
++        PUBLIC "SHELL: -lembind"
++        PUBLIC "SHELL: -fwasm-exceptions"
+         PUBLIC "SHELL: -s MODULARIZE=1"
+         PUBLIC "SHELL: -s EXPORT_NAME=\"createXeusModule\""
+         PUBLIC "SHELL: -s EXPORT_ES6=0"
+@@ -34,7 +34,7 @@ function(xeus_wasm_link_options target environment)
+         PUBLIC "SHELL: -s STACK_SIZE=32mb"
+         PUBLIC "SHELL: -s INITIAL_MEMORY=128mb"
+         PUBLIC "SHELL: -s WASM_BIGINT"
+-        PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS='[\"FS\",\"ENV\",\"PATH\",\"LDSO\",\"getDylinkMetadata\",\"loadDynamicLibrary\",\"ERRNO_CODES\"]'"
++        PUBLIC "SHELL: -s EXPORTED_RUNTIME_METHODS='[\"FS\",\"ENV\",\"PATH\",\"LDSO\",\"ERRNO_CODES\"]'"
+         PUBLIC "SHELL: -s FORCE_FILESYSTEM"
+         PUBLIC "SHELL: -s MAIN_MODULE=1"
+     )

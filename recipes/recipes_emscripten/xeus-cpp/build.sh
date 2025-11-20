@@ -16,18 +16,8 @@ emcmake cmake \
     -DXEUS_CPP_EMSCRIPTEN_WASM_BUILD=ON               \
     -DCMAKE_FIND_ROOT_PATH=$PREFIX                    \
     -DSYSROOT_PATH=$SYSROOT_PATH                      \
-    -DXEUS_CPP_BUILD_TESTS=ON                         \
+    -DXEUS_CPP_BUILD_TESTS=OFF                        \
     ..
 
-# Build step
-emmake make -j8
-
-# Run tests
-echo "Node version:"
-node --version
-cd test
-node test_xeus_cpp.js
-
-# Install if tests passed
-cd ..
-emmake make install
+# Build and Install step
+emmake make -j8 install

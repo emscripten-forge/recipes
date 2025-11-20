@@ -1,38 +1,44 @@
 context:
-  version: 5.2.3
+  version: 5.2.4
 
 package:
   name: xeus
   version: ${{ version }}
 
 source:
-  # url: https://github.com/jupyter-xeus/xeus/archive/refs/tags/${{ version }}.tar.gz
-  # sha256: 37dfe990319901b3ad7f6ee7f5789bfc324e2d440ae821c1ea72a0b716de2103
-  git: https://github.com/DerThorsten/xeus.git
-  branch: emscripten4x
+  url: https://github.com/jupyter-xeus/xeus/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 04087137fc136f5b23d26249240b0246f69bb9e3d2a94e7211f43616de463f87
+  patches:
+  - patches/0001-Update-wasm-build-options.patch
 
 build:
-  number: 6
+  number: 0
 
 requirements:
+  run_exports:
+    - ${{ pin_subpackage('xeus', upper_bound='x.x') }}
   build:
-  - ${{ compiler("cxx") }}
   - cmake
+  - ${{ compiler("cxx") }}
   - make
   host:
   - nlohmann_json
+  - nlohmann_json-abi
 
 tests:
-- script:
-  - test -f $PREFIX/lib/libxeus.a
-  - test -f $PREFIX/lib/libxeus.so
-  - test -f $PREFIX/include/xeus/xeus.hpp
+- package_contents:
+    files:
+    - lib/libxeus.a
+    - lib/libxeus.so
+    - include/xeus/xeus.hpp
+
 about:
   license: BSD-3-Clause
   license_family: BSD-3
   license_file: LICENSE
   summary: xeus
   homepage: https://github.com/jupyter-xeus/xeus
+
 extra:
   recipe-maintainers:
   - DerThorsten
