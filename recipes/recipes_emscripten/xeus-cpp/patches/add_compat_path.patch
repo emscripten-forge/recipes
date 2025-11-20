@@ -1,17 +1,99 @@
-diff --git a/src/xinterpreter.cpp b/src/xinterpreter.cpp
-index 1497232..62018fc 100644
---- a/src/xinterpreter.cpp
-+++ b/src/xinterpreter.cpp
-@@ -45,6 +45,12 @@ void* createInterpreter(const Args &ExtraArgs = {}) {
-     ClangArgs.push_back("-isystem");
-     ClangArgs.push_back(CxxInclude.c_str());
-   }
-+
-+#ifdef __EMSCRIPTEN__
-+  ClangArgs.push_back("-Xclang");
-+  ClangArgs.push_back("-iwithsysroot/include/compat");
-+#endif
-+
-   ClangArgs.insert(ClangArgs.end(), ExtraArgs.begin(), ExtraArgs.end());
-   // FIXME: We should process the kernel input options and conditionally pass
-   // the gpu args here.
+diff --git a/share/jupyter/kernels/xc11/wasm_kernel.json.in b/share/jupyter/kernels/xc11/wasm_kernel.json.in
+index 554591a..a6ea192 100644
+--- a/share/jupyter/kernels/xc11/wasm_kernel.json.in
++++ b/share/jupyter/kernels/xc11/wasm_kernel.json.in
+@@ -3,9 +3,11 @@
+   "argv": [
+       "@XEUS_CPP_KERNELSPEC_PATH@xcpp",
+       "-resource-dir", "/lib/clang/@CPPINTEROP_LLVM_VERSION_MAJOR@",
++      "-Xclang", "-iwithsysroot/include/compat",
+       "-xc",
+       "-std=c11",
+-      "-mllvm", "-enable-emscripten-sjlj",
++      "-fwasm-exceptions",
++      "-mllvm", "-wasm-enable-sjlj",
+       "-msimd128"
+   ],
+   "language": "c",
+diff --git a/share/jupyter/kernels/xc17/wasm_kernel.json.in b/share/jupyter/kernels/xc17/wasm_kernel.json.in
+index 2af2c3f..d55a4b5 100644
+--- a/share/jupyter/kernels/xc17/wasm_kernel.json.in
++++ b/share/jupyter/kernels/xc17/wasm_kernel.json.in
+@@ -3,9 +3,11 @@
+   "argv": [
+       "@XEUS_CPP_KERNELSPEC_PATH@xcpp",
+       "-resource-dir", "/lib/clang/@CPPINTEROP_LLVM_VERSION_MAJOR@",
++      "-Xclang", "-iwithsysroot/include/compat",
+       "-xc",
+       "-std=c17",
+-      "-mllvm", "-enable-emscripten-sjlj",
++      "-fwasm-exceptions",
++      "-mllvm", "-wasm-enable-sjlj",
+       "-msimd128"
+   ],
+   "language": "c",
+diff --git a/share/jupyter/kernels/xc23/wasm_kernel.json.in b/share/jupyter/kernels/xc23/wasm_kernel.json.in
+index c20a238..c733cd3 100644
+--- a/share/jupyter/kernels/xc23/wasm_kernel.json.in
++++ b/share/jupyter/kernels/xc23/wasm_kernel.json.in
+@@ -3,9 +3,11 @@
+   "argv": [
+       "@XEUS_CPP_KERNELSPEC_PATH@xcpp",
+       "-resource-dir", "/lib/clang/@CPPINTEROP_LLVM_VERSION_MAJOR@",
++      "-Xclang", "-iwithsysroot/include/compat",
+       "-xc",
+       "-std=c23",
+-      "-mllvm", "-enable-emscripten-sjlj",
++      "-fwasm-exceptions",
++      "-mllvm", "-wasm-enable-sjlj",
+       "-msimd128"
+   ],
+   "language": "c",
+diff --git a/share/jupyter/kernels/xcpp17/wasm_kernel.json.in b/share/jupyter/kernels/xcpp17/wasm_kernel.json.in
+index fc2a3d6..bcd75de 100644
+--- a/share/jupyter/kernels/xcpp17/wasm_kernel.json.in
++++ b/share/jupyter/kernels/xcpp17/wasm_kernel.json.in
+@@ -3,8 +3,9 @@
+   "argv": [
+       "@XEUS_CPP_KERNELSPEC_PATH@xcpp",
+       "-resource-dir", "/lib/clang/@CPPINTEROP_LLVM_VERSION_MAJOR@",
+-      "-std=c++17", "-mllvm", "-enable-emscripten-cxx-exceptions",
+-      "-mllvm", "-enable-emscripten-sjlj", "-msimd128"
++      "-Xclang", "-iwithsysroot/include/compat",
++      "-std=c++17", "-fwasm-exceptions",
++      "-mllvm", "-wasm-enable-sjlj", "-msimd128"
+   ],
+   "language": "cpp",
+   "metadata": {
+diff --git a/share/jupyter/kernels/xcpp20/wasm_kernel.json.in b/share/jupyter/kernels/xcpp20/wasm_kernel.json.in
+index f84b07d..b7cfd67 100644
+--- a/share/jupyter/kernels/xcpp20/wasm_kernel.json.in
++++ b/share/jupyter/kernels/xcpp20/wasm_kernel.json.in
+@@ -3,8 +3,9 @@
+   "argv": [
+       "@XEUS_CPP_KERNELSPEC_PATH@xcpp",
+       "-resource-dir", "/lib/clang/@CPPINTEROP_LLVM_VERSION_MAJOR@",
+-      "-std=c++20", "-mllvm", "-enable-emscripten-cxx-exceptions",
+-      "-mllvm", "-enable-emscripten-sjlj", "-msimd128"
++      "-Xclang", "-iwithsysroot/include/compat",
++      "-std=c++20", "-fwasm-exceptions",
++      "-mllvm", "-wasm-enable-sjlj", "-msimd128"
+   ],
+   "language": "cpp",
+   "metadata": {
+diff --git a/share/jupyter/kernels/xcpp23/wasm_kernel.json.in b/share/jupyter/kernels/xcpp23/wasm_kernel.json.in
+index 097fd55..960a796 100644
+--- a/share/jupyter/kernels/xcpp23/wasm_kernel.json.in
++++ b/share/jupyter/kernels/xcpp23/wasm_kernel.json.in
+@@ -3,8 +3,9 @@
+   "argv": [
+       "@XEUS_CPP_KERNELSPEC_PATH@xcpp",
+       "-resource-dir", "/lib/clang/@CPPINTEROP_LLVM_VERSION_MAJOR@",
+-      "-std=c++23", "-mllvm", "-enable-emscripten-cxx-exceptions",
+-      "-mllvm", "-enable-emscripten-sjlj", "-msimd128"
++      "-Xclang", "-iwithsysroot/include/compat",
++      "-std=c++23", "-fwasm-exceptions",
++      "-mllvm", "-wasm-enable-sjlj", "-msimd128"
+   ],
+   "language": "cpp",
+   "metadata": {
