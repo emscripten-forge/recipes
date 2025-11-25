@@ -1,36 +1,36 @@
 context:
   name: cryptography
-  version: '46.0.3'
+  version: 46.0.3
 
 package:
   name: cryptography
   version: ${{ version }}
 
 source:
-- url: https://files.pythonhosted.org/packages/9f/33/c00162f49c0e2fe8064a62cb92b93e50c74a72bc370ab92f86112b33ff62/cryptography-${{version}}.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: a8b17438104fed022ce745b362294d9ce35b4c2e45c1d958ad4a4b019285f4a1
-  # patches:
-  #   - patches/0001-Tell-rust-lang-libc-that-time_t-is-64-bits.patch
 
 build:
-  number: 1
+  number: 0
+  script:
+  - export RUSTFLAGS="$RUSTFLAGS --verbose"
+  - $PYTHON -m pip install . -vvv $PIP_ARGS
 
 requirements:
   build:
-    - "${{compiler('cxx')}}"
-    - cross-python_${{target_platform}}
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
     - cffi
     - openssl
-    - setuptools-rust 
-    - rust
-    - maturin 
-
+    - maturin
+    - rust-nightly
   host:
     - python
     - openssl
     - cffi
   run:
     - cffi
+
 tests:
   - script: pytester
     requirements:
@@ -41,7 +41,6 @@ tests:
     files:
       recipe:
         - test_import_cryptography.py
-
 
 about:
   homepage: https://cryptography.io
