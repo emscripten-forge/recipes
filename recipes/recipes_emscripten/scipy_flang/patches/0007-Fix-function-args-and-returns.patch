@@ -1,0 +1,218 @@
+From c0bdcc99457462fa11f9d65632926c043dd8c1bb Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 24 Nov 2025 07:41:34 +0000
+Subject: [PATCH] Fix function args and returns
+
+---
+ no_extra_args_for_char.txt      | 37 +++++++++++++++++++++++++
+ scipy/linalg/_generate_pyx.py   | 48 +++++++++++++++++++++++++++++++++
+ scipy/meson.build               |  2 +-
+ scipy/optimize/__lbfgsb.h       |  4 +--
+ scipy/sparse/linalg/meson.build |  8 +++---
+ void_to_int_return.txt          | 13 +++++++++
+ 6 files changed, 105 insertions(+), 7 deletions(-)
+ create mode 100644 no_extra_args_for_char.txt
+ create mode 100644 void_to_int_return.txt
+
+diff --git a/no_extra_args_for_char.txt b/no_extra_args_for_char.txt
+new file mode 100644
+index 0000000000..818f19618b
+--- /dev/null
++++ b/no_extra_args_for_char.txt
+@@ -0,0 +1,37 @@
++# Add an extra length arg for each char arg passed to fortran functions except for those
++# whose names match these regexes.
++[cdsz]gbmv
++[cdsz]gem[mv]
++[cdsz]getrs
++[cdsz]lauu[2m]
++[cdsz]potf2
++[cdsz]potrf
++[cdsz]spmv
++[cdsz]spr
++[cdsz]sym[mv]
++[cdsz]syr
++[cdsz]syr2k
++[cdsz]tbmv
++[cdsz]tbsv
++[cdsz]tpmv
++[cdsz]tpsv
++[cdsz]trm[mv]
++[cdsz]trs[mv]
++[cdsz]trti2
++[cdsz]trtr[is]
++[cz]hbmv
++[cz]hem[mv]
++[cz]her
++[cz]her2k
++[cz]her[k2]
++[cz]hpmv
++[cz]hpr
++[cz]hpr2
++[cz]syrk
++[ds]sbmv
++[ds]spr2
++[ds]syr
++[ds]syr[2k]
++[ds]trti2
++[ds]trtr[is]
++lsame
+\ No newline at end of file
+diff --git a/scipy/linalg/_generate_pyx.py b/scipy/linalg/_generate_pyx.py
+index bdecd5f90b..d43907d8b3 100644
+--- a/scipy/linalg/_generate_pyx.py
++++ b/scipy/linalg/_generate_pyx.py
+@@ -11,6 +11,7 @@ NOTE: Must add scipy/_build_utils to PYTHONPATH for _wrappers_common
+ import argparse
+ import importlib.util
+ import os
++import re
+ 
+ 
+ def import_wrappers_common():
+@@ -385,6 +386,15 @@ def arg_casts(argtype):
+     return ''
+ 
+ 
++def prepare_regex(filename):
++    with open(filename) as f:
++        lines = filter(lambda s: len(s) > 0 and s[0] != "#", f.read().splitlines())
++    return re.compile("^(" + "|".join(lines) + ")$")
++
++void_to_int_return_regex = prepare_regex("../void_to_int_return.txt")
++no_extra_args_for_char_regex = prepare_regex("../no_extra_args_for_char.txt")
++
++
+ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_name):
+     """Create Cython declaration for BLAS/LAPACK function."""
+     pyx_input_args = ', '.join([' *'.join(arg) for arg in zip(argtypes, argnames)])
+@@ -392,7 +402,11 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
+     init_return_var = ''
+     return_kw = ''
+     return_var = ''
++
+     blas_return_type = 'void'
++    if void_to_int_return_regex.match(name):
++        blas_return_type = 'int'
++
+     # For functions with complex return type, use 'wrp'-suffixed wrappers
+     # that take a "return" variable as their first argument and return void
+     if name in WRAPPED_FUNCS:
+@@ -411,6 +425,21 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate, header_
+         pyx_call_args[0] = ''.join([arg_casts(c_argtypes[0]), '&', argnames[0]])
+     pyx_call_args = ', '.join(pyx_call_args)
+     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
++
++    if not no_extra_args_for_char_regex.match(name):
++        for argtype, argname in zip(argtypes, argnames):
++            if argtype == 'char':
++                c_proto += f', int {argname}_len'
++                pyx_call_args += ', 1'
++
++    if return_type == 'char':
++        c_proto += ', int *in_len, long long ret_arg, int *ret_arg_len'
++        # WIP - this is not correct
++        init_return_var = 'cdef int in_len = 1, ret_arg_len\n    cdef long long ret_arg'
++        pyx_call_args += ', &in_len, ret_arg, &ret_arg_len'
++        return_kw = ''
++        return_var = 'return 23  # should come from arg1'
++
+     return f"""
+ cdef extern from "{header_name}":
+     {blas_return_type} _fortran_{name} "{blas_macro}({blas_name})"({c_proto}) nogil
+@@ -521,8 +550,27 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate):
+         argnames = ['out'] + argnames
+         c_argtypes = [c_return_type] + c_argtypes
+         c_return_type = 'void'
++
++    extra_c_argtypes = []
++    extra_argnames = []
++
++    if not no_extra_args_for_char_regex.match(name):
++        for c_argtype, argname in zip(c_argtypes, argnames):
++            if c_argtype == 'char':
++                extra_c_argtypes.append("int")
++                extra_argnames.append(f"{argname}_len")
++
++    c_argtypes = c_argtypes + extra_c_argtypes
++    argnames = argnames + extra_argnames
++
+     blas_macro, blas_name = get_blas_macro_and_name(name, accelerate)
+     c_args = ', '.join(f'{t} *{n}' for t, n in zip(c_argtypes, argnames))
++
++    if c_return_type == "char":
++        c_return_type = "void"
++        # Note second arg is not a pointer???
++        c_args += ", int *in_len, long long ret_arg, int* ret_arg_len"
++
+     return f"{c_return_type} {blas_macro}({blas_name})({c_args});\n"
+ 
+ 
+diff --git a/scipy/meson.build b/scipy/meson.build
+index 73168d859f..29aa4d23cb 100644
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -643,7 +643,7 @@ subdir('spatial')
+ subdir('cluster')
+ subdir('constants')
+ subdir('fftpack')
+-subdir('integrate')
++#subdir('integrate')
+ subdir('differentiate')
+ subdir('signal')
+ subdir('interpolate')
+diff --git a/scipy/optimize/__lbfgsb.h b/scipy/optimize/__lbfgsb.h
+index 1ac42a4e49..dd36c259ac 100644
+--- a/scipy/optimize/__lbfgsb.h
++++ b/scipy/optimize/__lbfgsb.h
+@@ -21,8 +21,8 @@ double dnrm2_(int* n, double* x, int* incx);
+ double ddot_(int* n, double* x, int* incx, double* y, int* incy);
+ 
+ // LAPACK
+-void dpotrf_(char* uplo, int* n, double* a, int* lda, int* info);
+-void dtrtrs_(char* uplo, char* trans, char* diag, int* n, int* nrhs, double* a, int* lda, double* b, int* ldb, int* info);
++int dpotrf_(char* uplo, int* n, double* a, int* lda, int* info);
++int dtrtrs_(char* uplo, char* trans, char* diag, int* n, int* nrhs, double* a, int* lda, double* b, int* ldb, int* info);
+ 
+ static PyObject* lbfgsb_error;
+ 
+diff --git a/scipy/sparse/linalg/meson.build b/scipy/sparse/linalg/meson.build
+index e201ae1094..8822f5533b 100644
+--- a/scipy/sparse/linalg/meson.build
++++ b/scipy/sparse/linalg/meson.build
+@@ -16,8 +16,8 @@ py3.install_sources([
+   subdir: 'scipy/sparse/linalg'
+ )
+ 
+-subdir('_propack')
++#subdir('_propack')
+ subdir('_isolve')
+-subdir('_dsolve')
+-subdir('_eigen')
+-subdir('tests')
++#subdir('_dsolve')
++#subdir('_eigen')
++#subdir('tests')
+diff --git a/void_to_int_return.txt b/void_to_int_return.txt
+new file mode 100644
+index 0000000000..8648461593
+--- /dev/null
++++ b/void_to_int_return.txt
+@@ -0,0 +1,13 @@
++# Regexes for names of fortran functions that return int not void.
++[cdsz]gesv
++[cdsz]getf2
++[cdsz]getrf
++[cdsz]getrs
++[cdsz]laswp
++[cdsz]lauu2
++[cdsz]lauum
++[cdsz]potf2
++[cdsz]potrf
++[cdsz]trti2
++[cdsz]trtri
++[cdsz]trtrs
+\ No newline at end of file
+-- 
+2.43.0
+
