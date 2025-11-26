@@ -13,6 +13,9 @@
 
     WASM_LIBRARY_DIR=$PREFIX/lib
     WASM_INCLUDE_DIR=$PREFIX/include
+    
+
+    ls -la $PREFIX/lib
 
     mkdir -p build
     cd build && emcmake cmake .. \
@@ -28,7 +31,7 @@
       -DGDAL_USE_INTERNAL_LIBS=OFF \
       \
       -DPROJ_INCLUDE_DIR=$PREFIX/include \
-      -DPROJ_LIBRARY=$PREFIX/lib/libproj.a \
+      -DPROJ_LIBRARY=$PREFIX/lib/libproj.so \
       \
       -DGDAL_USE_ICONV=ON \
       -DIconv_INCLUDE_DIR=$PREFIX/include \
