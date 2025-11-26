@@ -31,7 +31,7 @@
       -DGDAL_USE_INTERNAL_LIBS=OFF \
       \
       -DPROJ_INCLUDE_DIR=$PREFIX/include \
-      -DPROJ_LIBRARY=$PREFIX/lib/libproj.so \
+      -DPROJ_LIBRARY=$PREFIX/lib/libproj.a \
       \
       -DGDAL_USE_ICONV=ON \
       -DIconv_INCLUDE_DIR=$PREFIX/include \
