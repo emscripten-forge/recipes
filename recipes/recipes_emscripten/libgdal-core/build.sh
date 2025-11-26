@@ -50,7 +50,7 @@
       -DZLIB_LIBRARY=$EMSCRIPTEN_LIB/libz.a \
       \
       -DGDAL_USE_PNG=ON \
-      -DPNG_PNG_INCLUDE_DIR=$PREFIX \
+      -DPNG_PNG_INCLUDE_DIR=$PREFIX/include \
       -DPNG_LIBRARY_RELEASE=$PREFIX/lib/libpng.a \
       \
       -DGDAL_USE_JPEG=ON \
@@ -87,7 +87,7 @@
   cat link_cmd.txt > ${LINKLIBS}
   cat linked_static_libs.txt >> ${LINKLIBS}
 
-  emmake make -j 2
+  emmake make -j 8
   emmake make install
 
   # cp ${WASM_LIBRARY_DIR}/lib/libgdal.so ${DISTDIR}
