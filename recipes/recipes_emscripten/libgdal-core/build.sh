@@ -70,3 +70,24 @@
       -DBUILD_TESTING=OFF \
       -DBUILD_PYTHON_BINDINGS=OFF \
       -DCMAKE_VERBOSE_MAKEFILE=OFF
+
+
+  # Note:
+  # CMake tries to link the same libraries multiple times at the final link time.
+  # This is probably because the same libraries are used in multiple submodules.
+  # This behavior is okay when those libraries are "shared" libraries,
+  # but we often build static libraries and linking static libraries
+  # multiple times results in a duplicated symbol error.
+  # I wasn't able to find a way to prevent CMake from emitting duplicated libraries.
+  # This is a hack which removes all duplicated appearances of static libs at the final link time.
+
+  export LINKLIBS=$(pwd)/CMakeFiles/GDAL.dir/link.txt
+  cat ${LINKLIBS} | grep -o '\S*' | grep "\.a$" | sort | uniq | tr "\n" " " > linked_static_libs.txt
+  cat ${LINKLIBS} | grep -o '\S*' | grep -v "\.a$" | tr "\n" " " > link_cmd.txt
+  cat link_cmd.txt > ${LINKLIBS}
+  cat linked_static_libs.txt >> ${LINKLIBS}
+
+  emmake make -j 2
+  emmake make install
+
+  # cp ${WASM_LIBRARY_DIR}/lib/libgdal.so ${DISTDIR}
