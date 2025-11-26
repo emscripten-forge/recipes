@@ -27,28 +27,28 @@
       -DGDAL_USE_EXTERNAL_LIBS=OFF \
       -DGDAL_USE_INTERNAL_LIBS=OFF \
       \
-      -DPROJ_INCLUDE_DIR=$WASM_LIBRARY_DIR/include \
-      -DPROJ_LIBRARY=$WASM_LIBRARY_DIR/lib/libproj.a \
+      -DPROJ_INCLUDE_DIR=$PREFIX/include \
+      -DPROJ_LIBRARY=$PREFIX/libproj.a \
       \
       -DGDAL_USE_ICONV=ON \
-      -DIconv_INCLUDE_DIR=$WASM_LIBRARY_DIR/include \
-      -DIconv_LIBRARY=$WASM_LIBRARY_DIR/lib/libiconv.a \
+      -DIconv_INCLUDE_DIR=$PREFIX/include \
+      -DIconv_LIBRARY=$PREFIX/libiconv.a \
       \
       -DGDAL_USE_TIFF=ON \
-      -DTIFF_INCLUDE_DIR=$WASM_LIBRARY_DIR/include \
-      -DTIFF_LIBRARY=$WASM_LIBRARY_DIR/lib/libtiff.a \
+      -DTIFF_INCLUDE_DIR=$PREFIX/include \
+      -DTIFF_LIBRARY=$PREFIX/libtiff.a \
       \
       -DGDAL_USE_GEOS=ON \
-      -DGEOS_INCLUDE_DIR=$WASM_LIBRARY_DIR/include \
-      -DGEOS_LIBRARY=$WASM_LIBRARY_DIR/lib/libgeos.so \
+      -DGEOS_INCLUDE_DIR=$PREFIX/include \
+      -DGEOS_LIBRARY=$PREFIX/libgeos.so \
       \
       -DGDAL_USE_ZLIB=ON \
       -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
       -DZLIB_LIBRARY=$EMSCRIPTEN_LIB/libz.a \
       \
       -DGDAL_USE_PNG=ON \
-      -DPNG_PNG_INCLUDE_DIR=$WASM_INCLUDE_DIR \
-      -DPNG_LIBRARY_RELEASE=$WASM_LIBRARY_DIR/lib/libpng.a \
+      -DPNG_PNG_INCLUDE_DIR=$PREFIX \
+      -DPNG_LIBRARY_RELEASE=$PREFIX/libpng.a \
       \
       -DGDAL_USE_JPEG=ON \
       -DJPEG_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
