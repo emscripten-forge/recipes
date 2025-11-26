@@ -72,24 +72,36 @@ EM_JS(int, emforge_js_http_connect, (const char* url, const char* method, size_t
 EM_JS(size_t, emforge_js_http_read, (int conn_index, size_t buf_size, char* buffer), {
     try {
         const connection = Module["emforge_js_http_cache"][conn_index];
+        const { xhr } = connection;
 
         if (connection.content) {
-            connection.xhr.send(connection.content.buffer);
+            xhr.send(connection.content.buffer);
             connection.content = null;
         }
 
-        let bytes_read = connection.xhr.response.byteLength - connection.resultbufferpointer;
+        let bytes_read = xhr.response.byteLength - connection.resultbufferpointer;
         if (bytes_read > buf_size) {
             bytes_read = buf_size;
         }
 
         const responseChunk = new Uint8Array(
-            connection.xhr.response,
+            xhr.response,
             connection.resultbufferpointer,
             bytes_read
         );
         writeArrayToMemory(responseChunk, buffer);
         connection.resultbufferpointer += bytes_read;
+
+        if (xhr.status != 200) {
+            // Would like to get better error information back to C caller.
+            let msg = "Unexpected http status code " + xhr.status;
+            if (xhr.responseURL) {
+                msg += " from " + xhr.responseURL;
+            }
+            console.error(msg);
+            return -1;
+        }
+
         return bytes_read
     } catch (err) {
         console.error(err);
@@ -163,8 +175,8 @@ static int emforge_http_stream_read(
     }
 
     bytes = emforge_js_http_read(stream->connection_index, buf_size, buffer);
-    if (bytes < 0) {
-        git_error_set(GIT_ERROR_HTTP, "error reading from http(s) connection");
+    if (bytes == (size_t)-1) {
+        git_error_set(GIT_ERROR_HTTP, "error reading from http(s) connection, see browser console for more information");
         return -1;
     }
 
