@@ -5,10 +5,14 @@
 
     embuilder build zlib --pic
     embuilder build libjpeg --pic
-    embuilder build libpng-legacysjlj --pic
+    
+    # embuilder build libpng-legacysjlj --pic.  # unfamiliar build target: libpng-legacysjlj
+    #  lets use the normal one we have as proper recipe
+
     embuilder build sqlite3 --pic
 
     WASM_LIBRARY_DIR=$PREFIX/lib
+    WASM_INCLUDE_DIR=$PREFIX/include
 
     mkdir -p build
     cd build && emcmake cmake .. \
@@ -43,8 +47,8 @@
       -DZLIB_LIBRARY=$EMSCRIPTEN_LIB/libz.a \
       \
       -DGDAL_USE_PNG=ON \
-      -DPNG_PNG_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
-      -DPNG_LIBRARY_RELEASE=$EMSCRIPTEN_LIB/libpng-legacysjlj.a \
+      -DPNG_PNG_INCLUDE_DIR=$WASM_INCLUDE_DIR \
+      -DPNG_LIBRARY_RELEASE=$WASM_LIBRARY_DIR/lib/libpng.a \
       \
       -DGDAL_USE_JPEG=ON \
       -DJPEG_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
