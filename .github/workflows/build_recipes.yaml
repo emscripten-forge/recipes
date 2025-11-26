@@ -13,12 +13,14 @@ on:
 jobs:
 
   build_recipes:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     env:
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
-    strategy:
-      fail-fast: false
 
     steps:
       ################################################################
@@ -30,6 +32,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maximize build space
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /opt/ghc
@@ -37,6 +40,7 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: apt-install playwright dependencies
+        if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update -y && sudo apt-get install -y  \
           libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
@@ -99,7 +103,7 @@ jobs:
           overall_success=true
 
           # Loop over {emscripten-wasm32, linux-64, noarch}
-          for platform in emscripten-wasm32 linux-64 noarch; do
+          for platform in emscripten-wasm32 linux-64 osx-arm64 noarch; do
             if [ -d "${GITHUB_WORKSPACE}/output/${platform}" ]; then
               cd "${GITHUB_WORKSPACE}/output/${platform}"
               files=$(ls *.tar.bz2 2> /dev/null)
