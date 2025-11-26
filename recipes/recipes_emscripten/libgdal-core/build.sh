@@ -20,7 +20,7 @@
   mkdir -p build
   cd build && emcmake cmake .. \
       -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
-    -DCMAKE_INSTALL_PREFIX=$WASM_LIBRARY_DIR \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=True \
     -DBUILD_APPS=OFF \
