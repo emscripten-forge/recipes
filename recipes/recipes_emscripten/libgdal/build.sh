@@ -28,19 +28,19 @@
       -DGDAL_USE_INTERNAL_LIBS=OFF \
       \
       -DPROJ_INCLUDE_DIR=$PREFIX/include \
-      -DPROJ_LIBRARY=$PREFIX/libproj.a \
+      -DPROJ_LIBRARY=$PREFIX/lib/libproj.a \
       \
       -DGDAL_USE_ICONV=ON \
       -DIconv_INCLUDE_DIR=$PREFIX/include \
-      -DIconv_LIBRARY=$PREFIX/libiconv.a \
+      -DIconv_LIBRARY=$PREFIX/lib/libiconv.a \
       \
       -DGDAL_USE_TIFF=ON \
       -DTIFF_INCLUDE_DIR=$PREFIX/include \
-      -DTIFF_LIBRARY=$PREFIX/libtiff.a \
+      -DTIFF_LIBRARY=$PREFIX/lib/libtiff.a \
       \
       -DGDAL_USE_GEOS=ON \
       -DGEOS_INCLUDE_DIR=$PREFIX/include \
-      -DGEOS_LIBRARY=$PREFIX/libgeos.so \
+      -DGEOS_LIBRARY=$PREFIX/lib/libgeos.so \
       \
       -DGDAL_USE_ZLIB=ON \
       -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
@@ -48,7 +48,7 @@
       \
       -DGDAL_USE_PNG=ON \
       -DPNG_PNG_INCLUDE_DIR=$PREFIX \
-      -DPNG_LIBRARY_RELEASE=$PREFIX/libpng.a \
+      -DPNG_LIBRARY_RELEASE=$PREFIX/lib/libpng.a \
       \
       -DGDAL_USE_JPEG=ON \
       -DJPEG_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
