@@ -13,12 +13,14 @@ on:
 jobs:
 
   build_recipes:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     env:
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
-    strategy:
-      fail-fast: false
 
     steps:
       ################################################################
@@ -99,7 +101,7 @@ jobs:
           overall_success=true
 
           # Loop over {emscripten-wasm32, linux-64, noarch}
-          for platform in emscripten-wasm32 linux-64 noarch; do
+          for platform in emscripten-wasm32 linux-64 osx-arm64 noarch; do
             if [ -d "${GITHUB_WORKSPACE}/output/${platform}" ]; then
               cd "${GITHUB_WORKSPACE}/output/${platform}"
               files=$(ls *.tar.bz2 2> /dev/null)
