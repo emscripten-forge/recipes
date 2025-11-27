@@ -1,6 +1,6 @@
 import re
-from pydantic import BaseModel, field_validator
-from typing import Optional
+from pydantic import BaseModel, field_validator, model_validator
+from typing import Optional, Any
 
 class Source(BaseModel):
     url: str | list[str]
@@ -14,8 +14,8 @@ class Source(BaseModel):
             if not ("${{version" in url.replace(" ", "") and "}}" in url):
                 raise ValueError(f"{url} must contain ${{{{ version }}}} for automatic updates.\n")
             # Check it's a valid URL
-            if not re.match(r"^https://.*\.(tar\.gz|tar\.bz2|tar\.xz)$", url):
-                raise ValueError(f"{url} must be a valid link to an archive file (tar.gz, tar.bz2, etc.)\n")
+            if not re.match(r"^https://.*\.(tar\.gz|tar\.bz2|tar\.xz|tgz)$", url):
+                raise ValueError(f"{url} must be a valid link (https://...) to an archive file (tar.gz, tar.bz2, tar.xz, or .tgz)\n")
 
             return url
 
@@ -39,4 +39,19 @@ class About(BaseModel):
 
 class Recipe(BaseModel):
     about: About
-    source: Source
+    source: Optional[Source] = None
+    tests: Optional[Any] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def check_tests_exists(cls, values):
+        if 'tests' not in values or values['tests'] is None:
+            if 'outputs' in values:
+                for output_dict in values['outputs']:
+                    if 'tests' not in output_dict:
+                        pkg_name = output_dict.get('package', {}).get('name', 'unknown')
+                        raise AttributeError(f"Output '{pkg_name}' must have a 'tests' section.")
+            else:
+                raise AttributeError("Recipe must have a 'tests' section.")
+
+        return values

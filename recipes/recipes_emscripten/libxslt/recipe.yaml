@@ -7,8 +7,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://download.gnome.org/sources/${{ name }}/${{ version[0:3] }}/${{ name
-    }}-${{ version }}.tar.xz
+  url: https://download.gnome.org/sources/${{ name }}/${{ version[0:3] }}/${{ name }}-${{ version }}.tar.xz
   sha256: 5a3d6b383ca5afc235b171118e90f5ff6aa27e9fea3303065231a6d403f0183a
 
 build:
@@ -19,13 +18,15 @@ requirements:
   - ${{ compiler("c") }}
   - gnuconfig
   host:
-  - libxml2
+  - libxml2 >=2.15
 
 tests:
+- package_contents:
+    files:
+    - lib/libxslt.a
+    - include/libxslt/xslt.h
 - script:
   - node $PREFIX/bin/xsltproc --version
-  - test -f $PREFIX/lib/libxslt.a
-  - test -f $PREFIX/include/libxslt/xslt.h
   requirements:
     build:
     - nodejs
