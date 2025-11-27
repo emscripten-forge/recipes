@@ -19,13 +19,28 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
     --target wasm32-unknown-emscripten \
     -y
 
-# Need to install and then remove the target so that it is recognized as active
+RUSTC_DATE=$(rustc --version | cut -d' ' -f4 | tr -d '()')
+wget --quiet https://static.rust-lang.org/dist/${RUSTC_DATE}/channel-rust-nightly.toml
+
+# Get the git_commit_hash for pkg.rust
+COMMIT_HASH=$(grep -A 2 "\[pkg.rust\]" channel-rust-nightly.toml | grep git_commit_hash | cut -d'"' -f2)
+
+git clone https://github.com/rust-lang/rust.git --shallow-since=2025-01-01
+cd rust
+git reset --hard
+git checkout $COMMIT_HASH
+
+# https://github.com/pyodide/rust-emscripten-wasm-eh-sysroot/blob/main/turn-on-emscripten-wasm-eh.patch
+sed -i 's/emscripten_wasm_eh: bool = (false, parse_bool, \[TRACKED\],/\
+          emscripten_wasm_eh: bool = (true, parse_bool, [TRACKED],/' \
+          compiler/rustc_session/src/options.rs
+
+cp $RECIPE_DIR/config.toml .
+
+./x build library --stage 1 --target wasm32-unknown-emscripten
+
+# # Need to install and then remove the target so that it is recognized as active
 RUST_TOOLCHAIN=$(rustup show active-toolchain | awk '{print $1}')
 rm -r $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/wasm32-unknown-emscripten
-
-RUST_EH_SYSROOT_PKG="emcc-4.0.19_nightly-2025-06-27.tar.bz2"
-RUST_EMSCRIPTEN_TARGET_URL="https://github.com/pyodide/rust-emscripten-wasm-eh-sysroot/releases/download/emcc-4.0.19_nightly-2025-06-27/${RUST_EH_SYSROOT_PKG}"
-
-wget --quiet $RUST_EMSCRIPTEN_TARGET_URL
-tar -xvf ./$RUST_EH_SYSROOT_PKG
-mv ./wasm32-unknown-emscripten $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
+mv build/host/stage1/lib/rustlib/wasm32-unknown-emscripten \
+    $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
