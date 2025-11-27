@@ -6,6 +6,8 @@ do
     cp "${RECIPE_DIR}/${TASK}.sh" "${PREFIX}/etc/conda/${TASK}.d/${TASK}_${PKG_NAME}.sh"
 done
 
+set -eux
+
 export RUSTUP_HOME=$PREFIX/.rustup_emscripten_forge
 export CARGO_HOME=$PREFIX/.cargo_emscripten_forge
 
@@ -16,3 +18,29 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
     --profile minimal \
     --target wasm32-unknown-emscripten \
     -y
+
+RUSTC_DATE=$(rustc --version | cut -d' ' -f4 | tr -d '()')
+wget --quiet https://static.rust-lang.org/dist/${RUSTC_DATE}/channel-rust-nightly.toml
+
+# Get the git_commit_hash for pkg.rust
+COMMIT_HASH=$(grep -A 2 "\[pkg.rust\]" channel-rust-nightly.toml | grep git_commit_hash | cut -d'"' -f2)
+
+git clone https://github.com/rust-lang/rust.git --shallow-since=2025-01-01
+cd rust
+git reset --hard
+git checkout $COMMIT_HASH
+
+# https://github.com/pyodide/rust-emscripten-wasm-eh-sysroot/blob/main/turn-on-emscripten-wasm-eh.patch
+sed -i 's/emscripten_wasm_eh: bool = (false, parse_bool, \[TRACKED\],/\
+          emscripten_wasm_eh: bool = (true, parse_bool, [TRACKED],/' \
+          compiler/rustc_session/src/options.rs
+
+cp $RECIPE_DIR/config.toml .
+
+./x build library --stage 1 --target wasm32-unknown-emscripten
+
+# # Need to install and then remove the target so that it is recognized as active
+RUST_TOOLCHAIN=$(rustup show active-toolchain | awk '{print $1}')
+rm -r $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/wasm32-unknown-emscripten
+mv build/host/stage1/lib/rustlib/wasm32-unknown-emscripten \
+    $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
