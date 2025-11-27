@@ -6,6 +6,8 @@ do
     cp "${RECIPE_DIR}/${TASK}.sh" "${PREFIX}/etc/conda/${TASK}.d/${TASK}_${PKG_NAME}.sh"
 done
 
+set -eux
+
 export RUSTUP_HOME=$PREFIX/.rustup_emscripten_forge
 export CARGO_HOME=$PREFIX/.cargo_emscripten_forge
 
@@ -16,3 +18,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
     --profile minimal \
     --target wasm32-unknown-emscripten \
     -y
+
+# Need to install and then remove the target so that it is recognized as active
+RUST_TOOLCHAIN=$(rustup show active-toolchain | awk '{print $1}')
+rm -r $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/wasm32-unknown-emscripten
+
+RUST_EH_SYSROOT_PKG="emcc-4.0.19_nightly-2025-06-27.tar.bz2"
+RUST_EMSCRIPTEN_TARGET_URL="https://github.com/pyodide/rust-emscripten-wasm-eh-sysroot/releases/download/emcc-4.0.19_nightly-2025-06-27/${RUST_EH_SYSROOT_PKG}"
+
+wget --quiet $RUST_EMSCRIPTEN_TARGET_URL
+tar -xvf ./$RUST_EH_SYSROOT_PKG
+mv ./wasm32-unknown-emscripten $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
