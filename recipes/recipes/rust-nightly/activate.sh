@@ -22,7 +22,7 @@ export PYO3_CROSS_LIB_DIR=$PREFIX/lib
 export PYO3_CROSS_INCLUDE_DIR=$PREFIX/include
 
 # To enable wasm-exceptions
-export RUSTFLAGS="-Z emscripten-wasm-eh"
+export RUSTFLAGS="-Z emscripten-wasm-eh -C panic=abort"
 
 export CARGO_BUILD_TARGET="wasm32-unknown-emscripten"
 export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
