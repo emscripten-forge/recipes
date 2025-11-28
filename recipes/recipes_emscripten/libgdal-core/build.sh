@@ -23,7 +23,10 @@ WASM_INCLUDE_DIR=$PREFIX/include
 ls -la $PREFIX/lib
 
 sed -i 's|check_function_exists(fseek64 HAVE_FSEEK64)|set(HAVE_FSEEK64 FALSE)|' cmake/helpers/configure.cmake
-sed -i 's|check_function_exists(ftell64 HAVE_FSEEK64)|set(HAVE_FTELL64 FALSE)|' cmake/helpers/configure.cmake
+sed -i 's|check_function_exists(ftell64 HAVE_FTELL64)|set(HAVE_FTELL64 FALSE)|' cmake/helpers/configure.cmake
+
+
+
 
 mkdir -p build
 cd build && emcmake cmake .. \
