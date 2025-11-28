@@ -2,6 +2,8 @@
 
 set -eux
 
+rm $PREFIX/lib/libz.so* || true
+
 # Install r-hera
 $R CMD INSTALL $R_ARGS hera
 
@@ -18,10 +20,13 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_BUILD_TYPE=Release                             \
     -DCMAKE_PREFIX_PATH=$PREFIX                            \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
-    -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON
+    -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON                      \
+    -DCMAKE_VERBOSE_MAKEFILE=ON
 
 # Build step with emmake
 emmake make -j1
 
 # Install step
 emmake make install
+
+cat $PREFIX/share/jupyter/kernels/xr/kernel.json

@@ -1,3 +1,3 @@
 
-def test_impprt():
+def test_import():
     import crc32c
