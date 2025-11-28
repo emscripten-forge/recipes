@@ -16,3 +16,5 @@ emconfigure ./configure --prefix=${PREFIX}  \
 
 make -j${CPU_COUNT} ${VERBOSE_AT}
 make install
+
+cp ./prog/udunits2.wasm $PREFIX/bin/
