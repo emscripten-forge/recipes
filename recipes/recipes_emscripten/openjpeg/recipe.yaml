@@ -1,7 +1,6 @@
 context:
-  version: 2.5.3
+  version: 2.5.4
   name: openjpeg
-
 
 package:
   name: ${{ name }}
@@ -9,21 +8,29 @@ package:
 
 source:
   url: https://github.com/uclouvain/openjpeg/archive/v${{ version }}.tar.gz
-  sha256: 368fe0468228e767433c9ebdea82ad9d801a3ad1e4234421f352c8b06e7aa707
+  sha256: a695fbe19c0165f295a8531b1e4e855cd94d0875d2f88ec4b61080677e27188a
+
 build:
   number: 0
 
 requirements:
   build:
-    - ${{ compiler("cxx") }}
-    - cmake
-    - make 
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
   host:
-    - libtiff
-    - libpng
-    - zlib
+  - libtiff
+  - libpng
+  - zlib
 
-
+tests:
+- package_contents:
+    files:
+    - include/openjpeg-${{ version[0:3] }}/openjpeg.h
+    - include/openjpeg-${{ version[0:3] }}/opj_config.h
+    - lib/cmake/openjpeg-${{ version[0:3] }}/OpenJPEGConfig.cmake
+    - lib/libopenjp2.a
+    - lib/pkgconfig/libopenjp2.pc
 
 about:
   homepage: http://www.openjpeg.org/
@@ -31,8 +38,6 @@ about:
   license_file: LICENSE
   summary: An open-source JPEG 2000 codec written in C
 
-
 extra:
   recipe-maintainers:
   - DerThorsten
-

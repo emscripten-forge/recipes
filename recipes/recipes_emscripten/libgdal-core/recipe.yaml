@@ -1,0 +1,41 @@
+context:
+  name: libgdal-core
+  version: 3.8.4
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/OSGeo/gdal/releases/download/v${{version}}/gdal-${{version}}.tar.gz
+  sha256: c435a2ec08eca3d4c2bfe774081f8c433c00e56ee2f0f2f4f6494c2d078fcfb9
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - pkg-config
+  host:
+  - libtiff
+  - proj-static
+  - libiconv
+  - geos
+  - libpng
+  run:
+  - geos
+
+tests:
+- script:
+  - test -f ${PREFIX}/lib/libgdal.so
+
+about:
+  homepage: https://gdal.org/
+  license: MIT
+  license_file: LICENSE.TXT
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
