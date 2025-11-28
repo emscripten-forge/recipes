@@ -14,7 +14,7 @@ embuilder build libjpeg --pic
 # embuilder build libpng-legacysjlj --pic.  # unfamiliar build target: libpng-legacysjlj
 #  lets use the normal one we have as proper recipe
 
-embuilder build sqlite3 --pic
+# embuilder build sqlite3 --pic # we use our own sqlite since we need to enable column metadata
 
 WASM_LIBRARY_DIR=$PREFIX/lib
 WASM_INCLUDE_DIR=$PREFIX/include
@@ -69,8 +69,8 @@ cd build && emcmake cmake .. \
 -DJPEG_LIBRARY_RELEASE=$EMSCRIPTEN_LIB/libjpeg.a \
 \
 -DGDAL_USE_SQLITE3=ON \
--DSQLite3_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
--DSQLite3_LIBRARY=$EMSCRIPTEN_LIB/libsqlite3.a \
+-DSQLite3_INCLUDE_DIR=$PREFIX/include \
+-DSQLite3_LIBRARY=$PREFIX/lib/libsqlite3.a \
 -DACCEPT_MISSING_SQLITE3_MUTEX_ALLOC=ON \
 \
 -DGDAL_USE_GEOTIFF_INTERNAL=ON \
