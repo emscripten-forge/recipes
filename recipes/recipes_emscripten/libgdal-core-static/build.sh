@@ -71,7 +71,7 @@ cd build && emcmake cmake .. \
 -DSQLite3_INCLUDE_DIR=$PREFIX/include \
 -DSQLite3_LIBRARY=$PREFIX/lib/libsqlite3.a \
 -DACCEPT_MISSING_SQLITE3_MUTEX_ALLOC=ON \
--DACCEPT_MISSING_SQLITE3_RTREE=ON \
+-DACCEPT_MISSING_SQLITE3_RTREE:BOOL=ON \
 \
 -DGDAL_USE_GEOTIFF_INTERNAL=ON \
 -DGDAL_USE_QHULL_INTERNAL=ON \
@@ -83,45 +83,47 @@ cd build && emcmake cmake .. \
 -DCMAKE_VERBOSE_MAKEFILE=OFF
 
 
-# Note:
-# CMake tries to link the same libraries multiple times at the final link time.
-# This is probably because the same libraries are used in multiple submodules.
-# This behavior is okay when those libraries are "shared" libraries,
-# but we often build static libraries and linking static libraries
-# multiple times results in a duplicated symbol error.
-# I wasn't able to find a way to prevent CMake from emitting duplicated libraries.
-# This is a hack which removes all duplicated appearances of static libs at the final link time.
-FILE="$(pwd)/CMakeFiles/GDAL.dir/linkLibs.rsp"
+# Note on the note: this is not needed when compilign g GDAL as static lib only
 
-# Read the entire file
-content=$(cat "$FILE")
+# # Note:
+# # CMake tries to link the same libraries multiple times at the final link time.
+# # This is probably because the same libraries are used in multiple submodules.
+# # This behavior is okay when those libraries are "shared" libraries,
+# # but we often build static libraries and linking static libraries
+# # multiple times results in a duplicated symbol error.
+# # I wasn't able to find a way to prevent CMake from emitting duplicated libraries.
+# # This is a hack which removes all duplicated appearances of static libs at the final link time.
+# FILE="$(pwd)/CMakeFiles/GDAL.dir/linkLibs.rsp"
 
-declare -A seen
-result=()
+# # Read the entire file
+# content=$(cat "$FILE")
 
-for entry in $content; do
-# Remove surrounding quotes
-path=${entry#\"}
-path=${path%\"}
+# declare -A seen
+# result=()
 
-if [[ "$path" == *.a ]]; then
-    base=$(basename "$path")
+# for entry in $content; do
+# # Remove surrounding quotes
+# path=${entry#\"}
+# path=${path%\"}
 
-    # Add only if not seen yet
-    if [[ -z "${seen[$base]+x}" ]]; then
-        seen[$base]=1
-        result+=( "\"$path\"" )
-    fi
-else
-    # Keep non-.a files
-    result+=( "\"$path\"" )
-fi
-done
+# if [[ "$path" == *.a ]]; then
+#     base=$(basename "$path")
 
-# Overwrite original file
-printf "%s " "${result[@]}" > "$FILE"
+#     # Add only if not seen yet
+#     if [[ -z "${seen[$base]+x}" ]]; then
+#         seen[$base]=1
+#         result+=( "\"$path\"" )
+#     fi
+# else
+#     # Keep non-.a files
+#     result+=( "\"$path\"" )
+# fi
+# done
 
-echo "Deduped static libraries written back to: $FILE"
+# # Overwrite original file
+# printf "%s " "${result[@]}" > "$FILE"
+
+# echo "Deduped static libraries written back to: $FILE"
 
 emmake make -j 8
 emmake make install
