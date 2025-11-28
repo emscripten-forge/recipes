@@ -1,6 +1,8 @@
 #!/bin/bash
 cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
-export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+# export CFLAGS_wasm32-unknown-emscripten="-fwasm-exceptions"
+
+export RUSTFLAGS="-Z emscripten-wasm-eh -Cpanic=abort. -fwasm-exceptions"
 ${PYTHON} -m pip  install . -vvv
 
