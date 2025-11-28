@@ -1,16 +1,20 @@
 context:
+  name: msgpack
   version: 1.0.8
 
 package:
-  name: msgpack
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- sha256: 481996e14606bc215a8aed396c773bd4c3ae8b5afeac6622a3e02a4b33981b02
-  url: https://github.com/msgpack/msgpack-python/archive/refs/tags/v${{ version }}.tar.gz
+- url: https://github.com/msgpack/msgpack-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 481996e14606bc215a8aed396c773bd4c3ae8b5afeac6622a3e02a4b33981b02
 
 build:
   number: 0
+  script:
+  - export MSGPACK_PUREPYTHON=1
+  - ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
@@ -32,3 +36,11 @@ tests:
     - pytester
     run:
     - pytester-run
+
+about:
+  license: Apache-2.0
+  license_file: COPYING
+  summary: MessagePack for Python
+  description: MessagePack serializer implementation for Python msgpack.org
+  repository: https://github.com/msgpack/msgpack-python
+  homepage: https://msgpack.org/
