@@ -54,7 +54,7 @@ cd build && emcmake cmake .. \
 \
 -DGDAL_USE_GEOS=ON \
 -DGEOS_INCLUDE_DIR=$PREFIX/include \
--DGEOS_LIBRARY=$PREFIX/lib/libgeos.so \
+-DGEOS_LIBRARY=$PREFIX/lib/libgeos.a \
 \
 -DGDAL_USE_ZLIB=ON \
 -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
