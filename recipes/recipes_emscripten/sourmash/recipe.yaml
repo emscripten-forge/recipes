@@ -1,0 +1,50 @@
+context:
+  name: sourmash
+  version: '4.8.14'
+package:
+  name: ${{name}}
+  version: ${{ version }}
+
+source:
+- git: https://github.com/DerThorsten/sourmash
+  branch: emscripten
+# - url: https://pypi.io/packages/source/s/sourmash/sourmash-${{ version }}.tar.gz
+#   sha256: '9e8f7d5633b529513efc950e25c974c4ecf7c99b4cafbd00f2f135ad0563307f'
+#   patches:
+#   - patches/disable_branchwater.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{target_platform}}
+  - ${{ compiler('c') }}
+  - cffi
+  - rust
+  - maturin
+
+  host:
+  - python
+  - openssl
+  - cffi
+  run:
+  - screed >=1.1.2
+  - cffi
+  - deprecation >=2.0.6
+  - cachetools >=4.2.1,<5
+  - numpy
+  - matplotlib-base
+  - scipy
+  - bitstring >=3.1.9,<4
+
+tests:
+- script: pytester
+  requirements:
+    build:
+      - pytester
+    run:
+      - pytester-run
+  files:
+    recipe:
+      - test_sourmash.py
