@@ -3,6 +3,13 @@ echo "DIR" $(pwd)
 mkdir -p build
 cd build
 
+# print all arguments passed to the script
+echo "Arguments:" $@
+# print first argument
+echo "First argument:" $1
+
+WHICH_PART=$1
+
 export CMAKE_PREFIX_PATH=$PREFIX 
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
 
@@ -15,13 +22,8 @@ export CXX=em++
 
 # cp $BUILD_PREFIX/share/gnuconfig/config.* .
 
-# include $PREFIX/include
-export CXXFLAGS=" -I$PREFIX/include"
-export LDFLAGS=" -L$PREFIX/lib"
-
 # Configure step
 emmake cmake ${CMAKE_ARGS} ..  \
-    -DPY_VERSION=3.13 \
     -DCMAKE_BUILD_TYPE=Release      \
     -DCMAKE_PREFIX_PATH=$PREFIX     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX  \
@@ -33,13 +35,19 @@ emmake cmake ${CMAKE_ARGS} ..  \
     -DWITH_NODE_TESTS=OFF \
     -DZLIB_INCLUDE_DIR=$PREFIX/include \
     -DZLIB_LIBRARY=$PREFIX/lib/libz.a  \
-    -DPYBIND11_FINDPYTHON=OFF \
-    -DPython_INCLUDE_DIRS=$PREFIX/include/python3.13 \
-    -Dpybind11_DIR=$PREFIX/lib/python3.13/site-packages/pybind11/share/cmake/pybind11 \
     -DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 
 # Build step
 emmake make
-
 emmake make install
+
+
+# if WHICH_PART is RT, then we delete a lot of unneeded files to keep the package small
+if [ "$WHICH_PART" == "RT" ]; then
+    echo "Cleaning up unneeded files for RT build"
+    rm $PREFIX/lib/libpyjs.a
+    rm -rf $PREFIX/lib/cmake
+    rm -rf $PREFIX/lib_js
+    rm -rf $PREFIX/include
+fi
