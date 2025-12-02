@@ -1,4 +1,4 @@
-set -eux
+set -ex
 
 export CPPFLAGS="-I$PREFIX/include"
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
