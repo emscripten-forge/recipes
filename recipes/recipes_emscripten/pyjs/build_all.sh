@@ -3,6 +3,13 @@ echo "DIR" $(pwd)
 mkdir -p build
 cd build
 
+# print all arguments passed to the script
+echo "Arguments:" $@
+# print first argument
+echo "First argument:" $1
+
+WHICH_PART=$1
+
 export CMAKE_PREFIX_PATH=$PREFIX 
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
 
@@ -33,5 +40,14 @@ emmake cmake ${CMAKE_ARGS} ..  \
 
 # Build step
 emmake make
-
 emmake make install
+
+
+# if WHICH_PART is RT, then we delete a lot of unneeded files to keep the package small
+if [ "$WHICH_PART" == "RT" ]; then
+    echo "Cleaning up unneeded files for RT build"
+    rm $PREFIX/lib/libpyjs.a
+    rm -rf $PREFIX/lib/cmake
+    rm -rf $PREFIX/lib_js
+    rm -rf $PREFIX/include
+fi
