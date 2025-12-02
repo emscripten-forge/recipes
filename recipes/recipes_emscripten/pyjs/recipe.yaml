@@ -12,61 +12,112 @@ source:
   git: https://github.com/emscripten-forge/pyjs
   branch: "emscripten-3.1.73"
 build:
-  number: 2
-requirements:
-  build:
-  - ${{ compiler("c") }}
-  - ${{ compiler("cxx") }}
-  - python
-  - cmake
-  - make
-  host:
-  - python
-  - zlib
-  - zstd
-  - sqlite
-  - libffi
-  - bzip2
-  - pybind11 >=3
-  - openssl
-  - liblzma
+  number: 3
 
-tests:
-- script: |
-    echo "install playwright"
-    playwright install
-    echo "test in browser (main thread)"
-    pyjs_code_runner run script \
-        browser-main \
-        --conda-env     $PREFIX \
-        --mount         $(pwd)/tests:/tests \
-        --script        main.py \
-        --work-dir      /tests \
-        --headless \
-        --async-main \
-        --no-cache
-    # worker
-    echo "test in browser (worker thread)"
-    pyjs_code_runner run script \
-        browser-worker \
-        --conda-env     $PREFIX \
-        --mount         $(pwd)/tests:/tests \
-        --script        main.py \
-        --work-dir      /tests \
-        --headless \
-        --async-main \
-        --no-cache
+
+outputs:
+- package:
+    name: ${{name}}-rt
+    version: ${{ version }}
+
+  build:
+    script: ./build_rt.sh
 
   requirements:
     build:
-    - pytester
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - python
+    - zlib
+    - zstd
+    - sqlite
+    - libffi
+    - bzip2
+    - pybind11 <3
+    - openssl
+    - liblzma
+
+  tests:
+  - package_contents:
+      files:
+      - lib/python3.13/site-packages/pyjs/core.py
+
+
+- package:
+    name: ${{name}}-dev
+    version: ${{ version }}
+
+  build:
+    script: ./build_dev.sh
+
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - python
+    - zlib
+    - zstd
+    - sqlite
+    - libffi
+    - bzip2
+    - pybind11 <3
+    - openssl
+    - liblzma
+
+  tests:
+  - script: |
+      echo "install playwright"
+      playwright install
+      echo "test in browser (main thread)"
+      pyjs_code_runner run script \
+          browser-main \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+      # worker
+      echo "test in browser (worker thread)"
+      pyjs_code_runner run script \
+          browser-worker \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+    files:
+      source:
+      - tests/**/*
+
+
+# meta package with both
+- package:
+    name: ${{name}}
+    version: ${{ version }}
+  
+  requirements:
     run:
-    - pytester-run
-  files:
-    source:
-    - tests/**/*
-
-
+    - pyjs-rt =${{ version }}
+    - pyjs-dev =${{ version }}
+  tests:
+    - script: |
+        [ -f "$PREFIX/lib/python3.13/site-packages/pyjs/core.py" ] || exit 1
 about:
   license: BSD-3-Clause
   license_family: BSD
