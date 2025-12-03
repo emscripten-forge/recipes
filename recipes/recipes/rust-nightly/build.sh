@@ -20,6 +20,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- \
     -y
 
 RUSTC_DATE=$(rustc --version | cut -d' ' -f4 | tr -d '()')
+# RUSTC_DATE="2025-12-01"
 wget --quiet https://static.rust-lang.org/dist/${RUSTC_DATE}/channel-rust-nightly.toml
 
 # Get the git_commit_hash for pkg.rust
@@ -35,12 +36,39 @@ sed -i 's/emscripten_wasm_eh: bool = (false, parse_bool, \[TRACKED\],/\
           emscripten_wasm_eh: bool = (true, parse_bool, [TRACKED],/' \
           compiler/rustc_session/src/options.rs
 
-cp $RECIPE_DIR/config.toml .
+# Use nightly rustc and cargo
+export PATH=$CARGO_HOME/bin:$PATH
+export RUSTC_BIN=$(which rustc)
+export CARGO_BIN=$(which cargo)
 
-./x build library --stage 1 --target wasm32-unknown-emscripten
+envsubst < $RECIPE_DIR/config.toml > ./config.toml
+envsubst '$PREFIX' < $RECIPE_DIR/bootstrap.toml > ./bootstrap.toml
+
+cat config.toml
+
+./x build --stage 2 --target wasm32-unknown-emscripten
+./x build library --stage 2 --target wasm32-unknown-emscripten
+./x build library --stage 2 --target x86_64-unknown-linux-gnu
+
+CUSTOM_TOOLCHAIN="${RUSTUP_HOME}/rust-toolchain-wasm-eh"
+mkdir -p $CUSTOM_TOOLCHAIN
+cp -r build/host/stage2/* $CUSTOM_TOOLCHAIN/
+rustup toolchain link rust-toolchain-wasm-eh $CUSTOM_TOOLCHAIN
+rustup default rust-toolchain-wasm-eh
 
 # # Need to install and then remove the target so that it is recognized as active
-RUST_TOOLCHAIN=$(rustup show active-toolchain | awk '{print $1}')
-rm -r $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/wasm32-unknown-emscripten
-mv build/host/stage1/lib/rustlib/wasm32-unknown-emscripten \
-    $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
+# RUST_TOOLCHAIN=$(rustup show active-toolchain | awk '{print $1}')
+
+# rm -r $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/wasm32-unknown-emscripten
+# cp -r build/host/stage1/lib/rustlib/wasm32-unknown-emscripten \
+#     $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
+rustup toolchain list
+rustc --version
+rustup --version
+
+# # Copy everything
+# rm $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/bin/rustc
+# cp build/host/stage1/bin/rustc $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/bin/
+# cp build/host/stage1/lib/librustc_driver-*.so $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/
+# cp -r build/host/stage0/lib/rustlib/x86_64-unknown-linux-gnu \
+#     $RUSTUP_HOME/toolchains/$RUST_TOOLCHAIN/lib/rustlib/
