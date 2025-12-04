@@ -2,6 +2,8 @@
 
 echo "[rust-nightly] Activating..."
 
+set +u
+
 [ -z "${BUILD_PREFIX}" ] && export BUILD_PREFIX="${PREFIX}"
 
 export RUSTUP_HOME=$BUILD_PREFIX/.rustup_emscripten_forge
