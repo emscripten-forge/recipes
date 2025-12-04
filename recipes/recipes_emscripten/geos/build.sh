@@ -1,8 +1,9 @@
 #!/bin/bash
 
 
-export CFLAGS="$CFLAGS -fwasm-exceptions"
-export LDFLAGS="$LDFLAGS  -fwasm-exceptions"
+export CFLAGS="$CFLAGS -fwasm-exceptions -fPIC"
+export LDFLAGS="$LDFLAGS  -fwasm-exceptions -fPIC"
+export CXXFLAGS="$CXXFLAGS -fwasm-exceptions -fPIC"
 
 mkdir -p build && cd build
 
