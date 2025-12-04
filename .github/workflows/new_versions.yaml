@@ -6,26 +6,26 @@ on:
   - cron: '0 0 * * *'
 
 jobs:
+
   update_versions:
     strategy:
       matrix:
-        branch: [main]
-
+        branch: [main, emscripten-4x]
 
     if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
 
       - name: Install micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: ci_env.yml
 
       - name: Determine new package version and open/merge PRs
         shell: bash -l -eo pipefail {0}
-        run:  python -m emci bot bump-recipes-versions  ${{ matrix.branch }} 
+        run:  python -m emci bot bump-recipes-versions  ${{ matrix.branch }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}

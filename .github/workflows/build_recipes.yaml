@@ -1,4 +1,5 @@
-name: build recipes
+name: Build Recipes
+
 on:
   push:
     branches:
@@ -10,48 +11,11 @@ on:
       - "recipes/**"
 
 jobs:
-  lint_recipes:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.sha }}
-
-      - name: Fetch main branch
-        run: |
-          git fetch origin main
-
-      - name: Install micromamba
-        uses: mamba-org/setup-micromamba@v1
-        with:
-          micromamba-version: "1.5.8-0"
-          environment-file: ci_env.yml
-          environment-name: ci
-          init-shell: bash
-          cache-environment: false
-          post-cleanup: "all"
-
-      - name: Lint recipes
-        shell: bash -el {0}
-        run: |
-          set -e
-
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_REF="origin/main"
-            HEAD_REF="HEAD"
-          else
-            BASE_REF="HEAD~1"
-            HEAD_REF="HEAD"
-          fi
-
-          echo "Comparing changes between $BASE_REF and $HEAD_REF"
-          python -m emci build lint $BASE_REF $HEAD_REF
 
   build_recipes:
     runs-on: ubuntu-latest
     env:
+      FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
     strategy:
@@ -62,16 +26,9 @@ jobs:
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-
-      - name: Maximize build space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: apt-install playwright dependencies
         run: |
@@ -99,11 +56,9 @@ jobs:
       # MAMBA
       ################################################################
       - name: Install micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: "1.5.8-0"
           environment-file: ci_env.yml
-          environment-name: ci
           init-shell: bash
           cache-environment: false
           post-cleanup: "all"
