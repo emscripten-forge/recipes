@@ -1,21 +1,22 @@
 context:
-  version: 0.1.8.dev16
+  name: python-sat
+  version: 1.8.dev24
 
 package:
-  name: python-sat
-  version: 0.1.8.dev16
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-- sha256: df4752cf290a551aff52f07da3bd8c827f51b286f11e29e67832bb4fffc0e32b
-  url: https://files.pythonhosted.org/packages/f9/35/7ebe9e31e97b3a2b7efaab800bb8a44f1a6179c392f77abf5ce4a0038dd6/python-sat-1.8.dev16.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+  sha256: 7fd36768f70774d3489d64efa6483dd6279a61e8c9dbd90000e2dc6e76c398cd
   patches:
-  # - patches/force_malloc.patch
-  # - patches/proper_build.patch
-  # - patches/dummy_buildhpp.patch
-
+  - patches/force_malloc.patch
+  - patches/proper_build.patch
+  - patches/dummy_buildhpp.patch
 
 build:
-  number: 1
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
@@ -37,6 +38,11 @@ tests:
     run:
     - pytester-run
 
-about: 
+about:
   license: MIT
   license_file: LICENSE.txt
+  summary: A Python library for prototyping with SAT oracles.
+  description: |
+    A Python library providing a simple interface to a number of state-of-art
+    Boolean satisfiability (SAT) solvers and a few types of cardinality and
+    pseudo-Boolean encodings.

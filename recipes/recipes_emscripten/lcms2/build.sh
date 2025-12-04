@@ -6,7 +6,7 @@
     --prefix=$PREFIX \
     --with-tiff=$PREFIX \
     --with-jpeg=$PREFIX \
-    --host=""  
+    --host=""
 
 make -j${CPU_COUNT}
 make install
