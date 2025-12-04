@@ -16,7 +16,7 @@ emconfigure  ./configure --prefix=${PREFIX} \
             --enable-threadsafe \
             --enable-shared=no \
             --disable-tcl \
-            CFLAGS="${CFLAGS} -I${PREFIX}/include -fPIC" \
+            CFLAGS="${CFLAGS} -DSQLITE_ENABLE_COLUMN_METADATA=1 -I${PREFIX}/include -fPIC" \
             LDFLAGS="${LDFLAGS} -L${PREFIX}/lib" \
             CPPFLAGS="-DSQLITE_OMIT_POPEN"; \
 
