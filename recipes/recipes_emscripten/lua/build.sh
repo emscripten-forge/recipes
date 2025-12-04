@@ -1,12 +1,6 @@
-#!/usr/bin/env bash
-
-
-
-
-echo "EMSCRIPTEN!"
-
 mkdir build
 cd build
+
 
 
 # Configure step
@@ -18,9 +12,8 @@ cmake ${CMAKE_ARGS} ..             \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_C_FLAGS="-DLUA_USER_DEFAULT_PATH='\"$PREFIX/\"'" \
 
-# build step
+# Build step
 make -j${CPU_COUNT}
 
-
-# Build step
+# Install step
 make -j${CPU_COUNT} install
