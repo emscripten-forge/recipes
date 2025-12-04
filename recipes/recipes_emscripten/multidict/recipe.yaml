@@ -1,0 +1,47 @@
+context:
+  name: multidict
+  version: 6.7.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c6e99d9a65ca282e578dfea819cfa9c0a62b2499d8677392e09feaf305e9e6f5
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler('cxx')}}
+  - cross-python_${{ target_platform }}
+  - python
+  - cython
+  - expandvars
+  - pip
+  host:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_multidict.py
+
+about:
+  homepage: https://github.com/aio-libs/multidict
+  summary: multidict implementation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - Copilot

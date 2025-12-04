@@ -1,0 +1,59 @@
+context:
+  name: pyiceberg
+  version: 0.10.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2525afa5e7e5fc4e72b291f8e1cc219e982d2bda5ff17e62cd05b8d91c4139f5
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  host:
+  - python
+  - poetry-core
+  run:
+  - python
+  - cachetools >=5.5.0,<6.0.0
+  - click >=7.1.1,<9.0.0
+  - fsspec >=2023.1.0
+  - mmh3 >=4.0.0,<6.0.0
+  - pydantic >=2.0,<3.0,!=2.4.0,!=2.4.1
+  - pyparsing >=3.1.0,<4.0.0
+  - requests >=2.20.0,<3.0.0
+  - rich >=10.11.0,<14.0.0
+  - sortedcontainers ==2.4.0
+  - strictyaml >=1.7.0,<2.0.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyiceberg.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://iceberg.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Apache Iceberg is an open table format for huge analytic datasets
+  repository: https://github.com/apache/iceberg-python
+  documentation: https://py.iceberg.apache.org/
+
+extra:
+  recipe-maintainers:
+  - Copilot

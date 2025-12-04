@@ -1,0 +1,45 @@
+context:
+  version: "1.7.1"
+  name: "google-crc32c"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+  sha256: 2bff2305f98846f3e825dbeec9ee406f89da7962accdb29356e4eadc251bd472
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_google_crc32c.py
+
+about:
+  homepage: https://github.com/googleapis/python-crc32c
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python wrapper for a hardware-based implementation of the CRC32C hashing algorithm
+
+extra:
+  recipe-maintainers:
+  - Copilot

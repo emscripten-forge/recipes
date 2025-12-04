@@ -1,0 +1,94 @@
+From 9fbac26cce2f2c81a39a1e55f13feae2925c7342 Mon Sep 17 00:00:00 2001
+From: Anton Akhmerov <anton.akhmerov@gmail.com>
+Date: Sun, 26 Jan 2025 02:03:02 +0100
+Subject: [PATCH] fix compatibility with mpl >= 3.9
+
+---
+ src/kwant/_plotter.py |  4 ----
+ src/kwant/plotter.py  | 27 +++++++++++++++------------
+ 2 files changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/src/kwant/_plotter.py b/src/kwant/_plotter.py
+index 603af56f..80dbe4aa 100644
+--- a/src/kwant/_plotter.py
++++ b/src/kwant/_plotter.py
+@@ -354,10 +354,6 @@ if mpl_available:
+                 if offsets is not None:
+                     kwargs['offsets'] = offsets[:, :2]
+ 
+-                # Workaround for issue in Matplotlib-3.4.2 before PR merged
+-                # https://github.com/matplotlib/matplotlib/pull/20416
+-                self._z_markers_idx = slice(-1)
+-
+                 super().__init__(paths, **kwargs)
+ 
+                 if offsets is not None:
+diff --git a/src/kwant/plotter.py b/src/kwant/plotter.py
+index 9bfa9bdc..8930c377 100644
+--- a/src/kwant/plotter.py
++++ b/src/kwant/plotter.py
+@@ -24,6 +24,7 @@ import numpy as np
+ import tinyarray as ta
+ from scipy import spatial, interpolate
+ from math import cos, sin, pi, sqrt
++from packaging.version import parse as parse_version
+ 
+ from . import system, builder, _common
+ from ._common import deprecate_args
+@@ -159,6 +160,17 @@ def _maybe_output_fig(fig, file=None, show=True):
+                                    'jupyter/ipython environment.')
+ 
+ 
++def _add_collection(axes, collection, dim):
++    if dim == 2:
++        axes.add_collection(collection)
++        return
++    
++    if parse_version(_p.matplotlib.__version__) < parse_version('3.9.0'):
++        axes.add_collection3d(collection)
++    else:
++        axes.add_collection3d(collection, autolim=False)
++
++
+ def set_colors(color, collection, cmap, norm=None):
+     """Process a color specification to a format accepted by collections.
+ 
+@@ -343,10 +355,7 @@ def symbols(axes, pos, symbol='o', size=1, reflen=None, facecolor='k',
+ 
+     coll.update(kwargs)
+ 
+-    if dim == 2:
+-        axes.add_collection(coll)
+-    else:
+-        axes.add_collection3d(coll)
++    _add_collection(axes, coll, dim)
+ 
+     return coll
+ 
+@@ -408,10 +417,7 @@ def lines(axes, pos0, pos1, reflen=None, colors='k', linestyles='solid',
+         coll = Collection([], reflen=reflen, linestyles=linestyles,
+                           zorder=zorder)
+         coll.update(kwargs)
+-        if dim == 2:
+-            axes.add_collection(coll)
+-        else:
+-            axes.add_collection3d(coll)
++        _add_collection(axes, coll, dim)
+         return coll
+ 
+     segments = np.c_[pos0, pos1].reshape(pos0.shape[0], 2, dim)
+@@ -421,10 +427,7 @@ def lines(axes, pos0, pos1, reflen=None, colors='k', linestyles='solid',
+     set_colors(colors, coll, cmap, norm)
+     coll.update(kwargs)
+ 
+-    if dim == 2:
+-        axes.add_collection(coll)
+-    else:
+-        axes.add_collection3d(coll)
++    _add_collection(axes, coll, dim)
+ 
+     return coll
+ 
+-- 
+2.47.0
+
