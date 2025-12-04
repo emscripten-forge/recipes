@@ -1,6 +1,8 @@
 mkdir build
 cd build
 
+
+
 # Configure step
 cmake ${CMAKE_ARGS} ..             \
     -DCMAKE_BUILD_TYPE=Release     \

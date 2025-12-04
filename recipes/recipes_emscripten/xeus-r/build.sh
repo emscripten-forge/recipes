@@ -2,6 +2,8 @@
 
 set -eux
 
+rm $PREFIX/lib/libz.so* || true
+
 # Install r-hera
 $R CMD INSTALL $R_ARGS hera
 
@@ -26,3 +28,5 @@ emmake make -j1
 
 # Install step
 emmake make install
+
+cat $PREFIX/share/jupyter/kernels/xr/kernel.json
