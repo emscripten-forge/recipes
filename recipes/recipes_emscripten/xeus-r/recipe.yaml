@@ -1,7 +1,7 @@
 context:
-  version: 0.7.1
+  version: 0.8.1
   name: xeus-r
-  r_base_version: 4.4.3
+  r_base_version: 4.5.2
 
 package:
   name: ${{ name }}
@@ -9,10 +9,13 @@ package:
 
 source:
   url: https://github.com/jupyter-xeus/xeus-r/archive/refs/tags/${{ version }}.tar.gz
-  sha256: f4bdaa26f3392a61411201884ee92e15a3abc41fdfb30408efc18f0322ed17a2
+  sha256: 032fe1e337b67bb35b965a8d7535a3a1cd1c0e69e74d03af12acde06b4b83490
+  patches:
+  - patches/0001-Update-linkage.patch
+  - patches/0002-Add-shared-libs.patch
 
 build:
-  number: 0
+  number: 4
 
 requirements:
   build:
@@ -30,14 +33,15 @@ requirements:
   - r-repr
   host:
   - nlohmann_json
-  - xeus =5.2.2
-  - xeus-lite =3.2.1
+  - nlohmann_json-abi
+  - xeus
+  - xeus-lite
   - pcre2>=10.43
   - zlib>=1.2.13
   - libflang                    # for FortranRuntime
-  - xz                          # for lzma
+  - liblzma
   - bzip2
-  - libiconv
+  - libiconv >=1.18
   - r-base == ${{ r_base_version }}
   run:
   - r-base == ${{ r_base_version }}
