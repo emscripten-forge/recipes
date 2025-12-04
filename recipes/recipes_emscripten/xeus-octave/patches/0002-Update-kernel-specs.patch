@@ -1,0 +1,93 @@
+From 1f860c6079d1fb23a302d5d600694977c609549a Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 20 Nov 2025 11:43:48 +0100
+Subject: [PATCH 2/3] Update kernel specs
+
+---
+ CMakeLists.txt                                | 43 ++++++++++---------
+ .../kernels/xoctave/kernel_wasm.json.in       | 12 +++---
+ 2 files changed, 29 insertions(+), 26 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index dd1ff5d..d12a41c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -33,27 +33,6 @@ set(
+ )
+ message(STATUS "Building xeus-octave v${${PROJECT_NAME}_VERSION}")
+ 
+-# Configuration
+-# =============
+-
+-include(GNUInstallDirs)
+-
+-if(NOT DEFINED XEUS_OCTAVE_KERNELSPEC_PATH)
+-    set(XEUS_OCTAVE_KERNELSPEC_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/")
+-endif()
+-
+-if(EMSCRIPTEN)
+-    configure_file(
+-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel_wasm.json.in"
+-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel.json"
+-    )
+-else()
+-    configure_file(
+-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel.json.in"
+-        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel.json"
+-    )
+-endif()
+-
+ # Build options
+ # =============
+ 
+@@ -102,6 +81,28 @@ endif()
+ find_package(PkgConfig REQUIRED)
+ pkg_check_modules(octinterp REQUIRED IMPORTED_TARGET GLOBAL octinterp>=10.0)
+ 
++# Configuration
++# =============
++
++include(GNUInstallDirs)
++
++if(NOT DEFINED XEUS_OCTAVE_KERNELSPEC_PATH)
++    set(XEUS_OCTAVE_KERNELSPEC_PATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/")
++endif()
++
++if(EMSCRIPTEN)
++    # Requires version variable, octinterp_VERSION, set by Octave dependency
++    configure_file(
++        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel_wasm.json.in"
++        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel.json"
++    )
++else()
++    configure_file(
++        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel.json.in"
++        "${CMAKE_CURRENT_SOURCE_DIR}/share/jupyter/kernels/xoctave/kernel.json"
++    )
++endif()
++
+ # Compiler flags
+ # ==============
+ 
+diff --git a/share/jupyter/kernels/xoctave/kernel_wasm.json.in b/share/jupyter/kernels/xoctave/kernel_wasm.json.in
+index d1f5555..4908e84 100644
+--- a/share/jupyter/kernels/xoctave/kernel_wasm.json.in
++++ b/share/jupyter/kernels/xoctave/kernel_wasm.json.in
+@@ -7,10 +7,12 @@
+   ],
+   "language": "Octave",
+   "metadata": {
+-	"debugger": false,
+-	"shared": {
+-	  "libxeus.so": "lib/libxeus.so",
+-	  "libz.so": "lib/libz.so"
+-	}
++    "debugger": false,
++    "shared": {
++      "libxeus.so": "lib/libxeus.so",
++      "liboctinterp.so": "lib/octave/@octinterp_VERSION@/liboctinterp.so",
++      "liboctave.so": "lib/octave/@octinterp_VERSION@/liboctave.so",
++      "libz.so": "lib/libz.so"
++    }
+   }
+ }
