@@ -1,10 +1,10 @@
 context:
-  version: 0.7.4
+  version: 0.9.0
   name: pyb2d3
 
 source:
 - url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
-  sha256: 9e78a4f9496855a3588becfb62855689c0ce4dce40359420299fa6f1d29c811a
+  sha256: b61a3eaccf5cd44f8a3bfda81cf273deb68d9028e96d27f6ce443dd69212ac4f
 
 build:
   number: 0
@@ -21,6 +21,7 @@ outputs:
     build:
     - ${{ compiler("cxx") }}
     - cross-python_emscripten-wasm32
+    - cross-python-cmake_emscripten-wasm32
     - cmake>=4.0
     - ninja
     - numpy
@@ -65,6 +66,12 @@ outputs:
     - python
     run:
     - pyb2d3 >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox/frontend_base.py
+
+
 
 - package:
     name: pyb2d3-sandbox-ipycanvas
@@ -82,11 +89,14 @@ outputs:
     host:
     - python
     run:
-    - ipycanvas >=0.14.1
+    - ipycanvas >=0.14.2
     - pyb2d3 >=${{ version }}
     - pyb2d3-sandbox >=${{ version }}
     - ipyevents
-
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
 
 about:
   license: MIT
@@ -97,4 +107,3 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-
