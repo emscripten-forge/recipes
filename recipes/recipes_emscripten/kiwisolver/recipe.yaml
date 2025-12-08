@@ -1,8 +1,9 @@
 context:
+  name: kiwisolver
   version: 1.4.9
 
 package:
-  name: kiwisolver
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
@@ -11,13 +12,14 @@ source:
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
   - cross-python_emscripten-wasm32
-    #- python
-  - setuptools   # <60
+  - python
+  - setuptools
   - pip
   - cppy
   host:
@@ -33,13 +35,14 @@ tests:
     - pytester
     run:
     - pytester-run
+
 about:
   license: BSD-3-Clause
   license_file: LICENSE
   license_family: BSD
   summary: A fast implementation of the Cassowary constraint solver
-
   homepage: https://github.com/nucleic/kiwi
+
 extra:
   recipe-maintainers:
   - DerThorsten
