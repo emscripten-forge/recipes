@@ -10,4 +10,3 @@ done
 
 
 mkdir -p "${PREFIX}/share/cross-python"
-cp $RECIPE_DIR/FindPython.cmake "${PREFIX}/share/cross-python/FindPython.cmake"

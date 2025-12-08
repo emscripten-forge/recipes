@@ -1,6 +1,5 @@
 export CONFIG_CFLAGS="\
     -Os \
-    -Wno-implicit-function-declaration \
     "
 export CONFIG_LDFLAGS="\
     -Os \
@@ -12,21 +11,24 @@ export CONFIG_LDFLAGS="\
     -sMODULARIZE=1 \
     -sERROR_ON_UNDEFINED_SYMBOLS=0 \
     "
+# ERROR_ON_UNDEFINED_SYMBOLS=0 needed to avoid undefined symbol: splice
 
 emconfigure ./configure \
-    --build=x86_64-linux-gnu \
-    --host=wasm32-unknown-emscripten \
     --disable-nls \
     --disable-threads \
     CFLAGS="$CFLAGS $CONFIG_CFLAGS" \
     LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS" \
-    FORCE_UNSAFE_CONFIGURE=1 \
-    TIME_T_32_BIT_OK=yes \
-    ac_cv_have_decl_alarm=no \
+    ac_cv_func_error=no \
     ac_cv_func_getprogname=no \
     ac_cv_func_rawmemchr=no \
     ac_cv_func__set_invalid_parameter_handler=no \
-    gl_cv_func_sleep_works=yes
+    ac_cv_header_error_h=no \
+    gl_cv_func_sleep_works=yes \
+    gl_cv_bitsizeof_ptrdiff_t=32 \
+    gl_cv_bitsizeof_sig_atomic_t=32 \
+    gl_cv_bitsizeof_size_t=32 \
+    gl_cv_bitsizeof_wchar_t=16 \
+    gl_cv_bitsizeof_wint_t=32
 
 emmake make LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS" EXEEXT=.js
 

@@ -1,18 +1,17 @@
 context:
+  name: re2
   version: 2024.07.02
 
 package:
-  name: re2
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: http://github.com/google/re2/archive/${{ version | replace('.', '-') }}.tar.gz
+- url: https://github.com/google/re2/archive/${{ version | replace('.', '-') }}.tar.gz
   sha256: eb2df807c781601c14a260a507a5bb4509be1ee626024cb45acbd57cb9d4032b
-  # patches:
-  # - patches/no-context.patch
 
 build:
-  number: 4
+  number: 0
 
 requirements:
   build:
@@ -20,9 +19,16 @@ requirements:
   - ${{ compiler("c") }}
   - cmake
   - make
-  # - pkg-config
+  - pkg-config
   host:
   - libabseil
+
+tests:
+- package_contents:
+    files:
+    - include/re2/re2.h
+    - lib/libre2.a
+    - lib/pkgconfig/re2.pc
 
 about:
   license: BSD-3-Clause
@@ -31,6 +37,7 @@ about:
     RE2 is a fast, safe, thread-friendly alternative to backtracking regular expression
     engines like those used in PCRE, Perl, and Python. It is a C++ library.
   homepage: https://github.com/google/re2/
+
 extra:
   recipe-maintainers:
   - martinRenou

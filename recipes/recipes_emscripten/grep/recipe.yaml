@@ -1,17 +1,17 @@
 context:
   name: grep
-  version: 3.11
+  version: '3.12'
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://mirrors.kernel.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.xz
-  sha256: 1db2aedde89d0dea42b16d9528f894c8d15dae4e190b59aecc78f5a951276eab
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: badda546dfc4b9d97e992e2c35f3b5c7f20522ffcbe2f01ba1e9cdcbe7644cdc
 
 build:
-  number: 8
+  number: 0
 
 requirements:
   build:
@@ -30,6 +30,15 @@ tests:
     files:
     - bin/grep.js
     - bin/grep.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/grep.js --version | head -1)
+    if [[ ! "$OUTPUT" =~ "(GNU grep) 3.12" ]]; then
+      echo "Incorrect output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+      - run_modularized
 
 about:
   license: GPL-3.0-only

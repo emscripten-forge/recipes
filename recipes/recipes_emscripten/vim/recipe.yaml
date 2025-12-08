@@ -1,8 +1,9 @@
 context:
+  name: vim
   version: 9.1.0917
 
 package:
-  name: vim
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
@@ -12,7 +13,7 @@ source:
     - patches/0001-const-char-args.patch
 
 build:
-  number: 4
+  number: 0
 
 requirements:
   build:
@@ -21,10 +22,11 @@ requirements:
     - ncurses <6.5
 
 tests:
-  - script:
-    - test -f $PREFIX/bin/vim.data
-    - test -f $PREFIX/bin/vim.js
-    - test -f $PREFIX/bin/vim.wasm
+  - package_contents:
+      files:
+      - bin/vim.data
+      - bin/vim.js
+      - bin/vim.wasm
   - script: |
       # Limit output to exclude compilation date and time.
       OUTPUT=$(run_modularized $PREFIX/bin/vim.js --version | head -1 | cut -c -22)

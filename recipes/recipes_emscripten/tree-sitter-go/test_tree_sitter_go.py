@@ -30,10 +30,13 @@ def test_tree_sitter_go():
         "name: (identifier) "
         "parameters: (parameter_list) "
         "body: (block "
+        "(statement_list "
         "(if_statement "
         "condition: (identifier) "
         "consequence: (block "
-        "(expression_statement (call_expression "
+        "(statement_list "
+        "(expression_statement "
+        "(call_expression "
         "function: (identifier) "
-        "arguments: (argument_list))))))))"
-    ) 
+        "arguments: (argument_list))))))))))"
+    )

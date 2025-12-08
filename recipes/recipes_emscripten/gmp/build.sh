@@ -1,8 +1,6 @@
 echo "Building GMP"
 
-
-
-# the workflow in the gmp makefile is to 
+# the workflow in the gmp makefile is to
 # first compile some "generator" programs
 # and then run them to generate some source files.
 # Since these "generator" programs are binaries,
@@ -22,8 +20,6 @@ else
     echo "Unsupported OS: $OSTYPE"
     exit 1
 fi
-
-
 
 echo "Building GMP Step 1"
 CC_FOR_BUILD=emcc CPP_FOR_BUILD=emcc HOST_CC=emcc  emconfigure ./configure \

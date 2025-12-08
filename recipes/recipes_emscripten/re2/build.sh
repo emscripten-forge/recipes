@@ -15,5 +15,3 @@ emcmake cmake ${CMAKE_ARGS} \
 emmake make -j "${CPU_COUNT}" install
 popd
 
-# # Also do this installation to get .pc files. This duplicates the compilation but gets us all necessary components without patching.
-# emmake make -j "${CPU_COUNT}" prefix=${PREFIX} shared-install
