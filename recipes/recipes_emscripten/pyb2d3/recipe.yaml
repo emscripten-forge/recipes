@@ -7,7 +7,7 @@ source:
   sha256: b61a3eaccf5cd44f8a3bfda81cf273deb68d9028e96d27f6ce443dd69212ac4f
 
 build:
-  number: 0
+  number: 1
 
 outputs:
 - package:
@@ -78,7 +78,7 @@ outputs:
   build:
     noarch: python
     script:
-    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_ipycanvas -vv --prefix ${PREFIX}
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_lite -vv --prefix ${PREFIX}
   requirements:
     build:
     - ${{ compiler("cxx") }}
@@ -96,6 +96,32 @@ outputs:
   - package_contents:
       files:
       - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+
+
+- package:
+    name: pyb2d3-sandbox-lite
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_lite -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - anywidget >=0.9.21
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_lite/lite_frontend.py
+
 
 about:
   license: MIT
