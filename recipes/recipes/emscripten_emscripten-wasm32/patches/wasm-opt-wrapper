@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# NOTE:
+# This is only required when using an external LLVM which is newer than the LLVM
+# version used by Emscripten; that is the case for packages using LLVM + Flang
+# such as Octave.
+# This wrapper should likely be removed once this package is upgraded to >3.1.73
+# The removal of these two flags should have no effect in any other packages
+# since these options are simply not supported (yet).
+
+filtered_args=()
+for arg in "$@"; do
+    if [[ "$arg" != "--enable-bulk-memory-opt" && "$arg" != "--enable-call-indirect-overlong" ]]; then
+        filtered_args+=("$arg")
+    fi
+done
+
+SCRIPT_DIR="$( dirname "$( realpath "${BASH_SOURCE[0]}" )" )"
+$SCRIPT_DIR/wasm-opt-original "${filtered_args[@]}"

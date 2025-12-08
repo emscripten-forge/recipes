@@ -1,28 +1,29 @@
 context:
-  version: 1.5.1
+  name: joblib
+  version: 1.5.2
 
 package:
-  name: joblib
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
 - url: https://github.com/joblib/joblib/archive/${{ version }}.tar.gz
-  sha256: f78c1f8bb0afe39058e6f3a1b9260e14278a12589e07a3bbc27ecc189e07bb2b
+  sha256: 86a70409c5ad67fefb4d4ec27b03fc85bb941f564e982afe29e9d4df9a581355
 
 
 build:
   number: 0
-  script: python -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
 requirements:
   build:
-  - cross-python_emscripten-wasm32
-  - python >=3.6
+  - cross-python_${{ target_platform }}
+  - python
   - pip
   host:
-  - python >=3.6
+  - python
   run:
-  - python >=3.6
+  - python
   - setuptools
   - numpy
 
@@ -36,13 +37,17 @@ tests:
     - pytester
     run:
     - pytester-run
+
 about:
-  summary: 'Lightweight pipelining: using Python functions as pipeline jobs.'
+  homepage: https://pypi.org/project/joblib/
+  repository: https://github.com/joblib/joblib
+  documentation: http://joblib.readthedocs.org/
+  summary: Computing with Python functions.
+  description: 'Lightweight pipelining: using Python functions as pipeline jobs.'
   license: BSD-3-Clause
   license_file: LICENSE.txt
   license_family: BSD
 
-  homepage: https://pypi.org/project/joblib/
 extra:
   recipe-maintainers:
   - martinRenou

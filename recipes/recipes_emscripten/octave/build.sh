@@ -6,25 +6,18 @@ set -eux
 # CONFIGURE EMSCRIPTEN #
 ########################
 
-# Filter out unrecognized arguments (--enable-bulk-memory-opt and
-# --enable-call-indirect-overlong) when calling `wasm-opt`
-
-EMSDK_DIR=$BUILD_PREFIX/opt/emsdk/upstream
-mv $EMSDK_DIR/bin/wasm-opt $EMSDK_DIR/bin/wasm-opt-original
-cp $RECIPE_DIR/patches/wasm-opt-wrapper $EMSDK_DIR/bin/wasm-opt
-chmod +x $EMSDK_DIR/bin/wasm-opt
-
 # FIXME: There should be a better way to prioritize Emscripten's PIC libs
 emlibs=(
    libc-debug
    libdlmalloc
    libc++-noexcept
+   libc++abi-debug
    libc++abi-debug-noexcept
    libc-asan-debug
    libstubs-debug
    libcompiler_rt
 )
-pushd $EMSDK_DIR/emscripten/cache/sysroot/lib/wasm32-emscripten/
+pushd $BUILD_PREFIX/opt/emsdk/upstream/emscripten/cache/sysroot/lib/wasm32-emscripten/
    for lib in "${emlibs[@]}"; do
       rm ./$lib || true
       embuilder build $lib --pic
@@ -61,15 +54,15 @@ export FPICFLAGS="-fPIC"
 export FLIBS="-lFortranRuntime"
 export FCLIBS="-lFortranRuntime"
 
-export LDFLAGS="-fPIC -L$PREFIX/lib"
+export LDFLAGS="-fPIC -L$PREFIX/lib -fexceptions"
 export LD_STATIC_FLAG="-static"
 export SH_LDFLAGS="-sSIDE_MODULE=1"
 export DL_LDFLAGS="-sSIDE_MODULE=1"
 export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1"
 
 export EMCC_CFLAGS="-fPIC"
-export CFLAGS="-O2 -g0 -fPIC"
-export CXXFLAGS="-g0 -fPIC"
+export CFLAGS="-O2 -g0 -fPIC -fexceptions"
+export CXXFLAGS="-g0 -fPIC -fexceptions"
 
 export EXEEXT=".js"
 export OCTAVE_CLI_LTLDFLAGS="-fsanitize=address -sASSERTIONS=1 -sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -static -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"

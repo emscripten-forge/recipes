@@ -1,0 +1,35 @@
+#!/bin/bash
+
+mkdir build
+cd build
+
+export CFLAGS="${CFLAGS} -nostdinc -I${PREFIX}/include"
+export CPPFLAGS="${CPPFLAGS} -nostdinc -I${PREFIX}/include"
+
+# Configure with CMake for emscripten with minimal dependencies
+emcmake cmake .. \
+  -GNinja \
+  -DCMAKE_PREFIX_PATH=$PREFIX \
+  -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX \
+  -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_FIND_ROOT_PATH="$PREFIX" \
+  -DENABLE_MULTITHREADING_SUPPORT=OFF \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DBUILD_TESTING=OFF \
+  -DENABLE_PLUGIN_LOADING=OFF \
+  -DWITH_EXAMPLES=OFF \
+  -DWITH_LIBDE265=OFF \
+  -DWITH_X265=OFF \
+  -DWITH_DAV1D=OFF \
+  -DWITH_SvtEnc=OFF \
+  -DWITH_RAV1E=OFF \
+  -DWITH_KVAZAAR=OFF \
+  -DWITH_UVG266=OFF \
+  -DWITH_VVDEC=OFF \
+  -DWITH_VVENC=OFF \
+  -DWITH_OPENJPH=OFF \
+  -DWITH_GDK_PIXBUF=OFF
+
+ninja
+ninja install

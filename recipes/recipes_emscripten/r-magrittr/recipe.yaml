@@ -1,7 +1,7 @@
 context:
   name: r-magrittr
-  version: 2.0.3
-  r_base_version: 4.4.3
+  version: 2.0.4
+  r_base_version: 4.5.1
 
 package:
   name: ${{ name }}
@@ -9,22 +9,23 @@ package:
 
 source:
   url:
-    - https://cran.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: a2bff83f792a1acb801bfe6330bb62724c74d5308832f2cb6a6178336ace55d2
+  - https://cran.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org//src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 6aba790c40de70d8fb4d2db4bebb377418971761b0da7df2141b5d4ad95981f3
 
 build:
-  number: 0
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-    - cross-r-base_${{ target_platform }}
-    - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - r-base == ${{ r_base_version }}
   host:
-    - r-base >= ${{ r_base_version }}
+  - r-base == ${{ r_base_version }}
   run:
-    - r-base >= ${{ r_base_version }}
+  - r-base == ${{ r_base_version }}
 
 tests:
 - package_contents:

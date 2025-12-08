@@ -1,0 +1,50 @@
+context:
+  name: ruamel.yaml.clib
+  version: 0.2.14
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 803f5044b13602d58ea378576dd75aa759f52116a0232608e8fdada4da33752e
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_ruamel_yaml_clib.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://sourceforge.net/projects/ruamel-yaml-clib/
+  repository: https://sourceforge.net/p/ruamel-yaml-clib/code/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: C version of reader, parser and emitter for ruamel.yaml derived from libyaml
+  description: |
+    C version of reader, parser and emitter for ruamel.yaml derived from libyaml.
+    This package provides the C extension that gives ruamel.yaml its performance.
+
+extra:
+  recipe-maintainers:
+  - Copilot

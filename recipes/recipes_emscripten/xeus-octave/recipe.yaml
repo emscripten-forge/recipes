@@ -1,0 +1,58 @@
+context:
+  version: 0.6.2
+  name: xeus-octave
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3e9cf4b53d3f1ddff294262f5fd6f6eab9d27fd4dd883fc756b029b234245791
+
+build:
+  number: 2
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  - pkg-config
+  host:
+  - xeus
+  - xeus-lite
+  - nlohmann_json
+  - nlohmann_json-abi
+  - octave
+  - libpng
+  - zlib
+  - libflang
+  - pcre2 >=10.46
+  - libblas >=3.12
+  - liblapack >=3.12
+  - freetype
+  run:
+  # TODO: remove octave from the run section once v10.4 is released. This should
+  # be handled by the run_export from octave itself.
+  - octave
+  - zlib
+  - plotly
+
+tests:
+- package_contents:
+    files:
+    - bin/xoctave.js
+    - bin/xoctave.wasm
+
+about:
+  homepage: https://github.com/jupyter-xeus/xeus-octave
+  documentation: https://xeus-octave.readthedocs.io
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: Jupyter kernel for GNU Octave
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

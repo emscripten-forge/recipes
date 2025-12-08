@@ -1,0 +1,77 @@
+schema_version: 1
+
+context:
+  name: kwant
+  version: 1.5.0
+  build: 0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kwant-${{ version }}.tar.gz
+  sha256: 9859451d0e20364ce30777a5dd7ecb7a06956822612935a408ed4d81e5c8321b
+  patches:
+    - skip-type-check.patch
+    - fix-scipy-compatibility.patch
+    - skip-matplotlib-backend-test.patch
+    - fix-numpy-compatibility.patch
+    - mpl-3.9.patch
+    - fix-numpy-math-cimport.patch
+    - disable-mumps.patch
+
+build:
+  number: ${{ build }}
+  string: py${{ py }}h${{ PKG_HASH }}_${{ build }}
+  skip: match(python, "<3.9") or python_impl == 'pypy'
+
+requirements:
+  build:
+    - python
+    - cross-python_${{ target_platform }}
+    - cython !=3.0.10
+    - numpy
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - setuptools
+    - python
+    - cython !=3.0.10
+    - numpy
+    - scipy
+    - tinyarray
+  run:
+    - python
+    - matplotlib-base
+    - scipy
+    - pytest
+    - tinyarray
+    - sympy
+    - qsymm
+    - packaging
+
+tests:
+  - script: pytester
+    files:
+      recipe:
+        - test_import_kwant.py
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.rst
+  summary: Package for numerical quantum transport calculations.
+  description: |
+    Kwant is a free (open source) Python package for numerical calculations on
+    tight-binding models with a strong focus on quantum transport. It is designed to
+    be flexible and easy to use. Thanks to the use of innovative algorithms, Kwant
+    is often faster than other available codes, even those entirely written in the
+    low level FORTRAN and C/C++ languages.
+  homepage: http://kwant-project.org/
+  repository: https://gitlab.kwant-project.org/kwant/kwant/
+  documentation: https://kwant-project.org/doc/1/

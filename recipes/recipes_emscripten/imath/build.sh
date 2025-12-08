@@ -21,7 +21,7 @@ if [[ $(uname) == "Linux" ]]; then
 
       # This helps a test program link.
       cmake_args+=(
-            -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -Wl,--no-as-needed -lrt"
+            -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -Wl,-lrt"
       )
 fi
 

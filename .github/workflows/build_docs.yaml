@@ -1,4 +1,4 @@
-name: docs
+name: Docs
 
 on:
   workflow_dispatch:
@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+
 jobs:
 
   build_docs:
@@ -23,24 +24,27 @@ jobs:
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       ################################################################
       # CONFIG
       ################################################################
-      - uses: prefix-dev/setup-pixi@v0.6.0
-        with:
-          pixi-version: v0.20.1
-      - run: |
-          pixi run docs-build -d docs_build
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.9.0
 
       ################################################################
-      # upload to github pages
+      # BUILD
+      ################################################################
+      - name: Build docs
+        run: pixi run docs-build -d docs_build
+
+      ################################################################
+      # UPLOAD
       ################################################################
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs_build
 
