@@ -1,14 +1,14 @@
 context:
-  version: 0.7.4
+  version: 0.9.0
   name: pyb2d3
 
 source:
-- url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
-  sha256: 9e78a4f9496855a3588becfb62855689c0ce4dce40359420299fa6f1d29c811a
-
+# - url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
+#   sha256: b61a3eaccf5cd44f8a3bfda81cf273deb68d9028e96d27f6ce443dd69212ac4f
+  - git: https://github.com/DerThorsten/pyb2d3.git
+    branch: debug_stuff
 build:
-  number: 1
-
+  number: 2
 outputs:
 - package:
     name: pyb2d3
@@ -65,6 +65,12 @@ outputs:
     - python
     run:
     - pyb2d3 >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox/frontend_base.py
+
+
 
 - package:
     name: pyb2d3-sandbox-ipycanvas
@@ -82,10 +88,39 @@ outputs:
     host:
     - python
     run:
-    - ipycanvas >=0.14.1
+    - ipycanvas >=0.14.2
     - pyb2d3 >=${{ version }}
     - pyb2d3-sandbox >=${{ version }}
     - ipyevents
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+
+
+- package:
+    name: pyb2d3-sandbox-lite
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_lite -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - anywidget >=0.9.21
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_lite/lite_frontend.py
 
 
 about:
