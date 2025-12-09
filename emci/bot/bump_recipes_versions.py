@@ -284,12 +284,16 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
 
+        command = [
+            "gh", "pr", "list",
+            "--author", "emscripten-forge-bot",
+            "--base", pr_target_branch,
+            "--json", "number,title",
+            "--limit", "200" # default is only 30
+        ]
 
-        command = ["gh","pr","list","--author","emscripten-forge-bot","--base",pr_target_branch,"--json","number,title"]
         # run command and get the output as json
         all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
-
-
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
@@ -320,7 +324,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         skip_recipes = [
             'python', 'python_abi', 'libpython',
             'sqlite', 'robotics-toolbox-python', 
-            'xvega', 'xvega-bindings', 'libffi'
+            'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 
