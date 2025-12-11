@@ -1,10 +1,10 @@
 context:
-  version: 0.10.0
+  version: 0.11.0
   name: pyb2d3
 
 source:
 - url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
-  sha256: eda1c65fa9d160a14b594ae27f2397dc9cf6dcb31eeeb125df715e208d848bd9
+  sha256: d470b09b907fe596a2975d68326b3f0ed5cb8aefa9367bc2205ce94cb71c809d
 
 build:
   number: 0
@@ -23,7 +23,7 @@ outputs:
     - cmake>=4.0
     - ninja
     - numpy
-    - nanobind
+    - nanobind <2.10.2
     - scikit-build-core
     - python
     - pip
@@ -95,6 +95,30 @@ outputs:
   - package_contents:
       files:
       - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+      
+- package:
+    name: pyb2d3-sandbox-jupyter
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_jupyter -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - anywidget >=0.9.21
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_jupyter/jupyter_frontend.py
 
 
 about:
