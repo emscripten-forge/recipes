@@ -1,5 +1,5 @@
 context:
-  version: 0.10.0
+  version: 0.11.0
   name: pyb2d3
 
 source:
@@ -23,7 +23,7 @@ outputs:
     - cmake>=4.0
     - ninja
     - numpy
-    - nanobind
+    - nanobind <2.10.2
     - scikit-build-core
     - python
     - pip
@@ -95,6 +95,30 @@ outputs:
   - package_contents:
       files:
       - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+      
+- package:
+    name: pyb2d3-sandbox-jupyter
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_jupyter -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - anywidget >=0.9.21
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_ipycanvas/jupyter_frontend.py
 
 
 about:
