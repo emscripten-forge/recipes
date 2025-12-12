@@ -1,0 +1,47 @@
+context:
+  name: jiter
+  version: 0.12.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+  sha256: 64dfcd7d5c168b38d3f9f8bba7fc639edb3418abcc74f22fdbe6b8938293f30b
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - setuptools-rust
+  - rust
+  - maturin
+
+  host:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_jiter.py
+
+
+about:
+  license: MIT
+  summary: Fast iterable JSON parser written in Rust with support for parsing partial JSON
+  homepage: https://github.com/pydantic/jiter/tree/main/crates/jiter-python
+  repository: https://github.com/pydantic/jiter
+  documentation: https://github.com/pydantic/jiter
+
+extra:
+  recipe-maintainers:
+  - Copilot
