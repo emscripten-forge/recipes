@@ -14,8 +14,8 @@ class Source(BaseModel):
             if not ("${{version" in url.replace(" ", "") and "}}" in url):
                 raise ValueError(f"{url} must contain ${{{{ version }}}} for automatic updates.\n")
             # Check it's a valid URL
-            if not re.match(r"^https://.*\.(tar\.gz|tar\.bz2|tar\.xz)$", url):
-                raise ValueError(f"{url} must be a valid link to an archive file (tar.gz, tar.bz2, etc.)\n")
+            if not re.match(r"^(https://.*|http://.*)\.(tar\.gz|tar\.bz2|tar\.xz|tgz|zip)$", url):
+                raise ValueError(f"{url} must be a valid link (https://...) to an archive file (tar.gz, tar.bz2, tar.xz, .tgz, or .zip)\n")
 
             return url
 

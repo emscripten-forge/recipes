@@ -50,11 +50,13 @@ def configure_with_cmake():
 
     check_call(cmd, env=os.environ)
 
+    cmake_cxx_flags = os.getenv("CXXFLAGS")
+
     # Need to generate nlopt.hpp
     cmd = [
         "emcmake",
         "cmake",
-        f"-DCMAKE_CXX_FLAGS=-I {sys.prefix}/lib/python3.10/site-packages/numpy/core/include/",
+        f"-DCMAKE_CXX_FLAGS={cmake_cxx_flags}",
         "-DAPI_SOURCE_DIR=./src/api",
         "-P",
         "./cmake/generate-cpp.cmake",
@@ -151,7 +153,7 @@ setup(
                 "./src/algs/isres",
                 "./src/algs/esch",
                 "./src/algs/slsqp",
-                f"{sys.prefix}/lib/python3.10/site-packages/numpy/core/include/"
+                f"{os.getenv('NUMPY_INCLUDE_DIR')}"
             ],
             swig_opts=["-c++", "-interface", "_nlopt", "-outdir", "./nlopt"],
         )
