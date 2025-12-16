@@ -1,0 +1,135 @@
+context:
+  version: "1.7.5"
+
+recipe:
+  name: cvxpy-split
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/cvxpy/cvxpy/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 01b589b51a49ac8d1e4a41bf98ba4ed8048ce1ade2a8344f9b4fdb5574f0e9f4
+    patches:
+      # test that fails due to timing issues on slow CI agents when in emulation
+      - patches/0001-loosen-time-limit-in-test_scipy_mi_time_limit_reache.patch
+
+build:
+  number: 1
+
+outputs:
+  - package:
+      name: cvxpy-base
+      version: ${{ version }}
+    build:
+      script:
+        # if not in release mode, this may lead to issues, see
+        # https://github.com/cvxpy/cvxpy/issues/1690
+        - if: unix
+          then:
+            - export CXXFLAGS="${CXXFLAGS} -DNDEBUG"
+            - rm $SRC_DIR/pyproject.toml
+          else:
+            - del %SRC_DIR%\pyproject.toml
+        - python -m pip install . --no-deps -vvv
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+            - numpy
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+      host:
+        - python
+        - pybind11
+        # conda-forge recipe inserts oldest numpy per platform/runtime
+        - numpy
+        - pip
+        - setuptools
+      run:
+        - python
+        - scipy >=1.1.0
+    tests:
+      - python:
+          imports:
+            # public interface is defined (see #75) to be the content of
+            # https://github.com/cvxpy/cvxpy/blob/master/cvxpy/__init__.py
+            - cvxpy
+
+  - package:
+      name: cvxpy
+      version: ${{ version }}
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('cvxpy-base', exact=True) }}
+        - osqp >=0.6.2
+        - clarabel >=0.5
+        - cffi
+        - scs >=3.2.4
+    tests:
+      - python:
+          imports:
+            - cvxpy
+            - cvxpy.cvxcore
+            - cvxpy.cvxcore.python
+      - script:
+          - if: unix
+            then:
+              - |
+                tests_to_skip="_not_a_real_test"
+                # accuracy failure on PPC, likely due to emulation
+                if [ "${{ target_platform }}" == "linux-ppc64le" ]; then
+                  tests_to_skip="${tests_to_skip} or (TestDqcp and test_basic_multiply)"
+                fi
+                # test that fails on Python 3.13
+                python_version=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+                if [ "$python_version" == "3.13" ]; then
+                  tests_to_skip="${tests_to_skip} or test_sparsity_condition"
+                fi
+                pytest cvxpy/tests -v -k "not (${tests_to_skip})"
+              # test that pip recognizes installation correctly, see https://github.com/cvxpy/cvxpy/issues/2389;
+              # 'grep -v' inverts the match but returns non-zero exit code if no lines are returned; so we use 'wc -l';
+              - if [ 0 -eq $(pip list | grep "UNKNOWN" | wc -l) ]; then exit 0; else (pip list && exit 1); fi
+            else:
+              - pytest cvxpy/tests -v -k "not _not_a_real_test"
+        requirements:
+          run:
+            - pip
+            - pytest
+            # issues with newer scipy and other libraries
+            # - cvxopt
+            - hypothesis
+            - scipy
+        files:
+          source:
+            - cvxpy/tests
+
+about:
+  homepage: http://www.cvxpy.org/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: A Python-embedded modeling language for convex optimization problems
+  description: |
+    CVXPY is a Python-embedded modeling language for convex optimization
+    problems. It allows you to express your problem in a natural way that
+    follows the math, rather than in the restrictive standard form required
+    by solvers.
+  documentation: http://www.cvxpy.org/
+  repository: https://github.com/cvxpy/cvxpy
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - SteveDiamond
+    - akshayka
+    - rileyjmurray
+    - djsutherland
+    - mcg1969
+    - scopatz
+    - h-vetinari
+  feedstock-name: cvxpy
