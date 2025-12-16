@@ -1,0 +1,121 @@
+context:
+  version: "3.2.9"
+
+package:
+  name: scs
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/bodono/scs-python/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 56973e33629a40de41648591cc288096803d09c86c7a0ef8291f33a157f8c312
+  # include submodule (not in github tarball due to dear-github/dear-github#214)
+  - git: https://github.com/cvxgrp/scs.git
+    rev: c8297172633bcb3a10d4781a19d4769ce5282d29
+    target_directory: scs_source
+  - git: https://github.com/python/pythoncapi-compat.git
+    rev: fde4d3457d7c1e6f7d09afeae5afd2218fbb2cae
+    target_directory: scs/pythoncapi-compat
+
+build:
+  number: 2
+  string: ${{ ("mkl_py" if blas_impl == "mkl" else "default_py") }}${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+  script:
+    # Copy cross-compile meson file hack from scipy feedstock:
+    # See https://github.com/conda-forge/scipy-feedstock/blob/9401aa4ee5d9a22c2c9d219e5fb6dbd580f30207/recipe/build.sh#L10
+    - if: build_platform != target_platform
+      then:
+        - echo "python = '${PREFIX}/bin/python'" >> ${CONDA_PREFIX}/meson_cross_file.txt
+    # Copy cross-compile Meson args filtering from numpy/scipy/pandas feedstocks
+    # See https://github.com/conda-forge/scipy-feedstock/blob/9401aa4ee5d9a22c2c9d219e5fb6dbd580f30207/recipe/build.sh#L14
+    - if: unix and blas_impl == "mkl"
+      then:
+        - MESON_ARGS="-Dlink_mkl=true ${MESON_ARGS}"
+    - if: unix
+      then:
+        - MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
+        - python -m pip install . -vv -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=}
+    - if: win and blas_impl == "mkl"
+      then:
+        - python -m pip install . -vv -Csetup-args=-Dlink_mkl=true
+    - if: win and blas_impl != "mkl"
+      then:
+        - python -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - libblas 3.9.* *${{ blas_impl }}
+        - liblapack 3.9.* *${{ blas_impl }}
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+        - meson-python
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - libblas 3.9.* *${{ blas_impl }}
+    - liblapack 3.9.* *${{ blas_impl }}
+    - if: blas_impl == "mkl"
+      then:
+        - mkl-devel
+    - python
+    - meson-python
+    - pip
+    - numpy
+  run:
+    - python
+    - scipy >=0.13.2
+    - if: blas_impl == "mkl"
+      then:
+        - libblas * *${{ blas_impl }}
+        - liblapack * *${{ blas_impl }}
+  run_constraints:
+    # avoid installing incompatible cvxpy
+    - cvxpy >1.1.15
+
+tests:
+  - python:
+      imports:
+        - scs
+        - scs._scs_direct
+        - scs._scs_indirect
+        - if: blas_impl == "mkl"
+          then:
+            - scs._scs_mkl
+  - script:
+      - if: unix
+        then:
+          - if [ "${{ target_platform }}" != "linux-ppc64le" ]; then pytest test/ -v; fi
+      # NOTE: test suite is skipped on ppc due to bugs in QEMU code that cause
+      # CI to fail, even though the tests should run through on native hardware
+      - if: win
+        then:
+          - pytest test/ -v
+    requirements:
+      run:
+        - pytest
+    files:
+      source:
+        - test/
+
+about:
+  homepage: https://github.com/bodono/scs-python
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python interface for SCS, which solves convex cone problems
+  description: |
+    Solves convex cone programs via operator splitting.
+    Can solve: linear programs (LPs), second-order cone programs (SOCPs),
+    semidefinite programs (SDPs), exponential cone programs (ECPs),
+    and power cone programs (PCPs), or problems with any combination of
+    those cones.
+  repository: https://github.com/bodono/scs-python
+
+extra:
+  recipe-maintainers:
+    - djsutherland
+    - h-vetinari
+    - wshanks
