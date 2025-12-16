@@ -19,21 +19,7 @@ source:
 build:
   number: 2
   string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
-  script:
-    # Copy cross-compile meson file hack from scipy feedstock:
-    # See https://github.com/conda-forge/scipy-feedstock/blob/9401aa4ee5d9a22c2c9d219e5fb6dbd580f30207/recipe/build.sh#L10
-    - if: build_platform != target_platform
-      then:
-        - echo "python = '${PREFIX}/bin/python'" >> ${CONDA_PREFIX}/meson_cross_file.txt
-    # Copy cross-compile Meson args filtering from numpy/scipy/pandas feedstocks
-    # See https://github.com/conda-forge/scipy-feedstock/blob/9401aa4ee5d9a22c2c9d219e5fb6dbd580f30207/recipe/build.sh#L14
-    - if: unix
-      then:
-        - MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
-        - python -m pip install . -vv -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=}
-    - if: win
-      then:
-        - python -m pip install . -vv
+  script: build.sh
 
 requirements:
   build:
@@ -42,19 +28,14 @@ requirements:
     - numpy
     - meson-python
     - pkg-config
-    - ${{ compiler('c') }}
   host:
     - libblas >=3.12
-    - liblapack >=3.12
     - python
-    - meson-python
     - pip
     - numpy
   run:
     - python
     - scipy >=0.13.2
-    - libblas >=3.12
-    - liblapack >=3.12
   run_constraints:
     # avoid installing incompatible cvxpy
     - cvxpy >1.1.15
