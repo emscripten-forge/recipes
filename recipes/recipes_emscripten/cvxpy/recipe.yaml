@@ -25,14 +25,15 @@ outputs:
         # https://github.com/cvxpy/cvxpy/issues/1690
         # -fPIC is required for building shared libraries (.so files) for WebAssembly/emscripten
         # targets. Without it, wasm-ld will fail with relocation errors.
-        - if: unix
-          then:
-            - export CXXFLAGS="${CXXFLAGS} -DNDEBUG -fPIC"
-            - export CFLAGS="${CFLAGS} -fPIC"
-            - rm $SRC_DIR/pyproject.toml
-          else:
-            - del %SRC_DIR%\pyproject.toml
-        - python -m pip install . --no-deps -vvv
+        # Emscripten flags for Python extension modules:
+        # - SIDE_MODULE=1: Build as side module for WebAssembly
+        # - WASM_BIGINT: Enable big integer support
+        # - MODULARIZE=1, LINKABLE=1, EXPORT_ALL=1: Export Python module initialization functions
+        # - fexceptions: Enable exception handling
+        - export CXXFLAGS="${CXXFLAGS} -DNDEBUG -fPIC -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
+        - export CFLAGS="${CFLAGS} -fPIC -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
+        - export LDFLAGS="${LDFLAGS} -s MODULARIZE=1 -s LINKABLE=1 -s EXPORT_ALL=1 -s WASM=1 -s SIDE_MODULE=1 -sWASM_BIGINT -fexceptions -L$PREFIX/lib"
+        - ${PYTHON} -m pip install . --no-deps -vvv
     requirements:
       build:
         - if: build_platform != target_platform
