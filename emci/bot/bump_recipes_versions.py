@@ -303,8 +303,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_id = [pr['number'] for pr in all_prs]
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
-        # Merge PRs if possible (only for main atm)
-        if pr_target_branch == "main":
+        # Merge PRs if possible
+        if pr_target_branch in ["main", "emscripten-4x"]:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
@@ -323,7 +323,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python', 
+            'sqlite', 'robotics-toolbox-python',
             'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
