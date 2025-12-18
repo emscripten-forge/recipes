@@ -120,7 +120,10 @@ export CXXFLAGS="$CXXFLAGS -Wno-incompatible-function-pointer-types -fvisibility
 # Add numpy library paths to LDFLAGS for linking
 # Get numpy installation path using Python
 NUMPY_LIB=$(python -c "import numpy; import os; print(os.path.dirname(numpy.__file__))")
-export LDFLAGS="$LDFLAGS -s WASM_BIGINT -L${NUMPY_LIB}/_core/lib -L${NUMPY_LIB}/random/lib"
+# Build Python extension modules as side modules to ensure PyInit functions are exported
+# SIDE_MODULE=1 is required for Python extension modules in Emscripten
+# We rely on -fvisibility=default in CXXFLAGS to export C++ symbols from static libraries (like HiGHS)
+export LDFLAGS="$LDFLAGS -s WASM_BIGINT -s SIDE_MODULE=1 -L${NUMPY_LIB}/_core/lib -L${NUMPY_LIB}/random/lib"
 
 
 
