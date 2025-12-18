@@ -1,0 +1,177 @@
+From 9b670bd5330bd7834d157a9ec3087a97b71d6516 Mon Sep 17 00:00:00 2001
+From: Agriya Khetarpal <74401230+agriyakhetarpal@users.noreply.github.com>
+Date: Fri, 16 Aug 2024 22:59:26 +0530
+Subject: [PATCH 14/14] Remove f2py generators
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch reverts changes made in d85ba6b910ea9040b6a72bdc4ea87d151118f41d
+and is applied at the end, after the rest of the patches – the order is important.
+
+It removes the f2py generator and replaces it with custom targets mapping to
+f2py-generated wrappers. This is done to avoid the need for the f2py executable
+to be present in the environment where SciPy is built. Instead, the Python
+executable is used to run f2py as a module which is useful where f2py is not
+present on PATH.
+
+---
+ scipy/integrate/meson.build              | 24 +++++++++++++++++++++---
+ scipy/interpolate/meson.build            |  8 +++++++-
+ scipy/meson.build                        | 24 ------------------------
+ scipy/sparse/linalg/_propack/meson.build |  8 +++++++-
+ tools/generate_f2pymod.py                |  3 ++-
+ 5 files changed, 37 insertions(+), 30 deletions(-)
+
+diff --git a/scipy/integrate/meson.build b/scipy/integrate/meson.build
+index 30f738a077..a012bdc11b 100644
+--- a/scipy/integrate/meson.build
++++ b/scipy/integrate/meson.build
+@@ -79,8 +79,14 @@ py3.extension_module('_odepack',
+   subdir: 'scipy/integrate'
+ )
+ 
++vode_module = custom_target('vode_module',
++  output: ['_vode-f2pywrappers.f', '_vodemodule.c'],
++  input: 'vode.pyf',
++  command: [generate_f2pymod, '@INPUT@', '-o', '@OUTDIR@']
++)
++
+ py3.extension_module('_vode',
+-  f2py_gen.process('vode.pyf'),
++  vode_module,
+   link_with: [vode_lib],
+   c_args: [Wno_unused_variable],
+   link_args: version_link_args,
+@@ -90,8 +96,14 @@ py3.extension_module('_vode',
+   subdir: 'scipy/integrate'
+ )
+ 
++lsoda_module = custom_target('lsoda_module',
++  output: ['_lsoda-f2pywrappers.f', '_lsodamodule.c'],
++  input: 'lsoda.pyf',
++  command: [generate_f2pymod, '@INPUT@', '-o', '@OUTDIR@']
++)
++
+ py3.extension_module('_lsoda',
+-  f2py_gen.process('lsoda.pyf'),
++  lsoda_module,
+   link_with: [lsoda_lib, mach_lib],
+   c_args: [Wno_unused_variable],
+   dependencies: [lapack_dep, fortranobject_dep],
+@@ -101,8 +113,14 @@ py3.extension_module('_lsoda',
+   subdir: 'scipy/integrate'
+ )
+ 
++_dop_module = custom_target('_dop_module',
++  output: ['_dop-f2pywrappers.f', '_dopmodule.c'],
++  input: 'dop.pyf',
++  command: [generate_f2pymod, '@INPUT@', '-o', '@OUTDIR@']
++)
++
+ py3.extension_module('_dop',
+-  f2py_gen.process('dop.pyf'),
++  _dop_module,
+   link_with: [dop_lib],
+   c_args: [Wno_unused_variable],
+   dependencies: [lapack, fortranobject_dep],
+diff --git a/scipy/interpolate/meson.build b/scipy/interpolate/meson.build
+index e0e2867b18..9041cf7022 100644
+--- a/scipy/interpolate/meson.build
++++ b/scipy/interpolate/meson.build
+@@ -151,9 +151,15 @@ py3.extension_module('_fitpack',
+   subdir: 'scipy/interpolate'
+ )
+ 
++dfitpack_module = custom_target('dfitpack_module',
++  output: ['_dfitpack-f2pywrappers.f', '_dfitpackmodule.c'],
++  input: 'src/dfitpack.pyf',
++  command: [generate_f2pymod, '@INPUT@', '-o', '@OUTDIR@']
++)
++
+ # TODO: Add flags for 64 bit ints
+ py3.extension_module('_dfitpack',
+-  f2py_gen.process('src/dfitpack.pyf'),
++  dfitpack_module,
+   c_args: [Wno_unused_variable],
+   link_args: version_link_args,
+   dependencies: [lapack_dep, fortranobject_dep],
+diff --git a/scipy/meson.build b/scipy/meson.build
+index 1bc50f5026..77034140eb 100644
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -199,30 +199,6 @@ fortranobject_dep = declare_dependency(
+   compile_args: _f2py_c_args,
+ )
+ 
+-f2py = find_program('f2py')
+-# It should be quite rare for the `f2py` executable to not be the one from
+-# `numpy` installed in the Python env we are building for (unless we are
+-# cross-compiling). If it is from a different env, that is still fine as long
+-# as it's not too old. We are only using f2py as a code generator, and the
+-# output is not dependent on platform or Python version (see gh-20612 for more
+-# details).
+-# This should be robust enough. If not, we can make this more complex, using
+-# a fallback to `python -m f2py` rather than erroring out.
+-f2py_version = run_command([f2py, '-v'], check: true).stdout().strip()
+-if f2py_version.version_compare('<'+min_numpy_version)
+-  error(f'Found f2py executable is too old: @f2py_version@')
+-endif
+-
+-# Note: this generator cannot handle:
+-# 1. `.pyf.src` files, because `@BASENAME@` will still include .pyf
+-# 2. targets with #include's (due to no `depend_files` - see feature request
+-#    at meson#8295)
+-f2py_gen = generator(generate_f2pymod,
+-  arguments : ['@INPUT@', '-o', '@BUILD_DIR@'] + f2py_freethreading_arg,
+-  output : ['_@BASENAME@module.c', '_@BASENAME@-f2pywrappers.f'],
+-)
+-
+-
+ # TODO: 64-bit BLAS and LAPACK
+ #
+ # Note that this works as long as BLAS and LAPACK are detected properly via
+diff --git a/scipy/sparse/linalg/_propack/meson.build b/scipy/sparse/linalg/_propack/meson.build
+index d33cdc0e76..867aa4de82 100644
+--- a/scipy/sparse/linalg/_propack/meson.build
++++ b/scipy/sparse/linalg/_propack/meson.build
+@@ -99,8 +99,14 @@ foreach ele: elements
+     gnu_symbol_visibility: 'hidden',
+   )
+ 
++  propack_module = custom_target('propack_module' + ele[0],
++    output: [ele[0] + '-f2pywrappers.f', ele[0] + 'module.c'],
++    input: ele[2],
++    command: [generate_f2pymod, '@INPUT@', '-o', '@OUTDIR@']
++  )
++
+   propacklib = py3.extension_module(ele[0],
+-    f2py_gen.process(ele[2]),
++    propack_module,
+     link_with: propack_lib,
+     c_args: ['-U_OPENMP', _cpp_Wno_cpp],
+     fortran_args: _fflag_Wno_maybe_uninitialized,
+diff --git a/tools/generate_f2pymod.py b/tools/generate_f2pymod.py
+index e61524cc39..85e480b5ef 100644
+--- a/tools/generate_f2pymod.py
++++ b/tools/generate_f2pymod.py
+@@ -9,6 +9,7 @@ import argparse
+ import os
+ import re
+ import subprocess
++import sys
+ 
+ 
+ # START OF CODE VENDORED FROM `numpy.distutils.from_template`
+@@ -291,7 +292,7 @@ def main():
+     # Now invoke f2py to generate the C API module file
+     if args.infile.endswith(('.pyf.src', '.pyf')):
+         p = subprocess.Popen(
+-            ['f2py', fname_pyf, '--build-dir', outdir_abs] + nogil_arg,
++            [sys.executable, '-m', 'numpy.f2py', fname_pyf, '--build-dir', outdir_abs] + nogil_arg,
+             stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd()
+         )
+         out, err = p.communicate()
+-- 
+2.39.5 (Apple Git-154)
+

@@ -34,7 +34,12 @@ sed -i 's/void BLAS_FUNC/int BLAS_FUNC/g' scipy/special/lapack_defs.h
 sed -i 's/extern void/extern int/g' scipy/optimize/__minpack.h
 sed -i 's/void/int/g' scipy/linalg/cython_blas_signatures.txt
 sed -i 's/void/int/g' scipy/linalg/cython_lapack_signatures.txt
+sed -i 's/^void/int/g' scipy/linalg/_common_array_utils.h
+
 sed -i 's/^void/int/g' scipy/interpolate/src/_fitpackmodule.c
+sed -i 's/^void/int/g' scipy/interpolate/src/__fitpack.h
+sed -i 's/^void/int/g' scipy/interpolate/src/__fitpack.cc
+sed -i 's/void BLAS_FUNC/int BLAS_FUNC/g' scipy/interpolate/src/__fitpack.h
 
 sed -i 's/double z_abs(/double my_z_abs(/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcomplex.c
 
@@ -45,13 +50,32 @@ sed -i 's/^void/int/g' scipy/sparse/linalg/_dsolve/*.{c,h}
 sed -i 's/void \(.\)print/int \1/g' scipy/sparse/linalg/_dsolve/SuperLU/SRC/*.{c,h}
 sed -i 's/TYPE_GENERIC_FUNC(\(.*\), void)/TYPE_GENERIC_FUNC(\1, int)/g' scipy/sparse/linalg/_dsolve/_superluobject.h
 
+sed -i 's/^void/int/g' scipy/optimize/__nnls.h
+sed -i 's/^void/int/g' scipy/optimize/__nnls.c
+sed -i 's/^void/int/g' scipy/optimize/__slsqp.h
+sed -i 's/^void/int/g' scipy/optimize/__slsqp.c
+sed -i 's/^static void/static int/g' scipy/optimize/__slsqp.c
+
 sed -i 's/^void/int/g' scipy/optimize/_trlib/trlib_private.h
 sed -i 's/^void/int/g' scipy/optimize/_trlib/trlib/trlib_private.h
 sed -i 's/^void/int/g' scipy/_build_utils/src/wrap_dummy_g77_abi.c
 sed -i 's/, int)/)/g' scipy/optimize/_trlib/trlib_private.h
 sed -i 's/, 1)/)/g' scipy/optimize/_trlib/trlib_private.h
 
+sed -i 's/^void/int/g' scipy/linalg/_matfuncs_expm.h
+sed -i 's/^void/int/g' scipy/linalg/_matfuncs_expm.c
+sed -i 's/^void/int/g' scipy/linalg/_matfuncs_sqrtm.h
+sed -i 's/^void/int/g' scipy/linalg/_matfuncs_sqrtm.c
+
+sed -i 's/^void/int/g' scipy/sparse/linalg/_eigen/arpack/ARPACK/_arpack_n_double_complex.h
+sed -i 's/^void/int/g' scipy/sparse/linalg/_eigen/arpack/ARPACK/_arpack_n_double.h
+sed -i 's/^void/int/g' scipy/sparse/linalg/_eigen/arpack/ARPACK/_arpack_n_single_complex.h
+sed -i 's/^void/int/g' scipy/sparse/linalg/_eigen/arpack/ARPACK/_arpack_n_single.h
+sed -i 's/^void/int/g' scipy/sparse/linalg/_eigen/arpack/ARPACK/_arpack_s_double.h
+sed -i 's/^void/int/g' scipy/sparse/linalg/_eigen/arpack/ARPACK/_arpack_s_single.h
+
 sed -i 's/^void/int/g' scipy/spatial/qhull_misc.h
+sed -i 's/^void/int/g' scipy/optimize/__lbfgsb.h
 sed -i 's/, size_t)/)/g' scipy/spatial/qhull_misc.h
 sed -i 's/,1)/)/g' scipy/spatial/qhull_misc.h
 
@@ -74,8 +98,26 @@ export EMBIN=$CONDA_EMSDK_DIR/upstream/emscripten
 python $RECIPE_DIR/inject_compiler_wrapper.py $EMBIN/emcc.py
 
 # add BUILD_PREFIX/include for f2c.h file
-export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77 -s WASM_BIGINT"
-export LDFLAGS="$LDFLAGS -s WASM_BIGINT"
+# Fix LONG_BIT issue: Python's pyport.h checks LONG_BIT and errors if it doesn't match expectations
+# We need to patch pyport.h to undefine LONG_BIT before the check (same as Python recipe patch 0005)
+if [ -f "$BUILD_PREFIX/include/python${PY_VER}/pyport.h" ]; then
+  # Apply the same fix as Python recipe patch 0005: add #undef LONG_BIT before the check
+  if ! grep -q "^#undef LONG_BIT" "$BUILD_PREFIX/include/python${PY_VER}/pyport.h"; then
+    # Find the line with "#ifndef LONG_BIT" and add "#undef LONG_BIT" before it
+    sed -i '/^#ifndef LONG_BIT/i#undef LONG_BIT' "$BUILD_PREFIX/include/python${PY_VER}/pyport.h"
+  fi
+fi
+# Note: -s WASM_BIGINT is a linker flag, not a compiler flag
+# Suppress incompatible function pointer type errors (due to void->int function changes)
+# Set visibility=default for C++ symbols to fix "bad export type" errors (e.g., _ZTIPFvbE)
+# NumPy 2.1+ disabled visibility for symbols outside of extension modules by default,
+# so we need to explicitly set visibility=default for SciPy modules that rely on NumPy symbols
+export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77 -Wno-incompatible-function-pointer-types -DNPY_API_SYMBOL_ATTRIBUTE='__attribute__((visibility(\"default\")))' -fvisibility=default"
+export CXXFLAGS="$CXXFLAGS -Wno-incompatible-function-pointer-types -fvisibility=default"
+# Add numpy library paths to LDFLAGS for linking
+# Get numpy installation path using Python
+NUMPY_LIB=$(python -c "import numpy; import os; print(os.path.dirname(numpy.__file__))")
+export LDFLAGS="$LDFLAGS -s WASM_BIGINT -L${NUMPY_LIB}/_core/lib -L${NUMPY_LIB}/random/lib"
 
 
 
@@ -83,7 +125,11 @@ export LDFLAGS="$LDFLAGS -s WASM_BIGINT"
 #############################################################
 # write out the cross file
 #############################################################
-export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
+# Get numpy include directory using Python - resolve to actual filesystem path
+NUMPY_INCLUDE_DIR=$(python -c "import numpy; import os; numpy_dir = os.path.dirname(numpy.__file__); include_dir = os.path.join(numpy_dir, '_core', 'include'); print(os.path.abspath(os.path.realpath(include_dir)))")
+export NUMPY_INCLUDE_DIR
+echo "NUMPY_INCLUDE_DIR=${NUMPY_INCLUDE_DIR}"
+# Use | as delimiter for sed
 sed "s|@(NUMPY_INCLUDE_DIR)|${NUMPY_INCLUDE_DIR}|g" $RECIPE_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.cross.temp
 sed "s|@(PYTHON)|${PYTHON}|g" $SRC_DIR/emscripten.meson.cross.temp > $SRC_DIR/emscripten.meson.cross
 rm $SRC_DIR/emscripten.meson.cross.temp
