@@ -112,6 +112,9 @@ fi
 # Set visibility=default for C++ symbols to fix "bad export type" errors (e.g., _ZTIPFvbE)
 # NumPy 2.1+ disabled visibility for symbols outside of extension modules by default,
 # so we need to explicitly set visibility=default for SciPy modules that rely on NumPy symbols
+# Use single quotes around the entire macro definition to preserve the inner double quotes
+# The quotes in NPY_API_SYMBOL_ATTRIBUTE will cause a syntax error in the generated __config__.py
+# We'll fix this in the post-install step below
 export CFLAGS="$CFLAGS -I$BUILD_PREFIX/include -Wno-return-type -DUNDERSCORE_G77 -Wno-incompatible-function-pointer-types -DNPY_API_SYMBOL_ATTRIBUTE='__attribute__((visibility(\"default\")))' -fvisibility=default"
 export CXXFLAGS="$CXXFLAGS -Wno-incompatible-function-pointer-types -fvisibility=default"
 # Add numpy library paths to LDFLAGS for linking
@@ -145,3 +148,28 @@ export PKG_CONFIG_PATH=$SRC_DIR=openblas.pc
 MESON_ARGS="-Dfortran_std=none" ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"\
     -Csetup-args="-Dfortran_std=none"
+
+# Fix syntax error in generated __config__.py: escape quotes in NPY_API_SYMBOL_ATTRIBUTE
+# Meson writes the CFLAGS to the config file, and the double quotes break Python syntax
+# The config file is generated during build, so we need to find and fix it after pip install
+# Look for __config__.py in the site-packages directory
+if [ -d "$SP_DIR/scipy" ]; then
+  SCIPY_CONFIG="$SP_DIR/scipy/__config__.py"
+elif [ -n "$PREFIX" ] && [ -d "$PREFIX/lib/python${PY_VER}/site-packages/scipy" ] && [ -f "$PREFIX/lib/python${PY_VER}/site-packages/scipy/__config__.py" ]; then
+  SCIPY_CONFIG="$PREFIX/lib/python${PY_VER}/site-packages/scipy/__config__.py"
+else
+  # Try to find it using Python
+  SCIPY_CONFIG=$(python -c "import scipy; import os; print(os.path.join(os.path.dirname(scipy.__file__), '__config__.py'))" 2>/dev/null || echo "")
+fi
+
+if [ -n "$SCIPY_CONFIG" ] && [ -f "$SCIPY_CONFIG" ]; then
+  echo "Fixing syntax error in $SCIPY_CONFIG"
+  # Replace unescaped double quotes in the visibility("default") part with escaped quotes
+  # This fixes: visibility("default") -> visibility(\"default\")
+  # Need to escape both the quotes and the backslashes for sed
+  sed -i 's/visibility("default")/visibility(\\"default\\")/g' "$SCIPY_CONFIG"
+  echo "Fixed config file syntax"
+else
+  echo "Warning: Could not find scipy/__config__.py to fix syntax error"
+  echo "Searched in: $SP_DIR/scipy, $PREFIX/lib/python${PY_VER}/site-packages/scipy, $SRC_DIR/scipy"
+fi
