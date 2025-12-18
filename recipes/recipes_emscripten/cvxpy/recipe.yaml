@@ -8,45 +8,26 @@ recipe:
 source:
   - url: https://github.com/cvxpy/cvxpy/archive/refs/tags/v${{ version }}.tar.gz
     sha256: 01b589b51a49ac8d1e4a41bf98ba4ed8048ce1ade2a8344f9b4fdb5574f0e9f4
-    patches:
-      # test that fails due to timing issues on slow CI agents when in emulation
-      - patches/0001-loosen-time-limit-in-test_scipy_mi_time_limit_reache.patch
 
 build:
-  number: 1
+  number: 0
 
 outputs:
   - package:
       name: cvxpy-base
       version: ${{ version }}
     build:
-      script:
-        # if not in release mode, this may lead to issues, see
-        # https://github.com/cvxpy/cvxpy/issues/1690
-        # -fPIC is required for building shared libraries (.so files) for WebAssembly/emscripten
-        # targets. Without it, wasm-ld will fail with relocation errors.
-        # Emscripten flags for Python extension modules:
-        # - SIDE_MODULE=1: Build as side module for WebAssembly
-        # - WASM_BIGINT: Enable big integer support
-        # - MODULARIZE=1, LINKABLE=1, EXPORT_ALL=1: Export Python module initialization functions
-        # - fexceptions: Enable exception handling
-        - export CXXFLAGS="${CXXFLAGS} -DNDEBUG -fPIC -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
-        - export CFLAGS="${CFLAGS} -fPIC -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
-        - export LDFLAGS="${LDFLAGS} -s MODULARIZE=1 -s LINKABLE=1 -s EXPORT_ALL=1 -s WASM=1 -s SIDE_MODULE=1 -sWASM_BIGINT -fexceptions -L$PREFIX/lib"
-        - ${PYTHON} -m pip install . --no-deps -vvv
+      script: build.sh
     requirements:
       build:
-        - if: build_platform != target_platform
-          then:
-            - python
-            - cross-python_${{ target_platform }}
-            - numpy
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
       host:
         - python
         - pybind11
-        # conda-forge recipe inserts oldest numpy per platform/runtime
         - numpy
         - pip
         - setuptools
@@ -135,12 +116,5 @@ about:
 
 extra:
   recipe-maintainers:
-    - timkpaine
-    - SteveDiamond
-    - akshayka
-    - rileyjmurray
-    - djsutherland
-    - mcg1969
-    - scopatz
-    - h-vetinari
+    - jjerphan
   feedstock-name: cvxpy
