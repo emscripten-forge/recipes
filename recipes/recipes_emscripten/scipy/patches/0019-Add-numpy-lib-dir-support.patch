@@ -1,0 +1,24 @@
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -95,8 +95,20 @@ fortranobject_c = incdir_f2py / 'fortranobject.c'
+ 
+-npymath_path = _incdir_numpy_abs / '..' / 'lib'
+-npymath_lib = cc.find_library('npymath', dirs: npymath_path)
++npymath_lib_dir = meson.get_external_property('numpy-lib-dir', 'not-given')
++if npymath_lib_dir == 'not-given'
++  npymath_path = _incdir_numpy_abs / '..' / 'lib'
++else
++  npymath_path = npymath_lib_dir
++endif
++# Try to find npymath library - use required: false first to allow fallback
++npymath_lib = cc.find_library('npymath', dirs: npymath_path, required: false)
++# If not found and numpy-lib-dir was provided, try the default location as fallback
++if not npymath_lib.found() and npymath_lib_dir != 'not-given'
++  npymath_path_fallback = _incdir_numpy_abs / '..' / 'lib'
++  npymath_lib = cc.find_library('npymath', dirs: npymath_path_fallback, required: false)
++endif
++# If still not found, try without specifying dirs (let linker find it via LDFLAGS)
++if not npymath_lib.found()
++  npymath_lib = cc.find_library('npymath', required: true)
++endif
+
