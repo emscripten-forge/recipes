@@ -1,0 +1,31 @@
+From ccbb0fa0884d567c6139eeed7dc2dc9f8db4db3a Mon Sep 17 00:00:00 2001
+From: ryanking13 <def6488@gmail.com>
+Date: Sun, 28 Jul 2024 18:15:17 +0900
+Subject: [PATCH 8/14] Link openblas with modules that require f2c
+
+DOP requires symbols from f2c, which is provided by
+OpenBLAS.
+This patch adds OpenBLAS as a dependency to it.
+
+Co-Developed-by: Agriya Khetarpal <74401230+agriyakhetarpal@users.noreply.github.com>
+---
+ scipy/integrate/meson.build | 2 +-
+ scipy/optimize/meson.build  | 6 +++---
+ scipy/stats/meson.build     | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/scipy/integrate/meson.build b/scipy/integrate/meson.build
+index 23a715dd58..e5cd9ad4c8 100644
+--- a/scipy/integrate/meson.build
++++ b/scipy/integrate/meson.build
+@@ -154,7 +154,7 @@ py3.extension_module('_dop',
+   f2py_gen.process('dop.pyf'),
+   link_with: [dop_lib],
+   c_args: [Wno_unused_variable],
+-  dependencies: [fortranobject_dep],
++  dependencies: [lapack, fortranobject_dep],
+   link_args: version_link_args,
+   install: true,
+   link_language: 'fortran',
+-- 
+2.39.3 (Apple Git-146)
