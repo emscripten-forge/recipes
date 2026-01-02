@@ -1,0 +1,72 @@
+context:
+  version: "3.2.9"
+
+package:
+  name: scs
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/bodono/scs-python/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 56973e33629a40de41648591cc288096803d09c86c7a0ef8291f33a157f8c312
+  # include submodule (not in github tarball due to dear-github/dear-github#214)
+  - git: https://github.com/cvxgrp/scs.git
+    rev: c8297172633bcb3a10d4781a19d4769ce5282d29
+    target_directory: scs_source
+  - git: https://github.com/python/pythoncapi-compat.git
+    rev: fde4d3457d7c1e6f7d09afeae5afd2218fbb2cae
+    target_directory: scs/pythoncapi-compat
+
+build:
+  number: 2
+  string: py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+  script: build.sh
+
+requirements:
+  build:
+    - python
+    - cross-python_${{ target_platform }}
+    - numpy
+    - meson-python
+    - pkg-config
+  host:
+    - libblas >=3.12
+    - python
+    - pip
+    - numpy
+  run:
+    - python
+    - scipy >=0.13.2
+  run_constraints:
+    # avoid installing incompatible cvxpy
+    - cvxpy >1.1.15
+
+tests:
+  - script: pytester
+    files:
+      recipe:
+        - test_scs.py
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+
+about:
+  homepage: https://github.com/bodono/scs-python
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python interface for SCS, which solves convex cone problems
+  description: |
+    Solves convex cone programs via operator splitting.
+    Can solve: linear programs (LPs), second-order cone programs (SOCPs),
+    semidefinite programs (SDPs), exponential cone programs (ECPs),
+    and power cone programs (PCPs), or problems with any combination of
+    those cones.
+  repository: https://github.com/bodono/scs-python
+
+extra:
+  recipe-maintainers:
+    - djsutherland
+    - h-vetinari
+    - wshanks
