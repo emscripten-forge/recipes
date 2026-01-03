@@ -21,6 +21,13 @@ def scipy_fix_cfile(path: Path) -> None:
     text = text.replace("void(*)", "int(*)")
     text = text.replace("static void f2py_setup_", "static int f2py_setup_")
 
+
+    text = re.sub(
+        r"(__Pyx_IsSameCFunction\([^,]+,\s*)\(int\(\*\)\(void\)\)",
+        r"\1(void(*)(void))",
+        text,
+    )
+
     if path.name.endswith("_flapackmodule.c"):
         text = text.replace(",size_t", "")
         text = re.sub(r",slen\([a-z]*\)\)", ")", text)
