@@ -21,6 +21,7 @@ export LDFLAGS="$(echo "${LDFLAGS}" | sed -E 's/-s +/-s/g')"
 # Use local flang-new-wrapper that does some arg mangling.
 cp $RECIPE_DIR/flang-new-wrapper $LLVM_DIR/bin/flang-new-wrapper
 
+export EM_LLVM_ROOT=$LLVM_DIR
 export FC=$LLVM_DIR/bin/flang-new-wrapper
 
 ${PYTHON} -m pip install . ${PIP_ARGS} --no-build-isolation \
