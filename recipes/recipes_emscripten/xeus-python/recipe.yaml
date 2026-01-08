@@ -1,17 +1,16 @@
 context:
-  version: 0.17.4
+  version: 0.17.6
 
 package:
   name: xeus-python
   version: ${{ version }}
 
 source:
-  # url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
-  # sha256: 5b465638561019469c32974998b6f4bcde0b38c243c0b6f50bc5b001a4d78b4f
-  git: https://github.com/DerThorsten/xeus-python.git
-  branch: emscripten4x
+  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 32ad705962babacb1228fd3c1e4126cd48ff20d42806e8ba97e96f5440e24fca
+
 build:
-  number: 5
+  number: 2
 
 requirements:
   build:
@@ -22,29 +21,32 @@ requirements:
   - python
   - libpython
   - nlohmann_json
+  - nlohmann_json-abi
   - xeus
   - xeus-lite
   - pybind11
   - pybind11_json
   - xtl
-  - pyjs >=4.0.0
+  - pyjs >=4.0.1
   - zstd
   run:
   - python
-  - ipython
-  - xeus-python-shell >=0.6.0,<0.7
-  - pyjs >=4.0.0
+  - xeus-python-shell-lite >=0.6.0,<0.7
+  - pyjs-rt >=4.0.1
 
 tests:
-- script:
-  - test -f $PREFIX/bin/xpython.wasm
-  - test -f $PREFIX/bin/xpython.js
+- package_contents:
+    files:
+    - bin/xpython.wasm
+    - bin/xpython.js
+
 about:
   license: BSD-3-Clause
   license_family: BSD-3
   license_file: LICENSE
   summary: xeus-python
   homepage: https://github.com/jupyter-xeus/xeus-python
+
 extra:
   recipe-maintainers:
   - DerThorsten

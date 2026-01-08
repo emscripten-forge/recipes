@@ -14,7 +14,8 @@ def find_recipes_with_changes(old, new):
                 file_with_change = file_with_change[len(f"recipes/{subdir}/") :]
                 file_with_change = os.path.normpath(file_with_change)
                 recipe = file_with_change.split(os.sep)[0]
-                recipes_with_changes[subdir].add(recipe)
+                if os.path.exists(f"recipes/{subdir}/{recipe}"):
+                    recipes_with_changes[subdir].add(recipe)
 
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
         recipes_with_changes[subdir] = sorted(list(recipes_with_changes[subdir]))

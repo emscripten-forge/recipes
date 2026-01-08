@@ -1,0 +1,34 @@
+From d97e876c84f71d68e53ee509a83f0b0ba2386af1 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 5 Jan 2026 10:25:16 +0000
+Subject: [PATCH 15/15] Use openblas-flang not openblas dependency
+
+---
+ scipy/meson.build | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scipy/meson.build b/scipy/meson.build
+index 73168d859f..96e36e06c2 100644
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -271,7 +271,7 @@ endif
+ # pkg-config uses a lower-case name while CMake uses a capitalized name, so try
+ # that too to make the fallback detection with CMake work
+ if blas_name == 'openblas'
+-  blas = dependency(['openblas', 'OpenBLAS'])
++  blas = dependency(['openblas-flang', 'OpenBLAS-flang'])
+ elif blas_name != 'scipy-openblas'  # if so, we found it already
+   blas = dependency(blas_name)
+ endif
+@@ -295,7 +295,7 @@ if 'mkl' in blas.name() or blas.name().to_lower() == 'accelerate' or blas_name =
+   # use that - no need to run the full detection twice.
+   lapack = blas
+ elif lapack_name == 'openblas'
+-  lapack = dependency(['openblas', 'OpenBLAS'])
++  lapack = dependency(['openblas-flang', 'OpenBLAS-flang'])
+ else
+   lapack = dependency(lapack_name)
+ endif
+-- 
+2.51.0
+

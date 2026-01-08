@@ -1,13 +1,14 @@
 context:
   name: emscripten_emscripten-wasm32
-  version: 4.0.18
-  abi_version: 4.0.18
+  version: 4.0.9
+  abi_version: 4.0.9
+
 build:
-  number: 0
+  number: 6
 
 outputs:
   - package:
-      name: ${{ name|lower }}
+      name: ${{ name }}
       version: ${{ version }}
 
     source:
@@ -34,13 +35,21 @@ outputs:
         strong:
           - ${{ pin_subpackage('emscripten-abi', lower_bound='x', upper_bound='x') }}
 
+    tests:
+    - script: emcc -v
+
+
   - package:
       name: emscripten-abi
       version: ${{ abi_version }}
+
     build:
       noarch: generic
       script:
         - echo "emscripten abi is built."
+
+    tests:
+    - script: echo "Empty package."
 
 
 about:

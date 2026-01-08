@@ -2,10 +2,8 @@
 
 cp $BUILD_PREFIX/share/gnuconfig/config.* .
 
-# sed -i.bak -e 's/-llzma //g' -e 's/-lz /-lz/g' $PREFIX/bin/xml2-config
-
 emconfigure ./configure \
-    CFLAGS="-fPIC " \
+    CFLAGS="-fPIC" \
     --prefix=$PREFIX \
     --disable-dependency-tracking \
     --disable-shared \
