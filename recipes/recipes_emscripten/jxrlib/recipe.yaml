@@ -1,14 +1,17 @@
 context:
-  version: 1.1
   name: jxrlib
+  version: 1.1
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  git: https://github.com/DerThorsten/jxrlib
-  branch: master
+  url: http://http.debian.net/debian/pool/main/j/jxrlib/jxrlib_${{ version }}.orig.tar.gz
+  sha256: c7287b86780befa0914f2eeb8be2ac83e672ebd4bd16dc5574a36a59d9708303
+  patches:
+  - patches/0001-Update-secdec-and-JXRGlueJxr.patch
+
 build:
   number: 0
 
@@ -16,20 +19,25 @@ requirements:
   build:
     - ${{ compiler("cxx")}}
     - cmake
-    - make 
+    - make
 
-
+tests:
+- package_contents:
+    files:
+    - lib/libjpegxr.a
+    - lib/libjxrglue.a
+    - include/jxrlib/JXRGlue.h
 
 about:
   homepage: https://packages.debian.org/source/sid/jxrlib
   license: BSD-2-Clause
-  summary: "jxrlib - JPEG XR Library by Microsoft, built from Debian hosted sources."
-  description: "This package seems to be no longer maintained by the original developer (Microsoft)."
+  summary: |
+    "jxrlib - JPEG XR Library by Microsoft, built from Debian hosted sources."
+  description: |
+    This package seems to be no longer maintained by the original developer (Microsoft).
   license_family: BSD
   license_file: LICENSE
-
 
 extra:
   recipe-maintainers:
   - DerThorsten
-
