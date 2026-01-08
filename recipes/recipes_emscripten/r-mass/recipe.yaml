@@ -1,7 +1,6 @@
 context:
   name: r-mass
   version: 7.3-65
-  r_base_version: 4.5.2
 
 package:
   name: ${{ name }}
@@ -9,23 +8,18 @@ package:
 
 source:
   url:
-    - https://cran.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] | upper }}_${{ version }}.tar.gz
   sha256: b07ef1e3c364ce56269b4a8a7759cc9f87c876554f91293437bb578cfe38172f
 
 build:
-  number: 1
+  number: 3
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-    - cross-r-base_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - r-base == ${{ r_base_version }}
-  host:
-    - r-base == ${{ r_base_version }}
-  run:
-    - r-base == ${{ r_base_version }}
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler('c') }}
 
 tests:
 - package_contents:

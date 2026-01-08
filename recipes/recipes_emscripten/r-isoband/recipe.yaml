@@ -1,7 +1,6 @@
 context:
   name: r-isoband
-  version: 0.2.7
-  r_base_version: 4.5.2
+  version: 0.3.0
 
 package:
   name: ${{ name }}
@@ -9,24 +8,30 @@ package:
 
 source:
   url:
-    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 7693223343b45b86de2b5b638ff148f0dafa6d7b1237e822c5272902f79cdf61
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: fe8d3d58ca75bbee32f389152ac0058818f3f76f09c9867949531de7abc424ac
 
 build:
-  number: 1
+  number: 3
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-    - cross-r-base_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - r-base == ${{ r_base_version }}
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - r-cli
+  - r-rlang
+  - r-cpp11
   host:
-    - r-base == ${{ r_base_version }}
+  - r-cli
+  - r-rlang
+  - r-cpp11
   run:
-    - r-base == ${{ r_base_version }}
+  - r-cli
+  - r-rlang
+  - r-cpp11
 
 tests:
 - package_contents:
