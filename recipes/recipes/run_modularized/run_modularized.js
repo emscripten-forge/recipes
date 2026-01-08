@@ -14,7 +14,7 @@ async function my_main(){
         already_called = true;
         exitCode = status;
     }
-    
+
     const Module = await ModuleF({
         arguments: process.argv,
         locateFile: (filename) => {

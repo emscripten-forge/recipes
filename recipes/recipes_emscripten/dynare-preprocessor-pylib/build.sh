@@ -2,9 +2,13 @@
 
 export BOOST_ROOT=$PREFIX
 
-# cp $RECIPE_DIR/meson.build src/meson.build
+set -ex
+export PKG_CONFIG=$(which pkg-config)
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 
-flags="-w -fexperimental-library -Wno-enum-constexpr-conversion -s SIDE_MODULE=1 -s WASM_BIGINT -fexceptions -std=c++20"
+flags="-w -fexperimental-library -Wno-enum-constexpr-conversion \
+    -sSIDE_MODULE=1 -sWASM_BIGINT -fwasm-exceptions -std=c++20 \
+    -I$PREFIX/include/python$PY_VER"
 
 meson setup --prefix=$PREFIX --bindir=$PREFIX/bin --libdir=$PREFIX/lib --includedir=$PREFIX/include \
     --buildtype=release build_preproc \

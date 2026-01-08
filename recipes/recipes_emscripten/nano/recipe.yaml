@@ -1,14 +1,15 @@
 context:
-  version: 8.2
+  name: nano
+  version: 8.6
   major_version: ${{ version | split('.') | first }}
 
 package:
-  name: nano
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://www.nano-editor.org/dist/v${{ major_version }}/nano-${{ version }}.tar.xz
-  sha256: d5ad07dd862facae03051c54c6535e54c7ed7407318783fcad1ad2d7076fffeb
+  sha256: f7abfbf0eed5f573ab51bd77a458f32d82f9859c55e9689f819d96fe1437a619
 
 build:
   number: 0
@@ -22,13 +23,14 @@ requirements:
     - ncurses <6.5
 
 tests:
-  - script:
-    - test -f $PREFIX/bin/nano.data
-    - test -f $PREFIX/bin/nano.js
-    - test -f $PREFIX/bin/nano.wasm
+  - package_contents:
+      files:
+      - bin/nano.data
+      - bin/nano.js
+      - bin/nano.wasm
   - script: |
       OUTPUT=$(run_modularized $PREFIX/bin/nano.js --version | head -1)
-      if [[ ! "$OUTPUT" =~ "GNU nano, version 8.2" ]]; then
+      if [[ ! "$OUTPUT" =~ "GNU nano, version 8.6" ]]; then
         echo "Incorrect output: $OUTPUT"
         exit 1
       fi

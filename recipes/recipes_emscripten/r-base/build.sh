@@ -32,7 +32,6 @@ export CONFIG_ARGS="--enable-R-static-lib \
 --enable-java=no \
 --enable-R-profiling=no \
 --enable-byte-compiled-packages=no \
---disable-rpath \
 --disable-openmp \
 --disable-nls \
 --with-internal-tzcode \
@@ -80,9 +79,6 @@ popd
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
 
-# FIXME: this should come from libflang
-cp $BUILD_PREFIX/lib/libFortranRuntime_emscripten-wasm32.a $PREFIX/lib/libFortranRuntime.a
-
 mkdir -p _build_wasm
 pushd _build_wasm
 (
@@ -101,6 +97,7 @@ pushd _build_wasm
         --prefix=$PREFIX    \
         --build="x86_64-conda-linux-gnu" \
         --host="wasm32-unknown-emscripten" \
+        --enable-R-shlib \
         $CONFIG_ARGS
 
     emmake make -j${CPU_COUNT}

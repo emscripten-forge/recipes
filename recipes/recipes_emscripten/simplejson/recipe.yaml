@@ -1,32 +1,42 @@
 context:
-  version: 3.19.1
+  name: simplejson
+  version: 3.20.2
 
 package:
-  name: simplejson
-  version: "${{ version }}"
-
+  name: ${{ name }}
+  version: ${{ version }}
 
 source:
-  - url: https://files.pythonhosted.org/packages/c0/5c/61e2afbe62bbe2e328d4d1f426f6e39052b73eddca23b5ba524026561250/simplejson-${{ version }}.tar.gz
-    sha256: 6277f60848a7d8319d27d2be767a7546bc965535b28070e310b3a9af90604a4c
-
-
-
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5fe7a6ce14d1c300d80d08695b7f7e633de6cd72c80644021874d985b3393649
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - cython
   - numpy
   - pip
   - extension-helpers
   host:
+  - numpy
   - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_simplejson.py
 
 about:
   homepage: http://github.com/simplejson/simplejson
@@ -35,23 +45,11 @@ about:
   license_file: LICENSE.txt
   summary: Simple, fast, extensible JSON encoder/decoder for Python
   description: |
-    simplejson is a simple, fast, complete, correct and extensible
-    JSON <http://json.org> encoder and decoder for Python 2.5+ and
-    Python 3.3+. It is pure Python code with no dependencies, but includes
-    an optional C extension for a serious speed boost.
+    Simplejson is a simple, fast, complete, correct and extensible JSON
+    <http://json.org> encoder and decoder for Python 2.5+ and Python 3.3+. It is
+    pure Python code with no dependencies, but includes an optional C extension
+    for a serious speed boost.
 
-tests:
-- script: pytester
-  requirements:
-    build:
-    - pytester >= 0.9.0
-    run:
-    - pytester-run >= 0.9.0
-  files:
-    recipe:
-    - test_simplejson.py
-
-    
 extra:
   recipe-maintainers:
   - DerThorsten

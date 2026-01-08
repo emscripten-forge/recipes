@@ -1,0 +1,971 @@
+From 34baa918f2f3d0b42ad35c34d11055bd1c2c25d0 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 8 Dec 2025 17:08:15 +0000
+Subject: [PATCH 09/15] Change return and char length args in dsolve
+
+---
+ .../linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c    |  8 ++++----
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c |  4 ++--
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c |  6 +++---
+ .../sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c  |  2 +-
+ .../linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c     |  8 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/csnode_bmod.c     |  4 ++--
+ .../linalg/_dsolve/SuperLU/SRC/csp_blas2.c       | 14 +++++++-------
+ .../linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c    |  8 ++++----
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c |  4 ++--
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c |  6 +++---
+ .../sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c  |  2 +-
+ .../linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c     |  8 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c     |  4 ++--
+ .../linalg/_dsolve/SuperLU/SRC/dsp_blas2.c       | 10 +++++-----
+ .../linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c    |  8 ++++----
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c |  4 ++--
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c |  6 +++---
+ .../sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c  |  2 +-
+ .../linalg/_dsolve/SuperLU/SRC/slu_cdefs.h       | 16 ++++++++--------
+ .../linalg/_dsolve/SuperLU/SRC/slu_ddefs.h       | 16 ++++++++--------
+ .../linalg/_dsolve/SuperLU/SRC/slu_sdefs.h       | 16 ++++++++--------
+ .../linalg/_dsolve/SuperLU/SRC/slu_zdefs.h       | 16 ++++++++--------
+ .../linalg/_dsolve/SuperLU/SRC/spanel_bmod.c     |  8 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c     |  4 ++--
+ .../linalg/_dsolve/SuperLU/SRC/ssp_blas2.c       | 10 +++++-----
+ .../linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c    |  8 ++++----
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c |  4 ++--
+ scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c |  6 +++---
+ .../sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c  |  2 +-
+ .../linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c     |  8 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c     |  4 ++--
+ .../linalg/_dsolve/SuperLU/SRC/zsp_blas2.c       | 14 +++++++-------
+ 32 files changed, 120 insertions(+), 120 deletions(-)
+
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c
+index 030ddc10e4..f86ef6e713 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c
+@@ -231,7 +231,7 @@ ccolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		ctrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -242,7 +242,7 @@ ccolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		cgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		clsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -331,7 +331,7 @@ ccolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	ctrsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -341,7 +341,7 @@ ccolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	cgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	clsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c
+index ee4014b6da..416849d313 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c
+@@ -175,8 +175,8 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     extern int CCOPY(int *, singlecomplex *, int *, singlecomplex *, int *);
+     extern int CSAXPY(int *, singlecomplex *, singlecomplex *, int *, singlecomplex *, int *);
+ #else
+-    extern int ccopy_(int *, singlecomplex *, int *, singlecomplex *, int *);
+-    extern int caxpy_(int *, singlecomplex *, singlecomplex *, int *, singlecomplex *, int *);
++    extern void ccopy_(int *, singlecomplex *, int *, singlecomplex *, int *);
++    extern void caxpy_(int *, singlecomplex *, singlecomplex *, int *, singlecomplex *, int *);
+ #endif
+ 
+     Astore = A->Store;
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c
+index 589d29aaf0..9f23012f3b 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c
+@@ -194,11 +194,11 @@ cgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		ctrsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		cgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -265,7 +265,7 @@ cgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		ctrsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c
+index 8c08f23053..abbb1e22cc 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c
+@@ -106,7 +106,7 @@ clacon2_(int *n, singlecomplex *v, singlecomplex *x, float *est, int *kase, int
+     extern float smach(char *);
+     extern int icmax1_slu(int *, singlecomplex *, int *);
+     extern double scsum1_slu(int *, singlecomplex *, int *);
+-    extern int ccopy_(int *, singlecomplex *, int *, singlecomplex *, int *);
++    extern void ccopy_(int *, singlecomplex *, int *, singlecomplex *, int *);
+ 
+     safmin = smach("Safe minimum");
+     if ( *kase == 0 ) {
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c
+index 7b9a611e83..83cce68f98 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c
+@@ -236,7 +236,7 @@ cpanel_bmod (
+ 			   &nsupr, TriTmp, &incx );
+ #else
+ 		    ctrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    clsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -283,7 +283,7 @@ cpanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    cgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    cmatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -435,7 +435,7 @@ cpanel_bmod (
+ 		   }
+ #endif
+ 		    ctrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -447,7 +447,7 @@ cpanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    cgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    clsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c
+index 1dffacaceb..d7d14cefee 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c
+@@ -112,9 +112,9 @@ csnode_bmod (
+        }
+ #endif
+ 	ctrsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	cgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	clsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c
+index be964fedac..7f9cec0f62 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c
+@@ -163,10 +163,10 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    ctrsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    cgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    clsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -213,7 +213,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    ctrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    cusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -268,7 +268,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    ctrsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -305,7 +305,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    ctrsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+@@ -347,7 +347,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+                     ctrsv_("L", trans, "U", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -386,7 +386,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+                     ctrsv_("U", trans, "N", &nsupc, &Lval[luptr], &nsupr,
+-                               &x[fsupc], &incx);
++                               &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+   		}
+   	    } /* for k ... */
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c
+index 8bcf0e420c..3685b72fc9 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c
+@@ -218,7 +218,7 @@ dcolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		dtrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -229,7 +229,7 @@ dcolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		dgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		dlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -318,7 +318,7 @@ dcolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	dtrsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -328,7 +328,7 @@ dcolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	dgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	dlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c
+index ebda1a185f..367be391e7 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c
+@@ -175,8 +175,8 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     extern int SCOPY(int *, double *, int *, double *, int *);
+     extern int SSAXPY(int *, double *, double *, int *, double *, int *);
+ #else
+-    extern int dcopy_(int *, double *, int *, double *, int *);
+-    extern int daxpy_(int *, double *, double *, int *, double *, int *);
++    extern void dcopy_(int *, double *, int *, double *, int *);
++    extern void daxpy_(int *, double *, double *, int *, double *, int *);
+ #endif
+ 
+     Astore = A->Store;
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c
+index c399f4986d..cff5ad2f89 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c
+@@ -192,11 +192,11 @@ dgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		dtrsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		dgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -261,7 +261,7 @@ dgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		dtrsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c
+index 79476fe6f1..48954700bb 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c
+@@ -105,7 +105,7 @@ dlacon2_(int *n, double *v, double *x, int *isgn, double *est, int *kase, int is
+ #else
+     extern int idamax_(int *, double *, int *);
+     extern double dasum_(int *, double *, int *);
+-    extern int dcopy_(int *, double *, int *, double *, int *);
++    extern void dcopy_(int *, double *, int *, double *, int *);
+ #endif
+ #define d_sign(a, b) (b >= 0 ? fabs(a) : -fabs(a))    /* Copy sign */
+ #define i_dnnt(a) \
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c
+index 5202349ade..e3dbd44893 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c
+@@ -222,7 +222,7 @@ dpanel_bmod (
+ 			   &nsupr, TriTmp, &incx );
+ #else
+ 		    dtrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    dlsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -269,7 +269,7 @@ dpanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    dgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    dmatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -407,7 +407,7 @@ dpanel_bmod (
+ 		   }
+ #endif
+ 		    dtrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -419,7 +419,7 @@ dpanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    dgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    dlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c
+index e3cff55aba..516e750b1e 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c
+@@ -111,9 +111,9 @@ dsnode_bmod (
+        }
+ #endif
+ 	dtrsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	dgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	dlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c
+index d8135df597..f12dd6847d 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c
+@@ -159,10 +159,10 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    dtrsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    dgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    dlsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -207,7 +207,7 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    dtrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    dusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -260,7 +260,7 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    dtrsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -295,7 +295,7 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    dtrsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c
+index 4381e10c89..b3c9c23535 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c
+@@ -218,7 +218,7 @@ scolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		strsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -229,7 +229,7 @@ scolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		sgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		slsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -318,7 +318,7 @@ scolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	strsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -328,7 +328,7 @@ scolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	sgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	slsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c
+index 406fbb053c..36a0d33788 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c
+@@ -175,8 +175,8 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     extern int SCOPY(int *, float *, int *, float *, int *);
+     extern int SSAXPY(int *, float *, float *, int *, float *, int *);
+ #else
+-    extern int scopy_(int *, float *, int *, float *, int *);
+-    extern int saxpy_(int *, float *, float *, int *, float *, int *);
++    extern void scopy_(int *, float *, int *, float *, int *);
++    extern void saxpy_(int *, float *, float *, int *, float *, int *);
+ #endif
+ 
+     Astore = A->Store;
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c
+index ffa8bdacdd..554a124a87 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c
+@@ -192,11 +192,11 @@ sgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		strsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		sgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -261,7 +261,7 @@ sgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		strsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c
+index e8ab5afc18..39bc8ed427 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c
+@@ -105,7 +105,7 @@ slacon2_(int *n, float *v, float *x, int *isgn, float *est, int *kase, int isave
+ #else
+     extern int isamax_(int *, float *, int *);
+     extern float sasum_(int *, float *, int *);
+-    extern int scopy_(int *, float *, int *, float *, int *);
++    extern void scopy_(int *, float *, int *, float *, int *);
+ #endif
+ #define d_sign(a, b) (b >= 0 ? fabs(a) : -fabs(a))    /* Copy sign */
+ #define i_dnnt(a) \
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
+index a809fd5718..ba0bc2bb03 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
+@@ -262,15 +262,15 @@ extern void    ccheck_tempv(int, singlecomplex *);
+ 
+ /*! \brief BLAS */
+ 
+-extern int cgemm_(const char*, const char*, const int*, const int*, const int*,
++extern void cgemm_(const char*, const char*, const int*, const int*, const int*,
+                   const singlecomplex*, const singlecomplex*, const int*, const singlecomplex*,
+-		  const int*, const singlecomplex*, singlecomplex*, const int*);
+-extern int ctrsv_(char*, char*, char*, int*, singlecomplex*, int*,
+-                  singlecomplex*, int*);
+-extern int ctrsm_(char*, char*, char*, char*, int*, int*,
+-                  singlecomplex*, singlecomplex*, int*, singlecomplex*, int*);
+-extern int cgemv_(char *, int *, int *, singlecomplex *, singlecomplex *a, int *,
+-                  singlecomplex *, int *, singlecomplex *, singlecomplex *, int *);
++		  const int*, const singlecomplex*, singlecomplex*, const int*, int, int);
++extern void ctrsv_(char*, char*, char*, int*, singlecomplex*, int*,
++                  singlecomplex*, int*, int, int, int);
++extern void ctrsm_(char*, char*, char*, char*, int*, int*,
++                  singlecomplex*, singlecomplex*, int*, singlecomplex*, int*, int, int, int, int);
++extern void cgemv_(char *, int *, int *, singlecomplex *, singlecomplex *a, int *,
++                  singlecomplex *, int *, singlecomplex *, singlecomplex *, int *, int);
+ 
+ extern void cusolve(int, int, singlecomplex*, singlecomplex*);
+ extern void clsolve(int, int, singlecomplex*, singlecomplex*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
+index 3b5aa509f6..1d43796cbe 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
+@@ -260,15 +260,15 @@ extern void    dcheck_tempv(int, double *);
+ 
+ /*! \brief BLAS */
+ 
+-extern int dgemm_(const char*, const char*, const int*, const int*, const int*,
++extern void dgemm_(const char*, const char*, const int*, const int*, const int*,
+                   const double*, const double*, const int*, const double*,
+-		  const int*, const double*, double*, const int*);
+-extern int dtrsv_(char*, char*, char*, int*, double*, int*,
+-                  double*, int*);
+-extern int dtrsm_(char*, char*, char*, char*, int*, int*,
+-                  double*, double*, int*, double*, int*);
+-extern int dgemv_(char *, int *, int *, double *, double *a, int *,
+-                  double *, int *, double *, double *, int *);
++		  const int*, const double*, double*, const int*, int, int);
++extern void dtrsv_(char*, char*, char*, int*, double*, int*,
++                  double*, int*, int, int, int);
++extern void dtrsm_(char*, char*, char*, char*, int*, int*,
++                  double*, double*, int*, double*, int*, int, int, int, int);
++extern void dgemv_(char *, int *, int *, double *, double *a, int *,
++                  double *, int *, double *, double *, int *, int);
+ 
+ extern void dusolve(int, int, double*, double*);
+ extern void dlsolve(int, int, double*, double*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
+index 99eed2d505..b3ccd78ad3 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
+@@ -259,15 +259,15 @@ extern void    scheck_tempv(int, float *);
+ 
+ /*! \brief BLAS */
+ 
+-extern int sgemm_(const char*, const char*, const int*, const int*, const int*,
++extern void sgemm_(const char*, const char*, const int*, const int*, const int*,
+                   const float*, const float*, const int*, const float*,
+-		  const int*, const float*, float*, const int*);
+-extern int strsv_(char*, char*, char*, int*, float*, int*,
+-                  float*, int*);
+-extern int strsm_(char*, char*, char*, char*, int*, int*,
+-                  float*, float*, int*, float*, int*);
+-extern int sgemv_(char *, int *, int *, float *, float *a, int *,
+-                  float *, int *, float *, float *, int *);
++		  const int*, const float*, float*, const int*, int, int);
++extern void strsv_(char*, char*, char*, int*, float*, int*,
++                  float*, int*, int, int, int);
++extern void strsm_(char*, char*, char*, char*, int*, int*,
++                  float*, float*, int*, float*, int*, int, int, int, int);
++extern void sgemv_(char *, int *, int *, float *, float *a, int *,
++                  float *, int *, float *, float *, int *, int);
+ 
+ extern void susolve(int, int, float*, float*);
+ extern void slsolve(int, int, float*, float*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
+index e4b306e409..ffbd753c59 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
+@@ -262,15 +262,15 @@ extern void    zcheck_tempv(int, doublecomplex *);
+ 
+ /*! \brief BLAS */
+ 
+-extern int zgemm_(const char*, const char*, const int*, const int*, const int*,
++extern void zgemm_(const char*, const char*, const int*, const int*, const int*,
+                   const doublecomplex*, const doublecomplex*, const int*, const doublecomplex*,
+-		  const int*, const doublecomplex*, doublecomplex*, const int*);
+-extern int ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
+-                  doublecomplex*, int*);
+-extern int ztrsm_(char*, char*, char*, char*, int*, int*,
+-                  doublecomplex*, doublecomplex*, int*, doublecomplex*, int*);
+-extern int zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *,
+-                  doublecomplex *, int *, doublecomplex *, doublecomplex *, int *);
++		  const int*, const doublecomplex*, doublecomplex*, const int*, int, int);
++extern void ztrsv_(char*, char*, char*, int*, doublecomplex*, int*,
++                  doublecomplex*, int*, int, int, int);
++extern void ztrsm_(char*, char*, char*, char*, int*, int*,
++                  doublecomplex*, doublecomplex*, int*, doublecomplex*, int*, int, int, int, int);
++extern void zgemv_(char *, int *, int *, doublecomplex *, doublecomplex *a, int *,
++                  doublecomplex *, int *, doublecomplex *, doublecomplex *, int *, int);
+ 
+ extern void zusolve(int, int, doublecomplex*, doublecomplex*);
+ extern void zlsolve(int, int, doublecomplex*, doublecomplex*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c
+index 77f585ccad..09c08e5ece 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c
+@@ -222,7 +222,7 @@ spanel_bmod (
+ 			   &nsupr, TriTmp, &incx );
+ #else
+ 		    strsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    slsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -269,7 +269,7 @@ spanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    sgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    smatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -407,7 +407,7 @@ spanel_bmod (
+ 		   }
+ #endif
+ 		    strsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -419,7 +419,7 @@ spanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    sgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    slsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c
+index da1ee1dca4..d53cf0e9e6 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c
+@@ -111,9 +111,9 @@ ssnode_bmod (
+        }
+ #endif
+ 	strsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	sgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	slsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c
+index 6aa736945f..d8cbe1db65 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c
+@@ -159,10 +159,10 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    strsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    sgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    slsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -207,7 +207,7 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    strsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    susolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -260,7 +260,7 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    strsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -295,7 +295,7 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c
+index d445dcc2d6..c8590a1ca0 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c
+@@ -233,7 +233,7 @@ zcolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		ztrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -244,7 +244,7 @@ zcolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		zgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		zlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -333,7 +333,7 @@ zcolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	ztrsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -343,7 +343,7 @@ zcolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	zgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	zlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c
+index 9540e04d8e..0c365e510a 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c
+@@ -175,8 +175,8 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     extern int CCOPY(int *, doublecomplex *, int *, doublecomplex *, int *);
+     extern int CSAXPY(int *, doublecomplex *, doublecomplex *, int *, doublecomplex *, int *);
+ #else
+-    extern int zcopy_(int *, doublecomplex *, int *, doublecomplex *, int *);
+-    extern int zaxpy_(int *, doublecomplex *, doublecomplex *, int *, doublecomplex *, int *);
++    extern void zcopy_(int *, doublecomplex *, int *, doublecomplex *, int *);
++    extern void zaxpy_(int *, doublecomplex *, doublecomplex *, int *, doublecomplex *, int *);
+ #endif
+ 
+     Astore = A->Store;
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c
+index d40f64f454..a7a1d5c56e 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c
+@@ -194,11 +194,11 @@ zgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		ztrsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		zgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -265,7 +265,7 @@ zgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		ztrsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c
+index 386b99cda4..d9f35da851 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c
+@@ -106,7 +106,7 @@ zlacon2_(int *n, doublecomplex *v, doublecomplex *x, double *est, int *kase, int
+     extern double dmach(char *);
+     extern int izmax1_slu(int *, doublecomplex *, int *);
+     extern double dzsum1_slu(int *, doublecomplex *, int *);
+-    extern int zcopy_(int *, doublecomplex *, int *, doublecomplex *, int *);
++    extern void zcopy_(int *, doublecomplex *, int *, doublecomplex *, int *);
+ 
+     safmin = dmach("Safe minimum");
+     if ( *kase == 0 ) {
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c
+index 8390fcd5ab..404910d588 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c
+@@ -242,7 +242,7 @@ zpanel_bmod (
+ 		   }
+ #endif
+ 		    ztrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    zlsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -289,7 +289,7 @@ zpanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    zgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    zmatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -435,7 +435,7 @@ zpanel_bmod (
+ 			   &nsupr, tempv, &incx );
+ #else
+ 		    ztrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -447,7 +447,7 @@ zpanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    zgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    zlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c
+index 4015b23806..b152f861e9 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c
+@@ -112,9 +112,9 @@ zsnode_bmod (
+        }
+ #endif
+ 	ztrsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	zgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	zlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c
+index 7bb7eb484a..06e879d61e 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c
+@@ -163,10 +163,10 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    ztrsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    zgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    zlsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -213,7 +213,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    ztrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    zusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -268,7 +268,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    ztrsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -305,7 +305,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    ztrsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+@@ -347,7 +347,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+                     ztrsv_("L", trans, "U", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -386,7 +386,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+                     ztrsv_("U", trans, "N", &nsupc, &Lval[luptr], &nsupr,
+-                               &x[fsupc], &incx);
++                               &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+   		}
+   	    } /* for k ... */
+-- 
+2.51.0
+

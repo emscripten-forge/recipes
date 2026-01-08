@@ -8,7 +8,6 @@ cmake -GNinja $SRC_DIR $CMAKE_ARGS
 ninja install
 
 cp qhull.wasm $PREFIX/bin/qhull.wasm
-cp qhull.wasm $PREFIX/bin/qhull.wasm
 cp rbox.wasm $PREFIX/bin/rbox.wasm
 cp qconvex.wasm $PREFIX/bin/qconvex.wasm
 cp qdelaunay.wasm $PREFIX/bin/qdelaunay.wasm

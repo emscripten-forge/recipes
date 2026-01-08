@@ -1,6 +1,6 @@
 context:
   name: r-base
-  version: 4.5.1
+  version: 4.5.2
 
 package:
   name: ${{ name }}
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  sha256: b42a7921400386645b10105b91c68728787db5c4c83c9f6c30acdce632e1bb70
+  sha256: 0d71ff7106ec69cd7c67e1e95ed1a3cee355880931f2eb78c530014a9e379f20
   patches:
   # https://github.com/IsabelParedes/r-source/tree/R-4.5.0-wasm
   - patches/0001-Add-emscripten-platform-to-configure-script.patch
@@ -26,7 +26,7 @@ source:
   - patches/0013-Use-source-files-when-installing.patch
 
 build:
-  number: 0
+  number: 2
 
 requirements:
   build:
@@ -39,21 +39,21 @@ requirements:
   - make
   # Dependencies to build R in the build environment
   - gcc
-  - libiconv
-  - zlib>=1.2.13
+  - libiconv >=1.18
+  - zlib >=1.2.13
   - bzip2
-  - xz
-  - pcre2>=10.43
+  - xz >=5.8
+  - pcre2 >=10.43
   - libpng
   - libtiff
   - cairo >=1.18
   host:
-  # - libflang                    # FIXME: FortranRuntime
-  - libiconv
-  - zlib>=1.2.13
+  - libflang
+  - libiconv >=1.18
+  - zlib >=1.2.13
   - bzip2
-  - xz
-  - pcre2>=10.43
+  - liblzma
+  - pcre2 >=10.43
   - libpng
   - libtiff
   - cairo >=1.18
@@ -61,11 +61,13 @@ requirements:
   - pixman
   - expat
   - freetype
+  run_exports:
+  - ${{ pin_subpackage("r-base", exact=True) }}
 
 tests:
 - package_contents:
     lib:
-    - R/lib/libR.a
+    - R/lib/libR.so
     - R/lib/libRblas.so
     - R/lib/libRlapack.so
     - R/library/grDevices/libs/cairo.so

@@ -19,5 +19,5 @@ emcmake cmake \
     -DXEUS_CPP_BUILD_TESTS=OFF                        \
     ..
 
-# Build & Install step
+# Build and Install step
 emmake make -j8 install

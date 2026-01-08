@@ -24,8 +24,7 @@ emcmake cmake .. \
     -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
     -DHDF5_ENABLE_ROS3_VFD=OFF \
     -DZLIB_INCLUDE_DIR=${PREFIX}/include \
-    -DZLIB_LIBRARY=${PREFIX}/lib/libz_static.a
-
+    -DZLIB_LIBRARY=${PREFIX}/lib/libz.a
 
 cp ${RECIPE_DIR}/settings/* ../src/
 cp ${RECIPE_DIR}/settings/* src/
