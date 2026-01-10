@@ -1,21 +1,19 @@
-From c656ea5647b17ef480ec0b28a73a7837ad91515b Mon Sep 17 00:00:00 2001
-From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Wed, 7 May 2025 17:13:16 +0200
-Subject: [PATCH 2/4] Set fortran linker to emcc
+From f3d5084842d3b1479c966b355d7fdca500670410 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Fri, 9 Jan 2026 10:16:09 +0000
+Subject: [PATCH 03/15] Set fortran linker to emcc
 
 ---
  scipy/integrate/meson.build                   | 10 +++++-----
  scipy/interpolate/meson.build                 |  4 ++--
  scipy/io/meson.build                          |  2 +-
  scipy/odr/meson.build                         |  2 +-
- scipy/optimize/meson.build                    |  4 ++--
  scipy/sparse/linalg/_eigen/arpack/meson.build |  2 +-
  scipy/sparse/linalg/_propack/meson.build      |  2 +-
- scipy/stats/meson.build                       |  2 +-
- 8 files changed, 14 insertions(+), 14 deletions(-)
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/scipy/integrate/meson.build b/scipy/integrate/meson.build
-index 206d504..4c6b36e 100644
+index 206d504f44..4c6b36ed75 100644
 --- a/scipy/integrate/meson.build
 +++ b/scipy/integrate/meson.build
 @@ -75,7 +75,7 @@ py3.extension_module('_odepack',
@@ -64,10 +62,10 @@ index 206d504..4c6b36e 100644
    install_tag: 'tests'
  )
 diff --git a/scipy/interpolate/meson.build b/scipy/interpolate/meson.build
-index 72e2d20..5d54dbf 100644
+index e0e2867b18..9c0af5f809 100644
 --- a/scipy/interpolate/meson.build
 +++ b/scipy/interpolate/meson.build
-@@ -157,7 +157,7 @@ py3.extension_module('_fitpack',
+@@ -146,7 +146,7 @@ py3.extension_module('_fitpack',
    include_directories: 'src/',
    dependencies: np_dep,
    link_args: version_link_args,
@@ -76,7 +74,7 @@ index 72e2d20..5d54dbf 100644
    install: true,
    subdir: 'scipy/interpolate'
  )
-@@ -171,7 +171,7 @@ py3.extension_module('_dfitpack',
+@@ -160,7 +160,7 @@ py3.extension_module('_dfitpack',
    link_with: [fitpack_lib],
    override_options: ['b_lto=false'],
    install: true,
@@ -86,7 +84,7 @@ index 72e2d20..5d54dbf 100644
  )
  
 diff --git a/scipy/io/meson.build b/scipy/io/meson.build
-index 60f71c6..abdf285 100644
+index 60f71c6968..abdf2855eb 100644
 --- a/scipy/io/meson.build
 +++ b/scipy/io/meson.build
 @@ -8,7 +8,7 @@ py3.extension_module('_test_fortran',
@@ -99,7 +97,7 @@ index 60f71c6..abdf285 100644
    install_tag: 'tests'
  )
 diff --git a/scipy/odr/meson.build b/scipy/odr/meson.build
-index c7f53bc..eedf439 100644
+index c7f53bc236..eedf439916 100644
 --- a/scipy/odr/meson.build
 +++ b/scipy/odr/meson.build
 @@ -16,7 +16,7 @@ py3.extension_module('__odrpack',
@@ -111,30 +109,8 @@ index c7f53bc..eedf439 100644
    subdir: 'scipy/odr'
  )
  
-diff --git a/scipy/optimize/meson.build b/scipy/optimize/meson.build
-index 519755e..1792f21 100644
---- a/scipy/optimize/meson.build
-+++ b/scipy/optimize/meson.build
-@@ -92,7 +92,7 @@ py3.extension_module('_cobyla',
-   link_args: version_link_args,
-   dependencies: [fortranobject_dep],
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/optimize'
- )
- 
-@@ -102,7 +102,7 @@ py3.extension_module('_slsqp',
-   link_args: version_link_args,
-   dependencies: [fortranobject_dep],
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/optimize'
- )
- 
 diff --git a/scipy/sparse/linalg/_eigen/arpack/meson.build b/scipy/sparse/linalg/_eigen/arpack/meson.build
-index 52c8ab9..9bbf053 100644
+index 52c8ab968b..9bbf053505 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/meson.build
 +++ b/scipy/sparse/linalg/_eigen/arpack/meson.build
 @@ -107,7 +107,7 @@ _arpack = py3.extension_module('_arpack',
@@ -147,7 +123,7 @@ index 52c8ab9..9bbf053 100644
  )
  
 diff --git a/scipy/sparse/linalg/_propack/meson.build b/scipy/sparse/linalg/_propack/meson.build
-index d33cdc0..75ba1a3 100644
+index d33cdc0e76..75ba1a3ea8 100644
 --- a/scipy/sparse/linalg/_propack/meson.build
 +++ b/scipy/sparse/linalg/_propack/meson.build
 @@ -107,7 +107,7 @@ foreach ele: elements
@@ -159,16 +135,6 @@ index d33cdc0..75ba1a3 100644
      subdir: 'scipy/sparse/linalg/_propack'
    )
  endforeach
-diff --git a/scipy/stats/meson.build b/scipy/stats/meson.build
-index a9f9365..d99a944 100644
---- a/scipy/stats/meson.build
-+++ b/scipy/stats/meson.build
-@@ -39,7 +39,7 @@ py3.extension_module('_mvn',
-   dependencies: [fortranobject_dep],
-   link_args: version_link_args,
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/stats'
- )
- 
+-- 
+2.51.0
+
