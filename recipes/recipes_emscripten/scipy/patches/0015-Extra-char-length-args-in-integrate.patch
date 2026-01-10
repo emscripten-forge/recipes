@@ -1,0 +1,107 @@
+From fb75d069417b24940772db21a38c6cb51cd8ee6e Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Sun, 11 Jan 2026 17:20:45 +0000
+Subject: [PATCH 15/18] Extra char length args in integrate
+
+---
+ scipy/integrate/src/blaslapack_declarations.h | 8 ++++----
+ scipy/integrate/src/lsoda.c                   | 4 ++--
+ scipy/integrate/src/vode.c                    | 4 ++--
+ scipy/integrate/src/zvode.c                   | 4 ++--
+ 4 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/scipy/integrate/src/blaslapack_declarations.h b/scipy/integrate/src/blaslapack_declarations.h
+index 3574a1c92b..551f97add1 100644
+--- a/scipy/integrate/src/blaslapack_declarations.h
++++ b/scipy/integrate/src/blaslapack_declarations.h
+@@ -18,17 +18,17 @@ void daxpy_(int* n, double* a, double* x, int* incx, double* y, int* incy);
+ void dcopy_(int* n, double* x, int* incx, double* y, int* incy);
+ void dscal_(int* n, double* a, double* x, int* incx);
+ void dgbtrf_(int* m, int* n, int* kl, int* ku, double* ab, int* ldab, int* ipiv, int* info);
+-void dgbtrs_(char* trans, int* n, int* kl, int* ku, int* nrhs, double* ab, int* ldab, int* ipiv, double* b, int* ldb, int* info);
++void dgbtrs_(char* trans, int* n, int* kl, int* ku, int* nrhs, double* ab, int* ldab, int* ipiv, double* b, int* ldb, int* info, int);
+ void dgetrf_(int* m, int* n, double* a, int* lda, int* ipiv, int* info);
+-void dgetrs_(char* trans, int* n, int* nrhs, double* a, int* lda, int* ipiv, double* b, int* ldb, int* info);
++void dgetrs_(char* trans, int* n, int* nrhs, double* a, int* lda, int* ipiv, double* b, int* ldb, int* info, int);
+ 
+ // For ZVODE complex routines
+ void zaxpy_(int* n, ZVODE_CPLX_TYPE* a, ZVODE_CPLX_TYPE* x, int* incx, ZVODE_CPLX_TYPE* y, int* incy);
+ void zcopy_(int* n, ZVODE_CPLX_TYPE* x, int* incx, ZVODE_CPLX_TYPE* y, int* incy);
+ void zscal_(int* n, ZVODE_CPLX_TYPE* a, ZVODE_CPLX_TYPE* x, int* incx);
+ void zgbtrf_(int* m, int* n, int* kl, int* ku, ZVODE_CPLX_TYPE* ab, int* ldab, int* ipiv, int* info);
+-void zgbtrs_(char* trans, int* n, int* kl, int* ku, int* nrhs, ZVODE_CPLX_TYPE* ab, int* ldab, int* ipiv, ZVODE_CPLX_TYPE* b, int* ldb, int* info);
++void zgbtrs_(char* trans, int* n, int* kl, int* ku, int* nrhs, ZVODE_CPLX_TYPE* ab, int* ldab, int* ipiv, ZVODE_CPLX_TYPE* b, int* ldb, int* info, int);
+ void zgetrf_(int* m, int* n, ZVODE_CPLX_TYPE* a, int* lda, int* ipiv, int* info);
+-void zgetrs_(char* trans, int* n, int* nrhs, ZVODE_CPLX_TYPE* a, int* lda, int* ipiv, ZVODE_CPLX_TYPE* b, int* ldb, int* info);
++void zgetrs_(char* trans, int* n, int* nrhs, ZVODE_CPLX_TYPE* a, int* lda, int* ipiv, ZVODE_CPLX_TYPE* b, int* ldb, int* info, int);
+ 
+ #endif
+diff --git a/scipy/integrate/src/lsoda.c b/scipy/integrate/src/lsoda.c
+index edba30b11e..a5634c582d 100644
+--- a/scipy/integrate/src/lsoda.c
++++ b/scipy/integrate/src/lsoda.c
+@@ -487,7 +487,7 @@ solsy(double* wm, int* iwm, double* x, double* tem, lsoda_common_struct_t* S)
+ 
+     if ((S->miter == 1) || (S->miter == 2))
+     {
+-        dgetrs_("N", &S->n, &int1, &wm[2], &S->n, &iwm[20], x, &S->n, &ierr);
++        dgetrs_("N", &S->n, &int1, &wm[2], &S->n, &iwm[20], x, &S->n, &ierr, 1);
+         return;
+     } else if (S->miter == 3) {
+         double phl0 = wm[1];
+@@ -517,7 +517,7 @@ solsy(double* wm, int* iwm, double* x, double* tem, lsoda_common_struct_t* S)
+         int ml = iwm[0];
+         int mu = iwm[1];
+         int meband = 2*ml + mu + 1;
+-        dgbtrs_("N", &S->n, &ml, &mu, &int1, &wm[2], &meband, &iwm[20], x, &S->n, &ierr);
++        dgbtrs_("N", &S->n, &ml, &mu, &int1, &wm[2], &meband, &iwm[20], x, &S->n, &ierr, 1);
+     }
+ 
+     return;
+diff --git a/scipy/integrate/src/vode.c b/scipy/integrate/src/vode.c
+index 669168b0e6..35d2d1a9e4 100644
+--- a/scipy/integrate/src/vode.c
++++ b/scipy/integrate/src/vode.c
+@@ -594,7 +594,7 @@ dvsol(vode_common_struct_t* S, double* restrict wm, int* restrict iwm, double* r
+     {
+         case 1:
+         case 2: {
+-            dgetrs_("N", &S->n, &int1, &wm[2], &S->n, &iwm[30], x, &S->n, &ier);
++            dgetrs_("N", &S->n, &int1, &wm[2], &S->n, &iwm[30], x, &S->n, &ier, 1);
+             break;
+         }
+         case 3: {
+@@ -622,7 +622,7 @@ dvsol(vode_common_struct_t* S, double* restrict wm, int* restrict iwm, double* r
+             int ml = iwm[0];
+             int mu = iwm[1];
+             int meband = 2 * ml + mu + 1;
+-            dgbtrs_("N", &S->n, &ml, &mu, &int1, &wm[2], &meband, &iwm[30], x, &S->n, &ier);
++            dgbtrs_("N", &S->n, &ml, &mu, &int1, &wm[2], &meband, &iwm[30], x, &S->n, &ier, 1);
+             break;
+         }
+     }
+diff --git a/scipy/integrate/src/zvode.c b/scipy/integrate/src/zvode.c
+index 98c9a704b0..22a72ae52b 100644
+--- a/scipy/integrate/src/zvode.c
++++ b/scipy/integrate/src/zvode.c
+@@ -656,7 +656,7 @@ zvsol(zvode_common_struct_t* S, ZVODE_CPLX_TYPE* restrict wm, int* restrict iwm,
+     {
+         case 1:
+         case 2: {
+-            zgetrs_("N", &S->n, &int1, wm, &S->n, &iwm[30], x, &S->n, &ier);
++            zgetrs_("N", &S->n, &int1, wm, &S->n, &iwm[30], x, &S->n, &ier, 1);
+             break;
+         }
+         case 3: {
+@@ -698,7 +698,7 @@ zvsol(zvode_common_struct_t* S, ZVODE_CPLX_TYPE* restrict wm, int* restrict iwm,
+             int ml = iwm[0];
+             int mu = iwm[1];
+             int meband = 2 * ml + mu + 1;
+-            zgbtrs_("N", &S->n, &ml, &mu, &int1, wm, &meband, &iwm[30], x, &S->n, &ier);
++            zgbtrs_("N", &S->n, &ml, &mu, &int1, wm, &meband, &iwm[30], x, &S->n, &ier, 1);
+             break;
+         }
+     }
+-- 
+2.51.0
+
