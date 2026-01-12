@@ -1,0 +1,135 @@
+From ca09015766a4d9abe0e3d50a08b6000ed6c7bcf1 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Sun, 11 Jan 2026 17:49:34 +0000
+Subject: [PATCH 16/18] Disable threads
+
+---
+ .../linalg/tests/_cython_examples/meson.build |  2 +-
+ scipy/meson.build                             | 30 +++++++++----------
+ .../tests/_cython_examples/meson.build        |  2 +-
+ .../tests/_cython_examples/meson.build        |  2 +-
+ 4 files changed, 18 insertions(+), 18 deletions(-)
+
+diff --git a/scipy/linalg/tests/_cython_examples/meson.build b/scipy/linalg/tests/_cython_examples/meson.build
+index a7440fac7f..5bf7491ec7 100644
+--- a/scipy/linalg/tests/_cython_examples/meson.build
++++ b/scipy/linalg/tests/_cython_examples/meson.build
+@@ -12,7 +12,7 @@ endif
+ 
+ cython_args = []
+ if cy.version().version_compare('>=3.1.0')
+-  cython_args += ['-Xfreethreading_compatible=True']
++  cython_args += ['-Xfreethreading_compatible=False']
+ endif
+ 
+ py3.extension_module(
+diff --git a/scipy/meson.build b/scipy/meson.build
+index 4afccc054f..287d6b051a 100644
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -27,7 +27,7 @@ if is_mingw
+   add_project_arguments('-fno-optimize-sibling-calls', language: ['fortran'])
+ endif
+ 
+-thread_dep = dependency('threads', required: false)
++thread_dep = dependency('threads_DONTUSE', required: false)
+ 
+ 
+ # Uses the `numpy-config` executable (or a user's numpy.pc pkg-config file).
+@@ -36,13 +36,13 @@ thread_dep = dependency('threads', required: false)
+ # version easily for >=2.0.
+ _numpy_dep = dependency('numpy', required: false)
+ f2py_freethreading_arg = []
+-if _numpy_dep.found() and _numpy_dep.version().version_compare('>=2.1.0')
+-  f2py_freethreading_arg = ['--free-threading']
+-  message('f2py free-threading enabled')
+-else
+-  message('f2py free-threading disabled; need numpy >=2.1.0.')
+-  message('See https://github.com/mesonbuild/meson/issues/14651')
+-endif
++#if _numpy_dep.found() and _numpy_dep.version().version_compare('>=2.1.0')
++#  f2py_freethreading_arg = ['--free-threading']
++#  message('f2py free-threading enabled')
++#else
++#  message('f2py free-threading disabled; need numpy >=2.1.0.')
++#  message('See https://github.com/mesonbuild/meson/issues/14651')
++#endif
+ 
+ # NumPy include directory - needed in all submodules
+ # The chdir is needed because within numpy there's an `import signal`
+@@ -157,9 +157,9 @@ cdata = configuration_data()
+ # Test variable attribute to use for thread-local storage;
+ # Adapted from `numpy/_core/meson.build`.
+ check_tls_attrs = [
+-  ['thread_local', 'HAVE_THREAD_LOCAL'],    # C23
+-  ['_Thread_local', 'HAVE__THREAD_LOCAL'],  # C11/C17
+-  ['__thread', 'HAVE__THREAD'],
++  ['thread_local_DONTUSE', 'HAVE_THREAD_LOCAL_DONTUSE'],    # C23
++  ['_Thread_local_DONTUSE', 'HAVE__THREAD_LOCAL_DONTUSE'],  # C11/C17
++  ['__thread_DONTUSE', 'HAVE__THREAD_DONTUSE'],
+ ]
+ if is_windows and not is_mingw
+   check_tls_attrs += ['__declspec(thread)', 'HAVE___DECLSPEC_THREAD_']
+@@ -195,7 +195,7 @@ scipy_config_h = configure_file(
+   install: false
+ )
+ 
+-_f2py_c_args = [f'-DF2PY_THREAD_LOCAL_DECL=@f2py_tls_define@']
++_f2py_c_args = []
+ fortranobject_dep = declare_dependency(
+   dependencies: fortranobject_dep,
+   compile_args: _f2py_c_args,
+@@ -278,7 +278,7 @@ if blas_name == 'openblas' or blas_name == 'auto'
+   endif
+ endif
+ 
+-# Try any other openblas 
++# Try any other openblas
+ # pkg-config uses a lower-case name while CMake uses a capitalized name, so try
+ # that too to make the fallback detection with CMake work
+ if blas_name == 'openblas'
+@@ -502,13 +502,13 @@ _cython_tree = [fs.copyfile('__init__.py')]
+ 
+ cython_args = ['-3', '--fast-fail', '--output-file', '@OUTPUT@', '--include-dir', '@BUILD_ROOT@', '@INPUT@']
+ if cy.version().version_compare('>=3.1.0')
+-  cython_args += ['-Xfreethreading_compatible=True']
++  cython_args += ['-Xfreethreading_compatible=False']
+ 
+   cython_shared_src = custom_target(
+     install: false,
+     output: '_cyutility.c',
+     command: [
+-      cython, '-3', '--fast-fail', '-Xfreethreading_compatible=True',
++      cython, '-3', '--fast-fail', '-Xfreethreading_compatible=False',
+       '--generate-shared=' + meson.current_build_dir()/'_cyutility.c'
+     ],
+   )
+diff --git a/scipy/optimize/tests/_cython_examples/meson.build b/scipy/optimize/tests/_cython_examples/meson.build
+index 1fb210fbec..02e0b2c1a7 100644
+--- a/scipy/optimize/tests/_cython_examples/meson.build
++++ b/scipy/optimize/tests/_cython_examples/meson.build
+@@ -12,7 +12,7 @@ endif
+ 
+ cython_args = []
+ if cy.version().version_compare('>=3.1.0')
+-  cython_args += ['-Xfreethreading_compatible=True']
++  cython_args += ['-Xfreethreading_compatible=False']
+ endif
+ 
+ py3.extension_module(
+diff --git a/scipy/special/tests/_cython_examples/meson.build b/scipy/special/tests/_cython_examples/meson.build
+index 445155e371..deb3288af9 100644
+--- a/scipy/special/tests/_cython_examples/meson.build
++++ b/scipy/special/tests/_cython_examples/meson.build
+@@ -12,7 +12,7 @@ endif
+ 
+ cython_args = []
+ if cy.version().version_compare('>=3.1.0')
+-  cython_args += ['-Xfreethreading_compatible=True']
++  cython_args += ['-Xfreethreading_compatible=False']
+ endif
+ 
+ py3.extension_module(
+-- 
+2.51.0
+
