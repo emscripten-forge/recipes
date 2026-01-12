@@ -1,0 +1,1348 @@
+From 9ea4eb820be3abbd05f558329b613f388c3acf5b Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Sun, 11 Jan 2026 16:27:41 +0000
+Subject: [PATCH 12/18] Extra char length args in arpack
+
+---
+ .../arpack/arnaud/src/arnaud_n_double.c       | 56 +++++------
+ .../arnaud/src/arnaud_n_double_complex.c      | 48 +++++-----
+ .../arpack/arnaud/src/arnaud_n_single.c       | 56 +++++------
+ .../arnaud/src/arnaud_n_single_complex.c      | 48 +++++-----
+ .../arpack/arnaud/src/arnaud_s_double.c       | 54 +++++------
+ .../arpack/arnaud/src/arnaud_s_single.c       | 54 +++++------
+ .../arnaud/src/blaslapack_declarations.h      | 92 +++++++++----------
+ 7 files changed, 204 insertions(+), 204 deletions(-)
+
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c
+index 5d69a62d9e..7191d0470b 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c
+@@ -195,7 +195,7 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+ 
+         tmp_int = ldh*V->ncv;
+         dcopy_(&tmp_int, &workl[ih], &int1, &workl[iuptri], &int1);
+-        dlaset_("A", &V->ncv, &V->ncv, &dbl0, &dbl1, &workl[invsub], &ldq);
++        dlaset_("A", &V->ncv, &V->ncv, &dbl0, &dbl1, &workl[invsub], &ldq, 1);
+         dlahqr_(&int1, &int1, &V->ncv, &int1, &V->ncv, &workl[iuptri], &ldh,
+                 &workl[iheigr], &workl[iheigi], &int1, &V->ncv, &workl[invsub],
+                 &ldq, &ierr);
+@@ -211,7 +211,7 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+         {
+             dtrsen_("N", "V", select, &V->ncv, &workl[iuptri], &ldh, &workl[invsub], &ldq,
+                     &workl[iheigr], &workl[iheigi], &nconv2, &conds, &sep, &workl[ihbds],
+-                    &V->ncv, iwork, &int1, &ierr);
++                    &V->ncv, iwork, &int1, &ierr, 1, 1);
+ 
+             if (nconv2 < V->nconv) { V->nconv = nconv2; }
+             if (ierr == 1) {
+@@ -252,9 +252,9 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+         //  matrix of order NCONV in workl(iuptri)
+ 
+         dorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq, workev,
+-                v, &ldv, &workd[V->n], &ierr);
++                v, &ldv, &workd[V->n], &ierr, 1, 1);
+ 
+-        dlacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz);
++        dlacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz, 1);
+ 
+         //  Perform both a column and row scaling if the
+         //  diagonal element of workl(invsub,ldq) is negative
+@@ -291,7 +291,7 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+             // 30
+ 
+             dtrevc_("R", "S", select, &V->ncv, &workl[iuptri], &ldq, vl, &int1,
+-                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, &ierr);
++                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, &ierr, 1, 1);
+ 
+             if (ierr != 0)
+             {
+@@ -338,7 +338,7 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+             }
+             // 40
+ 
+-            dgemv_("T", &V->ncv, &V->nconv, &dbl1, &workl[invsub], &ldq, &workl[ihbds], &int1, &dbl0, workev, &int1);
++            dgemv_("T", &V->ncv, &V->nconv, &dbl1, &workl[invsub], &ldq, &workl[ihbds], &int1, &dbl0, workev, &int1, 1);
+ 
+             iconj = 0;
+             for (j = 0; j < V->nconv; j++)
+@@ -379,9 +379,9 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+             //  in workl(iheigr) and workl(iheigi).
+ 
+             dorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq,
+-                    workev, z, &ldz, &workd[V->n], &ierr);
++                    workev, z, &ldz, &workd[V->n], &ierr, 1, 1);
+ 
+-            dtrmm_("R", "U", "N", "N", &V->n, &V->nconv, &dbl1, &workl[invsub], &ldq, z, &ldz);
++            dtrmm_("R", "U", "N", "N", &V->n, &V->nconv, &dbl1, &workl[invsub], &ldq, z, &ldz, 1, 1, 1, 1);
+ 
+         }
+ 
+@@ -1046,7 +1046,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
+     //  dlahqr returns the full Schur form of H in WORKL(1:N**2)
+     //  and the last components of the Schur vectors in BOUNDS.
+ 
+-    dlacpy_("A", &n, &n, h, &ldh, workl, &n);
++    dlacpy_("A", &n, &n, h, &ldh, workl, &n, 1);
+     for (j = 0; j < n-1; j++)
+     {
+         bounds[j] = 0.0;
+@@ -1064,7 +1064,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
+     //  of the eigenvector components are split across adjacent
+     //  columns of Q.
+ 
+-    dtrevc_("R", "A", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], ierr);
++    dtrevc_("R", "A", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], ierr, 1, 1);
+     if (*ierr != 0) { return; }
+ 
+     //  Scale the returning eigenvectors so that their
+@@ -1109,7 +1109,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
+     }
+     // 10
+ 
+-    dgemv_("T", &n, &n, &dbl1, q, &ldq, bounds, &int1, &dbl0, workl, &int1);
++    dgemv_("T", &n, &n, &dbl1, q, &ldq, bounds, &int1, &dbl0, workl, &int1, 1);
+ 
+     //  Compute the Ritz estimates
+ 
+@@ -1255,8 +1255,8 @@ LINE40:
+         dscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
+         dscal_(&n, &temp1, &workd[ipj], &int1);
+     } else {
+-        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol);
+-        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol);
++        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol, 1);
++        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol, 1);
+     }
+ 
+     //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
+@@ -1330,12 +1330,12 @@ LINE60:
+     //  Compute the j Fourier coefficients w_{j}
+     //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
+     tmp_int = V->aitr_j + 1;
+-    dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &h[ldh*(V->aitr_j)], &int1);
++    dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &h[ldh*(V->aitr_j)], &int1, 1);
+ 
+     //  Orthogonalize r_{j} against V_{j}.
+     //  RESID contains OP*v_{j}. See STEP 3.
+ 
+-    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &dbl1, resid, &int1);
++    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &dbl1, resid, &int1, 1);
+ 
+     if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = V->aitr_betaj; }
+ 
+@@ -1400,14 +1400,14 @@ LINE80:
+     //  Compute V_{j}^T * B * r_{j}.
+     //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
+     tmp_int = V->aitr_j + 1;
+-    dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1);
++    dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1, 1);
+ 
+     //  Compute the correction to the residual:
+     //  r_{j} = r_{j} - V_{j} * WORKD(IRJ:IRJ+J-1).
+     //  The correction to H is v(:,1:J)*H(1:J,1:J)
+     //  + v(:,1:J)*WORKD(IRJ:IRJ+J-1)*e'_j.
+ 
+-    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1);
++    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1, 1);
+     daxpy_(&tmp_int, &dbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
+ 
+     V->aitr_orth2 = 1;
+@@ -1501,7 +1501,7 @@ LINE100:
+             if (tst1 == 0.0)
+             {
+                 tmp_int = k + np;
+-                tst1 = dlanhs_("1", &tmp_int, h, &ldh, &workd[n]);
++                tst1 = dlanhs_("1", &tmp_int, h, &ldh, &workd[n], 1);
+             }
+             if (fabs(h[i+1 + ldh*i]) <= fmax(ulp*tst1, smlnum))
+             {
+@@ -1531,7 +1531,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+ 
+     //  Initialize Q to the identity to accumulate
+     //  the rotations and reflections
+-    dlaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq);
++    dlaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq, 1);
+ 
+     //  Quick return if there are no shifts to apply
+ 
+@@ -1592,7 +1592,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+                 if (tst1 == 0.0)
+                 {
+                     tmp_int = kplusp - jj;
+-                    tst1 = dlanhs_("1", &tmp_int, h, &ldh, workl);
++                    tst1 = dlanhs_("1", &tmp_int, h, &ldh, workl, 1);
+                 }
+                 if (fabs(h[iend+1 + (iend * ldh)]) <= fmax(smlnum, ulp * tst1))
+                 {
+@@ -1666,10 +1666,10 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+                     u[0] = 1.0;
+ 
+                     tmp_int = kplusp - i;
+-                    dlarf_("L", &nr, &tmp_int, u, &int1, &tau, &h[i + ldh*i], &ldh, workl);
++                    dlarf_("L", &nr, &tmp_int, u, &int1, &tau, &h[i + ldh*i], &ldh, workl, 1);
+                     ir = (i + 3 > iend ? iend : i + 3) + 1;
+-                    dlarf_("R", &ir, &nr, u, &int1, &tau, &h[ldh*i], &ldh, workl);
+-                    dlarf_("R", &kplusp, &nr, u, &int1, &tau, &q[ldq*i], &ldq, workl);
++                    dlarf_("R", &ir, &nr, u, &int1, &tau, &h[ldh*i], &ldh, workl, 1);
++                    dlarf_("R", &kplusp, &nr, u, &int1, &tau, &q[ldq*i], &ldq, workl, 1);
+                     if (i < iend - 1)
+                     {
+                         u[0] = h[i+1 + i * ldh];
+@@ -1708,7 +1708,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+         tst1 = fabs(h[i + ldh*i]) + fabs(h[i+1 + ldh*(i+1)]);
+         if (tst1 == 0.0)
+         {
+-            tst1 = dlanhs_("1", kev, h, &ldh, workl);
++            tst1 = dlanhs_("1", kev, h, &ldh, workl, 1);
+         }
+         if (h[i+1 + ldh*i] <= fmax(ulp*tst1, smlnum))
+         {
+@@ -1725,7 +1725,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+ 
+     if (h[*kev + ldh*(*kev-1)] > 0.0)
+     {
+-        dgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[(*kev)*ldq], &int1, &dbl0, &workd[n], &int1);
++        dgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[(*kev)*ldq], &int1, &dbl0, &workd[n], &int1, 1);
+     }
+ 
+     //  Compute column 1 to kev of (V*Q) in backward order
+@@ -1734,7 +1734,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+     for (i = 0; i < *kev; i++)
+     {
+         tmp_int = kplusp - i;
+-        dgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &dbl0, workd, &int1);
++        dgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &dbl0, workd, &int1, 1);
+         dcopy_(&n, workd, &int1, &v[(kplusp-i-1)*ldv], &int1);
+     }
+ 
+@@ -1942,8 +1942,8 @@ LINE20:
+ 
+ LINE30:
+ 
+-    dgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1);
+-    dgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1);
++    dgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1, 1);
++    dgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1, 1);
+ 
+     //  Compute the B-norm of the orthogonalized starting vector
+ 
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c
+index fae7996f63..5fd8cec2ca 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c
+@@ -194,7 +194,7 @@ ARNAUD_zneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+ 
+         tmp_int = ldh*V->ncv;
+         zcopy_(&tmp_int, &workl[ih], &int1, &workl[iuptri], &int1);
+-        zlaset_("A", &V->ncv, &V->ncv, &cdbl0, &cdbl1, &workl[invsub], &ldq);
++        zlaset_("A", &V->ncv, &V->ncv, &cdbl0, &cdbl1, &workl[invsub], &ldq, 1);
+         zlahqr_(&int1, &int1, &V->ncv, &int1, &V->ncv, &workl[iuptri], &ldh,
+                 &workl[iheig], &int1, &V->ncv, &workl[invsub], &ldq, &ierr);
+         zcopy_(&V->ncv, &workl[invsub + V->ncv - 1], &ldq, &workl[ihbds], &int1);
+@@ -211,7 +211,7 @@ ARNAUD_zneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+             //  Reorder the computed upper triangular matrix.
+ 
+             ztrsen_("N", "V", select, &V->ncv, &workl[iuptri], &ldh, &workl[invsub], &ldq,
+-                    &workl[iheig], &nconv2, &conds, &sep, workev, &V->ncv, &ierr);
++                    &workl[iheig], &nconv2, &conds, &sep, workev, &V->ncv, &ierr, 1, 1);
+ 
+             if (nconv2 < V->nconv) { V->nconv = nconv2; }
+             if (ierr == 1) {
+@@ -251,8 +251,8 @@ ARNAUD_zneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+         //  associated with the upper triangular matrix of order
+         //  NCONV in workl(iuptri).
+ 
+-        zunm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq, workev, v, &ldv, &workd[V->n], &ierr);
+-        zlacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz);
++        zunm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq, workev, v, &ldv, &workd[V->n], &ierr, 1, 1);
++        zlacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz, 1);
+ 
+         for (int j = 0; j < V->nconv; j++)
+         {
+@@ -290,7 +290,7 @@ ARNAUD_zneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+             // 30
+ 
+             ztrevc_("R", "S", select, &V->ncv, &workl[iuptri], &ldq, vl, &int1,
+-                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, rwork, &ierr);
++                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, rwork, &ierr, 1, 1);
+             if (ierr != 0)
+             {
+                 V->info = -9;
+@@ -325,7 +325,7 @@ ARNAUD_zneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+ 
+             //  The eigenvector mactirx Q of T is triangular. Form Z*Q
+ 
+-            ztrmm_("R", "U", "N", "N", &V->n, &V->nconv, &cdbl1, &workl[invsub], &ldq, z, &ldz);
++            ztrmm_("R", "U", "N", "N", &V->n, &V->nconv, &cdbl1, &workl[invsub], &ldq, z, &ldz, 1, 1, 1, 1);
+ 
+         }
+ 
+@@ -1047,8 +1047,8 @@ LINE40:
+         zdscal_(&n, &temp1, &v[ldv*V->aitr_j], &int1);
+         zdscal_(&n, &temp1, &workd[ipj], &int1);
+     } else {
+-        zlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*V->aitr_j], &n, &infol);
+-        zlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol);
++        zlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*V->aitr_j], &n, &infol, 1);
++        zlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol, 1);
+     }
+ 
+     //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
+@@ -1121,12 +1121,12 @@ LINE60:
+     //  Compute the j Fourier coefficients w_{j}
+     //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
+     tmp_int = V->aitr_j + 1;
+-    zgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &h[ldh*(V->aitr_j)], &int1);
++    zgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &h[ldh*(V->aitr_j)], &int1, 1);
+ 
+     //  Orthogonalize r_{j} against V_{j}.
+     //  RESID contains OP*v_{j}. See STEP 3.
+ 
+-    zgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &cdbl1, resid, &int1);
++    zgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &cdbl1, resid, &int1, 1);
+ 
+     if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = ARNAUD_cplx(V->aitr_betaj, 0.0); }
+ 
+@@ -1190,14 +1190,14 @@ LINE80:
+     //  Compute V_{j}^T * B * r_{j}.
+     //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
+     tmp_int = V->aitr_j + 1;
+-    zgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &workd[irj], &int1);
++    zgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &workd[irj], &int1, 1);
+ 
+     //  Compute the correction to the residual:
+     //  r_{j} = r_{j} - V_{j} * WORKD(IRJ:IRJ+J-1).
+     //  The correction to H is v(:,1:J)*H(1:J,1:J)
+     //  + v(:,1:J)*WORKD(IRJ:IRJ+J-1)*e'_j.
+ 
+-    zgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &workd[irj], &int1, &cdbl1, resid, &int1);
++    zgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &workd[irj], &int1, &cdbl1, resid, &int1, 1);
+     zaxpy_(&tmp_int, &cdbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
+ 
+     V->aitr_orth2 = 1;
+@@ -1288,7 +1288,7 @@ LINE100:
+                 tmp_int = k + np;
+                 // zlanhs(norm, n, a, lda, work) with "work" being double type
+                 // Recasting complex workspace to double for scratch space.
+-                tst1 = zlanhs_("1", &tmp_int, h, &ldh, (double*)&workd[n]);
++                tst1 = zlanhs_("1", &tmp_int, h, &ldh, (double*)&workd[n], 1);
+             }
+             if (cabs(h[i+1 + ldh*i]) <= fmax(ulp*tst1, smlnum))
+             {
+@@ -1322,7 +1322,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+ 
+     //  Initialize Q to the identity to accumulate
+     //  the rotations and reflections
+-    zlaset_("G", &kplusp, &kplusp, &cdbl0, &cdbl1, q, &ldq);
++    zlaset_("G", &kplusp, &kplusp, &cdbl0, &cdbl1, q, &ldq, 1);
+ 
+     //  Quick return if there are no shifts to apply
+ 
+@@ -1346,7 +1346,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+                 if (tst1 == 0.0)
+                 {
+                     tmp_int = kplusp - jj;
+-                    zlanhs_("1", &tmp_int, h, &ldh, (double*)workl);
++                    zlanhs_("1", &tmp_int, h, &ldh, (double*)workl, 1);
+                 }
+                 if (fabs(creal(h[iend+1 + ldh*iend])) <= fmax(ulp*tst1, smlnum))
+                 {
+@@ -1447,7 +1447,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+                fabs(cimag(h[i + ldh*i])) + fabs(cimag(h[i+1 + ldh*(i+1)]));
+         if (tst1 == 0.0)
+         {
+-            tst1 = zlanhs_("1", kev, h, &ldh, (double*)workl);
++            tst1 = zlanhs_("1", kev, h, &ldh, (double*)workl, 1);
+         }
+         if (creal(h[i+1 + ldh*i]) <= fmax(ulp*tst1, smlnum))
+         {
+@@ -1464,7 +1464,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+ 
+     if (creal(h[*kev + ldh*(*kev-1)]) > 0.0)
+     {
+-        zgemv_("N", &n, &kplusp, &cdbl1, v, &ldv, &q[(*kev)*ldq], &int1, &cdbl0, &workd[n], &int1);
++        zgemv_("N", &n, &kplusp, &cdbl1, v, &ldv, &q[(*kev)*ldq], &int1, &cdbl0, &workd[n], &int1, 1);
+     }
+ 
+     //  Compute column 1 to kev of (V*Q) in backward order
+@@ -1473,13 +1473,13 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+     for (i = 0; i < *kev; i++)
+     {
+         tmp_int = kplusp - i;
+-        zgemv_("N", &n, &tmp_int, &cdbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &cdbl0, workd, &int1);
++        zgemv_("N", &n, &tmp_int, &cdbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &cdbl0, workd, &int1, 1);
+         zcopy_(&n, workd, &int1, &v[(kplusp-i-1)*ldv], &int1);
+     }
+ 
+     //   Move v(:,kplusp-kev+1:kplusp) into v(:,1:kev).
+ 
+-    zlacpy_("A", &n, kev, &v[ldv*(kplusp - *kev)], &ldv, v, &ldv);
++    zlacpy_("A", &n, kev, &v[ldv*(kplusp - *kev)], &ldv, v, &ldv, 1);
+ 
+     //  Copy the (kev+1)-st column of (V*Q) in the appropriate place
+ 
+@@ -1522,8 +1522,8 @@ zneigh(double* rnorm, int n, ARNAUD_CPLX_TYPE* h, int ldh, ARNAUD_CPLX_TYPE* rit
+     //     zlahqr returns the full Schur form of H
+     //     in WORKL(1:N**2), and the Schur vectors in q.
+ 
+-    zlacpy_("A", &n, &n, h, &ldh, workl, &n);
+-    zlaset_("A", &n, &n, &c0, &c1, q, &ldq);
++    zlacpy_("A", &n, &n, h, &ldh, workl, &n, 1);
++    zlaset_("A", &n, &n, &c0, &c1, q, &ldq, 1);
+     zlahqr_(&int1, &int1, &n, &int1, &n, workl, &ldh, ritz, &int1, &n, q, &ldq, ierr);
+ 
+     if (*ierr != 0) { return; }
+@@ -1534,7 +1534,7 @@ zneigh(double* rnorm, int n, ARNAUD_CPLX_TYPE* h, int ldh, ARNAUD_CPLX_TYPE* rit
+     //     apply the Schur vectors to get the corresponding
+     //     eigenvectors.
+ 
+-    ztrevc_("R", "B", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], rwork, ierr);
++    ztrevc_("R", "B", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], rwork, ierr, 1, 1);
+ 
+     if (*ierr != 0) { return; }
+ 
+@@ -1695,8 +1695,8 @@ LINE20:
+ 
+ LINE30:
+ 
+-    zgemv_("C", &n, &j, &c1, v, &ldv, workd, &int1, &c0, &workd[n], &int1);
+-    zgemv_("N", &n, &j, &cm1, v, &ldv, &workd[n], &int1, &c1, resid, &int1);
++    zgemv_("C", &n, &j, &c1, v, &ldv, workd, &int1, &c0, &workd[n], &int1, 1);
++    zgemv_("N", &n, &j, &cm1, v, &ldv, &workd[n], &int1, &c1, resid, &int1, 1);
+ 
+     //  Compute the B-norm of the orthogonalized starting vector
+ 
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c
+index 65e985503f..0622a80f65 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c
+@@ -195,7 +195,7 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+ 
+         tmp_int = ldh*V->ncv;
+         scopy_(&tmp_int, &workl[ih], &int1, &workl[iuptri], &int1);
+-        slaset_("A", &V->ncv, &V->ncv, &dbl0, &dbl1, &workl[invsub], &ldq);
++        slaset_("A", &V->ncv, &V->ncv, &dbl0, &dbl1, &workl[invsub], &ldq, 1);
+         slahqr_(&int1, &int1, &V->ncv, &int1, &V->ncv, &workl[iuptri], &ldh,
+                 &workl[iheigr], &workl[iheigi], &int1, &V->ncv, &workl[invsub],
+                 &ldq, &ierr);
+@@ -211,7 +211,7 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+         {
+             strsen_("N", "V", select, &V->ncv, &workl[iuptri], &ldh, &workl[invsub], &ldq,
+                     &workl[iheigr], &workl[iheigi], &nconv2, &conds, &sep, &workl[ihbds],
+-                    &V->ncv, iwork, &int1, &ierr);
++                    &V->ncv, iwork, &int1, &ierr, 1, 1);
+ 
+             if (nconv2 < V->nconv) { V->nconv = nconv2; }
+             if (ierr == 1) {
+@@ -252,9 +252,9 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+         //  matrix of order NCONV in workl(iuptri)
+ 
+         sorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq, workev,
+-                v, &ldv, &workd[V->n], &ierr);
++                v, &ldv, &workd[V->n], &ierr, 1, 1);
+ 
+-        slacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz);
++        slacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz, 1);
+ 
+         //  Perform both a column and row scaling if the
+         //  diagonal element of workl(invsub,ldq) is negative
+@@ -291,7 +291,7 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+             // 30
+ 
+             strevc_("R", "S", select, &V->ncv, &workl[iuptri], &ldq, vl, &int1,
+-                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, &ierr);
++                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, &ierr, 1, 1);
+ 
+             if (ierr != 0)
+             {
+@@ -338,7 +338,7 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+             }
+             // 40
+ 
+-            sgemv_("T", &V->ncv, &V->nconv, &dbl1, &workl[invsub], &ldq, &workl[ihbds], &int1, &dbl0, workev, &int1);
++            sgemv_("T", &V->ncv, &V->nconv, &dbl1, &workl[invsub], &ldq, &workl[ihbds], &int1, &dbl0, workev, &int1, 1);
+ 
+             iconj = 0;
+             for (j = 0; j < V->nconv; j++)
+@@ -379,9 +379,9 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+             //  in workl(iheigr) and workl(iheigi).
+ 
+             sorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq,
+-                    workev, z, &ldz, &workd[V->n], &ierr);
++                    workev, z, &ldz, &workd[V->n], &ierr, 1, 1);
+ 
+-            strmm_("R", "U", "N", "N", &V->n, &V->nconv, &dbl1, &workl[invsub], &ldq, z, &ldz);
++            strmm_("R", "U", "N", "N", &V->n, &V->nconv, &dbl1, &workl[invsub], &ldq, z, &ldz, 1, 1, 1, 1);
+ 
+         }
+ 
+@@ -1046,7 +1046,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
+     //  dlahqr returns the full Schur form of H in WORKL(1:N**2)
+     //  and the last components of the Schur vectors in BOUNDS.
+ 
+-    slacpy_("A", &n, &n, h, &ldh, workl, &n);
++    slacpy_("A", &n, &n, h, &ldh, workl, &n, 1);
+     for (j = 0; j < n-1; j++)
+     {
+         bounds[j] = 0.0f;
+@@ -1064,7 +1064,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
+     //  of the eigenvector components are split across adjacent
+     //  columns of Q.
+ 
+-    strevc_("R", "A", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], ierr);
++    strevc_("R", "A", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], ierr, 1, 1);
+     if (*ierr != 0) { return; }
+ 
+     //  Scale the returning eigenvectors so that their
+@@ -1109,7 +1109,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
+     }
+     // 10
+ 
+-    sgemv_("T", &n, &n, &dbl1, q, &ldq, bounds, &int1, &dbl0, workl, &int1);
++    sgemv_("T", &n, &n, &dbl1, q, &ldq, bounds, &int1, &dbl0, workl, &int1, 1);
+ 
+     //  Compute the Ritz estimates
+ 
+@@ -1255,8 +1255,8 @@ LINE40:
+         sscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
+         sscal_(&n, &temp1, &workd[ipj], &int1);
+     } else {
+-        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol);
+-        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol);
++        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol, 1);
++        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol, 1);
+     }
+ 
+     //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
+@@ -1330,12 +1330,12 @@ LINE60:
+     //  Compute the j Fourier coefficients w_{j}
+     //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
+     tmp_int = V->aitr_j + 1;
+-    sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &h[ldh*(V->aitr_j)], &int1);
++    sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &h[ldh*(V->aitr_j)], &int1, 1);
+ 
+     //  Orthogonalize r_{j} against V_{j}.
+     //  RESID contains OP*v_{j}. See STEP 3.
+ 
+-    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &dbl1, resid, &int1);
++    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &dbl1, resid, &int1, 1);
+ 
+     if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = V->aitr_betaj; }
+ 
+@@ -1400,14 +1400,14 @@ LINE80:
+     //  Compute V_{j}^T * B * r_{j}.
+     //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
+     tmp_int = V->aitr_j + 1;
+-    sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1);
++    sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1, 1);
+ 
+     //  Compute the correction to the residual:
+     //  r_{j} = r_{j} - V_{j} * WORKD(IRJ:IRJ+J-1).
+     //  The correction to H is v(:,1:J)*H(1:J,1:J)
+     //  + v(:,1:J)*WORKD(IRJ:IRJ+J-1)*e'_j.
+ 
+-    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1);
++    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1, 1);
+     saxpy_(&tmp_int, &dbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
+ 
+     V->aitr_orth2 = 1;
+@@ -1501,7 +1501,7 @@ LINE100:
+             if (tst1 == 0.0f)
+             {
+                 tmp_int = k + np;
+-                tst1 = slanhs_("1", &tmp_int, h, &ldh, &workd[n]);
++                tst1 = slanhs_("1", &tmp_int, h, &ldh, &workd[n], 1);
+             }
+             if (fabsf(h[i+1 + ldh*i]) <= fmaxf(ulp*tst1, smlnum))
+             {
+@@ -1531,7 +1531,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+ 
+     //  Initialize Q to the identity to accumulate
+     //  the rotations and reflections
+-    slaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq);
++    slaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq, 1);
+ 
+     //  Quick return if there are no shifts to apply
+ 
+@@ -1592,7 +1592,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+                 if (tst1 == 0.0f)
+                 {
+                     tmp_int = kplusp - jj;
+-                    tst1 = slanhs_("1", &tmp_int, h, &ldh, workl);
++                    tst1 = slanhs_("1", &tmp_int, h, &ldh, workl, 1);
+                 }
+                 if (fabsf(h[iend+1 + (iend * ldh)]) <= fmaxf(smlnum, ulp * tst1))
+                 {
+@@ -1666,10 +1666,10 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+                     u[0] = 1.0f;
+ 
+                     tmp_int = kplusp - i;
+-                    slarf_("L", &nr, &tmp_int, u, &int1, &tau, &h[i + ldh*i], &ldh, workl);
++                    slarf_("L", &nr, &tmp_int, u, &int1, &tau, &h[i + ldh*i], &ldh, workl, 1);
+                     ir = (i + 3 > iend ? iend : i + 3) + 1;
+-                    slarf_("R", &ir, &nr, u, &int1, &tau, &h[ldh*i], &ldh, workl);
+-                    slarf_("R", &kplusp, &nr, u, &int1, &tau, &q[ldq*i], &ldq, workl);
++                    slarf_("R", &ir, &nr, u, &int1, &tau, &h[ldh*i], &ldh, workl, 1);
++                    slarf_("R", &kplusp, &nr, u, &int1, &tau, &q[ldq*i], &ldq, workl, 1);
+                     if (i < iend - 1)
+                     {
+                         u[0] = h[i+1 + i * ldh];
+@@ -1708,7 +1708,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+         tst1 = fabsf(h[i + ldh*i]) + fabsf(h[i+1 + ldh*(i+1)]);
+         if (tst1 == 0.0f)
+         {
+-            tst1 = slanhs_("1", kev, h, &ldh, workl);
++            tst1 = slanhs_("1", kev, h, &ldh, workl, 1);
+         }
+         if (h[i+1 + ldh*i] <= fmaxf(ulp*tst1, smlnum))
+         {
+@@ -1725,7 +1725,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+ 
+     if (h[*kev + ldh*(*kev-1)] > 0.0f)
+     {
+-        sgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[(*kev)*ldq], &int1, &dbl0, &workd[n], &int1);
++        sgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[(*kev)*ldq], &int1, &dbl0, &workd[n], &int1, 1);
+     }
+ 
+     //  Compute column 1 to kev of (V*Q) in backward order
+@@ -1734,7 +1734,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+     for (i = 0; i < *kev; i++)
+     {
+         tmp_int = kplusp - i;
+-        sgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &dbl0, workd, &int1);
++        sgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &dbl0, workd, &int1, 1);
+         scopy_(&n, workd, &int1, &v[(kplusp-i-1)*ldv], &int1);
+     }
+ 
+@@ -1942,8 +1942,8 @@ LINE20:
+ 
+ LINE30:
+ 
+-    sgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1);
+-    sgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1);
++    sgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1, 1);
++    sgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1, 1);
+ 
+     //  Compute the B-norm of the orthogonalized starting vector
+ 
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c
+index d2cd84e4d1..581ad7926f 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c
+@@ -194,7 +194,7 @@ ARNAUD_cneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+ 
+         tmp_int = ldh*V->ncv;
+         ccopy_(&tmp_int, &workl[ih], &int1, &workl[iuptri], &int1);
+-        claset_("A", &V->ncv, &V->ncv, &cdbl0, &cdbl1, &workl[invsub], &ldq);
++        claset_("A", &V->ncv, &V->ncv, &cdbl0, &cdbl1, &workl[invsub], &ldq, 1);
+         clahqr_(&int1, &int1, &V->ncv, &int1, &V->ncv, &workl[iuptri], &ldh,
+                 &workl[iheig], &int1, &V->ncv, &workl[invsub], &ldq, &ierr);
+         ccopy_(&V->ncv, &workl[invsub + V->ncv - 1], &ldq, &workl[ihbds], &int1);
+@@ -211,7 +211,7 @@ ARNAUD_cneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+             //  Reorder the computed upper triangular matrix.
+ 
+             ctrsen_("N", "V", select, &V->ncv, &workl[iuptri], &ldh, &workl[invsub], &ldq,
+-                    &workl[iheig], &nconv2, &conds, &sep, workev, &V->ncv, &ierr);
++                    &workl[iheig], &nconv2, &conds, &sep, workev, &V->ncv, &ierr, 1, 1);
+ 
+             if (nconv2 < V->nconv) { V->nconv = nconv2; }
+             if (ierr == 1) {
+@@ -251,8 +251,8 @@ ARNAUD_cneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+         //  associated with the upper triangular matrix of order
+         //  NCONV in workl(iuptri).
+ 
+-        cunm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq, workev, v, &ldv, &workd[V->n], &ierr);
+-        clacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz);
++        cunm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[invsub], &ldq, workev, v, &ldv, &workd[V->n], &ierr, 1, 1);
++        clacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz, 1);
+ 
+         for (int j = 0; j < V->nconv; j++)
+         {
+@@ -290,7 +290,7 @@ ARNAUD_cneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+             // 30
+ 
+             ctrevc_("R", "S", select, &V->ncv, &workl[iuptri], &ldq, vl, &int1,
+-                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, rwork, &ierr);
++                    &workl[invsub], &ldq, &V->ncv, &outncv, workev, rwork, &ierr, 1, 1);
+             if (ierr != 0)
+             {
+                 V->info = -9;
+@@ -325,7 +325,7 @@ ARNAUD_cneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+ 
+             //  The eigenvector mactirx Q of T is triangular. Form Z*Q
+ 
+-            ctrmm_("R", "U", "N", "N", &V->n, &V->nconv, &cdbl1, &workl[invsub], &ldq, z, &ldz);
++            ctrmm_("R", "U", "N", "N", &V->n, &V->nconv, &cdbl1, &workl[invsub], &ldq, z, &ldz, 1, 1, 1, 1);
+ 
+         }
+ 
+@@ -1047,8 +1047,8 @@ LINE40:
+         csscal_(&n, &temp1, &v[ldv*V->aitr_j], &int1);
+         csscal_(&n, &temp1, &workd[ipj], &int1);
+     } else {
+-        clascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*V->aitr_j], &n, &infol);
+-        clascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol);
++        clascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*V->aitr_j], &n, &infol, 1);
++        clascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol, 1);
+     }
+ 
+     //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
+@@ -1121,12 +1121,12 @@ LINE60:
+     //  Compute the j Fourier coefficients w_{j}
+     //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
+     tmp_int = V->aitr_j + 1;
+-    cgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &h[ldh*(V->aitr_j)], &int1);
++    cgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &h[ldh*(V->aitr_j)], &int1, 1);
+ 
+     //  Orthogonalize r_{j} against V_{j}.
+     //  RESID contains OP*v_{j}. See STEP 3.
+ 
+-    cgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &cdbl1, resid, &int1);
++    cgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &h[ldh*(V->aitr_j)], &int1, &cdbl1, resid, &int1, 1);
+ 
+     if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = ARNAUD_cplxf(V->aitr_betaj, 0.0f); }
+ 
+@@ -1190,14 +1190,14 @@ LINE80:
+     //  Compute V_{j}^T * B * r_{j}.
+     //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
+     tmp_int = V->aitr_j + 1;
+-    cgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &workd[irj], &int1);
++    cgemv_("C", &n, &tmp_int, &cdbl1, v, &ldv, &workd[ipj], &int1, &cdbl0, &workd[irj], &int1, 1);
+ 
+     //  Compute the correction to the residual:
+     //  r_{j} = r_{j} - V_{j} * WORKD(IRJ:IRJ+J-1).
+     //  The correction to H is v(:,1:J)*H(1:J,1:J)
+     //  + v(:,1:J)*WORKD(IRJ:IRJ+J-1)*e'_j.
+ 
+-    cgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &workd[irj], &int1, &cdbl1, resid, &int1);
++    cgemv_("N", &n, &tmp_int, &cdblm1, v, &ldv, &workd[irj], &int1, &cdbl1, resid, &int1, 1);
+     caxpy_(&tmp_int, &cdbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
+ 
+     V->aitr_orth2 = 1;
+@@ -1288,7 +1288,7 @@ LINE100:
+                 tmp_int = k + np;
+                 // clanhs(norm, n, a, lda, work) with "work" being float type
+                 // Recasting complex workspace to float for scratch space.
+-                tst1 = clanhs_("1", &tmp_int, h, &ldh, (float*)&workd[n]);
++                tst1 = clanhs_("1", &tmp_int, h, &ldh, (float*)&workd[n], 1);
+             }
+             if (cabsf(h[i+1 + ldh*i]) <= fmaxf(ulp*tst1, smlnum))
+             {
+@@ -1322,7 +1322,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+ 
+     //  Initialize Q to the identity to accumulate
+     //  the rotations and reflections
+-    claset_("G", &kplusp, &kplusp, &cdbl0, &cdbl1, q, &ldq);
++    claset_("G", &kplusp, &kplusp, &cdbl0, &cdbl1, q, &ldq, 1);
+ 
+     //  Quick return if there are no shifts to apply
+ 
+@@ -1346,7 +1346,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+                 if (tst1 == 0.0f)
+                 {
+                    tmp_int = kplusp - jj;
+-                    clanhs_("1", &tmp_int, h, &ldh, (float*)workl);
++                    clanhs_("1", &tmp_int, h, &ldh, (float*)workl, 1);
+                 }
+                 if (fabsf(crealf(h[iend+1 + ldh*iend])) <= fmaxf(ulp*tst1, smlnum))
+                 {
+@@ -1447,7 +1447,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+                fabsf(cimagf(h[i + ldh*i])) + fabsf(cimagf(h[i+1 + ldh*(i+1)]));
+         if (tst1 == 0.0f)
+         {
+-            tst1 = clanhs_("1", kev, h, &ldh, (float*)workl);
++            tst1 = clanhs_("1", kev, h, &ldh, (float*)workl, 1);
+         }
+         if (crealf(h[i+1 + ldh*i]) <= fmaxf(ulp*tst1, smlnum))
+         {
+@@ -1464,7 +1464,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+ 
+     if (crealf(h[*kev + ldh*(*kev-1)]) > 0.0f)
+     {
+-        cgemv_("N", &n, &kplusp, &cdbl1, v, &ldv, &q[(*kev)*ldq], &int1, &cdbl0, &workd[n], &int1);
++        cgemv_("N", &n, &kplusp, &cdbl1, v, &ldv, &q[(*kev)*ldq], &int1, &cdbl0, &workd[n], &int1, 1);
+     }
+ 
+     //  Compute column 1 to kev of (V*Q) in backward order
+@@ -1473,13 +1473,13 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+     for (i = 0; i < *kev; i++)
+     {
+         tmp_int = kplusp - i;
+-        cgemv_("N", &n, &tmp_int, &cdbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &cdbl0, workd, &int1);
++        cgemv_("N", &n, &tmp_int, &cdbl1, v, &ldv, &q[(*kev-i-1)*ldq], &int1, &cdbl0, workd, &int1, 1);
+         ccopy_(&n, workd, &int1, &v[(kplusp-i-1)*ldv], &int1);
+     }
+ 
+     //   Move v(:,kplusp-kev+1:kplusp) into v(:,1:kev).
+ 
+-    clacpy_("A", &n, kev, &v[ldv*(kplusp - *kev)], &ldv, v, &ldv);
++    clacpy_("A", &n, kev, &v[ldv*(kplusp - *kev)], &ldv, v, &ldv, 1);
+ 
+     //  Copy the (kev+1)-st column of (V*Q) in the appropriate place
+ 
+@@ -1522,8 +1522,8 @@ cneigh(float* rnorm, int n, ARNAUD_CPLXF_TYPE* h, int ldh, ARNAUD_CPLXF_TYPE* ri
+     //     zlahqr returns the full Schur form of H
+     //     in WORKL(1:N**2), and the Schur vectors in q.
+ 
+-    clacpy_("A", &n, &n, h, &ldh, workl, &n);
+-    claset_("A", &n, &n, &c0, &c1, q, &ldq);
++    clacpy_("A", &n, &n, h, &ldh, workl, &n, 1);
++    claset_("A", &n, &n, &c0, &c1, q, &ldq, 1);
+     clahqr_(&int1, &int1, &n, &int1, &n, workl, &ldh, ritz, &int1, &n, q, &ldq, ierr);
+ 
+     if (*ierr != 0) { return; }
+@@ -1534,7 +1534,7 @@ cneigh(float* rnorm, int n, ARNAUD_CPLXF_TYPE* h, int ldh, ARNAUD_CPLXF_TYPE* ri
+     //     apply the Schur vectors to get the corresponding
+     //     eigenvectors.
+ 
+-    ctrevc_("R", "B", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], rwork, ierr);
++    ctrevc_("R", "B", select, &n, workl, &n, vl, &n, q, &ldq, &n, &n, &workl[n*n], rwork, ierr, 1, 1);
+ 
+     if (*ierr != 0) { return; }
+ 
+@@ -1696,8 +1696,8 @@ LINE20:
+ 
+ LINE30:
+ 
+-    cgemv_("C", &n, &j, &c1, v, &ldv, workd, &int1, &c0, &workd[n], &int1);
+-    cgemv_("N", &n, &j, &cm1, v, &ldv, &workd[n], &int1, &c1, resid, &int1);
++    cgemv_("C", &n, &j, &c1, v, &ldv, workd, &int1, &c0, &workd[n], &int1, 1);
++    cgemv_("N", &n, &j, &cm1, v, &ldv, &workd[n], &int1, &c1, resid, &int1, 1);
+ 
+     //  Compute the B-norm of the orthogonalized starting vector
+ 
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c
+index cbfee1c5bb..257344aa46 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c
+@@ -227,7 +227,7 @@ ARNAUD_dseupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+         dcopy_(&tmp_int, &workl[ih+1], &int1, &workl[ihb], &int1);
+         dcopy_(&V->ncv, &workl[ih+ldh], &int1, &workl[ihd], &int1);
+ 
+-        dsteqr_("I", &V->ncv, &workl[ihd], &workl[ihb], &workl[iq], &ldq, &workl[iw], &ierr);
++        dsteqr_("I", &V->ncv, &workl[ihd], &workl[ihb], &workl[iq], &ldq, &workl[iw], &ierr, 1);
+ 
+         if (ierr != 0)
+         {
+@@ -392,8 +392,8 @@ ARNAUD_dseupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+         // of the approximate invariant subspace associated with
+         // the Ritz values in workl(ihd).
+ 
+-        dorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], v, &ldv, &workd[V->n], &ierr);
+-        dlacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz);
++        dorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], v, &ldv, &workd[V->n], &ierr, 1, 1);
++        dlacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz, 1);
+ 
+         // In order to compute the Ritz estimates for the Ritz
+         // values in both systems, need the last row of the
+@@ -404,7 +404,7 @@ ARNAUD_dseupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
+             workl[ihb + j] = 0.0;
+         }
+         workl[ihb + V->ncv - 1] = 1.0;
+-        dorm2r_("L", "T", &V->ncv, &int1, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], &workl[ihb], &V->ncv, &temp, &ierr);
++        dorm2r_("L", "T", &V->ncv, &int1, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], &workl[ihb], &V->ncv, &temp, &ierr, 1, 1);
+ 
+         //  Make a copy of the last row into
+         //  workl(iw+ncv:iw+2*ncv), as it is needed again in
+@@ -1127,8 +1127,8 @@ LINE40:
+         dscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
+         dscal_(&n, &temp1, &workd[ipj], &int1);
+     } else {
+-        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol);
+-        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol);
++        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol, 1);
++        dlascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol, 1);
+     }
+ 
+     //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
+@@ -1216,15 +1216,15 @@ LINE65:
+     tmp_int = V->aitr_j + 1;
+     if (V->mode != 2)
+     {
+-        dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1);
++        dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1, 1);
+     } else {
+-        dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ivj], &int1, &dbl0, &workd[irj], &int1);
++        dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ivj], &int1, &dbl0, &workd[irj], &int1, 1);
+     }
+ 
+     //  Orthogonalize r_{j} against V_{j}.
+     //  RESID contains OP*v_{j}. See STEP 3.
+ 
+-    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1);
++    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1, 1);
+ 
+     // Extend H to have j rows and columns.
+ 
+@@ -1296,14 +1296,14 @@ LINE80:
+     //  Compute V_{j}^T * B * r_{j}.
+     //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
+     tmp_int = V->aitr_j + 1;
+-    dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1);
++    dgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1, 1);
+ 
+     //  Compute the correction to the residual:
+     //  r_{j} = r_{j} - V_{j} * WORKD(IRJ:IRJ+J-1).
+     //  The correction to H is v(:,1:J)*H(1:J,1:J)
+     //  + v(:,1:J)*WORKD(IRJ:IRJ+J-1)*e'_j.
+ 
+-    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1);
++    dgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1, 1);
+ 
+     if ((V->aitr_j == 0) || (V->aitr_restart))
+     {
+@@ -1423,7 +1423,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
+     // Initialize Q to the identity to accumulate
+     // the rotations and reflections
+ 
+-    dlaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq);
++    dlaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq, 1);
+ 
+     // Quick return if there are no shifts to apply
+ 
+@@ -1544,7 +1544,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
+ 
+     if (h[*kev] > 0.0)
+     {
+-        dgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[ldq*(*kev)], &int1, &dbl0, &workd[n], &int1);
++        dgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[ldq*(*kev)], &int1, &dbl0, &workd[n], &int1, 1);
+     }
+ 
+     // Compute column 1 to kev of (V*Q) in backward order
+@@ -1555,7 +1555,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
+     for (i = 0; i < *kev; i++)
+     {
+         tmp_int = kplusp - i;
+-        dgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[ldq*(*kev-i-1)], &int1, &dbl0, workd, &int1);
++        dgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[ldq*(*kev-i-1)], &int1, &dbl0, workd, &int1, 1);
+         dcopy_(&n, workd, &int1, &v[ldv*(kplusp-i-1)], &int1);
+     }
+     // 130
+@@ -1745,8 +1745,8 @@ LINE20:
+ 
+ LINE30:
+ 
+-    dgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1);
+-    dgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1);
++    dgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1, 1);
++    dgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1, 1);
+ 
+     //  Compute the B-norm of the orthogonalized starting vector
+ 
+@@ -1975,7 +1975,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+ 
+         // Scale submatrix in rows and columns L to LEND
+         tmp_int = lend - l + 1;
+-        anorm = dlanst_("I", &tmp_int, &d[l-1], &e[l-1]);
++        anorm = dlanst_("I", &tmp_int, &d[l-1], &e[l-1], 1);
+         iscale = 0;
+ 
+         if (anorm == 0.0) { continue; }
+@@ -1983,14 +1983,14 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+         if (anorm > ssfmax)
+         {
+             iscale = 1;
+-            dlascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &d[l-1], &n, info);
++            dlascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &d[l-1], &n, info, 1);
+             tmp_int -= 1;
+-            dlascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &e[l-1], &n, info);
++            dlascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &e[l-1], &n, info, 1);
+         } else if (anorm < ssfmin) {
+             iscale = 2;
+-            dlascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &d[l-1], &n, info);
++            dlascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &d[l-1], &n, info, 1);
+             tmp_int -= 1;
+-            dlascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &e[l-1], &n, info);
++            dlascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &e[l-1], &n, info, 1);
+         }
+         // Choose between QL and QR iteration
+ 
+@@ -2077,7 +2077,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+                 }
+                 // 70
+                 tmp_int = m - l + 1;
+-                dlasr_("R", "V", "B", &int1, &tmp_int, &work[l-1], &work[n-1+l-1], &z[l-1], &int1);
++                dlasr_("R", "V", "B", &int1, &tmp_int, &work[l-1], &work[n-1+l-1], &z[l-1], &int1, 1, 1, 1);
+ 
+                 d[l-1] = d[l-1] - p;
+                 e[l-1] = g;
+@@ -2161,7 +2161,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+                 // 120
+                 // Apply saved rotations.
+                 tmp_int = l - m + 1;
+-                dlasr_("R", "V", "F", &int1, &tmp_int, &work[m-1], &work[n-1+m-1], &z[m-1], &int1);
++                dlasr_("R", "V", "F", &int1, &tmp_int, &work[m-1], &work[n-1+m-1], &z[m-1], &int1, 1, 1, 1);
+ 
+                 d[l-1] = d[l-1] - p;
+                 e[l - 2] = g;
+@@ -2175,15 +2175,15 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+         if (iscale == 1)
+         {
+ 
+-            dlascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info);
++            dlascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info, 1);
+             tmp_int -= 1;
+-            dlascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info);
++            dlascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info, 1);
+ 
+         } else if (iscale == 2) {
+ 
+-            dlascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info);
++            dlascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info, 1);
+             tmp_int -= 1;
+-            dlascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info);
++            dlascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info, 1);
+ 
+         }
+ 
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c
+index 01fbbd52b5..1264e0ce08 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c
+@@ -227,7 +227,7 @@ ARNAUD_sseupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+         scopy_(&tmp_int, &workl[ih+1], &int1, &workl[ihb], &int1);
+         scopy_(&V->ncv, &workl[ih+ldh], &int1, &workl[ihd], &int1);
+ 
+-        ssteqr_("I", &V->ncv, &workl[ihd], &workl[ihb], &workl[iq], &ldq, &workl[iw], &ierr);
++        ssteqr_("I", &V->ncv, &workl[ihd], &workl[ihb], &workl[iq], &ldq, &workl[iw], &ierr, 1);
+ 
+         if (ierr != 0)
+         {
+@@ -392,8 +392,8 @@ ARNAUD_sseupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+         // of the approximate invariant subspace associated with
+         // the Ritz values in workl(ihd).
+ 
+-        sorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], v, &ldv, &workd[V->n], &ierr);
+-        slacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz);
++        sorm2r_("R", "N", &V->n, &V->ncv, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], v, &ldv, &workd[V->n], &ierr, 1, 1);
++        slacpy_("A", &V->n, &V->nconv, v, &ldv, z, &ldz, 1);
+ 
+         // In order to compute the Ritz estimates for the Ritz
+         // values in both systems, need the last row of the
+@@ -404,7 +404,7 @@ ARNAUD_sseupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
+             workl[ihb + j] = 0.0f;
+         }
+         workl[ihb + V->ncv - 1] = 1.0f;
+-        sorm2r_("L", "T", &V->ncv, &int1, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], &workl[ihb], &V->ncv, &temp, &ierr);
++        sorm2r_("L", "T", &V->ncv, &int1, &V->nconv, &workl[iq], &ldq, &workl[iw + V->ncv], &workl[ihb], &V->ncv, &temp, &ierr, 1, 1);
+ 
+         //  Make a copy of the last row into
+         //  workl(iw+ncv:iw+2*ncv), as it is needed again in
+@@ -1127,8 +1127,8 @@ LINE40:
+         sscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
+         sscal_(&n, &temp1, &workd[ipj], &int1);
+     } else {
+-        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol);
+-        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol);
++        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &v[ldv*(V->aitr_j)], &n, &infol, 1);
++        slascl_("G", &i, &i, rnorm, &dbl1, &n, &int1, &workd[ipj], &n, &infol, 1);
+     }
+ 
+     //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
+@@ -1216,15 +1216,15 @@ LINE65:
+     tmp_int = V->aitr_j + 1;
+     if (V->mode != 2)
+     {
+-        sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1);
++        sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1, 1);
+     } else {
+-        sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ivj], &int1, &dbl0, &workd[irj], &int1);
++        sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ivj], &int1, &dbl0, &workd[irj], &int1, 1);
+     }
+ 
+     //  Orthogonalize r_{j} against V_{j}.
+     //  RESID contains OP*v_{j}. See STEP 3.
+ 
+-    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1);
++    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1, 1);
+ 
+     // Extend H to have j rows and columns.
+ 
+@@ -1296,14 +1296,14 @@ LINE80:
+     //  Compute V_{j}^T * B * r_{j}.
+     //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
+     tmp_int = V->aitr_j + 1;
+-    sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1);
++    sgemv_("T", &n, &tmp_int, &dbl1, v, &ldv, &workd[ipj], &int1, &dbl0, &workd[irj], &int1, 1);
+ 
+     //  Compute the correction to the residual:
+     //  r_{j} = r_{j} - V_{j} * WORKD(IRJ:IRJ+J-1).
+     //  The correction to H is v(:,1:J)*H(1:J,1:J)
+     //  + v(:,1:J)*WORKD(IRJ:IRJ+J-1)*e'_j.
+ 
+-    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1);
++    sgemv_("N", &n, &tmp_int, &dblm1, v, &ldv, &workd[irj], &int1, &dbl1, resid, &int1, 1);
+ 
+     if ((V->aitr_j == 0) || (V->aitr_restart))
+     {
+@@ -1423,7 +1423,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
+     // Initialize Q to the identity to accumulate
+     // the rotations and reflections
+ 
+-    slaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq);
++    slaset_("A", &kplusp, &kplusp, &dbl0, &dbl1, q, &ldq, 1);
+ 
+     // Quick return if there are no shifts to apply
+ 
+@@ -1544,7 +1544,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
+ 
+     if (h[*kev] > 0.0f)
+     {
+-        sgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[ldq*(*kev)], &int1, &dbl0, &workd[n], &int1);
++        sgemv_("N", &n, &kplusp, &dbl1, v, &ldv, &q[ldq*(*kev)], &int1, &dbl0, &workd[n], &int1, 1);
+     }
+ 
+     // Compute column 1 to kev of (V*Q) in backward order
+@@ -1555,7 +1555,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
+     for (i = 0; i < *kev; i++)
+     {
+         tmp_int = kplusp - i;
+-        sgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[ldq*(*kev-i-1)], &int1, &dbl0, workd, &int1);
++        sgemv_("N", &n, &tmp_int, &dbl1, v, &ldv, &q[ldq*(*kev-i-1)], &int1, &dbl0, workd, &int1, 1);
+         scopy_(&n, workd, &int1, &v[ldv*(kplusp-i-1)], &int1);
+     }
+     // 130
+@@ -1745,8 +1745,8 @@ LINE20:
+ 
+ LINE30:
+ 
+-    sgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1);
+-    sgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1);
++    sgemv_("T", &n, &j, &dbl1, v, &ldv, workd, &int1, &dbl0, &workd[n], &int1, 1);
++    sgemv_("N", &n, &j, &dblm1, v, &ldv, &workd[n], &int1, &dbl1, resid, &int1, 1);
+ 
+     //  Compute the B-norm of the orthogonalized starting vector
+ 
+@@ -1975,7 +1975,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+ 
+         // Scale submatrix in rows and columns L to LEND
+         tmp_int = lend - l + 1;
+-        anorm = slanst_("I", &tmp_int, &d[l-1], &e[l-1]);
++        anorm = slanst_("I", &tmp_int, &d[l-1], &e[l-1], 1);
+         iscale = 0;
+ 
+         if (anorm == 0.0f) { continue; }
+@@ -1983,14 +1983,14 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+         if (anorm > ssfmax)
+         {
+             iscale = 1;
+-            slascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &d[l-1], &n, info);
++            slascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &d[l-1], &n, info, 1);
+             tmp_int -= 1;
+-            slascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &e[l-1], &n, info);
++            slascl_("G", &int0, &int0, &anorm, &ssfmax, &tmp_int, &int1, &e[l-1], &n, info, 1);
+         } else if (anorm < ssfmin) {
+             iscale = 2;
+-            slascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &d[l-1], &n, info);
++            slascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &d[l-1], &n, info, 1);
+             tmp_int -= 1;
+-            slascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &e[l-1], &n, info);
++            slascl_("G", &int0, &int0, &anorm, &ssfmin, &tmp_int, &int1, &e[l-1], &n, info, 1);
+         }
+         // Choose between QL and QR iteration
+ 
+@@ -2077,7 +2077,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+                 }
+                 // 70
+                 tmp_int = m - l + 1;
+-                slasr_("R", "V", "B", &int1, &tmp_int, &work[l-1], &work[n-1+l-1], &z[l-1], &int1);
++                slasr_("R", "V", "B", &int1, &tmp_int, &work[l-1], &work[n-1+l-1], &z[l-1], &int1, 1, 1, 1);
+ 
+                 d[l-1] = d[l-1] - p;
+                 e[l-1] = g;
+@@ -2161,7 +2161,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+                 // 120
+                 // Apply saved rotations.
+                 tmp_int = l - m + 1;
+-                slasr_("R", "V", "F", &int1, &tmp_int, &work[m-1], &work[n-1+m-1], &z[m-1], &int1);
++                slasr_("R", "V", "F", &int1, &tmp_int, &work[m-1], &work[n-1+m-1], &z[m-1], &int1, 1, 1, 1);
+ 
+                 d[l-1] = d[l-1] - p;
+                 e[l - 2] = g;
+@@ -2175,15 +2175,15 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+         if (iscale == 1)
+         {
+ 
+-            slascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info);
++            slascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info, 1);
+             tmp_int -= 1;
+-            slascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info);
++            slascl_("G", &int0, &int0, &ssfmax, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info, 1);
+ 
+         } else if (iscale == 2) {
+ 
+-            slascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info);
++            slascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &d[lsv-1], &n, info, 1);
+             tmp_int -= 1;
+-            slascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info);
++            slascl_("G", &int0, &int0, &ssfmin, &anorm, &tmp_int, &int1, &e[lsv-1], &n, info, 1);
+ 
+         }
+ 
+diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/blaslapack_declarations.h b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/blaslapack_declarations.h
+index de2dd92d07..d0c6e05262 100644
+--- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/blaslapack_declarations.h
++++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/blaslapack_declarations.h
+@@ -7,25 +7,25 @@
+ void saxpy_(int* n, float* alpha, float* x, int* incx, float* y, int* incy);
+ void scopy_(int* n, float* x, int* incx, float* y, int* incy);
+ float sdot_(int* n, float* x, int* incx, float* y, int* incy);
+-void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy);
++void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy, int);
+ void sger_(int* m, int* n, float* alpha, float* x, int* incx, float* y, int* incy, float* a, int* lda);
+ float snrm2_(int* n, float* x, int* incx);
+ void srot_(int* n, float* sx, int* incx, float* sy, int* incy, float* c, float* s);
+ void sscal_(int* n, float* alpha, float* x, int* incx);
+ void sswap_(int* n, float* x, int* incx, float* y, int* incy);
+-void strmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, float* alpha, float* a, int* lda, float* b, int* ldb);
++void strmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, float* alpha, float* a, int* lda, float* b, int* ldb, int, int, int, int);
+ 
+ 
+ void daxpy_(int* n, double* alpha, double* x, int* incx, double* y, int* incy);
+ void dcopy_(int* n, double* x, int* incx, double* y, int* incy);
+ double ddot_(int* n, double* x, int* incx, double* y, int* incy);
+-void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy);
++void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy, int);
+ void dger_(int* m, int* n, double* alpha, double* x, int* incx, double* y, int* incy, double* a, int* lda);
+ double dnrm2_(int* n, double* x, int* incx);
+ void drot_(int* n, double* sx, int* incx, double* sy, int* incy, double* c, double* s);
+ void dscal_(int* n, double* alpha, double* x, int* incx);
+ void dswap_(int* n, double* x, int* incx, double* y, int* incy);
+-void dtrmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, double* alpha, double* a, int* lda, double* b, int* ldb);
++void dtrmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, double* alpha, double* a, int* lda, double* b, int* ldb, int, int, int, int);
+ 
+ 
+ void caxpy_(int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* x, int* incx, ARNAUD_CPLXF_TYPE* y, int* incy);
+@@ -34,9 +34,9 @@ void cgeru_(int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* x, int*
+ float scnrm2_(int* n, ARNAUD_CPLXF_TYPE* x, int* incx);
+ void cscal_(int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* x, int* incx);
+ void csscal_(int* n, float* da, ARNAUD_CPLXF_TYPE* zx, int* incx);
+-void cgemv_(char* trans, int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* x, int* incx, ARNAUD_CPLXF_TYPE* beta, ARNAUD_CPLXF_TYPE* y, int* incy);
++void cgemv_(char* trans, int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* x, int* incx, ARNAUD_CPLXF_TYPE* beta, ARNAUD_CPLXF_TYPE* y, int* incy, int);
+ void crot_(int* n, ARNAUD_CPLXF_TYPE* cx, int* incx, ARNAUD_CPLXF_TYPE* cy, int* incy, float* c, ARNAUD_CPLXF_TYPE* s);
+-void ctrmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* b, int* ldb);
++void ctrmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* b, int* ldb, int, int, int, int);
+ 
+ 
+ void zaxpy_(int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* x, int* incx, ARNAUD_CPLX_TYPE* y, int* incy);
+@@ -45,77 +45,77 @@ void zgeru_(int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* x, int* i
+ double dznrm2_(int* n, ARNAUD_CPLX_TYPE* x, int* incx);
+ void zscal_(int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* x, int* incx);
+ void zdscal_(int* n, double* da, ARNAUD_CPLX_TYPE* zx, int* incx);
+-void zgemv_(char* trans, int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* x, int* incx, ARNAUD_CPLX_TYPE* beta, ARNAUD_CPLX_TYPE* y, int* incy);
++void zgemv_(char* trans, int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* x, int* incx, ARNAUD_CPLX_TYPE* beta, ARNAUD_CPLX_TYPE* y, int* incy, int);
+ void zrot_(int* n, ARNAUD_CPLX_TYPE* cx, int* incx, ARNAUD_CPLX_TYPE* cy, int* incy, double* c, ARNAUD_CPLX_TYPE* s);
+-void ztrmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* b, int* ldb);
++void ztrmm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* b, int* ldb, int, int, int, int);
+ 
+ 
+ 
+ // LAPACK
+ void sgeqr2_(int* m, int* n, float* a, int* lda, float* tau, float* work, int* info);
+-void slacpy_(char* uplo, int* m, int* n, float* a, int* lda, float* b, int* ldb);
++void slacpy_(char* uplo, int* m, int* n, float* a, int* lda, float* b, int* ldb, int);
+ void slaev2_(float* a, float* b, float* c, float* rt1, float* rt2, float* cs1, float* sn1);
+ void slahqr_(int* wantt, int* wantz, int* n, int* ilo, int* ihi, float* h, int* ldh, float* wr, float* wi, int* iloz, int* ihiz, float* z, int* ldz, int* info );
+-float slanhs_(char* norm, int* n, float* a, int* lda, float* work);
+-float slanst_(char* norm, int* n, float* d, float* e);
+-void slarf_(char* side, int* m, int* n, float* v, int* incv, float* tau, float* c, int* ldc, float* work);
++float slanhs_(char* norm, int* n, float* a, int* lda, float* work, int);
++float slanst_(char* norm, int* n, float* d, float* e, int);
++void slarf_(char* side, int* m, int* n, float* v, int* incv, float* tau, float* c, int* ldc, float* work, int);
+ void slarfg_(int* n, float* alpha, float* x, int* incx, float* tau);
+ void slartg_(float* f, float* g, float* c, float* s, float* r);
+ void slartgp_(float* f, float* g, float* c, float* s, float* r);
+-void slascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, float* a, int* lda, int* info);
+-void slaset_(char* uplo, int* m, int* n, float* alpha, float* beta, float* a, int* lda);
+-void slasr_(char* side, char* pivot, char* direct, int* m, int* n, float* c, float* s, float* a, int* lda);
+-void sorm2r_(char* side, char* trans, int* m, int* n, int* k, float* a, int* lda, float* tau, float* c, int* ldc, float* work, int* info);
+-void ssteqr_(char* compz, int* n, float* d, float* e, float* z, int* ldz, float* work, int* info);
+-void strevc_(char* side, char* howmny, int* select, int* n, float* t, int* ldt, float* vl, int* ldvl, float* vr, int* ldvr, int* mm, int* m, float* work, int* info);
+-void strsen_(char* job, char* compq, int* select, int* n, float* t, int* ldt, float* q, int* ldq, float* wr, float* wi, int* m, float* s, float* sep, float* work, int* lwork, int* iwork, int* liwork, int* info);
++void slascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, float* a, int* lda, int* info, int);
++void slaset_(char* uplo, int* m, int* n, float* alpha, float* beta, float* a, int* lda, int);
++void slasr_(char* side, char* pivot, char* direct, int* m, int* n, float* c, float* s, float* a, int* lda, int, int, int);
++void sorm2r_(char* side, char* trans, int* m, int* n, int* k, float* a, int* lda, float* tau, float* c, int* ldc, float* work, int* info, int, int);
++void ssteqr_(char* compz, int* n, float* d, float* e, float* z, int* ldz, float* work, int* info, int);
++void strevc_(char* side, char* howmny, int* select, int* n, float* t, int* ldt, float* vl, int* ldvl, float* vr, int* ldvr, int* mm, int* m, float* work, int* info, int, int);
++void strsen_(char* job, char* compq, int* select, int* n, float* t, int* ldt, float* q, int* ldq, float* wr, float* wi, int* m, float* s, float* sep, float* work, int* lwork, int* iwork, int* liwork, int* info, int, int);
+ 
+ 
+ void dgeqr2_(int* m, int* n, double* a, int* lda, double* tau, double* work, int* info);
+-void dlacpy_(char* uplo, int* m, int* n, double* a, int* lda, double* b, int* ldb);
++void dlacpy_(char* uplo, int* m, int* n, double* a, int* lda, double* b, int* ldb, int);
+ void dlaev2_(double* a, double* b, double* c, double* rt1, double* rt2, double* cs1, double* sn1);
+ void dlahqr_(int* wantt, int* wantz, int* n, int* ilo, int* ihi, double* h, int* ldh, double* wr, double* wi, int* iloz, int* ihiz, double* z, int* ldz, int* info );
+-double dlanhs_(char* norm, int* n, double* a, int* lda, double* work);
+-double dlanst_(char* norm, int* n, double* d, double* e);
+-void dlarf_(char* side, int* m, int* n, double* v, int* incv, double* tau, double* c, int* ldc, double* work);
++double dlanhs_(char* norm, int* n, double* a, int* lda, double* work, int);
++double dlanst_(char* norm, int* n, double* d, double* e, int);
++void dlarf_(char* side, int* m, int* n, double* v, int* incv, double* tau, double* c, int* ldc, double* work, int);
+ void dlarfg_(int* n, double* alpha, double* x, int* incx, double* tau);
+ void dlartg_(double* f, double* g, double* c, double* s, double* r);
+ void dlartgp_(double* f, double* g, double* c, double* s, double* r);
+-void dlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, double* a, int* lda, int* info);
+-void dlaset_(char* uplo, int* m, int* n, double* alpha, double* beta, double* a, int* lda);
+-void dlasr_(char* side, char* pivot, char* direct, int* m, int* n, double* c, double* s, double* a, int* lda);
+-void dorm2r_(char* side, char* trans, int* m, int* n, int* k, double* a, int* lda, double* tau, double* c, int* ldc, double* work, int* info);
+-void dsteqr_(char* compz, int* n, double* d, double* e, double* z, int* ldz, double* work, int* info);
+-void dtrevc_(char* side, char* howmny, int* select, int* n, double* t, int* ldt, double* vl, int* ldvl, double* vr, int* ldvr, int* mm, int* m, double* work, int* info);
+-void dtrsen_(char* job, char* compq, int* select, int* n, double* t, int* ldt, double* q, int* ldq, double* wr, double* wi, int* m, double* s, double* sep, double* work, int* lwork, int* iwork, int* liwork, int* info);
++void dlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, double* a, int* lda, int* info, int);
++void dlaset_(char* uplo, int* m, int* n, double* alpha, double* beta, double* a, int* lda, int);
++void dlasr_(char* side, char* pivot, char* direct, int* m, int* n, double* c, double* s, double* a, int* lda, int, int, int);
++void dorm2r_(char* side, char* trans, int* m, int* n, int* k, double* a, int* lda, double* tau, double* c, int* ldc, double* work, int* info, int, int);
++void dsteqr_(char* compz, int* n, double* d, double* e, double* z, int* ldz, double* work, int* info, int);
++void dtrevc_(char* side, char* howmny, int* select, int* n, double* t, int* ldt, double* vl, int* ldvl, double* vr, int* ldvr, int* mm, int* m, double* work, int* info, int, int);
++void dtrsen_(char* job, char* compq, int* select, int* n, double* t, int* ldt, double* q, int* ldq, double* wr, double* wi, int* m, double* s, double* sep, double* work, int* lwork, int* iwork, int* liwork, int* info, int, int);
+ 
+ 
+ void cgeqr2_(int* m, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* tau, ARNAUD_CPLXF_TYPE* work, int* info);
+-void clacpy_(char* uplo, int* m, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* b, int* ldb);
++void clacpy_(char* uplo, int* m, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* b, int* ldb, int);
+ void clahqr_(int* wantt, int* wantz, int* n, int* ilo, int* ihi, ARNAUD_CPLXF_TYPE* h, int* ldh, ARNAUD_CPLXF_TYPE* w, int* iloz, int* ihiz, ARNAUD_CPLXF_TYPE* z, int* ldz, int* info );
+-float clanhs_(char* norm, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, float* work);
+-void clarf_(char* side, int* m, int* n, ARNAUD_CPLXF_TYPE* v, int* incv, ARNAUD_CPLXF_TYPE* tau, ARNAUD_CPLXF_TYPE* c, int* ldc, ARNAUD_CPLXF_TYPE* work);
++float clanhs_(char* norm, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, float* work, int);
++void clarf_(char* side, int* m, int* n, ARNAUD_CPLXF_TYPE* v, int* incv, ARNAUD_CPLXF_TYPE* tau, ARNAUD_CPLXF_TYPE* c, int* ldc, ARNAUD_CPLXF_TYPE* work, int);
+ void clarfg_(int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* x, int* incx, ARNAUD_CPLXF_TYPE* tau);
+ void clartg_(ARNAUD_CPLXF_TYPE* f, ARNAUD_CPLXF_TYPE* g, float* c, ARNAUD_CPLXF_TYPE* s, ARNAUD_CPLXF_TYPE* r);
+-void clascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, int* info);
+-void claset_(char* uplo, int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* beta, ARNAUD_CPLXF_TYPE* a, int* lda);
+-void ctrevc_(char* side, char* howmny, int* select, int* n, ARNAUD_CPLXF_TYPE* t, int* ldt, ARNAUD_CPLXF_TYPE* vl, int* ldvl, ARNAUD_CPLXF_TYPE* vr, int* ldvr, int* mm, int* m, ARNAUD_CPLXF_TYPE* work, float* rwork, int* info);
+-void ctrsen_(char* job, char* compq, int* select, int* n, ARNAUD_CPLXF_TYPE* t, int* ldt, ARNAUD_CPLXF_TYPE* q, int* ldq, ARNAUD_CPLXF_TYPE* w, int* m, float* s, float* sep, ARNAUD_CPLXF_TYPE* work, int* lwork, int* info);
+-void cunm2r_(char* side, char* trans, int* m, int* n, int* k, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* tau, ARNAUD_CPLXF_TYPE* c, int* ldc, ARNAUD_CPLXF_TYPE* work, int* info);
++void clascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, ARNAUD_CPLXF_TYPE* a, int* lda, int* info, int);
++void claset_(char* uplo, int* m, int* n, ARNAUD_CPLXF_TYPE* alpha, ARNAUD_CPLXF_TYPE* beta, ARNAUD_CPLXF_TYPE* a, int* lda, int);
++void ctrevc_(char* side, char* howmny, int* select, int* n, ARNAUD_CPLXF_TYPE* t, int* ldt, ARNAUD_CPLXF_TYPE* vl, int* ldvl, ARNAUD_CPLXF_TYPE* vr, int* ldvr, int* mm, int* m, ARNAUD_CPLXF_TYPE* work, float* rwork, int* info, int, int);
++void ctrsen_(char* job, char* compq, int* select, int* n, ARNAUD_CPLXF_TYPE* t, int* ldt, ARNAUD_CPLXF_TYPE* q, int* ldq, ARNAUD_CPLXF_TYPE* w, int* m, float* s, float* sep, ARNAUD_CPLXF_TYPE* work, int* lwork, int* info, int, int);
++void cunm2r_(char* side, char* trans, int* m, int* n, int* k, ARNAUD_CPLXF_TYPE* a, int* lda, ARNAUD_CPLXF_TYPE* tau, ARNAUD_CPLXF_TYPE* c, int* ldc, ARNAUD_CPLXF_TYPE* work, int* info, int, int);
+ 
+ 
+ void zgeqr2_(int* m, int* n, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* tau, ARNAUD_CPLX_TYPE* work, int* info);
+-void zlacpy_(char* uplo, int* m, int* n, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* b, int* ldb);
++void zlacpy_(char* uplo, int* m, int* n, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* b, int* ldb, int);
+ void zlahqr_(int* wantt, int* wantz, int* n, int* ilo, int* ihi, ARNAUD_CPLX_TYPE* h, int* ldh, ARNAUD_CPLX_TYPE* w, int* iloz, int* ihiz, ARNAUD_CPLX_TYPE* z, int* ldz, int* info );
+-double zlanhs_(char* norm, int* n, ARNAUD_CPLX_TYPE* a, int* lda, double* work);
+-void zlarf_(char* side, int* m, int* n, ARNAUD_CPLX_TYPE* v, int* incv, ARNAUD_CPLX_TYPE* tau, ARNAUD_CPLX_TYPE* c, int* ldc, ARNAUD_CPLX_TYPE* work);
++double zlanhs_(char* norm, int* n, ARNAUD_CPLX_TYPE* a, int* lda, double* work, int);
++void zlarf_(char* side, int* m, int* n, ARNAUD_CPLX_TYPE* v, int* incv, ARNAUD_CPLX_TYPE* tau, ARNAUD_CPLX_TYPE* c, int* ldc, ARNAUD_CPLX_TYPE* work, int);
+ void zlarfg_(int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* x, int* incx, ARNAUD_CPLX_TYPE* tau);
+ void zlartg_(ARNAUD_CPLX_TYPE* f, ARNAUD_CPLX_TYPE* g, double* c, ARNAUD_CPLX_TYPE* s, ARNAUD_CPLX_TYPE* r);
+-void zlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, ARNAUD_CPLX_TYPE* a, int* lda, int* info);
+-void zlaset_(char* uplo, int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* beta, ARNAUD_CPLX_TYPE* a, int* lda);
+-void ztrevc_(char* side, char* howmny, int* select, int* n, ARNAUD_CPLX_TYPE* t, int* ldt, ARNAUD_CPLX_TYPE* vl, int* ldvl, ARNAUD_CPLX_TYPE* vr, int* ldvr, int* mm, int* m, ARNAUD_CPLX_TYPE* work, double* rwork, int* info);
+-void ztrsen_(char* job, char* compq, int* select, int* n, ARNAUD_CPLX_TYPE* t, int* ldt, ARNAUD_CPLX_TYPE* q, int* ldq, ARNAUD_CPLX_TYPE* w, int* m, double* s, double* sep, ARNAUD_CPLX_TYPE* work, int* lwork, int* info);
+-void zunm2r_(char* side, char* trans, int* m, int* n, int* k, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* tau, ARNAUD_CPLX_TYPE* c, int* ldc, ARNAUD_CPLX_TYPE* work, int* info);
++void zlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, ARNAUD_CPLX_TYPE* a, int* lda, int* info, int);
++void zlaset_(char* uplo, int* m, int* n, ARNAUD_CPLX_TYPE* alpha, ARNAUD_CPLX_TYPE* beta, ARNAUD_CPLX_TYPE* a, int* lda, int);
++void ztrevc_(char* side, char* howmny, int* select, int* n, ARNAUD_CPLX_TYPE* t, int* ldt, ARNAUD_CPLX_TYPE* vl, int* ldvl, ARNAUD_CPLX_TYPE* vr, int* ldvr, int* mm, int* m, ARNAUD_CPLX_TYPE* work, double* rwork, int* info, int, int);
++void ztrsen_(char* job, char* compq, int* select, int* n, ARNAUD_CPLX_TYPE* t, int* ldt, ARNAUD_CPLX_TYPE* q, int* ldq, ARNAUD_CPLX_TYPE* w, int* m, double* s, double* sep, ARNAUD_CPLX_TYPE* work, int* lwork, int* info, int, int);
++void zunm2r_(char* side, char* trans, int* m, int* n, int* k, ARNAUD_CPLX_TYPE* a, int* lda, ARNAUD_CPLX_TYPE* tau, ARNAUD_CPLX_TYPE* c, int* ldc, ARNAUD_CPLX_TYPE* work, int* info, int, int);
+ 
+ 
+ #endif
+-- 
+2.51.0
+
