@@ -1,0 +1,339 @@
+From 79a8620324b194412ba411bd7736e4c8fc279c6e Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Tue, 9 Dec 2025 09:55:21 +0000
+Subject: [PATCH 09/15] Change return and char length args in optimize
+
+---
+ scipy/optimize/__lbfgsb.c | 16 +++++++--------
+ scipy/optimize/__lbfgsb.h |  6 +++---
+ scipy/optimize/__nnls.c   |  4 ++--
+ scipy/optimize/__nnls.h   |  2 +-
+ scipy/optimize/__slsqp.c  | 42 +++++++++++++++++++--------------------
+ scipy/optimize/__slsqp.h  | 16 +++++++--------
+ 6 files changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/scipy/optimize/__lbfgsb.c b/scipy/optimize/__lbfgsb.c
+index 306f6d66e6..9a31bd8970 100644
+--- a/scipy/optimize/__lbfgsb.c
++++ b/scipy/optimize/__lbfgsb.c
+@@ -1270,7 +1270,7 @@ bmv(int m, double* sy, double* wt, int col, double* v, double* p, int* info)
+ 
+     // Solve the triangular system
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+-    dtrtrs_(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info);
++    dtrtrs_(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     // Solve D^(1/2)p1=v1.
+@@ -1286,7 +1286,7 @@ bmv(int m, double* sy, double* wt, int col, double* v, double* p, int* info)
+     // solve J^Tp2=p2.
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+     trans = "N";
+-    dtrtrs_(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info);
++    dtrtrs_(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     // compute p1=-D^(-1/2)(p1-D^(-1/2)L'p2)
+@@ -2223,14 +2223,14 @@ formk(int n, int nsub, int* ind, int nenter, int ileave,
+     //                      with L' stored in the upper triangle of wn.
+ 
+     // dpotrf(uplo, n, a, lda, info)
+-    dpotrf_(uplo, &col, wn, &m2, info);
++    dpotrf_(uplo, &col, wn, &m2, info, 1);
+     if (*info != 0) { *info = -1; return; }
+ 
+     // Then form L^-1(-L_a'+R_z') in the (1,2) block.
+     col2 = 2*col;
+ 
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+-    dtrtrs_(uplo, trans, diag, &col, &col, wn, &m2, &wn[m2*col], &m2, info);
++    dtrtrs_(uplo, trans, diag, &col, &col, wn, &m2, &wn[m2*col], &m2, info, 1, 1, 1);
+ 
+     // Form S'AA'S*theta + (L^-1(-L_a'+R_z'))'L^-1(-L_a'+R_z') in the upper
+     //  triangle of (2,2) block of wn.
+@@ -2245,7 +2245,7 @@ formk(int n, int nsub, int* ind, int nenter, int ileave,
+     // 72
+ 
+     // dpotrf(uplo, n, a, lda, info)
+-    dpotrf_(uplo, &col, &wn[col + m2*col], &m2, info);
++    dpotrf_(uplo, &col, &wn[col + m2*col], &m2, info, 1);
+     if (*info != 0) { *info = -2; }
+ 
+     return;
+@@ -2312,7 +2312,7 @@ formt(int m, double* wt, double* sy, double* ss, int col,
+ 
+     // Cholesky factorize T to J*J' with J' stored in the upper triangle of wt.
+     // dpotrf(uplo, n, a, lda, info)
+-    dpotrf_(uplo, &col, wt, &m, info);
++    dpotrf_(uplo, &col, wt, &m, info, 1);
+     if (*info != 0) { *info = -3; }
+ 
+     return;
+@@ -3025,13 +3025,13 @@ void subsm(int n, int m, int nsub, int* ind,
+     col2 = 2*col;
+ 
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+-    dtrtrs_(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info);
++    dtrtrs_(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     for (i = 0; i < col; i++) { wv[i] = -wv[i]; }
+ 
+     trans = "N";
+-    dtrtrs_(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info);
++    dtrtrs_(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     // Compute d = (1/theta)d + (1/theta**2)Z'W wv.
+diff --git a/scipy/optimize/__lbfgsb.h b/scipy/optimize/__lbfgsb.h
+index 1ac42a4e49..832ba9176f 100644
+--- a/scipy/optimize/__lbfgsb.h
++++ b/scipy/optimize/__lbfgsb.h
+@@ -21,8 +21,8 @@ double dnrm2_(int* n, double* x, int* incx);
+ double ddot_(int* n, double* x, int* incx, double* y, int* incy);
+ 
+ // LAPACK
+-void dpotrf_(char* uplo, int* n, double* a, int* lda, int* info);
+-void dtrtrs_(char* uplo, char* trans, char* diag, int* n, int* nrhs, double* a, int* lda, double* b, int* ldb, int* info);
++void dpotrf_(char* uplo, int* n, double* a, int* lda, int* info, int);
++void dtrtrs_(char* uplo, char* trans, char* diag, int* n, int* nrhs, double* a, int* lda, double* b, int* ldb, int* info, int, int, int);
+ 
+ static PyObject* lbfgsb_error;
+ 
+@@ -189,4 +189,4 @@ PyInit__lbfgsb(void)
+ }  /* extern "C" */
+ #endif /* __cplusplus */
+ 
+-#endif /* ifndef */
+\ No newline at end of file
++#endif /* ifndef */
+diff --git a/scipy/optimize/__nnls.c b/scipy/optimize/__nnls.c
+index 480b0e1aa6..bbdb5b5881 100644
+--- a/scipy/optimize/__nnls.c
++++ b/scipy/optimize/__nnls.c
+@@ -87,7 +87,7 @@ __nnls(const int m, const int n, double* restrict a, double* restrict b,
+                 tmpint = m - indz;
+                 pivot2 = a[indz + j*m];
+                 a[indz + j*m] = 1.0;
+-                dlarf_("L", &tmpint, &one, &a[indz + j*m], &one, &tau, &zz[indz], &tmpint, &tmp_work);
++                dlarf_("L", &tmpint, &one, &a[indz + j*m], &one, &tau, &zz[indz], &tmpint, &tmp_work, 1);
+                 // See if ztest is positive. This is from the original F77 code.
+                 // Probably better to use a sign test instead of a division.
+                 ztest = zz[indz] / pivot;
+@@ -119,7 +119,7 @@ __nnls(const int m, const int n, double* restrict a, double* restrict b,
+             for (k = indz; k < n; k++)
+             {
+                 jj = indices[k];
+-                dlarf_("L", &tmpint, &one, &a[indz - 1 + j*m], &one, &tau, &a[indz - 1 + jj*m], &tmpint, &tmp_work);
++                dlarf_("L", &tmpint, &one, &a[indz - 1 + j*m], &one, &tau, &a[indz - 1 + jj*m], &tmpint, &tmp_work, 1);
+             }
+         }
+         // Restore the pivot element into a, zero the subdiagonal elements in col j
+diff --git a/scipy/optimize/__nnls.h b/scipy/optimize/__nnls.h
+index 5644e6859e..7758b63210 100644
+--- a/scipy/optimize/__nnls.h
++++ b/scipy/optimize/__nnls.h
+@@ -3,7 +3,7 @@
+ #include <math.h>
+ 
+ double ddot_(int* n, double* dx, int* incx, double* dy, int* incy);
+-void dlarf_(char* side, int* m, int* n, double* v, int* incv, double* tau, double* c, int* ldc, double* work);
++void dlarf_(char* side, int* m, int* n, double* v, int* incv, double* tau, double* c, int* ldc, double* work, int);
+ void dlarfgp_(int* n, double* alpha, double* x, int* incx, double* tau);
+ void dlartgp_(double* f, double* g, double* cs, double* sn, double* r);
+ double dnrm2_(int* n, double* x, int* incx);
+diff --git a/scipy/optimize/__slsqp.c b/scipy/optimize/__slsqp.c
+index 2a9c0716f3..f3f2eb8fef 100644
+--- a/scipy/optimize/__slsqp.c
++++ b/scipy/optimize/__slsqp.c
+@@ -168,7 +168,7 @@ ITER_START:
+ 
+     // Update multipliers for L1-test
+     for (int i = 0; i < n; i++) { v[i] = gradx[i]; }
+-    dgemv_("T", &m, &n, &dmone, C, &lda, mult, &one, &done, v, &one);
++    dgemv_("T", &m, &n, &dmone, C, &lda, mult, &one, &done, v, &one, 1);
+ 
+     S->f0 = *funx;
+     for (int i = 0; i < n; i++) { x0[i] = sol[i]; }
+@@ -305,7 +305,7 @@ MODEM1:
+     // u[i] = gradx[i] - C.T @ mult - v[i]
+ 
+     for (int i = 0; i < n; i++) { u[i] = gradx[i]; }
+-    dgemv_("T", &m, &n, &dmone, C, &lda, mult, &one, &done, u, &one);
++    dgemv_("T", &m, &n, &dmone, C, &lda, mult, &one, &done, u, &one, 1);
+     for (int i = 0; i < n; i++)
+     {
+         u[i] = u[i] - v[i];
+@@ -313,7 +313,7 @@ MODEM1:
+ 
+     // L'*S
+     for (int i = 0; i < n; i++) { v[i] = s[i]; }
+-    dtpmv_("L", "T", "U", &n, bfgs, v, &one);
++    dtpmv_("L", "T", "U", &n, bfgs, v, &one, 1, 1, 1);
+ 
+     // D*L'*S
+     j = 0;
+@@ -323,7 +323,7 @@ MODEM1:
+     }
+ 
+     // L*D*L'*S
+-    dtpmv_("L", "N", "U", &n, bfgs, v, &one);
++    dtpmv_("L", "N", "U", &n, bfgs, v, &one, 1, 1, 1);
+ 
+     S->h1 = ddot_(&n, s, &one, u, &one);
+     S->h2 = ddot_(&n, s, &one, v, &one);
+@@ -462,7 +462,7 @@ void lsq(
+ 
+     // Compute b = - 1/sqrt(d[]) * inv(Lf[]) * gradx[]. Lf is already in packed format.
+     for (int i = 0; i < n; i++) { wb[i] = gradx[i]; }
+-    dtpsv_("L", "N", "U", &n, Lf, wb, &one);
++    dtpsv_("L", "N", "U", &n, Lf, wb, &one, 1, 1, 1);
+     cursor = 0;
+     for (int i = 0; i < n; i++)
+     {
+@@ -678,8 +678,8 @@ lsei(int ma, int me, int mg, int n,
+     dgerq2_(&me, &n, e, &lde, tau, lsi_scratch, &info);
+ 
+     // Right triangularize E and apply Q.T to A and G from the right.
+-    dormr2_("R", "T", &ma, &n, &me, e, &lde, tau, a, &ma, lsi_scratch, &info);
+-    dormr2_("R", "T", &mg, &n, &me, e, &lde, tau, g, &ldg, lsi_scratch, &info);
++    dormr2_("R", "T", &ma, &n, &me, e, &lde, tau, a, &ma, lsi_scratch, &info, 1, 1);
++    dormr2_("R", "T", &mg, &n, &me, e, &lde, tau, g, &ldg, lsi_scratch, &info, 1, 1);
+ 
+     // Check the diagonal elements of E for rank deficiency.
+     for (int i = 0; i < me; i++)
+@@ -689,7 +689,7 @@ lsei(int ma, int me, int mg, int n,
+     // Solve E*x = f and modify b.
+     // Note: RQ forms R at the right of E instead of [0, 0] position.
+     for (int i = 0; i < me; i++) { x[nvars + i] = f[i]; }
+-    dtrsv_("U", "N", "N", &me, &e[(nvars)*me], &lde, &x[nvars], &one);
++    dtrsv_("U", "N", "N", &me, &e[(nvars)*me], &lde, &x[nvars], &one, 1, 1, 1);
+ 
+     *mode = 1;
+     // Zero out the inequality multiplier.
+@@ -702,7 +702,7 @@ lsei(int ma, int me, int mg, int n,
+     // Copy b into wb
+     for (int i = 0; i < ma; i++) { wb[i] = b[i]; }
+     // Compute wb -= A1*xe
+-    dgemv_("N", &ma, &me, &dmone, &a[ma*nvars], &ma, &x[nvars], &one, &done, wb, &one);
++    dgemv_("N", &ma, &me, &dmone, &a[ma*nvars], &ma, &x[nvars], &one, &done, wb, &one, 1);
+ 
+     // Store the transformed A2 and G2 in the buffer
+     for (int j = 0; j < nvars; j++)
+@@ -734,7 +734,7 @@ lsei(int ma, int me, int mg, int n,
+         for (int i = 0; i < nvars; i++) { x[i] = wb[i]; }
+ 
+         // Compute the residual and its norm, use a since a2 is overwritten.
+-        dgemv_("N", &ma, &nvars, &done, a, &ma, x, &one, &dmone, wb_orig, &one);
++        dgemv_("N", &ma, &nvars, &done, a, &ma, x, &one, &dmone, wb_orig, &one, 1);
+         *xnorm = dnrm2_(&ma, wb_orig, &one);
+ 
+         *mode = 7;
+@@ -745,7 +745,7 @@ lsei(int ma, int me, int mg, int n,
+ 
+     // Modify h, and solve the inequality constrained least squares problem.
+     // h -= G1*xe
+-    dgemv_("N", &mg, &me, &dmone, &g[mg*nvars], &ldg, &x[nvars], &one, &done, h, &one);
++    dgemv_("N", &mg, &me, &dmone, &g[mg*nvars], &ldg, &x[nvars], &one, &done, h, &one, 1);
+ 
+     lsi(ma, mg, nvars, a2, wb, g2, h, x, lsi_scratch, jw, xnorm, mode);
+ 
+@@ -763,17 +763,17 @@ lsei(int ma, int me, int mg, int n,
+ ORIGINAL_BASIS:
+     // Convert the solution and multipliers to the original basis.
+     // b = A*x - b (residuals)
+-    dgemv_("N", &ma, &n, &done, a, &ma, x, &one, &dmone, b, &one);
++    dgemv_("N", &ma, &n, &done, a, &ma, x, &one, &dmone, b, &one, 1);
+     // f = A1^T*b - G1^T*w
+-    dgemv_("T", &ma, &me, &done, &a[nvars*ma], &ma, b, &one, &dzero, f, &one);
+-    dgemv_("T", &mg, &me, &dmone, &g[nvars*mg], &ldg, gmults, &one, &done, f, &one);
++    dgemv_("T", &ma, &me, &done, &a[nvars*ma], &ma, b, &one, &dzero, f, &one, 1);
++    dgemv_("T", &mg, &me, &dmone, &g[nvars*mg], &ldg, gmults, &one, &done, f, &one, 1);
+ 
+     // x = Q.T*x
+-    dormr2_("L", "T", &n, &one, &me, e, &lde, tau, x, &n, lsi_scratch, &info);
++    dormr2_("L", "T", &n, &one, &me, e, &lde, tau, x, &n, lsi_scratch, &info, 1, 1);
+ 
+     // Solve the triangular system for the equality multipliers, emults.
+     for (int i = 0; i < me; i++) { emults[i] = f[i]; }
+-    dtrsv_("U", "T", "N", &me, &e[(n - me)*me], &lde, emults, &one);
++    dtrsv_("U", "T", "N", &me, &e[(n - me)*me], &lde, emults, &one, 1, 1, 1);
+ 
+     return;
+ }
+@@ -813,7 +813,7 @@ lsi(int ma, int mg, int n, double* restrict a, double* restrict b, double* restr
+     dgeqr2_(&ma, &n, a, &ma, buffer, &buffer[tmp_int], &info);
+ 
+     // Compute Q^T b
+-    dorm2r_("L", "T", &ma, &one, &tmp_int, a, &ma, buffer, b, &ma, &buffer[tmp_int], &info);
++    dorm2r_("L", "T", &ma, &one, &tmp_int, a, &ma, buffer, b, &ma, &buffer[tmp_int], &info, 1, 1);
+ 
+     // Check the diagonal elements of R for rank deficiency.
+     *mode = 5;
+@@ -826,9 +826,9 @@ lsi(int ma, int mg, int n, double* restrict a, double* restrict b, double* restr
+     // The result is stored in G.
+     // Note: There is an inherent assumption that ma >= n. This is a bug carried
+     // over here from the original slsqp implementation.
+-    dtrsm_("R", "U", "N", "N", &mg, &n, &done, a, &ma, g, &mg);
++    dtrsm_("R", "U", "N", "N", &mg, &n, &done, a, &ma, g, &mg, 1, 1, 1, 1);
+     // h = h - Xf
+-    dgemv_("N", &mg, &n, &dmone, g, &mg, b, &one, &done, h, &one);
++    dgemv_("N", &mg, &n, &dmone, g, &mg, b, &one, &done, h, &one, 1);
+ 
+     // Solve the LDP problem.
+     ldp(mg, n, g, h, x, buffer, jw, xnorm, mode);
+@@ -836,7 +836,7 @@ lsi(int ma, int mg, int n, double* restrict a, double* restrict b, double* restr
+ 
+     // Convert to the solution of the original problem.
+     daxpy_(&n, &done, b, &one, x, &one);
+-    dtrsv_("U", "N", "N", &n, a, &ma, x, &one);
++    dtrsv_("U", "N", "N", &n, a, &ma, x, &one, 1, 1, 1);
+ 
+     // If any, compute the norm of the tail of b and add to xnorm
+     tmp_int = ma - n;
+@@ -911,7 +911,7 @@ ldp(int m, int n, double* restrict g, double* restrict h, double* restrict x,
+     if (!((1.0 + fac) - 1.0 > 0.0)) { return; }
+     *mode = 1;
+     fac = 1.0 / fac;
+-    dgemv_("T", &m, &n, &fac, g, &m, y, &one, &dzero, x, &one);
++    dgemv_("T", &m, &n, &fac, g, &m, y, &one, &dzero, x, &one, 1);
+     *xnorm = dnrm2_(&n, x, &one);
+ 
+     // Compute the lagrange multipliers for the primal problem
+diff --git a/scipy/optimize/__slsqp.h b/scipy/optimize/__slsqp.h
+index fabb8ae514..d931150019 100644
+--- a/scipy/optimize/__slsqp.h
++++ b/scipy/optimize/__slsqp.h
+@@ -55,21 +55,21 @@ static PyObject* slsqp_error;
+ void daxpy_(int* n, double* sa, double* sx, int* incx, double* sy, int* incy);
+ double ddot_(int* n, double* dx, int* incx, double* dy, int* incy);
+ void dgelsy_(int* m, int* n, int* nrhs, double* a, int* lda, double* b, int* ldb, int* jpvt, double* rcond, int* rank, double* work, int* lwork, int* info);
+-void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy);
++void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy, int);
+ void dgeqr2_(int* m, int* n, double* a, int* lda, double* tau, double* work, int* info);
+ void dgeqrf_(int* m, int* n, double* a, int* lda, double* tau, double* work, double* lwork, int* info);
+ void dgerq2_(int* m, int* n, double* a, int* lda, double* tau, double* work, int* info);
+-void dlarf_(char* side, int* m, int* n, double* v, int* incv, double* tau, double* c, int* ldc, double* work);
++void dlarf_(char* side, int* m, int* n, double* v, int* incv, double* tau, double* c, int* ldc, double* work, int);
+ void dlarfgp_(int* n, double* alpha, double* x, int* incx, double* tau);
+ void dlartgp_(double* f, double* g, double* cs, double* sn, double* r);
+ double dnrm2_(int* n, double* x, int* incx);
+-void dorm2r_(char* side, char* trans, int* m, int* n, int* k, double* a, int* lda, double* tau, double* c, int* ldc, double* work, int* info);
+-void dormr2_(char* side, char* trans, int* m, int* n, int* k, double* a, int* lda, double* tau, double* c, int* ldc, double* work, int* info);
++void dorm2r_(char* side, char* trans, int* m, int* n, int* k, double* a, int* lda, double* tau, double* c, int* ldc, double* work, int* info, int, int);
++void dormr2_(char* side, char* trans, int* m, int* n, int* k, double* a, int* lda, double* tau, double* c, int* ldc, double* work, int* info, int, int);
+ void dscal_(int* n, double* da, double* dx, int* incx);
+-void dtpmv_(char* uplo, char* trans, char* diag, int* n, double* ap, double* x, int* incx);
+-void dtpsv_(char* uplo, char* trans, char* diag, int* n, double* ap, double* x, int* incx);
+-void dtrsm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, double* alpha, double* a, int* lda, double* b, int* ldb);
+-void dtrsv_(char* uplo, char* trans, char* diag, int* n, double* a, int* lda, double* x, int* incx);
++void dtpmv_(char* uplo, char* trans, char* diag, int* n, double* ap, double* x, int* incx, int, int, int);
++void dtpsv_(char* uplo, char* trans, char* diag, int* n, double* ap, double* x, int* incx, int, int, int);
++void dtrsm_(char* side, char* uplo, char* transa, char* diag, int* m, int* n, double* alpha, double* a, int* lda, double* b, int* ldb, int, int, int, int);
++void dtrsv_(char* uplo, char* trans, char* diag, int* n, double* a, int* lda, double* x, int* incx, int, int, int);
+ 
+ 
+ // The SLSQP_vars struct holds the state of the algorithm and passed to Python
+-- 
+2.51.0
+
