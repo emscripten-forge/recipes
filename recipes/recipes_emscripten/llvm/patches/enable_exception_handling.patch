@@ -1,8 +1,8 @@
 diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
-index f91563dd0378..37cf3b62e6ec 100644
+index ed3bae59a144..b7102bec9db4 100644
 --- a/clang/lib/Interpreter/Interpreter.cpp
 +++ b/clang/lib/Interpreter/Interpreter.cpp
-@@ -142,6 +142,48 @@ CreateCI(const llvm::opt::ArgStringList &Argv) {
+@@ -144,6 +144,48 @@ CreateCI(const llvm::opt::ArgStringList &Argv) {
    return std::move(Clang);
  }
  
@@ -51,17 +51,15 @@ index f91563dd0378..37cf3b62e6ec 100644
  } // anonymous namespace
  
  namespace clang {
-@@ -452,7 +494,12 @@ const char *const Runtimes = R"(
- 
+@@ -462,7 +504,10 @@ const char *const Runtimes = R"(
  llvm::Expected<std::unique_ptr<Interpreter>>
- Interpreter::create(std::unique_ptr<CompilerInstance> CI) {
+ Interpreter::create(std::unique_ptr<CompilerInstance> CI,
+                     std::unique_ptr<llvm::orc::LLJITBuilder> JB) {
 -  llvm::Error Err = llvm::Error::success();
-+
 +  llvm::Error Err = HandleFrontendOptions(*CI);
 +  if (Err) {
 +    return std::move(Err);
 +  }
-+
-   auto Interp =
-       std::unique_ptr<Interpreter>(new Interpreter(std::move(CI), Err));
+   auto Interp = std::unique_ptr<Interpreter>(
+       new Interpreter(std::move(CI), Err, JB ? std::move(JB) : nullptr));
    if (Err)
