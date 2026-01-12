@@ -1,19 +1,19 @@
-From 8e899828d96b4b90f61a87a71f6eb9eba5919e61 Mon Sep 17 00:00:00 2001
+From cf0ad87b859284e292c55ad5ef6d9c19bd0cf7d6 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Tue, 9 Dec 2025 10:12:57 +0000
-Subject: [PATCH 12/15] Extra char length args to f2py source files
+Subject: [PATCH 11/15] Extra char length args to f2py source files
 
 ---
  scipy/linalg/fblas_l2.pyf.src            | 117 +++---
  scipy/linalg/fblas_l3.pyf.src            |  52 ++-
- scipy/linalg/flapack_gen.pyf.src         | 195 +++++----
+ scipy/linalg/flapack_gen.pyf.src         | 195 ++++++----
  scipy/linalg/flapack_gen_banded.pyf.src  |   7 +-
  scipy/linalg/flapack_gen_tri.pyf.src     |  37 +-
- scipy/linalg/flapack_other.pyf.src       | 488 ++++++++++++++---------
- scipy/linalg/flapack_pos_def.pyf.src     |  65 +--
+ scipy/linalg/flapack_other.pyf.src       | 460 ++++++++++++++---------
+ scipy/linalg/flapack_pos_def.pyf.src     |  65 ++--
  scipy/linalg/flapack_pos_def_tri.pyf.src |  28 +-
- scipy/linalg/flapack_sym_herm.pyf.src    | 407 +++++++++++--------
- 9 files changed, 865 insertions(+), 531 deletions(-)
+ scipy/linalg/flapack_sym_herm.pyf.src    | 407 ++++++++++++--------
+ 9 files changed, 847 insertions(+), 521 deletions(-)
 
 diff --git a/scipy/linalg/fblas_l2.pyf.src b/scipy/linalg/fblas_l2.pyf.src
 index 27b9972c0d..177dbc4892 100644
@@ -1106,7 +1106,7 @@ index 04037fdcab..7de01f169d 100644
  
  subroutine <prefix>geequ(m,n,a,lda,r,c,rowcnd,colcnd,amax,info)
 diff --git a/scipy/linalg/flapack_gen_banded.pyf.src b/scipy/linalg/flapack_gen_banded.pyf.src
-index e09a0edd98..94c651a11c 100644
+index 8eebc6c3ab..5caaac6034 100644
 --- a/scipy/linalg/flapack_gen_banded.pyf.src
 +++ b/scipy/linalg/flapack_gen_banded.pyf.src
 @@ -47,7 +47,7 @@ subroutine <prefix>gbtrf(m,n,ab,kl,ku,ldab,ipiv,info)
@@ -1129,14 +1129,16 @@ index e09a0edd98..94c651a11c 100644
      !character optional:: trans='N'
      integer optional:: trans=0
      integer optional,depend(ab) :: n=shape(ab,1)
-@@ -76,4 +76,5 @@ subroutine <prefix>gbtrs(ab,kl,ku,b,ipiv,trans,n,nrhs,ldab,ldb,info) ! in :Band:
+@@ -76,6 +76,7 @@ subroutine <prefix>gbtrs(ab,kl,ku,b,ipiv,trans,n,nrhs,ldab,ldb,info) ! in :Band:
      !integer optional,check(shape(b,0)==ldb),depend(b) :: ldb=shape(b,0)
      integer intent(out):: info
  
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix>gbtrs
+ 
+ 
 diff --git a/scipy/linalg/flapack_gen_tri.pyf.src b/scipy/linalg/flapack_gen_tri.pyf.src
-index d4e66a9480..674c35aaf7 100644
+index ed94563f34..8fbdc3c1e3 100644
 --- a/scipy/linalg/flapack_gen_tri.pyf.src
 +++ b/scipy/linalg/flapack_gen_tri.pyf.src
 @@ -40,15 +40,15 @@ subroutine <prefix>gttrf(n, dl, d, du, du2, ipiv, info)
@@ -1253,15 +1255,17 @@ index d4e66a9480..674c35aaf7 100644
  
      character optional, intent(in), check(*fact=='F'||*fact=='N') :: fact = 'N'
      character optional, intent(in), check(*trans=='N'||*trans=='C'||*trans=='T') :: trans = 'N'
-@@ -188,4 +193,6 @@ subroutine <prefix2c>gtsvx(fact,trans,n,nrhs,dl,d,du,dlf,df,duf,du2,ipiv,b,ldb,x
+@@ -188,6 +193,8 @@ subroutine <prefix2c>gtsvx(fact,trans,n,nrhs,dl,d,du,dlf,df,duf,du2,ipiv,b,ldb,x
      <ftype2> intent(hide,cache),dimension(n),depend(n) :: rwork
      integer intent(out) :: info
  
 +    integer intent(hide) :: len0 = 1
 +    integer intent(hide) :: len1 = 1
  end subroutine <prefix2c>gtsvx
+ 
+ 
 diff --git a/scipy/linalg/flapack_other.pyf.src b/scipy/linalg/flapack_other.pyf.src
-index d1a87f182a..fbcf71e4fa 100644
+index 1db51bbd83..eb7080de1d 100644
 --- a/scipy/linalg/flapack_other.pyf.src
 +++ b/scipy/linalg/flapack_other.pyf.src
 @@ -1,7 +1,7 @@
@@ -2164,7 +2168,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      integer optional,intent(in):: compute_v = 1
      check(compute_v==1||compute_v==0) compute_v
-@@ -1765,14 +1851,17 @@ subroutine <prefix2>sbevx(ab,ldab,compute_v,range,lower,n,kd,q,ldq,vl,vu,il,iu,a
+@@ -1765,10 +1851,12 @@ subroutine <prefix2>sbevx(ab,ldab,compute_v,range,lower,n,kd,q,ldq,vl,vu,il,iu,a
      integer dimension((compute_v?n:1)),depend(n,compute_v),intent(out) :: ifail
      integer intent(out):: info
  
@@ -2173,95 +2177,13 @@ index d1a87f182a..fbcf71e4fa 100644
 +    integer intent(hide) :: len2 = 1
  end subroutine <prefix2>sbevx
  
--subroutine <prefix2>stebz(d,e,range,vl,vu,il,iu,tol,order,n,work,iwork,m,nsplit,w,iblock,isplit,info)
-+subroutine <prefix2>stebz(d,e,range,vl,vu,il,iu,tol,order,n,work,iwork,m,nsplit,w,iblock,isplit,info,len0,len1)
-     ! computes all or selected eigenvalues of a real, symmetric tridiagonal
-     ! matrix.
- 
--    callstatement (*f2py_func)((range>0?(range==1?"V":"I"):"A"),order,&n,&vl,&vu,&il,&iu,&tol,d,e,&m,&nsplit,w,iblock,isplit,work,iwork,&info)
--    callprotoargument char*,char*,F_INT*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*
-+    callstatement (*f2py_func)((range>0?(range==1?"V":"I"):"A"),order,&n,&vl,&vu,&il,&iu,&tol,d,e,&m,&nsplit,w,iblock,isplit,work,iwork,&info,len0,len1)
-+    callprotoargument char*,char*,F_INT*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,F_INT,F_INT
- 
-     <ftype2> dimension(n),intent(in) :: d
-     <ftype2> dimension(n-1),depend(n),intent(in) :: e
-@@ -1793,6 +1882,8 @@ subroutine <prefix2>stebz(d,e,range,vl,vu,il,iu,tol,order,n,work,iwork,m,nsplit,
-     integer dimension(n),depend(n),intent(out) :: isplit
-     integer intent(out) :: info
- 
-+    integer intent(hide) :: len0 = 1
-+    integer intent(hide) :: len1 = 1
- end subroutine <prefix2>stebz
- 
- subroutine <prefix2>sterf(d,e,n,info)
-@@ -1831,11 +1922,11 @@ subroutine <prefix2>stein(d,e,w,iblock,isplit,m,n,z,ldz,work,iwork,ifail,info)
- 
- end subroutine <prefix2>stein
- 
--subroutine <prefix2>stemr(d,e,range,vl,vu,il,iu,compute_v,n,m,w,z,ldz,nzc,isuppz,tryrac,work,lwork,iwork,liwork,info)
-+subroutine <prefix2>stemr(d,e,range,vl,vu,il,iu,compute_v,n,m,w,z,ldz,nzc,isuppz,tryrac,work,lwork,iwork,liwork,info,len0,len1)
-     ! computes all eigenvalues of a real, symmetric tridiagonal matrix.
- 
--    callstatement (*f2py_func)((compute_v?"V":"N"),(range>0?(range==1?"V":"I"):"A"),&n,d,e,&vl,&vu,&il,&iu,&m,w,z,&ldz,&nzc,isuppz,&tryrac,work,&lwork,iwork,&liwork,&info)
--    callprotoargument char*,char*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*
-+    callstatement (*f2py_func)((compute_v?"V":"N"),(range>0?(range==1?"V":"I"):"A"),&n,d,e,&vl,&vu,&il,&iu,&m,w,z,&ldz,&nzc,isuppz,&tryrac,work,&lwork,iwork,&liwork,&info,len0,len1)
-+    callprotoargument char*,char*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*,F_INT,F_INT
- 
-     <ftype2> dimension(n),intent(in,copy) :: d
-     <ftype2> dimension(n),intent(in) :: e
-@@ -1859,14 +1950,16 @@ subroutine <prefix2>stemr(d,e,range,vl,vu,il,iu,compute_v,n,m,w,z,ldz,nzc,isuppz
-     integer dimension(liwork),depend(liwork),intent(hide) :: iwork
-     integer intent(out) :: info
- 
-+    integer intent(hide) :: len0 = 1
-+    integer intent(hide) :: len1 = 1
- end subroutine <prefix2>stemr
- 
--subroutine <prefix2>stemr_lwork(d,e,range,vl,vu,il,iu,compute_v,n,m,w,z,ldz,nzc,isuppz,tryrac,work,lwork,iwork,liwork,info)
-+subroutine <prefix2>stemr_lwork(d,e,range,vl,vu,il,iu,compute_v,n,m,w,z,ldz,nzc,isuppz,tryrac,work,lwork,iwork,liwork,info,len0,len1)
-     ! LWORK=-1, LIWORK=-1 call for STEMR
- 
-     fortranname <prefix2c>stemr
--    callstatement (*f2py_func)((compute_v?"V":"N"),(range>0?(range==1?"V":"I"):"A"),&n,d,e,&vl,&vu,&il,&iu,&m,w,z,&ldz,&nzc,isuppz,&tryrac,&work,&lwork,&iwork,&liwork,&info)
--    callprotoargument char*,char*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*
-+    callstatement (*f2py_func)((compute_v?"V":"N"),(range>0?(range==1?"V":"I"):"A"),&n,d,e,&vl,&vu,&il,&iu,&m,w,z,&ldz,&nzc,isuppz,&tryrac,&work,&lwork,&iwork,&liwork,&info,len0,len1)
-+    callprotoargument char*,char*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,<ctype2>*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*,<ctype2>*,F_INT*,F_INT*,F_INT*,F_INT*,F_INT,F_INT
- 
-     <ftype2> dimension(n),intent(in,copy) :: d
-     <ftype2> dimension(n),intent(in,copy) :: e
-@@ -1889,14 +1982,16 @@ subroutine <prefix2>stemr_lwork(d,e,range,vl,vu,il,iu,compute_v,n,m,w,z,ldz,nzc,
-     integer intent(hide) :: liwork = -1
-     integer intent(out) :: iwork
-     integer intent(out) :: info
-+    integer intent(hide) :: len0 = 1
-+    integer intent(hide) :: len1 = 1
- end subroutine <prefix2>stemr_lwork
- 
--subroutine <prefix2>stev(d,e,compute_v,n,z,ldz,work,info)
-+subroutine <prefix2>stev(d,e,compute_v,n,z,ldz,work,info,len0)
-     ! computes all eigenvalues, and, optionally eigvectors of a real,
-     ! symmetric tridiagonal matrix.
- 
--    callstatement (*f2py_func)((compute_v?"V":"N"),&n,d,e,z,&ldz,work,&info)
--    callprotoargument char*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,<ctype2>*,F_INT*
-+    callstatement (*f2py_func)((compute_v?"V":"N"),&n,d,e,z,&ldz,work,&info,len0)
-+    callprotoargument char*,F_INT*,<ctype2>*,<ctype2>*,<ctype2>*,F_INT*,<ctype2>*,F_INT*,F_INT
- 
-     integer optional,intent(in):: compute_v = 1
-     <ftype2> dimension(n),intent(in,out,copy,out=vals) :: d
-@@ -1907,9 +2002,10 @@ subroutine <prefix2>stev(d,e,compute_v,n,z,ldz,work,info)
-     <ftype2> dimension((compute_v?MAX(1,2*n-2):1)),depend(n),intent(hide) :: work
-     integer intent(out) :: info
- 
-+    integer intent(hide) :: len0 = 1
- end subroutine <prefix2>stev
- 
+-
 -subroutine <prefix><s,s,h,h>frk(transr,uplo,trans,n,k,nt,ka,alpha,a,lda,beta,c)
 +subroutine <prefix><s,s,h,h>frk(transr,uplo,trans,n,k,nt,ka,alpha,a,lda,beta,c,len0,len1,len2)
      !
      ! (S/D)SFRK - (C/Z)HFRK performs one of the Sym/Hermitian rank--k operations
      !
-@@ -1919,8 +2015,8 @@ subroutine <prefix><s,s,h,h>frk(transr,uplo,trans,n,k,nt,ka,alpha,a,lda,beta,c)
+@@ -1778,8 +1866,8 @@ subroutine <prefix><s,s,h,h>frk(transr,uplo,trans,n,k,nt,ka,alpha,a,lda,beta,c)
      ! matrix and A is an n--by--k matrix in the first case and a k--by--n
      ! matrix in the second case.
  
@@ -2272,7 +2194,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -1935,16 +2031,19 @@ subroutine <prefix><s,s,h,h>frk(transr,uplo,trans,n,k,nt,ka,alpha,a,lda,beta,c)
+@@ -1794,35 +1882,40 @@ subroutine <prefix><s,s,h,h>frk(transr,uplo,trans,n,k,nt,ka,alpha,a,lda,beta,c)
      <ftype> dimension(nt),intent(in,out,copy,out=cout):: c
      integer intent(hide),depend(c),check(nt==(n*(n+1)/2)):: nt=shape(c,0)
  
@@ -2295,7 +2217,10 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -1954,16 +2053,18 @@ subroutine <prefix>tpttf(transr,uplo,n,nt,ap,arf,info)
+-    integer intent(in), check(n>=0):: n
++    integer intent(in), check(n>=0):: n_matfun
+     <ftype> dimension(nt),intent(in):: ap
+     integer intent(hide),depend(ap,n),check(nt==(n*(n+1)/2)):: nt=shape(ap,0)
      <ftype> dimension(nt),intent(out),depend(nt):: arf
      integer intent(out):: info
  
@@ -2317,7 +2242,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
      integer intent(in), check(n>=0):: n
-@@ -1973,16 +2074,17 @@ subroutine <prefix>tpttr(uplo,n,nt,ap,a,lda,info)
+@@ -1832,16 +1925,17 @@ subroutine <prefix>tpttr(uplo,n,nt,ap,a,lda,info)
      integer intent(hide),depend(n):: lda=MAX(n,1)
      integer intent(out):: info
  
@@ -2338,7 +2263,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -1992,15 +2094,17 @@ subroutine <prefix>tfttp(transr,uplo,n,nt,ap,arf,info)
+@@ -1851,15 +1945,17 @@ subroutine <prefix>tfttp(transr,uplo,n,nt,ap,arf,info)
      <ftype> dimension(nt),intent(out),depend(nt):: ap
      integer intent(out):: info
  
@@ -2359,7 +2284,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -2011,15 +2115,17 @@ subroutine <prefix>tfttr(transr,uplo,n,nt,arf,a,lda,info)
+@@ -1870,15 +1966,17 @@ subroutine <prefix>tfttr(transr,uplo,n,nt,arf,a,lda,info)
      integer intent(hide),depend(n):: lda = MAX(n,1)
      integer intent(out):: info
  
@@ -2380,7 +2305,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -2029,15 +2135,17 @@ subroutine <prefix>trttf(transr,uplo,n,a,lda,arf,info)
+@@ -1888,15 +1986,17 @@ subroutine <prefix>trttf(transr,uplo,n,a,lda,arf,info)
      <ftype> dimension(n*(n+1)/2),intent(out),depend(n):: arf
      integer intent(out):: info
  
@@ -2401,7 +2326,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional, intent(F_INT),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
      integer intent(hide),depend(a):: n = shape(a,1)
-@@ -2046,9 +2154,10 @@ subroutine <prefix>trttp(uplo,n,a,lda,ap,info)
+@@ -1905,9 +2005,10 @@ subroutine <prefix>trttp(uplo,n,a,lda,ap,info)
      <ftype> dimension(n*(n+1)/2),intent(out),depend(n):: ap
      integer intent(out):: info
  
@@ -2413,7 +2338,7 @@ index d1a87f182a..fbcf71e4fa 100644
      !
      ! Level 3 BLAS like routine for A in RFP Format.
      !
-@@ -2064,8 +2173,8 @@ subroutine <prefix>tfsm(transr,side,uplo,trans,diag,m,n,nt,alpha,a,b,ldb)
+@@ -1923,8 +2024,8 @@ subroutine <prefix>tfsm(transr,side,uplo,trans,diag,m,n,nt,alpha,a,b,ldb)
      ! A is in Rectangular Full Packed (RFP) Format. The matrix X is overwritten on B.
      !
  
@@ -2424,7 +2349,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*side=='L'||*side=='R'):: side = 'L'
-@@ -2080,9 +2189,14 @@ subroutine <prefix>tfsm(transr,side,uplo,trans,diag,m,n,nt,alpha,a,b,ldb)
+@@ -1939,9 +2040,14 @@ subroutine <prefix>tfsm(transr,side,uplo,trans,diag,m,n,nt,alpha,a,b,ldb)
      <ftype> dimension(m,n),intent(in,out,copy,out=x):: b
      integer intent(hide),depend(b):: ldb=MAX(shape(b,0),1)
  
@@ -2440,7 +2365,7 @@ index d1a87f182a..fbcf71e4fa 100644
      !
      ! Computes the Cholesky factorization of a complex Hermitian positive definite matrix A.
      ! The factorization has the form
-@@ -2092,8 +2206,8 @@ subroutine <prefix>pftrf(transr,uplo,n,nt,a,info)
+@@ -1951,8 +2057,8 @@ subroutine <prefix>pftrf(transr,uplo,n,nt,a,info)
      ! where U is an upper triangular matrix and L is lower triangular.
      ! This is the block version of the algorithm, calling Level 3 BLAS.
      !
@@ -2451,7 +2376,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -2102,17 +2216,19 @@ subroutine <prefix>pftrf(transr,uplo,n,nt,a,info)
+@@ -1961,17 +2067,19 @@ subroutine <prefix>pftrf(transr,uplo,n,nt,a,info)
      integer intent(hide),depend(a,n),check(nt==(n*(n+1)/2)):: nt=shape(a,0)
      integer intent(out):: info
  
@@ -2474,7 +2399,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -2121,16 +2237,18 @@ subroutine <prefix>pftri(transr,uplo,n,nt,a,info)
+@@ -1980,16 +2088,18 @@ subroutine <prefix>pftri(transr,uplo,n,nt,a,info)
      integer intent(hide),depend(a,n),check(nt==(n*(n+1)/2)):: nt=shape(a,0)
      integer intent(out):: info
  
@@ -2496,7 +2421,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      character optional,intent(in),check(*transr=='N'||*transr==<'T','T','C','C'>):: transr = 'N'
      character optional,intent(in),check(*uplo=='U'||*uplo=='L'):: uplo = 'U'
-@@ -2142,6 +2260,8 @@ subroutine <prefix>pftrs(transr,uplo,n,nhrs,nt,a,b,ldb,info)
+@@ -2001,6 +2111,8 @@ subroutine <prefix>pftrs(transr,uplo,n,nhrs,nt,a,b,ldb,info)
      integer intent(hide),depend(b):: ldb = MAX(shape(b,0),1)
      integer intent(out):: info
  
@@ -2505,7 +2430,7 @@ index d1a87f182a..fbcf71e4fa 100644
  end subroutine<prefix>pftrs
  
  subroutine <prefix>tzrzf(m,n,a,lda,tau,work,lwork,info)
-@@ -2208,15 +2328,15 @@ subroutine <prefix2>lasd4( n, i, d, z, delta, rho, sigma, work, info )
+@@ -2067,15 +2179,15 @@ subroutine <prefix2>lasd4( n, i, d, z, delta, rho, sigma, work, info )
  
  end subroutine <prefix2>lasd4
  
@@ -2524,7 +2449,7 @@ index d1a87f182a..fbcf71e4fa 100644
  
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
  
-@@ -2225,6 +2345,7 @@ subroutine <prefix>lauum(n,c,info,lower)
+@@ -2084,6 +2196,7 @@ subroutine <prefix>lauum(n,c,info,lower)
      check(shape(c,0)==shape(c,1)) :: c
      integer intent(out) :: info
  
@@ -2532,7 +2457,7 @@ index d1a87f182a..fbcf71e4fa 100644
  end subroutine <prefix>lauum
  
  subroutine <prefix>laswp(n,a,nrows,k1,k2,piv,off,inc,m,npiv)
-@@ -2280,30 +2401,32 @@ end subroutine <prefix>laswp
+@@ -2139,30 +2252,32 @@ end subroutine <prefix>laswp
  !          rmin  = underflow threshold - base**(emin-1)
  !          emax  = largest exponent before overflow
  !          rmax  = overflow threshold  - (base**emax)*(1-eps)
@@ -2574,7 +2499,7 @@ index d1a87f182a..fbcf71e4fa 100644
      intent(c) <prefix2>lange
      fortranname F_FUNC(<prefix2>lange,<S,D>LANGE)
  
-@@ -2313,14 +2436,15 @@ function <prefix2>lange(norm,m,n,a,lda,work) result(n2)
+@@ -2172,14 +2287,15 @@ function <prefix2>lange(norm,m,n,a,lda,work) result(n2)
      integer intent(hide),depend(a) :: n = shape(a,1)
      <ftype2> dimension(m,n),intent(in) :: a
      <ftype2> dimension(m+1),intent(cache,hide) :: work
@@ -2593,7 +2518,7 @@ index d1a87f182a..fbcf71e4fa 100644
      intent(c) <prefix2c>lange
      fortranname F_FUNC(<prefix2c>lange,<C,Z>LANGE)
  
-@@ -2330,17 +2454,18 @@ function <prefix2c>lange(norm,m,n,a,lda,work) result(n2)
+@@ -2189,17 +2305,18 @@ function <prefix2c>lange(norm,m,n,a,lda,work) result(n2)
      integer intent(hide),depend(a) :: n = shape(a,1)
      <ftype2c> dimension(m,n),intent(in) :: a
      <ftype2> dimension(m+1),intent(cache,hide) :: work
@@ -2615,14 +2540,14 @@ index d1a87f182a..fbcf71e4fa 100644
      intent(c) <prefix>lantr
      fortranname F_FUNC(<prefix>lantr,<S,C,D,Z>LANTR)
  
-@@ -2353,6 +2478,9 @@ function <prefix>lantr(norm, uplo, diag, m, n, a, lda, work) result(n2)
+@@ -2212,6 +2329,9 @@ function <prefix>lantr(norm, uplo, diag, m, n, a, lda, work) result(n2)
      integer intent(hide), depend(m) :: lda = MAX(1, m)
      <ftypereal> intent(cache,hide), dimension(lda) :: work
  
 +    integer intent(hide) :: len0 = 1
 +    integer intent(hide) :: len1 = 1
 +    integer intent(hide) :: len2 = 1
- end subroutine <prefix>lantr
+ end function <prefix>lantr
  
  subroutine <prefix>larfg(n, alpha, x, incx, tau, lx)
 diff --git a/scipy/linalg/flapack_pos_def.pyf.src b/scipy/linalg/flapack_pos_def.pyf.src
@@ -2937,7 +2862,7 @@ index f28c3135f9..d881aa8418 100644
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix2c>ptsvx
 diff --git a/scipy/linalg/flapack_sym_herm.pyf.src b/scipy/linalg/flapack_sym_herm.pyf.src
-index d0decd33c9..ac2015c98f 100644
+index 48133ba237..7dc74f2e8d 100644
 --- a/scipy/linalg/flapack_sym_herm.pyf.src
 +++ b/scipy/linalg/flapack_sym_herm.pyf.src
 @@ -1,7 +1,7 @@
@@ -4054,12 +3979,14 @@ index d0decd33c9..ac2015c98f 100644
  
      integer intent(hide),depend(a) :: n = shape(a,1)
      integer intent(hide),depend(a) :: lda = MAX(1,shape(a,0))
-@@ -1409,4 +1503,5 @@ subroutine <prefix2c>heequb(lower,n,a,lda,s,scond,amax,work,info)
+@@ -1409,6 +1503,7 @@ subroutine <prefix2c>heequb(lower,n,a,lda,s,scond,amax,work,info)
      <ftype2> intent(out) :: amax
      integer intent(out) :: info
  
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix2c>heequb
+ 
+ subroutine <prefix2>sytri(lower,n,a,lda,ipiv,work,info)
 -- 
 2.51.0
 
