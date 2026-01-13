@@ -6,6 +6,3 @@ def test_import_cryptography():
     import cryptography.hazmat
     import cryptography.utils
     import cryptography.x509
-    
-
-
