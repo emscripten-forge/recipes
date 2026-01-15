@@ -83,10 +83,10 @@ def build_missing_recipes(target_branch_name: str):
 
 
 @bot_app.command()
-def update_matplotlib_fontcache():
+def update_matplotlib_fontcache(target_branch_name: str):
     from .bot.update_matplotlib_fontcache import update_matplotlib_fontcache
 
-    update_matplotlib_fontcache(RECIPES_EMSCRIPTEN_DIR)
+    update_matplotlib_fontcache(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
 
 @build_app.command()

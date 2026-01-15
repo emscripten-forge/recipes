@@ -13,6 +13,7 @@ import json
 import yaml
 import pprint
 import io
+from ..git_utils import git_branch_ctx, make_pr_for_recipe, get_current_branch_name
 
 
 THIS_DIR = Path(os.getcwd())
@@ -44,7 +45,7 @@ def find_free_port():
         return s.getsockname()[1]
 
 
-def update_matplotlib_fontcache(recipe_dir):
+def update_matplotlib_fontcache(recipe_dir, target_branch_name):
     matplotlib_folder = Path(recipe_dir) / "matplotlib"
     recipe_file = matplotlib_folder / "recipe.yaml"
     fontlist_file = matplotlib_folder / "src" / "fontlist.json"
@@ -109,20 +110,35 @@ def update_matplotlib_fontcache(recipe_dir):
     shutil.rmtree(MAIN_MOUNT_DIR)
     shutil.rmtree(PREFIX_PATH)
 
-    start = text.find(start_marker)
-    end = text.find(end_marker)
+    start = output.find(START_MARKER)
+    end = output.find(END_MARKER)
 
     if start == -1 or end == -1:
         raise ValueError("Fontcache markers not found in the output")
 
-    start += len(start_marker)
+    start += len(START_MARKER)
 
-    new_fontlist = json.loads(text[start:end].strip())
+    new_fontlist = json.loads(output[start:end].strip())
 
     if new_fontlist["_version"] == current_fontlist_version:
         print('Matplotlib fontlist is already up-to-date, nothing to do')
         return
 
-    # TODO if fontcache version has changed
-    # TODO   - bump recipe build n
-    # TODO   - commit and push
+    print('Matplotlib fontlist has changed! Updating it')
+
+    # Write new file
+    with open(fontlist_file, "w") as fobj:
+        fobj.write(json.dumps(new_fontlist))
+
+    # Bump build number
+    recipe["build"]["number"] = recipe["build"]["number"] + 1
+
+    # Commit and push
+    branch_name = f"update-matplotlib-fontcache_for_{target_branch_name}"
+
+    with git_branch_ctx(branch_name, stash_current=False):
+        # commit the changes and make a PR
+        pr_title = f"Update matplotlib fontcache for matplotlib {matplotlib_version}"
+        make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
+            target_branch_name=target_branch_name,
+            automerge=automerge)
