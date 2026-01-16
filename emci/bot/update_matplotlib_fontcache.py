@@ -13,7 +13,7 @@ import json
 import yaml
 import pprint
 import io
-from ..git_utils import git_branch_ctx, make_pr_for_recipe, get_current_branch_name
+from ..git_utils import git_branch_ctx, set_bot_user, make_pr_for_recipe, get_current_branch_name
 
 
 THIS_DIR = Path(os.getcwd())
@@ -37,6 +37,8 @@ with open(Path(matplotlib.__file__).parent / "fontlist.json") as fd:
 print('{END_MARKER}')
 """
 
+ON_GITHUB_ACTIONS = os.environ.get('GITHUB_ACTIONS') == 'true'
+
 
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
@@ -46,6 +48,9 @@ def find_free_port():
 
 
 def update_matplotlib_fontcache(recipe_dir, target_branch_name):
+    if not ON_GITHUB_ACTIONS:
+        raise RuntimeError("Cannot update fontcache outside of github actions")
+
     matplotlib_folder = Path(recipe_dir) / "matplotlib"
     recipe_file = matplotlib_folder / "recipe.yaml"
     fontlist_file = matplotlib_folder / "src" / "fontlist.json"
@@ -125,6 +130,10 @@ def update_matplotlib_fontcache(recipe_dir, target_branch_name):
         return
 
     print('Matplotlib fontlist has changed! Updating it')
+
+    # We are on GitHub Actions, we **cannot** **restore** the user account
+    # therefore we just set the bot user and use an empty context manager
+    set_bot_user()
 
     # Write new file
     with open(fontlist_file, "w") as fobj:
