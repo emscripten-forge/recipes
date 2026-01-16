@@ -100,7 +100,7 @@ EM_JS(size_t, emforge_js_http_read, (int conn_index, size_t buf_size, char* buff
 EM_JS(size_t, emforge_js_http_write, (int conn_index, size_t len, char* buffer), {
     try {
         const connection = Module["emforge_js_http_cache"][conn_index];
-        const buffer_js = new Uint8Array(Module.HEAPU8.buffer, buffer, len).slice(0);
+        const buffer_js = new Uint8Array(HEAPU8.buffer, buffer, len).slice(0);
         if (!connection.content) {
             connection.content = buffer_js;
         } else {
