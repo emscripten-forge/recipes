@@ -141,4 +141,4 @@ def update_matplotlib_fontcache(recipe_dir, target_branch_name):
         pr_title = f"Update matplotlib fontcache for matplotlib {matplotlib_version}"
         make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
             target_branch_name=target_branch_name,
-            automerge=automerge)
+            automerge=True)
