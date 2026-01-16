@@ -142,6 +142,14 @@ def update_matplotlib_fontcache(recipe_dir, target_branch_name):
     # Bump build number
     recipe["build"]["number"] = recipe["build"]["number"] + 1
 
+    with open(recipe_file, "w") as stream:
+        yaml.safe_dump(
+            recipe,
+            stream,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
     # Commit and push
     branch_name = f"update-matplotlib-fontcache_for_{target_branch_name}"
 
