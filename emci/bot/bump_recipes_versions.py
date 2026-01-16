@@ -208,7 +208,7 @@ def try_to_merge_pr(pr, recipe_dir=None):
         maintainers = []
         if recipe_dir is not None:
             with open(Path(recipe_dir)/"recipe.yaml") as file:
-                recipe = YAML().load(file) 
+                recipe = YAML().load(file)
                 if 'extra' in recipe:
                     if 'recipe-maintainers' in recipe['extra']:
                         maintainers = recipe['extra']['recipe-maintainers']
