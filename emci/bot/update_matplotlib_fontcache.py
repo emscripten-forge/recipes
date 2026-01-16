@@ -137,7 +137,7 @@ def update_matplotlib_fontcache(recipe_dir, target_branch_name):
 
     # Write new file
     with open(fontlist_file, "w") as fobj:
-        fobj.write(json.dumps(new_fontlist))
+        fobj.write(json.dumps(new_fontlist, indent=2))
 
     # Bump build number
     recipe["build"]["number"] = recipe["build"]["number"] + 1
