@@ -70,7 +70,7 @@ def update_matplotlib_fontcache(recipe_dir, target_branch_name):
             PREFIX_PATH,
             "--platform=emscripten-wasm32",
             "-c",
-            "https://prefix.dev/emscripten-forge-dev",
+            "https://prefix.dev/emscripten-forge-4x" if target_branch_name == "emscripten-4x" else "https://prefix.dev/emscripten-forge-dev",
             "-c",
             "https://prefix.dev/conda-forge",
             f"matplotlib={matplotlib_version}",
