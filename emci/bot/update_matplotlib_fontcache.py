@@ -60,8 +60,6 @@ def update_matplotlib_fontcache(recipe_dir, target_branch_name):
         recipe = yaml.safe_load(stream)
     matplotlib_version = recipe["context"]["version"]
 
-    print('--- DEBUG', target_branch_name)
-
     # Create prefix with installing pyjs and matplotlib = _x
     subprocess_run(
         [
