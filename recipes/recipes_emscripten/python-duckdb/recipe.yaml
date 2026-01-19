@@ -1,0 +1,58 @@
+context:
+  name: duckdb
+  version: 1.4.3
+
+package:
+  name: python-${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: efa7f1191c59e34b688fcd4e588c1b903a4e4e1f4804945902cf0b20e08a9001
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - pip
+  host:
+  - python
+  - pybind11
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_duckdb.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://www.duckdb.org/
+  license: MIT
+  license_file: LICENSE
+  summary: An Embeddable Analytical Database
+  description: |
+    DuckDB is an embedded database designed to execute analytical SQL queries
+    fast while embedded in another process. It is designed to be easy to
+    install and easy to use.
+  documentation: https://duckdb.org/docs/index.html
+  repository: https://github.com/duckdb/duckdb
+
+extra:
+  recipe-maintainers:
+  - Copilot
