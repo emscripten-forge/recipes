@@ -13,4 +13,7 @@ export PYBIND11_INCLUDE_DIR=$PREFIX/include
 export CMAKE_INSTALL_PREFIX=$PREFIX
 export CMAKE_PREFIX_PATH=$PREFIX
 
+export CMAKE_SHARED_LINKER_FLAGS="$CMAKE_SHARED_LINKER_FLAGS \
+  -s EXPORTED_FUNCTIONS=['_PyInit__duckdb','_duckdb_adbc_init']"
+
 python -m pip install . -vv
