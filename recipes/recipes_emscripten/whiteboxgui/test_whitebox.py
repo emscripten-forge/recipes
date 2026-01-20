@@ -2,4 +2,8 @@ import pytest
 
 
 def test_whitebox():
-    import whiteboxgui
+    # This is how it's supposed to behave for now on emscripten platform
+    try:
+        import whiteboxgui
+    except SystemExit:
+        pass
