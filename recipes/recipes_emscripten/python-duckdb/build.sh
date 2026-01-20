@@ -1,4 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
+# Setup toolchain
+emscripten_root=$(em-config EMSCRIPTEN_ROOT)
+toolchain_path="${emscripten_root}/cmake/Modules/Platform/Emscripten.cmake"
+
+# Setup build arguments
+export CMAKE_BUILD_PARALLEL_LEVEL="${CPU_COUNT}"
+export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path} -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake"
 export PYBIND11_INCLUDE_DIR=$PREFIX/include
-${PYTHON} -m pip install . ${PIP_ARGS}
+
+# conda prefix path
+export CMAKE_INSTALL_PREFIX=$PREFIX
+export CMAKE_PREFIX_PATH=$PREFIX
+
+python -m pip install . -vv
