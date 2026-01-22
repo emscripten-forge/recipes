@@ -2,9 +2,9 @@
 
 
 
-export CFLAGS="$CFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
+export CFLAGS="$CFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -Wno-implicit-function-declaration -fwasm-exceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fwasm-exceptions"
 
 
 # otherwise "cython" is not properly executable

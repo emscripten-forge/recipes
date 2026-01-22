@@ -1,17 +1,14 @@
 context:
   name: matplotlib
   version: 3.10.8
-
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
   sha256: dbc50c7b15bb8d7dbe51a27a58322ed73f09291772d9e3184f03f11c576693f7
   patches:
   - patches/fix-threading-and-font-cache.patch
   - patches/static-cast.patch
-
 build:
-  number: 0
-
+  number: 1
 outputs:
 - package:
     name: matplotlib-base
@@ -23,17 +20,13 @@ outputs:
     - python
     - pip
     - cross-python_${{ target_platform }}
-
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - pkg-config
     - meson-python
     - numpy
     - setuptools_scm_git_archive
-
-      # to template the emscripten.meson.cross file
     - sed
-
     host:
     - python
     - numpy
@@ -51,7 +44,6 @@ outputs:
     - pyparsing
     - python-dateutil
     - pytz
-
   tests:
   - package_contents:
       files:
@@ -70,18 +62,15 @@ outputs:
       - pytester
       run:
       - pytester-run
-
 - package:
     name: matplotlib
     version: ${{ version }}
-
   requirements:
     host:
     - python
     run:
     - python
     - ${{ pin_subpackage('matplotlib-base', exact=True) }}
-
   tests:
   - script: pytester
     files:
@@ -92,7 +81,6 @@ outputs:
       - pytester
       run:
       - pytester-run
-
 about:
   homepage: http://matplotlib.org/
   license: PSF-2.0
