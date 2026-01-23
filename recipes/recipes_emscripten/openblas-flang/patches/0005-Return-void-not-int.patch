@@ -1,4 +1,4 @@
-From 2403ac3eb0fc5831358ba1c2753579eceb9ac091 Mon Sep 17 00:00:00 2001
+From 80faa6fad6d0ad43f2cc46a3af04194ed5b252e4 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Mon, 8 Dec 2025 08:00:00 +0000
 Subject: [PATCH 5/8] Return void not int
@@ -10,6 +10,7 @@ Subject: [PATCH 5/8] Return void not int
  interface/lapack/getf2.c  |   8 +-
  interface/lapack/getrf.c  |   8 +-
  interface/lapack/getrs.c  |   8 +-
+ interface/lapack/laed3.c  |  10 +-
  interface/lapack/laswp.c  |   6 +-
  interface/lapack/lauu2.c  |   8 +-
  interface/lapack/lauum.c  |   8 +-
@@ -31,13 +32,13 @@ Subject: [PATCH 5/8] Return void not int
  interface/lapack/ztrti2.c |   8 +-
  interface/lapack/ztrtri.c |  10 +-
  interface/lapack/ztrtrs.c |  10 +-
- 27 files changed, 229 insertions(+), 229 deletions(-)
+ 28 files changed, 234 insertions(+), 234 deletions(-)
 
 diff --git a/common_interface.h b/common_interface.h
-index e35a21ac6..160c9b2c8 100644
+index a510810ab..aa7494c83 100644
 --- a/common_interface.h
 +++ b/common_interface.h
-@@ -43,7 +43,7 @@ extern "C" {
+@@ -44,7 +44,7 @@ extern "C" {
  	/* Assume C declarations for C++ */
  #endif  /* __cplusplus */
  
@@ -46,7 +47,7 @@ index e35a21ac6..160c9b2c8 100644
  
  void    openblas_set_num_threads_(int *);
  
-@@ -441,10 +441,10 @@ void BLASFUNC(zhpmv) (char *, blasint *, double  *, double *,
+@@ -447,10 +447,10 @@ void BLASFUNC(zhpmv) (char *, blasint *, double  *, double *,
  void BLASFUNC(xhpmv) (char *, blasint *, xdouble  *, xdouble *,
  		     xdouble  *, blasint *, xdouble *, xdouble *, blasint *, int);
  
@@ -61,7 +62,7 @@ index e35a21ac6..160c9b2c8 100644
  
  void BLASFUNC(sgbmv)(char *, blasint *, blasint *, blasint *, blasint *, float  *, float  *, blasint *,
  		    float  *, blasint *, float  *, float  *, blasint *, int);
-@@ -512,16 +512,16 @@ void BLASFUNC(cgemmt)(char*, char *, char *, blasint *, blasint *, float *,
+@@ -522,16 +522,16 @@ void BLASFUNC(cgemmt)(char*, char *, char *, blasint *, blasint *, float *,
  void BLASFUNC(zgemmt)(char*, char *, char *, blasint *, blasint *, double *,
  	   double *, blasint *, double *, blasint *, double *, double *, blasint *, int, int, int);
  
@@ -82,7 +83,7 @@ index e35a21ac6..160c9b2c8 100644
  		     double *, double  *, blasint *, double  *, blasint *,
  		     double *, double  *, blasint *, int, int, int);
  
-@@ -625,145 +625,145 @@ void BLASFUNC(zher2k)(char *, char *, blasint *, blasint *, double *, double *,
+@@ -635,145 +635,145 @@ void BLASFUNC(zher2k)(char *, char *, blasint *, blasint *, double *, double *,
  void BLASFUNC(xher2k)(char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
  	   xdouble*, blasint *, xdouble *, xdouble *, blasint *, int, int);
  
@@ -541,6 +542,45 @@ index ef3f341f4..1c1f71aeb 100644
 +  return;
  
  }
+diff --git a/interface/lapack/laed3.c b/interface/lapack/laed3.c
+index 4e5215fcf..a68b155f1 100644
+--- a/interface/lapack/laed3.c
++++ b/interface/lapack/laed3.c
+@@ -40,9 +40,9 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #endif
+ 
+ /* ===================================================================== */
+-int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d, 
++void NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+         FLOAT *q, blasint *ldq, FLOAT *rho, FLOAT *dlamda,
+-        FLOAT *q2, blasint *indx, blasint *ctot, FLOAT *w, 
++        FLOAT *q2, blasint *indx, blasint *ctot, FLOAT *w,
+         FLOAT *s, blasint *Info)
+ {
+   blasint kval, nval, qdim, info;
+@@ -63,13 +63,13 @@ int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+ /*   Quick return if possible */
+ 
+   *Info = 0;
+-  if (kval == 0) return 0;
++  if (kval == 0) return;
+ 
+ #ifdef SMP
+   int nthreads = num_cpu_avail(4);
+@@ -83,5 +83,5 @@ int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+   }
+ #endif
+ 
+-  return 0;
++  return;
+ }
 diff --git a/interface/lapack/laswp.c b/interface/lapack/laswp.c
 index 6544dbc5b..6b017469d 100644
 --- a/interface/lapack/laswp.c
@@ -782,7 +822,7 @@ index bd32dc433..adef0d25d 100644
 +  return;
  }
 diff --git a/interface/lapack/trtri.c b/interface/lapack/trtri.c
-index 8a4716090..ae8f4ccfd 100644
+index e118caad8..248486ebb 100644
 --- a/interface/lapack/trtri.c
 +++ b/interface/lapack/trtri.c
 @@ -61,7 +61,7 @@ static blasint (*trtri_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -815,7 +855,7 @@ index 8a4716090..ae8f4ccfd 100644
      }
    }
  
-@@ -155,5 +155,5 @@ else
+@@ -155,5 +155,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
  
    IDEBUG_END;
  
