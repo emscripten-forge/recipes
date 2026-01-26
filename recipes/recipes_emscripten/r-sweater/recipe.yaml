@@ -1,0 +1,66 @@
+context:
+  name: r-sweater
+  version: 0.1.8
+  r_base_version: 4.5.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 23cf198ff1edfce86cadd4de23e94dea0acb1310faec77df651366ab1bf4ac10
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - r-base == ${{ r_base_version }}
+  host:
+  - r-base == ${{ r_base_version }}
+  - r-base
+  - r-liblinear
+  - r-rcpp
+  - r-cli
+  - r-combinat
+  - r-data.table
+  - r-proxy
+  - r-purrr
+  - r-quanteda
+  run:
+  - r-base == ${{ r_base_version }}
+  - r-liblinear
+  - r-rcpp
+  - r-cli
+  - r-combinat
+  - r-data.table
+  - r-proxy
+  - r-purrr
+  - r-quanteda
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  home: https://github.com/gesistsa/sweater
+  license: GPL-3.0-or-later
+  summary: 'Conduct various tests for evaluating implicit biases in word embeddings: Word Embedding
+    Association Test (Caliskan et al., 2017), <doi:10.1126/science.aal4230>, Relative
+    Norm Distance (Garg et al., 2018), <doi:10.1073/pnas.1720347115>, Mean Average Cosine
+    Similarity (Mazini et al., 2019) <arXiv:1904.04047>, SemAxis (An et al., 2018) <arXiv:1806.05521>,
+    Relative Negative Sentiment Bias (Sweeney & Najafian, 2019) <doi:10.18653/v1/P19-1162>,
+    and Embedding Coherence Test (Dev & Phillips, 2019) <arXiv:1901.07656>.'
+  license_family: GPL3
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
