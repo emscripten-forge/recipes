@@ -133,8 +133,8 @@ rm -rf $PREFIX/pyarrow/_pyarrow_cpp_tests.cpython-313-wasm32-emscripten.so
 rm -rf $PREFIX/pyarrow/__pycache__/
 
 
- rm  -f $PREFIX/pyarrow/_compute.cpython-313-wasm32-emscripten.so
- rm  -f $PREFIX/pyarrow/_compute.pxd
+#  rm  -f $PREFIX/pyarrow/_compute.cpython-313-wasm32-emscripten.so
+#  rm  -f $PREFIX/pyarrow/_compute.pxd
  rm  -f $PREFIX/pyarrow/_compute.pyx
  rm  -f $PREFIX/pyarrow/_compute_docstrings.py
  rm  -f  $PREFIX/pyarrow/_csv.cpython-313-wasm32-emscripten.so
