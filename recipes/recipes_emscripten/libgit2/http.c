@@ -201,7 +201,7 @@ static int emforge_http_stream_write(
 
 static void emforge_http_stream_free(git_smart_subtransport_stream* s)
 {
-    emforge_http_stream* stream = GIT_CONTAINER_OF(s, emforge_http_stream, parent);
+    //emforge_http_stream* stream = GIT_CONTAINER_OF(s, emforge_http_stream, parent);
     git__free(s);
 }
 
@@ -277,9 +277,9 @@ static int emforge_http_action(
     return 0;
 }
 
-static int emforge_http_close(git_smart_subtransport* t)
+static int emforge_http_close([[maybe_unused]] git_smart_subtransport* t)
 {
-    emforge_http_subtransport* transport = GIT_CONTAINER_OF(t, emforge_http_subtransport, parent);
+    //emforge_http_subtransport* transport = GIT_CONTAINER_OF(t, emforge_http_subtransport, parent);
     return 0;
 }
 
