@@ -121,8 +121,8 @@ def _hash_url(url, hash_type, progress=False, conn=None, timeout=None):
         if conn is not None:
             conn.send(_hash)
             conn.close()
-
-    return _hash
+        else:
+            return _hash
 
 
 def hash_url(url, timeout=None, progress=False, hash_type="sha256"):
