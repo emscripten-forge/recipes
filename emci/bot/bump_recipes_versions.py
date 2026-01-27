@@ -3,14 +3,12 @@ import subprocess
 import os
 from pathlib import Path
 from ruamel.yaml import YAML
-import pprint
 import jinja2
 import copy
 from .next_version import next_version
 from .url_exists import url_exists
 from .hash_url import hash_url
 from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
-import sys
 import json
 
 # custom error derived from Exception
@@ -164,7 +162,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
         # Multi-outputs recipe
         if hasattr(recipe, "outputs"):
-            for i, output in enumerate(outputs):
+            for i, output in enumerate(recipe["outputs"]):
                 if "tests" not in output:
                     automerge = False
                     break
