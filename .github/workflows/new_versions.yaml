@@ -8,10 +8,6 @@ on:
 jobs:
 
   update_versions:
-    strategy:
-      matrix:
-        branch: [main, emscripten-4x]
-
     if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
     steps:
@@ -26,6 +22,6 @@ jobs:
 
       - name: Determine new package version and open/merge PRs
         shell: bash -l -eo pipefail {0}
-        run:  python -m emci bot bump-recipes-versions ${{ matrix.branch }}
+        run:  python -m emci bot bump-recipes-versions main
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
