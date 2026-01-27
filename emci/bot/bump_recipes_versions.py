@@ -3,14 +3,12 @@ import subprocess
 import os
 from pathlib import Path
 from ruamel.yaml import YAML
-import pprint
 import jinja2
 import copy
 from .next_version import next_version
 from .url_exists import url_exists
 from .hash_url import hash_url
 from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
-import sys
 import json
 
 # custom error derived from Exception
@@ -164,10 +162,10 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
         # Multi-outputs recipe
         if hasattr(recipe, "outputs"):
-            for i, output in enumerate(outputs):
-                 if "tests" not in output:
-                     automerge = False
-                     break
+            for i, output in enumerate(recipe["outputs"]):
+                if "tests" not in output:
+                    automerge = False
+                    break
         elif 'tests' not in recipe:
             automerge = False
 
@@ -215,7 +213,7 @@ def try_to_merge_pr(pr, recipe_dir=None):
         maintainers = []
         if recipe_dir is not None:
             with open(Path(recipe_dir)/"recipe.yaml") as file:
-                recipe = YAML().load(file) 
+                recipe = YAML().load(file)
                 if 'extra' in recipe:
                     if 'recipe-maintainers' in recipe['extra']:
                         maintainers = recipe['extra']['recipe-maintainers']
@@ -250,7 +248,7 @@ def user_ctx(user, email, bypass=False):
 
 def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20):
     print(f"Bumping recipes in {recipe_dir} to {pr_target_branch}")
-   # empty context manager
+    # empty context manager
     @contextlib.contextmanager
     def empty_context_manager():
         yield
@@ -298,6 +296,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
             "--json", "number,title",
             "--limit", "200" # default is only 30
         ]
+
         # run command and get the output as json
         all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
 
@@ -309,8 +308,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_id = [pr['number'] for pr in all_prs]
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
-        # Merge PRs if possible (only for main atm)
-        if pr_target_branch == "main":
+        # Merge PRs if possible
+        if pr_target_branch in ["main"]:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
@@ -329,8 +328,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python', 
-            'xvega', 'xvega-bindings', 'libffi'
+            'sqlite', 'robotics-toolbox-python',
+            'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 

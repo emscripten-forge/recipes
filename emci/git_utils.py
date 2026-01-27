@@ -72,8 +72,6 @@ def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
         if out.returncode == 0:
             stashed_successfully = True
 
-
-    
     subprocess.check_output(['git', 'checkout', '-b', new_branch_name])
 
 
@@ -109,21 +107,15 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
     subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
 
 
-    args = ['gh', 'pr', 'create', 
-            '-B', target_branch_name, 
+    args = ['gh', 'pr', 'create',
+            '-B', target_branch_name,
             '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
             '--label', 'Automerge' if automerge else 'Needs Tests'
     ]
-    # if target_branch_name == 'main':
-    #     extra_label = "3.1.45"
-    # elif target_branch_name == "emscripten-3.1.73":
-    #     extra_label = "3.1.73"
-    # else:
-    #     extra_label = None
-    extra_label = None
 
-    if extra_label is not None:
-        args.extend(['--label', extra_label])
+    # this is not necessary, it can be removed later
+    if target_branch_name == "main":
+        args.extend(['--label', '4.X'])
 
     # call gh to create a PR
     subprocess.check_call(args, cwd=os.getcwd())

@@ -10,8 +10,6 @@ jobs:
   update_matplotlib_fontcache:
     strategy:
       fail-fast: false
-      matrix:
-        branch: [main, emscripten-4x]
 
     if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
@@ -32,6 +30,6 @@ jobs:
         shell: bash -l -eo pipefail {0}
         run: |
           playwright install
-          python -m emci bot update-matplotlib-fontcache ${{ matrix.branch }}
+          python -m emci bot update-matplotlib-fontcache main
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
