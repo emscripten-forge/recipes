@@ -1,0 +1,62 @@
+context:
+  version: 0.1.0
+  name: dtks
+
+source:
+# - url: https://github.com/DerThorsten/dtks/archive/refs/tags/v${{version}}.tar.gz
+#   sha256: b61a3eaccf5cd44f8a3bfda81cf273deb68d9028e96d27f6ce443dd69212ac4f
+  - git: https://github.com/DerThorsten/dtks/
+    branch: main
+
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: dtks
+    version: ${{ version }}
+
+  build:
+    script: build.sh
+
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - cross-python-cmake_emscripten-wasm32
+    - cmake>=4.0
+    - ninja
+    - numpy
+    - nanobind
+    - scikit-build-core
+    - python
+    - pip
+    host:
+    - python
+    - numpy
+    run:
+    - python
+    - numpy
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_dtks.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: python bindings for box2d v3, a 2D physics engine
+  homepage: https://github.com/DerThorsten/pyb2d3
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
