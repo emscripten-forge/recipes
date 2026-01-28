@@ -20,6 +20,7 @@ PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_NumPy_INCLUDE_DIRS=$BUIL
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_SIMD_LEVEL=None"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DArrow_DIR=$PREFIX/lib/cmake/Arrow"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DArrowDataset_DIR=$PREFIX/lib/cmake/ArrowDataset"
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DArrowCompute_DIR=$PREFIX/lib/cmake/ArrowCompute"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -Dre2_DIR=$PREFIX/lib/cmake/re2"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -Dutf8proc_LIB=$PREFIX/lib/libutf8proc.a"
 #  absl_DIR
@@ -36,11 +37,12 @@ PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_ORC=OFF"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_PARQUET=OFF"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_CSV=OFF"
 
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_WITH_COMPUTE=ON"
+
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_BUILD_SUBSTRAIT=OFF"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_BUILD_DATASET=OFF"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_BUILD_PARQUET=OFF"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_BUILD_ACERO=OFF"
-PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_BUILD_PARQUET=OFF"
 
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_SUBSTRAIT=OFF"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPYARROW_DATASET=OFF"
@@ -98,10 +100,10 @@ export ARROW_HOME=$PREFIX
 # export PYARROW_WITH_SUBSTRAIT=0
 
 
-export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.13/site-packages/numpy/core/include   -I$PREFIX/lib/python3.13/site-packages/numpy/core/include" 
+export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.13/site-packages/numpy/core/include   -I$PREFIX/lib/python3.13/site-packages/numpy/core/include"
 
 export CFLAGS="$CFLAGS $INCLUDE_NUMPY_FLAGS"
-export CXXFLAGS="$CXXFLAGS $INCLUDE_NUMPY_FLAGS" 
+export CXXFLAGS="$CXXFLAGS $INCLUDE_NUMPY_FLAGS"
 
 
 export CFLAGS="$CFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -fexceptions"
@@ -118,12 +120,12 @@ $PREFIX/bin/python -c "import sys; print(sys.platform);print(sys.executable)"
 
 
 
-# 
+#
 # $PREFIX/bin/python -m pip install . -vvv  --platform wasm32-emscripten --target $PREFIX
 
 # echo "PYTHON IS $PYTHON ${PYTHON}"
-${PYTHON} -m pip install . -vvv  
-#  --platform wasm32-emscripten 
+${PYTHON} -m pip install . -vvv
+#  --platform wasm32-emscripten
 SP=$PREFIX/lib/python3.13/site-packages/
 
 rm -rf $PREFIX/pyarrow/tests
@@ -131,8 +133,8 @@ rm -rf $PREFIX/pyarrow/_pyarrow_cpp_tests.cpython-313-wasm32-emscripten.so
 rm -rf $PREFIX/pyarrow/__pycache__/
 
 
- rm  -f $PREFIX/pyarrow/_compute.cpython-313-wasm32-emscripten.so
- rm  -f $PREFIX/pyarrow/_compute.pxd
+#  rm  -f $PREFIX/pyarrow/_compute.cpython-313-wasm32-emscripten.so
+#  rm  -f $PREFIX/pyarrow/_compute.pxd
  rm  -f $PREFIX/pyarrow/_compute.pyx
  rm  -f $PREFIX/pyarrow/_compute_docstrings.py
  rm  -f  $PREFIX/pyarrow/_csv.cpython-313-wasm32-emscripten.so
