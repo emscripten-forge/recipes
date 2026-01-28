@@ -23,10 +23,23 @@ CMAKE_ARGS="${CMAKE_ARGS} \
     -DPYTHON_PREFIX=$PREFIX \
     -DPYTHON_MODULE_EXTENSION=.so \
     -DPYTHON_MODULE_PREFIX= \
-    -DPYTHON_IS_DEBUG=0"
+    -DPYTHON_IS_DEBUG=0 \
+    -DPYTHON_VERSION=3.13"
 
 
 export CMAKE_ARGS
 
-#!/bin/bash
-${PYTHON} -m pip  install . --prefix="$PREFIX"
+# #!/bin/bash
+# ${PYTHON} -m pip  install . --prefix="$PREFIX"
+
+
+mkdir build
+cd build
+cmake .. \
+    -DCMAKE_PREFIX_PATH=$PREFIX \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
+    -DXPYT_EMSCRIPTEN_WASM_BUILD=ON \
+    -DCMAKE_VERBOSE_MAKEFILE=ON \
+    ${CMAKE_ARGS}
