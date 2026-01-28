@@ -1,0 +1,104 @@
+context:
+  name: py-rattler
+  python_name: py_rattler
+  version: "0.21.0"
+
+recipe:
+  name: py-rattler
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ python_name }}-${{ version }}.tar.gz
+  sha256: abc35d04489a8a8a18587683abea4b6967326ac6777559f8a53d0aa821fb48c7
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: py-rattler
+    build:
+      # only build for the minimal python version
+      skip: is_abi3 and not is_python_min
+      script: build_base
+      python:
+        version_independent: true
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+            - maturin >=1.2.2,<2
+        - ${{ compiler('c') }}
+        # Should use `compiler('rust-nightly')`
+        - rust-nightly
+        # - cargo-bundle-licenses
+      host:
+        - python
+        - if: is_abi3
+          then: python-abi3
+        - maturin >=1.2.2,<2
+        - pip
+        - if: unix
+          then:
+            - openssl
+      run:
+        - python
+    tests:
+      - python:
+          imports:
+            - rattler
+          python_version:
+            - if: is_abi3
+              then: "${{ python_min ~ '.*' }}"
+            - "*"
+      - if: is_abi3
+        then:
+          script:
+            - if: win
+              then: abi3audit %PREFIX%/Lib/site-packages/rattler/rattler.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+            - if: not win
+              then:
+                # Need to set SP_DIR because of https://github.com/prefix-dev/rattler-build/issues/1733
+                - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+                - abi3audit $SP_DIR/rattler/rattler.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          requirements:
+            run:
+              - abi3audit
+
+  - package:
+      name: py_rattler
+    build:
+      noarch: generic
+      skip: not (linux and x86_64 and is_python_min)
+    requirements:
+      run:
+        - ${{ pin_subpackage('py-rattler', upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - rattler
+    about:
+      license_file: []
+
+about:
+  homepage: https://github.com/conda/rattler
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - py-rattler/THIRDPARTY.yml
+  summary: A blazing fast library to work with the conda ecosystem
+  description: |
+    Rattler is a library that provides common functionality used within the conda
+    ecosystem. The goal of the library is to enable programs and other libraries to
+    easily interact with the conda ecosystem without being dependent on Python. Its
+    primary use case is as a library that you can use to provide conda related
+    workflows in your own tools.
+  repository: https://github.com/conda/rattler
+
+extra:
+  feedstock-name: py-rattler
+  recipe-maintainers:
+    - baszalmstra
+    - wolfv
