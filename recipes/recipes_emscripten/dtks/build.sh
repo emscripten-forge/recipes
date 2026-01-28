@@ -29,8 +29,6 @@ CMAKE_ARGS="${CMAKE_ARGS} \
 
 export CMAKE_ARGS
 
-# #!/bin/bash
-# ${PYTHON} -m pip  install . --prefix="$PREFIX"
 
 
 mkdir build
@@ -43,3 +41,5 @@ cmake .. \
     -DXPYT_EMSCRIPTEN_WASM_BUILD=ON \
     -DCMAKE_VERBOSE_MAKEFILE=ON \
     ${CMAKE_ARGS}
+
+make -j8 install
