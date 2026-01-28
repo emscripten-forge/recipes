@@ -144,3 +144,45 @@ requirements:
 * [cryptography](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/cryptography)
 * [pydantic-core](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/cryptography)
 * [pycrdt](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/pycrdt)
+
+## R Packages
+
+For a simple package, only these requirements are usually necessary:
+
+```yaml
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler("c") }}
+```
+
+All other R-dependencies need to be in all 3 `requirements` sections (`build`, `host`, and `run`).
+
+There needs to be 2 urls because very frequently the first one is not reachable.
+
+For the tests, we only check that the shared library for the package exists. Eventually we should be able to load the package and do actual tests, but that's not available yet.
+
+**Example recipes**:
+
+* [r-yaml](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/r-yaml/)
+
+## Rcpp
+
+Some R packages use the [Rcpp](https://cran.r-project.org/web/packages/Rcpp/index.html) package.
+
+```yaml
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - r-rcpp
+  host:
+  - r-rcpp
+  run:
+  - r-rcpp
+```
+
+
+**Example recipes**:
+
+* [r-plyr](https://github.com/emscripten-forge/recipes/blob/main/recipes/recipes_emscripten/r-plyr/)
