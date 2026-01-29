@@ -1,49 +1,49 @@
 context:
-  version: "1.7.5"
+  version: 1.8.0
 
 recipe:
   name: cvxpy-split
   version: ${{ version }}
 
 source:
-  - url: https://github.com/cvxpy/cvxpy/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 01b589b51a49ac8d1e4a41bf98ba4ed8048ce1ade2a8344f9b4fdb5574f0e9f4
+- url: https://github.com/cvxpy/cvxpy/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c82ce40c4d65aef4ba2e7c1dbc7ec67e3b7999d09ddf56458b1db0a803001e8c
 
 build:
   number: 0
 
 outputs:
-  - package:
-      name: cvxpy-base
-      version: ${{ version }}
+- package:
+    name: cvxpy-base
+    version: ${{ version }}
+  build:
+    script: build.sh
+  requirements:
     build:
-      script: build.sh
+    - python
+    - cross-python_${{ target_platform }}
+    - numpy
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    host:
+    - python
+    - pybind11
+    - numpy
+    - pip
+    - setuptools
+    run:
+    - python
+    - scipy >=1.1.0
+  tests:
+  - script: pytester
     requirements:
       build:
-        - python
-        - cross-python_${{ target_platform }}
-        - numpy
-        - ${{ compiler('c') }}
-        - ${{ compiler('cxx') }}
-      host:
-        - python
-        - pybind11
-        - numpy
-        - pip
-        - setuptools
+      - pytester
       run:
-        - python
-        - scipy >=1.1.0
-    tests:
-      - script: pytester
-        requirements:
-          build:
-            - pytester
-          run:
-            - pytester-run
-        files:
-          recipe:
-            - test_cvxpy_base.py
+      - pytester-run
+    files:
+      recipe:
+      - test_cvxpy_base.py
 
   # TODO: Distribute scs on emscripten-forge first
   # - package:
@@ -116,5 +116,5 @@ about:
 
 extra:
   recipe-maintainers:
-    - jjerphan
+  - jjerphan
   feedstock-name: cvxpy
