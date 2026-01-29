@@ -158,11 +158,18 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
     # check if the recipe has test section
     # load recipe
-    automerge = False
+    automerge = True
     with open(recipe_file) as file:
         recipe = YAML().load(file)
-        if 'tests' in recipe:
-            automerge = True
+
+        # Multi-outputs recipe
+        if hasattr(recipe, "outputs"):
+            for i, output in enumerate(outputs):
+                 if "tests" not in output:
+                     automerge = False
+                     break
+        elif 'tests' not in recipe:
+            automerge = False
 
 
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
@@ -208,7 +215,7 @@ def try_to_merge_pr(pr, recipe_dir=None):
         maintainers = []
         if recipe_dir is not None:
             with open(Path(recipe_dir)/"recipe.yaml") as file:
-                recipe = YAML().load(file) 
+                recipe = YAML().load(file)
                 if 'extra' in recipe:
                     if 'recipe-maintainers' in recipe['extra']:
                         maintainers = recipe['extra']['recipe-maintainers']
@@ -284,12 +291,16 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
 
+        command = [
+            "gh", "pr", "list",
+            "--author", "emscripten-forge-bot",
+            "--base", pr_target_branch,
+            "--json", "number,title",
+            "--limit", "200" # default is only 30
+        ]
 
-        command = ["gh","pr","list","--author","emscripten-forge-bot","--base",pr_target_branch,"--json","number,title"]
         # run command and get the output as json
         all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
-
-
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
@@ -299,8 +310,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_id = [pr['number'] for pr in all_prs]
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
-        # Merge PRs if possible (only for main atm)
-        if pr_target_branch == "main":
+        # Merge PRs if possible
+        if pr_target_branch in ["main", "emscripten-4x"]:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
@@ -319,8 +330,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python', 
-            'xvega', 'xvega-bindings', 'libffi'
+            'sqlite', 'robotics-toolbox-python',
+            'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 

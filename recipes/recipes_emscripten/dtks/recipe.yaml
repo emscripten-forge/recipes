@@ -1,0 +1,58 @@
+context:
+  version: 0.0.1
+  name: dtks
+
+source:
+- url: https://github.com/DerThorsten/dtks/archive/refs/tags/${{version}}.tar.gz
+  sha256: 6a8ff8187ec02de7b49fd933af15942a20c215bf4d62fcfc4afb4922f3f4fc1f
+
+build:
+  number: 2
+
+outputs:
+- package:
+    name: dtks
+    version: ${{ version }}
+
+  build:
+    script: build.sh
+
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - cmake>=4.0
+    - ninja
+    - numpy
+    - nanobind
+    - scikit-build-core
+    - python
+    - pip
+    host:
+    - python
+    - numpy
+    run:
+    - python
+    - numpy
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_dtks.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: dtks - DerThorsten's Kitchen Sink - A collection of fun projects
+  homepage: https://github.com/DerThorsten/dtks
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

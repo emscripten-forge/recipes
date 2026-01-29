@@ -1,0 +1,59 @@
+From 6c5a44dc902115c8ceea74b02f164b6f9257e55e Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 5 Jan 2026 11:20:41 +0000
+Subject: [PATCH 8/8] Use openblas-flang in pkgconfig and cmake config
+
+---
+ CMakeLists.txt       | 4 ++--
+ cmake/openblas.pc.in | 4 ++--
+ openblas.pc.in       | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1fa4d9678..bf69ffeb1 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -744,8 +744,8 @@ endif()
+ endif()
+ 
+ # Install pkg-config files
+-configure_file(${PROJECT_SOURCE_DIR}/cmake/openblas.pc.in ${PROJECT_BINARY_DIR}/openblas${SUFFIX64}.pc @ONLY)
+-install (FILES ${PROJECT_BINARY_DIR}/openblas${SUFFIX64}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
++configure_file(${PROJECT_SOURCE_DIR}/cmake/openblas.pc.in ${PROJECT_BINARY_DIR}/openblas-flang${SUFFIX64}.pc @ONLY)
++install (FILES ${PROJECT_BINARY_DIR}/openblas-flang${SUFFIX64}.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig/)
+ 
+ 
+ set(PN OpenBLAS)
+diff --git a/cmake/openblas.pc.in b/cmake/openblas.pc.in
+index 374221b47..1a0f2967c 100644
+--- a/cmake/openblas.pc.in
++++ b/cmake/openblas.pc.in
+@@ -5,9 +5,9 @@ libsuffix=@SUFFIX64_UNDERSCORE@
+ includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+ 
+ openblas_config=USE_64BITINT=@INTERFACE64@ NO_CBLAS=@NO_CBLAS@ NO_LAPACK=@NO_LAPACK@ NO_LAPACKE=@NO_LAPACKE@ DYNAMIC_ARCH=@DYNAMIC_ARCH@ DYNAMIC_OLDER=@DYNAMIC_OLDER@ NO_AFFINITY=@NO_AFFINITY@ USE_OPENMP=@USE_OPENMP@ @CORE@ MAX_THREADS=@NUM_THREADS@ 
+-Name: OpenBLAS
++Name: OpenBLAS-flang
+ Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
+ Version: @OpenBLAS_VERSION@
+ URL: https://github.com/OpenMathLib/OpenBLAS
+-Libs: -L${libdir} -l${libnameprefix}openblas${libnamesuffix}${libsuffix} 
++Libs: -L${libdir} -l${libnameprefix}openblas-flang${libnamesuffix}${libsuffix} 
+ Cflags: -I${includedir} @OpenMP_C_FLAGS@ 
+diff --git a/openblas.pc.in b/openblas.pc.in
+index fe2f08720..59c742edd 100644
+--- a/openblas.pc.in
++++ b/openblas.pc.in
+@@ -1,7 +1,7 @@
+-Name: openblas
++Name: openblas-flang
+ Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
+ Version: ${version}
+ URL: https://github.com/xianyi/OpenBLAS
+-Libs: -L${libdir} -l${libprefix}openblas${libsuffix}${libnamesuffix}
++Libs: -L${libdir} -l${libprefix}openblas-flang${libsuffix}${libnamesuffix}
+ Libs.private: ${extralib}
+ Cflags: -I${includedir} ${omp_opt}
+-- 
+2.51.0
+

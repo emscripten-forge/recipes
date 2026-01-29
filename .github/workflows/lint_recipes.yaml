@@ -1,11 +1,6 @@
 name: Lint Recipes
 
 on:
-  push:
-    branches:
-      - "main"
-    paths:
-      - "recipes/**"
   pull_request:
     paths:
       - "recipes/**"
@@ -15,13 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
 
-      - name: Fetch main branch
-        run: git fetch origin main
+      - name: Fetch emscripten-3x branch
+        run: git fetch origin emscripten-3x
 
       - name: Install micromamba
         uses: mamba-org/setup-micromamba@v2
@@ -36,7 +31,7 @@ jobs:
           set -e
 
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_REF="origin/main"
+            BASE_REF="origin/emscripten-3x"
             HEAD_REF="HEAD"
           else
             BASE_REF="HEAD~1"

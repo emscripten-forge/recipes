@@ -1,0 +1,120 @@
+context:
+  version: 1.8.0
+
+recipe:
+  name: cvxpy-split
+  version: ${{ version }}
+
+source:
+- url: https://github.com/cvxpy/cvxpy/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c82ce40c4d65aef4ba2e7c1dbc7ec67e3b7999d09ddf56458b1db0a803001e8c
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: cvxpy-base
+    version: ${{ version }}
+  build:
+    script: build.sh
+  requirements:
+    build:
+    - python
+    - cross-python_${{ target_platform }}
+    - numpy
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    host:
+    - python
+    - pybind11
+    - numpy
+    - pip
+    - setuptools
+    run:
+    - python
+    - scipy >=1.1.0
+  tests:
+  - script: pytester
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+    files:
+      recipe:
+      - test_cvxpy_base.py
+
+  # TODO: Distribute scs on emscripten-forge first
+  # - package:
+  #     name: cvxpy
+  #     version: ${{ version }}
+  #   requirements:
+  #     host:
+  #       - python
+  #     run:
+  #       - python
+  #       - ${{ pin_subpackage('cvxpy-base', exact=True) }}
+  #       - osqp >=0.6.2
+  #       - clarabel >=0.5
+  #       - scs >=3.2.4
+  #   tests:
+  #     - script: pytester
+  #       requirements:
+  #         build:
+  #           - pytester
+  #         run:
+  #           - pytester-run
+  #       files:
+  #         recipe:
+  #           - test_cvxpy.py
+  #     - script:
+  #         - if: unix
+  #           then:
+  #             - |
+  #               tests_to_skip="_not_a_real_test"
+  #               # accuracy failure on PPC, likely due to emulation
+  #               if [ "${{ target_platform }}" == "linux-ppc64le" ]; then
+  #                 tests_to_skip="${tests_to_skip} or (TestDqcp and test_basic_multiply)"
+  #               fi
+  #               # test that fails on Python 3.13
+  #               python_version=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+  #               if [ "$python_version" == "3.13" ]; then
+  #                 tests_to_skip="${tests_to_skip} or test_sparsity_condition"
+  #               fi
+  #               pytest cvxpy/tests -v -k "not (${tests_to_skip})"
+  #             # test that pip recognizes installation correctly, see https://github.com/cvxpy/cvxpy/issues/2389;
+  #             # 'grep -v' inverts the match but returns non-zero exit code if no lines are returned; so we use 'wc -l';
+  #             - if [ 0 -eq $(pip list | grep "UNKNOWN" | wc -l) ]; then exit 0; else (pip list && exit 1); fi
+  #           else:
+  #             - pytest cvxpy/tests -v -k "not _not_a_real_test"
+  #       requirements:
+  #         run:
+  #           - pip
+  #           - pytest
+  #           # issues with newer scipy and other libraries
+  #           # - cvxopt
+  #           - hypothesis
+  #           - scipy
+  #       files:
+  #         source:
+  #           - cvxpy/tests
+
+about:
+  homepage: http://www.cvxpy.org/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: A Python-embedded modeling language for convex optimization problems
+  description: |
+    CVXPY is a Python-embedded modeling language for convex optimization
+    problems. It allows you to express your problem in a natural way that
+    follows the math, rather than in the restrictive standard form required
+    by solvers.
+  documentation: http://www.cvxpy.org/
+  repository: https://github.com/cvxpy/cvxpy
+
+extra:
+  recipe-maintainers:
+  - jjerphan
+  feedstock-name: cvxpy

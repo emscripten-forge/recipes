@@ -3,7 +3,7 @@ name: Build Recipes
 on:
   push:
     branches:
-      - "main"
+      - "emscripten-3x"
     paths:
       - "recipes/**"
   pull_request:
@@ -15,6 +15,7 @@ jobs:
   build_recipes:
     runs-on: ubuntu-latest
     env:
+      FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
     strategy:
@@ -25,7 +26,7 @@ jobs:
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -69,7 +70,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-3x~1 origin/emscripten-3x
 
       ################################################################
       # PULL_REQUEST
@@ -78,7 +79,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-3x HEAD
 
       ################################################################
       # UPLOAD

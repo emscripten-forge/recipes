@@ -1,0 +1,408 @@
+From 1fa87ca2a8f2c390ab3618169b3bbb8d0cf517c6 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Sun, 11 Jan 2026 15:29:17 +0000
+Subject: [PATCH 10/18] Extra char length args in propack
+
+---
+ .../linalg/_propack/PROPACK/src/common.c      |  4 +--
+ .../_propack/PROPACK/src/gemm_overwrite.c     | 16 ++++-----
+ scipy/sparse/linalg/_propack/PROPACK/src/gs.c | 16 ++++-----
+ .../src/include/blaslapack_declarations.h     | 36 +++++++++----------
+ .../linalg/_propack/PROPACK/src/lanbpro.c     |  8 ++---
+ .../linalg/_propack/PROPACK/src/lansvd.c      |  8 ++---
+ .../linalg/_propack/PROPACK/src/lansvd_irl.c  |  8 ++---
+ .../linalg/_propack/PROPACK/src/ritzvec.c     |  8 ++---
+ 8 files changed, 52 insertions(+), 52 deletions(-)
+
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/common.c b/scipy/sparse/linalg/_propack/PROPACK/src/common.c
+index 6165645463..772cdcdc0f 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/common.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/common.c
+@@ -122,7 +122,7 @@ void sbdqr(const int ignorelast, const int jobq, const int n, float* restrict D,
+     {
+         // Reset Qt to the identity matrix.
+         int nplus1 = n + 1;
+-        slaset_("A", &nplus1, &nplus1, &flt0, &flt1, Qt, &ldq);
++        slaset_("A", &nplus1, &nplus1, &flt0, &flt1, Qt, &ldq, 1);
+     }
+     for (int i = 0; i < n-1; i++)
+     {
+@@ -416,7 +416,7 @@ void dbdqr(const int ignorelast, const int jobq, const int n, double* restrict D
+     {
+         // Reset Qt to the identity matrix.
+         int nplus1 = n + 1;
+-        dlaset_("A", &nplus1, &nplus1, &dbl0, &dbl1, Qt, &ldq);
++        dlaset_("A", &nplus1, &nplus1, &dbl0, &dbl1, Qt, &ldq, 1);
+     }
+     for (int i = 0; i < n-1; i++)
+     {
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/gemm_overwrite.c b/scipy/sparse/linalg/_propack/PROPACK/src/gemm_overwrite.c
+index bec35162f2..b7dbe17782 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/gemm_overwrite.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/gemm_overwrite.c
+@@ -23,7 +23,7 @@ void sgemm_ovwr(const int transa, int m, int n, int k, float alpha,
+         int block_start = i * blocksize;
+ 
+         // Compute work = alpha * op(A) * B(:, block_start:block_start+blocksize-1)
+-        sgemm_(&transchara, "N", &m, &blocksize, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m);
++        sgemm_(&transchara, "N", &m, &blocksize, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m, 1, 1);
+ 
+         // Copy result back to B
+         float* B_col = &B[block_start * ldb];
+@@ -51,7 +51,7 @@ void sgemm_ovwr(const int transa, int m, int n, int k, float alpha,
+     if (remainder_cols > 0) {
+         int block_start = num_full_blocks * blocksize;
+ 
+-        sgemm_(&transchara, "N", &m, &remainder_cols, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m);
++        sgemm_(&transchara, "N", &m, &remainder_cols, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m, 1, 1);
+ 
+         // Copy remainder results back
+         float* B_col = &B[block_start * ldb];
+@@ -97,7 +97,7 @@ void sgemm_ovwr_left(const int transb, int m, int n, int k, float alpha,
+         int block_start = i * blocksize;
+ 
+         // Compute work = alpha * A(block_start:block_start+blocksize-1, :) * op(B)
+-        sgemm_("N", &transcharb, &blocksize, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &blocksize);
++        sgemm_("N", &transcharb, &blocksize, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &blocksize, 1, 1);
+ 
+         // Copy result back to A
+         float* work_ptr = work;
+@@ -116,7 +116,7 @@ void sgemm_ovwr_left(const int transb, int m, int n, int k, float alpha,
+     if (remainder_rows > 0) {
+         int block_start = num_full_blocks * blocksize;
+ 
+-        sgemm_("N", &transcharb, &remainder_rows, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &remainder_rows);
++        sgemm_("N", &transcharb, &remainder_rows, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &remainder_rows, 1, 1);
+ 
+         // Copy remainder results back
+         float* work_ptr = work;
+@@ -154,7 +154,7 @@ void dgemm_ovwr(
+         int block_start = i * blocksize;
+ 
+         // Compute work = alpha * op(A) * B(:, block_start:block_start+blocksize-1)
+-        dgemm_(&transchara, "N", &m, &blocksize, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m);
++        dgemm_(&transchara, "N", &m, &blocksize, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m, 1, 1);
+ 
+         // Copy result back to B
+         double* B_col = &B[block_start * ldb];
+@@ -182,7 +182,7 @@ void dgemm_ovwr(
+     if (remainder_cols > 0) {
+         int block_start = num_full_blocks * blocksize;
+ 
+-        dgemm_(&transchara, "N", &m, &remainder_cols, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m);
++        dgemm_(&transchara, "N", &m, &remainder_cols, &k, &alpha, A, &lda, &B[block_start * ldb], &ldb, &zero, work, &m, 1, 1);
+ 
+         // Copy remainder results back
+         double* B_col = &B[block_start * ldb];
+@@ -228,7 +228,7 @@ void dgemm_ovwr_left(const int transb, int m, int n, int k, double alpha,
+         int block_start = i * blocksize;
+ 
+         // Compute work = alpha * A(block_start:block_start+blocksize-1, :) * op(B)
+-        dgemm_("N", &transcharb, &blocksize, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &blocksize);
++        dgemm_("N", &transcharb, &blocksize, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &blocksize, 1, 1);
+ 
+         // Copy result back to A
+         double* work_ptr = work;
+@@ -246,7 +246,7 @@ void dgemm_ovwr_left(const int transb, int m, int n, int k, double alpha,
+     if (remainder_rows > 0) {
+         int block_start = num_full_blocks * blocksize;
+ 
+-        dgemm_("N", &transcharb, &remainder_rows, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &remainder_rows);
++        dgemm_("N", &transcharb, &remainder_rows, &n, &k, &alpha, &A[block_start], &lda, B, &ldb, &zero, work, &remainder_rows, 1, 1);
+ 
+         // Copy remainder results back
+         double* work_ptr = work;
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/gs.c b/scipy/sparse/linalg/_propack/PROPACK/src/gs.c
+index 7935f2aff3..02d2d094e4 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/gs.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/gs.c
+@@ -146,10 +146,10 @@ void scgs(int n, int k, float* V, int ldv, float* vnew, const int* indices, floa
+         int block_size = end - start + 1;
+ 
+         // Compute all projection coefficients for this block: work = V_block^T * vnew
+-        sgemv_("T", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione);
++        sgemv_("T", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione, 1);
+ 
+         // Orthogonalize: vnew = vnew - V_block * work
+-        sgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione);
++        sgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione, 1);
+ 
+         idx += 2;  // Move to next block
+         start = indices[idx];
+@@ -177,10 +177,10 @@ void dcgs(int n, int k, double* V, int ldv, double* vnew, const int* indices, do
+         int block_size = end - start + 1;
+ 
+         // Compute all projection coefficients for this block: work = V_block^T * vnew
+-        dgemv_("T", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione);
++        dgemv_("T", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione, 1);
+ 
+         // Orthogonalize: vnew = vnew - V_block * work
+-        dgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione);
++        dgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione, 1);
+ 
+         idx += 2;  // Move to next block
+         start = indices[idx];
+@@ -208,10 +208,10 @@ void ccgs(int n, int k, PROPACK_CPLXF_TYPE* V, int ldv, PROPACK_CPLXF_TYPE* vnew
+         int block_size = end - start + 1;
+ 
+         // Compute all projection coefficients for this block: work = V_block^H * vnew
+-        cgemv_("C", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione);
++        cgemv_("C", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione, 1);
+ 
+         // Orthogonalize: vnew = vnew - V_block * work
+-        cgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione);
++        cgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione, 1);
+ 
+         idx += 2;  // Move to next block
+         start = indices[idx];
+@@ -239,10 +239,10 @@ void zcgs(int n, int k, PROPACK_CPLX_TYPE* V, int ldv, PROPACK_CPLX_TYPE* vnew,
+         int block_size = end - start + 1;
+ 
+         // Compute all projection coefficients for this block: work = V_block^H * vnew
+-        zgemv_("C", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione);
++        zgemv_("C", &n, &block_size, &one, &V[start * ldv], &ldv, vnew, &ione, &zero, work, &ione, 1);
+ 
+         // Orthogonalize: vnew = vnew - V_block * work
+-        zgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione);
++        zgemv_("N", &n, &block_size, &neg_one, &V[start * ldv], &ldv, work, &ione, &one, vnew, &ione, 1);
+ 
+         idx += 2;  // Move to next block
+         start = indices[idx];
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h b/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h
+index 78ae07bb4d..2b6b3f0d89 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h
+@@ -8,8 +8,8 @@
+ void saxpy_(int* n, float* alpha, float* x, int* incx, float* y, int* incy);
+ void scopy_(int* n, float* x, int* incx, float* y, int* incy);
+ float sdot_(int* n, float* x, int* incx, float* y, int* incy);
+-void sgemm_(char* transa, char* transb, int* m, int* n, int* k, float* alpha, float* a, int* lda, float* b, int* ldb, float* beta, float* c, int* ldc);
+-void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy);
++void sgemm_(char* transa, char* transb, int* m, int* n, int* k, float* alpha, float* a, int* lda, float* b, int* ldb, float* beta, float* c, int* ldc, int, int);
++void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy, int);
+ float snrm2_(int* n, float* x, int* incx);
+ void srot_(int* n, float* sx, int* incx, float* sy, int* incy, float* c, float* s);
+ void sscal_(int* n, float* alpha, float* x, int* incx);
+@@ -17,43 +17,43 @@ void sscal_(int* n, float* alpha, float* x, int* incx);
+ void daxpy_(int* n, double* alpha, double* x, int* incx, double* y, int* incy);
+ void dcopy_(int* n, double* x, int* incx, double* y, int* incy);
+ double ddot_(int* n, double* x, int* incx, double* y, int* incy);
+-void dgemm_(char* transa, char* transb, int* m, int* n, int* k, double* alpha, double* a, int* lda, double* b, int* ldb, double* beta, double* c, int* ldc);
+-void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy);
++void dgemm_(char* transa, char* transb, int* m, int* n, int* k, double* alpha, double* a, int* lda, double* b, int* ldb, double* beta, double* c, int* ldc, int, int);
++void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy, int);
+ double dnrm2_(int* n, double* x, int* incx);
+ void drot_(int* n, double* sx, int* incx, double* sy, int* incy, double* c, double* s);
+ void dscal_(int* n, double* alpha, double* x, int* incx);
+ 
+ void caxpy_(int* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* x, int* incx, PROPACK_CPLXF_TYPE* y, int* incy);
+ float scnrm2_(int* n, PROPACK_CPLXF_TYPE* x, int* incx);
+-void cgemm_(char* transa, char* transb, int* m, int* n, int* k, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, int* lda, PROPACK_CPLXF_TYPE* b, int* ldb, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* c, int* ldc);
+-void cgemv_(char* trans, int* m, int* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, int* lda, PROPACK_CPLXF_TYPE* x, int* incx, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* y, int* incy);
++void cgemm_(char* transa, char* transb, int* m, int* n, int* k, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, int* lda, PROPACK_CPLXF_TYPE* b, int* ldb, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* c, int* ldc, int, int);
++void cgemv_(char* trans, int* m, int* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, int* lda, PROPACK_CPLXF_TYPE* x, int* incx, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* y, int* incy, int);
+ void csscal_(int* n, float* da, PROPACK_CPLXF_TYPE* zx, int* incx);
+ 
+ void zaxpy_(int* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* x, int* incx, PROPACK_CPLX_TYPE* y, int* incy);
+ double dznrm2_(int* n, PROPACK_CPLX_TYPE* x, int* incx);
+-void zgemm_(char* transa, char* transb, int* m, int* n, int* k, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, int* lda, PROPACK_CPLX_TYPE* b, int* ldb, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* c, int* ldc);
+-void zgemv_(char* trans, int* m, int* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, int* lda, PROPACK_CPLX_TYPE* x, int* incx, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* y, int* incy);
++void zgemm_(char* transa, char* transb, int* m, int* n, int* k, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, int* lda, PROPACK_CPLX_TYPE* b, int* ldb, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* c, int* ldc, int, int);
++void zgemv_(char* trans, int* m, int* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, int* lda, PROPACK_CPLX_TYPE* x, int* incx, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* y, int* incy, int);
+ void zdscal_(int* n, double* da, PROPACK_CPLX_TYPE* zx, int* incx);
+ 
+ // LAPACK
+ 
+-void sbdsdc_(char* uplo, char* compq, int* n, float* d, float* e, float* u, int* ldu, float* vt, int* ldvt, float* q, int* iq, float* work, int* iwork, int* info);
+-void sbdsqr_(char* uplo, int* n, int* ncvt, int* nru, int* ncc, float* d, float* e, float* vt, int* ldvt, float* u, int* ldu, float* c, int* ldc, float* work, int* info);
++void sbdsdc_(char* uplo, char* compq, int* n, float* d, float* e, float* u, int* ldu, float* vt, int* ldvt, float* q, int* iq, float* work, int* iwork, int* info, int, int);
++void sbdsqr_(char* uplo, int* n, int* ncvt, int* nru, int* ncc, float* d, float* e, float* vt, int* ldvt, float* u, int* ldu, float* c, int* ldc, float* work, int* info, int);
+ void slartg_(float* f, float* g, float* c, float* s, float* r);
+-void slascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, float* a, int* lda, int* info);
+-void slaset_(char* uplo, int* m, int* n, float* alpha, float* beta, float* a, int* lda);
++void slascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, float* a, int* lda, int* info, int);
++void slaset_(char* uplo, int* m, int* n, float* alpha, float* beta, float* a, int* lda, int);
+ 
+-void dbdsdc_(char* uplo, char* compq, int* n, double* d, double* e, double* u, int* ldu, double* vt, int* ldvt, double* q, int* iq, double* work, int* iwork, int* info);
+-void dbdsqr_(char* uplo, int* n, int* ncvt, int* nru, int* ncc, double* d, double* e, double* vt, int* ldvt, double* u, int* ldu, double* c, int* ldc, double* work, int* info);
++void dbdsdc_(char* uplo, char* compq, int* n, double* d, double* e, double* u, int* ldu, double* vt, int* ldvt, double* q, int* iq, double* work, int* iwork, int* info, int, int);
++void dbdsqr_(char* uplo, int* n, int* ncvt, int* nru, int* ncc, double* d, double* e, double* vt, int* ldvt, double* u, int* ldu, double* c, int* ldc, double* work, int* info, int);
+ void dlartg_(double* f, double* g, double* c, double* s, double* r);
+-void dlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, double* a, int* lda, int* info);
+-void dlaset_(char* uplo, int* m, int* n, double* alpha, double* beta, double* a, int* lda);
++void dlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, double* a, int* lda, int* info, int);
++void dlaset_(char* uplo, int* m, int* n, double* alpha, double* beta, double* a, int* lda, int);
+ 
+ void clarfg_(int* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* x, int* incx, PROPACK_CPLXF_TYPE* tau);
+-void clascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, PROPACK_CPLXF_TYPE* a, int* lda, int* info);
++void clascl_(char* mtype, int* kl, int* ku, float* cfrom, float* cto, int* m, int* n, PROPACK_CPLXF_TYPE* a, int* lda, int* info, int);
+ 
+ void zlarfg_(int* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* x, int* incx, PROPACK_CPLX_TYPE* tau);
+-void zlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, PROPACK_CPLX_TYPE* a, int* lda, int* info);
++void zlascl_(char* mtype, int* kl, int* ku, double* cfrom, double* cto, int* m, int* n, PROPACK_CPLX_TYPE* a, int* lda, int* info, int);
+ 
+ 
+ // (c,z)dotc is the complex conjugate dot product of two complex vectors.
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/lanbpro.c b/scipy/sparse/linalg/_propack/PROPACK/src/lanbpro.c
+index 7120651451..b38a843a54 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/lanbpro.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/lanbpro.c
+@@ -27,7 +27,7 @@ static void ssafescal(int n, float alpha, float* x)
+     } else {
+         // Use LAPACK's safe scaling for very small alpha values
+         float one = 1.0f;
+-        slascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info);
++        slascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info, 1);
+     }
+ }
+ 
+@@ -52,7 +52,7 @@ void dsafescal(int n, double alpha, double* x)
+     } else {
+         // Use LAPACK's safe scaling for very small alpha values
+         double one = 1.0;
+-        dlascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info);
++        dlascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info, 1);
+     }
+ }
+ 
+@@ -77,7 +77,7 @@ void csafescal(int n, float alpha, PROPACK_CPLXF_TYPE* x)
+     } else {
+         // Use LAPACK's safe scaling for very small alpha values
+         float one = 1.0f;
+-        clascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info);
++        clascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info, 1);
+     }
+ }
+ 
+@@ -102,7 +102,7 @@ void zsafescal(int n, double alpha, PROPACK_CPLX_TYPE* x)
+     } else {
+         // Use LAPACK's safe scaling for very small alpha values
+         double one = 1.0;
+-        zlascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info);
++        zlascl_("G", &ione, &ione, &alpha, &one, &n, &ione, x, &n, &info, 1);
+     }
+ }
+ 
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/lansvd.c b/scipy/sparse/linalg/_propack/PROPACK/src/lansvd.c
+index 492ad1218a..b44aa43f7f 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/lansvd.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/lansvd.c
+@@ -81,7 +81,7 @@ void slansvd(int jobu, int jobv, int m, int n, int k, int kmax, PROPACK_aprod_s
+         sbdqr((j == int_min(m, n)), 0, j, &work[ib1], &work[ib1 + lanmax], &work[ibnd + j - 1], &work[ibnd + j], &work[ip], lanmax + 1);
+ 
+         // SVD of bidiagonal matrix
+-        sbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        sbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (j > 5)
+@@ -224,7 +224,7 @@ void dlansvd(int jobu, int jobv, int m, int n, int k, int kmax, PROPACK_aprod_d
+         dbdqr((j == int_min(m, n)), 0, j, &work[ib1], &work[ib1 + lanmax], &work[ibnd + j - 1], &work[ibnd + j], &work[ip], lanmax + 1);
+ 
+         // SVD of bidiagonal matrix
+-        dbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        dbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (j > 5)
+@@ -370,7 +370,7 @@ void clansvd(int jobu, int jobv, int m, int n, int k, int kmax, PROPACK_aprod_c
+         sbdqr((j == int_min(m, n)), 0, j, &work[ib1], &work[ib1 + lanmax], &work[ibnd + j - 1], &work[ibnd + j], &work[ip], lanmax + 1);
+ 
+         // SVD of bidiagonal matrix
+-        sbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        sbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (j > 5)
+@@ -516,7 +516,7 @@ void zlansvd(int jobu, int jobv, int m, int n, int k, int kmax, PROPACK_aprod_z
+         dbdqr((j == int_min(m, n)), 0, j, &work[ib1], &work[ib1 + lanmax], &work[ibnd + j - 1], &work[ibnd + j], &work[ip], lanmax + 1);
+ 
+         // SVD of bidiagonal matrix
+-        dbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        dbdsqr_("U", &j, &int0, &int1, &int0, &work[ib1], &work[ib1 + lanmax], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (j > 5)
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/lansvd_irl.c b/scipy/sparse/linalg/_propack/PROPACK/src/lansvd_irl.c
+index 8e7050e4c6..e9572cfc63 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/lansvd_irl.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/lansvd_irl.c
+@@ -89,7 +89,7 @@ void slansvd_irl(int which, int jobu, int jobv, int m, int n, int dim, int p, in
+ 
+         // SVD of bidiagonal matrix
+         sbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1,
+-                &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++                &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (dim > 5)
+@@ -322,7 +322,7 @@ void dlansvd_irl(int which, int jobu, int jobv, int m, int n, int dim, int p, in
+         dbdqr((dim == int_min(m, n)), 0, dim, &work[ialpha1], &work[ibeta1], &work[ibnd + dim - 1], &work[ibnd + dim], &work[ip], dim + 1);
+ 
+         // SVD of bidiagonal matrix
+-        dbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        dbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (dim > 5)
+@@ -556,7 +556,7 @@ void clansvd_irl(int which, int jobu, int jobv, int m, int n, int dim, int p, in
+         sbdqr((dim == int_min(m, n)), 0, dim, &work[ialpha1], &work[ibeta1], &work[ibnd + dim - 1], &work[ibnd + dim], &work[ip], dim + 1);
+ 
+         // SVD of bidiagonal matrix
+-        sbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        sbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (dim > 5)
+@@ -787,7 +787,7 @@ void zlansvd_irl(int which, int jobu, int jobv, int m, int n, int dim, int p, in
+         dbdqr((dim == int_min(m, n)), 0, dim, &work[ialpha1], &work[ibeta1], &work[ibnd + dim - 1], &work[ibnd + dim], &work[ip], dim + 1);
+ 
+         // SVD of bidiagonal matrix
+-        dbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo);
++        dbdsqr_("U", &dim, &int0, &int1, &int0, &work[ialpha1], &work[ibeta1], work, &int1, &work[ibnd], &int1, work, &int1, &work[iwrk], &lapinfo, 1);
+ 
+         // Update anorm estimate
+         if (dim > 5)
+diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/ritzvec.c b/scipy/sparse/linalg/_propack/PROPACK/src/ritzvec.c
+index 68ef620534..3eb886fe48 100644
+--- a/scipy/sparse/linalg/_propack/PROPACK/src/ritzvec.c
++++ b/scipy/sparse/linalg/_propack/PROPACK/src/ritzvec.c
+@@ -25,7 +25,7 @@ void sritzvec(const int which, const int jobu, const int jobv, const int m, cons
+     //   B = M * [R; 0]
+     sbdqr((dim == (m < n ? m : n)), jobu, dim, D, E, &c1, &c2, &work[imt], dim+1);
+     // Compute SVD of R using the Divide-and-conquer SVD: R = P * S * Q^T,
+-    sbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info);
++    sbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info, 1, 1);
+     // Compute left singular vectors for B, X = P^T * M^T
+     sgemm_ovwr(1, dim, dim+1, dim, 1.0f, &work[ip], dim, 0.0f, &work[imt], dim+1, &work[iwrk], lwrk / dim);
+ 
+@@ -68,7 +68,7 @@ void dritzvec(const int which, const int jobu, const int jobv, const int m, cons
+     //   B = M * [R; 0]
+     dbdqr((dim == (m < n ? m : n)), jobu, dim, D, E, &c1, &c2, &work[imt], dim+1);
+     // Compute SVD of R using the Divide-and-conquer SVD: R = P * S * Q^T,
+-    dbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info);
++    dbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info, 1, 1);
+     // Compute left singular vectors for B, X = P^T * M^T
+     dgemm_ovwr(1, dim, dim+1, dim, 1.0, &work[ip], dim, 0.0, &work[imt], dim+1, &work[iwrk], lwrk / dim);
+ 
+@@ -113,7 +113,7 @@ void critzvec(const int which, const int jobu, const int jobv, const int m, cons
+     sbdqr((dim == (m < n ? m : n)), jobu, dim, D, E, &c1, &c2, &work[imt], dim+1);
+ 
+     // Compute SVD of R using the Divide-and-conquer SVD: R = P * S * Q^T,
+-    sbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info);
++    sbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info, 1, 1);
+ 
+     // Compute left singular vectors for B, X = P^T * M^T
+     sgemm_ovwr(1, dim, dim+1, dim, 1.0f, &work[ip], dim, 0.0f, &work[imt], dim+1, &work[iwrk], lwrk / dim);
+@@ -159,7 +159,7 @@ void zritzvec(const int which, const int jobu, const int jobv, const int m, cons
+     //   B = M * [R; 0]
+     dbdqr((dim == (m < n ? m : n)), jobu, dim, D, E, &c1, &c2, &work[imt], dim+1);
+     // Compute SVD of R using the Divide-and-conquer SVD: R = P * S * Q^T,
+-    dbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info);
++    dbdsdc_("U", "I", &dim, D, E, &work[ip], &dim, &work[iqt], &dim, dd, id, &work[iwrk], iwork, &info, 1, 1);
+     // Compute left singular vectors for B, X = P^T * M^T
+     dgemm_ovwr(1, dim, dim+1, dim, 1.0, &work[ip], dim, 0.0, &work[imt], dim+1, &work[iwrk], lwrk / dim);
+ 
+-- 
+2.51.0
+

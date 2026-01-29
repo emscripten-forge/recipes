@@ -14,13 +14,12 @@ THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 MAIN_MOUNT_DIR= Path(THIS_DIR) /"main_mount"
 EMPACK_CONFIG= str(Path(THIS_DIR) / "empack_config.yaml")
 
+
 def find_free_port():
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
         s.bind(("", 0))
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return s.getsockname()[1]
-    
-
 
 
 def main():
@@ -45,10 +44,8 @@ def main():
     print("Test files found:")
     pprint.pprint(test_files)
 
-
     print("create a dir in the current work_dir named 'tests'")
     # create a dir in the current work_dir named "tests"
-
 
     tests_dir = Path(work_dir) / "tests"
     tests_dir.mkdir(exist_ok=True)
@@ -58,13 +55,9 @@ def main():
     # copy all test files to the "tests" dir
     for test_file in test_files:
         shutil.copy(test_file, tests_dir)
-    
-
 
     # work dir in the virtual file system
     virtual_work_dir = Path("/home/web_user/tests")
-    
-
 
     backends = [
         (
@@ -113,15 +106,11 @@ def main():
         except Exception as e:
             print(f"Test  backend : {backend_type} FAILED {e}")
             exceptions.append(e)
-    
+
     if exceptions:
         sys.exit(1)
     sys.exit(0)
 
 
-
-
-
 if __name__ == "__main__":
-    
     main()
