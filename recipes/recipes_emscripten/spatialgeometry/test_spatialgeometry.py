@@ -1,11 +1,3 @@
-import pyjs
-import pytest
-
-
-@pytest.mark.skipif(
-    not pyjs.js.Function('return typeof importScripts === "function"')(),
-    reason="requires browser, not node",
-)
 def test_spatialgeometry():
     import spatialgeometry as gm
 
