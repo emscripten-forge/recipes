@@ -1,6 +1,6 @@
 context:
   name: openblas-flang
-  version: 0.3.30
+  version: 0.3.31
 
 package:
   name: ${{ name }}
@@ -8,14 +8,21 @@ package:
 
 source:
   url: https://github.com/OpenMathLib/OpenBLAS/archive/v${{ version }}.tar.gz
-  sha256: 27342cff518646afb4c2b976d809102e368957974c250a25ccc965e53063c95d
+  sha256: 6dd2a63ac9d32643b7cc636eab57bf4e57d0ed1fff926dfbc5d3d97f2d2be3a6
   patches:
+  # Branch containing these patches is v0.3.31-emforge at https://github.com/ianthomas23/OpenBLAS
+  # Use `git format-patch v0.3.31..v0.3.31-emforge` to create patch files.
   - patches/0001-Remove-march-flags.patch
   - patches/0002-Skip-linktest.patch
   - patches/0003-Add-emscripten-as-supported-arch.patch
+  - patches/0004-Add-dummy-length-arguments-for-char-arguments.patch
+  - patches/0005-Return-void-not-int.patch
+  - patches/0006-Int-to-void-return-types-of-lapack-functions-used-by.patch
+  - patches/0007-Enable-LAPACK_FORTRAN_STDLEN_END-for-lapacke-calling.patch
+  - patches/0008-Use-openblas-flang-in-pkgconfig-and-cmake-config.patch
 
 build:
-  number: 4
+  number: 0
 
 requirements:
   build:
@@ -28,12 +35,23 @@ requirements:
 
 tests:
 - package_contents:
-    lib:
-    - libopenblas.a
-    - libopenblas.so
     include:
     - cblas.h
+    - f77blas.h
     - lapack.h
+    - lapacke.h
+    lib:
+    - libopenblas-flang.a
+    - libopenblas-flang.so
+- script: pytester
+  files:
+    recipe:
+    - test_openblas.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   homepage: http://www.openblas.net/
@@ -47,3 +65,4 @@ extra:
   - DerThorsten
   - anutosh491
   - IsabelParedes
+  - ianthomas23

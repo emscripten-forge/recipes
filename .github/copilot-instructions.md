@@ -91,7 +91,7 @@ To build the recipe you worked on with rattler-build with:
 
   rattler-build build \
   --package-format tar-bz2 \
-  -c https://repo.prefix.dev/emscripten-forge-dev \
+  -c https://repo.prefix.dev/emscripten-forge-4x \
   -c microsoft \
   -c conda-forge \
   --target-platform emscripten-wasm32 \
