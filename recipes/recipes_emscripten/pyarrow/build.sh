@@ -74,7 +74,7 @@ export CPYTHONLIB=$PREFIX/lib/libpython$PY_VER.a
 export NUMPY_LIB="$PREFIX/lib/python$PY_VER/site-packages/numpy"
 export SYSCONFIG_NAME="_sysconfigdata__emscripten_wasm32-emscripten"
 export ARROW_HOME=$PREFIX
-export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.13/site-packages/numpy/core/include   -I$PREFIX/lib/python3.13/site-packages/numpy/core/include"
+export INCLUDE_NUMPY_FLAGS="-I$PREFIX/lib/python${PY_VER}/site-packages/numpy/core/include"
 export CFLAGS="$CFLAGS $INCLUDE_NUMPY_FLAGS"
 export CXXFLAGS="$CXXFLAGS $INCLUDE_NUMPY_FLAGS"
 export CFLAGS="$CFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s -fwasm-exceptions"
