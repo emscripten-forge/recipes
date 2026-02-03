@@ -12,10 +12,10 @@
 # cp $RECIPE_DIR/SetupCxxFlags.cmake $SRC_DIR/cpp/cmake_modules/
 
 PYARROW_CMAKE_OPTIONS=""
-PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_INCLUDE_DIR=$PREFIX/include/python3.13"
-PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_INCLUDE_DIRS=$PREFIX/include/python3.13"
-PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_NumPy_INCLUDE_DIR=$BUILD_PREFIX/lib/python3.13/site-packages/numpy/_core/include"
-PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_NumPy_INCLUDE_DIRS=$BUILD_PREFIX/lib/python3.13/site-packages/numpy/_core/include"
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_INCLUDE_DIR=$PREFIX/include/python${PY_VER}"
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_INCLUDE_DIRS=$PREFIX/include/python${PY_VER}"
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_NumPy_INCLUDE_DIR=$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
+PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_NumPy_INCLUDE_DIRS=$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
 # PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DPython3_EXECUTABLE=$BUILD_PREFIX/bin/python -DPython3_INTERPRETER=$BUILD_PREFIX/bin/python"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DARROW_SIMD_LEVEL=None"
 PYARROW_CMAKE_OPTIONS="$PYARROW_CMAKE_OPTIONS -DArrow_DIR=$PREFIX/lib/cmake/Arrow"
@@ -91,7 +91,7 @@ $PREFIX/bin/python -c "import sys; print(sys.platform);print(sys.executable)"
 # echo "PYTHON IS $PYTHON ${PYTHON}"
 ${PYTHON} -m pip install . -vvv
 #  --platform wasm32-emscripten
-SP=$PREFIX/lib/python3.13/site-packages/
+SP=$PREFIX/lib/python${PY_VER}/site-packages/
 
 # Copy libarrow_python.so to $PREFIX/lib so it can be found as a dependency by WASM side modules
 # The Cython extensions (_compute.so, lib.so, etc.) depend on libarrow_python.so
