@@ -77,11 +77,9 @@ export ARROW_HOME=$PREFIX
 export INCLUDE_NUMPY_FLAGS="-I$BUILD_PREFIX/lib/python3.13/site-packages/numpy/core/include   -I$PREFIX/lib/python3.13/site-packages/numpy/core/include"
 export CFLAGS="$CFLAGS $INCLUDE_NUMPY_FLAGS"
 export CXXFLAGS="$CXXFLAGS $INCLUDE_NUMPY_FLAGS"
-export CFLAGS="$CFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s -fexceptions"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s  -fexceptions"
-# Use --whole-archive to ensure all symbols from Arrow static libraries are included
-# This prevents symbols like DefaultDeviceMemoryMapper from being stripped
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s -fexceptions"
+export CFLAGS="$CFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s -fwasm-exceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -s SIDE_MODULE=1 -s -fwasm-exceptions"
 
 export CMAKE_BUILD_PARALLEL_LEVEL=4
 
