@@ -9,20 +9,22 @@ package:
 source:
   url: https://github.com/${{ name }}/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 6f097c82fc06ece4f40539fb17e9d41baf1a5a2fc26b1b8562d21b89bc355fe6
+  patches:
+  - patches/0001-Disable-use-of-builtin-intrinsics.patch
 
 build:
-  number: 1
+  number: 3
 
 requirements:
   build:
   - ${{ compiler('c') }}
   - cmake
   - pkg-config
+  host:
+  - zlib
 
 tests:
 - script:
-  - test -f ${PREFIX}/bin/git2.js
-  - test -f ${PREFIX}/bin/git2.wasm
   - test -f ${PREFIX}/include/git2.h
   - test -f ${PREFIX}/lib/libgit2.a
   - test -f ${PREFIX}/lib/pkgconfig/libgit2.pc

@@ -191,7 +191,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     return True , current_version, new_version
 
 
-def try_to_merge_pr(pr, recipe_dir=None):
+def try_to_merge_pr(pr, recipe_dir=None, ping=False):
 
     passed = subprocess.run(
         ['gh', 'pr', 'checks', str(pr)],
@@ -219,7 +219,7 @@ def try_to_merge_pr(pr, recipe_dir=None):
                         maintainers = recipe['extra']['recipe-maintainers']
 
         message = """Either the CI is failing, or the recipe is not tested. I need help from a human."""
-        if maintainers:
+        if maintainers and ping:
             message += "\nPing the maintainers: "
             for maintainer in maintainers:
                 message += f"@{maintainer} "
@@ -309,13 +309,13 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
         # Merge PRs if possible
-        if pr_target_branch in ["main"]:
+        if pr_target_branch in ["main", "emscripten-3x"]:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
 
                 try:
-                    try_to_merge_pr(pr, recipe_dir=recipe_dir)
+                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
 
