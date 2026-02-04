@@ -14,6 +14,9 @@ pixi run setup
 pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/regex
 ```
 
+!!! note
+    When using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/) (WSL), some local builds might fail due to `libatomic` not be available. For cases like this, developers are required a full Linux machine like a virtual machine or cloud server.
+
 ## Local builds with `rattler-build`
 We recommend using the `pixi` command to build packages locally. However, if you want to use `rattler-build` directly, you can do so with the following steps:
 
