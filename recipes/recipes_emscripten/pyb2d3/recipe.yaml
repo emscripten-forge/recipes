@@ -1,14 +1,13 @@
 context:
-  version: 0.7.4
+  version: 0.11.1
   name: pyb2d3
 
 source:
 - url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
-  sha256: 9e78a4f9496855a3588becfb62855689c0ce4dce40359420299fa6f1d29c811a
+  sha256: 50b56338b1ade7659d36283a68f57f128916c31ebd4dc6478d1c4a2753273a7f
 
 build:
-  number: 1
-
+  number: 0
 outputs:
 - package:
     name: pyb2d3
@@ -24,7 +23,7 @@ outputs:
     - cmake>=4.0
     - ninja
     - numpy
-    - nanobind
+    - nanobind <2.10.2
     - scikit-build-core
     - python
     - pip
@@ -65,6 +64,12 @@ outputs:
     - python
     run:
     - pyb2d3 >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox/frontend_base.py
+
+
 
 - package:
     name: pyb2d3-sandbox-ipycanvas
@@ -82,10 +87,38 @@ outputs:
     host:
     - python
     run:
-    - ipycanvas >=0.14.1
+    - ipycanvas >=0.14.2
     - pyb2d3 >=${{ version }}
     - pyb2d3-sandbox >=${{ version }}
     - ipyevents
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+      
+- package:
+    name: pyb2d3-sandbox-jupyter
+    version: ${{ version }}
+  build:
+    noarch: python
+    script:
+    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_jupyter -vv --prefix ${PREFIX}
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    host:
+    - python
+    run:
+    - anywidget >=0.9.21
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - site-packages/pyb2d3_sandbox_jupyter/jupyter_frontend.py
 
 
 about:

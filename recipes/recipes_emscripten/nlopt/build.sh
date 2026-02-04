@@ -1,4 +1,8 @@
 #!/bin/bash
-export CFLAGS="${CFLAGS} -DHAVE_UINT32_T -I$BUILD_PREFIX/lib/python3.11/site-packages/numpy/core/include/"
+
+NUMPY_INCLUDE_DIR="$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include/"
+export CFLAGS="${CFLAGS} -fPIC -DHAVE_UINT32_T -I${NUMPY_INCLUDE_DIR}"
+export CXXFLAGS="${CXXFLAGS} -fPIC -I${NUMPY_INCLUDE_DIR}"
+
 ${PYTHON} -m pip install .
 

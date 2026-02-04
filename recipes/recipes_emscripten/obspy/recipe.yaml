@@ -1,0 +1,72 @@
+context:
+  name: obspy
+  version: 1.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:  
+  git: https://github.com/obspy/obspy  
+  rev: 7cbbd44c3eadec5d2ae62212410e43f850db251b
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - setuptools
+    - cython
+    - python
+    - numpy
+    - pip
+  host:
+    - numpy
+    - python
+    - jinja2
+    - markupsafe
+    - numpy
+  run:
+    - numpy >=1.20
+    - scipy 
+    - matplotlib >=3.3
+    - lxml
+    - sqlalchemy >=1.4
+    - decorator
+    - requests
+    - setuptools
+    - jaraco.text 
+    - platformdirs
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_obspy.py
+
+about:
+  homepage: https://github.com/obspy/obspy
+  license: LGPL-3.0-only
+  license_file: obspy/LICENSE.txt
+  summary: ObsPy is an open-source project dedicated to provide a Python framework for processing seismological data.
+  description: |
+    ObsPy is an open-source project dedicated to provide a Python framework for processing seismological data.
+    It provides parsers for common file formats, 
+    clients to access data centers and seismological signal processing routines which allow 
+    the manipulation of seismological time series 
+    (see Beyreuther et al. 2010, Megies et al. 2011, Krischer et al. 2015).
+
+
+  documentation: https://docs.obspy.org/
+  repository: https://github.com/obspy/obspy
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

@@ -1,0 +1,49 @@
+context:
+  version: 0.8.6
+  cross_target_plattform: emscripten-wasm32
+  target_plattform: emscripten-wasm32
+
+package:
+  name: pycdfpp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/SciQLop/CDFpp/archive/v${{ version }}.tar.gz
+  sha256: 2867bb79303e1b0837f53289a68f656eaba147a9f200aea21fabfce2fe20a5ef
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{target_platform}}
+  - meson-python
+  - ninja >=1.8.2
+  - pip >=24.0
+  - python
+  host:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - numpy
+  files:
+    recipe:
+    - test_pycdfpp.py
+
+about:
+  homepage: https://github.com/SciQLop/CDFpp
+  license: MIT
+  license_file: COPYING
+  summary: A modern C++ header only cdf library with Python bindings
+
+extra:
+  recipe-maintainers:
+  - AlexisJeandet

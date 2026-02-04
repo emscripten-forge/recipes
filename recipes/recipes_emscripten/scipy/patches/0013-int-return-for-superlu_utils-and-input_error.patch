@@ -1,0 +1,67 @@
+From 7440712e9a7c7dccd11140fa495e7b4f2f7fbb42 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Tue, 9 Dec 2025 10:03:40 +0000
+Subject: [PATCH 13/18] int return for superlu_utils and input_error
+
+These are internal functions using int returns requires fewer changes
+than using void returns.
+---
+ .../linalg/_dsolve/SuperLU/SRC/input_error.c      |  3 ++-
+ scipy/sparse/linalg/_dsolve/_superlu_utils.c      | 15 +++++++++------
+ 2 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
+index bd3beab31c..4d37de80ea 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/input_error.c
+@@ -42,8 +42,9 @@ at the top-level directory.
+  *
+  * </pre>
+  */
+-void input_error(char *srname, int *info)
++int input_error(char *srname, int *info)
+ {
+     printf("** On entry to %6s, parameter number %2d had an illegal value\n",
+ 		srname, *info);
++    return 0;
+ }
+diff --git a/scipy/sparse/linalg/_dsolve/_superlu_utils.c b/scipy/sparse/linalg/_dsolve/_superlu_utils.c
+index ea7e1bc701..ee9e6cdc99 100644
+--- a/scipy/sparse/linalg/_dsolve/_superlu_utils.c
++++ b/scipy/sparse/linalg/_dsolve/_superlu_utils.c
+@@ -228,23 +228,26 @@ PyTypeObject SuperLUGlobalType = {
+  * Stub for error handling; does nothing, as we don't want to spew debug output.
+  */
+ 
+-int input_error(char *srname, int *info)
+-{
+-    return 0;
+-}
++// NOTE: Avoid duplicate symbol
++//int input_error(char *srname, int *info)
++//{
++//    return 0;
++//}
+ 
+ /*
+  * Stubs for Harwell Subroutine Library functions that SuperLU tries to call.
+  */
+ 
+-void mc64id_(int *a)
++int mc64id_(int *a)
+ {
+     superlu_python_module_abort("chosen functionality not available");
++    return 0;
+ }
+ 
+-void mc64ad_(int *a, int *b, int *c, int d[], int e[], double f[],
++int mc64ad_(int *a, int *b, int *c, int d[], int e[], double f[],
+ 	     int *g, int h[], int *i, int j[], int *k, double l[],
+ 	     int m[], int n[])
+ {
+     superlu_python_module_abort("chosen functionality not available");
++    return 0;
+ }
+-- 
+2.51.0
+
