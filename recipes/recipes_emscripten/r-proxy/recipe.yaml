@@ -1,0 +1,39 @@
+context:
+  name: r-proxy
+  version: 0.4-29
+
+package:
+  name: ${{ name }}
+  version: ${{ version|replace("-", "_") }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: c6eb0e36ef2eecb1b8564f0188ca8d2c91a80865c86698386a7b5d5baa92c35b
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://CRAN.R-project.org/package=proxy
+  license: GPL-3.0-or-later
+  summary: Provides an extensible framework for the efficient calculation of auto- and cross-proximities,
+    along with implementations of the most popular ones.
+  license_family: GPL3
+  license_file: DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
