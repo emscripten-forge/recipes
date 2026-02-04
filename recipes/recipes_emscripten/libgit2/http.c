@@ -100,7 +100,7 @@ EM_JS(size_t, emforge_js_http_read, (int conn_index, size_t buf_size, char* buff
 EM_JS(size_t, emforge_js_http_write, (int conn_index, size_t len, char* buffer), {
     try {
         const connection = Module["emforge_js_http_cache"][conn_index];
-        const buffer_js = new Uint8Array(Module.HEAPU8.buffer, buffer, len).slice(0);
+        const buffer_js = new Uint8Array(HEAPU8.buffer, buffer, len).slice(0);
         if (!connection.content) {
             connection.content = buffer_js;
         } else {
@@ -201,7 +201,7 @@ static int emforge_http_stream_write(
 
 static void emforge_http_stream_free(git_smart_subtransport_stream* s)
 {
-    emforge_http_stream* stream = GIT_CONTAINER_OF(s, emforge_http_stream, parent);
+    //emforge_http_stream* stream = GIT_CONTAINER_OF(s, emforge_http_stream, parent);
     git__free(s);
 }
 
@@ -277,9 +277,9 @@ static int emforge_http_action(
     return 0;
 }
 
-static int emforge_http_close(git_smart_subtransport* t)
+static int emforge_http_close([[maybe_unused]] git_smart_subtransport* t)
 {
-    emforge_http_subtransport* transport = GIT_CONTAINER_OF(t, emforge_http_subtransport, parent);
+    //emforge_http_subtransport* transport = GIT_CONTAINER_OF(t, emforge_http_subtransport, parent);
     return 0;
 }
 

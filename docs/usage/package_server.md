@@ -1,6 +1,6 @@
 # Package Server
 
-Emscripten-forge packages are hosted on  [prefix.dev](https://prefix.dev/channels/emscripten-forge-dev).
+Emscripten-forge packages are hosted on  [prefix.dev](https://prefix.dev/channels/emscripten-forge-4x).
 
 !!! note
 
@@ -8,7 +8,7 @@ Emscripten-forge packages are hosted on  [prefix.dev](https://prefix.dev/channel
 
     ```bash
     micromamba create -n myenv --platform=emscripten-wasm32 \
-        -c https://prefix.dev/channels/emscripten-forge-dev \
+        -c https://prefix.dev/channels/emscripten-forge-4x \
         -c conda-forge \
         python numpy
     ```
