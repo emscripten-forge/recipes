@@ -1,0 +1,57 @@
+context:
+  name: fastcan
+  version: 0.5.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f096487acc9898c4a9af4906bffeb9fd2203a277a3e94c0fc586097cc0e769dd
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - cython
+    - meson-python
+    - pip
+  host:
+    - python
+    - scikit-learn >=1.6.0
+  run:
+    - python
+    - scikit-learn >=1.6.0
+
+tests:
+- script:
+  - echo "FIXME:"
+# The tests for v0.5.0 pass. This has been tested with xeus-python.
+# The following fails because of issues with the test environment.
+# See https://github.com/emscripten-forge/recipes/issues/4364
+# tests:
+# - script: pytester
+#   files:
+#     recipe:
+#     - test_fastcan.py
+#   requirements:
+#     build:
+#     - pytester
+#     run:
+#     - pytester-run
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A fast canonical-correlation-based search algorithm
+  homepage: https://fastcan.readthedocs.io/en/latest/
+  repository: https://github.com/scikit-learn-contrib/fastcan/
+
+extra:
+  recipe-maintainers:
+    - MatthewSZhang
