@@ -6,7 +6,6 @@ def  test_numpy_testing():
     import numpy.testing as npt
 
 
-# @pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_scikit_learn():
     print("1.1")
     import numpy as np
@@ -24,7 +23,6 @@ def test_scikit_learn():
     estimator.score(X, y)
     print("1.5")
 
-# @pytest.mark.skip(reason="failing since scipy build is broken atm")
 def test_logistic_regression():
     print("2.1")
     from sklearn.datasets import load_iris
@@ -42,13 +40,14 @@ def test_logistic_regression():
 
 
 
-# is_browser_worker = pyjs.js.Function('return typeof importScripts === "function"')()
 # skip_non_worker = pytest.mark.skipif(
 #     not is_browser_worker,
 #     reason="requires browser-worker, not node",
 # )
 
-# @pytest.mark.skip(reason="failing since scipy build is broken atm")
+# FIXME: downloading does not work, it is an issue from pyjs.
+# Uncaught (in promise) TypeError: can't access property "buffer", handle is undefined
+#    __emval_get_property http://localhost:9007/xeus/.../bin/xpython.js
 def test_dl():
     from sklearn import datasets
     iris = datasets.fetch_california_housing()

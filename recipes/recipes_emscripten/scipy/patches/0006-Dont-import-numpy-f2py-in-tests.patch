@@ -1,0 +1,21 @@
+--- scipy/_lib/array_api_compat/array_api_compat/numpy/__init__.py	2026-01-05 17:14:25.021584011 +0000
++++ scipy/_lib/array_api_compat/array_api_compat/numpy/__init__.py	2026-01-05 17:14:13.782469066 +0000
+@@ -1,4 +1,17 @@
+-from numpy import * # noqa: F403
++import os
++if "PYTEST_CURRENT_TEST" in os.environ:
++    # If running in pytest, do not import numpy.f2py as it causes the em-forge
++    # testing framework to crash.
++    import importlib
++    mod = importlib.import_module('numpy')
++    objs = {}
++    for n in dir(mod):
++        if not n.startswith("_") and n != "f2py":
++            objs[n] = getattr(mod, n)
++    globals().update(objs)
++else:
++    # original code
++    from numpy import * # noqa: F403
+
+ # from numpy import * doesn't overwrite these builtin names
+ from numpy import abs, max, min, round # noqa: F401

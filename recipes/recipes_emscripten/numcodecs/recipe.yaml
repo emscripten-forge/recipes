@@ -1,57 +1,48 @@
 context:
   name: numcodecs
-  version: 0.16.0
+  version: 0.16.5
 
 package:
-  name: numcodecs
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-# - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{version
-#     }}.tar.gz
-#   sha256: f71229a951c4991ab226df4147f3780c988d1cecf1309e388d9e57bcba827387
-#   patches:
-#   # - patches/fixblosc.patch
-#   - patches/fixzlib.patch'
-
-# change to pypi sources if and when https://github.com/zarr-developers/numcodecs/pull/737
-# is merged
-- git: https://github.com/DerThorsten/numcodecs/
-  branch: emscripten
-
+  - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: 0d0fb60852f84c0bd9543cc4d2ab9eefd37fc8efcc410acd4777e62a1d300318
+    patches:
+      - patches/setup.patch
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
-  - ${{ compiler("c") }}
-  - cross-python_emscripten-wasm32
-  - cython
-  - python
-  - pip
-  - setuptools_scm
-  - numpy
+    - ${{ compiler("c") }}
+    - cross-python_emscripten-wasm32
+    - cython
+    - python
+    - pip
+    - setuptools_scm
+    - numpy
   host:
-  - numpy
-  - python
+    - numpy
+    - python
   run:
-  - numpy
-  - msgpack
-  - deprecated
-  - typing_extensions
-
+    - numpy
+    - msgpack
+    - deprecated
+    - typing_extensions
 
 tests:
-- script: pytester
-  files:
-    recipe:
-    - test_import_numcodecs.py
-  requirements:
-    build:
-    - pytester
-    run:
-    - pytester-run
+  - script: pytester
+    files:
+      recipe:
+        - test_import_numcodecs.py
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
 
 about:
   homepage: https://github.com/zarr-developers/numcodecs

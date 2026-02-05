@@ -1,17 +1,14 @@
 context:
   name: matplotlib
-  version: 3.10.6
-
+  version: 3.10.8
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
-  sha256: b553f599f639a9e19074c7e4f8f4343443483da6cd8819fbfcf6506f155ddf0e
+  sha256: dbc50c7b15bb8d7dbe51a27a58322ed73f09291772d9e3184f03f11c576693f7
   patches:
   - patches/fix-threading-and-font-cache.patch
   - patches/static-cast.patch
-
 build:
-  number: 0
-
+  number: 1
 outputs:
 - package:
     name: matplotlib-base
@@ -23,17 +20,13 @@ outputs:
     - python
     - pip
     - cross-python_${{ target_platform }}
-
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - pkg-config
     - meson-python
     - numpy
     - setuptools_scm_git_archive
-
-      # to template the emscripten.meson.cross file
     - sed
-
     host:
     - python
     - numpy
@@ -51,18 +44,33 @@ outputs:
     - pyparsing
     - python-dateutil
     - pytz
-
+  tests:
+  - package_contents:
+      files:
+      - lib/python3.13/site-packages/matplotlib/_c_internal_utils.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/ft2font.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_image.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_path.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_qhull.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_tri.cpython-313-wasm32-emscripten.so
+  - script: pytester
+    files:
+      recipe:
+      - test_matplotlib_base.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
 - package:
     name: matplotlib
     version: ${{ version }}
-
   requirements:
     host:
     - python
     run:
     - python
     - ${{ pin_subpackage('matplotlib-base', exact=True) }}
-
   tests:
   - script: pytester
     files:
@@ -73,7 +81,6 @@ outputs:
       - pytester
       run:
       - pytester-run
-
 about:
   homepage: http://matplotlib.org/
   license: PSF-2.0
