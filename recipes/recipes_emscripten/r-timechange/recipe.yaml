@@ -1,0 +1,51 @@
+context:
+  name: r-timechange
+  version: 0.4.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 6dc8ff9d339d3c4cff7ddf3800383f3e94f41c021f6c7bacccf971e187f73feb
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - r-cpp11
+  host:
+  - r-cpp11
+  run:
+  - r-cpp11
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://github.com/vspinu/timechange/
+  repository: https://github.com/vspinu/timechange/
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file: LICENSE.md
+  summary: Efficient Updating of Date-Times
+  description: |
+    Efficient routines for manipulation of date-time objects while accounting
+    for time-zones and daylight saving times. The package includes utilities for
+    updating of date-time components (year, month, day etc.), modification of
+    time-zones, rounding of date-times, period addition and subtraction etc.
+    Parts of the 'CCTZ' source code, released under the Apache 2.0 License, are
+    included in this package.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

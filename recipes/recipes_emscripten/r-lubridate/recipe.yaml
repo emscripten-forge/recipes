@@ -1,0 +1,54 @@
+context:
+  name: r-lubridate
+  version: 1.9.4
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 864b7ee223d622d41214c6aacc7d68d8984090a8e1e823c729983d33624646c1
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - r-generics
+    - r-timechange
+  host:
+    - r-generics
+    - r-timechange
+  run:
+    - r-generics
+    - r-timechange
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://lubridate.tidyverse.org
+  repository: https://github.com/tidyverse/lubridate
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  license_file: GPL-2
+  summary: Make Dealing with Dates a Little Easier
+  description: |
+    Functions to work with date-times and time-spans: fast and user friendly
+    parsing of date-time data, extraction and updating of components of a date-
+    time (years, months, days, hours, minutes, and seconds), algebraic
+    manipulation on date-time and time-span objects. The 'lubridate' package has
+    a consistent and memorable syntax that makes working with dates easy and
+    fun.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
