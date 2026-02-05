@@ -2,6 +2,10 @@ context:
   version: 0.0.2
   name: dtks
 
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
 - url: https://github.com/DerThorsten/dtks/archive/refs/tags/${{version}}.tar.gz
   sha256: cf86bd419231e2f976fcfbd0a7fbee308e77f7cc29b20c55e7cfc384c84a9d11
@@ -9,43 +13,34 @@ source:
 build:
   number: 0
 
-outputs:
-- package:
-    name: dtks
-    version: ${{ version }}
-
+requirements:
   build:
-    script: build.sh
+  - ${{ compiler("cxx") }}
+  - cross-python_emscripten-wasm32
+  - cmake>=4.0
+  - ninja
+  - numpy
+  - nanobind
+  - scikit-build-core
+  - python
+  - pip
+  host:
+  - python
+  - numpy
+  run:
+  - python
+  - numpy
 
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_dtks.py
   requirements:
     build:
-    - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
-    - cmake>=4.0
-    - ninja
-    - numpy
-    - nanobind
-    - scikit-build-core
-    - python
-    - pip
-    host:
-    - python
-    - numpy
+    - pytester
     run:
-    - python
-    - numpy
-
-  tests:
-  - script: pytester
-    files:
-      recipe:
-      - test_dtks.py
-    requirements:
-      build:
-      - pytester
-      run:
-      - pytester-run
-
+    - pytester-run
 
 about:
   license: MIT
