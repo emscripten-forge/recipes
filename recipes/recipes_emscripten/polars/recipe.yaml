@@ -43,16 +43,20 @@ outputs:
         - cffi
 
     tests:
-      - python:
-          pip_check: true
-          imports:
-            - _polars_runtime_32
       - package_contents:
           site_packages:
             - _polars_runtime_${{ polars_runtime }}/__init__.py
             - _polars_runtime_${{ polars_runtime }}/_polars_runtime.abi3.so
             - polars_runtime_${{ polars_runtime }}-${{ version }}.dist-info/*
-          strict: true
+      - script: pytester
+        requirements:
+          build:
+            - pytester
+          run:
+            - pytester-run
+        files:
+          recipe:
+            - test_polars.py
     about:
       license_file:
         - polars-runtime-${{ polars_runtime }}/LICENSE
