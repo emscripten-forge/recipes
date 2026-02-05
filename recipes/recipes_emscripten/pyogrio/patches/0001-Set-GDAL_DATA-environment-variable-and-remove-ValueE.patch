@@ -1,0 +1,78 @@
+From 8e7ad6c60a5052f29a95def2709ad4075f0d1aa1 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Fri, 19 Dec 2025 16:19:35 +0100
+Subject: [PATCH] Set GDAL_DATA environment variable and remove ValueError
+ checks
+
+Set GDAL_DATA to ${PREFIX}/share/gdal before importing pyogrio.core
+to ensure GDAL data files are found correctly. Also remove ValueError
+checks in init_gdal_data to allow graceful handling when data files
+are not present. Patch get_gdal_data_path to return GDAL_DATA env var.
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ pyogrio/__init__.py |  7 +++++++
+ pyogrio/_ogr.pyx    | 16 +++-------------
+ 2 files changed, 10 insertions(+), 13 deletions(-)
+
+diff --git a/pyogrio/__init__.py b/pyogrio/__init__.py
+index 17db833..9bc18b1 100644
+--- a/pyogrio/__init__.py
++++ b/pyogrio/__init__.py
+@@ -1,5 +1,12 @@
+ """Vectorized vector I/O using OGR."""
+ 
++import os
++
++# Set GDAL_DATA environment variable before importing GDAL-dependent modules
++if 'GDAL_DATA' not in os.environ:
++    __prefix = os.environ.get('PREFIX', "/")
++    os.environ['GDAL_DATA'] = os.path.join(__prefix, 'share', 'gdal')
++
+ try:
+     # we try importing shapely, to ensure it is imported (and it can load its
+     # own GEOS copy) before we load GDAL and its linked GEOS
+diff --git a/pyogrio/_ogr.pyx b/pyogrio/_ogr.pyx
+index 2109125..e58ee53 100644
+--- a/pyogrio/_ogr.pyx
++++ b/pyogrio/_ogr.pyx
+@@ -159,10 +159,9 @@ def get_gdal_data_path():
+     """
+     Get the path to the directory GDAL uses to read data files.
+     """
+-    cdef const char *path_c = CPLFindFile("gdal", "header.dxf")
+-    if path_c != NULL:
+-        return get_string(path_c).replace("header.dxf", "")
+-    return None
++    __prefix = os.environ.get('PREFIX', "/")
++    __fallback = os.path.join(__prefix, 'share', 'gdal')
++    return os.environ.get('GDAL_DATA', __fallback)
+ 
+ 
+ def has_proj_data():
+@@ -204,10 +203,6 @@ def init_gdal_data():
+     wheel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "gdal_data"))
+     if os.path.exists(wheel_path):
+         set_gdal_config_options({"GDAL_DATA": wheel_path})
+-        if not has_gdal_data():
+-            raise ValueError(
+-                "Could not correctly detect GDAL data files installed by pyogrio wheel"
+-            )
+         return
+ 
+     # GDAL correctly found data files from GDAL_DATA or compiled-in paths
+@@ -217,11 +212,6 @@ def init_gdal_data():
+     wk_path = os.path.join(sys.prefix, "share", "gdal")
+     if os.path.exists(wk_path):
+         set_gdal_config_options({"GDAL_DATA": wk_path})
+-        if not has_gdal_data():
+-            raise ValueError(
+-                f"Found GDAL data directory at {wk_path} but it does not appear to "
+-                "correctly contain GDAL data files"
+-            )
+         return
+ 
+     warnings.warn(
+-- 
+2.52.0
+
