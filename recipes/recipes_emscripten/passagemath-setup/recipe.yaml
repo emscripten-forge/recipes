@@ -1,0 +1,60 @@
+context:
+  version: 10.6.48
+
+package:
+  name: passagemath-setup
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-setup/passagemath_setup-${{ version }}.tar.gz
+  sha256: 12e1fce773d176ff90e216b5f36d0037090b2028dc685a2e3ed72077431b2bc8
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - pip
+  host:
+  - python
+  - setuptools
+  - wheel
+  - pip
+  run:
+  - python
+  - setuptools
+  - jinja2
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_setup.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'passagemath: Build system of the Sage library'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    sage-setup: Build system of the Sage library
+    ================================================
+
+    This is the build system of the Sage library, based on setuptools.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_setup.py
+  recipe-maintainers:
+  - mkoeppe
