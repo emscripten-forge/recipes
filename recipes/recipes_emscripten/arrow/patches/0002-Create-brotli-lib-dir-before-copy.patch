@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: GitHub Copilot <copilot@github.com>
+Date: Wed, 5 Feb 2026 16:54:00 +0100
+Subject: [PATCH] Create brotli lib directory before copying libraries
+
+The brotli external project build on Emscripten tries to copy
+library files to ${BROTLI_LIB_DIR} but the directory doesn't exist,
+causing the build to fail with:
+  Error: Target (for copy_if_different command) ".../lib" is not a directory.
+
+This patch ensures the lib directory is created before the copy operation.
+---
+ cpp/cmake_modules/ThirdpartyToolchain.cmake | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/cpp/cmake_modules/ThirdpartyToolchain.cmake b/cpp/cmake_modules/ThirdpartyToolchain.cmake
+index 1234567890..abcdefghij 100644
+--- a/cpp/cmake_modules/ThirdpartyToolchain.cmake
++++ b/cpp/cmake_modules/ThirdpartyToolchain.cmake
+@@ -1519,6 +1519,9 @@ macro(build_brotli)
+     # Copy the libraries to our install directory manually.
+     set(BROTLI_BUILD_INCLUDE_DIR
+         ${CMAKE_CURRENT_BINARY_DIR}/brotli_ep-prefix/src/brotli_ep/c/include/brotli)
++    # Create the lib directory before copying
++    file(MAKE_DIRECTORY "${BROTLI_LIB_DIR}")
++
+     add_custom_command(TARGET brotli_ep
+                        POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+-- 
+2.39.0
