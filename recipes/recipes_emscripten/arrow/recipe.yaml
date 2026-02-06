@@ -1,0 +1,223 @@
+context:
+  version: 23.0.0
+  name: arrow
+
+build:
+  number: 0
+
+cache:
+  source:
+  - url: https://github.com/apache/arrow/releases/download/apache-arrow-${{ version }}/apache-arrow-${{ version }}.tar.gz
+    sha256: 12f6844a0ba3b99645cd2bc6cc4f44f6a174ab90da37e474f08b7d073433cb60
+    patches:
+    - patches/patch_libraries_search_prefix.patch
+    - patches/0001-Patch-emscripten.patch
+    - patches/0002-Create-brotli-lib-dir-before-copy.patch
+    - patches/0003-Use-NewlineBoundaryFinder-for-Emscripten.patch
+    # - patches/0001-Add-parquet-variable.patch
+  
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - boost-cpp
+    - re2
+    - libabseil
+    - libutf8proc
+    - rapidjson
+    - nlohmann_json
+  
+  build:
+    script: build.sh
+
+outputs:
+# ============================================================================
+# Core Arrow C++ Library Outputs
+# ============================================================================
+- package:
+    name: arrow-cpp
+    version: ${{ version }}
+  build:
+    script: echo "Collecting files from cache"
+    files:
+    - lib/libarrow.a
+    - lib/cmake/Arrow/
+    - lib/pkgconfig/arrow.pc
+    - include/arrow/**
+  tests:
+  - package_contents:
+      lib:
+      - libarrow.a
+      include:
+      - arrow/array.h
+
+- package:
+    name: libarrow-acero
+    version: ${{ version }}
+  build:
+    script: echo "Collecting files from cache"
+    files:
+    - lib/libarrow_acero.a
+    - lib/cmake/ArrowAcero/
+  requirements:
+    run:
+    - arrow-cpp =${{ version }}
+  tests:
+  - package_contents:
+      lib:
+      - libarrow_acero.a
+
+- package:
+    name: libarrow-dataset
+    version: ${{ version }}
+  build:
+    script: echo "Collecting files from cache"
+    files:
+    - lib/libarrow_dataset.a
+    - lib/cmake/ArrowDataset/
+  requirements:
+    run:
+    - arrow-cpp =${{ version }}
+    - libarrow-acero =${{ version }}
+  tests:
+  - package_contents:
+      lib:
+      - libarrow_dataset.a
+
+- package:
+    name: libarrow-parquet
+    version: ${{ version }}
+  build:
+    script: echo "Collecting files from cache"
+    files:
+    - lib/libparquet.a
+    - lib/cmake/ArrowParquet/
+    - lib/cmake/Parquet/
+    - include/parquet/**
+  requirements:
+    run:
+    - arrow-cpp =${{ version }}
+  tests:
+  - package_contents:
+      lib:
+      - libparquet.a
+
+# ============================================================================
+# Python bindings
+# ============================================================================
+- package:
+    name: pyarrow
+    version: ${{ version }}
+  build:
+    script: build_pyarrow.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - cython >=3.0.12
+    - setuptools
+    - setuptools-scm
+    - numpy
+    - pip
+    - cmake
+    - make
+    host:
+    - numpy
+    - python
+    - cffi
+    - arrow-cpp =${{ version }}
+    - libarrow-acero =${{ version }}
+    - libarrow-dataset =${{ version }}
+    - libarrow-parquet =${{ version }}
+    - re2
+    - libabseil
+    - libutf8proc
+    run:
+    - numpy
+    - python
+    - libffi
+    - pycparser
+    - cloudpickle
+    - fsspec
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_py_arrow.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+# ============================================================================
+# R bindings
+# ============================================================================
+# - package:
+#     name: r-arrow
+#     version: ${{ version }}
+#   build:
+#     script: build_r_arrow.sh
+#   requirements:
+#     build:
+#     - cross-r-base_${{ target_platform }}
+#     - ${{ compiler('c') }}
+#     - pkg-config
+#     - r-assertthat
+#     - r-bit64
+#     - r-cpp11
+#     - r-glue
+#     - r-purrr
+#     - r-r6
+#     - r-rlang
+#     - r-tidyselect
+#     - r-vctrs
+#     host:
+#     - arrow-cpp =${{ version }}
+#     - libarrow-acero =${{ version }}
+#     - libarrow-dataset =${{ version }}
+#     - libarrow-parquet =${{ version }}
+#     - r-assertthat
+#     - r-bit64
+#     - r-cpp11
+#     - r-glue
+#     - r-purrr
+#     - r-r6
+#     - r-rlang
+#     - r-tidyselect
+#     - r-vctrs
+#     run:
+#     - r-assertthat
+#     - r-bit64
+#     - r-cpp11
+#     - r-glue
+#     - r-purrr
+#     - r-r6
+#     - r-rlang
+#     - r-tidyselect
+#     - r-vctrs
+#   tests:
+#   - package_contents:
+#       lib:
+#       - R/library/arrow/libs/arrow.so
+
+about:
+  homepage: https://arrow.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: 'Arrow: A cross-language development platform for in-memory analytics'
+  description: |
+    Apache Arrow is a cross-language development platform for in-memory analytics.
+    This recipe builds the Arrow C++ library, Python bindings (pyarrow), and R bindings (r-arrow).
+  license_family: APACHE
+
+extra:
+  recipe-maintainers:
+  - Klaim
+  - martinRenou
+  - DerThorsten
+  - Alex-PLACET
+  - IsabelParedes
