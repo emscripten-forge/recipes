@@ -17,8 +17,25 @@ print(os.listdir('/lib/python3.13/site-packages/'))
 ##########################################################################################
 # The following tests were extracted from various tests files in the orignal repository
 
-# test_array.py (partial)
-import pyarrow as pa
+import traceback
+
+print("=== PyArrow Import Debug ===")
+print("Python version:", sys.version)
+print("Python path:", sys.path)
+
+try:
+    print("\n1. Testing import of pyarrow...")
+    import pyarrow as pa
+    print("SUCCESS: pyarrow imported successfully")
+    print("PyArrow version:", pa.__version__)
+except Exception as e:
+    print("FAILED: Exception during import")
+    print(f"Exception type: {type(e).__name__}")
+    print(f"Exception message: {repr(e)}")
+    print(f"Exception args: {e.args}")
+    print("\nFull traceback:")
+    traceback.print_exc()
+    sys.exit(1)
 
 import weakref
 import pytest
@@ -431,3 +448,183 @@ def test_write_options():
         opts = cls()
         opts.batch_size = 0
         opts.validate()
+
+
+#### test_parquet.py (partial)
+import pyarrow.parquet as pq
+import tempfile
+
+
+def test_parquet_write_read_roundtrip():
+    """Test basic parquet write and read roundtrip."""
+    # Create a simple table
+    data = {
+        'a': [1, 2, 3, 4, 5],
+        'b': ['foo', 'bar', 'baz', 'qux', 'quux'],
+        'c': [1.1, 2.2, 3.3, 4.4, 5.5]
+    }
+    table = pa.table(data)
+    
+    # Write to parquet
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        pq.write_table(table, f.name)
+        
+        # Read back
+        result = pq.read_table(f.name)
+        
+        # Verify
+        assert result.equals(table)
+        assert result.num_rows == 5
+        assert result.num_columns == 3
+
+
+def test_parquet_column_selection():
+    """Test reading specific columns from parquet."""
+    data = {
+        'a': [1, 2, 3],
+        'b': ['x', 'y', 'z'],
+        'c': [10.0, 20.0, 30.0],
+        'd': [True, False, True]
+    }
+    table = pa.table(data)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        pq.write_table(table, f.name)
+        
+        # Read only specific columns
+        result = pq.read_table(f.name, columns=['a', 'c'])
+        
+        assert result.num_columns == 2
+        assert result.column_names == ['a', 'c']
+        assert result.column('a').to_pylist() == [1, 2, 3]
+        assert result.column('c').to_pylist() == [10.0, 20.0, 30.0]
+
+
+def test_parquet_schema():
+    """Test parquet schema preservation."""
+    schema = pa.schema([
+        ('int_col', pa.int32()),
+        ('string_col', pa.string()),
+        ('float_col', pa.float64()),
+        ('bool_col', pa.bool_())
+    ])
+    
+    data = [
+        pa.array([1, 2, 3], type=pa.int32()),
+        pa.array(['a', 'b', 'c'], type=pa.string()),
+        pa.array([1.5, 2.5, 3.5], type=pa.float64()),
+        pa.array([True, False, True], type=pa.bool_())
+    ]
+    
+    table = pa.Table.from_arrays(data, schema=schema)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        pq.write_table(table, f.name)
+        
+        # Read back and verify schema
+        result = pq.read_table(f.name)
+        
+        assert result.schema.equals(schema)
+        assert result.schema.field('int_col').type == pa.int32()
+        assert result.schema.field('string_col').type == pa.string()
+        assert result.schema.field('float_col').type == pa.float64()
+        assert result.schema.field('bool_col').type == pa.bool_()
+
+
+def test_parquet_with_nulls():
+    """Test parquet with null values."""
+    data = {
+        'a': [1, None, 3, None, 5],
+        'b': ['foo', 'bar', None, 'qux', None],
+        'c': [1.1, 2.2, 3.3, None, 5.5]
+    }
+    table = pa.table(data)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        pq.write_table(table, f.name)
+        result = pq.read_table(f.name)
+        
+        # Verify nulls are preserved
+        assert result.column('a')[1].as_py() is None
+        assert result.column('a')[3].as_py() is None
+        assert result.column('b')[2].as_py() is None
+        assert result.column('b')[4].as_py() is None
+        assert result.column('c')[3].as_py() is None
+
+
+def test_parquet_metadata():
+    """Test reading parquet file metadata."""
+    data = {'a': [1, 2, 3], 'b': [4, 5, 6]}
+    table = pa.table(data)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        pq.write_table(table, f.name)
+        
+        # Read metadata
+        parquet_file = pq.ParquetFile(f.name)
+        metadata = parquet_file.metadata
+        
+        assert metadata.num_rows == 3
+        assert metadata.num_columns == 2
+        assert metadata.num_row_groups > 0
+
+
+def test_parquet_writer_context_manager():
+    """Test ParquetWriter using context manager."""
+    schema = pa.schema([
+        ('int_col', pa.int64()),
+        ('str_col', pa.string())
+    ])
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        # Write using ParquetWriter
+        with pq.ParquetWriter(f.name, schema) as writer:
+            for i in range(3):
+                batch = pa.RecordBatch.from_arrays([
+                    pa.array([i]),
+                    pa.array([f'row_{i}'])
+                ], schema=schema)
+                writer.write_batch(batch)
+        
+        # Read and verify
+        result = pq.read_table(f.name)
+        assert result.num_rows == 3
+        assert result.column('int_col').to_pylist() == [0, 1, 2]
+        assert result.column('str_col').to_pylist() == ['row_0', 'row_1', 'row_2']
+
+
+def test_parquet_compression():
+    """Test parquet with compression."""
+    data = {'a': list(range(100)), 'b': [f'string_{i}' for i in range(100)]}
+    table = pa.table(data)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        # Write with snappy compression (default)
+        pq.write_table(table, f.name, compression='snappy')
+        
+        # Read back and verify
+        result = pq.read_table(f.name)
+        assert result.equals(table)
+
+
+def test_parquet_batch_reading():
+    """Test reading parquet in batches."""
+    data = {'col': list(range(50))}
+    table = pa.table(data)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.parquet') as f:
+        pq.write_table(table, f.name)
+        
+        # Read in batches
+        parquet_file = pq.ParquetFile(f.name)
+        batches = []
+        for batch in parquet_file.iter_batches(batch_size=10):
+            batches.append(batch)
+            assert isinstance(batch, pa.RecordBatch)
+        
+        # Verify we got multiple batches
+        assert len(batches) > 0
+        
+        # Reconstruct table from batches
+        reconstructed = pa.Table.from_batches(batches)
+        assert reconstructed.equals(table)
