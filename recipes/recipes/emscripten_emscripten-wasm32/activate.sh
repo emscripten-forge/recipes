@@ -53,6 +53,8 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     export EXCEPTION_HANDLING_FLAGS="-sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
 
+    export SIMD_FLAGS="-msimd128"
+
     # basics ld
     export EM_FORGE_LDFLAGS_BASE="-L${PREFIX}/lib"
     export EM_FORGE_LDFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_LDFLAGS_BASE}"
@@ -67,6 +69,6 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
 
     # these flags are passed to emcc, so every package built with emcc gets them
-    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS}"
+    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS} ${SIMD_FLAGS}"
 
 fi
