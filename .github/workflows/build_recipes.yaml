@@ -3,7 +3,7 @@ name: Build Recipes
 on:
   push:
     branches:
-      - "emscripten-4x"
+      - "main"
     paths:
       - "recipes/**"
   pull_request:
@@ -15,6 +15,7 @@ jobs:
   build_recipes:
     runs-on: ubuntu-latest
     env:
+      FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
     strategy:
@@ -25,16 +26,9 @@ jobs:
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Maximize build space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: apt-install playwright dependencies
         run: |
@@ -76,7 +70,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-4x~1 origin/emscripten-4x
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
       ################################################################
       # PULL_REQUEST
@@ -85,7 +79,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-4x HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
 
       ################################################################
       # UPLOAD
