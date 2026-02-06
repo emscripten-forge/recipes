@@ -43,6 +43,7 @@ outputs:
     script: echo "Collecting files from cache"
     files:
     - lib/libarrow.a
+    - lib/libarrow_bundled_dependencies.a
     - lib/cmake/Arrow/
     - lib/pkgconfig/arrow.pc
     - include/arrow/**
@@ -50,6 +51,7 @@ outputs:
   - package_contents:
       lib:
       - libarrow.a
+      - libarrow_bundled_dependencies.a
       include:
       - arrow/array.h
 
@@ -85,6 +87,22 @@ outputs:
   - package_contents:
       lib:
       - libarrow_dataset.a
+
+- package:
+    name: libarrow-compute
+    version: ${{ version }}
+  build:
+    script: echo "Collecting files from cache"
+    files:
+    - lib/libarrow_compute.a
+    - lib/cmake/ArrowCompute/
+  requirements:
+    run:
+    - arrow-cpp =${{ version }}
+  tests:
+  - package_contents:
+      lib:
+      - libarrow_compute.a
 
 - package:
     name: libarrow-parquet
@@ -132,10 +150,16 @@ outputs:
     - libarrow-acero =${{ version }}
     - libarrow-dataset =${{ version }}
     - libarrow-parquet =${{ version }}
+    - libarrow-compute =${{ version }}
     - re2
     - libabseil
     - libutf8proc
     run:
+    - arrow-cpp =${{ version }}
+    - libarrow-acero =${{ version }}
+    - libarrow-dataset =${{ version }}
+    - libarrow-parquet =${{ version }}
+    - libarrow-compute =${{ version }}
     - numpy
     - python
     - libffi
