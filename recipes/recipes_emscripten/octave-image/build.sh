@@ -11,9 +11,12 @@ PKG_DIR="$PREFIX/lib/octave/packages/$PKG-$VER"
 mkdir -p "$SITE_OCT"
 mkdir -p "$PKG_DIR"
 
-# Install package metadata and m-files
+# Package metadata + m-files
+cp DESCRIPTION "$PKG_DIR/"
 cp -r inst "$PKG_DIR/"
-cp PKG_ADD PKG_DEL DESCRIPTION "$PKG_DIR/"
+
+[ -f PKG_ADD ] && cp PKG_ADD "$PKG_DIR/" || true
+[ -f PKG_DEL ] && cp PKG_DEL "$PKG_DIR/" || true
 [ -d doc ] && cp -r doc "$PKG_DIR/" || true
 
 # Build oct-files
