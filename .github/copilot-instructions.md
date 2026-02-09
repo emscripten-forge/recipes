@@ -82,7 +82,7 @@ curl -sL <url> | sha256sum
 ```yaml
 build:
   number: 0
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 ```
 
 **R packages:**
