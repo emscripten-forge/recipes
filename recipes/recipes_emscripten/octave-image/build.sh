@@ -8,11 +8,39 @@ BUILD_DIR="_builddir"
 LOG_DIR="${SRC_DIR:-$PWD}/config-logs"
 mkdir -p "${LOG_DIR}"
 
-# Create tarball exactly how Octave expects
-tar -czf ${PKG}-${VER}.tar.gz ${PKG}
+log() {
+  echo
+  echo "==== $* ===="
+}
 
-# Run build only (no install)
+log "Initial environment (before sanitizing flags)"
+printenv | grep -E 'CFLAGS|CXXFLAGS|FCFLAGS|march|mtune' || true
+
+strip_cpu_flags() {
+  echo "$1" \
+    | sed -E 's/-march=[^ ]+//g' \
+    | sed -E 's/-mtune=[^ ]+//g' \
+    | sed -E 's/-fno-plt//g'
+}
+
+export CFLAGS="$(strip_cpu_flags "${CFLAGS:-}")"
+export CXXFLAGS="$(strip_cpu_flags "${CXXFLAGS:-}")"
+export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
+
+log "Sanitized flags"
+echo "CFLAGS   = ${CFLAGS:-<unset>}"
+echo "CXXFLAGS = ${CXXFLAGS:-<unset>}"
+echo "FCFLAGS  = ${FCFLAGS:-<unset>}"
+
+log "Creating Octave package tarball"
+tar -czf "${PKG}-${VER}.tar.gz" "${PKG}"
+ls -lah "${PKG}-${VER}.tar.gz"
+
+log "Running pkg build (no install, keep build dir)"
 octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || true
+
+
+
 
 CONFIG_LOG="${BUILD_DIR}/${PKG}/src/config.log"
 
