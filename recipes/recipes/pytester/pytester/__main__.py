@@ -68,16 +68,16 @@ def main():
 
     backends = [
         (
-            BackendType.browser_main,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+            BackendType.browser_worker,
+            lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=False)
         ),
         (
             BackendType.browser_worker,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=True)
         ),
         (
-            BackendType.browser_worker,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=False)
+            BackendType.browser_main,
+            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
         )
     ]
     print(
