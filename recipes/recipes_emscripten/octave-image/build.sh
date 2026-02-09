@@ -1,44 +1,27 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-log() {
-  echo
-  echo "==== $* ===="
-}
-
 PKG=image
 VER=2.18.1
 
-log "Build environment"
-echo "PWD            = $(pwd)"
-echo "PREFIX         = ${PREFIX:-<unset>}"
-echo "BUILD_PREFIX   = ${BUILD_PREFIX:-<unset>}"
-echo "PATH           = $PATH"
-which octave || true
-which mkoctfile || true
-which g++ || true
-octave --version || true
+OCT_PKG_DIR="$PREFIX/share/octave/packages/${PKG}-${VER}"
 
-log "Source tree sanity check"
-ls -lah .
-ls -lah "${PKG}"
-ls -lah "${PKG}/src" || true
-ls -lah "${PKG}/inst" || true
+echo "Installing Octave package to:"
+echo "  ${OCT_PKG_DIR}"
 
-log "Creating Octave package tarball"
-tar -czf "${PKG}-${VER}.tar.gz" "${PKG}"
-ls -lah "${PKG}-${VER}.tar.gz"
+mkdir -p "${OCT_PKG_DIR}"
 
-log "Running pkg install (this WILL run configure)"
-octave -W -H --eval "
-  disp('Octave version:');
-  disp(version);
-  disp('mkoctfile path:');
-  system('which mkoctfile');
-  disp('Compiler info:');
-  system('mkoctfile -p CXX');
-  disp('Starting pkg install...');
-  pkg install -global -verbose ${PKG}-${VER}.tar.gz;
-"
+# Required metadata
+cp "${PKG}/DESCRIPTION" "${OCT_PKG_DIR}/"
 
-log "pkg install completed"
+# Optional hooks
+[ -f "${PKG}/PKG_ADD" ] && cp "${PKG}/PKG_ADD" "${OCT_PKG_DIR}/"
+[ -f "${PKG}/PKG_DEL" ] && cp "${PKG}/PKG_DEL" "${OCT_PKG_DIR}/"
+
+# Install functions
+cp -r "${PKG}/inst" "${OCT_PKG_DIR}/"
+
+# Optional documentation
+[ -d "${PKG}/doc" ] && cp -r "${PKG}/doc" "${OCT_PKG_DIR}/"
+
+echo "Package files installed."
