@@ -15,8 +15,3 @@ find_package(sparrow-ipc REQUIRED)
 
 add_executable(test_simple test_simple.cpp)
 target_link_libraries(test_simple PRIVATE sparrow-ipc::sparrow-ipc)
-
-# Enable main module for dynamic linking with side modules
-set_target_properties(test_simple PROPERTIES 
-  LINK_FLAGS "-s MAIN_MODULE=2"
-)
