@@ -9,4 +9,4 @@ VER=2.18.1
 tar -czf ${PKG}-${VER}.tar.gz ${PKG}
 
 # Install using Octave's package manager
-octave -W -H --eval "pkg install -global -verbose ${PKG}-${VER}.tar.gz || cat config.log"
+octave -W -H --eval "pkg install -global -verbose ${PKG}-${VER}.tar.gz" || cat config.log
