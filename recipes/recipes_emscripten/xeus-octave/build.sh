@@ -11,7 +11,8 @@ emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
     -DCMAKE_FIND_ROOT_PATH="$PREFIX"                       \
-    -DCMAKE_VERBOSE_MAKEFILE=OFF
+    -DCMAKE_VERBOSE_MAKEFILE=OFF                           \
+    -DXEUS_OCTAVE_PKG_REBUILD=ON
 
 emmake make install
 

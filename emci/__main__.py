@@ -75,6 +75,20 @@ def bump_recipes_versions(target_branch_name: str):
 
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
+
+@bot_app.command()
+def build_missing_recipes(target_branch_name: str):
+    from .bot.build_missing_recipes import build_missing_recipes
+    build_missing_recipes(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+
+
+@bot_app.command()
+def update_matplotlib_fontcache(target_branch_name: str):
+    from .bot.update_matplotlib_fontcache import update_matplotlib_fontcache
+
+    update_matplotlib_fontcache(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+
+
 @build_app.command()
 def lint(old: str, new: str):
     """
@@ -114,6 +128,8 @@ def lint(old: str, new: str):
         sys.exit(1)
     else:
         print("✅ All changed recipes passed validation")
+
+
 
 
 if __name__ == "__main__":

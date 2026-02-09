@@ -1,0 +1,98 @@
+From b56dd0a61a8634e5d0beab5babcbdac302c82b58 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 7 May 2025 17:34:52 +0200
+Subject: [PATCH 3/4] Disable threads
+
+---
+ scipy/meson.build                             | 22 +++++++++----------
+ .../tests/_cython_examples/meson.build        |  2 +-
+ subprojects/highs/meson.build                 |  2 +-
+ 3 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/scipy/meson.build b/scipy/meson.build
+index 73168d8..3771c7c 100644
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -27,7 +27,7 @@ if is_mingw
+   add_project_arguments('-fno-optimize-sibling-calls', language: ['fortran'])
+ endif
+ 
+-thread_dep = dependency('threads', required: false)
++thread_dep = dependency('threads_DONTUSE', required: false)
+ 
+ 
+ # Uses the `numpy-config` executable (or a user's numpy.pc pkg-config file).
+@@ -36,11 +36,11 @@ thread_dep = dependency('threads', required: false)
+ # version easily for >=2.0.
+ _numpy_dep = dependency('numpy', required: false)
+ f2py_freethreading_arg = []
+-if _numpy_dep.found()
+-  if _numpy_dep.version().version_compare('>=2.1.0')
+-    f2py_freethreading_arg = ['--free-threading']
+-  endif
+-endif
++# if _numpy_dep.found()
++#   if _numpy_dep.version().version_compare('>=2.1.0')
++#     f2py_freethreading_arg = ['--free-threading']
++#   endif
++# endif
+ 
+ # NumPy include directory - needed in all submodules
+ # The chdir is needed because within numpy there's an `import signal`
+@@ -155,9 +155,9 @@ cdata = configuration_data()
+ # Test variable attribute to use for thread-local storage;
+ # Adapted from `numpy/_core/meson.build`.
+ check_tls_attrs = [
+-  ['thread_local', 'HAVE_THREAD_LOCAL'],    # C23
+-  ['_Thread_local', 'HAVE__THREAD_LOCAL'],  # C11/C17
+-  ['__thread', 'HAVE__THREAD'],
++  ['thread_local_DONTUSE', 'HAVE_THREAD_LOCAL_DONTUSE'],    # C23
++  ['_Thread_local_DONTUSE', 'HAVE__THREAD_LOCAL_DONTUSE'],  # C11/C17
++  ['__thread_DONTUSE', 'HAVE__THREAD_DONTUSE'],
+ ]
+ if is_windows and not is_mingw
+   check_tls_attrs += ['__declspec(thread)', 'HAVE___DECLSPEC_THREAD_']
+@@ -193,7 +193,7 @@ scipy_config_h = configure_file(
+   install: false
+ )
+ 
+-_f2py_c_args = [f'-DF2PY_THREAD_LOCAL_DECL=@f2py_tls_define@']
++_f2py_c_args = []
+ fortranobject_dep = declare_dependency(
+   dependencies: fortranobject_dep,
+   compile_args: _f2py_c_args,
+@@ -379,7 +379,7 @@ _cython_tree = [fs.copyfile('__init__.py')]
+ 
+ cython_args = ['-3', '--fast-fail', '--output-file', '@OUTPUT@', '--include-dir', '@BUILD_ROOT@', '@INPUT@']
+ if cy.version().version_compare('>=3.1.0')
+-  cython_args += ['-Xfreethreading_compatible=True']
++  cython_args += ['-Xfreethreading_compatible=False']
+ endif
+ cython_cplus_args = ['--cplus'] + cython_args
+ 
+diff --git a/scipy/optimize/tests/_cython_examples/meson.build b/scipy/optimize/tests/_cython_examples/meson.build
+index 1fb210f..02e0b2c 100644
+--- a/scipy/optimize/tests/_cython_examples/meson.build
++++ b/scipy/optimize/tests/_cython_examples/meson.build
+@@ -12,7 +12,7 @@ endif
+ 
+ cython_args = []
+ if cy.version().version_compare('>=3.1.0')
+-  cython_args += ['-Xfreethreading_compatible=True']
++  cython_args += ['-Xfreethreading_compatible=False']
+ endif
+ 
+ py3.extension_module(
+diff --git a/subprojects/highs/meson.build b/subprojects/highs/meson.build
+index 8cb61f8..bae6f05 100644
+--- a/subprojects/highs/meson.build
++++ b/subprojects/highs/meson.build
+@@ -110,7 +110,7 @@ if is_mingw
+ endif
+ 
+ # --------------------- Dependencies
+-threads_dep = dependency('threads', required: false)
++threads_dep = dependency('threads_DONTUSE', required: false)
+ _deps += threads_dep
+ 
+ # Determine whether it is necessary to link libatomic. This could be the case
