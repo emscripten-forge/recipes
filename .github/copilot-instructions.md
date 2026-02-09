@@ -366,3 +366,5 @@ requirements:
 - `$HOST` - host platform triplet
 - `$EM_FORGE_SIDE_MODULE_CFLAGS` - C/C++ flags for emscripten
 - `$EM_FORGE_SIDE_MODULE_LDFLAGS` - linker flags for emscripten
+- `BUILD_PREFIX` - build environment prefix
+- `$PY_VER` - Python version (e.g., 3.10)
