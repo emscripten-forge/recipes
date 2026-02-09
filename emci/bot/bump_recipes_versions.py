@@ -3,14 +3,12 @@ import subprocess
 import os
 from pathlib import Path
 from ruamel.yaml import YAML
-import pprint
 import jinja2
 import copy
 from .next_version import next_version
 from .url_exists import url_exists
 from .hash_url import hash_url
 from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
-import sys
 import json
 
 # custom error derived from Exception
@@ -158,11 +156,18 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
     # check if the recipe has test section
     # load recipe
-    automerge = False
+    automerge = True
     with open(recipe_file) as file:
         recipe = YAML().load(file)
-        if 'tests' in recipe:
-            automerge = True
+
+        # Multi-outputs recipe
+        if hasattr(recipe, "outputs"):
+            for i, output in enumerate(recipe["outputs"]):
+                if "tests" not in output:
+                    automerge = False
+                    break
+        elif 'tests' not in recipe:
+            automerge = False
 
 
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
@@ -186,7 +191,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     return True , current_version, new_version
 
 
-def try_to_merge_pr(pr, recipe_dir=None):
+def try_to_merge_pr(pr, recipe_dir=None, ping=False):
 
     passed = subprocess.run(
         ['gh', 'pr', 'checks', str(pr)],
@@ -208,13 +213,13 @@ def try_to_merge_pr(pr, recipe_dir=None):
         maintainers = []
         if recipe_dir is not None:
             with open(Path(recipe_dir)/"recipe.yaml") as file:
-                recipe = YAML().load(file) 
+                recipe = YAML().load(file)
                 if 'extra' in recipe:
                     if 'recipe-maintainers' in recipe['extra']:
                         maintainers = recipe['extra']['recipe-maintainers']
 
         message = """Either the CI is failing, or the recipe is not tested. I need help from a human."""
-        if maintainers:
+        if maintainers and ping:
             message += "\nPing the maintainers: "
             for maintainer in maintainers:
                 message += f"@{maintainer} "
@@ -243,7 +248,7 @@ def user_ctx(user, email, bypass=False):
 
 def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20):
     print(f"Bumping recipes in {recipe_dir} to {pr_target_branch}")
-   # empty context manager
+    # empty context manager
     @contextlib.contextmanager
     def empty_context_manager():
         yield
@@ -284,12 +289,16 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         # Check for opened PRs and merge them if the CI passed
         print("Checking opened PRs and merge them if green!")
 
+        command = [
+            "gh", "pr", "list",
+            "--author", "emscripten-forge-bot",
+            "--base", pr_target_branch,
+            "--json", "number,title",
+            "--limit", "200" # default is only 30
+        ]
 
-        command = ["gh","pr","list","--author","emscripten-forge-bot","--base",pr_target_branch,"--json","number,title"]
         # run command and get the output as json
         all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
-
-
 
         all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
         # map from folder names to recipe-dir
@@ -299,14 +308,14 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_id = [pr['number'] for pr in all_prs]
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
-        # Merge PRs if possible (only for main atm)
-        if pr_target_branch == "main":
+        # Merge PRs if possible
+        if pr_target_branch in ["main", "emscripten-3x"]:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
 
                 try:
-                    try_to_merge_pr(pr, recipe_dir=recipe_dir)
+                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
 
@@ -319,8 +328,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python', 
-            'xvega', 'xvega-bindings', 'libffi'
+            'sqlite', 'robotics-toolbox-python',
+            'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 

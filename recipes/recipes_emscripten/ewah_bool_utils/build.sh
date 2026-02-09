@@ -7,7 +7,7 @@ cmake ${CMAKE_ARGS} ..                    \
     -DCMAKE_BUILD_TYPE=Release            \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}    \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX} \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON  
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
 
 # Build step (install headers and cmake config files)
 ninja install

@@ -7,7 +7,7 @@
 
 Emscripten-forge is a GitHub [organization](https://github.com/emscripten-forge)/[repository](https://github.com/emscripten-forge/recipes) containing  [conda recipes](https://github.com/emscripten-forge/recipes) for the `emscripten-wasm32` platform.
 Conda-forge does not (yet) support the `emscripten-wasm32` platform. `emscripten-forge` fills this gap by providing a channel with conda packages for the `emscripten-wasm32` platform.
-The recipes repository not only stores the recipe files for multiple packages, but it also builds and uploads these packages to the `emscripten-forge` channel on [prefix.dev](https://prefix.dev/channels/emscripten-forge-dev)
+The recipes repository not only stores the recipe files for multiple packages, but it also builds and uploads these packages to the `emscripten-forge` channel on [prefix.dev](https://prefix.dev/channels/emscripten-forge-4x)
 
 ##
 

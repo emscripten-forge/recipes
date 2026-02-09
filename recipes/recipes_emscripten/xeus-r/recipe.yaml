@@ -1,7 +1,6 @@
 context:
-  version: 0.7.1
+  version: 0.9.0
   name: xeus-r
-  r_base_version: 4.4.3
 
 package:
   name: ${{ name }}
@@ -9,7 +8,10 @@ package:
 
 source:
   url: https://github.com/jupyter-xeus/xeus-r/archive/refs/tags/${{ version }}.tar.gz
-  sha256: f4bdaa26f3392a61411201884ee92e15a3abc41fdfb30408efc18f0322ed17a2
+  sha256: 72fdd248ff13c901ec8f793960fa59e2158e20d39014ec0428a31af2f3c3a947
+  patches:
+  - patches/0001-Update-linkage.patch
+  - patches/0002-Add-shared-libs.patch
 
 build:
   number: 0
@@ -21,7 +23,6 @@ requirements:
   - make
   # Dependencies to build hera
   - cross-r-base_${{ target_platform }}
-  - r-base == ${{ r_base_version }}
   - r-cli
   - r-evaluate
   - r-glue
@@ -30,17 +31,16 @@ requirements:
   - r-repr
   host:
   - nlohmann_json
-  - xeus =5.2.2
-  - xeus-lite =3.2.1
+  - nlohmann_json-abi
+  - xeus
+  - xeus-lite
   - pcre2>=10.43
   - zlib>=1.2.13
   - libflang                    # for FortranRuntime
-  - xz                          # for lzma
+  - liblzma
   - bzip2
-  - libiconv
-  - r-base == ${{ r_base_version }}
+  - libiconv >=1.18
   run:
-  - r-base == ${{ r_base_version }}
   - r-cli
   - r-evaluate
   - r-glue
@@ -49,6 +49,7 @@ requirements:
   - r-R6
   - r-repr
   - r-rlang
+  - zlib
 
 tests:
 - package_contents:

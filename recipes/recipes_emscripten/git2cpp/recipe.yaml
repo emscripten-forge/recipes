@@ -1,6 +1,6 @@
 context:
   name: git2cpp
-  version: 0.0.4
+  version: 0.0.7
 
 package:
   name: ${{ name }}
@@ -8,33 +8,34 @@ package:
 
 source:
   url: https://github.com/QuantStack/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 3750102d4a36ff4a584c4ff1f667387bb695c86d1bf5861f14c3b67b65fda718
+  sha256: 48364f858a21d5a5a6b5f05ad33c94a768daeaf000784fec69a7424c809a44e0
 
 build:
   number: 0
 
 requirements:
   build:
-    - ${{ compiler("cxx") }}
-    - cli11
-    - cmake
-    - termcolor-cpp
+  - ${{ compiler("cxx") }}
+  - cli11
+  - cmake
+  - termcolor-cpp
   host:
-    - libgit2>=1.9.0
+  - libgit2>=1.9.0
+  - zlib
 
 tests:
-  - script:
-    - test -f $PREFIX/bin/git2cpp.js
-    - test -f $PREFIX/bin/git2cpp.wasm
-  - script: |
-      OUTPUT=$(run_modularized $PREFIX/bin/git2cpp.js --version | cut -c -15)
-      if [[ "$OUTPUT" != "git2cpp version" ]]; then
-        echo "Unexpected output: $OUTPUT"
-        exit 1
-      fi
-    requirements:
-      build:
-        - run_modularized >= 0.1.2
+- script:
+  - test -f $PREFIX/bin/git2cpp.js
+  - test -f $PREFIX/bin/git2cpp.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/git2cpp.js --version | cut -c -15)
+    if [[ "$OUTPUT" != "git2cpp version" ]]; then
+      echo "Unexpected output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
 
 about:
   homepage: https://github.com/QuantStack/git2cpp
@@ -43,4 +44,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - ianthomas23
+  - ianthomas23
