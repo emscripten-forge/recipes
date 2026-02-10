@@ -23,7 +23,7 @@ strip_cpu_flags() {
     | sed -E 's/-fno-plt//g'
 }
 
-WRAPPER="$SRC_DIR/empp-wrapper.sh"
+WRAPPER="${RECIPE_DIR}/empp-wrapper.sh"
 
 chmod +x "$WRAPPER"
 
