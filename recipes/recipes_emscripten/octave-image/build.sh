@@ -13,9 +13,6 @@ log() {
   echo "==== $* ===="
 }
 
-log "Initial environment (before sanitizing flags)"
-printenv | grep -E 'CFLAGS|CXXFLAGS|FCFLAGS|march|mtune' || true
-
 strip_cpu_flags() {
   echo "$1" \
     | sed -E 's/-march=[^ ]+//g' \
@@ -23,21 +20,33 @@ strip_cpu_flags() {
     | sed -E 's/-fno-plt//g'
 }
 
-WRAPPER="${RECIPE_DIR}/empp-wrapper.sh"
+log "mkoctfile defaults (before override)"
+mkoctfile -p CFLAGS   || true
+mkoctfile -p CXXFLAGS || true
+mkoctfile -p LDFLAGS  || true
 
-chmod +x "$WRAPPER"
+log "Initial environment (before sanitizing)"
+printenv | grep -E '^(ALL_)?(CFLAGS|CXXFLAGS|FCFLAGS|LDFLAGS)=' || true
 
-export CXX="$WRAPPER"
-export CXXFLAGS=""
-echo "Using CXX=$CXX"
-ls -l "$CXX"
-
+# ---- sanitize user flags ----
+export CFLAGS="$(strip_cpu_flags "${CFLAGS:-}")"
+export CXXFLAGS="$(strip_cpu_flags "${CXXFLAGS:-}")"
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
+export LDFLAGS="$(strip_cpu_flags "${LDFLAGS:-}")"
 
-log "Sanitized flags"
-echo "CFLAGS   = ${CFLAGS:-<unset>}"
-echo "CXXFLAGS = ${CXXFLAGS:-<unset>}"
-echo "FCFLAGS  = ${FCFLAGS:-<unset>}"
+# ---- sanitize Octave-injected flags ----
+export ALL_CFLAGS="$(strip_cpu_flags "$(mkoctfile -p CFLAGS)")"
+export ALL_CXXFLAGS="$(strip_cpu_flags "$(mkoctfile -p CXXFLAGS)")"
+export ALL_LDFLAGS="$(strip_cpu_flags "$(mkoctfile -p LDFLAGS)")"
+
+log "Sanitized flags (effective)"
+echo "ALL_CFLAGS   = ${ALL_CFLAGS}"
+echo "ALL_CXXFLAGS = ${ALL_CXXFLAGS}"
+echo "ALL_LDFLAGS  = ${ALL_LDFLAGS}"
+echo "CFLAGS       = ${CFLAGS:-<unset>}"
+echo "CXXFLAGS     = ${CXXFLAGS:-<unset>}"
+echo "FCFLAGS      = ${FCFLAGS:-<unset>}"
+echo "LDFLAGS      = ${LDFLAGS:-<unset>}"
 
 log "Creating Octave package tarball"
 tar -czf "${PKG}-${VER}.tar.gz" "${PKG}"
