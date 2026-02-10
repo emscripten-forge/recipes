@@ -61,6 +61,8 @@ cd build_cpp
 # Add Emscripten-specific flags to help Boost detect the platform correctly
 export CXXFLAGS="${CXXFLAGS} -fms-extensions -pthread"
 
+export LDFLAGS="${LDFLAGS} -sNODERAWFS=1 -sUSE_ZLIB=1 -sFORCE_FILESYSTEM=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,PATH,ERRNO_CODES,PROXYFS -lproxyfs.js"
+
 # Configure Arrow C++ with comprehensive feature set
 cmake ${CMAKE_ARGS} \
     ${CMAKE_COMMON_ARGS} \

@@ -55,6 +55,17 @@ outputs:
       - libarrow_bundled_dependencies.a
       include:
       - arrow/array.h
+  - script:
+      - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/arrow-cpp/
 
 - package:
     name: libarrow-acero
@@ -71,6 +82,19 @@ outputs:
   - package_contents:
       lib:
       - libarrow_acero.a
+  - script:
+      - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      run:
+      - arrow-cpp =${{ version }}
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/libarrow-acero/
 
 - package:
     name: libarrow-dataset
@@ -88,6 +112,20 @@ outputs:
   - package_contents:
       lib:
       - libarrow_dataset.a
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      run:
+      - arrow-cpp =${{ version }}
+      - libarrow-acero =${{ version }}
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/libarrow-dataset/
 
 - package:
     name: libarrow-compute
@@ -104,6 +142,20 @@ outputs:
   - package_contents:
       lib:
       - libarrow_compute.a
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      run:
+      - arrow-cpp =${{ version }}
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/libarrow-compute/
+
 
 - package:
     name: libarrow-parquet
@@ -122,6 +174,19 @@ outputs:
   - package_contents:
       lib:
       - libparquet.a
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      run:
+      - arrow-cpp =${{ version }}
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/libarrow-parquet/
 
 # ============================================================================
 # Python bindings
