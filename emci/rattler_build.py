@@ -18,8 +18,6 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         if recipe == "arrow" or recipe == "thrift":
             cmd.extend(["--experimental"])
     elif recipes_dir is not None:
-
-        raise RuntimeError(f"Building all recipes in directory: {recipes_dir}")
         cmd.extend(["--recipe-dir", str(recipes_dir)])
         if "thrift" or "arrow" in str(recipes_dir):
             cmd.extend(["--experimental"])
