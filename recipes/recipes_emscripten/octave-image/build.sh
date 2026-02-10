@@ -23,9 +23,14 @@ strip_cpu_flags() {
     | sed -E 's/-fno-plt//g'
 }
 
-export CXX="$SRC_DIR/empp-wrapper.sh"
+WRAPPER="$PWD/empp-wrapper.sh"
+
+chmod +x "$WRAPPER"
+
+export CXX="$WRAPPER"
 export CXXFLAGS=""
-echo "Using CXX=${CXX}"
+echo "Using CXX=$CXX"
+ls -l "$CXX"
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
 
