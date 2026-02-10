@@ -23,21 +23,20 @@ strip_cpu_flags() {
     | sed -E 's/-fno-plt//g'
 }
 
+rm $BUILD_PREFIX/bin/wasm-ld
+
 WRAPPER="${RECIPE_DIR}/empp-wrapper.sh"
-WASM_LD_WRAPPER="${RECIPE_DIR}/wasm-ld-wrapper.sh"
 
 chmod +x "$WRAPPER"
-chmod +x "$WASM_LD_WRAPPER"
 
 export CXX="$WRAPPER"
 export CXXFLAGS=""
 echo "Using CXX=$CXX"
 ls -l "$CXX"
 
-mkdir -p toolchain-wrappers
-cp "$WASM_LD_WRAPPER" toolchain-wrappers/wasm-ld
-chmod +x toolchain-wrappers/wasm-ld
-export PATH="$PWD/toolchain-wrappers:$PATH"
+cp "${RECIPE_DIR}/wasm-ld-wrapper.sh" "$BUILD_PREFIX/bin/wasm-ld"
+chmod +x "$BUILD_PREFIX/bin/wasm-ld"
+
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
 

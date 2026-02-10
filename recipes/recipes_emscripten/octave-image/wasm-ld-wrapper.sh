@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REAL_WASM_LD="$(command -v wasm-ld)"
+REAL_WASM_LD="${BUILD_PREFIX}/opt/emsdk/upstream/bin/wasm-ld"
 
 if [[ -z "$REAL_WASM_LD" ]]; then
   echo "wasm-ld not found" >&2
@@ -31,4 +31,4 @@ for arg in "$@"; do
   esac
 done
 
-exec "$REAL_WASM_LD" "${ARGS[@]}"
+exec "${REAL_WASM_LD}" "${ARGS[@]}"
