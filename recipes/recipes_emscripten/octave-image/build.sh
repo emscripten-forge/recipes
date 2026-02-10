@@ -50,7 +50,7 @@ tar -czf "${PKG}-${VER}.tar.gz" "${PKG}"
 ls -lah "${PKG}-${VER}.tar.gz"
 
 log "Running pkg build (no install, keep build dir)"
-octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || true
+octave -W -H --eval "pkg install ${PKG}-${VER}.tar.gz -verbose"
 
 
 
