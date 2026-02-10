@@ -34,7 +34,10 @@ export CXXFLAGS=""
 echo "Using CXX=$CXX"
 ls -l "$CXX"
 
-export WASM_LD="$WASM_LD_WRAPPER"
+mkdir -p toolchain-wrappers
+cp "$WASM_LD_WRAPPER" toolchain-wrappers/wasm-ld
+chmod +x toolchain-wrappers/wasm-ld
+export PATH="$PWD/toolchain-wrappers:$PATH"
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
 
