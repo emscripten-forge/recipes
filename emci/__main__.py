@@ -109,8 +109,14 @@ def lint(old: str, new: str):
             try:
                 with open(meta_path) as f:
                     meta = yaml.safe_load(f)
-                if isinstance(meta.get('source'), list):
-                    meta['source'] = meta['source'][0]
+                # Convert list to single element only if it's a URL-based source
+                # Path-based sources (like pytester) should remain as lists
+                if isinstance(meta.get('source'), list) and len(meta['source']) > 0:
+                    first_source = meta['source'][0]
+                    # If first element has 'path', keep as list (path-based source)
+                    # Otherwise, convert to single element (URL-based source)
+                    if not isinstance(first_source, dict) or 'path' not in first_source:
+                        meta['source'] = meta['source'][0]
             except Exception as e:
                 print(f"❌ Failed to parse {meta_path}: {e}")
                 failed = True
