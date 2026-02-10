@@ -18,6 +18,9 @@ for arg in "$@"; do
       ;;
     -march=*|-mtune=*|-fno-plt)
       ;;
+    -shared)
+      filtered+=("-sSIDE_MODULE=1")
+      ;;
     *)
       filtered+=("$arg")
       ;;

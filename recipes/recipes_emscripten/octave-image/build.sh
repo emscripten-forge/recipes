@@ -24,13 +24,17 @@ strip_cpu_flags() {
 }
 
 WRAPPER="${RECIPE_DIR}/empp-wrapper.sh"
+WASM_LD_WRAPPER="${RECIPE_DIR}/wasm-ld-wrapper.sh"
 
 chmod +x "$WRAPPER"
+chmod +x "$WASM_LD_WRAPPER"
 
 export CXX="$WRAPPER"
 export CXXFLAGS=""
 echo "Using CXX=$CXX"
 ls -l "$CXX"
+
+export WASM_LD="$WASM_LD_WRAPPER"
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
 
