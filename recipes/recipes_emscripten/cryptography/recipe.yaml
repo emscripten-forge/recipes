@@ -11,35 +11,45 @@ source:
   sha256: bfd019f60f8abc2ed1b9be4ddc21cfef059c841d86d710bb69909a688cbb8f59
 
 build:
-  number: 0
+  number: 1
   script: ${PYTHON} -m pip install . -vvv
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - ${{compiler('cxx')}}
-    - cross-python_${{target_platform}}
-    - cffi
-    - openssl
-    - setuptools-rust
-    - rust-nightly
-    - maturin
+  - ${{compiler('cxx')}}
+  - cross-python_${{target_platform}}
+  - cffi
+  - openssl
+  - setuptools-rust
+  - rust-nightly
+  - maturin
   host:
-    - python
-    - openssl
-    - cffi
+  - python
+  - openssl
+  - cffi
   run:
-    - cffi
+  - cffi
 
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_import_cryptography.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_cryptography.py
 
 about:
   homepage: https://cryptography.io
