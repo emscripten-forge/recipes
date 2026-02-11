@@ -140,13 +140,6 @@ void read_single_column_chunk() {
 
 int main(int argc, char **argv) {
   std::cout << "Running Parquet example with Arrow C++" << std::endl;
-  // Ensure working directory exists in MEMFS (in-memory filesystem)
-  std::cout << "Setting up in-memory filesystem and working directory" << std::endl;
-  EM_ASM(
-      try { FS.mkdir('/working'); } catch (e) {
-        // Directory might already exist, that's ok
-      } FS.chdir('/working'););
-
   std::cout << "Generating an Arrow Table with some data" << std::endl;
   std::shared_ptr<arrow::Table> table = generate_table();
   write_parquet_file(*table);
