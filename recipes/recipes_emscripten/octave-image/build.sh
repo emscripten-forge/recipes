@@ -23,10 +23,9 @@ strip_cpu_flags() {
     | sed -E 's/-fno-plt//g'
 }
 
-rm $BUILD_PREFIX/bin/wasm-ld
+rm -f "$BUILD_PREFIX/bin/wasm-ld"
 
 WRAPPER="${RECIPE_DIR}/empp-wrapper.sh"
-
 chmod +x "$WRAPPER"
 
 export CXX="$WRAPPER"
@@ -36,7 +35,6 @@ ls -l "$CXX"
 
 cp "${RECIPE_DIR}/wasm-ld-wrapper.sh" "$BUILD_PREFIX/bin/wasm-ld"
 chmod +x "$BUILD_PREFIX/bin/wasm-ld"
-
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
 
@@ -50,9 +48,56 @@ tar -czf "${PKG}-${VER}.tar.gz" "${PKG}"
 ls -lah "${PKG}-${VER}.tar.gz"
 
 log "Running pkg build (no install, keep build dir)"
-octave -W -H --eval "pkg install ${PKG}-${VER}.tar.gz -verbose"
+octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose"
 
+# ------------------------------------------------------------------
+# Manual install into $PREFIX
+# ------------------------------------------------------------------
 
+PKG_BUILD_DIR="${BUILD_DIR}/${PKG}-${VER}"
+
+if [[ ! -d "${PKG_BUILD_DIR}" ]]; then
+  echo "ERROR: Build directory ${PKG_BUILD_DIR} not found"
+  exit 1
+fi
+
+log "Detecting Octave canonical host type"
+
+OCT_ARCH=$(octave -q --eval "printf('%s', octave_config_info('canonical_host_type'))")
+echo "OCT_ARCH=${OCT_ARCH}"
+
+LIB_DEST="${PREFIX}/lib/octave/packages/${PKG}-${VER}/${OCT_ARCH}"
+SHARE_DEST="${PREFIX}/share/octave/packages/${PKG}-${VER}"
+
+log "Creating destination directories"
+
+mkdir -p "${LIB_DEST}"
+mkdir -p "${SHARE_DEST}"
+
+log "Copying compiled .oct files"
+
+find "${PKG_BUILD_DIR}" -type f -name "*.oct" -exec cp {} "${LIB_DEST}/" \;
+
+log "Copying PKG_ADD and PKG_DEL if present"
+
+for f in PKG_ADD PKG_DEL; do
+  if [[ -f "${PKG_BUILD_DIR}/${f}" ]]; then
+    cp "${PKG_BUILD_DIR}/${f}" "${LIB_DEST}/"
+  fi
+done
+
+log "Copying all remaining package content to share/"
+
+rsync -a \
+  --exclude="*.oct" \
+  "${PKG_BUILD_DIR}/" \
+  "${SHARE_DEST}/"
+
+log "Manual installation complete"
+
+log "Final installed tree"
+find "${PREFIX}/lib/octave/packages/${PKG}-${VER}" -maxdepth 3 || true
+find "${PREFIX}/share/octave/packages/${PKG}-${VER}" -maxdepth 3 || true
 
 
 # CONFIG_LOG="${BUILD_DIR}/${PKG}/src/config.log"
