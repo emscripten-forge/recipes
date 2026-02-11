@@ -7,4 +7,5 @@ mv $SRC_DIR/emscripten.meson.new $SRC_DIR/emscripten.meson.cross
 cat $SRC_DIR/emscripten.meson.cross
 
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
-    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"
+          -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
+          -Csetup-args="-Dc_thread_count=0"
