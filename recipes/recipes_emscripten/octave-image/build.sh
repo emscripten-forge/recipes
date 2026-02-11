@@ -92,6 +92,14 @@ find . -type f -name "config.log" || true
 
 log "END DEBUG"
 
+log "Inspecting produced binary package"
+
+mkdir -p inspect_pkg
+tar -xzf _builddir/*.tar.gz -C inspect_pkg
+
+find inspect_pkg -maxdepth 5 -print
+
+
 
 # CONFIG_LOG="${BUILD_DIR}/${PKG}/src/config.log"
 
