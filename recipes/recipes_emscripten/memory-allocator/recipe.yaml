@@ -1,0 +1,65 @@
+context:
+  version: 0.2.0
+
+package:
+  name: memory-allocator
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/m/memory-allocator/memory_allocator-${{ version }}.tar.gz
+  sha256: 675d3c91019db98c97441de73d5c648821e5ae813f3f54cd09863d474b48fe26
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cython
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - meson-python
+  - pkg-config
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_memory_allocator.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/sagemath/memory_allocator
+  license_file: LICENSE
+  description: |
+    # MemoryAllocator
+    An extension class to allocate memory easily with cython.
+
+    This extension class started as part of the [Sage](https://sagemath.org) software.
+
+    It provides a single extension class `MemoryAllocator` with `cdef` methods
+
+    - `malloc`,
+    - `calloc`,
+    - `allocarray`,
+    - `realloc`,
+    - `reallocarray`,
+    - `aligned_malloc`,
+    - `aligned_calloc`,
+    - `aligned_allocarray`.
+
+    Memory is freed when the instance of `MemoryAllocator` is deallocated.
+    On failure to allocate the memory, a proper error is raised.
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
