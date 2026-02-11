@@ -54,12 +54,14 @@ octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose"
 # Manual install into $PREFIX
 # ------------------------------------------------------------------
 
-PKG_BUILD_DIR="${BUILD_DIR}/${PKG}-${VER}"
+PKG_BUILD_DIR=$(find "${BUILD_DIR}" -maxdepth 1 -mindepth 1 -type d | head -n 1)
 
-if [[ ! -d "${PKG_BUILD_DIR}" ]]; then
-  echo "ERROR: Build directory ${PKG_BUILD_DIR} not found"
+if [[ -z "${PKG_BUILD_DIR}" ]]; then
+  echo "ERROR: No build directory found inside ${BUILD_DIR}"
   exit 1
 fi
+
+echo "Using PKG_BUILD_DIR=${PKG_BUILD_DIR}"
 
 log "Detecting Octave canonical host type"
 
