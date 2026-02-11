@@ -1,18 +1,26 @@
+about:
+  homepage: http://biopython.org
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: Collection of freely available tools for computational molecular biology
+build:
+  files:
+    exclude:
+    - '**/*.typed'
+    - '**/__pycache__/**'
+    - '**/test_*.py'
+    - '**.dist-info/**'
+    - '**/*.pyc'
+  number: 1
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 context:
   name: biopython
   version: '1.86'
-
 package:
   name: biopython
   version: ${{ version }}
-
-source:
-- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 93a50b586a4d2cec68ab2f99d03ef583c5761d8fba5535cb8e81da781d0d92ff
-
-build:
-  number: 0
-
 requirements:
   build:
   - cross-python_emscripten-wasm32
@@ -23,10 +31,12 @@ requirements:
   - python
   run:
   - numpy
-
+source:
+- sha256: 93a50b586a4d2cec68ab2f99d03ef583c5761d8fba5535cb8e81da781d0d92ff
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{
+    version }}.tar.gz
 tests:
-- script: pytester
-  files:
+- files:
     recipe:
     - test_import_biopython.py
   requirements:
@@ -34,9 +44,4 @@ tests:
     - pytester
     run:
     - pytester-run
-
-about:
-  license: BSD-3-Clause
-  license_file: LICENSE.rst
-  homepage: http://biopython.org
-  summary: Collection of freely available tools for computational molecular biology
+  script: pytester
