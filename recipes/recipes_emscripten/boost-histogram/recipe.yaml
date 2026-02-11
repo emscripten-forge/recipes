@@ -1,21 +1,28 @@
+about:
+  homepage: https://github.com/scikit-hep/boost-histogram
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The Boost::Histogram Python wrapper.
+build:
+  files:
+    exclude:
+    - '**/*.typed'
+    - '**/__pycache__/**'
+    - '**/*.pyi'
+    - '**/test_*.py'
+    - '**.dist-info/**'
+    - '**/*.pyc'
+  number: 1
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 context:
   name: boost-histogram
   version: 1.7.1
-
 package:
   name: boost-histogram
   version: ${{ version }}
-
-source:
-- url: https://pypi.io/packages/source/b/boost_histogram/boost_histogram-${{ version }}.tar.gz
-  sha256: 6ed3d7d2688fa32889dd441a7ef4920d60d696137d2abc3ab14eb9bd3b455b19
-  patches:
-  - patches/patch_allow_shared.patch
-
-build:
-  number: 0
-  script: ${PYTHON} -m pip install . ${PIP_ARGS}
-
 requirements:
   build:
   - python
@@ -30,10 +37,14 @@ requirements:
   run:
   - python
   - numpy
-
+source:
+- patches:
+  - patches/patch_allow_shared.patch
+  sha256: 6ed3d7d2688fa32889dd441a7ef4920d60d696137d2abc3ab14eb9bd3b455b19
+  url: https://pypi.io/packages/source/b/boost_histogram/boost_histogram-${{ version
+    }}.tar.gz
 tests:
-- script: pytester
-  files:
+- files:
     recipe:
     - test_import_boost_histogram.py
   requirements:
@@ -41,9 +52,4 @@ tests:
     - pytester
     run:
     - pytester-run
-
-about:
-  summary: The Boost::Histogram Python wrapper.
-  license: BSD-3-Clause
-  license_file: LICENSE
-  homepage: https://github.com/scikit-hep/boost-histogram
+  script: pytester
