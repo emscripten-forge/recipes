@@ -6,39 +6,51 @@ package:
   name: ${{ name }}
   version: ${{ version }}
 
-source:  
-  git: https://github.com/obspy/obspy  
+source:
+  git: https://github.com/obspy/obspy
   rev: 7cbbd44c3eadec5d2ae62212410e43f850db251b
 
 build:
-  number: 1
+  number: 2
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/*.ini'
+    - '**/__pycache__/**'
+    - '**/tests/**'
+    - '**/*.pyc'
+    - '**/test/**'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
-    - setuptools
-    - cython
-    - python
-    - numpy
-    - pip
+  - ${{ compiler("cxx") }}
+  - cross-python_emscripten-wasm32
+  - setuptools
+  - cython
+  - python
+  - numpy
+  - pip
   host:
-    - numpy
-    - python
-    - jinja2
-    - markupsafe
-    - numpy
+  - numpy
+  - python
+  - jinja2
+  - markupsafe
+  - numpy
   run:
-    - numpy >=1.20
-    - scipy 
-    - matplotlib >=3.3
-    - lxml
-    - sqlalchemy >=1.4
-    - decorator
-    - requests
-    - setuptools
-    - jaraco.text 
-    - platformdirs
+  - numpy >=1.20
+  - scipy
+  - matplotlib >=3.3
+  - lxml
+  - sqlalchemy >=1.4
+  - decorator
+  - requests
+  - setuptools<82
+  - jaraco.text
+  - platformdirs
 
 tests:
 - script: pytester
