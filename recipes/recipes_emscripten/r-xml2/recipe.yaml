@@ -1,0 +1,52 @@
+context:
+  name: r-xml2
+  version: 1.5.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: ed87cfa478f9e4c398288963cf7b0e1a66ba08f54d909b261a4a6c35944f50ab
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - pkg-config
+  - cross-r-base_${{ target_platform }}
+  - libxml2 >=2.15
+  - r-cli
+  - r-rlang >=1.1.0
+  host:
+  - libxml2 >=2.15
+  - r-cli
+  - r-rlang >=1.1.0
+  run:
+  - libxml2 >=2.15
+  - r-cli
+  - r-rlang >=1.1.0
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://xml2.r-lib.org
+  license: MIT
+  summary: Bindings to 'libxml2' for working with XML data using a simple, consistent interface
+    based on 'XPath' expressions. Also supports XML schema validation; for 'XSLT' transformations
+    see the 'xslt' package.
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
