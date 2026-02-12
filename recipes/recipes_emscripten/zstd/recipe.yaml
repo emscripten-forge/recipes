@@ -24,13 +24,27 @@ requirements:
   - meson
 
 tests:
+- package_contents:
+    files:
+    - lib/libzstd.a
+    - include/zstd.h
+    - lib/cmake/zstd/zstdConfig.cmake
 - script:
-  - test -f $PREFIX/lib/libzstd.a
-  - test -f $PREFIX/include/zstd.h
   - node $PREFIX/bin/zstd.js --version
   requirements:
     build:
     - nodejs
+- script:
+    - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+      - build_tests.sh
+      - tests/
 
 about:
   homepage: http://www.zstd.net
