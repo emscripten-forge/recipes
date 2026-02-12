@@ -1,0 +1,114 @@
+context:
+  version: 0.22.0
+  name: thrift
+
+build:
+  number: 0
+
+cache:
+  source:
+    - url: https://github.com/apache/thrift/archive/refs/tags/v${{ version }}.tar.gz
+      sha256: c4649c5879dd56c88f1e7a1c03e0fbfcc3b2a2872fb81616bffba5aa8a225a37
+
+  requirements:
+    build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    host:
+      - boost-cpp
+      - openssl
+      - zlib
+
+  build:
+    script: build.sh
+
+outputs:
+  # ============================================================================
+  # C++ Library
+  # ============================================================================
+  - package:
+      name: thrift-cpp
+      version: ${{ version }}
+    build:
+      script: echo "Collecting files from cache"
+      files:
+        include:
+          - lib/libthrift.a
+          - lib/cmake/thrift/
+          - lib/cmake/thrift-emscripten/
+          - lib/pkgconfig/thrift.pc
+          - include/thrift/**
+    requirements:
+      run:
+        - boost-cpp
+        - openssl
+        - zlib
+    tests:
+      - package_contents:
+          lib:
+            - libthrift.a
+          include:
+            - thrift/Thrift.h
+            - thrift/protocol/TBinaryProtocol.h
+      - script:
+          - bash build_tests.sh
+        requirements:
+          build:
+            - ${{ compiler("cxx") }}
+            - cmake
+        files:
+          recipe:
+            - build_tests.sh
+            - tests/thrift-cpp/
+
+  # ============================================================================
+  # Python bindings
+  # ============================================================================
+  - package:
+      name: thrift
+      version: ${{ version }}
+    build:
+      script: build_python.sh
+    requirements:
+      build:
+        - cross-python_emscripten-wasm32
+        - python
+        - pip
+        - setuptools
+        - wheel
+      host:
+        - python
+        - setuptools
+        - thrift-cpp =${{ version }}
+      run:
+        - python
+        - six
+    tests:
+      - script: pytester
+        files:
+          recipe:
+            - test_import_thrift.py
+        requirements:
+          build:
+            - pytester
+          run:
+            - pytester-run
+
+about:
+  homepage: https://thrift.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Apache Thrift - A scalable cross-language services development framework"
+  description: |
+    Apache Thrift is a software framework for scalable cross-language services development.
+    It combines a software stack with a code generation engine to build services that work
+    efficiently and seamlessly between C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell,
+    C#, Cocoa, JavaScript, Node.js, Smalltalk, OCaml and Delphi and other languages.
+  documentation: https://thrift.apache.org/docs/
+  repository: https://github.com/apache/thrift
+  license_family: Apache
+
+extra:
+  recipe-maintainers:
+    - Copilot
