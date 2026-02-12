@@ -53,7 +53,7 @@ log "Running pkg build (no install, keep build dir)"
 octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || true
 
 log "Installing package into PREFIX"
-octave -W -H --eval "pkg prefix ${PREFIX}; pkg install -nodeps ${BUILD_DIR}/*.tar.gz"
+octave -W -H --eval "pkg prefix ${PREFIX}/octave/packages; pkg install -nodeps ${BUILD_DIR}/*.tar.gz"
 
 log "Verify installation"
 find "${PREFIX}" -maxdepth 5 -print
