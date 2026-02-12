@@ -4,13 +4,13 @@ set -e
 # Install our custom CMake config file to make it easier to find and use thrift
 mkdir -p $PREFIX/lib/cmake/thrift-emscripten
 
-# Copy our custom config file
-cp $RECIPE_DIR/thrift-config.cmake $PREFIX/lib/cmake/thrift-emscripten/thrift-config.cmake
+# Copy our custom config file with version substitution
+sed "s/@VERSION@/${PKG_VERSION}/g" $RECIPE_DIR/thrift-config.cmake > $PREFIX/lib/cmake/thrift-emscripten/thrift-config.cmake
 
 # Create a config version file
-cat > $PREFIX/lib/cmake/thrift-emscripten/thrift-config-version.cmake << 'EOF'
+cat > $PREFIX/lib/cmake/thrift-emscripten/thrift-config-version.cmake << EOF
 # thrift-config-version.cmake
-set(PACKAGE_VERSION "0.22.0")
+set(PACKAGE_VERSION "${PKG_VERSION}")
 
 if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
     set(PACKAGE_VERSION_COMPATIBLE FALSE)

@@ -9,7 +9,7 @@
 #   THRIFT_INCLUDE_DIRS - Include directories
 #   THRIFT_LIBRARIES - Libraries to link
 
-set(THRIFT_VERSION "0.22.0")
+set(THRIFT_VERSION "@VERSION@")
 
 # Get the directory of this config file
 get_filename_component(THRIFT_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
