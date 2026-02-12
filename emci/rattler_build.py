@@ -15,8 +15,12 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         raise ValueError("recipe or recipes_dir must be set")
     elif recipe is not None:
         cmd.extend(["--recipe", str(recipe)])
+        if recipe == "thrift":
+            cmd.extend(["--experimental"])
     elif recipes_dir is not None:
         cmd.extend(["--recipe-dir", str(recipes_dir)])
+        if "thrift" in os.listdir(recipes_dir):
+            cmd.extend(["--experimental"])
 
     cmd.extend(["--skip-existing", skip_existing])
 
