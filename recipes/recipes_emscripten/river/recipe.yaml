@@ -11,9 +11,21 @@ source:
   sha256: f174cb8e5984be1a193827faf8e09a03ceb110a055290628accc72ec987390f1
 
 build:
-  number: 0
+  number: 1
   script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/*.pxd'
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler('c') }}
@@ -37,7 +49,7 @@ requirements:
 
 tests:
 - script:
-    - echo "FIXME:"
+  - echo "FIXME:"
 # river v0.23.0 passes the tests. It has been tested with xeus-python.
 # The following tests fail because of how shared libs are loaded in the test
 # environment.
