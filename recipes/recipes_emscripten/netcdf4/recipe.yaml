@@ -13,30 +13,41 @@ source:
   - patches/0001-Fix-unknown-arg-R-PREFIX-lib.patch
 
 build:
-  number: 0
+  number: 1
   script:
   - export LDFLAGS="-L$PREFIX/lib -lhdf5 $LDFLAGS"
   - ${PYTHON} -m pip install . -vvv
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - python
-    - cross-python_${{ target_platform }}
-    - ${{ compiler("c") }}
-    - pip
-    - pkg-config
-    - numpy
-    - cython
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - pip
+  - pkg-config
+  - numpy
+  - cython
   host:
-    - python
-    - hdf5
-    - libnetcdf
+  - python
+  - hdf5
+  - libnetcdf
   run:
-    - python
-    - numpy
-    - hdf5
-    - cftime
-    - certifi
+  - python
+  - numpy
+  - hdf5
+  - cftime
+  - certifi
 
 tests:
 - script: pytester
