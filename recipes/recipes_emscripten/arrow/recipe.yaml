@@ -22,6 +22,7 @@ cache:
       - ${{ compiler("cxx") }}
       - cmake
       - make
+      - nushell
     host:
       - boost-cpp
       - re2
@@ -29,9 +30,16 @@ cache:
       - libutf8proc
       - rapidjson
       - nlohmann_json
+      - brotli
+      - zlib
+      - bZip2
+      - lz4
+      - protobuf
+      - zstd
+      - xsimd
 
   build:
-    script: build.sh
+    script: build.nu
 
 outputs:
   # ============================================================================
@@ -54,6 +62,21 @@ outputs:
           - include/arrow/compute/**
           - include/arrow/dataset/**
           - include/arrow/testing/**
+    requirements:
+      run:
+        - boost-cpp
+        - re2
+        - libabseil
+        - libutf8proc
+        - rapidjson
+        - nlohmann_json
+        - brotli
+        - zlib
+        - bZip2
+        - lz4
+        - protobuf
+        - zstd
+        - xsimd
     tests:
       - package_contents:
           lib:
@@ -193,60 +216,55 @@ outputs:
             - build_tests.sh
             - tests/arrow-cpp-parquet/
 
-  # # ============================================================================
-  # # Python bindings
-  # # ============================================================================
-  # - package:
-  #     name: pyarrow
-  #     version: ${{ version }}
-  #   build:
-  #     script: build_pyarrow.sh
-  #   requirements:
-  #     build:
-  #       - ${{ compiler("cxx") }}
-  #       - cross-python_emscripten-wasm32
-  #       - python
-  #       - cython >=3.0.12
-  #       - setuptools
-  #       - setuptools-scm
-  #       - numpy
-  #       - pip
-  #       - cmake
-  #       - make
-  #     host:
-  #       - numpy
-  #       - python
-  #       - cffi
-  #       - arrow-cpp =${{ version }}
-  #       - arrow-cpp-acero =${{ version }}
-  #       - arrow-cpp-dataset =${{ version }}
-  #       - arrow-cpp-parquet =${{ version }}
-  #       - arrow-cpp-compute =${{ version }}
-  #       - re2
-  #       - libabseil
-  #       - libutf8proc
-  #     run:
-  #       - arrow-cpp =${{ version }}
-  #       - arrow-cpp-acero =${{ version }}
-  #       - arrow-cpp-dataset =${{ version }}
-  #       - arrow-cpp-parquet =${{ version }}
-  #       - arrow-cpp-compute =${{ version }}
-  #       - numpy
-  #       - python
-  #       - libffi
-  #       - pycparser
-  #       - cloudpickle
-  #       - fsspec
-  #   tests:
-  #     - script: pytester
-  #       files:
-  #         recipe:
-  #           - test_py_arrow.py
-  #       requirements:
-  #         build:
-  #           - pytester
-  #         run:
-  #           - pytester-run
+  # ============================================================================
+  # Python bindings
+  # ============================================================================
+  - package:
+      name: pyarrow
+      version: ${{ version }}
+    build:
+      script: build_pyarrow.sh
+    requirements:
+      build:
+        - ${{ compiler("cxx") }}
+        - cross-python_emscripten-wasm32
+        - python
+        - cython >=3.0.12
+        - setuptools
+        - setuptools-scm
+        - numpy
+        - pip
+        - cmake
+        - make
+      host:
+        - numpy
+        - python
+        - cffi
+        - arrow-cpp =${{ version }}
+        - arrow-cpp-acero =${{ version }}
+        - arrow-cpp-dataset =${{ version }}
+        - arrow-cpp-parquet =${{ version }}
+        - arrow-cpp-compute =${{ version }}
+        - re2
+        - libabseil
+        - libutf8proc
+      run:
+        - numpy
+        - python
+        - libffi
+        - pycparser
+        - cloudpickle
+        - fsspec
+    tests:
+      - script: pytester
+        files:
+          recipe:
+            - test_py_arrow.py
+        requirements:
+          build:
+            - pytester
+          run:
+            - pytester-run
 
 # ============================================================================
 # R bindings
