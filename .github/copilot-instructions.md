@@ -90,6 +90,17 @@ build:
 build:
   number: 0
   script: $R CMD INSTALL $R_ARGS .
+  files:
+    exclude:
+    - '**/*.pxd'
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 ```
 
 **C++ packages (CMake):**
@@ -98,13 +109,18 @@ Create `build.sh` using `emcmake` and `emmake`:
 #!/bin/bash
 set -e  # Exit on error
 
-export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
-export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
+# Set compiler flags
+export CFLAGS="$CFLAGS $EMCC_CFLAGS"
+export CXXFLAGS="$CXXFLAGS $EMCC_CFLAGS"
 export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
 
 emcmake cmake -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=$PREFIX
+  -DCMAKE_INSTALL_PREFIX=$PREFIX \
+  -DCMAKE_C_FLAGS_RELEASE="$CFLAGS" \
+  -DCMAKE_CXX_FLAGS_RELEASE="$CXXFLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="$LDFLAGS" \
+  -DCMAKE_STATIC_LINKER_FLAGS_RELEASE="$LDFLAGS"
 emmake make -C build -j${CPU_COUNT} install
 ```
 
@@ -229,6 +245,8 @@ tests:
     include:
     - package.hpp
 ```
+
+For C++ packages, also verify CMake config files is provided. If the installation don't include it, create a custom one.
 
 ### About Section
 
