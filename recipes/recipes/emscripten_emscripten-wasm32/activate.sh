@@ -61,7 +61,7 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     # basics cflags
     export EM_FORGE_CFLAGS_BASE="-fPIC"
-    export EM_FORGE_CFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_CFLAGS_BASE}"
+    export EM_FORGE_CFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_CFLAGS_BASE} ${SIMD_FLAGS}"
 
     # side module
     export EM_FORGE_SIDE_MODULE_LDFLAGS="${EM_FORGE_LDFLAGS_BASE} -s SIDE_MODULE=1"
@@ -69,6 +69,6 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
 
     # these flags are passed to emcc, so every package built with emcc gets them
-    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS} ${SIMD_FLAGS}"
+    export EMCC_CFLAGS="${EM_FORGE_CFLAGS_BASE} ${EXCEPTION_HANDLING_FLAGS}"
 
 fi
