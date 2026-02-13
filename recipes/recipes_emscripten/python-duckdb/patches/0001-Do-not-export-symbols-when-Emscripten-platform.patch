@@ -1,0 +1,47 @@
+From 60ec3655298016e28a7dfe7c4aeb5c10b247fb5f Mon Sep 17 00:00:00 2001
+From: martinRenou <martin.renou@gmail.com>
+Date: Tue, 20 Jan 2026 09:55:36 +0100
+Subject: [PATCH 1/1] Do not export symbols when Emscripten platform
+
+---
+ CMakeLists.txt | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ab9e1ce..e821a24 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -97,17 +97,19 @@ set_target_properties(
+              C_VISIBILITY_PRESET hidden
+              VISIBILITY_INLINES_HIDDEN ON)
+ 
+-if(APPLE)
+-  target_link_options(
+-    _duckdb PRIVATE "LINKER:-exported_symbol,_duckdb_adbc_init"
+-    "LINKER:-exported_symbol,_PyInit__duckdb")
+-elseif(UNIX AND NOT APPLE)
+-  target_link_options(
+-    _duckdb PRIVATE "LINKER:--export-dynamic-symbol=duckdb_adbc_init"
+-    "LINKER:--export-dynamic-symbol=PyInit__duckdb")
+-elseif(WIN32)
+-  target_link_options(_duckdb PRIVATE "/EXPORT:duckdb_adbc_init"
+-                      "/EXPORT:PyInit__duckdb")
++if(NOT EMSCRIPTEN)
++  if(APPLE)
++    target_link_options(
++      _duckdb PRIVATE "LINKER:-exported_symbol,_duckdb_adbc_init"
++      "LINKER:-exported_symbol,_PyInit__duckdb")
++  elseif(UNIX AND NOT APPLE)
++    target_link_options(
++      _duckdb PRIVATE "LINKER:--export-dynamic-symbol=duckdb_adbc_init"
++      "LINKER:--export-dynamic-symbol=PyInit__duckdb")
++  elseif(WIN32)
++    target_link_options(_duckdb PRIVATE "/EXPORT:duckdb_adbc_init"
++                        "/EXPORT:PyInit__duckdb")
++  endif()
+ endif()
+ 
+ # ────────────────────────────────────────────
+-- 
+2.52.0
+
