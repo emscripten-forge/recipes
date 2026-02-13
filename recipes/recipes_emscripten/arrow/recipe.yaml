@@ -25,7 +25,13 @@ cache:
       - ${{ compiler("cxx") }}
       - cmake
       - make
-      - nushell
+      - cross-python_emscripten-wasm32
+      - python
+      - cython >=3.0.12
+      - setuptools
+      - setuptools-scm
+      - numpy
+      - pip
     host:
       - boost-cpp
       - re2
@@ -44,7 +50,7 @@ cache:
       - snappy
 
   build:
-    script: build.nu
+    script: build.sh
 
 outputs:
   # ============================================================================
@@ -228,7 +234,21 @@ outputs:
       name: pyarrow
       version: ${{ version }}
     build:
-      script: build_pyarrow.sh
+      script: echo "Collecting files from cache"
+      files:
+        include:
+          - lib/libarrow_python.so
+          - pyarrow/**/*.py
+          - pyarrow/**/*.pxd
+          - pyarrow/**/*.pxi
+        exclude:
+        - '**/*.pyc'
+        - '**/__pycache__/**'
+        - '**.dist-info/**'
+        - '**/test_*.py'
+        python:
+          skip_pyc_compilation:
+          - '**/*.py'
     requirements:
       build:
         - ${{ compiler("cxx") }}
@@ -260,6 +280,11 @@ outputs:
         - pycparser
         - cloudpickle
         - fsspec
+        - arrow-cpp =${{ version }}
+        - arrow-cpp-acero =${{ version }}
+        - arrow-cpp-dataset =${{ version }}
+        - arrow-cpp-parquet =${{ version }}
+        - arrow-cpp-compute =${{ version }}
     tests:
       - script: pytester
         files:
