@@ -29,3 +29,4 @@ emmake make install -j8
 
 # Manually install the shared library
 cp libsparrow.so "$PREFIX/lib/"
+

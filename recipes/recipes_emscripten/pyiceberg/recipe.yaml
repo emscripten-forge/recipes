@@ -1,6 +1,6 @@
 context:
   name: pyiceberg
-  version: 0.10.0
+  version: 0.11.0
 
 package:
   name: ${{ name }}
@@ -8,12 +8,23 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 2525afa5e7e5fc4e72b291f8e1cc219e982d2bda5ff17e62cd05b8d91c4139f5
+  sha256: 095bbafc87d204cf8d3ffc1c434e07cf9a67a709192ac0b11dcb0f8251f7ad4e
 
 build:
   number: 1
   script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - cross-python_${{ target_platform }}

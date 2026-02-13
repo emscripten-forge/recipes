@@ -12,12 +12,11 @@ source:
   sha256: 537512904744b35e232912055ccf8ec66d768639ff3abe5788d90d792ec5f48b
 
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
   - make
   run:
   - ${{ pin_subpackage('lz4-c', exact=True) }}
@@ -27,6 +26,19 @@ tests:
     files:
     - lib/liblz4.a
     - include/lz4.h
+    - lib/cmake/lz4/lz4Config.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
 
 about:
   homepage: https://github.com/lz4/lz4
