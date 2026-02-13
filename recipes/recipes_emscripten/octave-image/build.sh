@@ -54,9 +54,8 @@ octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || tr
 
 log "Installing package into PREFIX"
 octave -W -H --eval "
-pkg prefix '/share/octave/packages' '/octave/packages';
+pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
-pkg list;
 "
 
 log "Verify installation"
