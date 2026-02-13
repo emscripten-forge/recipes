@@ -15,7 +15,10 @@ cache:
         - patches/0002-Create-brotli-lib-dir-before-copy.patch
         - patches/0003-Use-NewlineBoundaryFinder-for-Emscripten.patch
         - patches/0004-Fix-xxhash-emscripten-extern-C-linkage.patch
-      # - patches/0001-Add-parquet-variable.patch
+        - patches/0005-Fix-FindSnappyAlt-target-type-check.patch
+        - patches/0006-Fix-FindBrotliAlt-root-variable.patch
+        - patches/0007-Include-FindPackageHandleStandardArgs-in-FindBrotliAlt.patch
+        - patches/0008-Fix-FindThriftAlt-missing-target-on-early-return.patch
 
   requirements:
     build:
@@ -38,6 +41,7 @@ cache:
       - zstd
       - xsimd
       - thrift-cpp = 0.22.0
+      - snappy
 
   build:
     script: build.nu
@@ -54,7 +58,6 @@ outputs:
       files:
         include:
           - lib/libarrow.a
-          - lib/libarrow_bundled_dependencies.a
           - lib/cmake/Arrow/
           - lib/pkgconfig/arrow.pc
           - include/arrow/**
@@ -79,11 +82,11 @@ outputs:
         - zstd
         - xsimd
         - thrift-cpp = 0.22.0
+        - snappy
     tests:
       - package_contents:
           lib:
             - libarrow.a
-            - libarrow_bundled_dependencies.a
           include:
             - arrow/array.h
       - script:

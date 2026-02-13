@@ -78,6 +78,20 @@ run_test() {
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_FIND_ROOT_PATH=$PREFIX \
       -DCMAKE_PREFIX_PATH=$PREFIX \
+            -DZLIB_ROOT=$PREFIX \
+            -DZLIB_LIBRARY=$PREFIX/lib/libz.a \
+            -DZLIB_INCLUDE_DIR=$PREFIX/include \
+            -DBZIP2_LIBRARY=$PREFIX/lib/libbz2.a \
+            -DBZIP2_LIBRARIES=$PREFIX/lib/libbz2.a \
+            -DBZIP2_INCLUDE_DIR=$PREFIX/include \
+            -DBROTLI_ROOT=$PREFIX \
+            -DBROTLI_COMMON_LIBRARY=$PREFIX/lib/libbrotlicommon.a \
+            -DBROTLI_ENC_LIBRARY=$PREFIX/lib/libbrotlienc.a \
+            -DBROTLI_DEC_LIBRARY=$PREFIX/lib/libbrotlidec.a \
+            -DBROTLI_INCLUDE_DIR=$PREFIX/include \
+            -DZSTD_ROOT=$PREFIX \
+            -DZSTD_LIB=$PREFIX/lib/libzstd.a \
+            -DZSTD_INCLUDE_DIR=$PREFIX/include \
       -DCMAKE_C_COMPILER_LAUNCHER=sccache \
       -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
     

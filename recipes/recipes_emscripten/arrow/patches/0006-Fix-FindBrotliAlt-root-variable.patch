@@ -1,0 +1,43 @@
+diff --git a/cpp/cmake_modules/FindBrotliAlt.cmake b/cpp/cmake_modules/FindBrotliAlt.cmake
+index 22ef3da90..5df9015f0 100644
+--- a/cpp/cmake_modules/FindBrotliAlt.cmake
++++ b/cpp/cmake_modules/FindBrotliAlt.cmake
+@@ -81,19 +81,24 @@ else()
+       ${CMAKE_STATIC_LIBRARY_PREFIX}brotlidec_static${CMAKE_STATIC_LIBRARY_SUFFIX}
+       ${CMAKE_STATIC_LIBRARY_PREFIX}brotlidec${CMAKE_STATIC_LIBRARY_SUFFIX})
+ endif()
+ 
+-if(BROTLI_ROOT)
++set(_brotli_root)
++if(BROTLI_ROOT)
++  set(_brotli_root ${BROTLI_ROOT})
++elseif(Brotli_ROOT)
++  set(_brotli_root ${Brotli_ROOT})
++endif()
++
++if(_brotli_root)
+   find_library(BROTLI_COMMON_LIBRARY
+                NAMES ${BROTLI_COMMON_LIB_NAMES}
+-               PATHS ${BROTLI_ROOT}
++               PATHS ${_brotli_root}
+                PATH_SUFFIXES ${ARROW_LIBRARY_PATH_SUFFIXES}
+                NO_DEFAULT_PATH)
+   find_library(BROTLI_ENC_LIBRARY
+                NAMES ${BROTLI_ENC_LIB_NAMES}
+-               PATHS ${BROTLI_ROOT}
++               PATHS ${_brotli_root}
+                PATH_SUFFIXES ${ARROW_LIBRARY_PATH_SUFFIXES}
+                NO_DEFAULT_PATH)
+   find_library(BROTLI_DEC_LIBRARY
+                NAMES ${BROTLI_DEC_LIB_NAMES}
+-               PATHS ${BROTLI_ROOT}
++               PATHS ${_brotli_root}
+                PATH_SUFFIXES ${ARROW_LIBRARY_PATH_SUFFIXES}
+                NO_DEFAULT_PATH)
+   find_path(BROTLI_INCLUDE_DIR
+             NAMES brotli/decode.h
+-            PATHS ${BROTLI_ROOT}
++            PATHS ${_brotli_root}
+             PATH_SUFFIXES ${ARROW_INCLUDE_PATH_SUFFIXES}
+             NO_DEFAULT_PATH)
+ else()
