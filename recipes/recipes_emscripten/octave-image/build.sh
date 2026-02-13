@@ -56,6 +56,7 @@ log "Installing package into PREFIX"
 octave -W -H --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
+pkg list;
 "
 
 log "Verify installation"
