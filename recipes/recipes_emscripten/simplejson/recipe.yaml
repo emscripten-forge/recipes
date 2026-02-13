@@ -3,19 +3,31 @@ context:
 
 package:
   name: simplejson
-  version: "${{ version }}"
+  version: ${{ version }}
 
 
 source:
-  - url: https://files.pythonhosted.org/packages/c0/5c/61e2afbe62bbe2e328d4d1f426f6e39052b73eddca23b5ba524026561250/simplejson-${{ version }}.tar.gz
-    sha256: 6277f60848a7d8319d27d2be767a7546bc965535b28070e310b3a9af90604a4c
+- url: 
+    https://files.pythonhosted.org/packages/c0/5c/61e2afbe62bbe2e328d4d1f426f6e39052b73eddca23b5ba524026561250/simplejson-${{
+    version }}.tar.gz
+  sha256: 6277f60848a7d8319d27d2be767a7546bc965535b28070e310b3a9af90604a4c
 
 
 
 
 build:
-  number: 0
+  number: 1
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/tests/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler("cxx") }}
@@ -51,7 +63,7 @@ tests:
     recipe:
     - test_simplejson.py
 
-    
+
 extra:
   recipe-maintainers:
   - DerThorsten
