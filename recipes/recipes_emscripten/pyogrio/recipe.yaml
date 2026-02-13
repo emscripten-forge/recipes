@@ -10,46 +10,56 @@ source:
   url: https://github.com/geopandas/pyogrio/releases/download/v${{ version }}/pyogrio-${{ version }}.tar.gz
   sha256: e548ab705bb3e5383693717de1e6c76da97f3762ab92522cb310f93128a75ff1
   patches:
-    - patches/0001-Set-GDAL_DATA-environment-variable-and-remove-ValueE.patch
+  - patches/0001-Set-GDAL_DATA-environment-variable-and-remove-ValueE.patch
 
 build:
-  number: 0
+  number: 1
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/tests/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - python
-    - cross-python_${{ target_platform }}
-    - cython
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - pip
-    - setuptools
-    - numpy
+  - python
+  - cross-python_${{ target_platform }}
+  - cython
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - pip
+  - setuptools
+  - numpy
   host:
-    - python
-    - pip
-    - setuptools
-    - cython
-    - libgdal-core
-    - versioneer
-    - tomli
-    - numpy
+  - python
+  - pip
+  - setuptools
+  - cython
+  - libgdal-core
+  - versioneer
+  - tomli
+  - numpy
   run:
-    - python
-    - libgdal-core
-    - packaging
-    - numpy
+  - python
+  - libgdal-core
+  - packaging
+  - numpy
 
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_pyogrio.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pyogrio.py
 
 about:
   homepage: https://github.com/geopandas/pyogrio/
@@ -64,4 +74,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - jjerphan
+  - jjerphan
