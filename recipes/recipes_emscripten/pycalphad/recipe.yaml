@@ -7,54 +7,68 @@ package:
 
 source:
   sha256: 6fc874a37582c35964c672424e65c940579b5e0fbd74bdb41015a21833643eb7
-  url: https://files.pythonhosted.org/packages/3c/64/6fb88736abea123c0aac68dd847af5d77d0f0343c3275b78a6f3f63dac5f/pycalphad-${{ version }}.tar.gz
+  url: 
+    https://files.pythonhosted.org/packages/3c/64/6fb88736abea123c0aac68dd847af5d77d0f0343c3275b78a6f3f63dac5f/pycalphad-${{
+    version }}.tar.gz
 
 
 build:
-  number: 0
+  number: 1
   script: ${PYTHON} -m pip install .
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pxd'
+    - '**/tests/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - cross-python_${{ target_platform }}
-    - ${{ compiler('cxx') }}
-    - python
-    - cython
-    - numpy>=2.0
-    - setuptools-scm
-    - scipy
-    - pip
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('cxx') }}
+  - python
+  - cython
+  - numpy>=2.0
+  - setuptools-scm
+  - scipy
+  - pip
   host:
-    - python
+  - python
   run:
-    - matplotlib
-    - numpy
-    - pint
-    - pyparsing
-    - pytest
-    - python-symengine
-    - runtype
-    - scipy
-    - tinydb
-    - typing-extensions # drop when pycalphad drops support for Python<3.13
-    - xarray
+  - matplotlib
+  - numpy
+  - pint
+  - pyparsing
+  - pytest
+  - python-symengine
+  - runtype
+  - scipy
+  - tinydb
+  - typing-extensions   # drop when pycalphad drops support for Python<3.13
+  - xarray
 
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_pycalphad.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pycalphad.py
 
 about:
   homepage: https://pycalphad.org/
   license: MIT
   license_file: LICENSE.txt
-  summary: CALPHAD tools for designing thermodynamic models, calculating phase diagrams and investigating phase equilibria.
+  summary: CALPHAD tools for designing thermodynamic models, calculating phase diagrams and investigating phase 
+    equilibria.
   description: |
     pycalphad is a free and open-source Python library for designing thermodynamic models, calculating phase diagrams and investigating phase equilibria within the CALPHAD method.
   documentation: https://pycalphad.org/
