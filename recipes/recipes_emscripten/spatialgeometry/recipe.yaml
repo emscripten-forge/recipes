@@ -11,9 +11,17 @@ source:
   sha256: 98b2b1023eed6197d26f31cf4643c51d1a41059ac6036a10b16dc389ec6af5a6
 
 build:
-  number: 0
+  number: 1
   script: ${{ PYTHON }} -m pip install . -vv
 
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**.dist-info/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler('c') }}
@@ -31,17 +39,17 @@ requirements:
   - numpy
 
 
-  
+
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run 
-    files:
-      recipe:
-        - test_spatialgeometry.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_spatialgeometry.py
 
 about:
   summary: A Shape and Geometry Package
