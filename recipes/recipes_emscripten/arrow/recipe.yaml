@@ -3,7 +3,7 @@ context:
   name: arrow
 
 build:
-  number: 0
+  number: 2
 
 cache:
   source:
@@ -33,6 +33,7 @@ cache:
       - numpy
       - pip
     host:
+      - python
       - boost-cpp
       - re2
       - libabseil
@@ -42,7 +43,7 @@ cache:
       - brotli
       - zlib
       - bZip2
-      - lz4
+      - lz4-c = 1.10.0
       - protobuf
       - zstd
       - xsimd
@@ -83,7 +84,7 @@ outputs:
         - brotli
         - zlib
         - bZip2
-        - lz4
+        - lz4-c = 1.10.0
         - protobuf
         - zstd
         - xsimd
@@ -238,17 +239,18 @@ outputs:
       files:
         include:
           - lib/libarrow_python.so
-          - pyarrow/**/*.py
-          - pyarrow/**/*.pxd
-          - pyarrow/**/*.pxi
+          - lib/python*/site-packages/pyarrow/**/*.py
+          - lib/python*/site-packages/pyarrow/**/*.pxd
+          - lib/python*/site-packages/pyarrow/**/*.pxi
+          - lib/python*/site-packages/pyarrow/**/*.so
         exclude:
         - '**/*.pyc'
         - '**/__pycache__/**'
         - '**.dist-info/**'
         - '**/test_*.py'
-        python:
-          skip_pyc_compilation:
-          - '**/*.py'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
     requirements:
       build:
         - ${{ compiler("cxx") }}
