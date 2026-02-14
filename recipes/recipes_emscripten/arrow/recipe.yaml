@@ -3,7 +3,7 @@ context:
   name: arrow
 
 build:
-  number: 2
+  number: 4
 
 cache:
   source:
@@ -19,6 +19,7 @@ cache:
         - patches/0006-Fix-FindBrotliAlt-root-variable.patch
         - patches/0007-Include-FindPackageHandleStandardArgs-in-FindBrotliAlt.patch
         - patches/0008-Fix-FindThriftAlt-missing-target-on-early-return.patch
+        - patches/0009-Remove-pthread-from-R-arrow-PKG_LIBS.patch
 
   requirements:
     build:
@@ -32,6 +33,18 @@ cache:
       - setuptools-scm
       - numpy
       - pip
+
+      - cross-r-base_${{ target_platform }}
+      - pkg-config
+      - r-assertthat
+      - r-bit64
+      - r-cpp11
+      - r-glue
+      - r-purrr
+      - r-r6
+      - r-rlang
+      - r-tidyselect
+      - r-vctrs
     host:
       - python
       - boost-cpp
@@ -49,6 +62,16 @@ cache:
       - xsimd
       - thrift-cpp = 0.22.0
       - snappy
+
+      - r-assertthat
+      - r-bit64
+      - r-cpp11
+      - r-glue
+      - r-purrr
+      - r-r6
+      - r-rlang
+      - r-tidyselect
+      - r-vctrs
 
   build:
     script: build.sh
@@ -288,10 +311,13 @@ outputs:
         - arrow-cpp-parquet =${{ version }}
         - arrow-cpp-compute =${{ version }}
     tests:
-      - script: pytester
+      - script:
+          - bash test_pyarrow.sh
         files:
           recipe:
             - test_py_arrow.py
+            - test_pyarrow.sh
+            - empack_config.yaml
         requirements:
           build:
             - pytester
@@ -301,53 +327,38 @@ outputs:
 # ============================================================================
 # R bindings
 # ============================================================================
-# - package:
-#     name: r-arrow
-#     version: ${{ version }}
-#   build:
-#     script: build_r_arrow.sh
-#   requirements:
-#     build:
-#     - cross-r-base_${{ target_platform }}
-#     - ${{ compiler('c') }}
-#     - pkg-config
-#     - r-assertthat
-#     - r-bit64
-#     - r-cpp11
-#     - r-glue
-#     - r-purrr
-#     - r-r6
-#     - r-rlang
-#     - r-tidyselect
-#     - r-vctrs
-#     host:
-#     - arrow-cpp =${{ version }}
-#     - libarrow-acero =${{ version }}
-#     - libarrow-dataset =${{ version }}
-#     - libarrow-parquet =${{ version }}
-#     - r-assertthat
-#     - r-bit64
-#     - r-cpp11
-#     - r-glue
-#     - r-purrr
-#     - r-r6
-#     - r-rlang
-#     - r-tidyselect
-#     - r-vctrs
-#     run:
-#     - r-assertthat
-#     - r-bit64
-#     - r-cpp11
-#     - r-glue
-#     - r-purrr
-#     - r-r6
-#     - r-rlang
-#     - r-tidyselect
-#     - r-vctrs
-#   tests:
-#   - package_contents:
-#       lib:
-#       - R/library/arrow/libs/arrow.so
+  - package:
+      name: r-arrow
+      version: ${{ version }}
+    build:
+      script: echo "Collecting files from cache"
+      files:
+        include:
+          - lib/R/library/arrow/libs/arrow.so
+          - lib/R/library/arrow/DESCRIPTION
+          - lib/R/library/arrow/NAMESPACE
+          - lib/R/library/arrow/R/*.R
+    requirements:
+      
+      run:
+      - arrow-cpp =${{ version }}
+      - arrow-cpp-acero =${{ version }}
+      - arrow-cpp-dataset =${{ version }}
+      - arrow-cpp-parquet =${{ version }}
+      - arrow-cpp-compute =${{ version }}
+      - r-assertthat
+      - r-bit64
+      - r-cpp11
+      - r-glue
+      - r-purrr
+      - r-r6
+      - r-rlang
+      - r-tidyselect
+      - r-vctrs
+    tests:
+    - package_contents:
+        lib:
+        - R/library/arrow/libs/arrow.so
 
 about:
   homepage: https://arrow.apache.org/
