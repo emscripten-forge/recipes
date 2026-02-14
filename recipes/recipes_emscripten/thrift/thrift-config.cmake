@@ -13,7 +13,7 @@ set(THRIFT_VERSION "@VERSION@")
 
 # Get the directory of this config file
 get_filename_component(THRIFT_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(THRIFT_ROOT_DIR "${THRIFT_CMAKE_DIR}/../.." ABSOLUTE)
+get_filename_component(THRIFT_ROOT_DIR "${THRIFT_CMAKE_DIR}/../../.." ABSOLUTE)
 
 # Set include and library paths
 set(THRIFT_INCLUDE_DIRS "${THRIFT_ROOT_DIR}/include")
@@ -48,20 +48,14 @@ if(NOT TARGET thrift::thrift)
     )
     
     # Set dependencies
-    # Thrift requires Boost (headers only), OpenSSL, and zlib
+    # Thrift requires Boost (headers only) and zlib
+    # Note: OpenSSL is not linked for Emscripten builds since thrift is built as a static library
     find_package(Boost QUIET)
     if(Boost_FOUND OR TARGET Boost::headers)
         if(TARGET Boost::headers)
             set_property(TARGET thrift::thrift APPEND PROPERTY
                 INTERFACE_LINK_LIBRARIES Boost::headers)
         endif()
-    endif()
-    
-    # Link with OpenSSL if available
-    find_package(OpenSSL QUIET)
-    if(OPENSSL_FOUND)
-        set_property(TARGET thrift::thrift APPEND PROPERTY
-            INTERFACE_LINK_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
     endif()
     
     # Link with zlib if available

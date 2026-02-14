@@ -44,8 +44,9 @@ ARROW_DEPENDENCIES=(
     "-DBZIP2_LIBRARY=${PREFIX}/lib/libbz2.a"
     "-DBZIP2_INCLUDE_DIR=${PREFIX}/include"
     "-Dlz4_ROOT=${PREFIX}"
+    "-Dlz4_DIR=${PREFIX}/lib/cmake/lz4"
     "-Dre2_ROOT=${PREFIX}"
-    "-DZLIB_DIR=${PREFIX}"
+    # "-DZLIB_DIR=${PREFIX}"
     "-DZLIB_ROOT=${PREFIX}"
     "-DZLIB_LIBRARY=${PREFIX}/lib/libz.a"
     "-DZLIB_INCLUDE_DIR=${PREFIX}/include"
@@ -58,10 +59,14 @@ ARROW_DEPENDENCIES=(
     "-DZSTD_INCLUDE_DIR=${PREFIX}/include"
     "-Dxsimd_ROOT=${PREFIX}"
     "-DRapidJSON_ROOT=${PREFIX}"
-    "-DThrift_DIR=${PREFIX}"
+    "-DThrift_DIR=${PREFIX}/lib/cmake/thrift"
     "-DThrift_ROOT=${PREFIX}"
     "-DSnappy_ROOT=${PREFIX}"
     "-DSnappy_DIR=${PREFIX}/lib/cmake/Snappy"
+    "-Dre2_DIR=$PREFIX/lib/cmake/re2"
+    "-Dutf8proc_LIB=$PREFIX/lib/libutf8proc.a"
+    "-Dabsl_DIR=$PREFIX/lib/cmake/absl"
+    "-Dutf8proc_INCLUDE_DIR=$PREFIX/include"
 )
 
 ARROW_SHARED_COMPRESSION=(
@@ -95,7 +100,7 @@ build_arrow_cpp() {
   mkdir -p build_cpp
   cd build_cpp
 
-  export CXXFLAGS="${CXXFLAGS:-} -fms-extensions -pthread"
+  export CXXFLAGS="${CXXFLAGS:-} -fms-extensions"
   export LDFLAGS="${LDFLAGS:-} -sNODERAWFS=1 -sUSE_ZLIB=1 -sFORCE_FILESYSTEM=1 -sALLOW_MEMORY_GROWTH=1 -sEXPORTED_RUNTIME_METHODS=FS,PATH,ERRNO_CODES,PROXYFS -lproxyfs.js"
 
   cpu_count="${CPU_COUNT:-8}"
@@ -105,6 +110,7 @@ build_arrow_cpp() {
     "${cmake_args[@]}" \
     "${COMMON_CMAKE_OPTIONS[@]}" \
     "${ARROW_CPP_OPTIONS[@]}" \
+    "-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON" \
     "-DARROW_INSTALL_NAME_RPATH=ON" \
     "-DCMAKE_PREFIX_PATH=${PREFIX}" \
     "-DCMAKE_INSTALL_PREFIX=${PREFIX}" \
@@ -112,9 +118,15 @@ build_arrow_cpp() {
     -B ./
 
   emmake make install -j"${cpu_count}"
+
+  echo "✅ Arrow C++ build and installation complete ✅"
 }
 
 build_pyarrow() {
+    echo "============================================================"    
+    echo "🐍 Starting PyArrow build with Python ${PY_VER} 🐍"
+    echo "============================================================"   
+
     ARROW_PYTHON_OPTIONS=(
         "-DPython3_INCLUDE_DIR=$PREFIX/include/python${PY_VER}"
         "-DPython3_INCLUDE_DIRS=$PREFIX/include/python${PY_VER}"
@@ -133,23 +145,21 @@ build_pyarrow() {
     pyarrow_cmake_options=(
         "-DCMAKE_PREFIX_PATH:PATH=${PREFIX}"
         "-DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}"
-        "${ARROW_CPP_OPTIONS[@]}"
         "-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=TRUE"
+        "${ARROW_CPP_OPTIONS[@]}"
         "${ARROW_PYTHON_OPTIONS[@]}"
-        # "-DArrow_DIR=$PREFIX/lib/cmake/Arrow"
-        # "-DArrowDataset_DIR=$PREFIX/lib/cmake/ArrowDataset"
-        # "-DArrowCompute_DIR=$PREFIX/lib/cmake/ArrowCompute"
-        # "-DArrowAcero_DIR=$PREFIX/lib/cmake/ArrowAcero"
-        # "-DArrowParquet_DIR=$PREFIX/lib/cmake/ArrowParquet"
-        # "-DParquet_DIR=$PREFIX/lib/cmake/Parquet"
+        "-DArrow_DIR=$PREFIX/lib/cmake/Arrow"
+        "-DArrowDataset_DIR=$PREFIX/lib/cmake/ArrowDataset"
+        "-DArrowCompute_DIR=$PREFIX/lib/cmake/ArrowCompute"
+        "-DArrowAcero_DIR=$PREFIX/lib/cmake/ArrowAcero"
+        "-DArrowParquet_DIR=$PREFIX/lib/cmake/ArrowParquet"
+        "-DParquet_DIR=$PREFIX/lib/cmake/Parquet"
         # "-Dre2_DIR=$PREFIX/lib/cmake/re2"
         # "-Dutf8proc_LIB=$PREFIX/lib/libutf8proc.a"
         # "-Dabsl_DIR=$PREFIX/lib/cmake/absl"
         # "-Dutf8proc_INCLUDE_DIR=$PREFIX/include"
-        # "-DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/cmake/overwriteProp.cmake"
+        "-DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/cmake/overwriteProp.cmake"
     )
-
-    echo "PY_VER IS $PY_VER"
 
     export PYARROW_CMAKE_OPTIONS="${pyarrow_cmake_options[*]}"
     export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata__emscripten_wasm32-emscripten"
@@ -162,10 +172,25 @@ build_pyarrow() {
     export ARROW_HOME="$PREFIX"
     export INCLUDE_NUMPY_FLAGS="-I$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
 
-    export CFLAGS="${CFLAGS:-} $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
-    export CXXFLAGS="${CXXFLAGS:-} $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
+    sanitized_cflags=" ${CFLAGS:-} "
+    sanitized_cflags="${sanitized_cflags// -pthread / }"
+    sanitized_cflags="${sanitized_cflags// -sPTHREADS / }"
+    sanitized_cflags="${sanitized_cflags// -sPTHREADS=1 / }"
+
+    sanitized_cxxflags=" ${CXXFLAGS:-} "
+    sanitized_cxxflags="${sanitized_cxxflags// -pthread / }"
+    sanitized_cxxflags="${sanitized_cxxflags// -sPTHREADS / }"
+    sanitized_cxxflags="${sanitized_cxxflags// -sPTHREADS=1 / }"
+
+    sanitized_ldflags=" ${LDFLAGS:-} "
+    sanitized_ldflags="${sanitized_ldflags// -pthread / }"
+    sanitized_ldflags="${sanitized_ldflags// -sPTHREADS / }"
+    sanitized_ldflags="${sanitized_ldflags// -sPTHREADS=1 / }"
+
+    export CFLAGS="${sanitized_cflags} $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
+    export CXXFLAGS="${sanitized_cxxflags} $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
     export PYARROW_CXXFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
-    export LDFLAGS="${LDFLAGS:-} $EM_FORGE_SIDE_MODULE_LDFLAGS -sWASM_BIGINT -L$PREFIX/lib"
+    export LDFLAGS="${sanitized_ldflags} $EM_FORGE_SIDE_MODULE_LDFLAGS -sWASM_BIGINT -L$PREFIX/lib"
     export CMAKE_BUILD_PARALLEL_LEVEL=4
 
     cd "$SRC_DIR/python"
@@ -179,6 +204,8 @@ build_pyarrow() {
     for disabled_file in _cuda.pxd _cuda.pyx _flight.pyx _gcsfs.pyx _hdfs.pyx; do
         rm -f "$SP/pyarrow/$disabled_file"
     done
+
+    echo "✅ PyArrow build and installation complete ✅"
 }
 
 build_arrow_cpp
