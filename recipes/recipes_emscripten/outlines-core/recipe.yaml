@@ -1,0 +1,53 @@
+context:
+  name: outlines-core
+  version: 0.2.14
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.io/packages/source/o/outlines-core/outlines_core-${{ version }}.tar.gz
+    sha256: 64808deed1591ca3029ff64346ceb974cd5d780c916ea82504951fe83523039e
+
+build:
+  number: 0
+
+  files:
+    exclude:
+      - '**.dist-info/**'
+      - '**/*.pyi'
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+      - '**/*.py'
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - rust
+    - maturin
+  host:
+    - python
+  run:
+    - python
+
+tests:
+ - script: pytester
+   requirements:
+     build:
+       - pytester
+     run:
+       - pytester-run
+   files:
+     recipe:
+       - test_outlines_core.py
+
+about:
+  summary: Faster structured generation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dottxt-ai/outlines-core
+  repository: https://github.com/dottxt-ai/outlines-core
+  documentation: https://docs.rs/outlines-core
