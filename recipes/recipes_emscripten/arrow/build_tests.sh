@@ -93,8 +93,6 @@ run_test() {
             -DZSTD_LIB=$PREFIX/lib/libzstd.a \
             -DZSTD_INCLUDE_DIR=$PREFIX/include \
             -Dthrift_DIR=$PREFIX/lib/cmake/thrift \
-      -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-      -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
     
     emmake make
     
