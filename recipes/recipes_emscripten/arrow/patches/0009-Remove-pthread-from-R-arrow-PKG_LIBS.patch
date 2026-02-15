@@ -1,0 +1,12 @@
+--- a/r/configure
++++ b/r/configure
+@@ -279,6 +279,9 @@ set_pkg_vars() {
+   
+   # pkg-config --libs-only-l
+   PKG_LIBS=`${PKG_CONFIG} --libs-only-l --libs-only-other ${pkg_config_names}`
++  # Remove -pthread since Arrow was built without threading support for emscripten
++  PKG_LIBS=$(echo "$PKG_LIBS" | sed 's/ -pthread / /g' | sed 's/^-pthread //g' | sed 's/ -pthread$//g')
++  
+   PKG_LIBS="$PKG_LIBS $PKG_LIBS_FEATURES"
+   
+   # pkg-config on macos sometimes gives things other than directories here
