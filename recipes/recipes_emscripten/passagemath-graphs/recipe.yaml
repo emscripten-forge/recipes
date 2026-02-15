@@ -1,0 +1,67 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-graphs
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-graphs/passagemath_graphs-${{ version }}.tar.gz
+  sha256: 4cadf729d6639b9503139085d96dbe168c1248d6aaa4a7d2a2a760d0a83d8373
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - boost-cpp
+  - passagemath-categories
+  run:
+  - python
+  - gmpy2
+  - cysignals
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_graphs.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Graphs, posets, hypergraphs, designs, abstract complexes, combinatorial polyhedra, abelian sandpiles, quivers'
+  description: "=======================================================================================================================================================\r\n passagemath: Graphs, posets, hypergraphs, designs, abstract complexes, combinatorial polyhedra, abelian sandpiles, quivers\r\n=======================================================================================================================================================\r\n\r\n`passagemath <https://github.com/passagemath/passagemath>`__ is open\r\nsource mathematical software in Python, released under the GNU General\r\nPublic Licence GPLv2+.\r\n\r\nIt is a fork of `SageMath <https://www.sagemath.org/>`__, which has been\r\ndeveloped 2005-2026 under the motto “Creating a Viable Open Source\r\nAlternative to Magma, Maple, Mathematica, and MATLAB”.\r\n\r\nThe passagemath fork uses the motto \"Creating a Free Passage Between the\r\nScientific Python Ecosystem and Mathematical Software Communities.\"\r\nIt was created in October 2024 with the following goals:\r\n\r\n-  providing modularized installation with pip from binary wheels,\r\n   - this major project was started in May 2020 in the Sage codebase and completed in passagemath 10.5.29 (May 2025),\r\n\r\n-  establishing first-class membership in the scientific Python\r\n   ecosystem,\r\n\r\n-  giving `clear attribution of upstream\r\n   projects <https://groups.google.com/g/sage-devel/c/6HO1HEtL1Fs/m/G002rPGpAAAJ>`__,\r\n\r\n-  providing independently usable Python interfaces to upstream\r\n   libraries,\r\n\r\n-  offering `platform portability and integration testing\r\n   services <https://github.com/passagemath/passagemath/issues/704>`__\r\n   to upstream projects,\r\n\r\n-  inviting collaborations with upstream projects,\r\n\r\n-  `building a professional, respectful, inclusive\r\n   community <https://groups.google.com/g/sage-devel/c/xBzaINHWwUQ>`__,\r\n\r\n-  `empowering Sage users to participate in the scientific Python ecosystem\r\n   <https://github.com/passagemath/passagemath/issues/248>`__ by publishing packages,\r\n\r\n-  developing a port to WebAssembly (`Pyodide <https://pyodide.org/en/stable/>`__, emscripten-forge) for\r\n   serverless deployment with Javascript,\r\n\r\n-  developing a native Windows port\r\n   - passagemath 10.6.1 (July 2025) published the first pip-installable wheel packages for native Windows on x86_64,\r\n   - passagemath packages became available in the [MSYS2 software distribution](https://packages.msys2.org/search?t=pkg&q=passagemath) in November 2025.\r\n\r\nMoreover, the passagemath project:\r\n\r\n-  provides a stable, frequently updated version of the Sage distribution,\r\n-  integrates additional mathematical software, notably Macaulay2, a full set of GAP packages,\r\n   and the Combinatorial Matrix Recognition library,\r\n-  curates a library of Sage user packages.\r\n\r\n`Full documentation <https://passagemath.org/docs/latest/html/en/index.html>`__ is\r\navailable online.\r\n\r\npassagemath attempts to support and provides binary wheels suitable for\r\nall major Linux distributions and recent versions of macOS.\r\n\r\nBinary wheels for native Windows (x86_64, ARM) are are available for a subset of\r\nthe passagemath distributions. Use of the full functionality of passagemath\r\non Windows currently requires the use of Windows Subsystem for Linux (WSL)\r\nor virtualization.\r\n\r\nThe supported Python versions in the passagemath-10.8.x series are 3.11.x-3.14.x;\r\nthe passagemath-10.6.x series (EOL 2026-10) still supports Python 3.10.x.\r\n\r\n\r\nAbout this pip-installable distribution package\r\n-----------------------------------------------\r\n\r\nThis pip-installable package ``passagemath-graphs`` is a distribution of a part of the Sage Library.  It provides a small subset of the modules of the Sage library (\"sagelib\", ``passagemath-standard``) for computations with graphs, posets, complexes, etc.\r\n\r\nIt consists of over 170 first-party Python and Cython modules and uses the `Boost Graph Library <https://github.com/boostorg/graph>`_, with additional functionality from `NetworkX <https://networkx.github.io/>`_ and several other libraries.\r\n\r\n\r\nWhat is included\r\n----------------\r\n\r\n* `Graph Theory <https://passagemath.org/docs/latest/html/en/reference/graphs/index.html>`_\r\n\r\n* `Trees <https://passagemath.org/docs/latest/html/en/reference/combinat/sage/combinat/enumerated_sets.html#trees>`_\r\n\r\n* `Posets <https://passagemath.org/docs/latest/html/en/reference/combinat/sage/combinat/posets/all.html>`_\r\n\r\n* `Abstract Complexes <https://passagemath.org/docs/latest/html/en/reference/topology/index.html>`_\r\n\r\n* `Combinatorial Designs and Incidence Structure <https://passagemath.org/docs/latest/html/en/reference/combinat/sage/combinat/designs/all.html>`_\r\n\r\n* `Finite State Machines, Automata, Transducers <https://passagemath.org/docs/latest/html/en/reference/combinat/sage/combinat/finite_state_machine.html>`_\r\n\r\n* `Cluster Algebras and Quivers <https://passagemath.org/docs/latest/html/en/reference/combinat/sage/combinat/cluster_algebra_quiver/all.html>`_\r\n\r\n* `Knot Theory <https://passagemath.org/docs/latest/html/en/reference/knots/index.html>`_\r\n\r\n* `Sandpiles <https://passagemath.org/docs/latest/html/en/reference/dynamics/sage/sandpiles/sandpile.html>`_\r\n\r\n* see https://github.com/passagemath/passagemath/blob/main/pkgs/sagemath-graphs/MANIFEST.in\r\n\r\n\r\nExamples\r\n--------\r\n\r\nA quick way to try it out interactively::\r\n\r\n    $ pipx run --pip-args=\"--prefer-binary\" --spec \"passagemath-graphs[test]\" ipython\r\n    In [1]: from passagemath_graphs import *\r\n\r\n    In [6]: g = Graph([(1, 3), (3, 8), (5, 2)]); g\r\n    Out[6]: Graph on 5 vertices\r\n\r\n    In [7]: g.is_connected()\r\n    Out[7]: False\r\n\r\n\r\nAvailable as extras, from other distributions\r\n---------------------------------------------\r\n\r\nLibraries\r\n~~~~~~~~~\r\n\r\n``pip install passagemath-graphs[benzene,buckygen,plantri]`` additionally make\r\nvarious graph generators available via `passagemath-benzene <https://pypi.org/project/passagemath-benzene/>`_, `passagemath-buckygen <https://pypi.org/project/passagemath-buckygen/>`_, and `passagemath-plantri <https://pypi.org/project/passagemath-plantri/>`_.\r\n\r\n``pip install passagemath-graphs[bliss]`` additionally installs `passagemath-bliss <https://pypi.org/project/passagemath-bliss/>`_ for the purpose\r\nof computing graph (iso/auto)morphisms.\r\n\r\n``pip install passagemath-graphs[cliquer]`` additionally installs `passagemath-cliquer <https://pypi.org/project/passagemath-cliquer/>`_\r\n\r\n``pip install passagemath-graphs[cmr]`` additionally installs `passagemath-cmr <https://pypi.org/project/passagemath-cmr/>`_ for recognition and decomposition algorithms\r\nfor network matrices, totally unimodular matrices and regular matroids, series-parallel matroids, etc.\r\n\r\n``pip install passagemath-graphs[gap]`` additionally installs `passagemath-gap <https://pypi.org/project/passagemath-gap/>`_ for group-theoretic functionality.\r\n\r\n``pip install passagemath-graphs[igraph]`` additionally installs\r\n`igraph <https://python.igraph.org/en/stable/>`_::\r\n\r\n    $ pipx run --pip-args=\"--prefer-binary\" --spec \"passagemath-graphs[igraph,test]\" ipython\r\n    In [1]: from passagemath_graphs import *\r\n\r\n    In [2]: ## Example depending on igraph goes here\r\n\r\n``pip install passagemath-graphs[mcqd]`` additionally installs `passagemath-mcqd <https://pypi.org/project/passagemath-mcqd/>`_\r\n\r\n``pip install passagemath-graphs[nauty]`` additionally installs `passagemath-nauty <https://pypi.org/project/passagemath-nauty/>`_ for computing\r\nautomorphism groups of graphs and digraphs.\r\n\r\n``pip install passagemath-graphs[networkx]`` additionally installs\r\n`NetworkX <https://networkx.github.io>`__::\r\n\r\n    $ pipx run --pip-args=\"--prefer-binary\" --spec \"passagemath-graphs[networkx,test]\" ipython\r\n    In [1]: from passagemath_graphs import *\r\n\r\n    In [2]: ## Example depending on networkx goes here\r\n\r\n``pip install passagemath-graphs[pari]`` additionally installs `passagemath-pari <https://pypi.org/project/passagemath-pari/>`_\r\n\r\n``pip install passagemath-graphs[planarity]`` additionally installs `passagemath-planarity <https://pypi.org/project/passagemath-planarity/>`_ for planarity testing.\r\n\r\n``pip install passagemath-graphs[rankwidth]`` additionally installs `passagemath-rankwidth <https://pypi.org/project/passagemath-rankwidth/>`_ for rank width and rank decompositions.\r\n\r\n``pip install passagemath-graphs[tdlib]`` additionally installs `passagemath-tdlib <https://pypi.org/project/passagemath-tdlib/>`_ for computing tree decompositions.\r\n\r\n\r\nFeatures\r\n~~~~~~~~\r\n\r\n``pip install passagemath-graphs[combinat]`` additionally installs `passagemath-combinat <https://pypi.org/project/passagemath-combinat/>`_\r\n\r\n``pip install passagemath-graphs[editor]`` additionally installs the interactive graph editor `phitigra <https://pypi.org/project/phitigra/>`_.\r\n\r\n``pip install passagemath-graphs[groups]`` additionally makes group-theoretic features\r\navailable via `passagemath-gap <https://pypi.org/project/passagemath-gap/>`_, `passagemath-groups <https://pypi.org/project/passagemath-groups/>`_, and `passagemath-nauty <https://pypi.org/project/passagemath-nauty/>`_::\r\n\r\n    $ pipx run --pip-args=\"--prefer-binary\" --spec \"passagemath-graphs[groups,test]\" ipython\r\n    In [1]: from passagemath_graphs import *\r\n\r\n    In [2]: g = Graph({\r\n                0: [1, 2],\r\n                1: [0, 2],\r\n                2: [0, 1, 3],\r\n                3: [2]\r\n            })\r\n\r\n    In [3]: aut = g.automorphism_group()\r\n\r\n    In [4]: print(aut.order())\r\n\r\n``pip install passagemath-graphs[homology]`` provides homological computations for abstract complexes via `passagemath-modules <https://pypi.org/project/passagemath-modules/>`_.\r\n\r\n``pip install passagemath-graphs[mip]`` additionally makes the mixed-integer programming\r\nsolver GLPK available via `passagemath-glpk <https://pypi.org/project/passagemath-glpk/>`_ and `passagemath-polyhedra <https://pypi.org/project/passagemath-polyhedra/>`_ (see there for other available solvers).::\r\n\r\n    $ pipx run --pip-args=\"--prefer-binary\" --spec \"passagemath-graphs[mip,test]\" ipython\r\n    In [1]: from passagemath_graphs import *\r\n\r\n    In [2]: ## Example depending on MIP goes here\r\n\r\n``pip install passagemath-graphs[modules]`` additionally makes linear algebra features available via `passagemath-modules <https://pypi.org/project/passagemath-modules/>`_.\r\n\r\n``pip install passagemath-graphs[plot]`` additionally installs `passagemath-plot <https://pypi.org/project/passagemath-plot/>`_.\r\n\r\n``pip install passagemath-graphs[polyhedra]`` additionally installs `passagemath-polyhedra <https://pypi.org/project/passagemath-polyhedra/>`_.\r\n\r\n``pip install passagemath-graphs[sat]`` additionally provides SAT features via `passagemath-combinat <https://pypi.org/project/passagemath-combinat/>`_.\r\n\r\n``pip install passagemath-graphs[standard]`` installs all libraries and features related to graphs that\r\nare available in a standard installation of Sage.\r\n\r\n\r\nDevelopment\r\n-----------\r\n\r\n::\r\n\r\n    $ git clone --origin passagemath https://github.com/passagemath/passagemath.git\r\n    $ cd passagemath\r\n    passagemath $ ./bootstrap\r\n    passagemath $ python3 -m venv graphs-venv\r\n    passagemath $ source graphs-venv/bin/activate\r\n    (graphs-venv) passagemath $ pip install -v -e pkgs/sagemath-graphs\r\n"
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_graphs.py
+  recipe-maintainers:
+  - mkoeppe
