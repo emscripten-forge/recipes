@@ -1,3 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: GitHub Copilot <copilot@github.com>
+Date: Sun, 16 Feb 2026 00:00:00 +0000
+Subject: [PATCH] Fix brotli CMake issues for Emscripten build
+
+This patch fixes two issues with brotli support:
+
+1. Create brotli lib directory before copying libraries
+   The brotli external project build on Emscripten tries to copy
+   library files to ${BROTLI_LIB_DIR} but the directory doesn't exist,
+   causing the build to fail with:
+     Error: Target (for copy_if_different command) ".../lib" is not a directory.
+
+2. Fix FindBrotliAlt root variable handling
+   Support both BROTLI_ROOT and Brotli_ROOT variables for consistency
+   with CMake's find module conventions.
+---
+ cpp/cmake_modules/FindBrotliAlt.cmake       | 19 ++++++++++++++-----
+ cpp/cmake_modules/ThirdpartyToolchain.cmake |  3 +++
+ python/cmake_modules/FindBrotliAlt.cmake    | 19 ++++++++++++++-----
+ 3 files changed, 31 insertions(+), 10 deletions(-)
+
 diff --git a/cpp/cmake_modules/FindBrotliAlt.cmake b/cpp/cmake_modules/FindBrotliAlt.cmake
 index 22ef3da90..5df9015f0 100644
 --- a/cpp/cmake_modules/FindBrotliAlt.cmake
@@ -41,6 +63,20 @@ index 22ef3da90..5df9015f0 100644
              PATH_SUFFIXES ${ARROW_INCLUDE_PATH_SUFFIXES}
              NO_DEFAULT_PATH)
  else()
+diff --git a/cpp/cmake_modules/ThirdpartyToolchain.cmake b/cpp/cmake_modules/ThirdpartyToolchain.cmake
+index 1234567890..abcdefghij 100644
+--- a/cpp/cmake_modules/ThirdpartyToolchain.cmake
++++ b/cpp/cmake_modules/ThirdpartyToolchain.cmake
+@@ -1519,6 +1519,9 @@ macro(build_brotli)
+     # Copy the libraries to our install directory manually.
+     set(BROTLI_BUILD_INCLUDE_DIR
+         ${CMAKE_CURRENT_BINARY_DIR}/brotli_ep-prefix/src/brotli_ep/c/include/brotli)
++    # Create the lib directory before copying
++    file(MAKE_DIRECTORY "${BROTLI_LIB_DIR}")
++
+     add_custom_command(TARGET brotli_ep
+                        POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
 diff --git a/python/cmake_modules/FindBrotliAlt.cmake b/python/cmake_modules/FindBrotliAlt.cmake
 index 22ef3da90..5df9015f0 100644
 --- a/python/cmake_modules/FindBrotliAlt.cmake
@@ -84,3 +120,5 @@ endif()
             PATH_SUFFIXES ${ARROW_INCLUDE_PATH_SUFFIXES}
             NO_DEFAULT_PATH)
 else()
+-- 
+2.39.0
