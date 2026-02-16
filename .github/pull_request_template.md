@@ -32,7 +32,6 @@ Added `recipes/recipes_emscripten/[package-name]/recipe.yaml` with proper struct
 
 - [ ] ⚠️ Bump build number if the version remains unchanged
 - [ ] Or reset build number to 0 if updating the package to a newer version
-- [ ] Tests pass
 
 ---
 
