@@ -19,7 +19,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
             cmd.extend(["--experimental"])
     elif recipes_dir is not None:
         cmd.extend(["--recipe-dir", str(recipes_dir)])
-        if "thrift" or "arrow" in str(recipes_dir):
+        if "thrift" in str(recipes_dir) or "arrow" in str(recipes_dir):
             cmd.extend(["--experimental"])
 
     cmd.extend(["--skip-existing", skip_existing])
