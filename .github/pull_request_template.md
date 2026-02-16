@@ -3,6 +3,8 @@
 ### Pre-submission Checks
 - [ ] Package requires building for `emscripten-wasm32` platform (not a noarch package), in other words, the package requires compilation.
 
+<!-- If you have a noarch package, we suggest submitting your recipe to https://github.com/conda-forge/staged-recipes/ instead. -->
+
 ### Recipe Structure
 Added `recipes/recipes_emscripten/[package-name]/recipe.yaml` with proper structure:
 - [ ] `context` section with `version` (and optionally `name`)
