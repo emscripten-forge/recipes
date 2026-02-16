@@ -1,0 +1,67 @@
+context:
+  name: pycairo
+  version: 1.29.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pygobject/pycairo/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f3f7fde97325cae80224c09f12564ef58d0d0f655da0e3b040f5807bd5bd3142
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - meson >=0.62
+  - ninja
+  - pkg-config
+  - python
+  host:
+  - cairo
+  - expat
+  - fontconfig
+  - freetype
+  - libffi
+  - libpng
+  - lzo
+  - pixman
+  - python
+  - zlib
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pycairo.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: http://cairographics.org/pycairo/
+  license: LGPL-2.1-only OR MPL-1.1
+  license_file: COPYING
+  summary: Python bindings for the Cairo graphics library.
+  repository: https://github.com/pygobject/pycairo/
+
+extra:
+  recipe-maintainers:
+  - wolfv
