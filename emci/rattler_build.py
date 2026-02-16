@@ -1,6 +1,7 @@
 import platform
 import os
 import subprocess
+from pathlib import Path
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 
@@ -15,12 +16,16 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         raise ValueError("recipe or recipes_dir must be set")
     elif recipe is not None:
         cmd.extend(["--recipe", str(recipe)])
-        if recipe == "arrow" or recipe == "thrift":
+        if (recipe == "arrow") or (recipe == "thrift"):
             cmd.extend(["--experimental"])
     elif recipes_dir is not None:
         cmd.extend(["--recipe-dir", str(recipes_dir)])
-        if "thrift" in str(recipes_dir) or "arrow" in str(recipes_dir):
-            cmd.extend(["--experimental"])
+        # Check if thrift or arrow folders exist in recipes_dir
+        recipes_path = Path(recipes_dir)
+        if recipes_path.is_dir():
+            folder_names = {p.name for p in recipes_path.iterdir() if p.is_dir()}
+            if "thrift" in folder_names or "arrow" in folder_names:
+                cmd.extend(["--experimental"])
 
     cmd.extend(["--skip-existing", skip_existing])
 
