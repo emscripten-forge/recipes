@@ -11,3 +11,6 @@ cmake ${CMAKE_ARGS} ..                    \
     -DCMAKE_BUILD_TYPE=Release
 
 ninja install
+
+# Copy wasm files also
+cp src/main/*.wasm $PREFIX/bin/
