@@ -209,25 +209,6 @@ build_r_arrow() {
     echo "📊 Starting R Arrow build 📊"
     echo "============================================================"
     
-    # Sanitize flags to remove pthread since Arrow was built without threading
-    # sanitized_cflags=" ${CFLAGS:-} "
-    # sanitized_cflags="${sanitized_cflags// -pthread / }"
-    # sanitized_cflags="${sanitized_cflags// -sPTHREADS / }"
-    # sanitized_cflags="${sanitized_cflags// -sPTHREADS=1 / }"
-
-    # sanitized_cxxflags=" ${CXXFLAGS:-} "
-    # sanitized_cxxflags="${sanitized_cxxflags// -pthread / }"
-    # sanitized_cxxflags="${sanitized_cxxflags// -sPTHREADS / }"
-    # sanitized_cxxflags="${sanitized_cxxflags// -sPTHREADS=1 / }"
-
-    # sanitized_ldflags=" ${LDFLAGS:-} "
-    # sanitized_ldflags="${sanitized_ldflags// -pthread / }"
-    # sanitized_ldflags="${sanitized_ldflags// -sPTHREADS / }"
-    # sanitized_ldflags="${sanitized_ldflags// -sPTHREADS=1 / }"
-    
-    # export CFLAGS="${sanitized_cflags}"
-    # export CXXFLAGS="${sanitized_cxxflags}"
-    # export LDFLAGS="${sanitized_ldflags}"
     export ARROW_HOME=${PREFIX}
 
     cd $SRC_DIR/r
