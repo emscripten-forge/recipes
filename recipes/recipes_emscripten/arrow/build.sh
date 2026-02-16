@@ -154,10 +154,6 @@ build_pyarrow() {
         "-DArrowAcero_DIR=$PREFIX/lib/cmake/ArrowAcero"
         "-DArrowParquet_DIR=$PREFIX/lib/cmake/ArrowParquet"
         "-DParquet_DIR=$PREFIX/lib/cmake/Parquet"
-        # "-Dre2_DIR=$PREFIX/lib/cmake/re2"
-        # "-Dutf8proc_LIB=$PREFIX/lib/libutf8proc.a"
-        # "-Dabsl_DIR=$PREFIX/lib/cmake/absl"
-        # "-Dutf8proc_INCLUDE_DIR=$PREFIX/include"
         "-DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/cmake/overwriteProp.cmake"
     )
 
