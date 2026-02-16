@@ -13,4 +13,4 @@ cmake ${CMAKE_ARGS} ..                    \
 ninja install
 
 # Copy wasm files also
-cp src/main/*.wasm $PREFIX/bin/
+cp *.wasm $PREFIX/bin/
