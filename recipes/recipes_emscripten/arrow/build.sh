@@ -208,7 +208,7 @@ build_r_arrow() {
     echo "============================================================"
     echo "📊 Starting R Arrow build 📊"
     echo "============================================================"
-    
+
     export ARROW_HOME=${PREFIX}
 
     cd $SRC_DIR/r

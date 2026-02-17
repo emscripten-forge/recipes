@@ -1,4 +1,4 @@
-// Comes frol https://github.com/apache/arrow/blob/main/cpp/examples/arrow/acero_register_example.cc
+// Comes from https://github.com/apache/arrow/blob/main/cpp/examples/arrow/acero_register_example.cc
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements. See the NOTICE file
