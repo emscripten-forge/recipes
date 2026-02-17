@@ -168,25 +168,10 @@ build_pyarrow() {
     export ARROW_HOME="$PREFIX"
     export INCLUDE_NUMPY_FLAGS="-I$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
 
-    sanitized_cflags=" ${CFLAGS:-} "
-    sanitized_cflags="${sanitized_cflags// -pthread / }"
-    sanitized_cflags="${sanitized_cflags// -sPTHREADS / }"
-    sanitized_cflags="${sanitized_cflags// -sPTHREADS=1 / }"
-
-    sanitized_cxxflags=" ${CXXFLAGS:-} "
-    sanitized_cxxflags="${sanitized_cxxflags// -pthread / }"
-    sanitized_cxxflags="${sanitized_cxxflags// -sPTHREADS / }"
-    sanitized_cxxflags="${sanitized_cxxflags// -sPTHREADS=1 / }"
-
-    sanitized_ldflags=" ${LDFLAGS:-} "
-    sanitized_ldflags="${sanitized_ldflags// -pthread / }"
-    sanitized_ldflags="${sanitized_ldflags// -sPTHREADS / }"
-    sanitized_ldflags="${sanitized_ldflags// -sPTHREADS=1 / }"
-
-    export CFLAGS="${sanitized_cflags} $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
-    export CXXFLAGS="${sanitized_cxxflags} $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
+    export CFLAGS=" $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
+    export CXXFLAGS=" $EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
     export PYARROW_CXXFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS $INCLUDE_NUMPY_FLAGS -sWASM_BIGINT"
-    export LDFLAGS="${sanitized_ldflags} $EM_FORGE_SIDE_MODULE_LDFLAGS -sWASM_BIGINT -L$PREFIX/lib"
+    export LDFLAGS=" $EM_FORGE_SIDE_MODULE_LDFLAGS -sWASM_BIGINT -L$PREFIX/lib"
     export CMAKE_BUILD_PARALLEL_LEVEL=4
 
     cd "$SRC_DIR/python"
