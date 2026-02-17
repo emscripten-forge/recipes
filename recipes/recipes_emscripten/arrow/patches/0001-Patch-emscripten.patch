@@ -12,15 +12,6 @@ diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
 index d550796a7a..a6be9cc19f 100644
 --- a/python/CMakeLists.txt
 +++ b/python/CMakeLists.txt
-@@ -8,7 +8,7 @@
- #
- #   http://www.apache.org/licenses/LICENSE-2.0
- #
--# Unless required by applicable law or agreed to in writing,
-+# Unless ARROW_BUILD_SHARED by applicable law or agreed to in writing,
- # software distributed under the License is distributed on an
- # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- # KIND, either express or implied.  See the License for the
 @@ -161,21 +161,30 @@ endif()
  include(SetupCxxFlags)
 
@@ -62,37 +53,10 @@ index d550796a7a..a6be9cc19f 100644
    endif()
    set(ENV{_PYTHON_SYSCONFIGDATA_NAME} $ENV{SYSCONFIG_NAME})
    # we set the c and cxx compiler manually to bypass pywasmcross
-@@ -506,7 +515,8 @@ set_target_properties(arrow_python PROPERTIES VERSION "${PYARROW_FULL_SO_VERSION
- install(TARGETS arrow_python
-         ARCHIVE DESTINATION .
-         LIBRARY DESTINATION .
--        RUNTIME DESTINATION .)
-+        RUNTIME DESTINATION .
-+        )
-
- set(PYARROW_CPP_ENCRYPTION_SRCS ${PYARROW_CPP_SOURCE_DIR}/parquet_encryption.cc)
- if(NOT PYARROW_BUILD_PARQUET_ENCRYPTION)
-@@ -904,7 +914,7 @@ set(CYTHON_FLAGS "${CYTHON_FLAGS}" "--warning-errors")
- set(CYTHON_FLAGS "${CYTHON_FLAGS}" "--no-c-in-traceback")
-
- if(CYTHON_VERSION VERSION_GREATER_EQUAL "3.1.0a0")
--  list(APPEND CYTHON_FLAGS "-Xfreethreading_compatible=True")
-+  # list(APPEND CYTHON_FLAGS "-Xfreethreading_compatible=True")
- endif()
-
- foreach(module ${CYTHON_EXTENSIONS})
 diff --git a/python/setup.py b/python/setup.py
 index a27bd3baef..895dfa1d70 100755
 --- a/python/setup.py
 +++ b/python/setup.py
-@@ -44,6 +44,7 @@ is_64_bit = sys.maxsize > 2**32
-
- # We can't use sys.platform in a cross-compiling situation
- # as here it may be set to the host not target platform
-+print("SOABI", sysconfig.get_config_var("SOABI"), sys.platform)
- is_emscripten = (
-     sysconfig.get_config_var("SOABI")
-     and sysconfig.get_config_var("SOABI").find("emscripten") != -1
 @@ -268,8 +269,6 @@ class build_ext(_build_ext):
 
              cmake_options = [
