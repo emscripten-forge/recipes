@@ -37,6 +37,9 @@ ls -l "$CXX"
 cp "${RECIPE_DIR}/wasm-ld-wrapper.sh" "$BUILD_PREFIX/bin/wasm-ld"
 chmod +x "$BUILD_PREFIX/bin/wasm-ld"
 
+export OCTAVE_HOME=$PREFIX
+export OCTAVE_EXEC_HOME=$BUILD_PREFIX
+
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
 
