@@ -1,0 +1,33 @@
+From fb6cde9a76a6245adfdf2a905d28797b7dd8aaec Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Wed, 11 Feb 2026 10:50:16 -0800
+Subject: [PATCH 2/3] meson.build: Do not use threads on emscripten
+
+---
+ meson.build | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 2253bcd..8082e2d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -15,6 +15,7 @@ is_windows = host_machine.system() == 'windows'
+ is_cygwin = host_machine.system() == 'cygwin'
+ is_msvc = cc.get_id() == 'msvc'
+ is_mingw = cc.get_id()=='gcc' and host_machine.system()=='windows'
++is_emscripten = host_machine.system() == 'emscripten'
+ 
+ # Set preprocessor macros
+ # Disable .c line numbers in exception tracebacks
+@@ -94,7 +95,7 @@ config.set('CYSIGNALS_STD_ATOMIC', cxx.links('#include <atomic>\nint main() { st
+ # for std::atomic with OpenMP in C++ code
+ config.set('CYSIGNALS_STD_ATOMIC_WITH_OPENMP', cxx.links('#include <atomic>\nint main() { static std::atomic<int> x; return 0; }', args: ['-fopenmp']) ? 1 : 0)
+ 
+-if is_windows
++if is_windows or is_emscripten
+   threads_dep = []
+ else
+   threads_dep = dependency('threads')
+-- 
+2.51.1
+
