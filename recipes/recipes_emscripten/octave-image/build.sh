@@ -62,6 +62,8 @@ pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
 pkg list;
 "
 
+mv '${PREFIX}/lib/octave/packages/${PKG}-${VER}/x86_64-conda-linux-gnu-api-v60' '${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten'
+
 log "Verify installation"
 find "${PREFIX}" -maxdepth 5 -print
 
