@@ -56,10 +56,12 @@ log "Running pkg build (no install, keep build dir)"
 octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || true
 
 log "Installing package into PREFIX"
+echo "OCTAVE USED:"
+which octave
 echo "PREFIX = $PREFIX"
 ls -lah "$PREFIX"
 ls -lah "$PREFIX/bin"
-echo $(node $PREFIX/bin/octave-cli.js --eval "disp (computer)")
+echo $(node "$PREFIX/bin/octave-cli" --eval "disp (computer)")
 octave -W -H --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/lib/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
