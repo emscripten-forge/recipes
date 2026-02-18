@@ -26,8 +26,6 @@ sed -i 's|check_function_exists(fseek64 HAVE_FSEEK64)|set(HAVE_FSEEK64 FALSE)|' 
 sed -i 's|check_function_exists(ftell64 HAVE_FTELL64)|set(HAVE_FTELL64 FALSE)|' cmake/helpers/configure.cmake
 
 
-
-
 mkdir -p build
 cd build && emcmake cmake .. \
     -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
@@ -54,7 +52,7 @@ cd build && emcmake cmake .. \
 \
 -DGDAL_USE_GEOS=ON \
 -DGEOS_INCLUDE_DIR=$PREFIX/include \
--DGEOS_LIBRARY=$PREFIX/lib/libgeos.a \
+-DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.a \
 \
 -DGDAL_USE_ZLIB=ON \
 -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
