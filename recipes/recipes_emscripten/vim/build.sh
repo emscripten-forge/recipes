@@ -7,20 +7,21 @@ echo $NCURSES_CFLAGS
 echo $NCURSES_LDFLAGS
 ls -l $XTERM_256COLOR
 
+export EMCC_CFLAGS="${EMCC_CFLAGS} -Os"
+
 export CONFIG_CFLAGS="\
     $NCURSES_CFLAGS \
-    -Os \
     "
 export CONFIG_LDFLAGS="\
     $NCURSES_LDFLAGS \
-    -Os \
     --minify=0 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sEXIT_RUNTIME=1 \
-    -sEXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY \
+    -sEXPORTED_RUNTIME_METHODS=FS,ENV,PROXYFS,TTY \
     -sFORCE_FILESYSTEM=1 \
     -sMODULARIZE=1 \
     -sLZ4 \
+    -lproxyfs.js \
     "
 
 emconfigure ./configure \
@@ -52,10 +53,10 @@ DESTDIR=$PWD make -C src installruntime
 emmake make EXEEXT=.js -j4 LDFLAGS=" \
     $LDFLAGS \
     $CONFIG_LDFLAGS \
-    --preload-file $PWD/usr/local/share/vim/vim91@/usr/local/share/vim/vim91 \
-    --exclude-file $PWD/usr/local/share/vim/vim91/lang \
-    --exclude-file $PWD/usr/local/share/vim/vim91/doc \
-    --exclude-file $PWD/usr/local/share/vim/vim91/tutor \
+    --preload-file $PWD/usr/local/share/vim/vim92@/usr/local/share/vim/vim92 \
+    --exclude-file $PWD/usr/local/share/vim/vim92/lang \
+    --exclude-file $PWD/usr/local/share/vim/vim92/doc \
+    --exclude-file $PWD/usr/local/share/vim/vim92/tutor \
     --preload-file $XTERM_256COLOR@/usr/local/share/terminfo/x/xterm-256color \
     --preload-file $VIMRC@/etc/vimrc \
     "
