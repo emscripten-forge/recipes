@@ -17,6 +17,8 @@ emcmake cmake \
     -DCMAKE_FIND_ROOT_PATH=$PREFIX                    \
     -DSYSROOT_PATH=$SYSROOT_PATH                      \
     -DXEUS_CPP_BUILD_TESTS=OFF                        \
+    -DXEUS_CPP_WASM_KERNEL_EXTRA_FLAGS="-fexceptions" \
+    -DXEUS_CPP_WASM_KERNEL_EXTRA_ARGS="--mllvm;--enable-emscripten-cxx-exceptions;--mllvm;--enable-emscripten-sjlj" \
     ..
 
 # Build & Install step
