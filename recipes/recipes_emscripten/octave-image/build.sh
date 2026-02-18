@@ -67,7 +67,7 @@ ls -lah "$BUILD_PREFIX"
 ls -lah "$BUILD_PREFIX/bin"
 
 echo $(node "$PREFIX/bin/octave-cli" --eval "disp (computer)")
-node $PREFIX/bin/octave --eval "
+$BUILD_PREFIX/bin/octave --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/lib/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
 pkg list;
