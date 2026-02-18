@@ -10,6 +10,10 @@ on:
     paths:
       - "recipes/**"
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
 
   build_recipes:
@@ -44,7 +48,8 @@ jobs:
           libmanette-0.2-0 \
           libgles2 \
           gstreamer1.0-libav \
-          libgtk-4-1
+          libgtk-4-1 \
+          libwayland-server0
       ################################################################
       # CONFIG
       ################################################################
@@ -84,11 +89,16 @@ jobs:
       ################################################################
       # UPLOAD
       ################################################################
+      - name: Create artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: output
+          path: output
+        continue-on-error: true
+
       - name: Upload packages to prefix channel
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -l {0}
-        env:
-          PREFIX_DEV_API_KEY: ${{ secrets.PREFIX_DEV_API_KEY }}
         run: |
           overall_success=true
 
@@ -103,7 +113,6 @@ jobs:
 
                   rattler-build upload prefix \
                     --channel emscripten-forge-4x \
-                    -a $PREFIX_DEV_API_KEY \
                     ${package}
 
                   RETURNCODE=$?

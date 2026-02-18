@@ -1,11 +1,10 @@
-
 context:
-  version: "3.13.1"
+  version: 3.13.1
   name: python
-  ver2: "3.13"
+  ver2: '3.13'
   ver2nd: ${{ version | version_to_buildstring}}
-  build_number: 9
-  abi_tag: "cp${{ ver2nd }}"
+  build_number: 10
+  abi_tag: cp${{ ver2nd }}
 
 package:
   name: python
@@ -15,11 +14,21 @@ source:
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
   sha256: 9cf9427bee9e2242e3877dd0f6b641c1853ca461f39d6503ce260a59c80bf0d9
   patches:
-    - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
+  - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
 build:
   number: ${{ build_number }}
   string: h_${{ hash }}_${{build_number}}_${{ abi_tag }}
 
+  files:
+    exclude:
+    - '**/*.ini'
+    - '**/ensurepip/**'
+    - '**/idlelib/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler("cxx") }}
@@ -47,20 +56,20 @@ requirements:
   - libffi
   - liblzma
   run:
-    - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
+  - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
   run_exports:
     weak:
-      - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
+    - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
 
 
 
 tests:
-  - script:
-    - test -f $PREFIX/include/python${{ver2}}/Python.h
-    - test -f $PREFIX/lib/python${{ver2}}/enum.py
-    - test -f $PREFIX/lib/python${{ver2}}/ast.py
-    - test -f $PREFIX/lib/libpython${{ver2}}.a
-    - test -f $PREFIX/bin/python${{ver2}}
+- script:
+  - test -f $PREFIX/include/python${{ver2}}/Python.h
+  - test -f $PREFIX/lib/python${{ver2}}/enum.py
+  - test -f $PREFIX/lib/python${{ver2}}/ast.py
+  - test -f $PREFIX/lib/libpython${{ver2}}.a
+  - test -f $PREFIX/bin/python${{ver2}}
 
 about:
   license: Python-2.0
