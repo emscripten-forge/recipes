@@ -1,0 +1,66 @@
+context:
+  name: cysignals
+  version: 1.12.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3ef3a37bdb244821b85475a08e2762ca1019570b369e321504995fa9a54675ce
+  patches:  # from https://github.com/passagemath/upstream-cysignals
+  - 'patches/0001-src-cysignals-implementation.c-Only-use-backtrace-wh.patch'
+  - 'patches/0002-meson.build-Do-not-use-threads-on-emscripten.patch'
+  - 'patches/0003-src-cysignals-implementation.c-EMSCRIPTEN-Do-not-use.patch'
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cython
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - meson-python
+  - pkg-config
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_cysignals.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/sagemath/cysignals
+  license: LGPL-3.0-or-later
+  license_file: LICENSE
+  summary: Interrupt and signal handling for Cython
+  description: |
+    When writing Cython code, special care must be taken to ensure that the code
+    can be interrupted with CTRL-C. Since Cython optimizes for speed, Cython
+    normally does not check for interrupts. For example, code like the following
+    cannot be interrupted in Cython:
+
+    cdef long i
+    for i in range(2^63):
+        if i > 2^60:
+            print i
+
+    The cysignals package provides mechanisms to handle interrupts (and other
+    signals and errors) in Cython code.
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
