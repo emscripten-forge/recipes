@@ -21,16 +21,17 @@ export CMAKE_ARGS="${CMAKE_ARGS} \
     -DPYTHON_IS_DEBUG=0 \
     -DPYTHON_VERSION=${PY_VER}"
 
+$PYTHON -m pip install . --no-deps --ignore-installed --prefix=$PREFIX
 
-mkdir build
-cd build
-cmake .. \
-    -DCMAKE_PREFIX_PATH=$PREFIX \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
-    -DXPYT_EMSCRIPTEN_WASM_BUILD=ON \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    ${CMAKE_ARGS}
+# mkdir build
+# cd build
+# cmake .. \
+#     -DCMAKE_PREFIX_PATH=$PREFIX \
+#     -DCMAKE_INSTALL_PREFIX=$PREFIX \
+#     -DCMAKE_BUILD_TYPE=Release \
+#     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
+#     -DXPYT_EMSCRIPTEN_WASM_BUILD=ON \
+#     -DCMAKE_VERBOSE_MAKEFILE=ON \
+#     ${CMAKE_ARGS}
 
-make -j8 install
+# make -j8 install
