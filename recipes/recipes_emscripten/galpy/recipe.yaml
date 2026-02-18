@@ -1,6 +1,6 @@
 context:
   name: galpy
-  version: 1.11.0
+  version: 1.11.1
 
 package:
   name: ${{ name }}
@@ -8,10 +8,20 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: f6d3148a1ff408d693915e3f6b4f347af744e1da6c44d91ecc1bec5bd26fe62e
+  sha256: 58d0d2eccfa8f27603ba4187a53e62399e92233980effd7a006568ac69380e9f
 
 build:
   number: 0
+
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 
 requirements:
   build:
@@ -26,23 +36,30 @@ requirements:
   - python
   - numpy
   - pip
+  - gsl
   run:
   - python
   - packaging
-  - numpy >=1.7
+  - numpy
   - scipy
   - matplotlib
 
 tests:
-- script: pytester
-  files:
-    recipe:
-    - test_import_galpy.py
-  requirements:
-    build:
-    - pytester
-    run:
-    - pytester-run
+- script: echo "FIXME:"
+# The tests for v1.11.1 pass. This package has been tested with xeus-python.
+# The following fails because of issues with the test environment.
+# See https://github.com/emscripten-forge/recipes/issues/4364
+
+# tests:
+# - script: pytester
+#   files:
+#     recipe:
+#     - test_import_galpy.py
+#   requirements:
+#     build:
+#     - pytester
+#     run:
+#     - pytester-run
 
 about:
   license: BSD-3-Clause
@@ -53,4 +70,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - copilot
+  - IsabelParedes
