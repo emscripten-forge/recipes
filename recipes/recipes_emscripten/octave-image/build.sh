@@ -57,6 +57,8 @@ octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || tr
 
 log "Installing package into PREFIX"
 echo $(mkoctfile -p CANONICAL_HOST_TYPE)
+node $PREFIX/bin/octave-cli.js --eval "disp (computer)"
+echo $(node $PREFIX/bin/octave-cli.js --eval "disp (computer)")
 octave -W -H --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/lib/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
