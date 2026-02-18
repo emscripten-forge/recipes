@@ -110,7 +110,7 @@ def lint(old: str, new: str):
                 with open(meta_path) as f:
                     meta = yaml.safe_load(f)
 
-                if recipe['context'].has('build'):
+                if recipe['context'].get('build') is not None:
                     build_number = recipe['context']['build']
                 else:
                     build_number = recipe['build']['number']

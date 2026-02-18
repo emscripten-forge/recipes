@@ -101,7 +101,7 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
     context['version'] = new_version
 
     # reset build number
-    if recipe['context'].has('build'):
+    if recipe['context'].get('build') is not None:
         recipe['context']['build'] = 4000
     else:
         recipe['build']['number'] = 4000
