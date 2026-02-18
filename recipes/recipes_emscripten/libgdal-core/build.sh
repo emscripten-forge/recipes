@@ -35,7 +35,7 @@ cd build && emcmake cmake .. \
 -DCMAKE_BUILD_TYPE=Release \
 -DBUILD_SHARED_LIBS=True \
 -DBUILD_APPS=OFF \
--DCMAKE_C_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS}  -fPIC -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
+-DCMAKE_C_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_CXX_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC  -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_SHARED_LINKER_FLAGS="-sSIDE_MODULE=1 -sWASM_BIGINT" \
 -DGDAL_USE_EXTERNAL_LIBS=OFF \
