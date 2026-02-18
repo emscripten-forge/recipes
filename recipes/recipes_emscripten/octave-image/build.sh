@@ -61,8 +61,13 @@ which octave
 echo "PREFIX = $PREFIX"
 ls -lah "$PREFIX"
 ls -lah "$PREFIX/bin"
+
+echo "BUILD_PREFIX = $BUILD_PREFIX"
+ls -lah "$BUILD_PREFIX"
+ls -lah "$BUILD_PREFIX/bin"
+
 echo $(node "$PREFIX/bin/octave-cli" --eval "disp (computer)")
-octave -W -H --eval "
+$PREFIX/bin/octave-cli --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/lib/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
 pkg list;
