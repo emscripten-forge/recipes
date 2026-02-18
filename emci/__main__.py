@@ -109,6 +109,12 @@ def lint(old: str, new: str):
             try:
                 with open(meta_path) as f:
                     meta = yaml.safe_load(f)
+
+                if recipe['build']['number'] < 4000:
+                    print(f"❌ Build number should be >= 4000 for emscripten 4.x in recipe {meta_path}")
+                    failed = True
+                    continue
+
                 # Convert list to single element only if it's a URL-based source
                 # Path-based sources (like pytester) should remain as lists
                 if isinstance(meta.get('source'), list) and len(meta['source']) > 0:
