@@ -26,8 +26,6 @@ sed -i 's|check_function_exists(fseek64 HAVE_FSEEK64)|set(HAVE_FSEEK64 FALSE)|' 
 sed -i 's|check_function_exists(ftell64 HAVE_FTELL64)|set(HAVE_FTELL64 FALSE)|' cmake/helpers/configure.cmake
 
 
-
-
 mkdir -p build
 cd build && emcmake cmake .. \
     -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
@@ -35,7 +33,7 @@ cd build && emcmake cmake .. \
 -DCMAKE_BUILD_TYPE=Release \
 -DBUILD_SHARED_LIBS=True \
 -DBUILD_APPS=OFF \
--DCMAKE_C_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS}  -fPIC -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
+-DCMAKE_C_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_CXX_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC  -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_SHARED_LINKER_FLAGS="-sSIDE_MODULE=1 -sWASM_BIGINT" \
 -DGDAL_USE_EXTERNAL_LIBS=OFF \
@@ -54,7 +52,7 @@ cd build && emcmake cmake .. \
 \
 -DGDAL_USE_GEOS=ON \
 -DGEOS_INCLUDE_DIR=$PREFIX/include \
--DGEOS_LIBRARY=$PREFIX/lib/libgeos.a \
+-DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.a \
 \
 -DGDAL_USE_ZLIB=ON \
 -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
