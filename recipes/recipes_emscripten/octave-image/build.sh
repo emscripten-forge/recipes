@@ -37,9 +37,6 @@ ls -l "$CXX"
 cp "${RECIPE_DIR}/wasm-ld-wrapper.sh" "$BUILD_PREFIX/bin/wasm-ld"
 chmod +x "$BUILD_PREFIX/bin/wasm-ld"
 
-echo $OCTAVE_HOME
-echo $OCTAVE_EXEC_HOME
-
 export OCTAVE_HOME=$PREFIX
 export OCTAVE_EXEC_HOME=$BUILD_PREFIX
 
