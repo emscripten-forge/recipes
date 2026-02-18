@@ -1,6 +1,4 @@
 import pytest
 
-
-def test_rasterio():    
+def test_rasterio():
     import rasterio
-   
