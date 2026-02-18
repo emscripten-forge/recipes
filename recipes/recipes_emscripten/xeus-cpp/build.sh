@@ -23,3 +23,5 @@ emcmake cmake \
 
 # Build & Install step
 emmake make -j8 install
+
+cat "$PREFIX/share/jupyter/kernels/xcpp23/kernel.json"
