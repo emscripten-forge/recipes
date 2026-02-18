@@ -110,10 +110,10 @@ def lint(old: str, new: str):
                 with open(meta_path) as f:
                     meta = yaml.safe_load(f)
 
-                if recipe['context'].get('build') is not None:
-                    build_number = recipe['context']['build']
+                if meta['context'].get('build') is not None:
+                    build_number = meta['context']['build']
                 else:
-                    build_number = recipe['build']['number']
+                    build_number = meta['build']['number']
 
                 if build_number < 4000:
                     print(f"❌ Build number should be >= 4000 for emscripten 4.x in recipe {meta_path}")
