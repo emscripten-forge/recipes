@@ -37,9 +37,9 @@ echo "✅ onnxruntime-wasm build complete ✅"
 # Install C/C++ API headers per the ORT wasm static lib documentation:
 # https://onnxruntime.ai/docs/build/web.html
 mkdir -p "${PREFIX}/include/onnxruntime"
-cp include/onnxruntime/core/session/onnxruntime_c_api.h        "${PREFIX}/include/onnxruntime/"
-cp include/onnxruntime/core/session/onnxruntime_cxx_api.h      "${PREFIX}/include/onnxruntime/"
-cp include/onnxruntime/core/session/onnxruntime_cxx_inline.h   "${PREFIX}/include/onnxruntime/"
+
+#copy all public headers
+cp -r include/onnxruntime/. "${PREFIX}/include/onnxruntime/"
 
 echo "✅ onnxruntime-wasm headers installed ✅"
 
