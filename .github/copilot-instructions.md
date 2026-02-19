@@ -78,17 +78,23 @@ curl -sL <url> | sha256sum
 
 ### Build Section
 
+We use a build number that depends on the Emscripten version currently being used.
+- Emscripten 4.x builds will have build numbers >=4000,<5000
+- Emscripten 5.x builds will have build numbers >=5000,<6000
+- Emscripten 6.x builds will have build numbers >=6000,<7000
+- etc
+
 **Python packages:**
 ```yaml
 build:
-  number: 0
+  number: 4000
   script: ${PYTHON} -m pip install . ${PIP_ARGS}
 ```
 
 **R packages:**
 ```yaml
 build:
-  number: 0
+  number: 4000
   script: $R CMD INSTALL $R_ARGS .
   files:
     exclude:
@@ -146,7 +152,7 @@ emmake make install
 **Rust packages:**
 ```yaml
 build:
-  number: 0
+  number: 4000
   script: ${PYTHON} -m pip install . -vvv
 
 requirements:
@@ -166,7 +172,7 @@ requirements:
 In `recipe.yaml`:
 ```yaml
 build:
-  number: 0
+  number: 4000
   script: build.sh
 ```
 

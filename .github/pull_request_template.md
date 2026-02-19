@@ -19,7 +19,7 @@ Added `recipes/recipes_emscripten/[package-name]/recipe.yaml` with proper struct
   - R packages: `$R CMD INSTALL $R_ARGS .`
   - C++ packages: Uses `emcmake`/`emmake` or `emconfigure`/`emmake`
   - Rust packages: Uses `rust-nightly` and `maturin` or appropriate Rust build tool
-  - Build number is 0
+  - Build number is 4000 (Emscripten 4.x builds have build numbers >=4000,<5000, Emscripten 5.x builds will build numbers >=5000,<6000 etc.)
   - If the script is longer than 3 lines, a *build.sh* is included
 - [ ] `requirements` section (build, host, run as needed)
 - [ ] `tests` section
@@ -33,7 +33,7 @@ Added `recipes/recipes_emscripten/[package-name]/recipe.yaml` with proper struct
 ## Template B: Checklist for **updating** a package
 
 - [ ] ⚠️ Bump build number if the version remains unchanged
-- [ ] Or reset build number to 0 if updating the package to a newer version
+- [ ] Or reset build number to 4000 if updating the package to a newer version
 
 ---
 
@@ -44,8 +44,8 @@ Added `recipes/recipes_emscripten/[package-name]/recipe.yaml` with proper struct
   - Any special build considerations or patches applied
 
 ## Package Details
-- **Package Name**: 
-- **Version**: 
+- **Package Name**:
+- **Version**:
 
 ## Build Notes
 <!-- Any special build considerations, patches applied, or issues encountered -->
