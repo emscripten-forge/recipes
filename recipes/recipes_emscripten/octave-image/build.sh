@@ -58,6 +58,8 @@ octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || tr
 log "Installing package into PREFIX"
 echo "OCTAVE USED:"
 which octave
+node $PREFIX/bin/octave-cli --eval "1+1"
+node $PREFIX/bin/octave --eval "1+1"
 echo "PREFIX = $PREFIX"
 ls -lah "$PREFIX"
 ls -lah "$PREFIX/bin"
