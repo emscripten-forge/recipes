@@ -46,9 +46,21 @@ class About(BaseModel):
     license_family: Optional[str] = None
 
 
+class Build(BaseModel):
+    number: int
+
+    @field_validator("number")
+    @classmethod
+    def validate_build_number(cls, v: int) -> int:
+        if not (4000 <= v < 5000):
+            raise ValueError("build.number must be greater than equal 4000 and less than 5000")
+        return v
+
+
 class Recipe(BaseModel):
     about: About
     source: Optional[Union[Source, list[PathSource]]] = None
+    build: Build
     tests: Optional[Any] = None
 
     @model_validator(mode='before')
