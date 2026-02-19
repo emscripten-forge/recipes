@@ -37,9 +37,8 @@ ls -l "$CXX"
 cp "${RECIPE_DIR}/wasm-ld-wrapper.sh" "$BUILD_PREFIX/bin/wasm-ld"
 chmod +x "$BUILD_PREFIX/bin/wasm-ld"
 
-export PATH="$PREFIX/bin:$PATH"
-export OCTAVE_HOME="$PREFIX"
-export OCTAVE_EXEC_HOME="$PREFIX"
+export OCTAVE_HOME=$PREFIX
+export OCTAVE_EXEC_HOME=$BUILD_PREFIX
 
 
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
@@ -68,7 +67,7 @@ ls -lah "$BUILD_PREFIX"
 ls -lah "$BUILD_PREFIX/bin"
 
 echo $(node "$PREFIX/bin/octave-cli" --eval "disp (computer)")
-node $PREFIX/bin/octave-cli --eval "
+$PREFIX/bin/octave-cli --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/lib/octave/packages';
 pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
 pkg list;
