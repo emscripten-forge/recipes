@@ -53,7 +53,7 @@ class Build(BaseModel):
     @classmethod
     def validate_build_number(cls, v: int) -> int:
         if not (4000 <= v < 5000):
-            raise ValueError("build.number must be greater than equal 4000 and less than 5000")
+            raise ValueError("build.number must be greater than or equal to 4000 and less than 5000")
         return v
 
 
