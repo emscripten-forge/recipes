@@ -1,0 +1,59 @@
+context:
+  version: 1.24.1
+
+package:
+  name: onnxruntime-wasm
+  version: ${{ version }}
+
+source:
+- url: https://github.com/microsoft/onnxruntime/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 65bc043f5c1f386fc3e04aa2efdab91ac53f5195d4f78fc7e22eb0fe9caeadc6
+
+build:
+  number: 1
+  script:
+    file: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - python >=3.9
+
+tests:
+- package_contents:
+    lib:
+    - libonnxruntime_webassembly.a
+    # - cmake/onnxruntime-wasm/onnxruntime-wasmConfig.cmake
+    include:
+    - onnxruntime/**
+- script:
+    - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://onnxruntime.ai/
+  license: MIT
+  license_file: LICENSE
+  summary: ONNX Runtime WebAssembly static library for emscripten-wasm32
+  description: |
+    ONNX Runtime is a cross-platform inference and training machine-learning
+    accelerator. This package provides the WebAssembly static library
+    (libonnxruntime_webassembly.a) built with SIMD and threads support,
+    suitable for linking into Emscripten-compiled C/C++ applications.
+  documentation: https://onnxruntime.ai/docs/build/web.html
+  repository: https://github.com/microsoft/onnxruntime
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
