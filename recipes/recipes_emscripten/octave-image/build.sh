@@ -74,4 +74,4 @@
 # "
 
 cp ${RECIPE_DIR}/Makefile .
-make install
+make all
