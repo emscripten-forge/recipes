@@ -30,7 +30,7 @@ Added `recipes/recipes_emscripten/[package-name]/recipe.yaml` with proper struct
 
 #### About the build number
 
-We will follow the following scheme:
+We follow the following scheme:
 - Emscripten 3.x builds have build numbers >=0,<1000
 - Emscripten 4.x builds have build numbers >=4000,<5000 (the current `main` branch)
 - Future Emscripten 5.x builds will have build numbers >=5000,<6000
