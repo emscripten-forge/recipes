@@ -8,6 +8,7 @@ emcmake cmake -S . -B _build \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_Fortran_COMPILER=$FC \
     -DCMAKE_Fortran_FLAGS="$FFLAGS" \
+    -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
     -DBUILD_SHARED_LIBS=OFF \
     -DMPI=OFF \
     -DICB=ON \
