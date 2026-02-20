@@ -1,0 +1,66 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-highs
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-highs/passagemath_highs-${{ version }}.tar.gz
+  sha256: dc6c9d2921678e7486ad06c7ae309e70a231d42d662eb290e106c575def57f0a
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - highs
+  - zlib
+  - gmp
+  - passagemath-categories
+  run:
+  - python
+  - cysignals
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_highs.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Linear and mixed integer linear optimization backend using HiGHS'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides a backend for linear and mixed integer linear optimization backend using HiGHS.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_highs.py
+  recipe-maintainers:
+  - mkoeppe
