@@ -1,0 +1,75 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-plot
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-plot/passagemath_plot-${{ version }}.tar.gz
+  sha256: f3a9e0c7c1847439db63509bec6fce34a4291ccd0f428d274112d6a1038ba70a
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - numpy
+  - cysignals
+  - memory-allocator
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - gsl
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - gmpy2
+  - matplotlib
+  - memory-allocator
+  - numpy
+  - pillow
+  - passagemath-modules
+  - scipy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_plot.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Plotting and graphics with Matplotlib, Three.JS, etc.'
+  description: |
+    Distribution of a small part of the Sage library.
+    It provides the namespace packages sage.plot and sage.plot.plot3d, which provide
+    functions for plotting that are very similar to Mathematica's plotting functions.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_plot.py
+  recipe-maintainers:
+  - mkoeppe
