@@ -1,6 +1,6 @@
 context:
   name: scipy
-  version: 1.15.3
+  version: 1.16.2
 
 package:
   name: ${{ name }}
@@ -8,16 +8,17 @@ package:
 
 source:
 - url: https://pypi.org/packages/source/s/scipy/scipy-${{ version }}.tar.gz
-  sha256: eae3cf522bc7df64b42cad3925c876e1b0b6c35c1337c93e12c0f366f55b0eaf
+  sha256: af029b153d243a80afb6eabe40b0a07f8e35c9adc269c019f364ad747f826a6b
   patches:
-  - patches/0001-Remove-duplicate-symbol.patch
-  - patches/0002-Set-fortran-linker-to-emcc.patch
-  - patches/0003-Disable-threads.patch
-  - patches/0004-Replace-dtype-with-numpy-int32.patch
-  - patches/0005-Remove-unsupported-version-script.patch
-  - patches/0006-Dont-import-numpy-f2py-in-tests.patch
-    # Branch containing following patches is v1.15.2-emforge-4x at https://github.com/ianthomas23/scipy
-    # Use `git format-patch v1.15.2...HEAD --start-number 7`
+  # Patches for subprojects
+  - patches/0001-Disable-threads.patch
+  - patches/0002-Dont-import-numpy-f2py-in-tests.patch
+  # Branch containing following patches is v1.16.0-emforge at https://github.com/ianthomas23/scipy
+  # Use `git format-patch v1.16.0...v1.16.0-emforge --start-number 3` to create patch files.
+  - patches/0003-Remove-duplicate-symbol.patch
+  - patches/0004-Set-fortran-linker-to-emcc.patch
+  - patches/0005-Replace-dtype-with-numpy-int32.patch
+  - patches/0006-Remove-unsupported-version-script.patch
   - patches/0007-Remove-chla_transtype.patch
   - patches/0008-Extra-char-length-arguments-in-linalg-cython-wrapper.patch
   - patches/0009-Change-return-and-char-length-args-in-dsolve.patch
@@ -25,19 +26,16 @@ source:
   - patches/0011-int-return-for-superlu_utils-and-input_error.patch
   - patches/0012-Extra-char-length-args-to-f2py-source-files.patch
   - patches/0013-Change-arg-type-in-odepack.patch
-  - patches/0014-Make-sf_error_state-a-static-library.patch
-  - patches/0015-Use-openblas-flang-not-openblas-dependency.patch
+  - patches/0014-Extra-char-length-args-in-_common_array_utils.patch
+  - patches/0015-Disable-unsupported-ffloat-store.patch
 
 build:
-  number: 1
+  number: 0
 
   files:
     exclude:
     - '**/*.pyi'
     - '**/tests/**'
-    - '**/*.pxd'
-    - '**.dist-info/**'
-    - '**/*.pyx'
     - '**/__pycache__/**'
     - '**/*.pyc'
     - '**/test_*.py'
@@ -57,13 +55,13 @@ requirements:
   - pkg-config
   host:
   - numpy
-  - openblas-flang
+  - openblas
   - pybind11
   - python
   run:
   - python
   - numpy
-  - openblas-flang
+  - openblas
 
 tests:
 - dummy-to-avoiding-linting-error:

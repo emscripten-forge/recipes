@@ -77,6 +77,7 @@ $(BUILD)/Makefile:
 	#   so it is more efficient to use 30 bit digits.
 	( \
 		cd $(BUILD); \
+		ac_cv_header_fcntl_h=yes ac_cv_func_fcntl=yes \
 		ac_cv_func_mbstowcs=yes ac_cv_broken_mbstowcs=yes \
 		CONFIG_SITE=./Tools/wasm/config.site-wasm32-emscripten READELF=true emconfigure \
 		  ./configure \
