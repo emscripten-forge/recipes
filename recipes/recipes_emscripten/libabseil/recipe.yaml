@@ -1,5 +1,5 @@
 context:
-  version: '20240116.3'
+  version: '20260107.1'
   name: libabseil
 
 package:
@@ -8,10 +8,10 @@ package:
 
 source:
   url: https://github.com/abseil/abseil-cpp/archive/refs/tags/${{ version }}.tar.gz
-  sha256: e887b423da5a1ba66e71610094fd7147ff2febfedccdfbf00f2c644ac21adf83
+  sha256: 4314e2a7cbac89cac25a2f2322870f343d81579756ceff7f431803c2c9090195
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
@@ -21,13 +21,29 @@ requirements:
   - ninja
 
 tests:
+- package_contents:
+    lib:
+    - libabsl_base.a
+    - libabsl_civil_time.a
+    - libabsl_cord.a
+    - libabsl_strings.a
+    - libabsl_status.a
+    include:
+    - absl/base/config.h
+    - absl/strings/string_view.h
+    - absl/status/status.h
+    - absl/synchronization/mutex.h
 - script:
-  - test -f $PREFIX/lib/libabsl_base.a
-  - test -f $PREFIX/lib/libabsl_civil_time.a
-  - test -f $PREFIX/lib/libabsl_cord.a
-  - test -f $PREFIX/lib/libabsl_cordz_functions.a
-  - test -f $PREFIX/include/absl/synchronization/mutex.h
-  - test -f $PREFIX/include/absl/base/thread_annotations.h
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
 
 about:
   homepage: https://github.com/abseil/abseil-cpp
@@ -36,11 +52,13 @@ about:
   license_file: LICENSE
   summary: Abseil Common Libraries (C++)
   description: |
-    Abseil is an open-source collection of C++ code (compliant to C++11)
-    designed to augment the C++ standard library.
-  documentation: https://github.com/abseil/abseil-cpp
+    Abseil is an open-source collection of C++ library code designed to augment
+    the C++ standard library. The Abseil library code is collected from Google's
+    own C++ code base and has been extensively tested and used in production.
+  documentation: https://abseil.io
   repository: https://github.com/abseil/abseil-cpp
 
 extra:
   recipe-maintainers:
   - KGB99
+  - Alex-PLACET

@@ -1,35 +1,58 @@
 context:
   name: libgdal-core
-  version: 3.8.3
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  version: 3.12.2
 
 source:
-  url: https://github.com/OSGeo/gdal/releases/download/v${{version}}/gdal-${{version}}.tar.gz
-  sha256: f7a30387a8239e9da26200f787a02136df2ee6473e86b36d05ad682761a049ea
+  url: https://github.com/OSGeo/gdal/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 1817fa4bd60a98ed4bff06f369a352d994332e63a48be5c15bcee44680fa5ace
+  patches:
+  - patches/0001-Add-CPL_CPUID-guards.patch
 
 build:
   number: 0
 
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
   build:
+    script: build.sh
+  requirements:
+    build:
     - ${{ compiler('c') }}
     - cmake
     - pkg-config
-  host:
+    host:
     - libtiff
     - proj-static
     - libiconv
-    - geos
+    - geos-static
     - libpng
-  run:
-    - geos
+  tests:
+  - package_contents:
+      files:
+      - lib/libgdal.so
 
-tests:
-- script:
-  - test -f ${PREFIX}/lib/libgdal.so
+- package:
+    name: ${{ name }}-static
+    version: ${{ version }}
+  build:
+    script: build_static.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - pkg-config
+    host:
+    - libtiff
+    - proj-static
+    - libiconv
+    - geos-static
+    - libpng
+  tests:
+  - package_contents:
+      files:
+      - lib/libgdal.a
 
 about:
   homepage: https://gdal.org/
@@ -39,3 +62,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes

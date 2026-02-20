@@ -1,51 +1,58 @@
 context:
-  version: "2.7.1"
-  name: "crc32c"
+  version: 2.7.1
+  name: crc32c
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/7f/4c/4e40cc26347ac8254d3f25b9f94710b8e8df24ee4dddc1ba41907a88a94d/crc32c-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: f91b144a21eef834d64178e01982bb9179c354b3e9e5f4c803b0e5096384968c
 
 build:
   number: 1
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - python
-    - crossenv
-    - cross-python_emscripten-wasm32
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - python
+  - crossenv
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
+  - python
 
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_crc32c.py
-
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_crc32c.py
 
 about:
   homepage: https://github.com/ICRAR/crc32c
-  license: LGPL-2.1
+  license: LGPL-2.1-or-later
   license_file: LICENSE
-  summary:  A python package implementing the crc32c algorithm in hardware and software
+  summary: A python package implementing the crc32c algorithm in hardware and software
 
 extra:
   recipe-maintainers:
-    - DerThorsten
-
-
-
+  - DerThorsten

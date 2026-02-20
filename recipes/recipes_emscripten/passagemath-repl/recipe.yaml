@@ -1,0 +1,64 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-repl
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-repl/passagemath_repl-${{ version }}.tar.gz
+  sha256: a27e3e56c024fd05721eb95aa57f0261bf85e16ec0a0b354003f96b6d64686b5
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - pkgconfig
+  host:
+  - python
+  - setuptools
+  - wheel
+  - pip
+  run:
+  - python
+  - passagemath-environment
+  - passagemath-objects
+  - ipython
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_repl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'passagemath: IPython kernel, Sage preparser, doctester'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    Distribution of a small part of the Sage library.
+    It provides the top-level interactive environment with the preparser that defines the surface
+    language of Sage. This distribution also includes the doctesting facilities, as the doctests
+    are written in the surface language, as well as the IPython kernel.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_repl.py
+  recipe-maintainers:
+  - mkoeppe

@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Copilot <copilot@github.com>
+Date: Sun, 9 Feb 2026 00:00:00 +0000
+Subject: [PATCH] Fix xxhash emscripten extern C linkage issue
+
+Include arm_neon.h before extern "C" block to avoid C++ template
+linkage errors with Emscripten headers.
+
+This fixes the compilation error:
+  error: templates must have C++ linkage
+  template<typename, typename = void> struct __em_asm_sig {};
+
+See: https://github.com/Cyan4973/xxHash/issues/960
+---
+ cpp/src/arrow/vendored/xxhash/xxhash.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/cpp/src/arrow/vendored/xxhash/xxhash.h b/cpp/src/arrow/vendored/xxhash/xxhash.h
+index 1111111111..2222222222 100644
+--- a/cpp/src/arrow/vendored/xxhash/xxhash.h
++++ b/cpp/src/arrow/vendored/xxhash/xxhash.h
+@@ -241,6 +241,13 @@
+  * @file xxhash.h
+  * xxHash prototypes and implementation
+  */
++
++/* Include arm_neon.h before entering extern "C" namespace
++ * to avoid C++ template linkage errors with Emscripten headers.
++ * See: https://github.com/Cyan4973/xxHash/issues/960 */
++#if defined(__EMSCRIPTEN__) && defined(__wasm_simd128__)
++#  include <arm_neon.h>
++#endif
+ 
+ #if defined(__cplusplus) && !defined(XXH_NO_EXTERNC_GUARD)
+ extern "C" {
+-- 
+2.43.0

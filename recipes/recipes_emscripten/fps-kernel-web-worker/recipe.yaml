@@ -1,6 +1,6 @@
 context:
   name: fps-kernel-web-worker
-  version: 0.1.5
+  version: 0.1.10
 
 package:
   name: ${{ name }}
@@ -8,17 +8,27 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fps_kernel_web_worker-${{ version }}.tar.gz
-  sha256: dfaf1dc255358455f2ebd4a919c87588a405c2fd5bf9504bc5e4b8b942be9cc5
+  sha256: 97b9c2cc8452207803c670fe16a265e118073c4b6131238a7fcdaf00afba151b
 
 build:
-  number: 0
+  number: 2
   script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  noarch: python
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - pip != 25.1
   - cross-python_${{ target_platform }}
-  - hatchling
+  - uv-build
   host:
   - python
   run:

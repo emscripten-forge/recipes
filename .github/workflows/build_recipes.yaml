@@ -3,18 +3,23 @@ name: Build Recipes
 on:
   push:
     branches:
-      - "emscripten-4x"
+      - "main"
     paths:
       - "recipes/**"
   pull_request:
     paths:
       - "recipes/**"
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
 
   build_recipes:
     runs-on: ubuntu-latest
     env:
+      FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
     strategy:
@@ -25,16 +30,9 @@ jobs:
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Maximize build space
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       - name: apt-install playwright dependencies
         run: |
@@ -50,7 +48,8 @@ jobs:
           libmanette-0.2-0 \
           libgles2 \
           gstreamer1.0-libav \
-          libgtk-4-1
+          libgtk-4-1 \
+          libwayland-server0
       ################################################################
       # CONFIG
       ################################################################
@@ -76,7 +75,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-4x~1 origin/emscripten-4x
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
 
       ################################################################
       # PULL_REQUEST
@@ -85,16 +84,21 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-4x HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
 
       ################################################################
       # UPLOAD
       ################################################################
+      - name: Create artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: output
+          path: output
+        continue-on-error: true
+
       - name: Upload packages to prefix channel
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -l {0}
-        env:
-          PREFIX_DEV_API_KEY: ${{ secrets.PREFIX_DEV_API_KEY }}
         run: |
           overall_success=true
 
@@ -109,7 +113,6 @@ jobs:
 
                   rattler-build upload prefix \
                     --channel emscripten-forge-4x \
-                    -a $PREFIX_DEV_API_KEY \
                     ${package}
 
                   RETURNCODE=$?

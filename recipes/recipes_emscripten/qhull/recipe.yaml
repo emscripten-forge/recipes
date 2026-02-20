@@ -1,8 +1,9 @@
 context:
-  version: "2020.2"
+  name: qhull
+  version: 2020.2
 
 package:
-  name: qhull
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
@@ -10,36 +11,35 @@ source:
   sha256: 59356b229b768e6e2b09a701448bfa222c37b797a84f87f864f97462d8dbc7c5
 
 build:
-  number: 0
+  number: 1
 
+  files:
+    exclude:
+    - share/man/man1/**
 requirements:
   build:
-    - ${{ compiler('cxx') }}
-    - cmake
-    - ninja
-
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
   run_exports:
-    - ${{ pin_subpackage('qhull', upper_bound='x.x') }}
+  - ${{ pin_subpackage('qhull', upper_bound='x.x') }}
 
 tests:
-  - package_contents:
-      lib:
-        - libqhull_r.a
-        - libqhullstatic.a
-      include:
-        - libqhull/libqhull.h
-        - libqhull_r/qhull_ra.h
-        - libqhullcpp/Qhull.h
-      bin:
-        - qhull.js
-        - qconvex.js
-
-  - script:
-    - node $PREFIX/bin/qvoronoi.js -
-    - node $PREFIX/bin/qhull.js -
-    requirements:
-      build:
-        - nodejs
+- package_contents:
+    files:
+    - lib/libqhull_r.a
+    - lib/libqhullstatic.a
+    - include/libqhull/libqhull.h
+    - include/libqhull_r/qhull_ra.h
+    - include/libqhullcpp/Qhull.h
+    - bin/qhull.js
+    - bin/qconvex.js
+- script:
+  - node $PREFIX/bin/qvoronoi.js -
+  - node $PREFIX/bin/qhull.js -
+  requirements:
+    build:
+    - nodejs
 
 about:
   homepage: http://www.qhull.org/

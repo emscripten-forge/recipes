@@ -1,6 +1,6 @@
 context:
-  version: "4.9.3"
-  name: "libnetcdf"
+  name: libnetcdf
+  version: 4.9.3
 
 package:
   name: ${{ name }}
@@ -10,30 +10,42 @@ source:
   url: https://github.com/Unidata/netcdf-c/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 990f46d49525d6ab5dc4249f8684c6deeaf54de6fec63a187e9fb382cc0ffdff
   patches:
-    - parallel-disable.patch
-    - hdf5-parallel-disable.patch
+  - patches/parallel-disable.patch
+  - patches/hdf5-parallel-disable.patch
+
 build:
   number: 1
 
+  files:
+    exclude:
+    - share/man/man1/**
 requirements:
   build:
-    - python
-    - cross-python_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - pip
-    - m4
-    - make
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  - m4
+  - make
   host:
-    - python
-    - libxml2
-    - hdf5
-    - zlib
+  - python
+  - libxml2 >=2.15
+  - hdf5
+  - zlib
   run:
-    - python
+  - python
+
+tests:
+- package_contents:
+    files:
+    - include/netcdf.h
+    - lib/libnetcdf.a
+    - lib/pkgconfig/netcdf.pc
 
 about:
   homepage: http://www.unidata.ucar.edu/software/netcdf/
   license: MIT
   license_file: COPYRIGHT
-  summary: Libraries and data formats that support array-oriented scientific data
+  summary: |
+    Libraries and data formats that support array-oriented scientific data.
   repository: https://github.com/Unidata/netcdf-c

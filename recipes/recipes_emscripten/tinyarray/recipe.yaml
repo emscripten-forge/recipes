@@ -1,46 +1,46 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
   name: tinyarray
   version: 1.2.5
-  sha256: 5d47b3d475a30478ee72d6afe238c3d3683b3a3f9d425bb2f6384270b2c8799b
 
 package:
-  name: ${{ name|lower }}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
+  sha256: 5d47b3d475a30478ee72d6afe238c3d3683b3a3f9d425bb2f6384270b2c8799b
 
 build:
-  number: 0
-  script: CFLAGS="-fPIC" CXXFLAGS="-fPIC" ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  number: 1
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/test_*.py'
 requirements:
   build:
-    - python
-    - cross-python_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
   host:
-    - python
-    - pip
-    - setuptools
+  - python
+  - pip
+  - setuptools
   run:
-    - python
+  - python
 
 tests:
-  - script: pytester
-    files:
-      recipe:
-        - test_import_tinyarray.py
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
+- script: pytester
+  files:
+    recipe:
+    - test_import_tinyarray.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   license: BSD-2-Clause

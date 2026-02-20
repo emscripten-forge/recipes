@@ -1,0 +1,56 @@
+context:
+  name: snappy
+  version: 1.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/snappy/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 90f74bc1fbf78a6c56b3c4a082a05103b3a56bb17bca1a27e052ea11723292dc
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/snappy.h
+    - include/snappy-c.h
+    - lib/libsnappy.a
+    - lib/cmake/Snappy/SnappyConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/google/snappy
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: A fast compressor/decompressor
+  description: |
+    Snappy is a compression/decompression library. It does not aim for maximum
+    compression, or compatibility with any other compression library; instead,
+    it aims for very high speeds and reasonable compression. Snappy is used
+    in many Google projects including BigTable, MapReduce and other systems.
+  documentation: https://github.com/google/snappy
+  repository: https://github.com/google/snappy
+
+extra:
+  recipe-maintainers:
+  - Copilot

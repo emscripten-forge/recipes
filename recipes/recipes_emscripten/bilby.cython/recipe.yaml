@@ -1,0 +1,65 @@
+context:
+  name: bilby.cython
+  version: 0.5.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bilby_cython-${{ version }}.tar.gz
+  sha256: 44400b2abc6fa592b13d69f33460cb156d6edb48a783f5539ee0a21e1d0a3508
+
+build:
+  number: 1
+  script: ${{PYTHON}} -m pip install . -vv
+
+
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/test/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - cross-python_emscripten-wasm32
+  - cython >=3
+  - numpy
+  - ${{ compiler('c') }}
+  host:
+  - cython
+  - numpy
+  - pip
+  - python
+  - setuptools
+  - setuptools-scm
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_bilby_cython.py
+
+about:
+  homepage: https://git.ligo.org/colm.talbot/bilby-cython
+  summary: Optimized functionality for Bilby
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - ColmTalbot

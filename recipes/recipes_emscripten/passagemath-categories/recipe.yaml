@@ -1,0 +1,73 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-categories
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-categories/passagemath_categories-${{ version }}.tar.gz
+  sha256: 9f86366306be3caae5f6c8c3d3a017e11595ea2693cfc378bbb7d3ec78dd2cbe
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - passagemath-objects
+  - memory-allocator
+  run:
+  - python
+  - gmpy2
+  - cysignals
+  - memory-allocator
+  - passagemath-objects
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_categories.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  summary: 'passagemath: Sage categories and basic rings'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    Distribution of a small part of the Sage library.
+    Building on top of passagemath-objects (providing Sage objects, the element/parent framework, basic
+    categories, the coercion system, and the related metaclasses), it contains the full set of categories
+    defined by Sage, as well as basic mathematical objects such as integers and rational numbers, a basic
+    implementation of polynomials, and affine spaces.  None of this brings in additional dependencies.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_categories.py
+  recipe-maintainers:
+  - mkoeppe

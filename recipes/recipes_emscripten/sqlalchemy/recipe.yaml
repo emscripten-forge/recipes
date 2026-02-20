@@ -1,8 +1,9 @@
 context:
+  name: sqlalchemy
   version: 2.0.32
 
 package:
-  name: sqlalchemy
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
@@ -11,8 +12,19 @@ source:
 
 build:
   number: 1
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**/*.pxd'
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - python

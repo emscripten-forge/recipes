@@ -1,6 +1,6 @@
 context:
   name: ruamel.yaml.clib
-  version: 0.2.12
+  version: 0.2.14
 
 package:
   name: ${{ name }}
@@ -8,18 +8,23 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 6c8fbb13ec503f99a91901ab46e0b07ae7941cd527393187039aec586fdfd36f
+  sha256: 803f5044b13602d58ea378576dd75aa759f52116a0232608e8fdada4da33752e
 
 build:
-  number: 0
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  number: 1
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/test_*.py'
 requirements:
   build:
   - ${{ compiler("c") }}
   - cross-python_emscripten-wasm32
   - python
   - pip
+  - cython
   host:
   - python
 

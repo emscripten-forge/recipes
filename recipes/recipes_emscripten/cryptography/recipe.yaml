@@ -1,46 +1,55 @@
 context:
   name: cryptography
-  version: '42.0.2'
+  version: 46.0.5
 
 package:
   name: cryptography
   version: ${{ version }}
 
 source:
-- url: https://files.pythonhosted.org/packages/0f/6f/40f1b5c6bafc809dd21a9e577458ecc1d8062a7e10148d140f402b535eaa/cryptography-${{version}}.tar.gz
-  sha256: e0ec52ba3c7f1b7d813cd52649a5b3ef1fc0d433219dc8c93827c57eab6cf888
-  patches:
-    - patches/0001-Tell-rust-lang-libc-that-time_t-is-64-bits.patch
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: abace499247268e3757271b2f1e244b36b06f8515cf27c4d49468fc9eb16e93d
 
 build:
   number: 1
+  script: ${PYTHON} -m pip install . -vvv
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - "${{compiler('cxx')}}"
-    - cross-python_${{target_platform}}
-    - cffi
-    - openssl
-    - setuptools-rust 
-    - rust
-    
+  - ${{compiler('cxx')}}
+  - cross-python_${{target_platform}}
+  - cffi
+  - openssl
+  - setuptools-rust
+  - rust-nightly
+  - maturin
   host:
-    - python
-    - openssl
-    - cffi
+  - python
+  - openssl
+  - cffi
   run:
-    - cffi
-tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_import_cryptography.py
+  - cffi
 
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_cryptography.py
 
 about:
   homepage: https://cryptography.io

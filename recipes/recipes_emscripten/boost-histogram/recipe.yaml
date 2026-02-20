@@ -1,5 +1,6 @@
 context:
-  version: 1.6.1
+  name: boost-histogram
+  version: 1.7.1
 
 package:
   name: boost-histogram
@@ -7,15 +8,24 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/b/boost_histogram/boost_histogram-${{ version }}.tar.gz
-  sha256: cbe67507f62063590395cc9fe177bf979f26a53c0574365f8241b883b9a6f756
+  sha256: 6ed3d7d2688fa32889dd441a7ef4920d60d696137d2abc3ab14eb9bd3b455b19
   patches:
   - patches/patch_allow_shared.patch
 
 build:
-  number: 0
-#   cxxflags: -fexceptions
-#   ldflags: -fexceptions
+  number: 1
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - python
@@ -26,6 +36,7 @@ requirements:
   - scikit-build-core
   host:
   - python
+  - pybind11
   run:
   - python
   - numpy
@@ -40,9 +51,9 @@ tests:
     - pytester
     run:
     - pytester-run
+
 about:
   summary: The Boost::Histogram Python wrapper.
   license: BSD-3-Clause
   license_file: LICENSE
-
   homepage: https://github.com/scikit-hep/boost-histogram

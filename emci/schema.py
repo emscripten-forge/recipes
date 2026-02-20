@@ -1,8 +1,14 @@
 import re
 from pydantic import BaseModel, field_validator, model_validator
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
-class Source(BaseModel):
+class PathSource(BaseModel):
+    """Source with local path (e.g., pytester recipe)"""
+    path: str
+    target_directory: Optional[str] = None
+
+class UrlSource(BaseModel):
+    """Source with URL and SHA256 (standard remote sources)"""
     url: str | list[str]
     sha256: str
 
@@ -14,8 +20,8 @@ class Source(BaseModel):
             if not ("${{version" in url.replace(" ", "") and "}}" in url):
                 raise ValueError(f"{url} must contain ${{{{ version }}}} for automatic updates.\n")
             # Check it's a valid URL
-            if not re.match(r"^https://.*\.(tar\.gz|tar\.bz2|tar\.xz|tgz)$", url):
-                raise ValueError(f"{url} must be a valid link (https://...) to an archive file (tar.gz, tar.bz2, tar.xz, or .tgz)\n")
+            if not re.match(r"^(https://.*|http://.*)\.(tar\.gz|tar\.bz2|tar\.xz|tgz|zip)$", url):
+                raise ValueError(f"{url} must be a valid link (https://...) to an archive file (tar.gz, tar.bz2, tar.xz, .tgz, or .zip)\n")
 
             return url
 
@@ -31,6 +37,9 @@ class Source(BaseModel):
             raise ValueError("source.sha256 must be a 64-character hex string")
         return v
 
+# Union type for source - can be either path-based or URL-based
+Source = Union[PathSource, UrlSource]
+
 class About(BaseModel):
     license: str
     license_file: str | list[str]
@@ -39,7 +48,7 @@ class About(BaseModel):
 
 class Recipe(BaseModel):
     about: About
-    source: Optional[Source] = None
+    source: Optional[Union[Source, list[PathSource]]] = None
     tests: Optional[Any] = None
 
     @model_validator(mode='before')
@@ -55,3 +64,26 @@ class Recipe(BaseModel):
                 raise AttributeError("Recipe must have a 'tests' section.")
 
         return values
+
+    @model_validator(mode='after')
+    def validate_source(self):
+        """Validate that non-path sources have url and sha256"""
+        if self.source is None:
+            return self
+
+        # Handle list of path sources (e.g., pytester)
+        if isinstance(self.source, list):
+            # All elements should be PathSource, which is already validated
+            return self
+
+        # Handle single source - check the model type
+        if isinstance(self.source, PathSource):
+            # PathSource is valid - no url/sha256 needed
+            return self
+
+        if isinstance(self.source, UrlSource):
+            # UrlSource already requires sha256 via field definition, so it's valid
+            return self
+
+        # If we get here, something unexpected happened
+        return self
