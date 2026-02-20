@@ -1,0 +1,269 @@
+From f7c2e81b49adf74a55d18b9bff5fbc3514a6bd6a Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Sat, 10 Jan 2026 11:58:35 +0000
+Subject: [PATCH 14/15] Extra char length args in _common_array_utils
+
+---
+ scipy/linalg/_common_array_utils.h | 40 ++++++++++++-------------
+ scipy/linalg/_matfuncs_sqrtm.c     | 48 +++++++++++++++---------------
+ 2 files changed, 44 insertions(+), 44 deletions(-)
+
+diff --git a/scipy/linalg/_common_array_utils.h b/scipy/linalg/_common_array_utils.h
+index c72a1cdbaa..63f2c601e4 100644
+--- a/scipy/linalg/_common_array_utils.h
++++ b/scipy/linalg/_common_array_utils.h
+@@ -23,54 +23,54 @@
+ // BLAS and LAPACK functions used
+ void saxpy_(int* n, float* sa, float* sx, int* incx, float* sy, int* incy);
+ void scopy_(int* n, float* dx, int* incx, float* dy, int* incy);
+-void sgees_(char* jobvs, char* sort, int (*select)(float*, float*), int* n, float* a, int* lda, int* sdim, float* wr, float* wi, float* vs, int* ldvs, float* work, int* lwork, int* bwork, int* info);
+-void sgemm_(char* transa, char* transb, int* m, int* n, int* k, float* alpha, float* a, int* lda, float* b, int* ldb, float* beta, float* c, int* ldc);
+-void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy);
++void sgees_(char* jobvs, char* sort, int (*select)(float*, float*), int* n, float* a, int* lda, int* sdim, float* wr, float* wi, float* vs, int* ldvs, float* work, int* lwork, int* bwork, int* info, int, int);
++void sgemm_(char* transa, char* transb, int* m, int* n, int* k, float* alpha, float* a, int* lda, float* b, int* ldb, float* beta, float* c, int* ldc, int, int);
++void sgemv_(char* trans, int* m, int* n, float* alpha, float* a, int* lda, float* x, int* incx, float* beta, float* y, int* incy, int);
+ void sgetrf_(int* m, int* n, float* a, int* lda, int* ipiv, int* info);
+-void sgetrs_(char* trans, int* n, int* nrhs, float* a, int* lda, int* ipiv, float* b, int* ldb, int* info);
++void sgetrs_(char* trans, int* n, int* nrhs, float* a, int* lda, int* ipiv, float* b, int* ldb, int* info, int);
+ void slacn2_(int* n, float* v, float* x, int* isgn, float* est, int* kase, int* isave);
+ void slanv2_(float* a, float* b, float* c, float* d, float* rt1r, float* rt1i, float* rt2r, float* rt2i, float* cs, float* sn);
+ void sscal_(int* n, float* sa, float* sx, int* incx);
+-void strsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, float* a, int* lda, float* b, int* ldb, float* c, int* ldc, float* scale, int* info);
++void strsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, float* a, int* lda, float* b, int* ldb, float* c, int* ldc, float* scale, int* info, int, int);
+ // void strsyl3_(char* trana, char* tranb, int* isgn, int* m, int* n, float* a, int* lda, float* b, int* ldb, float* c, int* ldc, float* scale, int* iwork, int* liwork, float* swork, int* ldswork, int* info);
+ 
+ void daxpy_(int* n, double* sa, double* sx, int* incx, double* sy, int* incy);
+ void dcopy_(int* n, double* dx, int* incx, double* dy, int* incy);
+-void dgees_(char* jobvs, char* sort, int (*select)(double*, double*), int* n, double* a, int* lda, int* sdim, double* wr, double* wi, double* vs, int* ldvs, double* work, int* lwork, int* bwork, int* info);
+-void dgemm_(char* transa, char* transb, int* m, int* n, int* k, double* alpha, double* a, int* lda, double* b, int* ldb, double* beta, double* c, int* ldc);
+-void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy);
++void dgees_(char* jobvs, char* sort, int (*select)(double*, double*), int* n, double* a, int* lda, int* sdim, double* wr, double* wi, double* vs, int* ldvs, double* work, int* lwork, int* bwork, int* info, int, int);
++void dgemm_(char* transa, char* transb, int* m, int* n, int* k, double* alpha, double* a, int* lda, double* b, int* ldb, double* beta, double* c, int* ldc, int, int);
++void dgemv_(char* trans, int* m, int* n, double* alpha, double* a, int* lda, double* x, int* incx, double* beta, double* y, int* incy, int);
+ void dgetrf_(int* m, int* n, double* a, int* lda, int* ipiv, int* info);
+-void dgetrs_(char* trans, int* n, int* nrhs, double* a, int* lda, int* ipiv, double* b, int* ldb, int* info);
++void dgetrs_(char* trans, int* n, int* nrhs, double* a, int* lda, int* ipiv, double* b, int* ldb, int* info, int);
+ void dlacn2_(int* n, double* v, double* x, int* isgn, double* est, int* kase, int* isave);
+ void dlanv2_(double* a, double* b, double* c, double* d, double* rt1r, double* rt1i, double* rt2r, double* rt2i, double* cs, double* sn);
+ void dscal_(int* n, double* sa, double* sx, int* incx);
+-void dtrsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, double* a, int* lda, double* b, int* ldb, double* c, int* ldc, double* scale, int* info);
++void dtrsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, double* a, int* lda, double* b, int* ldb, double* c, int* ldc, double* scale, int* info, int, int);
+ // void dtrsyl3_(char* trana, char* tranb, int* isgn, int* m, int* n, double* a, int* lda, double* b, int* ldb, double* c, int* ldc, double* scale, int* iwork, int* liwork, double* swork, int* ldswork, int* info);
+ 
+ void caxpy_(int* n, SCIPY_C* sa, SCIPY_C* sx, int* incx, SCIPY_C* sy, int* incy);
+ void ccopy_(int* n, SCIPY_C* dx, int* incx, SCIPY_C* dy, int* incy);
+-void cgees_(char* jobvs, char* sort, int (*select)(SCIPY_C), int* n, SCIPY_C* a, int* lda, int* sdim, SCIPY_C* w, SCIPY_C* vs, int* ldvs, SCIPY_C* work, int* lwork, float* rwork, int* bwork, int* info);
+-void cgemm_(char* transa, char* transb, int* m, int* n, int* k, SCIPY_C* alpha, SCIPY_C* a, int* lda, SCIPY_C* b, int* ldb, SCIPY_C* beta, SCIPY_C* c, int* ldc);
+-void cgemv_(char* trans, int* m, int* n, SCIPY_C* alpha, SCIPY_C* a, int* lda, SCIPY_C* x, int* incx, SCIPY_C* beta, SCIPY_C* y, int* incy);
++void cgees_(char* jobvs, char* sort, int (*select)(SCIPY_C), int* n, SCIPY_C* a, int* lda, int* sdim, SCIPY_C* w, SCIPY_C* vs, int* ldvs, SCIPY_C* work, int* lwork, float* rwork, int* bwork, int* info, int, int);
++void cgemm_(char* transa, char* transb, int* m, int* n, int* k, SCIPY_C* alpha, SCIPY_C* a, int* lda, SCIPY_C* b, int* ldb, SCIPY_C* beta, SCIPY_C* c, int* ldc, int, int);
++void cgemv_(char* trans, int* m, int* n, SCIPY_C* alpha, SCIPY_C* a, int* lda, SCIPY_C* x, int* incx, SCIPY_C* beta, SCIPY_C* y, int* incy, int);
+ void cgetrf_(int* m, int* n, SCIPY_C* a, int* lda, int* ipiv, int* info);
+-void cgetrs_(char* trans, int* n, int* nrhs, SCIPY_C* a, int* lda, int* ipiv, SCIPY_C* b, int* ldb, int* info);
++void cgetrs_(char* trans, int* n, int* nrhs, SCIPY_C* a, int* lda, int* ipiv, SCIPY_C* b, int* ldb, int* info, int);
+ void clacn2_(int* n, SCIPY_C* v, SCIPY_C* x, float* est, int* kase, int* isave);
+ void crot_(int* n, SCIPY_C* cx, int* incx, SCIPY_C* cy, int* incy, float* c, SCIPY_C* s);
+ void csscal_(int* n, float* sa, SCIPY_C* sx, int* incx);
+-void ctrsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, SCIPY_C* a, int* lda, SCIPY_C* b, int* ldb, SCIPY_C* c, int* ldc, float* scale, int* info);
++void ctrsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, SCIPY_C* a, int* lda, SCIPY_C* b, int* ldb, SCIPY_C* c, int* ldc, float* scale, int* info, int, int);
+ // void ctrsyl3_(char* trana, char* tranb, int* isgn, int* m, int* n, SCIPY_C* a, int* lda, SCIPY_C* b, int* ldb, SCIPY_C* c, int* ldc, float* scale, float* swork, int* ldswork, int* info);
+ 
+ void zaxpy_(int* n, SCIPY_Z* sa, SCIPY_Z* sx, int* incx, SCIPY_Z* sy, int* incy);
+ void zcopy_(int* n, SCIPY_Z* dx, int* incx, SCIPY_Z* dy, int* incy);
+-void zgees_(char* jobvs, char* sort, int (*select)(SCIPY_Z), int* n, SCIPY_Z* a, int* lda, int* sdim, SCIPY_Z* w, SCIPY_Z* vs, int* ldvs, SCIPY_Z* work, int* lwork, double* rwork, int* bwork, int* info);
+-void zgemm_(char* transa, char* transb, int* m, int* n, int* k, SCIPY_Z* alpha, SCIPY_Z* a, int* lda, SCIPY_Z* b, int* ldb, SCIPY_Z* beta, SCIPY_Z* c, int* ldc);
+-void zgemv_(char* trans, int* m, int* n, SCIPY_Z* alpha, SCIPY_Z* a, int* lda, SCIPY_Z* x, int* incx, SCIPY_Z* beta, SCIPY_Z* y, int* incy);
++void zgees_(char* jobvs, char* sort, int (*select)(SCIPY_Z), int* n, SCIPY_Z* a, int* lda, int* sdim, SCIPY_Z* w, SCIPY_Z* vs, int* ldvs, SCIPY_Z* work, int* lwork, double* rwork, int* bwork, int* info, int, int);
++void zgemm_(char* transa, char* transb, int* m, int* n, int* k, SCIPY_Z* alpha, SCIPY_Z* a, int* lda, SCIPY_Z* b, int* ldb, SCIPY_Z* beta, SCIPY_Z* c, int* ldc, int, int);
++void zgemv_(char* trans, int* m, int* n, SCIPY_Z* alpha, SCIPY_Z* a, int* lda, SCIPY_Z* x, int* incx, SCIPY_Z* beta, SCIPY_Z* y, int* incy, int);
+ void zgetrf_(int* m, int* n, SCIPY_Z* a, int* lda, int* ipiv, int* info);
+-void zgetrs_(char* trans, int* n, int* nrhs, SCIPY_Z* a, int* lda, int* ipiv, SCIPY_Z* b, int* ldb, int* info);
++void zgetrs_(char* trans, int* n, int* nrhs, SCIPY_Z* a, int* lda, int* ipiv, SCIPY_Z* b, int* ldb, int* info, int);
+ void zlacn2_(int* n, SCIPY_Z* v, SCIPY_Z* x, double* est, int* kase, int* isave);
+ void zrot_(int* n, SCIPY_Z* cx, int* incx, SCIPY_Z* cy, int* incy, double* c, SCIPY_Z* s);
+ void zdscal_(int* n, double* sa, SCIPY_Z* sx, int* incx);
+-void ztrsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, SCIPY_Z* a, int* lda, SCIPY_Z* b, int* ldb, SCIPY_Z* c, int* ldc, double* scale, int* info);
++void ztrsyl_(char* trana, char* tranb, int* isgn, int* m, int* n, SCIPY_Z* a, int* lda, SCIPY_Z* b, int* ldb, SCIPY_Z* c, int* ldc, double* scale, int* info, int, int);
+ // void ztrsyl3_(char* trana, char* tranb, int* isgn, int* m, int* n, SCIPY_Z* a, int* lda, SCIPY_Z* b, int* ldb, SCIPY_Z* c, int* ldc, double* scale, double* swork, int* ldswork, int* info);
+ 
+ /*
+diff --git a/scipy/linalg/_matfuncs_sqrtm.c b/scipy/linalg/_matfuncs_sqrtm.c
+index 89f90aad39..a9f30b5584 100644
+--- a/scipy/linalg/_matfuncs_sqrtm.c
++++ b/scipy/linalg/_matfuncs_sqrtm.c
+@@ -41,7 +41,7 @@ matrix_squareroot_s(const PyArrayObject* ap_Am, float* restrict ret_data, int* i
+     // --------------------------------------------------------------------
+     int info = 0, sdim = 0, lwork = -1, intn = (int)n;
+     float tmp_float = 0.0f, one = 1.0f, zero = 0.0f;
+-    sgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, NULL, &intn, &tmp_float, &lwork, NULL, &info);
++    sgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, NULL, &intn, &tmp_float, &lwork, NULL, &info, 1, 1);
+     // Improbable to fail at lwork query but check anyway
+     if (info != 0) { *sq_info = -100; return;}
+     lwork = (int)tmp_float;
+@@ -107,7 +107,7 @@ matrix_squareroot_s(const PyArrayObject* ap_Am, float* restrict ret_data, int* i
+ 
+         if (!isSchur)
+         {
+-            sgees_("V", "N", NULL, &intn, data, &intn, &sdim, wr, wi, vs, &intn, work, &lwork, NULL, &info);
++            sgees_("V", "N", NULL, &intn, data, &intn, &sdim, wr, wi, vs, &intn, work, &lwork, NULL, &info, 1, 1);
+             if (info != 0)
+             {
+                 free(buffer);
+@@ -247,8 +247,8 @@ matrix_squareroot_s(const PyArrayObject* ap_Am, float* restrict ret_data, int* i
+                 // data = ret_data * vs^H
+                 SCIPY_C c_one = CPLX_C(1.0f, 0.0f);
+                 SCIPY_C c_zero = CPLX_C(0.0f, 0.0f);
+-                cgemm_("N", "N", &intn, &intn, &intn, &c_one, complex_vs, &intn, complex_data, &intn, &c_zero, &((SCIPY_C*)ret_data)[idx*n*n], &intn);
+-                cgemm_("N", "C", &intn, &intn, &intn, &c_one, &((SCIPY_C*)ret_data)[idx*n*n], &intn, complex_vs, &intn, &c_zero, complex_data, &intn);
++                cgemm_("N", "N", &intn, &intn, &intn, &c_one, complex_vs, &intn, complex_data, &intn, &c_zero, &((SCIPY_C*)ret_data)[idx*n*n], &intn, 1, 1);
++                cgemm_("N", "C", &intn, &intn, &intn, &c_one, &((SCIPY_C*)ret_data)[idx*n*n], &intn, complex_vs, &intn, &c_zero, complex_data, &intn, 1, 1);
+             }
+ 
+         } else {
+@@ -259,8 +259,8 @@ matrix_squareroot_s(const PyArrayObject* ap_Am, float* restrict ret_data, int* i
+                 // Apply the Schur decomposition, use the return array, current
+                 // slice as scratch space for the matrix multiplication.
+                 int new_address = (upcasted_to_complex? 2*idx*n*n : idx*n*n);
+-                sgemm_("N", "N", &intn, &intn, &intn, &one, vs, &intn, data, &intn, &zero, &ret_data[new_address], &intn);
+-                sgemm_("N", "T", &intn, &intn, &intn, &one, &ret_data[new_address], &intn, vs, &intn, &zero, data, &intn);
++                sgemm_("N", "N", &intn, &intn, &intn, &one, vs, &intn, data, &intn, &zero, &ret_data[new_address], &intn, 1, 1);
++                sgemm_("N", "T", &intn, &intn, &intn, &one, &ret_data[new_address], &intn, vs, &intn, &zero, data, &intn, 1, 1);
+             }
+         }
+ 
+@@ -331,7 +331,7 @@ matrix_squareroot_d(const PyArrayObject* ap_Am, double* restrict ret_data, int*
+     }
+     int info = 0, sdim = 0, lwork = -1, intn = (int)n;
+     double tmp_float = 0.0, one = 1.0, zero = 0.0;
+-    dgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, NULL, &intn, &tmp_float, &lwork, NULL, &info);
++    dgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, NULL, &intn, &tmp_float, &lwork, NULL, &info, 1, 1);
+     if (info != 0) { *sq_info = -100; return; }
+     lwork = (int)tmp_float;
+     size_t buffer_size = 4*n*n + 2*n + lwork;
+@@ -367,7 +367,7 @@ matrix_squareroot_d(const PyArrayObject* ap_Am, double* restrict ret_data, int*
+ 
+         if (!isSchur)
+         {
+-            dgees_("V", "N", NULL, &intn, data, &intn, &sdim, wr, wi, vs, &intn, work, &lwork, NULL, &info);
++            dgees_("V", "N", NULL, &intn, data, &intn, &sdim, wr, wi, vs, &intn, work, &lwork, NULL, &info, 1, 1);
+             if (info != 0)
+             {
+                 free(buffer);
+@@ -468,16 +468,16 @@ matrix_squareroot_d(const PyArrayObject* ap_Am, double* restrict ret_data, int*
+             {
+                 SCIPY_Z c_one = CPLX_Z(1.0, 0.0);
+                 SCIPY_Z c_zero = CPLX_Z(0.0, 0.0);
+-                zgemm_("N", "N", &intn, &intn, &intn, &c_one, complex_vs, &intn, complex_data, &intn, &c_zero, &((SCIPY_Z*)ret_data)[idx*n*n], &intn);
+-                zgemm_("N", "C", &intn, &intn, &intn, &c_one, &((SCIPY_Z*)ret_data)[idx*n*n], &intn, complex_vs, &intn, &c_zero, complex_data, &intn);
++                zgemm_("N", "N", &intn, &intn, &intn, &c_one, complex_vs, &intn, complex_data, &intn, &c_zero, &((SCIPY_Z*)ret_data)[idx*n*n], &intn, 1, 1);
++                zgemm_("N", "C", &intn, &intn, &intn, &c_one, &((SCIPY_Z*)ret_data)[idx*n*n], &intn, complex_vs, &intn, &c_zero, complex_data, &intn, 1, 1);
+             }
+         } else {
+             info = sqrtm_recursion_d(data, n, n);
+             if (!isSchur)
+             {
+                 int new_address = (upcasted_to_complex? 2*idx*n*n : idx*n*n);
+-                dgemm_("N", "N", &intn, &intn, &intn, &one, vs, &intn, data, &intn, &zero, &ret_data[new_address], &intn);
+-                dgemm_("N", "T", &intn, &intn, &intn, &one, &ret_data[new_address], &intn, vs, &intn, &zero, data, &intn);
++                dgemm_("N", "N", &intn, &intn, &intn, &one, vs, &intn, data, &intn, &zero, &ret_data[new_address], &intn, 1, 1);
++                dgemm_("N", "T", &intn, &intn, &intn, &one, &ret_data[new_address], &intn, vs, &intn, &zero, data, &intn, 1, 1);
+             }
+         }
+ 
+@@ -521,7 +521,7 @@ matrix_squareroot_c(const PyArrayObject* ap_Am, SCIPY_C* restrict ret_data, int*
+     }
+     int info = 0, sdim = 0, lwork = -1, intn = (int)n;
+     SCIPY_C tmp_float = CPLX_C(0.0f, 0.0f), cone = CPLX_C(1.0f, 0.0f), czero = CPLX_C(0.0f, 0.0f);
+-    cgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, &intn, &tmp_float, &lwork, NULL, NULL, &info);
++    cgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, &intn, &tmp_float, &lwork, NULL, NULL, &info, 1, 1);
+     if (info != 0) { *sq_info = -100; return; }
+ 
+     lwork = (int)crealf(tmp_float);
+@@ -569,7 +569,7 @@ matrix_squareroot_c(const PyArrayObject* ap_Am, SCIPY_C* restrict ret_data, int*
+ 
+         if (!isSchur)
+         {
+-            cgees_("V", "N", NULL, &intn, data, &intn, &sdim, w, vs, &intn, work, &lwork, rwork, NULL, &info);
++            cgees_("V", "N", NULL, &intn, data, &intn, &sdim, w, vs, &intn, work, &lwork, rwork, NULL, &info, 1, 1);
+             if (info != 0)
+             {
+                 free(buffer);
+@@ -591,8 +591,8 @@ matrix_squareroot_c(const PyArrayObject* ap_Am, SCIPY_C* restrict ret_data, int*
+         info = sqrtm_recursion_c(data, n, n);
+         if (!isSchur)
+         {
+-            cgemm_("N", "N", &intn, &intn, &intn, &cone, vs, &intn, data, &intn, &czero, &ret_data[idx*n*n], &intn);
+-            cgemm_("N", "C", &intn, &intn, &intn, &cone, &ret_data[idx*n*n], &intn, vs, &intn, &czero, data, &intn);
++            cgemm_("N", "N", &intn, &intn, &intn, &cone, vs, &intn, data, &intn, &czero, &ret_data[idx*n*n], &intn, 1, 1);
++            cgemm_("N", "C", &intn, &intn, &intn, &cone, &ret_data[idx*n*n], &intn, vs, &intn, &czero, data, &intn, 1, 1);
+         }
+ 
+         if (info != 0) { *isIllconditioned = 1; }
+@@ -623,7 +623,7 @@ matrix_squareroot_z(const PyArrayObject* ap_Am, SCIPY_Z* restrict ret_data, int*
+     }
+     int info = 0, sdim = 0, lwork = -1, intn = (int)n;
+     SCIPY_Z tmp_float = CPLX_Z(0.0f, 0.0f), cone = CPLX_Z(1.0f, 0.0f), czero = CPLX_Z(0.0f, 0.0f);
+-    zgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, &intn, &tmp_float, &lwork, NULL, NULL, &info);
++    zgees_("V", "N", NULL, &intn, NULL, &intn, &sdim, NULL, NULL, &intn, &tmp_float, &lwork, NULL, NULL, &info, 1, 1);
+     if (info != 0) { *sq_info = -100; return; }
+ 
+     lwork = (int)creal(tmp_float);
+@@ -671,7 +671,7 @@ matrix_squareroot_z(const PyArrayObject* ap_Am, SCIPY_Z* restrict ret_data, int*
+ 
+         if (!isSchur)
+         {
+-            zgees_("V", "N", NULL, &intn, data, &intn, &sdim, w, vs, &intn, work, &lwork, rwork, NULL, &info);
++            zgees_("V", "N", NULL, &intn, data, &intn, &sdim, w, vs, &intn, work, &lwork, rwork, NULL, &info, 1, 1);
+             if (info != 0)
+             {
+                 free(buffer);
+@@ -693,8 +693,8 @@ matrix_squareroot_z(const PyArrayObject* ap_Am, SCIPY_Z* restrict ret_data, int*
+         info = sqrtm_recursion_z(data, n, n);
+         if (!isSchur)
+         {
+-            zgemm_("N", "N", &intn, &intn, &intn, &cone, vs, &intn, data, &intn, &czero, &ret_data[idx*n*n], &intn);
+-            zgemm_("N", "C", &intn, &intn, &intn, &cone, &ret_data[idx*n*n], &intn, vs, &intn, &czero, data, &intn);
++            zgemm_("N", "N", &intn, &intn, &intn, &cone, vs, &intn, data, &intn, &czero, &ret_data[idx*n*n], &intn, 1, 1);
++            zgemm_("N", "C", &intn, &intn, &intn, &cone, &ret_data[idx*n*n], &intn, vs, &intn, &czero, data, &intn, 1, 1);
+         }
+ 
+         if (info != 0) { *isIllconditioned = 1; }
+@@ -778,7 +778,7 @@ sqrtm_recursion_s(float* T, npy_intp bign, npy_intp n)
+         i2 = sqrtm_recursion_s(&T[halfn*(bign + 1)], bign, otherhalfn);
+ 
+         // Solve the Sylvester equation for the top right block
+-        strsyl_("N", "N", &int1, &halfn, &otherhalfn, T, &intbign, &T[halfn*(intbign + 1)], &intbign, &T[halfn*intbign], &intbign, &scale, &info);
++        strsyl_("N", "N", &int1, &halfn, &otherhalfn, T, &intbign, &T[halfn*(intbign + 1)], &intbign, &T[halfn*intbign], &intbign, &scale, &info, 1, 1);
+         if (scale != 1.0)
+         {
+             for (i = 0; i < otherhalfn; i++)
+@@ -854,7 +854,7 @@ sqrtm_recursion_d(double* T, npy_intp bign, npy_intp n)
+         i2 = sqrtm_recursion_d(&T[halfn*(bign + 1)], bign, otherhalfn);
+ 
+         // Solve the Sylvester equation for the top right block
+-        dtrsyl_("N", "N", &int1, &halfn, &otherhalfn, T, &intbign, &T[halfn*(intbign + 1)], &intbign, &T[halfn*intbign], &intbign, &scale, &info);
++        dtrsyl_("N", "N", &int1, &halfn, &otherhalfn, T, &intbign, &T[halfn*(intbign + 1)], &intbign, &T[halfn*intbign], &intbign, &scale, &info, 1, 1);
+ 
+         if (scale != 1.0)
+         {
+@@ -914,7 +914,7 @@ sqrtm_recursion_c(SCIPY_C* T, npy_intp bign, npy_intp n)
+         i1 = sqrtm_recursion_c(T11, bign, halfn);
+         i2 = sqrtm_recursion_c(T22, bign, otherhalfn);
+ 
+-        ctrsyl_("N", "N", &int1, &halfn, &otherhalfn, T11, &intbign, T22, &intbign, T12, &intbign, &scale, &info);
++        ctrsyl_("N", "N", &int1, &halfn, &otherhalfn, T11, &intbign, T22, &intbign, T12, &intbign, &scale, &info, 1, 1);
+         if (scale != 1.0)
+         {
+             for (i = 0; i < otherhalfn; i++)
+@@ -976,7 +976,7 @@ sqrtm_recursion_z(SCIPY_Z* T, npy_intp bign, npy_intp n)
+         SCIPY_Z* T12 = &T[halfn*bign];
+         i1 = sqrtm_recursion_z(T11, bign, halfn);
+         i2 = sqrtm_recursion_z(T22, bign, otherhalfn);
+-        ztrsyl_("N", "N", &int1, &halfn, &otherhalfn, T11, &intbign, T22, &intbign, T12, &intbign, &scale, &info);
++        ztrsyl_("N", "N", &int1, &halfn, &otherhalfn, T11, &intbign, T22, &intbign, T12, &intbign, &scale, &info, 1, 1);
+         if (scale != 1.0)
+         {
+             for (i = 0; i < otherhalfn; i++)
+-- 
+2.51.0
+
