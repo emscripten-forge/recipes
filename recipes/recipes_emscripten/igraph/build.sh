@@ -14,7 +14,15 @@ emcmake cmake ${CMAKE_ARGS} ..          \
     -DIGRAPH_USE_INTERNAL_GLPK=OFF      \
     -DIGRAPH_ENABLE_TLS=OFF             \
     -DBUILD_SHARED_LIBS=OFF             \
-    -DBUILD_TESTING=OFF
+    -DBUILD_TESTING=OFF                 \
+    -DBLAS_LIBRARIES=$PREFIX/lib/libblas.a \
+    -DLAPACK_LIBRARIES=$PREFIX/lib/liblapack.a \
+    -DARPACK_LIBRARY=$PREFIX/lib/libarpack.a \
+    -DARPACK_INCLUDE_DIR=$PREFIX/include/arpack \
+    -DGMP_LIBRARY=$PREFIX/lib/libgmp.a  \
+    -DGMP_INCLUDE_DIR=$PREFIX/include   \
+    -DGLPK_LIBRARY=$PREFIX/lib/libglpk.a \
+    -DGLPK_INCLUDE_DIR=$PREFIX/include
 
 emmake make -j${CPU_COUNT:-3}
 emmake make install
