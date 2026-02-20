@@ -1,6 +1,6 @@
 context:
   name: multidict
-  version: 6.7.0
+  version: 6.7.1
 
 package:
   name: ${{ name }}
@@ -8,12 +8,21 @@ package:
 
 source:
   url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: c6e99d9a65ca282e578dfea819cfa9c0a62b2499d8677392e09feaf305e9e6f5
+  sha256: ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d
 
 build:
-  number: 0
+  number: 1
   script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler('cxx')}}

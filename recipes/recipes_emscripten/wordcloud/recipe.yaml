@@ -1,6 +1,6 @@
 context:
   name: wordcloud
-  version: 1.9.4
+  version: 1.9.6
 
 package:
   name: ${{ name }}
@@ -8,12 +8,22 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: b273d8a5ded97d3ead904046b49464dcb71119ee79df875072a4c105cadd347a
+  sha256: df17c468ff903bd0aba4f87c6540745d13a4931220dd4937cb363ad85a4771b9
 
 build:
-  number: 0
+  number: 1
   script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler('cxx') }}

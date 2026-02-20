@@ -1,29 +1,37 @@
 context:
   name: tiktoken
-  version: 0.11.0
+  version: 0.12.0
 
 package:
-  name: ${{name}}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
 - url: https://pypi.io/packages/source/t/${{ name }}/tiktoken-${{ version }}.tar.gz
-  sha256: 3c518641aee1c52247c2b97e74d8d07d780092af79d5911a6ab5e79359d9b06a
+  sha256: b18ba7ee2b093863978fcb14f74b3707cdc8d4d4d3836853ce7ec60772139931
 
 build:
-  number: 0
+  number: 1
 
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - cross-python_${{target_platform}}
   - setuptools-rust
-  - rust
+  - rust-nightly
   - cargo-bundle-licenses
   host:
   - python
   run:
   - regex
-
 
 tests:
 - script: pytester
@@ -36,9 +44,11 @@ tests:
     recipe:
     - test_tiktoken.py
 
-
 about:
-  license_family: MIT
+  homepage: https://github.com/openai/tiktoken
+  repository: https://github.com/openai/tiktoken
+  summary: tiktoken is a fast BPE tokeniser for use with OpenAI's models
+  license: MIT
   license_file:
   - LICENSE
   - THIRDPARTY.yml

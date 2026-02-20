@@ -1,36 +1,58 @@
 context:
   name: libgdal-core
-  version: 3.12.0
+  version: 3.12.2
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
 source:
-
-  url: https://github.com/OSGeo/gdal/archive/refs/tags/v${{version}}.tar.gz
-  sha256: d770d4bdb8d48dd91be39b99a7ea81f356a133b62dfaaa431d4e0862af754fe8
+  url: https://github.com/OSGeo/gdal/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 1817fa4bd60a98ed4bff06f369a352d994332e63a48be5c15bcee44680fa5ace
+  patches:
+  - patches/0001-Add-CPL_CPUID-guards.patch
 
 build:
   number: 0
 
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
   build:
-  - ${{ compiler('c') }}
-  - cmake
-  - pkg-config
-  host:
-  - libtiff
-  - proj-static
-  - libiconv
-  - geos-static
-  - libpng
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - pkg-config
+    host:
+    - libtiff
+    - proj-static
+    - libiconv
+    - geos-static
+    - libpng
+  tests:
+  - package_contents:
+      files:
+      - lib/libgdal.so
 
-
-
-
-tests:
-- script:
-  - test -f ${PREFIX}/lib/libgdal.so
+- package:
+    name: ${{ name }}-static
+    version: ${{ version }}
+  build:
+    script: build_static.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - pkg-config
+    host:
+    - libtiff
+    - proj-static
+    - libiconv
+    - geos-static
+    - libpng
+  tests:
+  - package_contents:
+      files:
+      - lib/libgdal.a
 
 about:
   homepage: https://gdal.org/
@@ -40,3 +62,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes

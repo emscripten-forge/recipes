@@ -12,6 +12,7 @@ emcmake cmake .. \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_FIND_ROOT_PATH=$PREFIX \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
+  -DUSE_DATE_POLYFILL=ON \
   -DBUILD_EXAMPLES=OFF \
   -DBUILD_TESTS=OFF \
   -DBUILD_DOCS=OFF
@@ -28,3 +29,4 @@ emmake make install -j8
 
 # Manually install the shared library
 cp libsparrow.so "$PREFIX/lib/"
+

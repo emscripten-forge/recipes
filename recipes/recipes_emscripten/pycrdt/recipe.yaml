@@ -1,26 +1,36 @@
 context:
   name: pycrdt
-  version: 0.12.32
+  version: 0.12.46
 
 package:
-  name: ${{name}}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://github.com/jupyter-server/pycrdt/archive/refs/tags/${{version}}.tar.gz
-  sha256: 39177cf5b515875f345a2a1460b44e1b11d30273263f6569d0bed5b8c953205f
+- url: https://github.com/jupyter-server/pycrdt/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 418d11c875a625c5633b88851a815bf6bd3fcb750d43467e8711b7abe4c3c0f8
 
 build:
-  number: 0
+  number: 2
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 
 requirements:
   build:
-  - cross-python_${{target_platform}}
+  - cross-python_${{ target_platform }}
   - cffi
   - setuptools-rust
-  - rust
+  - rust-nightly
   - maturin
-
   host:
   - python
   - openssl

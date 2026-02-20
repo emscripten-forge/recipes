@@ -21,8 +21,14 @@ export PYO3_CROSS_PYTHON_VERSION=$PY_VER
 export PYO3_CROSS_LIB_DIR=$PREFIX/lib
 export PYO3_CROSS_INCLUDE_DIR=$PREFIX/include
 
-# To enable wasm-exceptions
-export RUSTFLAGS="-Z emscripten-wasm-eh -C panic=abort"
+# To enable wasm-exceptions set RUSTFLAGS=$RUST_WASM_EXCEPTIONS
+# Not all packages require this and sometimes it causes problems
+export RUST_WASM_EXCEPTIONS="-Z emscripten-wasm-eh -C panic=abort"
 
 export CARGO_BUILD_TARGET="wasm32-unknown-emscripten"
 export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
+
+source $CARGO_HOME/env
+rustup default nightly
+
+echo "[rust-nightly] Activation complete."

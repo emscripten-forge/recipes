@@ -2,10 +2,6 @@ context:
   name: astropy
   version: 7.2.0
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
 - url: https://pypi.io/packages/source/a/astropy/astropy-${{ version }}.tar.gz
   sha256: ae48bc26b1feaeb603cd94bd1fa1aa39137a115fe931b7f13787ab420e8c3070
@@ -13,39 +9,101 @@ source:
   # - patches/skip_ep.patch
 
 build:
-  number: 0
+  number: 3
 
-requirements:
+outputs:
+- package:
+    name: astropy-base
+    version: ${{ version }}
   build:
-  - ${{ compiler("cxx") }}
-  - cross-python_emscripten-wasm32
-  - python
-  - cython
-  - numpy
-  - pip
-  - extension-helpers
-  host:
-  - python
-  - jinja2
-  - markupsafe
-  - numpy
-  run:
-  - numpy
-  - pyerfa
-  - pyyaml
-  - packaging
-  - astropy-iers-data>=0.2024.7.1.0.34.3
-
-tests:
-- script: pytester
+    script: build-base.sh
+    files:
+      exclude:
+      - '**/*.pyi'
+      - '**/tests/**'
+      - '**.dist-info/**'
+      - '**/*.pyx'
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
   requirements:
     build:
-    - pytester >= 0.9.0
+    - ${{ compiler("cxx") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - cython
+    - numpy
+    - pip
+    - extension-helpers
+    host:
+    - python
+    - jinja2
+    - markupsafe
+    - numpy
     run:
-    - pytester-run >= 0.9.0
-  files:
-    recipe:
-    - test_astropy.py
+    - numpy
+    - pyerfa
+    - pyyaml
+    - packaging
+    - astropy-iers-data>=0.2024.7.1.0.34.3
+  tests:
+  - script: pytester
+    requirements:
+      build:
+      - pytester >= 0.9.0
+      run:
+      - pytester-run >= 0.9.0
+    files:
+      recipe:
+      - test_astropy.py
+
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    noarch: python
+  requirements:
+    host:
+    - python
+    run:
+    - python
+    - ${{ pin_subpackage('astropy-base', exact=True) }}
+    - matplotlib-base >=3.8.0
+    - scipy >=1.9.2
+    - certifi >=2022.6.15.1
+    - ipython >=8.0.0
+    - ipywidgets >=7.7.3
+    - ipydatagrid >=1.1.13
+    - dask-core >=2024.8.0
+    - h5py >=3.9.0
+    - pyarrow >=14.0.2
+    - beautifulsoup4 >=4.9.3
+    - html5lib >=1.1
+    - bleach >=3.2.1
+    - pandas >=2.0
+    - sortedcontainers >=2.1.0
+    - pytz >=2016.10
+    - jplephem >=2.17.0
+    - mpmath >=1.2.1
+    - fsspec >=2023.4.0
+    - narwhals >=1.42.0
+    # fsspec optional deps
+    - aiohttp
+    - s3fs >=2023.4.0
+    - uncompresspy >=0.4.0
+  tests:
+  - script: pytester
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+    files:
+      recipe:
+      - test_astropy.py
 
 about:
   homepage: https://www.astropy.org/

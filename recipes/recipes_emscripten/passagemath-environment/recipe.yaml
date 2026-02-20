@@ -1,0 +1,58 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-environment
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-environment/passagemath_environment-${{ version }}.tar.gz
+  sha256: 51477339171cdfa88aaae838d77f244f3fbae75293794078153eeffa80fa7d65
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - pip
+  host:
+  - python
+  - setuptools
+  - wheel
+  - pip
+  run:
+  - python
+  - packaging
+  - platformdirs
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_environment.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'passagemath: System and software environment'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    Distribution of a small part of the Sage library.
+    It provides the connection to the system and software environment.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_environment.py
+  recipe-maintainers:
+  - mkoeppe

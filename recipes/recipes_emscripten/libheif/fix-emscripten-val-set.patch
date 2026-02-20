@@ -1,0 +1,23 @@
+diff --git a/libheif/api/libheif/heif_emscripten.h b/libheif/api/libheif/heif_emscripten.h
+index 1234567..abcdefg 100644
+--- a/libheif/api/libheif/heif_emscripten.h
++++ b/libheif/api/libheif/heif_emscripten.h
+@@ -335,15 +335,8 @@ emscripten::val heif_js_decode_image2(struct heif_image_handle* handle, heif_co
+   if (err.code != heif_error_Ok) {
+     return emscripten::val(err);
+   }
+-
+-#if __EMSCRIPTEN_major__ > 4 ||   \
+-    (__EMSCRIPTEN_major__ == 4 && \
+-     (__EMSCRIPTEN_minor__ > 0 || __EMSCRIPTEN_tiny__ >= 9))
+-  result.set("image", image, emscripten::allow_raw_pointers());
+-#else
+-  result.set("image", image);
+-#endif
+-
++
++  result.set("image", emscripten::val(image, emscripten::allow_raw_pointers()));
++
+   int width = heif_image_handle_get_width(handle);
+   result.set("width", width);
+ 

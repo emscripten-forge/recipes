@@ -1,25 +1,40 @@
 context:
-  version: 5.2.1
+  name: qutip
+  version: 5.2.3
 
 package:
-  name: qutip
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://github.com/qutip/qutip/archive/v${{ version }}.tar.gz
-  sha256: 708b182f09db8a6a0fa41b8a59ed5bcfdf43befe625afc2efe30885b68898b6e
+  sha256: 39435fe006213c116314fe46509e3f35d39c0ba897d633af172125056f893a11
 
 build:
-  number: 0
+  number: 1
+  script: ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/tests/**'
+    - '**/*.pxd'
+    - '**.dist-info/**'
+    - '**/*.ini'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-  - python
+  - ${{ compiler('cxx') }}
   - cross-python_${{ target_platform }}
   - cython
   - numpy
   - setuptools
-  - ${{ compiler('cxx') }}
   - packaging >=22
   - pip
   host:
@@ -28,13 +43,9 @@ requirements:
   - scipy >=1.0
   run:
   - python
-    # - "{{ pin_compatible('numpy') }}"
   - numpy
   - scipy >=1.0
   - packaging
-# test:
-#   imports:
-#     - "qutip"
 
 tests:
 - script: pytester
@@ -46,12 +57,16 @@ tests:
     - pytester
     run:
     - pytester-run
+
 about:
   license: BSD-3-Clause
   license_file: LICENSE.txt
-  summary: QuTiP is open-source software for simulating the dynamics of open quantum systems and optimal quantum control
-
+  summary: |
+    QuTiP is open-source software for simulating the dynamics of open quantum
+    systems and optimal quantum control.
   homepage: http://qutip.org
+  repository: https://github.com/qutip/qutip
+
 extra:
   recipe-maintainers:
   - hodgestar

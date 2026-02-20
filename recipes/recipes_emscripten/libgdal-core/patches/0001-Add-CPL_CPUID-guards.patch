@@ -1,0 +1,84 @@
+From 5e6b394b72f8ddf95bfbc5bf31c1b18e94b23d28 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 18 Feb 2026 14:38:56 +0100
+Subject: [PATCH] Add CPL_CPUID guards
+
+---
+ port/cpl_cpu_features.cpp | 24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/port/cpl_cpu_features.cpp b/port/cpl_cpu_features.cpp
+index 5fdacb9..3ece038 100644
+--- a/port/cpl_cpu_features.cpp
++++ b/port/cpl_cpu_features.cpp
+@@ -30,8 +30,8 @@
+ #define REG_ECX 2
+ #define REG_EDX 3
+ 
+-#if defined(__GNUC__)
+-#if defined(__x86_64)
++#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
++#if defined(__x86_64__)
+ #define GCC_CPUID(level, a, b, c, d)                                           \
+     __asm__("xchgq %%rbx, %q1\n"                                               \
+             "cpuid\n"                                                          \
+@@ -63,12 +63,19 @@
+ /*                          CPLHaveRuntimeSSE()                         */
+ /************************************************************************/
+ 
++#if defined(CPL_CPUID)
+ bool CPLHaveRuntimeSSE()
+ {
+     int cpuinfo[4] = {0, 0, 0, 0};
+     CPL_CPUID(1, cpuinfo);
+     return (cpuinfo[REG_EDX] & (1 << CPUID_SSE_EDX_BIT)) != 0;
+ }
++#else
++bool CPLHaveRuntimeSSE()
++{
++    return false;
++}
++#endif
+ 
+ #endif
+ 
+@@ -78,12 +85,19 @@ bool CPLHaveRuntimeSSE()
+ /*                         CPLHaveRuntimeSSSE3()                        */
+ /************************************************************************/
+ 
++#if defined(CPL_CPUID)
+ static inline bool CPLDetectSSSE3()
+ {
+     int cpuinfo[4] = {0, 0, 0, 0};
+     CPL_CPUID(1, cpuinfo);
+     return (cpuinfo[REG_ECX] & (1 << CPUID_SSSE3_ECX_BIT)) != 0;
+ }
++#else
++static inline bool CPLDetectSSSE3()
++{
++    return false;
++}
++#endif
+ 
+ #if defined(__GNUC__) && !defined(DEBUG)
+ bool bCPLHasSSSE3 = false;
+@@ -112,7 +126,7 @@ bool CPLHaveRuntimeSSSE3()
+ /*                          CPLHaveRuntimeAVX()                         */
+ /************************************************************************/
+ 
+-#if defined(__GNUC__)
++#if defined(__GNUC__) && defined(CPL_CPUID)
+ 
+ static bool CPLDetectRuntimeAVX()
+ {
+@@ -185,6 +199,10 @@ bool CPLHaveRuntimeAVX()
+     return true;
+ }
+ 
++#elif defined(__GNUC__) && !defined(CPL_CPUID)
++
++bool bCPLHasAVX = false;
++
+ #else
+ 
+ bool CPLHaveRuntimeAVX()

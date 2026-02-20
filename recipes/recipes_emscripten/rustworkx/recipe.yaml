@@ -1,26 +1,35 @@
 context:
   name: rustworkx
-  version: 0.17.0a3
+  version: 0.17.1
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://github.com/IvanIsCoding/rustworkx/releases/download/v${{ version }}/rustworkx-${{ version }}.tar.gz
-  sha256: 8bd0c295134e2b0c03808d4e69428b41153849db6488839084a78793c337f191
+- url: https://github.com/Qiskit/rustworkx/archive/refs/tags/${{ version }}.tar.gz
+  sha256: dc248da9cc364b81ac67f5d67b626ee3f03a1f6299f7a9b4d0a0501548715365
 
 build:
   number: 1
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - cross-python_${{ target_platform }}
   - ${{ compiler("c") }}
   - cffi
   - setuptools-rust
-  - rust
-  - rust-src
+  - rust-nightly
   - maturin
   host:
   - python

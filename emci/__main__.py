@@ -75,6 +75,20 @@ def bump_recipes_versions(target_branch_name: str):
 
     bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
+
+@bot_app.command()
+def build_missing_recipes(target_branch_name: str):
+    from .bot.build_missing_recipes import build_missing_recipes
+    build_missing_recipes(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+
+
+@bot_app.command()
+def update_matplotlib_fontcache(target_branch_name: str):
+    from .bot.update_matplotlib_fontcache import update_matplotlib_fontcache
+
+    update_matplotlib_fontcache(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+
+
 @build_app.command()
 def lint(old: str, new: str):
     """
@@ -95,8 +109,14 @@ def lint(old: str, new: str):
             try:
                 with open(meta_path) as f:
                     meta = yaml.safe_load(f)
-                if isinstance(meta.get('source'), list):
-                    meta['source'] = meta['source'][0]
+                # Convert list to single element only if it's a URL-based source
+                # Path-based sources (like pytester) should remain as lists
+                if isinstance(meta.get('source'), list) and len(meta['source']) > 0:
+                    first_source = meta['source'][0]
+                    # If first element has 'path', keep as list (path-based source)
+                    # Otherwise, convert to single element (URL-based source)
+                    if not isinstance(first_source, dict) or 'path' not in first_source:
+                        meta['source'] = meta['source'][0]
             except Exception as e:
                 print(f"❌ Failed to parse {meta_path}: {e}")
                 failed = True
@@ -114,6 +134,8 @@ def lint(old: str, new: str):
         sys.exit(1)
     else:
         print("✅ All changed recipes passed validation")
+
+
 
 
 if __name__ == "__main__":

@@ -1,28 +1,30 @@
 context:
   name: numcodecs
-  version: 0.16.0
+  version: 0.16.5
 
 package:
-  name: numcodecs
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-# - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{version
-#     }}.tar.gz
-#   sha256: f71229a951c4991ab226df4147f3780c988d1cecf1309e388d9e57bcba827387
-#   patches:
-#   # - patches/fixblosc.patch
-#   - patches/fixzlib.patch'
-
-# change to pypi sources if and when https://github.com/zarr-developers/numcodecs/pull/737
-# is merged
-- git: https://github.com/DerThorsten/numcodecs/
-  branch: emscripten
-
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0d0fb60852f84c0bd9543cc4d2ab9eefd37fc8efcc410acd4777e62a1d300318
+  patches:
+  - patches/setup.patch
 
 build:
   number: 1
 
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - ${{ compiler("c") }}
@@ -41,7 +43,6 @@ requirements:
   - deprecated
   - typing_extensions
 
-
 tests:
 - script: pytester
   files:
@@ -57,4 +58,5 @@ about:
   homepage: https://github.com/zarr-developers/numcodecs
   license: MIT
   license_file: LICENSE.txt
-  summary: A Python package providing buffer compression and transformation codecs for use in data storage and communication applications.
+  summary: A Python package providing buffer compression and transformation codecs for use in data storage and 
+    communication applications.

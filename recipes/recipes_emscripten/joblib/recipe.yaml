@@ -1,6 +1,6 @@
 context:
   name: joblib
-  version: 1.5.2
+  version: 1.5.3
 
 package:
   name: ${{ name }}
@@ -8,12 +8,23 @@ package:
 
 source:
 - url: https://github.com/joblib/joblib/archive/${{ version }}.tar.gz
-  sha256: 86a70409c5ad67fefb4d4ec27b03fc85bb941f564e982afe29e9d4df9a581355
+  sha256: 7de874013042e7c4dfd14e34c81a0fec19ab7cd8f08bf447b773488e96770fa2
 
 
 build:
   number: 2
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/test/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 
 requirements:
   build:

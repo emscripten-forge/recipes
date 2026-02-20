@@ -9,22 +9,34 @@ package:
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
   sha256: fac63f3f5679a04d9277311c1f3e8eacee02a10e456547187f1a9695b6b3a333
+  patches:
+  - patches/0001-Fix-examples-path.patch
 
 build:
-  number: 0
+  number: 2
+
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 
 requirements:
   build:
   - cross-python_${{ target_platform }}
-  - cffi == 1.17.1
+  - cffi
   - setuptools-rust
-  - rust
+  - rust-nightly
   - maturin
   host:
   - python
-  - cffi == 1.17.1
+  - cffi
   run:
-  - cffi == 1.17.1
+  - cffi
 
 tests:
 - script: pytester

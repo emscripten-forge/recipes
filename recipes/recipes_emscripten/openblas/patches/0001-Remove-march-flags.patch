@@ -1,0 +1,54 @@
+From 33f7828727f374c6299126aa8abff4606b1c2efe Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 8 Dec 2025 07:47:46 +0000
+Subject: [PATCH 1/8] Remove -march flags
+
+---
+ Makefile.prebuild | 4 ----
+ Makefile.riscv64  | 4 ----
+ Makefile.system   | 2 +-
+ 3 files changed, 1 insertion(+), 9 deletions(-)
+
+diff --git a/Makefile.prebuild b/Makefile.prebuild
+index b7d695a75..47cbcbf83 100644
+--- a/Makefile.prebuild
++++ b/Makefile.prebuild
+@@ -71,10 +71,6 @@ ifeq ($(TARGET), RISCV64_ZVL128B)
+ TARGET_FLAGS = -march=rv64imafdcv -mabi=lp64d
+ endif
+ 
+-ifeq ($(TARGET), RISCV64_GENERIC)
+-TARGET_FLAGS = -march=rv64imafdc -mabi=lp64d
+-endif
+-
+ all: getarch_2nd
+ 	./getarch_2nd  0 >> $(TARGET_MAKE)
+ 	./getarch_2nd  1 >> $(TARGET_CONF)
+diff --git a/Makefile.riscv64 b/Makefile.riscv64
+index d8da98d5f..86c61553b 100644
+--- a/Makefile.riscv64
++++ b/Makefile.riscv64
+@@ -21,7 +21,3 @@ ifeq ($(CORE), RISCV64_ZVL128B)
+ CCOMMON_OPT += -march=$(RISCV64_OPT) -mabi=lp64d
+ FCOMMON_OPT += -march=$(RISCV64_OPT) -mabi=lp64d
+ endif
+-ifeq ($(CORE), RISCV64_GENERIC)
+-CCOMMON_OPT += -march=rv64imafdc -mabi=lp64d
+-FCOMMON_OPT += -march=rv64imafdc -mabi=lp64d
+-endif
+diff --git a/Makefile.system b/Makefile.system
+index ab463f53d..4a8b17f96 100644
+--- a/Makefile.system
++++ b/Makefile.system
+@@ -202,7 +202,7 @@ endif
+ # On x86_64 build getarch with march=native unless the compiler is PGI. This is required to detect AVX512 support in getarch.
+ ifeq ($(HOSTARCH), x86_64)
+ ifeq ($(findstring pgcc,$(HOSTCC))$(findstring nvc,$(HOSTCC)),)
+-GETARCH_FLAGS += -march=native
++# GETARCH_FLAGS += -march=native
+ endif
+ endif
+ 
+-- 
+2.51.0
+
