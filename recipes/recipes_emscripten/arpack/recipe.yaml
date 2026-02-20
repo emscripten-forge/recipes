@@ -1,0 +1,45 @@
+context:
+  name: arpack
+  version: 3.9.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/opencollab/arpack-ng/archive/${{ version }}.tar.gz
+  sha256: f6641deb07f78571571f46f4677e259b1b1c5cdbc75ffe0cbf38e2ddd8c7929b
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - cmake
+  - make
+  host:
+  - libblas
+  - liblapack
+
+tests:
+- package_contents:
+    files:
+    - include/arpack/arpack.hpp
+    - lib/libarpack.a
+
+about:
+  homepage: https://github.com/opencollab/arpack-ng
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: Solution of large scale eigenvalue problems
+  description: |
+    ARPACK-NG is a collection of Fortran77 subroutines designed to solve
+    large scale eigenvalue problems. It implements the Implicitly Restarted
+    Arnoldi Method (IRAM) for standard and generalized eigenvalue problems.
+  repository: https://github.com/opencollab/arpack-ng
+
+extra:
+  recipe-maintainers:
+  - wolfv
