@@ -1,0 +1,67 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-m4ri-m4rie
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-m4ri-m4rie/passagemath_m4ri_m4rie-${{ version }}.tar.gz
+  sha256: 4cfd2655677e1caaa5a0dfa709d7ead6f6c0e2c60b2e11153463f049f2919fcb
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - m4ri
+  - m4rie
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - passagemath-modules
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_m4ri_m4rie.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Linear Algebra with m4ri and m4rie'
+  description: |
+    Distribution of a small part of the Sage library for use with passagemath-modules.
+    It provides modules that depend on the libraries m4ri and m4rie
+    for dense matrices over GF(2) and GF(2**e) for e from 2 to 16.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_m4ri_m4rie.py
+  recipe-maintainers:
+  - mkoeppe
