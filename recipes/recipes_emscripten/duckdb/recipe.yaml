@@ -1,0 +1,68 @@
+context:
+  name: duckdb
+  version: 1.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/duckdb/duckdb/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 99387810537dd3f90454e5620ab624405d7f2e0d997aa1e3999316b7969592ed
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('cxx') }}
+  - pip
+  - setuptools
+  - pybind11
+  - scikit-build-core
+  - cmake
+  - ninja
+  host:
+  - python
+  - pybind11
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_duckdb.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://duckdb.org/
+  license: MIT
+  license_file: LICENSE
+  summary: DuckDB is an analytical in-process SQL database management system
+  description: |
+    DuckDB is an in-process SQL OLAP database management system.
+    It is designed to support analytical query workloads (OLAP) while
+    being embeddable in Python and other languages.
+  repository: https://github.com/duckdb/duckdb
+
+extra:
+  recipe-maintainers:
+  - wolfv
