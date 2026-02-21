@@ -1,0 +1,47 @@
+context:
+  name: ppl
+  version: 1.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://mirrors.mit.edu/sage/spkg/upstream/ppl/ppl-${{ version }}.tar.bz2
+  sha256: 2d470b0c262904f190a19eac57fb5c2387b1bfc3510de25a08f3c958df62fdf1
+  patches:
+    - patches/clang5-support.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - libtool
+  - m4
+  - make
+  - gnuconfig
+  host:
+  - glpk
+  - gmp
+
+tests:
+- package_contents:
+    files:
+    - include/ppl.hh
+    - lib/libppl.a
+
+about:
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: |
+    The Parma Polyhedra Library implements convex polyhedra,
+    not-necessarily-closed polyhedra and other numerical
+    abstractions targeted at applications in the field of analysis and
+    verification of complex systems.
+  homepage: https://www.bugseng.com/ppl
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
