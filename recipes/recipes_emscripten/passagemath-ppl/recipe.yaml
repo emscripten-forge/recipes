@@ -1,0 +1,66 @@
+context:
+  version: 0.8.10.2
+
+package:
+  name: passagemath-ppl
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-ppl/passagemath_ppl-${{ version }}.tar.gz
+  sha256: ceadbb1855a0c740f2335692f667a6a9e1db20af4a700fda82de85d8ad38d775
+
+build:
+  script: |
+    export CXXFLAGS="$CXXFLAGS -std=c++14"
+    ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - glpk
+  - mpc
+  - mpfr
+  - ppl
+  run:
+  - python
+  - gmpy2
+  - cysignals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_ppl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'passagemath: Python wrapper for the Parma Polyhedra Library (pplpy fork)'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    Python interface to the Parma Polyhedra Library.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_ppl.py
+  recipe-maintainers:
+  - mkoeppe
