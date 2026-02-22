@@ -1,0 +1,64 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-tdlib
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-tdlib/passagemath_tdlib-${{ version }}.tar.gz
+  sha256: ed320715a36e0627371c615329638229a52fb8c647ec61c210f55cf624443577
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - boost-cpp
+  - treedec
+  run:
+  - python
+  - cysignals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_tdlib.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Tree decompositions with tdlib'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides a Cython interface to the tdlib library, now also known as treedec,
+    providing algorithms concerning tree decompositions.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_tdlib.py
+  recipe-maintainers:
+  - mkoeppe
