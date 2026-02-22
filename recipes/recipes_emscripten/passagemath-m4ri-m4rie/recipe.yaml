@@ -10,7 +10,9 @@ source:
   sha256: 4cfd2655677e1caaa5a0dfa709d7ead6f6c0e2c60b2e11153463f049f2919fcb
 
 build:
-  script: ${{ PYTHON }} -m pip install .
+  script: |
+    (cd $PREFIX/lib/pkgconfig && rm -f libpng.pc && cp libpng16.pc libpng.pc && cat libpng.pc)
+    ${{ PYTHON }} -m pip install . -vv
   noarch: python
 
 requirements:
@@ -29,6 +31,8 @@ requirements:
   - pkgconfig
   host:
   - python
+  - libgd
+  - libpng
   - m4ri
   - m4rie
   - passagemath-modules
