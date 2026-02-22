@@ -1,0 +1,55 @@
+context:
+  version: 2.1
+
+package:
+  name: lrcalc-python
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/l/lrcalc/lrcalc-${{ version }}.tar.gz
+  sha256: e3a0509aeda487b412b391a52e817ca36b5c063a8305e09fd54d53259dd6aaa9
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - cython
+  host:
+  - python
+  - lrcalc
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_lrcalc_python.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'Littlewood-Richardson calculator (Python bindings)'
+  description: |
+    Python bindings for the Littlewood-Richardson Calculator
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_lrcalc_python.py
+  recipe-maintainers:
+  - mkoeppe
