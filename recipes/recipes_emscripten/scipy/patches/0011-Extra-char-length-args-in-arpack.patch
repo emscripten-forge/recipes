@@ -1,7 +1,7 @@
-From 9ea4eb820be3abbd05f558329b613f388c3acf5b Mon Sep 17 00:00:00 2001
+From 7778c041bcd56a4edd458a49c833954107ba5ed7 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Sun, 11 Jan 2026 16:27:41 +0000
-Subject: [PATCH 12/18] Extra char length args in arpack
+Subject: [PATCH 11/17] Extra char length args in arpack
 
 ---
  .../arpack/arnaud/src/arnaud_n_double.c       | 56 +++++------
@@ -14,7 +14,7 @@ Subject: [PATCH 12/18] Extra char length args in arpack
  7 files changed, 204 insertions(+), 204 deletions(-)
 
 diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c
-index 5d69a62d9e..7191d0470b 100644
+index 5a254d2ded..82bcd24728 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c
 +++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double.c
 @@ -195,7 +195,7 @@ ARNAUD_dneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
@@ -77,7 +77,7 @@ index 5d69a62d9e..7191d0470b 100644
  
          }
  
-@@ -1046,7 +1046,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
+@@ -1047,7 +1047,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
      //  dlahqr returns the full Schur form of H in WORKL(1:N**2)
      //  and the last components of the Schur vectors in BOUNDS.
  
@@ -86,7 +86,7 @@ index 5d69a62d9e..7191d0470b 100644
      for (j = 0; j < n-1; j++)
      {
          bounds[j] = 0.0;
-@@ -1064,7 +1064,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
+@@ -1065,7 +1065,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
      //  of the eigenvector components are split across adjacent
      //  columns of Q.
  
@@ -95,7 +95,7 @@ index 5d69a62d9e..7191d0470b 100644
      if (*ierr != 0) { return; }
  
      //  Scale the returning eigenvectors so that their
-@@ -1109,7 +1109,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
+@@ -1110,7 +1110,7 @@ dneigh(double* rnorm, int n, double* h, int ldh, double* ritzr, double* ritzi,
      }
      // 10
  
@@ -104,7 +104,7 @@ index 5d69a62d9e..7191d0470b 100644
  
      //  Compute the Ritz estimates
  
-@@ -1255,8 +1255,8 @@ LINE40:
+@@ -1256,8 +1256,8 @@ LINE40:
          dscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
          dscal_(&n, &temp1, &workd[ipj], &int1);
      } else {
@@ -115,7 +115,7 @@ index 5d69a62d9e..7191d0470b 100644
      }
  
      //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
-@@ -1330,12 +1330,12 @@ LINE60:
+@@ -1331,12 +1331,12 @@ LINE60:
      //  Compute the j Fourier coefficients w_{j}
      //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
      tmp_int = V->aitr_j + 1;
@@ -130,7 +130,7 @@ index 5d69a62d9e..7191d0470b 100644
  
      if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = V->aitr_betaj; }
  
-@@ -1400,14 +1400,14 @@ LINE80:
+@@ -1401,14 +1401,14 @@ LINE80:
      //  Compute V_{j}^T * B * r_{j}.
      //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
      tmp_int = V->aitr_j + 1;
@@ -147,7 +147,7 @@ index 5d69a62d9e..7191d0470b 100644
      daxpy_(&tmp_int, &dbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
  
      V->aitr_orth2 = 1;
-@@ -1501,7 +1501,7 @@ LINE100:
+@@ -1502,7 +1502,7 @@ LINE100:
              if (tst1 == 0.0)
              {
                  tmp_int = k + np;
@@ -156,7 +156,7 @@ index 5d69a62d9e..7191d0470b 100644
              }
              if (fabs(h[i+1 + ldh*i]) <= fmax(ulp*tst1, smlnum))
              {
-@@ -1531,7 +1531,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+@@ -1532,7 +1532,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
  
      //  Initialize Q to the identity to accumulate
      //  the rotations and reflections
@@ -165,7 +165,7 @@ index 5d69a62d9e..7191d0470b 100644
  
      //  Quick return if there are no shifts to apply
  
-@@ -1592,7 +1592,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+@@ -1593,7 +1593,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
                  if (tst1 == 0.0)
                  {
                      tmp_int = kplusp - jj;
@@ -174,7 +174,7 @@ index 5d69a62d9e..7191d0470b 100644
                  }
                  if (fabs(h[iend+1 + (iend * ldh)]) <= fmax(smlnum, ulp * tst1))
                  {
-@@ -1666,10 +1666,10 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+@@ -1667,10 +1667,10 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
                      u[0] = 1.0;
  
                      tmp_int = kplusp - i;
@@ -188,7 +188,7 @@ index 5d69a62d9e..7191d0470b 100644
                      if (i < iend - 1)
                      {
                          u[0] = h[i+1 + i * ldh];
-@@ -1708,7 +1708,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+@@ -1709,7 +1709,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
          tst1 = fabs(h[i + ldh*i]) + fabs(h[i+1 + ldh*(i+1)]);
          if (tst1 == 0.0)
          {
@@ -197,7 +197,7 @@ index 5d69a62d9e..7191d0470b 100644
          }
          if (h[i+1 + ldh*i] <= fmax(ulp*tst1, smlnum))
          {
-@@ -1725,7 +1725,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+@@ -1726,7 +1726,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
  
      if (h[*kev + ldh*(*kev-1)] > 0.0)
      {
@@ -206,7 +206,7 @@ index 5d69a62d9e..7191d0470b 100644
      }
  
      //  Compute column 1 to kev of (V*Q) in backward order
-@@ -1734,7 +1734,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
+@@ -1735,7 +1735,7 @@ dnapps(int n, int* kev, int np, double* shiftr, double* shifti, double* v,
      for (i = 0; i < *kev; i++)
      {
          tmp_int = kplusp - i;
@@ -215,7 +215,7 @@ index 5d69a62d9e..7191d0470b 100644
          dcopy_(&n, workd, &int1, &v[(kplusp-i-1)*ldv], &int1);
      }
  
-@@ -1942,8 +1942,8 @@ LINE20:
+@@ -1943,8 +1943,8 @@ LINE20:
  
  LINE30:
  
@@ -227,7 +227,7 @@ index 5d69a62d9e..7191d0470b 100644
      //  Compute the B-norm of the orthogonalized starting vector
  
 diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c
-index fae7996f63..5fd8cec2ca 100644
+index 6d8856fc7c..712a32870a 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c
 +++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_double_complex.c
 @@ -194,7 +194,7 @@ ARNAUD_zneupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
@@ -277,7 +277,7 @@ index fae7996f63..5fd8cec2ca 100644
  
          }
  
-@@ -1047,8 +1047,8 @@ LINE40:
+@@ -1048,8 +1048,8 @@ LINE40:
          zdscal_(&n, &temp1, &v[ldv*V->aitr_j], &int1);
          zdscal_(&n, &temp1, &workd[ipj], &int1);
      } else {
@@ -288,7 +288,7 @@ index fae7996f63..5fd8cec2ca 100644
      }
  
      //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
-@@ -1121,12 +1121,12 @@ LINE60:
+@@ -1122,12 +1122,12 @@ LINE60:
      //  Compute the j Fourier coefficients w_{j}
      //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
      tmp_int = V->aitr_j + 1;
@@ -303,7 +303,7 @@ index fae7996f63..5fd8cec2ca 100644
  
      if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = ARNAUD_cplx(V->aitr_betaj, 0.0); }
  
-@@ -1190,14 +1190,14 @@ LINE80:
+@@ -1191,14 +1191,14 @@ LINE80:
      //  Compute V_{j}^T * B * r_{j}.
      //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
      tmp_int = V->aitr_j + 1;
@@ -320,7 +320,7 @@ index fae7996f63..5fd8cec2ca 100644
      zaxpy_(&tmp_int, &cdbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
  
      V->aitr_orth2 = 1;
-@@ -1288,7 +1288,7 @@ LINE100:
+@@ -1289,7 +1289,7 @@ LINE100:
                  tmp_int = k + np;
                  // zlanhs(norm, n, a, lda, work) with "work" being double type
                  // Recasting complex workspace to double for scratch space.
@@ -329,7 +329,7 @@ index fae7996f63..5fd8cec2ca 100644
              }
              if (cabs(h[i+1 + ldh*i]) <= fmax(ulp*tst1, smlnum))
              {
-@@ -1322,7 +1322,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+@@ -1323,7 +1323,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
  
      //  Initialize Q to the identity to accumulate
      //  the rotations and reflections
@@ -338,7 +338,7 @@ index fae7996f63..5fd8cec2ca 100644
  
      //  Quick return if there are no shifts to apply
  
-@@ -1346,7 +1346,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+@@ -1347,7 +1347,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
                  if (tst1 == 0.0)
                  {
                      tmp_int = kplusp - jj;
@@ -347,7 +347,7 @@ index fae7996f63..5fd8cec2ca 100644
                  }
                  if (fabs(creal(h[iend+1 + ldh*iend])) <= fmax(ulp*tst1, smlnum))
                  {
-@@ -1447,7 +1447,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+@@ -1448,7 +1448,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
                 fabs(cimag(h[i + ldh*i])) + fabs(cimag(h[i+1 + ldh*(i+1)]));
          if (tst1 == 0.0)
          {
@@ -356,7 +356,7 @@ index fae7996f63..5fd8cec2ca 100644
          }
          if (creal(h[i+1 + ldh*i]) <= fmax(ulp*tst1, smlnum))
          {
-@@ -1464,7 +1464,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+@@ -1465,7 +1465,7 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
  
      if (creal(h[*kev + ldh*(*kev-1)]) > 0.0)
      {
@@ -365,7 +365,7 @@ index fae7996f63..5fd8cec2ca 100644
      }
  
      //  Compute column 1 to kev of (V*Q) in backward order
-@@ -1473,13 +1473,13 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
+@@ -1474,13 +1474,13 @@ znapps(int n, int* kev, int np, ARNAUD_CPLX_TYPE* shift, ARNAUD_CPLX_TYPE* v,
      for (i = 0; i < *kev; i++)
      {
          tmp_int = kplusp - i;
@@ -381,7 +381,7 @@ index fae7996f63..5fd8cec2ca 100644
  
      //  Copy the (kev+1)-st column of (V*Q) in the appropriate place
  
-@@ -1522,8 +1522,8 @@ zneigh(double* rnorm, int n, ARNAUD_CPLX_TYPE* h, int ldh, ARNAUD_CPLX_TYPE* rit
+@@ -1523,8 +1523,8 @@ zneigh(double* rnorm, int n, ARNAUD_CPLX_TYPE* h, int ldh, ARNAUD_CPLX_TYPE* rit
      //     zlahqr returns the full Schur form of H
      //     in WORKL(1:N**2), and the Schur vectors in q.
  
@@ -392,7 +392,7 @@ index fae7996f63..5fd8cec2ca 100644
      zlahqr_(&int1, &int1, &n, &int1, &n, workl, &ldh, ritz, &int1, &n, q, &ldq, ierr);
  
      if (*ierr != 0) { return; }
-@@ -1534,7 +1534,7 @@ zneigh(double* rnorm, int n, ARNAUD_CPLX_TYPE* h, int ldh, ARNAUD_CPLX_TYPE* rit
+@@ -1535,7 +1535,7 @@ zneigh(double* rnorm, int n, ARNAUD_CPLX_TYPE* h, int ldh, ARNAUD_CPLX_TYPE* rit
      //     apply the Schur vectors to get the corresponding
      //     eigenvectors.
  
@@ -401,7 +401,7 @@ index fae7996f63..5fd8cec2ca 100644
  
      if (*ierr != 0) { return; }
  
-@@ -1695,8 +1695,8 @@ LINE20:
+@@ -1696,8 +1696,8 @@ LINE20:
  
  LINE30:
  
@@ -413,7 +413,7 @@ index fae7996f63..5fd8cec2ca 100644
      //  Compute the B-norm of the orthogonalized starting vector
  
 diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c
-index 65e985503f..0622a80f65 100644
+index 69e6644903..21e1c503b2 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c
 +++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single.c
 @@ -195,7 +195,7 @@ ARNAUD_sneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
@@ -476,7 +476,7 @@ index 65e985503f..0622a80f65 100644
  
          }
  
-@@ -1046,7 +1046,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
+@@ -1047,7 +1047,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
      //  dlahqr returns the full Schur form of H in WORKL(1:N**2)
      //  and the last components of the Schur vectors in BOUNDS.
  
@@ -485,7 +485,7 @@ index 65e985503f..0622a80f65 100644
      for (j = 0; j < n-1; j++)
      {
          bounds[j] = 0.0f;
-@@ -1064,7 +1064,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
+@@ -1065,7 +1065,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
      //  of the eigenvector components are split across adjacent
      //  columns of Q.
  
@@ -494,7 +494,7 @@ index 65e985503f..0622a80f65 100644
      if (*ierr != 0) { return; }
  
      //  Scale the returning eigenvectors so that their
-@@ -1109,7 +1109,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
+@@ -1110,7 +1110,7 @@ sneigh(float* rnorm, int n, float* h, int ldh, float* ritzr, float* ritzi,
      }
      // 10
  
@@ -503,7 +503,7 @@ index 65e985503f..0622a80f65 100644
  
      //  Compute the Ritz estimates
  
-@@ -1255,8 +1255,8 @@ LINE40:
+@@ -1256,8 +1256,8 @@ LINE40:
          sscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
          sscal_(&n, &temp1, &workd[ipj], &int1);
      } else {
@@ -514,7 +514,7 @@ index 65e985503f..0622a80f65 100644
      }
  
      //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
-@@ -1330,12 +1330,12 @@ LINE60:
+@@ -1331,12 +1331,12 @@ LINE60:
      //  Compute the j Fourier coefficients w_{j}
      //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
      tmp_int = V->aitr_j + 1;
@@ -529,7 +529,7 @@ index 65e985503f..0622a80f65 100644
  
      if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = V->aitr_betaj; }
  
-@@ -1400,14 +1400,14 @@ LINE80:
+@@ -1401,14 +1401,14 @@ LINE80:
      //  Compute V_{j}^T * B * r_{j}.
      //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
      tmp_int = V->aitr_j + 1;
@@ -546,7 +546,7 @@ index 65e985503f..0622a80f65 100644
      saxpy_(&tmp_int, &dbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
  
      V->aitr_orth2 = 1;
-@@ -1501,7 +1501,7 @@ LINE100:
+@@ -1502,7 +1502,7 @@ LINE100:
              if (tst1 == 0.0f)
              {
                  tmp_int = k + np;
@@ -555,7 +555,7 @@ index 65e985503f..0622a80f65 100644
              }
              if (fabsf(h[i+1 + ldh*i]) <= fmaxf(ulp*tst1, smlnum))
              {
-@@ -1531,7 +1531,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+@@ -1532,7 +1532,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
  
      //  Initialize Q to the identity to accumulate
      //  the rotations and reflections
@@ -564,7 +564,7 @@ index 65e985503f..0622a80f65 100644
  
      //  Quick return if there are no shifts to apply
  
-@@ -1592,7 +1592,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+@@ -1593,7 +1593,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
                  if (tst1 == 0.0f)
                  {
                      tmp_int = kplusp - jj;
@@ -573,7 +573,7 @@ index 65e985503f..0622a80f65 100644
                  }
                  if (fabsf(h[iend+1 + (iend * ldh)]) <= fmaxf(smlnum, ulp * tst1))
                  {
-@@ -1666,10 +1666,10 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+@@ -1667,10 +1667,10 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
                      u[0] = 1.0f;
  
                      tmp_int = kplusp - i;
@@ -587,7 +587,7 @@ index 65e985503f..0622a80f65 100644
                      if (i < iend - 1)
                      {
                          u[0] = h[i+1 + i * ldh];
-@@ -1708,7 +1708,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+@@ -1709,7 +1709,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
          tst1 = fabsf(h[i + ldh*i]) + fabsf(h[i+1 + ldh*(i+1)]);
          if (tst1 == 0.0f)
          {
@@ -596,7 +596,7 @@ index 65e985503f..0622a80f65 100644
          }
          if (h[i+1 + ldh*i] <= fmaxf(ulp*tst1, smlnum))
          {
-@@ -1725,7 +1725,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+@@ -1726,7 +1726,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
  
      if (h[*kev + ldh*(*kev-1)] > 0.0f)
      {
@@ -605,7 +605,7 @@ index 65e985503f..0622a80f65 100644
      }
  
      //  Compute column 1 to kev of (V*Q) in backward order
-@@ -1734,7 +1734,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
+@@ -1735,7 +1735,7 @@ snapps(int n, int* kev, int np, float* shiftr, float* shifti, float* v,
      for (i = 0; i < *kev; i++)
      {
          tmp_int = kplusp - i;
@@ -614,7 +614,7 @@ index 65e985503f..0622a80f65 100644
          scopy_(&n, workd, &int1, &v[(kplusp-i-1)*ldv], &int1);
      }
  
-@@ -1942,8 +1942,8 @@ LINE20:
+@@ -1943,8 +1943,8 @@ LINE20:
  
  LINE30:
  
@@ -626,7 +626,7 @@ index 65e985503f..0622a80f65 100644
      //  Compute the B-norm of the orthogonalized starting vector
  
 diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c
-index d2cd84e4d1..581ad7926f 100644
+index dfbe815147..ba220dc6ed 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c
 +++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_n_single_complex.c
 @@ -194,7 +194,7 @@ ARNAUD_cneupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
@@ -676,7 +676,7 @@ index d2cd84e4d1..581ad7926f 100644
  
          }
  
-@@ -1047,8 +1047,8 @@ LINE40:
+@@ -1048,8 +1048,8 @@ LINE40:
          csscal_(&n, &temp1, &v[ldv*V->aitr_j], &int1);
          csscal_(&n, &temp1, &workd[ipj], &int1);
      } else {
@@ -687,7 +687,7 @@ index d2cd84e4d1..581ad7926f 100644
      }
  
      //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
-@@ -1121,12 +1121,12 @@ LINE60:
+@@ -1122,12 +1122,12 @@ LINE60:
      //  Compute the j Fourier coefficients w_{j}
      //  WORKD(IPJ:IPJ+N-1) contains B*OP*v_{j}.
      tmp_int = V->aitr_j + 1;
@@ -702,7 +702,7 @@ index d2cd84e4d1..581ad7926f 100644
  
      if (V->aitr_j > 0) { h[V->aitr_j + ldh*(V->aitr_j-1)] = ARNAUD_cplxf(V->aitr_betaj, 0.0f); }
  
-@@ -1190,14 +1190,14 @@ LINE80:
+@@ -1191,14 +1191,14 @@ LINE80:
      //  Compute V_{j}^T * B * r_{j}.
      //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
      tmp_int = V->aitr_j + 1;
@@ -719,7 +719,7 @@ index d2cd84e4d1..581ad7926f 100644
      caxpy_(&tmp_int, &cdbl1, &workd[irj], &int1, &h[ldh*(V->aitr_j)], &int1);
  
      V->aitr_orth2 = 1;
-@@ -1288,7 +1288,7 @@ LINE100:
+@@ -1289,7 +1289,7 @@ LINE100:
                  tmp_int = k + np;
                  // clanhs(norm, n, a, lda, work) with "work" being float type
                  // Recasting complex workspace to float for scratch space.
@@ -728,7 +728,7 @@ index d2cd84e4d1..581ad7926f 100644
              }
              if (cabsf(h[i+1 + ldh*i]) <= fmaxf(ulp*tst1, smlnum))
              {
-@@ -1322,7 +1322,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+@@ -1323,7 +1323,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
  
      //  Initialize Q to the identity to accumulate
      //  the rotations and reflections
@@ -737,7 +737,7 @@ index d2cd84e4d1..581ad7926f 100644
  
      //  Quick return if there are no shifts to apply
  
-@@ -1346,7 +1346,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+@@ -1347,7 +1347,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
                  if (tst1 == 0.0f)
                  {
                     tmp_int = kplusp - jj;
@@ -746,7 +746,7 @@ index d2cd84e4d1..581ad7926f 100644
                  }
                  if (fabsf(crealf(h[iend+1 + ldh*iend])) <= fmaxf(ulp*tst1, smlnum))
                  {
-@@ -1447,7 +1447,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+@@ -1448,7 +1448,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
                 fabsf(cimagf(h[i + ldh*i])) + fabsf(cimagf(h[i+1 + ldh*(i+1)]));
          if (tst1 == 0.0f)
          {
@@ -755,7 +755,7 @@ index d2cd84e4d1..581ad7926f 100644
          }
          if (crealf(h[i+1 + ldh*i]) <= fmaxf(ulp*tst1, smlnum))
          {
-@@ -1464,7 +1464,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+@@ -1465,7 +1465,7 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
  
      if (crealf(h[*kev + ldh*(*kev-1)]) > 0.0f)
      {
@@ -764,7 +764,7 @@ index d2cd84e4d1..581ad7926f 100644
      }
  
      //  Compute column 1 to kev of (V*Q) in backward order
-@@ -1473,13 +1473,13 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
+@@ -1474,13 +1474,13 @@ cnapps(int n, int* kev, int np, ARNAUD_CPLXF_TYPE* shift, ARNAUD_CPLXF_TYPE* v,
      for (i = 0; i < *kev; i++)
      {
          tmp_int = kplusp - i;
@@ -780,7 +780,7 @@ index d2cd84e4d1..581ad7926f 100644
  
      //  Copy the (kev+1)-st column of (V*Q) in the appropriate place
  
-@@ -1522,8 +1522,8 @@ cneigh(float* rnorm, int n, ARNAUD_CPLXF_TYPE* h, int ldh, ARNAUD_CPLXF_TYPE* ri
+@@ -1523,8 +1523,8 @@ cneigh(float* rnorm, int n, ARNAUD_CPLXF_TYPE* h, int ldh, ARNAUD_CPLXF_TYPE* ri
      //     zlahqr returns the full Schur form of H
      //     in WORKL(1:N**2), and the Schur vectors in q.
  
@@ -791,7 +791,7 @@ index d2cd84e4d1..581ad7926f 100644
      clahqr_(&int1, &int1, &n, &int1, &n, workl, &ldh, ritz, &int1, &n, q, &ldq, ierr);
  
      if (*ierr != 0) { return; }
-@@ -1534,7 +1534,7 @@ cneigh(float* rnorm, int n, ARNAUD_CPLXF_TYPE* h, int ldh, ARNAUD_CPLXF_TYPE* ri
+@@ -1535,7 +1535,7 @@ cneigh(float* rnorm, int n, ARNAUD_CPLXF_TYPE* h, int ldh, ARNAUD_CPLXF_TYPE* ri
      //     apply the Schur vectors to get the corresponding
      //     eigenvectors.
  
@@ -800,7 +800,7 @@ index d2cd84e4d1..581ad7926f 100644
  
      if (*ierr != 0) { return; }
  
-@@ -1696,8 +1696,8 @@ LINE20:
+@@ -1697,8 +1697,8 @@ LINE20:
  
  LINE30:
  
@@ -812,7 +812,7 @@ index d2cd84e4d1..581ad7926f 100644
      //  Compute the B-norm of the orthogonalized starting vector
  
 diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c
-index cbfee1c5bb..257344aa46 100644
+index 520d5c1393..704609cf2f 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c
 +++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_double.c
 @@ -227,7 +227,7 @@ ARNAUD_dseupd(struct ARNAUD_state_d *V, int rvec, int howmny, int* select,
@@ -844,7 +844,7 @@ index cbfee1c5bb..257344aa46 100644
  
          //  Make a copy of the last row into
          //  workl(iw+ncv:iw+2*ncv), as it is needed again in
-@@ -1127,8 +1127,8 @@ LINE40:
+@@ -1128,8 +1128,8 @@ LINE40:
          dscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
          dscal_(&n, &temp1, &workd[ipj], &int1);
      } else {
@@ -855,7 +855,7 @@ index cbfee1c5bb..257344aa46 100644
      }
  
      //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
-@@ -1216,15 +1216,15 @@ LINE65:
+@@ -1217,15 +1217,15 @@ LINE65:
      tmp_int = V->aitr_j + 1;
      if (V->mode != 2)
      {
@@ -874,7 +874,7 @@ index cbfee1c5bb..257344aa46 100644
  
      // Extend H to have j rows and columns.
  
-@@ -1296,14 +1296,14 @@ LINE80:
+@@ -1297,14 +1297,14 @@ LINE80:
      //  Compute V_{j}^T * B * r_{j}.
      //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
      tmp_int = V->aitr_j + 1;
@@ -891,7 +891,7 @@ index cbfee1c5bb..257344aa46 100644
  
      if ((V->aitr_j == 0) || (V->aitr_restart))
      {
-@@ -1423,7 +1423,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
+@@ -1424,7 +1424,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
      // Initialize Q to the identity to accumulate
      // the rotations and reflections
  
@@ -900,7 +900,7 @@ index cbfee1c5bb..257344aa46 100644
  
      // Quick return if there are no shifts to apply
  
-@@ -1544,7 +1544,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
+@@ -1545,7 +1545,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
  
      if (h[*kev] > 0.0)
      {
@@ -909,7 +909,7 @@ index cbfee1c5bb..257344aa46 100644
      }
  
      // Compute column 1 to kev of (V*Q) in backward order
-@@ -1555,7 +1555,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
+@@ -1556,7 +1556,7 @@ dsapps(int n, int* kev, int np, double* shift, double* v, int ldv, double* h, in
      for (i = 0; i < *kev; i++)
      {
          tmp_int = kplusp - i;
@@ -918,7 +918,7 @@ index cbfee1c5bb..257344aa46 100644
          dcopy_(&n, workd, &int1, &v[ldv*(kplusp-i-1)], &int1);
      }
      // 130
-@@ -1745,8 +1745,8 @@ LINE20:
+@@ -1746,8 +1746,8 @@ LINE20:
  
  LINE30:
  
@@ -929,7 +929,7 @@ index cbfee1c5bb..257344aa46 100644
  
      //  Compute the B-norm of the orthogonalized starting vector
  
-@@ -1975,7 +1975,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+@@ -1976,7 +1976,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
  
          // Scale submatrix in rows and columns L to LEND
          tmp_int = lend - l + 1;
@@ -938,7 +938,7 @@ index cbfee1c5bb..257344aa46 100644
          iscale = 0;
  
          if (anorm == 0.0) { continue; }
-@@ -1983,14 +1983,14 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+@@ -1984,14 +1984,14 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
          if (anorm > ssfmax)
          {
              iscale = 1;
@@ -957,7 +957,7 @@ index cbfee1c5bb..257344aa46 100644
          }
          // Choose between QL and QR iteration
  
-@@ -2077,7 +2077,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+@@ -2078,7 +2078,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
                  }
                  // 70
                  tmp_int = m - l + 1;
@@ -966,7 +966,7 @@ index cbfee1c5bb..257344aa46 100644
  
                  d[l-1] = d[l-1] - p;
                  e[l-1] = g;
-@@ -2161,7 +2161,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+@@ -2162,7 +2162,7 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
                  // 120
                  // Apply saved rotations.
                  tmp_int = l - m + 1;
@@ -975,7 +975,7 @@ index cbfee1c5bb..257344aa46 100644
  
                  d[l-1] = d[l-1] - p;
                  e[l - 2] = g;
-@@ -2175,15 +2175,15 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
+@@ -2176,15 +2176,15 @@ dstqrb(int n, double* d, double* e, double* z, double* work, int* info)
          if (iscale == 1)
          {
  
@@ -996,7 +996,7 @@ index cbfee1c5bb..257344aa46 100644
          }
  
 diff --git a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c
-index 01fbbd52b5..1264e0ce08 100644
+index 3e7f15f527..0ec5c0d1dd 100644
 --- a/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c
 +++ b/scipy/sparse/linalg/_eigen/arpack/arnaud/src/arnaud_s_single.c
 @@ -227,7 +227,7 @@ ARNAUD_sseupd(struct ARNAUD_state_s *V, int rvec, int howmny, int* select,
@@ -1028,7 +1028,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
          //  Make a copy of the last row into
          //  workl(iw+ncv:iw+2*ncv), as it is needed again in
-@@ -1127,8 +1127,8 @@ LINE40:
+@@ -1128,8 +1128,8 @@ LINE40:
          sscal_(&n, &temp1, &v[ldv*(V->aitr_j)], &int1);
          sscal_(&n, &temp1, &workd[ipj], &int1);
      } else {
@@ -1039,7 +1039,7 @@ index 01fbbd52b5..1264e0ce08 100644
      }
  
      //  STEP 3:  r_{j} = OP*v_{j}; Note that p_{j} = B*v_{j}
-@@ -1216,15 +1216,15 @@ LINE65:
+@@ -1217,15 +1217,15 @@ LINE65:
      tmp_int = V->aitr_j + 1;
      if (V->mode != 2)
      {
@@ -1058,7 +1058,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
      // Extend H to have j rows and columns.
  
-@@ -1296,14 +1296,14 @@ LINE80:
+@@ -1297,14 +1297,14 @@ LINE80:
      //  Compute V_{j}^T * B * r_{j}.
      //  WORKD(IRJ:IRJ+J-1) = v(:,1:J)'*WORKD(IPJ:IPJ+N-1).
      tmp_int = V->aitr_j + 1;
@@ -1075,7 +1075,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
      if ((V->aitr_j == 0) || (V->aitr_restart))
      {
-@@ -1423,7 +1423,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
+@@ -1424,7 +1424,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
      // Initialize Q to the identity to accumulate
      // the rotations and reflections
  
@@ -1084,7 +1084,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
      // Quick return if there are no shifts to apply
  
-@@ -1544,7 +1544,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
+@@ -1545,7 +1545,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
  
      if (h[*kev] > 0.0f)
      {
@@ -1093,7 +1093,7 @@ index 01fbbd52b5..1264e0ce08 100644
      }
  
      // Compute column 1 to kev of (V*Q) in backward order
-@@ -1555,7 +1555,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
+@@ -1556,7 +1556,7 @@ ssapps(int n, int* kev, int np, float* shift, float* v, int ldv, float* h, int l
      for (i = 0; i < *kev; i++)
      {
          tmp_int = kplusp - i;
@@ -1102,7 +1102,7 @@ index 01fbbd52b5..1264e0ce08 100644
          scopy_(&n, workd, &int1, &v[ldv*(kplusp-i-1)], &int1);
      }
      // 130
-@@ -1745,8 +1745,8 @@ LINE20:
+@@ -1746,8 +1746,8 @@ LINE20:
  
  LINE30:
  
@@ -1113,7 +1113,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
      //  Compute the B-norm of the orthogonalized starting vector
  
-@@ -1975,7 +1975,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+@@ -1976,7 +1976,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
  
          // Scale submatrix in rows and columns L to LEND
          tmp_int = lend - l + 1;
@@ -1122,7 +1122,7 @@ index 01fbbd52b5..1264e0ce08 100644
          iscale = 0;
  
          if (anorm == 0.0f) { continue; }
-@@ -1983,14 +1983,14 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+@@ -1984,14 +1984,14 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
          if (anorm > ssfmax)
          {
              iscale = 1;
@@ -1141,7 +1141,7 @@ index 01fbbd52b5..1264e0ce08 100644
          }
          // Choose between QL and QR iteration
  
-@@ -2077,7 +2077,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+@@ -2078,7 +2078,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
                  }
                  // 70
                  tmp_int = m - l + 1;
@@ -1150,7 +1150,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
                  d[l-1] = d[l-1] - p;
                  e[l-1] = g;
-@@ -2161,7 +2161,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+@@ -2162,7 +2162,7 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
                  // 120
                  // Apply saved rotations.
                  tmp_int = l - m + 1;
@@ -1159,7 +1159,7 @@ index 01fbbd52b5..1264e0ce08 100644
  
                  d[l-1] = d[l-1] - p;
                  e[l - 2] = g;
-@@ -2175,15 +2175,15 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
+@@ -2176,15 +2176,15 @@ sstqrb(int n, float* d, float* e, float* z, float* work, int* info)
          if (iscale == 1)
          {
  
