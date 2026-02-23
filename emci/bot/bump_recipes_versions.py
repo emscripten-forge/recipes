@@ -87,9 +87,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         return None, None
 
     # Only create branch if we have a valid version change
-    if current_version == new_version:
-        print(f"Version unchanged for {name} (still {current_version}) - skipping.")
-        # Restore the file to original state
+    if current_version == new_version:        # Restore the file to original state
         subprocess.run(['git', 'checkout', '--', str(recipe_file)], check=False)
         return None, None
 
