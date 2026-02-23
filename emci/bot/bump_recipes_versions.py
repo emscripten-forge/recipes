@@ -133,7 +133,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
         # commit the changes and make a PR
         pr_title = make_pr_title(name, current_version, new_version, target_pr_branch_name)
-        print(f"Making PR for {name} with title: {pr_title} with target branch {target_pr_branch_name}")
+        print(f"🛠️ Making PR: {pr_title} with target branch {target_pr_branch_name}")
         print("TODO TESTING make pr for recipe")
         # make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
         #     target_branch_name=target_pr_branch_name,
