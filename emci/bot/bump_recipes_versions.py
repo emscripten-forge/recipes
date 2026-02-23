@@ -38,7 +38,6 @@ def update_recipe_version(recipe_file):
             text=True,
             check=True
         )
-        print(result.stdout)
         if result.stderr:
             print(result.stderr)
         return True
