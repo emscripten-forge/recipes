@@ -73,8 +73,8 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     # This way we can check if anything actually changed
     try:
         update_recipe_version(recipe_file)
-    except CannotHandleRecipeException as e:
-        print(f"Failed to bump recipe for {name}: {e}")
+    except CannotHandleRecipeException:
+        print(f"Failed to bump recipe for {name}")
         return None, None
 
     # Get the new version after the update
@@ -87,11 +87,12 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         return None, None
 
     # Only create branch if we have a valid version change
-    if current_version == new_version:        # Restore the file to original state
+    if current_version == new_version:
+        # Restore the file to original state
         subprocess.run(['git', 'checkout', '--', str(recipe_file)], check=False)
         return None, None
 
-    # check if the recipe has test section
+    # Check if the recipe has test section
     # load recipe
     automerge = True
     with open(recipe_file) as file:
