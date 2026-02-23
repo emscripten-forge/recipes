@@ -60,7 +60,7 @@ def update_recipe_version(recipe_file):
             print(result.stderr)
         return True
     except subprocess.CalledProcessError as e:
-        raise CannotHandleRecipeException(recipe_file, f"Failed to bump recipe: {e}")
+        raise CannotHandleRecipeException(recipe_file, e)
 
 def make_pr_title(name, old_version, new_version, target_pr_branch_name):
     if target_pr_branch_name == "main":
@@ -139,6 +139,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     pr_title = make_pr_title(name, current_version, new_version, target_pr_branch_name)
     print(f"Making PR: {pr_title} with target branch {target_pr_branch_name}")
     print("TODO TESTING make pr for recipe")
+    subprocess.run(['git', 'checkout', '--', str(recipe_file)], check=False) #REMOVE
         # make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
         #     target_branch_name=target_pr_branch_name,
         #     automerge=automerge)
