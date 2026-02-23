@@ -68,6 +68,7 @@ def make_pr_title(name, old_version, new_version, target_pr_branch_name):
     else:
         return f"Update {name} from {old_version} to {new_version} [{target_pr_branch_name}]"
 
+
 def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
     recipe_fname = 'recipe.yaml'
@@ -90,6 +91,30 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     # use the last directory in the path as the branch name
     name = recipe_dir.name
 
+    # Try to bump the recipe first (without creating a branch yet)
+    # This way we can check if anything actually changed
+    try:
+        update_recipe_version(recipe_file)
+    except CannotHandleRecipeException as e:
+        print(f"Failed to bump recipe for {name}: {e}")
+        return None, None
+
+    # Get the new version after the update
+    try:
+        new_version = get_current_version(recipe_file)
+    except CannotHandleRecipeException:
+        print(f"Failed to get new version after bumping {name}")
+        # Restore the file to original state
+        subprocess.run(['git', 'checkout', '--', str(recipe_file)], check=False)
+        return None, None
+
+    # Only create branch if we have a valid version change
+    if current_version == new_version:
+        print(f"Version unchanged for {name} (still {current_version}) - skipping.")
+        # Restore the file to original state
+        subprocess.run(['git', 'checkout', '--', str(recipe_file)], check=False)
+        return None, None
+
     # check if the recipe has test section
     # load recipe
     automerge = True
@@ -105,35 +130,14 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         elif 'tests' not in recipe:
             automerge = False
 
-    # Create branch name - we'll update it after we know the new version
-    # Start with a simple name, then rename after bumping
-    branch_name = f"bump-{name}_{current_version}_for_{target_pr_branch_name}"
+    # Create branch name with actual versions
+    branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
 
     with git_branch_ctx(branch_name, stash_current=False):
-
-        # update the recipe using rattler-build
-        update_recipe_version(recipe_file)
-
-        # Get the new version after the update
-        try:
-            new_version = get_current_version(recipe_file)
-        except CannotHandleRecipeException:
-            print(f"Failed to get new version after bumping {name}")
-            return None, None
-
-        # Update branch name with actual versions
-        new_branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
-        # Rename the current branch
-        try:
-            subprocess.check_output(['git', 'branch', '-m', new_branch_name], stderr=subprocess.DEVNULL)
-            branch_name = new_branch_name
-        except subprocess.CalledProcessError:
-            # If rename fails, continue with original branch name
-            pass
-
+        # The recipe is already bumped, so we just need to commit and create PR
         # commit the changes and make a PR
         pr_title = make_pr_title(name, current_version, new_version, target_pr_branch_name)
-        print(f"🛠️ Making PR: {pr_title} with target branch {target_pr_branch_name}")
+        print(f"Making PR: {pr_title} with target branch {target_pr_branch_name}")
         print("TODO TESTING make pr for recipe")
         # make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
         #     target_branch_name=target_pr_branch_name,
@@ -290,7 +294,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
             try:
                 old_version, new_version = bump_recipe_version(recipe, pr_target_branch)
                 if new_version:
-                    print(f"Bumped {recipe.name} from {old_version} to {new_version}")
+                    print(f"🛠️ Bumped {recipe.name} from {old_version} to {new_version}")
                     total_bumped += 1
             except Exception as e:
                 print(f"❌ Error in {recipe.name}:\n{e}\n")
