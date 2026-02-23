@@ -60,9 +60,6 @@ def update_recipe_version(recipe_file):
             print(result.stderr)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Error updating recipe: {e}")
-        print(f"stdout: {e.stdout}")
-        print(f"stderr: {e.stderr}")
         raise CannotHandleRecipeException(recipe_file, f"Failed to bump recipe: {e}")
 
 def make_pr_title(name, old_version, new_version, target_pr_branch_name):
@@ -296,7 +293,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
                     print(f"Bumped {recipe} from {old_version} to {new_version}")
                     total_bumped += 1
             except Exception as e:
-                print(f"Error in {recipe}: {e}")
+                print(f"❌ Error in {recipe.name}: {e}")
 
             if pr_limit is not None and total_bumped >= pr_limit:
                 break
