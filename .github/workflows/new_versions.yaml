@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *'
-  pull_request:
-    paths:
-      - "emci/**"
 
 
 jobs:
@@ -14,7 +11,7 @@ jobs:
   update_versions:
     strategy:
       matrix:
-        branch: [main]
+        branch: [main, emscripten-3x]
 
     if: (github.event_name == 'schedule' && github.repository == 'emscripten-forge/recipes') || (github.event_name != 'schedule')
     runs-on: [ubuntu-latest]
@@ -32,4 +29,4 @@ jobs:
         shell: bash -l -eo pipefail {0}
         run:  python -m emci bot bump-recipes-versions ${{ matrix.branch }}
         env:
-          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
