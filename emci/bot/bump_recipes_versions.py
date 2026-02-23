@@ -131,7 +131,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
             automerge = False
 
     # Create branch name with actual versions
-    branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
+    branch_name = f"bumpTST-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
 
     with git_branch_ctx(branch_name, stash_current=False):
         # The recipe is already bumped, so we just need to commit and create PR
