@@ -5,6 +5,7 @@ cp $BUILD_PREFIX/share/gnuconfig/config.* . || true
 
 emconfigure ./configure \
     CFLAGS="$CFLAGS -fPIC" \
+    CPPFLAGS="$CPPFLAGS -I$PREFIX/include" \
     --prefix=$PREFIX \
     --with-python=no \
     --enable-shared=no
