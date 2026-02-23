@@ -69,11 +69,11 @@ class Recipe(BaseModel):
         """Validate recipe structure including build number and tests"""
         # Check build number is present and >= 0
         if 'build' not in values:
-            raise ValueError("build section is required")
+            raise AttributeError("Recipe must have a 'build' section.")
         build = values['build']
         if isinstance(build, dict):
             if 'number' not in build:
-                raise ValueError("build.number is required and must be >= 0")
+                raise AttributeError("build.number is required and must be >= 0")
             number = build.get('number')
             if not isinstance(number, int) or number < 0:
                 raise ValueError("build.number must be an integer >= 0")
