@@ -10,8 +10,18 @@ source:
   sha256: 6823a0665f187a729bf34d941db0afb31190e56647d2b2315bac4b76574dba2a
 
 build:
+  number: 1
   script: ${{ PYTHON }} -m pip install .
-  noarch: python
+
+  files:
+    exclude:
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 
 requirements:
   build:
@@ -61,9 +71,5 @@ about:
     related metaclasses available. It only depends on the basic arithmetic libraries.
 
 extra:
-  emscripten_tests:
-    python:
-      pytest_files:
-      - test_passagemath_objects.py
   recipe-maintainers:
   - mkoeppe
