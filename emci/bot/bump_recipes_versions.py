@@ -225,7 +225,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         if current_branch_name == pr_target_branch:
             print(f"Already on target branch {pr_target_branch}")
         else:
-            print(f"swichting from {current_branch_name} to {pr_target_branch}")
+            print(f"switching from {current_branch_name} to {pr_target_branch}")
             # switch to the target branch
             subprocess.run(['git', 'stash'], check=False)
             print(f"fetch {pr_target_branch}")
