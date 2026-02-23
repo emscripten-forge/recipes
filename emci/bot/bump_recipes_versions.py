@@ -290,10 +290,10 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
             try:
                 old_version, new_version = bump_recipe_version(recipe, pr_target_branch)
                 if new_version:
-                    print(f"Bumped {recipe} from {old_version} to {new_version}")
+                    print(f"Bumped {recipe.name} from {old_version} to {new_version}")
                     total_bumped += 1
             except Exception as e:
-                print(f"❌ Error in {recipe.name}: {e}")
+                print(f"❌ Error in {recipe.name}:\n{e}\n")
 
             if pr_limit is not None and total_bumped >= pr_limit:
                 break
