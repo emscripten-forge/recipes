@@ -29,23 +29,6 @@ def get_current_version(recipe_file):
         raise CannotHandleRecipeException(recipe_file, "No version in context")
 
 
-def check_for_update(recipe_file):
-    """Check if there's an update available using rattler-build bump-recipe --check-only"""
-    try:
-        result = subprocess.run(
-            ['rattler-build', 'bump-recipe', '--recipe', str(recipe_file), '--check-only'],
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        # If exit code is 0, there's an update available
-        # If exit code is non-zero, no update or error
-        return result.returncode == 0
-    except Exception as e:
-        print(f"Error checking for updates: {e}")
-        return False
-
-
 def update_recipe_version(recipe_file):
     """Update the recipe version using rattler-build bump-recipe"""
     try:
@@ -81,11 +64,6 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     try:
         current_version = get_current_version(recipe_file)
     except CannotHandleRecipeException:
-        return None, None
-
-    # Check if there's an update available
-    if not check_for_update(recipe_file):
-        print(f"No update available for {recipe_dir.name}")
         return None, None
 
     # use the last directory in the path as the branch name
