@@ -3,11 +3,6 @@ import subprocess
 import os
 from pathlib import Path
 from ruamel.yaml import YAML
-import jinja2
-import copy
-from .next_version import next_version
-from .url_exists import url_exists
-from .hash_url import hash_url
 from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
 import json
 
@@ -21,104 +16,54 @@ class CannotHandleRecipeException(Exception):
         super().__init__(f"Cannot handle recipe in {recipe_dir}: {msg}")
 
 
-def get_new_version(recipe_file):
-    # read the file
+def get_current_version(recipe_file):
+    """Get the current version from the recipe file"""
     with open(recipe_file) as file:
         recipe = YAML().load(file)
 
-    # get context
     try:
         context = recipe['context']
-    except KeyError:
-        raise CannotHandleRecipeException(recipe_file, "No context in recipe")
-
-
-    # get version from context
-    try:
         version = context['version']
+        return version
     except KeyError:
         raise CannotHandleRecipeException(recipe_file, "No version in context")
 
-    # get the url from the source
+
+def check_for_update(recipe_file):
+    """Check if there's an update available using rattler-build bump-recipe --check-only"""
     try:
-        source = recipe['source']
-    except KeyError:
-        raise CannotHandleRecipeException(recipe_file, "No source in recipe")
+        result = subprocess.run(
+            ['rattler-build', 'bump-recipe', '--recipe', str(recipe_file), '--check-only'],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        # If exit code is 0, there's an update available
+        # If exit code is non-zero, no update or error
+        return result.returncode == 0
+    except Exception as e:
+        print(f"Error checking for updates: {e}")
+        return False
 
-    if isinstance(source, list):
-        # some recipes have paths listed under sources, these are excluded
-        if len(source) > 1 and len(source[1]) > 1:
-            raise CannotHandleRecipeException(recipe_file, "Multiple sources")
-        source = source[0]
 
-    # make sure sha256 is in source
-    if 'sha256' not in source:
-        raise CannotHandleRecipeException(recipe_file, "No sha256 in source")
-
+def update_recipe_version(recipe_file):
+    """Update the recipe version using rattler-build bump-recipe"""
     try:
-        url_template = source['url']
-    except KeyError:
-        raise CannotHandleRecipeException(recipe_file, "No url in source")
-
-    # only check the first url, the others are backups
-    if isinstance(url_template, list):
-        url_template = url_template[0]
-
-    if "${{" not in url_template or "}}" not in url_template:
-            raise CannotHandleRecipeException(recipe_file, "url is not a template")
-
-    environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
-
-    # get name from dir
-    name = recipe_file.parent.name
-
-    print(f"{name} current version: ", version)
-    for new_version in next_version(str(version)):
-        # render the new url with the new version
-        new_version_context = copy.deepcopy(context)
-        new_version_context['version'] = new_version
-        new_url = environment.from_string(url_template).render(**new_version_context)
-        if url_exists(new_url):
-            print(f"- found new version: {new_version}")
-
-            # hash the new url
-            new_sha256 = hash_url(new_url, hash_type='sha256')
-            print(f"- new sha256: {new_sha256}")
-
-            return version, new_version, new_sha256
-
-    return None, None,None
-
-
-def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
-
-    # read the file
-    with open(recipe_file) as file:
-        recipe = YAML().load(file)
-
-    # get context
-    context = recipe['context']
-    context['version'] = new_version
-
-    # reset build number
-    recipe['build']['number'] = 0
-
-    # update sha256 in source
-    source = recipe['source']
-    if isinstance(source, list):
-        # some recipes have paths listed under sources, these are excluded
-        if len(source) > 1 and len(source[1]) > 1:
-            raise CannotHandleRecipeException(recipe_file, "Multiple sources")
-        source = source[0]
-    source['sha256'] = new_sha256
-
-    # custom yaml to avoid line wrapping long urls
-    yaml = YAML()
-    yaml.width = 120
-
-    # write the file
-    with open(recipe_file, 'w') as file:
-        yaml.dump(recipe, file)
+        result = subprocess.run(
+            ['rattler-build', 'bump-recipe', '--recipe', str(recipe_file)],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error updating recipe: {e}")
+        print(f"stdout: {e.stdout}")
+        print(f"stderr: {e.stderr}")
+        raise CannotHandleRecipeException(recipe_file, f"Failed to bump recipe: {e}")
 
 def make_pr_title(name, old_version, new_version, target_pr_branch_name):
     if target_pr_branch_name == "main":
@@ -128,28 +73,22 @@ def make_pr_title(name, old_version, new_version, target_pr_branch_name):
 
 def bump_recipe_version(recipe_dir, target_pr_branch_name):
 
-    recipe_locations = [ ("recipe.yaml", True)]
-
-    current_version = None
-    new_version = None
-    new_sha256 = None
-
-
     recipe_fname = 'recipe.yaml'
-    if (recipe_dir / recipe_fname).exists():
-        recipe_file = recipe_dir / recipe_fname
-        cv, nv, h = get_new_version(recipe_file)
-        if nv is not None:
-            new_version = nv
-            current_version = cv
-            new_sha256 = h
-    else:
-        return False, None, None
+    if not (recipe_dir / recipe_fname).exists():
+        return None, None
 
+    recipe_file = recipe_dir / recipe_fname
 
-    # no new version found -- nothing to do
-    if new_version is None:
-        return False, None, None
+    # Get current version before checking for updates
+    try:
+        current_version = get_current_version(recipe_file)
+    except CannotHandleRecipeException:
+        return None, None
+
+    # Check if there's an update available
+    if not check_for_update(recipe_file):
+        print(f"No update available for {recipe_dir.name}")
+        return None, None
 
     # use the last directory in the path as the branch name
     name = recipe_dir.name
@@ -169,26 +108,41 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         elif 'tests' not in recipe:
             automerge = False
 
-
-    branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
-
+    # Create branch name - we'll update it after we know the new version
+    # Start with a simple name, then rename after bumping
+    branch_name = f"bump-{name}_{current_version}_for_{target_pr_branch_name}"
 
     with git_branch_ctx(branch_name, stash_current=False):
 
-        # update the recipe
-        for recipe_fname, is_rattler in recipe_locations:
-            if (recipe_dir / recipe_fname).exists():
-                recipe_file = recipe_dir / recipe_fname
-                update_recipe_version(recipe_file, new_version=new_version, new_sha256=new_sha256, is_rattler=is_rattler)
+        # update the recipe using rattler-build
+        update_recipe_version(recipe_file)
+
+        # Get the new version after the update
+        try:
+            new_version = get_current_version(recipe_file)
+        except CannotHandleRecipeException:
+            print(f"Failed to get new version after bumping {name}")
+            return None, None
+
+        # Update branch name with actual versions
+        new_branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
+        # Rename the current branch
+        try:
+            subprocess.check_output(['git', 'branch', '-m', new_branch_name], stderr=subprocess.DEVNULL)
+            branch_name = new_branch_name
+        except subprocess.CalledProcessError:
+            # If rename fails, continue with original branch name
+            pass
 
         # commit the changes and make a PR
         pr_title = make_pr_title(name, current_version, new_version, target_pr_branch_name)
         print(f"Making PR for {name} with title: {pr_title} with target branch {target_pr_branch_name}")
-        make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
-            target_branch_name=target_pr_branch_name,
-            automerge=automerge)
+        print("TODO TESTING make pr for recipe")
+        # make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
+        #     target_branch_name=target_pr_branch_name,
+        #     automerge=automerge)
 
-    return True , current_version, new_version
+    return current_version, new_version
 
 
 def try_to_merge_pr(pr, recipe_dir=None, ping=False):
@@ -315,7 +269,8 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
 
                 try:
-                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
+                    print("TODO TESTING try to merge pr")
+                    # try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
 
@@ -328,8 +283,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python',
-            'libffi'
+            'sqlite', 'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 
@@ -337,10 +291,10 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         total_bumped = 0
         for recipe in all_recipes:
             try:
-                bumped_version, old_version, new_version = bump_recipe_version(recipe, pr_target_branch)
-                if bumped_version:
+                old_version, new_version = bump_recipe_version(recipe, pr_target_branch)
+                if new_version:
                     print(f"Bumped {recipe} from {old_version} to {new_version}")
-                total_bumped += int(bumped_version)
+                    total_bumped += 1
             except Exception as e:
                 print(f"Error in {recipe}: {e}")
 
