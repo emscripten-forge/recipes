@@ -1,38 +1,52 @@
-From 3070e2332c7d35be971a87790fd8e65ae55976ee Mon Sep 17 00:00:00 2001
+From cce11eae9a02c6cdc43b265e852b53ad60df4c2e Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Fri, 9 Jan 2026 10:21:48 +0000
-Subject: [PATCH 05/15] Remove unsupported version script
+Subject: [PATCH 06/18] Remove unsupported version script
 
 ---
- meson.build | 15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ meson.build | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 11eb036164..4100003bd3 100644
+index 93171d4dbf..918628fdea 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -141,13 +141,14 @@ add_global_arguments(_intel_fflags, language: 'fortran')
+@@ -165,16 +165,16 @@ add_global_arguments(_intel_fflags, language: 'fortran')
  # Meson using `-fvisibility=hidden` for C and `-fvisibility-inlines-hidden` for
  # C++ code. See gh-15996 for details.
- _linker_script = meson.project_source_root() / 'scipy/_build_utils/link-version-pyinit.map'
--version_link_args = ['-Wl,--version-script=' + _linker_script]
--# Note that FreeBSD only accepts version scripts when -shared is passed,
--# hence we need to pass that to `cc.links` explicitly (flag is already
--# present for `extension_module` invocations).
--if not cc.links('', name: '-Wl,--version-script', args: ['-shared', version_link_args])
--  version_link_args = []
+ version_link_args = []
+-if cc.get_id() != 'clang-cl'
+-  _linker_script = meson.project_source_root() / 'scipy/_build_utils/link-version-pyinit.map'
+-  vscript_link_args = ['-Wl,--version-script=' + _linker_script]
+-  # Note that FreeBSD only accepts version scripts when -shared is passed,
+-  # hence we need to pass that to `cc.links` explicitly (flag is already
+-  # present for `extension_module` invocations).
+-  if cc.links('', name: '-Wl,--version-script', args: ['-shared', vscript_link_args])
+-    version_link_args = vscript_link_args
+-  endif
 -endif
-+# version_link_args = ['-Wl,--version-script=' + _linker_script]
-+# # Note that FreeBSD only accepts version scripts when -shared is passed,
-+# # hence we need to pass that to `cc.links` explicitly (flag is already
-+# # present for `extension_module` invocations).
-+# if not cc.links('', name: '-Wl,--version-script', args: ['-shared', version_link_args])
-+#   version_link_args = []
-+# endif
-+version_link_args = []
++#if cc.get_id() != 'clang-cl'
++#  _linker_script = meson.project_source_root() / 'scipy/_build_utils/link-version-pyinit.map'
++#  vscript_link_args = ['-Wl,--version-script=' + _linker_script]
++#  # Note that FreeBSD only accepts version scripts when -shared is passed,
++#  # hence we need to pass that to `cc.links` explicitly (flag is already
++#  # present for `extension_module` invocations).
++#  if cc.links('', name: '-Wl,--version-script', args: ['-shared', vscript_link_args])
++#    version_link_args = vscript_link_args
++#  endif
++#endif
  
  generate_f2pymod = find_program('tools/generate_f2pymod.py')
  tempita = find_program('scipy/_build_utils/tempita.py')
+@@ -205,7 +205,7 @@ if use_system_libraries.contains('none')
+ elif use_system_libraries.contains('all')
+   all_system_libraries = true
+ elif use_system_libraries.contains('auto')
+-  auto_system_libraries = true 
++  auto_system_libraries = true
+ endif
+ 
+ if all_system_libraries or use_system_libraries.contains('boost.math')
 -- 
 2.51.0
 
