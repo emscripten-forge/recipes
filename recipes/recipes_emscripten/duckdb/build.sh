@@ -3,10 +3,7 @@ set -euo pipefail
 
 export SETUPTOOLS_SCM_PRETEND_VERSION="${PKG_VERSION}"
 
-# DuckDB-specific flags for wasm
-export DUCKDB_NO_THREADS=1
-export DUCKDB_EXTENSIONS="parquet;json;autocomplete"
-export SKIP_EXTENSIONS="jemalloc"
+# DuckDB-specific CMake flags for wasm via scikit-build-core
+export SKBUILD_CMAKE_DEFINE="BUILD_EXTENSIONS=parquet;json;autocomplete,BUILD_SHELL=OFF,BUILD_UNITTESTS=OFF,ENABLE_EXTENSION_AUTOLOADING=OFF,ENABLE_EXTENSION_AUTOINSTALL=OFF,OVERRIDE_GIT_DESCRIBE=v${PKG_VERSION}"
 
-cd tools/pythonpkg
 ${PYTHON} -m pip install . ${PIP_ARGS}
