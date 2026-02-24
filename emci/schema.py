@@ -40,6 +40,17 @@ class UrlSource(BaseModel):
 # Union type for source - can be either path-based or URL-based
 Source = Union[PathSource, UrlSource]
 
+class Build(BaseModel):
+    """Build configuration for the recipe"""
+    number: int
+
+    @field_validator("number")
+    @classmethod
+    def validate_build_number(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("build.number must be >= 0")
+        return v
+
 class About(BaseModel):
     license: str
     license_file: str | list[str]
@@ -48,12 +59,26 @@ class About(BaseModel):
 
 class Recipe(BaseModel):
     about: About
+    build: Build
     source: Optional[Union[Source, list[PathSource]]] = None
     tests: Optional[Any] = None
 
     @model_validator(mode='before')
     @classmethod
-    def check_tests_exists(cls, values):
+    def validate_recipe(cls, values):
+        """Validate recipe structure including build number and tests"""
+        # Check build number is present and >= 0
+        if 'build' not in values:
+            raise AttributeError("Recipe must have a 'build' section.")
+        build = values['build']
+        if isinstance(build, dict):
+            if 'number' not in build:
+                raise AttributeError("build.number is required and must be >= 0")
+            number = build.get('number')
+            if not isinstance(number, int) or number < 0:
+                raise ValueError("build.number must be an integer >= 0")
+
+        # Check tests
         if 'tests' not in values or values['tests'] is None:
             if 'outputs' in values:
                 for output_dict in values['outputs']:
