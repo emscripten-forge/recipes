@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Get an updated config.sub and config.guess
+cp $BUILD_PREFIX/share/gnuconfig/config.* . || true
+
+emconfigure ./configure \
+    CPPFLAGS="$CPPFLAGS -I$PREFIX/include" \
+    LDFLAGS="$LDFLAGS -L$PREFIX/lib" \
+    CFLAGS="$CFLAGS -fPIC" \
+    --prefix=$PREFIX \
+    --enable-shared=no
+
+make -j${CPU_COUNT}
+make install
