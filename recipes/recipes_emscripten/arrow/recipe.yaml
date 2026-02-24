@@ -30,7 +30,6 @@ cache:
       - setuptools-scm
       - numpy
       - pip
-
       - cross-r-base_${{ target_platform }}
       - pkg-config
       - r-assertthat
@@ -69,7 +68,9 @@ cache:
       - r-rlang
       - r-tidyselect
       - r-vctrs
-
+    ignore_run_exports:
+      from_package:
+        - cross-r-base_${{ target_platform }}
   build:
     script: build.sh
 
@@ -336,7 +337,8 @@ outputs:
           - lib/R/library/arrow/NAMESPACE
           - lib/R/library/arrow/R/*.R
     requirements:
-      
+      build:
+      - cross-r-base_${{ target_platform }}
       run:
       - arrow-cpp =${{ version }}
       - arrow-cpp-acero =${{ version }}
@@ -352,6 +354,7 @@ outputs:
       - r-rlang
       - r-tidyselect
       - r-vctrs
+      
     tests:
     - package_contents:
         lib:
