@@ -1,0 +1,42 @@
+context:
+  name: r-fs
+  version: 1.6.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 57d3a0844e2fec28e6fe9901d18e07d32a437dfe43c4b547757eb07360f5850a
+  patches:
+  - patches/0001-Patch-based-on-r-wasm.patch
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - pkg-config
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://fs.r-lib.org
+  license: MIT
+  summary: A cross-platform interface to file system operations, built on top of the 'libuv'
+    C library.
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rgaiacs

@@ -1,0 +1,50 @@
+context:
+  name: r-LiblineaR
+  version: 2.10-24
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version|replace("-", "_") }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 3949a566f36e0c7578b9aa3584873b52c1b2058cdd7a1f7c87d5073f57f027c8
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-r-base_${{ target_platform }}
+  host:
+  run:
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://dnalytics.com/software/liblinear/
+  license: GPL-2.0-only
+  summary: A wrapper around the LIBLINEAR C/C++ library for machine learning (available at <https://www.csie.ntu.edu.tw/~cjlin/liblinear/>).
+    LIBLINEAR is a simple library for solving large-scale regularized linear classification
+    and regression. It currently supports L2-regularized classification (such as logistic
+    regression, L2-loss linear SVM and L1-loss linear SVM) as well as L1-regularized
+    classification (such as L2-loss linear SVM and logistic regression) and L2-regularized
+    support vector regression (with L1- or L2-loss). The main features of LiblineaR
+    include multi-class classification (one-vs-the rest, and Crammer & Singer method),
+    cross validation for model selection, probability estimates (logistic regression
+    only) or weights for unbalanced data. The estimation of the models is particularly
+    fast as compared to other libraries.
+  license_family: GPL2
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
