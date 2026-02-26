@@ -97,3 +97,6 @@ if [ $FAILED -ne 0 ]; then
 fi
 
 echo "No shared memory or pthread usage detected."
+
+# Move files to share/
+mv ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten ${PREFIX}/share/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten
