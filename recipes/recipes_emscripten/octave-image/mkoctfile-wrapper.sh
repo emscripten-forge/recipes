@@ -1,63 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REAL="$BUILD_PREFIX/bin/mkoctfile.real"
+REAL_MKOCTFILE="$BUILD_PREFIX/bin/mkoctfile.real"
 
-filter_flags() {
-    echo "$1" \
-      | sed -E 's/-pthread//g' \
-      | sed -E 's/-fopenmp//g' \
-      | sed -E 's/-fstack-protector[^ ]*//g' \
-      | sed -E 's/-fexceptions//g' \
-      | sed -E 's/-march=[^ ]+//g' \
-      | sed -E 's/-mtune=[^ ]+//g' \
-      | sed -E 's/-s[[:space:]]*USE_PTHREADS=1//g' \
-      | sed -E 's/-s[[:space:]]*PTHREAD_POOL_SIZE=[^ ]+//g'
-}
+# Call real mkoctfile and capture output
+OUTPUT="$("$REAL_MKOCTFILE" "$@")"
+STATUS=$?
 
-# Intercept -p queries
-if [[ "${1:-}" == "-p" ]]; then
-    VAR="${2:-}"
-    RAW="$("$REAL" -p "$VAR")"
-    FILTERED="$(filter_flags "$RAW")"
-
-    if [[ "$VAR" == "CXXFLAGS" ]]; then
-        FILTERED="$FILTERED -fwasm-exceptions"
-    fi
-
-    echo "$FILTERED"
-    exit 0
+if [ $STATUS -ne 0 ]; then
+    exit $STATUS
 fi
 
-# Normal compile call
-filtered_args=()
-skip_next=0
+# Remove unwanted threading / parallel flags
+FILTERED="$(echo "$OUTPUT" | \
+    sed -E \
+        -e 's/(^|[[:space:]])-pthread(s)?([[:space:]]|$)/ /g' \
+        -e 's/(^|[[:space:]])-fopenmp([[:space:]]|$)/ /g' \
+        -e 's/(^|[[:space:]])-openmp([[:space:]]|$)/ /g' \
+        -e 's/(^|[[:space:]])-lgomp([[:space:]]|$)/ /g' \
+        -e 's/(^|[[:space:]])-liomp5([[:space:]]|$)/ /g' \
+        -e 's/(^|[[:space:]])-lomp([[:space:]]|$)/ /g' \
+)"
 
-for arg in "$@"; do
-    if [[ $skip_next -eq 1 ]]; then
-        skip_next=0
-        continue
-    fi
-
-    case "$arg" in
-        -pthread|-fopenmp|-fstack-protector|-fexceptions)
-            ;;
-        -march|-mtune)
-            skip_next=1
-            ;;
-        -march=*|-mtune=*|-fno-plt)
-            ;;
-        -sUSE_PTHREADS=1|-sPTHREAD_POOL_SIZE=*)
-            ;;
-        -shared)
-            filtered_args+=("-sSIDE_MODULE=1")
-            ;;
-        *)
-            filtered_args+=("$arg")
-            ;;
-    esac
-done
-
-filtered_args+=(-fwasm-exceptions)
-
-exec "$REAL" "${filtered_args[@]}"
+# Normalize whitespace
+echo "$FILTERED" | xargs
+exit 0
