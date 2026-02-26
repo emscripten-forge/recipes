@@ -39,9 +39,14 @@ chmod +x "$BUILD_PREFIX/bin/wasm-ld"
 
 export OCTAVE_HOME=$PREFIX
 export OCTAVE_EXEC_HOME=$BUILD_PREFIX
-
-
 export FCFLAGS="$(strip_cpu_flags "${FCFLAGS:-}")"
+
+# Replace mkoctfile with wrapper inside build env
+mv "$BUILD_PREFIX/bin/mkoctfile" "$BUILD_PREFIX/bin/mkoctfile.real"
+
+cp "${RECIPE_DIR}/mkoctfile-wrapper.sh" "$BUILD_PREFIX/bin/mkoctfile"
+
+chmod +x "$BUILD_PREFIX/bin/mkoctfile"
 
 log "Sanitized flags"
 echo "CFLAGS   = ${CFLAGS:-<unset>}"
@@ -56,15 +61,6 @@ log "Running pkg build (no install, keep build dir)"
 octave -W -H --eval "pkg build ${BUILD_DIR} ${PKG}-${VER}.tar.gz -verbose" || true
 
 log "Installing package into PREFIX"
-# echo "OCTAVE USED:"
-# which octave
-# echo "PREFIX = $PREFIX"
-# ls -lah "$PREFIX"
-# ls -lah "$PREFIX/bin"
-
-# echo "BUILD_PREFIX = $BUILD_PREFIX"
-# ls -lah "$BUILD_PREFIX"
-# ls -lah "$BUILD_PREFIX/bin"
 
 octave -W -H --eval "
 pkg prefix '${PREFIX}/share/octave/packages' '${PREFIX}/lib/octave/packages';
