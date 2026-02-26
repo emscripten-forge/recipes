@@ -1,50 +1,72 @@
 context:
-  name: msgpack
+  name: msgpack-python
   version: 1.1.2
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
 
 source:
 - url: https://github.com/msgpack/msgpack-python/archive/refs/tags/v${{ version }}.tar.gz
   sha256: b8c0dc52c93604d4f2d04c6bc19bfac0a10229ee06277e1140bacc75005fe85a
 
 build:
-  number: 1
-  script:
-  - export MSGPACK_PUREPYTHON=1
-  - ${PYTHON} -m pip install . ${PIP_ARGS}
+  number: 0
 
-  files:
-    exclude:
-    - '**.dist-info/**'
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-    - '**/test_*.py'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
-requirements:
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
   build:
-  - ${{ compiler("c") }}
-  - cross-python_emscripten-wasm32
-  - python
-  - pip
-  - cython
-  host:
-  - python
-
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_import_msgpack.py
+    script:
+    - export MSGPACK_PUREPYTHON=1
+    - ${PYTHON} -m pip install . ${PIP_ARGS}
+    files:
+      exclude:
+      - '**.dist-info/**'
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
   requirements:
     build:
-    - pytester
+    - ${{ compiler("c") }}
+    - cross-python_emscripten-wasm32
+    - python
+    - pip
+    - cython
+    host:
+    - python
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_msgpack.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+- package:
+    name: msgpack
+    version: ${{ version }}
+  build:
+    noarch: python
+  requirements:
+    host:
+    - python
     run:
-    - pytester-run
+    - python
+    - ${{ pin_subpackage('msgpack-python', exact=True) }}
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_msgpack.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
 
 about:
   license: Apache-2.0
