@@ -13,14 +13,27 @@ for arg in "$@"; do
   fi
 
   case "$arg" in
+    # remove arch tuning
     -march|-mtune)
       skip_next=1
       ;;
     -march=*|-mtune=*|-fno-plt)
       ;;
+
+    # remove pthread / threading flags
+    -pthread|-pthreads|-fopenmp|-openmp)
+      ;;
+    -lpthread|-lpthreads|-lgomp|-lomp|-liomp5)
+      ;;
+    -sUSE_PTHREADS=*|-sPTHREAD*|-sPROXY_TO_PTHREAD*)
+      ;;
+
+    # replace shared with side module
     -shared)
       filtered+=("-sSIDE_MODULE=1")
       ;;
+
+    # keep everything else
     *)
       filtered+=("$arg")
       ;;
