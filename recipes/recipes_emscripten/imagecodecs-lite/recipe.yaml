@@ -12,11 +12,12 @@ source:
 
 build:
   number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
   files:
     exclude:
+    - '**/tests/**'
     - '**.dist-info/**'
-    - '**/*.pyx'
     - '**/__pycache__/**'
     - '**/*.pyc'
     - '**/test_*.py'
@@ -26,15 +27,16 @@ build:
 
 requirements:
   build:
-  - ${{ compiler('c') }}
+  - python
+  - cross-python_${{ target_platform }}
   - cython
-  - cross-python_emscripten-wasm32
-  - python
   - numpy
-  - pip
+  - ${{ compiler("c") }}
   host:
-  - numpy
   - python
+  - pip
+  - setuptools
+  - numpy
   run:
   - python
 
