@@ -68,12 +68,10 @@ pkg install -nodeps ${BUILD_DIR}/*.tar.gz;
 pkg list;
 "
 
-mv ${PREFIX}/lib/octave/packages/${PKG}-${VER}/x86_64-conda-linux-gnu-api-v60 ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten
-
 echo
 echo "==== Checking .oct files for shared memory / pthread usage ===="
 
-OCT_DIR="${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten"
+OCT_DIR="${PREFIX}/lib/octave/packages/${PKG}-${VER}/x86_64-conda-linux-gnu-api-v60"
 
 FAILED=0
 
@@ -97,6 +95,3 @@ if [ $FAILED -ne 0 ]; then
 fi
 
 echo "No shared memory or pthread usage detected."
-
-# Move files to share/
-mv ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten ${PREFIX}/share/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten
