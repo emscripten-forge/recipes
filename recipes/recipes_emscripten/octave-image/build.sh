@@ -69,3 +69,31 @@ pkg list;
 "
 
 mv ${PREFIX}/lib/octave/packages/${PKG}-${VER}/x86_64-conda-linux-gnu-api-v60 ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten
+
+echo
+echo "==== Checking .oct files for shared memory / pthread usage ===="
+
+OCT_DIR="${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten"
+
+FAILED=0
+
+for f in "$OCT_DIR"/*.oct; do
+    echo "Inspecting $f"
+
+    if wasm-objdump -x "$f" | grep -q "shared"; then
+        echo "Error: shared memory detected in $f"
+        FAILED=1
+    fi
+
+    if wasm-objdump -x "$f" | grep -iq 'thread\|pthread'; then
+        echo "Error: pthread/thread symbols detected in $f"
+        FAILED=1
+    fi
+done
+
+if [ $FAILED -ne 0 ]; then
+    echo "Thread/shared memory usage detected — failing build."
+    exit 1
+fi
+
+echo "No shared memory or pthread usage detected."
