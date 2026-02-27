@@ -1,0 +1,81 @@
+context:
+  name: reproject
+  version: 0.19.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/r/reproject/reproject-${{ version }}.tar.gz
+  sha256: ba5d6ac9341258a9e270dc87805f3bd7409253ed73b47ae5fa68903b49c172c9
+  patches:
+  - patches/no_dask_image.patch
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython >=3.1
+  - numpy
+  - ${{ compiler("c") }}
+  host:
+  - python
+  - pip
+  - setuptools
+  - setuptools_scm
+  - cython >=3.1
+  - extension-helpers >=1.3,<2
+  - numpy
+  run:
+  - python
+  - numpy >=1.23
+  - astropy >=5.0
+  - scipy >=1.9
+  - shapely
+  - zarr >=2.17.0
+  - fsspec >=2021.9
+  - pillow >=10.0
+  - astropy-healpix >=1.0
+  - dask-core >=2024.4.1
+  # - dask-image >=2025.11.0  # dask-image depends on distributed which has dependencies that can't be installed on this platform
+  - pyavm >=0.9.6
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_reproject.py
+
+about:
+  homepage: https://reproject.readthedocs.io/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Image reprojection (resampling) methods for astronomical data
+  description: |
+    The reproject package implements image reprojection (resampling) methods
+    for astronomical data.
+
+extra:
+  recipe-maintainers:
+  - astrofrog

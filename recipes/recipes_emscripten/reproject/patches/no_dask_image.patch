@@ -1,0 +1,21 @@
+diff --git a/reproject/array_utils.py b/reproject/array_utils.py
+--- a/reproject/array_utils.py
++++ b/reproject/array_utils.py
+@@ -1,6 +1,4 @@
+ import numpy as np
+-from dask_image.ndinterp import map_coordinates as dask_image_map_coordinates
+-from dask_image.ndinterp import spline_filter
+ from scipy.ndimage import spline_filter as scipy_spline_filter
+
+ __all__ = ["map_coordinates", "dask_map_coordinates", "sample_array_edges", "ArrayWrapper"]
+@@ -85,6 +83,10 @@ def _clip_coords(image, coords):
+
+ def dask_map_coordinates(image, coords, output=None, **kwargs):
+
++    raise NotImplementedError(
++        "dask_map_coordinates is not supported on Emscripten/WebAssembly. "
++        "Use map_coordinates with non-dask arrays instead."
++    )
+     cval = kwargs.get("cval", 0.0)
+
+     original_shape = image.shape
