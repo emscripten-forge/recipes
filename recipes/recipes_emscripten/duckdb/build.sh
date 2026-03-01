@@ -1,10 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Ensure the native extension is built as a wasm side module
-export CFLAGS="$CFLAGS -fPIC -sSIDE_MODULE=1 -sWASM_BIGINT"
-export CXXFLAGS="$CXXFLAGS -fPIC -sSIDE_MODULE=1 -sWASM_BIGINT"
-export LDFLAGS="$LDFLAGS -sSIDE_MODULE=1 -sWASM_BIGINT"
+# Setup emscripten toolchain for scikit-build-core
+emscripten_root=$(em-config EMSCRIPTEN_ROOT)
+toolchain_path="${emscripten_root}/cmake/Modules/Platform/Emscripten.cmake"
+
+export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path} -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake"
 
 # DuckDB-specific CMake flags for wasm passed via scikit-build-core config settings
 ${PYTHON} -m pip install . ${PIP_ARGS} \
