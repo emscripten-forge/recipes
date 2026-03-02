@@ -47,4 +47,5 @@ filtered+=("-sEXPORT_ALL=1")
 
 
 echo "Filtered arguments: ${filtered[*]}"
+echo "Original arguments: $*"
 exec "$REAL_EMPP" "${filtered[@]}"
