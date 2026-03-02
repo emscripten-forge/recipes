@@ -44,4 +44,7 @@ done
 filtered+=("-sLINKABLE=1")
 # -s EXPORT_ALL=1
 filtered+=("-sEXPORT_ALL=1")
+
+
+echo "Filtered arguments: ${filtered[*]}"
 exec "$REAL_EMPP" "${filtered[@]}"
