@@ -97,3 +97,9 @@ if [ $FAILED -ne 0 ]; then
 fi
 
 echo "No shared memory or pthread usage detected."
+
+# print the size of the .oct files
+echo "Sizes of .oct files:"
+for f in "$OCT_DIR"/*.oct; do
+    ls -lh "$f"
+done

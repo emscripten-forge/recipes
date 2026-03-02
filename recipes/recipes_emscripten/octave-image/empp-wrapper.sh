@@ -40,4 +40,6 @@ for arg in "$@"; do
   esac
 done
 
+# add linkable to filteredargs
+filtered+=("-sLINKABLE=1")
 exec "$REAL_EMPP" "${filtered[@]}"
