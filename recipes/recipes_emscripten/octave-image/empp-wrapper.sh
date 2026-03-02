@@ -42,4 +42,6 @@ done
 
 # add linkable to filteredargs
 filtered+=("-sLINKABLE=1")
+# -s EXPORT_ALL=1
+filtered+=("-sEXPORT_ALL=1")
 exec "$REAL_EMPP" "${filtered[@]}"
