@@ -5,7 +5,7 @@ if [ -z ${CONDA_BUILD+x} ]; then
 fi
 ## End of preamble
 
-cd work 
+
 SOURCE_DIR=$(pwd)/image/src
 OCTAVE_VER="10.3.0"
 
