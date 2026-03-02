@@ -129,6 +129,12 @@ rm ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten/*.oct
 cp ${CUSTOM_BUILD_DIR}/*.oct ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten/
 
 
+# copy everything from ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten/
+# to ${PREFIX}/share/octave/packages/${PKG}-${VER}/
+cp -r ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten/* ${PREFIX}/share/octave/packages/${PKG}-${VER}/
+
+
+
 echo
 echo "==== Checking .oct files for shared memory / pthread usage ===="
 
