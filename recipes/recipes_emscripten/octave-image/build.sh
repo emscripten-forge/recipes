@@ -1,5 +1,33 @@
+#!/bin/bash
+## Start of bash preamble
+if [ -z ${CONDA_BUILD+x} ]; then
+    source "/Users/thorstenbeier/src/recipes/output/bld/rattler-build_octave-image_1772446917/work/build_env.sh"
+fi
+## End of preamble
+
+cd work 
+SOURCE_DIR=$(pwd)/image/src
+OCTAVE_VER="10.3.0"
+
+CUSTOM_BUILD_DIR=$(pwd)/build
+mkdir -p "$CUSTOM_BUILD_DIR"
+
+# compile each *.cc file to a *.oct file using emcc with the appropriate flags
+for f in "$SOURCE_DIR"/*.cc; do
+    echo "Compiling $f"
+    base=$(basename "$f" .cc)
+    emcc "$f" -o "${CUSTOM_BUILD_DIR}/${base}.oct" \
+        -sSIDE_MODULE=1 -sEXPORT_ALL=1 -sLINKABLE=1 \
+        -fPIC -O2 \
+        -I "$PREFIX/include/octave-${OCTAVE_VER}" 
+done
+
+
+
 #!/usr/bin/env bash
 set -euxo pipefail
+
+
 
 PKG=image
 VER=2.18.1
@@ -33,6 +61,30 @@ export CXX="$WRAPPER"
 export CXXFLAGS=""
 echo "Using CXX=$CXX"
 ls -l "$CXX"
+
+
+# Force mkoctfile to use emcc and the side-module flags
+export MKOCTFILE_CC="emcc"
+export MKOCTFILE_CXX="em++"
+
+export BUILD_EXEEXT=".js"
+export cross_compiling=yes
+# Tell the script what the build machine is vs the target
+export build_alias="aarch64-apple-darwin"
+export host_alias="wasm32-unknown-emscripten"
+export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1 -sEXPORT_ALL=1 -sLINKABLE=1"
+
+
+
+
+# Inject the WASM-specific side-module flags into the linker stage
+export LDFLAGS="-sSIDE_MODULE=1 -sEXPORT_ALL=1 -sLINKABLE=1"
+
+# Ensure the compiler knows we are in a WASM/PIC environment
+export CXXFLAGS="-fPIC -O2"
+
+
+
 
 cp "${RECIPE_DIR}/wasm-ld-wrapper.sh" "$BUILD_PREFIX/bin/wasm-ld"
 chmod +x "$BUILD_PREFIX/bin/wasm-ld"
@@ -69,6 +121,13 @@ pkg list;
 "
 
 mv ${PREFIX}/lib/octave/packages/${PKG}-${VER}/x86_64-conda-linux-gnu-api-v60 ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten
+
+# remove all *.oct files in ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten
+rm ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten/*.oct
+
+# copy the one we build by hand into the package directory
+cp ${CUSTOM_BUILD_DIR}/*.oct ${PREFIX}/lib/octave/packages/${PKG}-${VER}/wasm32-unknown-emscripten/
+
 
 echo
 echo "==== Checking .oct files for shared memory / pthread usage ===="
