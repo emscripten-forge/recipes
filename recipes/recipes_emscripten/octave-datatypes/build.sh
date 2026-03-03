@@ -21,7 +21,7 @@ cp -r "$DATATYPES_DIR"/inst/* "${M_FILE_INSTALL_DIR}/"
 
 cd "$SOURCE_DIR"
 chmod +x $RECIPE_DIR/fake_mkoctfile.sh
-make -f Makefile.in MKOCTFILE="$RECIPE_DIR/fake_mkoctfile.sh" 
+make -f Makefile MKOCTFILE="$RECIPE_DIR/fake_mkoctfile.sh" 
 
 # copy the generated .oct files into the OCT_INSTALL_DIR
 mkdir -p "$OCT_INSTALL_DIR"
