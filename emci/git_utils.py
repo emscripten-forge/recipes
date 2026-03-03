@@ -4,6 +4,8 @@ import json
 from contextlib import contextmanager
 
 def find_files_with_changes(old, new):
+    print("DEBUG: old", old)
+    print("DEBUG: new", new)
     cmd = ["git", "diff", "--name-only", old, new]
     result = subprocess.run(
         cmd,
@@ -17,6 +19,8 @@ def find_files_with_changes(old, new):
         print(error_str)
 
     files_with_changes = output_str.splitlines()
+
+    print("DEBUG: files_with_changes", files_with_changes)
     return files_with_changes
 
 def set_git_user(user, email):
