@@ -6,7 +6,8 @@ from contextlib import contextmanager
 def find_files_with_changes(old, new):
     print("DEBUG: old", old)
     print("DEBUG: new", new)
-    cmd = ["git", "diff", "--name-only", old, new]
+    # origin/main...HEAD shows the unique files changed in HEAD
+    cmd = ["git", "diff", "--name-only", f"{old}...{new}"]
     result = subprocess.run(
         cmd,
         shell=False,
