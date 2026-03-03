@@ -6,7 +6,7 @@ export OCTAVE_VER="10.3.0"
 
 # atm we install the *oct files in the same dir
 # as the *.m files, without any arch-specific subdir
-M_FILE_INSTALL_DIR=$PREFIX/share/octave/packages/${PKG}-${PKG_VERSION}
+M_FILE_INSTALL_DIR=$PREFIX/share/octave/packages/image-${PKG_VERSION}
 OCT_INSTALL_DIR=$M_FILE_INSTALL_DIR/
 
 
