@@ -1,0 +1,72 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-combinat
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-combinat/passagemath_combinat-${{ version }}.tar.gz
+  sha256: 80e036953e912742e1406c2372fadcd110f24458e4e98a776af3fb9c49bd38aa
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - symmetrica
+  - passagemath-categories
+  run:
+  - python
+  - gmpy2
+  - cysignals
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_combinat.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Algebraic combinatorics, combinatorial representation theory'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides "everything combinatorial", except for graphs.
+    It consists of about 350 first-party Python and Cython modules and also provides
+    the functionality of SYMMETRICA, the library for representation theory of the
+    symmetric group, combinatorics of tableaux, symmetric functions, etc.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_combinat.py
+  recipe-maintainers:
+  - mkoeppe

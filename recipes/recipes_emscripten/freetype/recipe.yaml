@@ -1,31 +1,58 @@
 context:
   version: 2.14.1
 
-package:
-  name: freetype
-  version: ${{ version }}
+recipe:
+  name: freetype-split
 
 source:
   url: https://download.savannah.gnu.org/releases/freetype/freetype-${{ version }}.tar.gz
   sha256: 174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34
 
 build:
-  number: 1
+  number: 2
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - cmake
-  - make
-  host:
-  - libpng
-  - zlib
+outputs:
+  - package:
+      name: freetype
+      version: ${{ version }}
 
-tests:
-- script:
-  - test -f $PREFIX/include/freetype2/freetype/freetype.h
-  - test -f $PREFIX/include/freetype2/ft2build.h
-  - test -f $PREFIX/lib/libfreetype.a
+    build:
+      script: build_static.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - cmake
+      - make
+      host:
+      - libpng
+      - zlib
+
+    tests:
+    - script:
+      - test -f $PREFIX/include/freetype2/freetype/freetype.h
+      - test -f $PREFIX/include/freetype2/ft2build.h
+      - test -f $PREFIX/lib/libfreetype.a
+
+  - package:
+      name: freetype-shared
+      version: ${{ version }}
+
+    build:
+      script: build_shared.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - cmake
+      - ninja
+      host:
+      - libpng
+      - zlib
+
+    tests:
+    - script:
+      - test -f $PREFIX/include/freetype2/freetype/freetype.h
+      - test -f $PREFIX/include/freetype2/ft2build.h
+      - test -f $PREFIX/lib/libfreetype.so
 
 about:
   homepage: https://www.freetype.org/

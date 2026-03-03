@@ -27,3 +27,7 @@ rm unzstd zstdcat
 ln -s ./zstd.js unzstd
 ln -s ./zstd.js zstdcat
 ln -s ./zstd.js zstd
+
+# Install CMake config file with version substitution
+mkdir -p ${PREFIX}/lib/cmake/zstd
+sed "s/@VERSION@/${PKG_VERSION}/g" ${RECIPE_DIR}/zstdConfig.cmake > ${PREFIX}/lib/cmake/zstd/zstdConfig.cmake

@@ -7,14 +7,33 @@ source:
   patches:
   - patches/fix-threading-and-font-cache.patch
   - patches/static-cast.patch
+
 build:
-  number: 1
+  number: 4
+  files:
+    exclude:
+    - '**/test_*.py'
+
 outputs:
 - package:
     name: matplotlib-base
     version: ${{ version }}
   build:
     script: build-base.sh
+    files:
+      exclude:
+      - "**/*.pyi"
+      - "**/tests/**"
+      - "**.dist-info/**"
+      - "**/*.ini"
+      - "**/__pycache__/**"
+      - "**/*.pyx"
+      - "**/*.pxd"
+      - "**/*.pyc"
+      - "**/test_*.py"
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
   requirements:
     build:
     - python
@@ -65,6 +84,8 @@ outputs:
 - package:
     name: matplotlib
     version: ${{ version }}
+  build:
+    noarch: python
   requirements:
     host:
     - python
@@ -81,6 +102,7 @@ outputs:
       - pytester
       run:
       - pytester-run
+
 about:
   homepage: http://matplotlib.org/
   license: PSF-2.0

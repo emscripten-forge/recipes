@@ -1,0 +1,69 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-objects
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-objects/passagemath_objects-${{ version }}.tar.gz
+  sha256: 6823a0665f187a729bf34d941db0afb31190e56647d2b2315bac4b76574dba2a
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  run:
+  - python
+  - gmpy2
+  - cysignals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_objects.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'passagemath: Sage objects, elements, parents, categories, coercion, metaclasses'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    Distribution of a small part of the Sage library.
+    Sage extends Python's object system by dynamic mix-in classes that are driven by categories
+    and axioms. It is loosely modeled on concepts of category theory and inspired by
+    Scratchpad/Axiom/FriCAS, Magma, and MuPAD. This distribution package makes Sage objects,
+    the element/parent framework, basic categories and functors, the coercion system and the
+    related metaclasses available. It only depends on the basic arithmetic libraries.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_objects.py
+  recipe-maintainers:
+  - mkoeppe

@@ -68,11 +68,15 @@ def main():
 
     backends = [
         (
-            BackendType.browser_main,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+            BackendType.browser_worker,
+            lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=False)
         ),
         (
             BackendType.browser_worker,
+            lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=True)
+        ),
+        (
+            BackendType.browser_main,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
         )
     ]
@@ -87,7 +91,8 @@ def main():
         print(
             "================================================================================"
         )
-        print(f"Test backend: {backend_type}")
+        preload_shared_libs = backend_kwargs_factory().get("preload_shared_libs", True)
+        print(f"Test backend: {backend_type}, preload_shared_libs: {preload_shared_libs}")
         print(
             "================================================================================"
         )
@@ -111,7 +116,7 @@ def main():
                 backend_kwargs=backend_kwargs_factory(),
             )
         except Exception as e:
-            print(f"Test  backend : {backend_type} FAILED {e}")
+            print(f"Test  backend : {backend_type}, preload_shared_libs: {preload_shared_libs} FAILED {e}")
             exceptions.append(e)
     
     if exceptions:

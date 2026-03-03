@@ -142,7 +142,7 @@ requirements:
 **Example recipes**:
 
 * [cryptography](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/cryptography)
-* [pydantic-core](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/cryptography)
+* [pydantic-core](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/pydantic-core)
 * [pycrdt](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/pycrdt)
 
 ## R Packages

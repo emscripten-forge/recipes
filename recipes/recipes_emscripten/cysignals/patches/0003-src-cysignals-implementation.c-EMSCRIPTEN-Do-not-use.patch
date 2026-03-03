@@ -1,0 +1,36 @@
+From 2ce8b6b240072d218ece162fb3705ad318472a46 Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Wed, 24 Jan 2024 23:24:45 -0800
+Subject: [PATCH 3/3] src/cysignals/implementation.c [EMSCRIPTEN]: Do not use
+ sigaltstack
+
+---
+ src/cysignals/implementation.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/cysignals/implementation.c b/src/cysignals/implementation.c
+index 5f8f3e5..ae27eee 100644
+--- a/src/cysignals/implementation.c
++++ b/src/cysignals/implementation.c
+@@ -632,7 +632,7 @@ static void _sig_off_warning(const char* file, int line)
+ 
+ static void setup_alt_stack(void)
+ {
+-#if HAVE_SIGALTSTACK
++#if HAVE_SIGALTSTACK && !defined(__EMSCRIPTEN__)
+     /* Space for the alternate signal stack. The size should be
+      * of the form MINSIGSTKSZ + constant. The constant is chosen rather
+      * ad hoc but sufficiently large. */
+@@ -675,7 +675,9 @@ static void setup_cysignals_handlers(void)
+      * After setting up the trampoline, we reset the signal mask. */
+     sigprocmask(SIG_BLOCK, &sa.sa_mask, &default_sigmask);
+ #endif
++#if !defined(__EMSCRIPTEN__)
+     setup_trampoline();
++#endif
+ #if HAVE_SIGPROCMASK
+     sigprocmask(SIG_SETMASK, &default_sigmask, &sigmask_with_sigint);
+ #endif
+-- 
+2.51.1
+
