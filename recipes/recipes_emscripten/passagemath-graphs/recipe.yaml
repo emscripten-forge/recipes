@@ -1,0 +1,72 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-graphs
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-graphs/passagemath_graphs-${{ version }}.tar.gz
+  sha256: 4cadf729d6639b9503139085d96dbe168c1248d6aaa4a7d2a2a760d0a83d8373
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - boost-cpp
+  - passagemath-categories
+  run:
+  - python
+  - gmpy2
+  - cysignals
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_graphs.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Graphs, posets, hypergraphs, designs, abstract complexes, combinatorial polyhedra, abelian sandpiles, quivers'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides directed and undirected graphs, but also posets, combinatorial designs,
+    abstract simplicial complexes, quivers, etc.  It consists of over 170 first-party Python
+    and Cython modules and uses the Boost Graph Library, with additional functionality from
+    NetworkX and several other libraries.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_graphs.py
+  recipe-maintainers:
+  - mkoeppe

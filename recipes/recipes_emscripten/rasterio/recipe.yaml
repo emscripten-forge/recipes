@@ -1,0 +1,64 @@
+context:
+  version: 1.5.0
+  name: rasterio
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1e0ea56b02eea4989b36edf8e58a5a3ef40e1b7edcb04def2603accd5ab3ee7b
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cython
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - pip
+  - numpy
+  - setuptools
+  host:
+  - numpy
+  - libgdal-core
+  - proj-static
+  - python
+  - geos-static
+  - libiconv
+  - libtiff
+  - libpng
+  - zlib
+  run:
+  - libgdal-core
+  - numpy
+  - affine
+  - attrs
+  - certifi
+  - click
+  - cligj
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_rasterio.py
+
+about:
+  homepage: https://github.com/rasterio/rasterio
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Fast and direct raster I/O for use with Numpy and SciPy
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes

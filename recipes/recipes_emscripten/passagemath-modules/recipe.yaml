@@ -1,0 +1,79 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-modules
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-modules/passagemath_modules-${{ version }}.tar.gz
+  sha256: fcbb1cc6a6c3df17be3bfa1ecaa8538d30122a354871d8f4b7ebdbd600f53ad8
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - jinja2
+  - pkgconfig
+  - numpy
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - gsl
+  - gmpy2
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  run:
+  - python
+  - gmpy2
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+  - mpmath
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_modules.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Vectors, matrices, tensors, vector spaces, affine spaces, modules and algebras, additive groups, quadratic forms, homology, coding theory, matroids'
+  description: |
+   Distribution of a part of the Sage library.
+   It provides vector spaces, modules, matrices, tensors, homology, coding theory, abelian groups,
+   matroids, etc.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_modules.py
+  recipe-maintainers:
+  - mkoeppe

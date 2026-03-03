@@ -11,25 +11,35 @@ source:
   sha256: 390973b98af22bda85c29dcf6f008ba0d626321e9bd3f5a9d7a43e5690ea69ea
 
 build:
-  number: 0
+  number: 1
   script: ${{ PYTHON }} -m pip install . --no-deps -vvv
 
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
-    - python
-    - numpy
+  - ${{ compiler("cxx") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - numpy
   host:
-    - python
-    - setuptools
-    - pip
-    - setuptools-scm
-    - wheel
-    - numpy
+  - python
+  - setuptools
+  - pip
+  - setuptools-scm
+  - wheel
+  - numpy
   run:
-    - python
-    - numpy
+  - python
+  - numpy
 
 tests:
 - script: pytester

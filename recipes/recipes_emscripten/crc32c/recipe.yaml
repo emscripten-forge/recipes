@@ -11,31 +11,41 @@ source:
   sha256: f91b144a21eef834d64178e01982bb9179c354b3e9e5f4c803b0e5096384968c
 
 build:
-  number: 0
+  number: 1
   script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - cross-python_${{ target_platform }}
-    - python
-    - crossenv
-    - pip
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - python
+  - crossenv
+  - pip
   host:
-    - python
+  - python
   run:
-    - python
+  - python
 
 tests:
-  - script: pytester
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
-    files:
-      recipe:
-        - test_crc32c.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_crc32c.py
 
 about:
   homepage: https://github.com/ICRAR/crc32c
@@ -45,4 +55,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten

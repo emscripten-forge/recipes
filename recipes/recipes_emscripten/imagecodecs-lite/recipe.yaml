@@ -1,0 +1,64 @@
+context:
+  name: imagecodecs-lite
+  version: 2019.12.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 95d18aa13ceb1b18a6109433b42d054e13b9a295cba96c08ab719f864f589d68
+  patches:
+  - patches/0001-fix-numpy-setup.patch
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython
+  - numpy
+  - ${{ compiler("c") }}
+  host:
+  - python
+  - pip
+  - setuptools
+  - numpy
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_imagecodecs_lite.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: Subset of image transformation, compression, and decompression codecs
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://www.lfd.uci.edu/~gohlke
+
+extra:
+  recipe-maintainers:
+  - astrofrog

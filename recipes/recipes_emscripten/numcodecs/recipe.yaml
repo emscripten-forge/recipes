@@ -7,45 +7,56 @@ package:
   version: ${{ version }}
 
 source:
-  - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-    sha256: 0d0fb60852f84c0bd9543cc4d2ab9eefd37fc8efcc410acd4777e62a1d300318
-    patches:
-      - patches/setup.patch
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0d0fb60852f84c0bd9543cc4d2ab9eefd37fc8efcc410acd4777e62a1d300318
+  patches:
+  - patches/setup.patch
 
 build:
-  number: 0
+  number: 1
 
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
-    - ${{ compiler("c") }}
-    - cross-python_emscripten-wasm32
-    - cython
-    - python
-    - pip
-    - setuptools_scm
-    - numpy
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - cython
+  - python
+  - pip
+  - setuptools_scm
+  - numpy
   host:
-    - numpy
-    - python
+  - numpy
+  - python
   run:
-    - numpy
-    - msgpack
-    - deprecated
-    - typing_extensions
+  - numpy
+  - msgpack
+  - deprecated
+  - typing_extensions
 
 tests:
-  - script: pytester
-    files:
-      recipe:
-        - test_import_numcodecs.py
-    requirements:
-      build:
-        - pytester
-      run:
-        - pytester-run
+- script: pytester
+  files:
+    recipe:
+    - test_import_numcodecs.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   homepage: https://github.com/zarr-developers/numcodecs
   license: MIT
   license_file: LICENSE.txt
-  summary: A Python package providing buffer compression and transformation codecs for use in data storage and communication applications.
+  summary: A Python package providing buffer compression and transformation codecs for use in data storage and 
+    communication applications.

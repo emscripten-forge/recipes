@@ -6,13 +6,23 @@ package:
   version: ${{ version }}
 
 source:
+  url: https://github.com/symengine/symengine.py/releases/download/v${{ version }}/symengine.py-${{ version }}.tar.gz
   sha256: 3e79d39af5e9f024cd4b8d1372314ac2b83cace7d49cdbad482b4aec5b04c37b
-  url: https://github.com/symengine/symengine.py/releases/download/v${{ version }}/symengine.py-${{
-    version }}.tar.gz
 
 build:
-  number: 0
+  number: 1
 
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/*.pxd'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 requirements:
   build:
   - cross-python_${{ target_platform }}
@@ -43,14 +53,14 @@ tests:
     recipe:
     - test_symengine.py
 
-
 about:
   homepage: https://github.com/symengine/symengine.py
   license: MIT
   license_file: LICENSE
   summary: Python wrappers to the C++ library SymEngine.
   description: |
-    Python wrappers to the C++ library SymEngine, a fast C++ symbolic manipulation library.
+    Python wrappers to the C++ library SymEngine, a fast C++ symbolic
+    manipulation library.
   documentation: https://github.com/symengine/symengine.py
   repository: https://github.com/symengine/symengine.py
 

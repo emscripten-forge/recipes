@@ -1,0 +1,51 @@
+context:
+  name: python-igraph
+  version: 1.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/i/igraph/igraph-${{ version }}.tar.gz
+  sha256: 2414d0be2e4d77ee5357807d100974b40f6082bb1bb71988ec46cfb6728651ee
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pkgconfig
+  - pip
+  - setuptools
+  host:
+  - python
+  - igraph
+  run:
+  - python
+  - texttable >=1.6.2
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_igraph.py
+
+about:
+  homepage: https://igraph.org/python
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Python interface to the igraph high performance graph library
+  repository: https://github.com/igraph/python-igraph
+
+extra:
+  recipe-maintainers:
+  - wolfv
