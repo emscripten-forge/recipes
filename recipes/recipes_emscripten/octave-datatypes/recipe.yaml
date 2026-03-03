@@ -1,0 +1,40 @@
+context:
+  name: datatypes
+  version: "1.1.9"
+
+package:
+  name: octave-${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pr0m1th3as/datatypes/releases/download/release-${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d3757195955b3d8ccf77b309f509b9313debad9b95d72004dea66a7687852e47
+  target_directory: ${{ name }}
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+    - wabt
+    - octave 10.3.*
+  host:
+    - octave 10.3.*
+
+tests:
+  - package_contents:
+      files:
+        - share/octave/packages/${{ name }}-${{ version }}/array2table.m
+
+about:
+  homepage: https://gnu-octave.github.io/packages/${{ name }}/
+  license: GPL-3.0-or-later
+  license_file: ${{ name }}/LICENSE.txt
+  summary: Extra data types for GNU Octave
+
+extra:
+  recipe-maintainers:
+    - arjxn-py
