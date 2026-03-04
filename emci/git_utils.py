@@ -4,7 +4,9 @@ import json
 from contextlib import contextmanager
 
 def find_files_with_changes(old, new):
-    cmd = ["git", "diff", "--name-only", old, new]
+    # `origin/main...HEAD` shows the unique files changed in HEAD
+    # and ignores changes in origin/main after the branch split
+    cmd = ["git", "diff", "--name-only", f"{old}...{new}"]
     result = subprocess.run(
         cmd,
         shell=False,
@@ -17,6 +19,7 @@ def find_files_with_changes(old, new):
         print(error_str)
 
     files_with_changes = output_str.splitlines()
+
     return files_with_changes
 
 def set_git_user(user, email):
