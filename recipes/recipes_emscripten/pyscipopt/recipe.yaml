@@ -1,0 +1,60 @@
+context:
+  version: 6.1.0
+
+package:
+  name: pyscipopt
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/pyscipopt/pyscipopt-${{ version }}.tar.gz
+  sha256: 7a6b144fd3a7485a85ffa2e6eea71d8251f2ca8bbc84cb2b36d6bb08d1c17e17
+
+build:
+  number: 0
+  script: |
+    ${{ PYTHON }} -m pip install .
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - cython
+  - numpy
+  host:
+  - python
+  - scip
+  - numpy
+  run:
+  - python
+  - numpy
+  - gmp
+  - soplex
+  - scip
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_ppl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'Python interface and modeling environment for SCIP'
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_pyscipopt.py
+  recipe-maintainers:
+  - mkoeppe
