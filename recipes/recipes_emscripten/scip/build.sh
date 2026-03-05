@@ -10,9 +10,11 @@ cmake ${CMAKE_ARGS} ..                          \
     -GNinja                                     \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}          \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}       \
+    -DCMAKE_INSTALL_LIBDIR=lib                  \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON        \
     -DCMAKE_BUILD_TYPE=Release                  \
     -DSHARED=OFF                                \
+    -DREADLINE=OFF                              \
     -DZLIB_LIBRARY="${PREFIX}/lib/libz.a"       \
     -DZLIB_INCLUDE_DIR="${PREFIX}/include"      \
     -DSTATIC_GMP=ON                             \
@@ -22,7 +24,9 @@ cmake ${CMAKE_ARGS} ..                          \
     -DMPFR_DIR="${PREFIX}"                      \
     -DMPFR_INCLUDE_DIRS="${PREFIX}/include"     \
     -DMPFR_LIBRARY="${PREFIX}/lib/libmpfr.a"    \
-    -DPAPILO=OFF
+    -DPAPILO=OFF                                \
+    -DZIMPL=OFF                                 \
+    -DIPOPT=OFF
 
 ninja install
 
