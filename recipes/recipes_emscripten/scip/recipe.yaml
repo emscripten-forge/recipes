@@ -1,0 +1,43 @@
+context:
+  version: 10.0.1
+
+package:
+  name: scip
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipopt/scip/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: abf11e86f5d2025a8f5652e818ff02eb60e41bcf61f6ad4d2ddbe6762ac7f7d0
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - boost-cpp
+  - gmp
+  - mpfr
+  - zlib
+  - soplex
+  # omitted for now: papilo
+
+tests:
+- script:
+  - test -d ${PREFIX}/include/scip
+- package_contents:
+    files:
+      - lib/libscip.a
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Mixed integer programming solver
+  homepage: https://github.com/scipopt/scip
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
