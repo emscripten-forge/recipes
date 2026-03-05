@@ -21,6 +21,7 @@ cmake ${CMAKE_ARGS} ..                          \
     -DGMP_DIR="${PREFIX}"                       \
     -DGMP_INCLUDE_DIRS="${PREFIX}/include"      \
     -DGMP_LIBRARY="${PREFIX}/lib/libgmp.a"      \
+    -DMPFR_DIR="${PREFIX}"                      \
     -DMPFR_INCLUDE_DIRS="${PREFIX}/include"     \
     -DMPFR_LIBRARY="${PREFIX}/lib/libmpfr.a"    \
     -DPAPILO=OFF

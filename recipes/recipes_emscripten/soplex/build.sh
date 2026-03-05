@@ -12,12 +12,17 @@ cmake ${CMAKE_ARGS} ..                          \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}       \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON        \
     -DCMAKE_BUILD_TYPE=Release                  \
+    -DSHARED=OFF                                \
     -DZLIB_LIBRARY="${PREFIX}/lib/libz.a"       \
     -DZLIB_INCLUDE_DIR="${PREFIX}/include"      \
+    -DSTATIC_GMP=ON                             \
+    -DGMP_DIR="${PREFIX}"                       \
     -DGMP_INCLUDE_DIRS="${PREFIX}/include"      \
-    -DGMP_LIBRARIES="${PREFIX}/lib/libgmp.a"    \
+    -DGMP_LIBRARY="${PREFIX}/lib/libgmp.a"      \
+    -DMPFR_DIR="${PREFIX}"                      \
     -DMPFR_INCLUDE_DIRS="${PREFIX}/include"     \
-    -DMPFR_LIBRARIES="${PREFIX}/lib/libmpfr.a"
+    -DMPFR_LIBRARY="${PREFIX}/lib/libmpfr.a"    \
+    -DPAPILO=OFF
 
 ninja install
 
