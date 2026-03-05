@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-SOURCE_FILE="${1:-}"
+SOURCE_FILE=""
 
-# if the first argument is -c
-if [ "$SOURCE_FILE" == "-c" ]; then
-    # second arg is filename
-    SOURCE_FILE="$2"
-    EXTRA_ARG=""
-else
-    SOURCE_FILE="$1"
+for arg in "$@"; do
+    if [[ "$arg" == *.cc ]]; then
+        SOURCE_FILE="$arg"
+        break
+    fi
+done
 
-    # get the basename without extension, e.g. "Gwatershed.cc" -> "Gwatershed"
+if [[ -n "$SOURCE_FILE" ]]; then
     BASENAME=$(basename "$SOURCE_FILE" .cc)
-    EXTRA_ARG=" -o ${BASENAME}.oct"
+    EXTRA_ARG="-o ${BASENAME}.oct"
+else
+    EXTRA_ARG=""
 fi
 
 emcc -sSIDE_MODULE=1 -O3 -I "$PREFIX/include/octave-${OCTAVE_VER}" "$@" $EXTRA_ARG
