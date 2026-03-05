@@ -24,7 +24,9 @@ cmake ${CMAKE_ARGS} ..                          \
     -DMPFR_DIR="${PREFIX}"                      \
     -DMPFR_INCLUDE_DIRS="${PREFIX}/include"     \
     -DMPFR_LIBRARY="${PREFIX}/lib/libmpfr.a"    \
-    -DPAPILO=OFF
+    -DPAPILO=OFF                                \
+    -DZIMPL=OFF                                 \
+    -DIPOPT=OFF
 
 ninja install
 
