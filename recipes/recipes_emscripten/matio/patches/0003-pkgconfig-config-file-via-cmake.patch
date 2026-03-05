@@ -1,0 +1,45 @@
+From 0651b312ce897e2417c112b2bd5257aea801d584 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Wed, 4 Mar 2026 14:44:13 +0000
+Subject: [PATCH 3/3] pkgconfig config file via cmake
+
+---
+ CMakeLists.txt |  2 ++
+ matio.pc.in    | 12 ++++++------
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 197a628..cc94368 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -41,3 +41,5 @@ include(cmake/compilerOptions.cmake)
+ include(cmake/getopt.cmake)
+ include(cmake/src.cmake)
+ include(cmake/test.cmake)
++
++configure_file(matio.pc.in matio.pc @ONLY)
+diff --git a/matio.pc.in b/matio.pc.in
+index 96d9402..fd7969f 100644
+--- a/matio.pc.in
++++ b/matio.pc.in
+@@ -1,11 +1,11 @@
+-prefix=@prefix@
+-exec_prefix=@exec_prefix@
+-libdir=@libdir@
+-includedir=@includedir@
++prefix=@CMAKE_INSTALL_PREFIX@
++exec_prefix=${prefix}
++libdir=${exec_prefix}/lib
++includedir=${prefix}/include
+ 
+ Name: MATIO
+ Description: MATIO Library
+-Version: @VERSION@
++Version: @PROJECT_VERSION@
+ Libs: -L${libdir} -lmatio
+ Cflags: -I${includedir}
+-Requires.private: @HDF5_REQUIRES_PRIVATE@ @ZLIB_REQUIRES_PRIVATE@
++Requires.private: hdf5
+-- 
+2.51.0
+
