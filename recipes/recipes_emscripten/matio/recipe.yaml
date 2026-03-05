@@ -1,0 +1,49 @@
+context:
+  name: matio
+  version: 1.5.30
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/tbeu/matio/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8bd3b9477042ecc00dd71c04762fa58468e14cccc32fd8c6826c2da1e8bc3107
+  patches:
+  - patches/0001-Add-cmake-shared-library-flags.patch
+  - patches/0002-Do-not-build-matdump-exe.patch
+  - patches/0003-pkgconfig-config-file-via-cmake.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  host:
+  - hdf5
+  - zlib
+  run:
+  - hdf5
+
+tests:
+- package_contents:
+    files:
+    - include/matio.h
+    - include/matio_pubconf.h
+    - lib/libmatio.so
+    - lib/libmatio.so.${{ version }}
+    - lib/pkgconfig/matio.pc
+
+about:
+  homepage: https://github.com/tbeu/matio
+  license: BSD-2-Clause
+  license_file: COPYING
+  summary: MATLAB MAT File I/O Library
+  description: |
+    Matio is an open-source C library for reading and writing binary MATLAB MAT files.
+
+extra:
+  maintainers:
+  - ianthomas23
