@@ -81,6 +81,10 @@ export gl_cv_const_PTHREAD_PROCESS_SHARED=no
 # Assume putenv is compatible
 export gl_cv_func_svid_putenv=yes
 
+
+# set pkg config path to prefix
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+
 emconfigure ../configure \
    --prefix="${PREFIX}" \
    --build="${BUILD}"\
