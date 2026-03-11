@@ -1,12 +1,12 @@
+export EMCC_CFLAGS="${EMCC_CFLAGS} -Os"
+
 export CONFIG_CXXFLAGS="\
-    -Os \
     -I$BUILD_PREFIX/include \
     -Wno-deprecated-declarations \
     "
 
 # stringToNewUTF8 and writeArrayToMemory are used by libgit2.
 export CONFIG_LDFLAGS="\
-    -Os \
     --minify=0 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sEXIT_RUNTIME=1 \
