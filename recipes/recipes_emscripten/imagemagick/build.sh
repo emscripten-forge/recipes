@@ -79,6 +79,7 @@ emconfigure ./configure \
     --with-x=no \
     --with-xml=yes \
     --with-zlib=yes \
-    --with-glib=no
+    --with-glib=no \
+    --without-threads
 
 emmake make install
