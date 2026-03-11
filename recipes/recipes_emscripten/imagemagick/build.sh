@@ -9,11 +9,16 @@
 export CPPFLAGS="-I$PREFIX/include"
 export LDFLAGS="-L$PREFIX/lib"
 
+export LIBPNG_CFLAGS="-I$PREFIX/include"
+export LIBPNG_LIBS="-L$PREFIX/lib -lpng"
+
+file $PREFIX/lib/libpng.a
+
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --prefix=$PREFIX \
-    --enable-hdri=yes \
-    --with-quantum-depth=16 \
+    --with-quantum-depth=8 \
+    --disable-hdri \
     --disable-docs \
     --disable-static \
     --disable-openmp \
