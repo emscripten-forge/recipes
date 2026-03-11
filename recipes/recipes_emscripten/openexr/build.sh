@@ -10,10 +10,8 @@ cmake \
     -DBUILD_SHARED_LIBS=OFF \
     -DOPENEXR_LIB_SUFFIX="" \
     -DOPENEXR_ENABLE_THREADING=OFF \
-    -DOPENEXR_ENABLE_SIMD=OFF \
-    -DOPENEXR_BUILD_TOOLS=OFF \
-    -DOPENEXR_BUILD_EXAMPLES=OFF \
-    -DOPENEXR_BUILD_TESTS=OFF \
+    -DCMAKE_CXX_FLAGS="-msse=none -msse2=none" \
+    -DCMAKE_C_FLAGS="-msse=none -msse2=none" \
     ..
 
 make -j2
