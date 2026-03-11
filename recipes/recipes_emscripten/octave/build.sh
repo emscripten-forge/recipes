@@ -85,6 +85,9 @@ export gl_cv_func_svid_putenv=yes
 # set pkg config path to prefix
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 
+export MAGICKCORE_HDRI_ENABLE=0
+export MAGICKCORE_QUANTUM_DEPTH=8
+
 emconfigure ../configure \
    --prefix="${PREFIX}" \
    --build="${BUILD}"\
