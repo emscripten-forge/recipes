@@ -1,0 +1,41 @@
+context:
+  version: 7.1.2
+package:
+  name: jpeg
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ImageMagick/ImageMagick/archive/${{ version }}-16.tar.gz
+  sha256: aadfa67a104d14a35339de0f2cc286c973a0f43329770c69e9667a22208750fb
+build:
+  number: 0
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - libtool
+  - ${{ compiler('c') }}
+  - make
+  host:
+  - libwebp
+  - libtiff
+  - libpng
+  - libjpeg-turbo
+  - bzip2
+  - libxml2
+  - openjpeg
+
+tests:
+- package_contents:
+    files:
+    - include/jpeglib.h
+    - lib/libjpeg.a
+    - lib/pkgconfig/libjpeg.pc
+
+about:
+  homepage: http://www.ijg.org/
+  license: IJG
+  license_file: LICENSE.txt
+  summary: read/write jpeg COM, EXIF, IPTC medata
