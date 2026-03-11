@@ -7,12 +7,6 @@ set -euo pipefail
 #   3. Guard out GNU ld --export-dynamic-symbol flags
 python3 "${RECIPE_DIR}/patch_cmake.py"
 
-# The duckdb-python build backend (duckdb_packaging/build_backend.py) requires
-# either a .git directory OR sdist marker files (PKG-INFO + duckdb_packaging/duckdb_version.txt).
-# The URL tarball source has neither, so we create the sdist markers before pip runs.
-echo "v${PKG_VERSION}" > duckdb_packaging/duckdb_version.txt
-touch PKG-INFO
-
 # Bypass setuptools_scm version detection. DuckDB's custom version scheme
 # removes SETUPTOOLS_SCM_PRETEND_VERSION and only respects OVERRIDE_GIT_DESCRIBE.
 # The patched CMakeLists.txt dirties the working tree, causing setuptools_scm to
