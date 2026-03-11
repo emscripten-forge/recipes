@@ -117,9 +117,7 @@ emconfigure ../configure \
    --without-framework-carbon \
    --without-framework-opengl \
    --without-qt \
-   --with-magick=ImageMagick++ 
-
-   
+   --with-magick=ImageMagick++ \
 || cat config.log
 
 
