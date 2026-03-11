@@ -14,6 +14,30 @@ export LIBPNG_LIBS="-L$PREFIX/lib -lpng"
 
 file $PREFIX/lib/libpng.a
 
+
+
+mkdir -p "$PREFIX/lib/pkgconfig"
+
+cat > "$PREFIX/lib/pkgconfig/libpng.pc" <<EOF
+prefix=$PREFIX
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib
+includedir=\${prefix}/include
+
+Name: libpng
+Description: PNG reference library
+Version: 1.6.55
+Libs: -L\${libdir} -lpng
+Cflags: -I\${includedir}
+EOF
+
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+
+
+pkg-config --libs libpng
+
+
+
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --prefix=$PREFIX \
