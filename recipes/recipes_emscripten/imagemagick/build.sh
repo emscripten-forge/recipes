@@ -74,7 +74,7 @@ emconfigure ./configure \
     --with-raw=no \
     --with-rsvg=yes \
     --with-tiff=yes \
-    --with-webp=yes \
+    --with-webp=no \
     --with-wmf=no \
     --with-x=no \
     --with-xml=yes \
