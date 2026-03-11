@@ -202,3 +202,16 @@ def test_table_operations():
     # Slicing
     t2 = t[1:]
     assert len(t2) == 2
+
+
+# =============================================================================
+# NDData tests
+# =============================================================================
+
+def test_nddata_import():
+    """Test astropy.nddata import.
+
+    This module imports scipy.sparse and is required by downstream
+    packages like photutils.
+    """
+    import astropy.nddata
