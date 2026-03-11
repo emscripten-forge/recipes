@@ -1,0 +1,50 @@
+context:
+  version: "1.4.4"
+  name: python-duckdb
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/duckdb/duckdb-python.git
+  tag: v${{ version }}
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - pip
+    - setuptools
+    - setuptools-scm
+    - scikit-build-core
+    - pybind11
+    - cmake
+    - ninja
+  host:
+    - python
+    - pybind11
+  run:
+    - python
+
+tests:
+  - package_contents:
+      files:
+        - lib/python*/site-packages/duckdb/__init__.py
+
+about:
+  homepage: https://duckdb.org/
+  license: MIT
+  license_file: LICENSE
+  summary: DuckDB in-process SQL database compiled for emscripten-wasm32
+  description: Python bindings for DuckDB, an in-process SQL OLAP database management system, compiled for emscripten-wasm32.
+  repository: https://github.com/duckdb/duckdb-python
+
+extra:
+  recipe-maintainers:
+    - MRYingLEE
