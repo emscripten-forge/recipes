@@ -93,7 +93,6 @@ build:
   files:
     exclude:
     - '**/*.pxd'
-    - '**.dist-info/**'
     - '**/*.pyx'
     - '**/__pycache__/**'
     - '**/*.pyc'
