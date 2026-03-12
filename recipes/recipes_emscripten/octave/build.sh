@@ -114,6 +114,23 @@ pkg-config --cflags --libs Magick++
 # make sure LDFLAGS contain -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16
 export LDFLAGS="$LDFLAGS -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16"
 
+
+# link bz2, libtiff and libpng 
+export LDFLAGS="$LDFLAGS -lbz2 -ltiff -lpng"
+
+# link zlib
+export LDFLAGS="$LDFLAGS -lz"
+
+# jpeg
+export LDFLAGS="$LDFLAGS -ljpeg"
+
+# libxml2
+export LDFLAGS="$LDFLAGS -lxml2"
+
+
+# ensure $PREFIX/lib is considered for finding libraries
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+
 emconfigure ../configure \
    --prefix="${PREFIX}" \
    --build="${BUILD}"\
