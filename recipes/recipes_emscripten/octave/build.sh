@@ -170,7 +170,7 @@ emconfigure ../configure \
    --with-magick=Magick++ \ 
    MAGICK_CFLAGS="$(pkg-config --cflags Magick++)" \
    MAGICK_LIBS="$(pkg-config --libs Magick++)" \
-   LIBS="-lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16" \
+   LIBS="-lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lz -lbz2 -ltiff -lpng -ljpeg -lxml2" \
 || cat config.log
 
 
