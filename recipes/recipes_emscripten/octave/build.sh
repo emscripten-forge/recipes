@@ -6,6 +6,25 @@ set -eux
 # CONFIGURE BUILD ENVIRONMENT #
 ###############################
 
+# set pkg config path to prefix
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+# export MAGICKCORE_HDRI_ENABLE=0
+# export MAGICKCORE_QUANTUM_DEPTH=8
+# create test program
+cat > test.cpp << 'EOF'
+#include <Magick++.h>
+
+int main() {
+   Magick::ColorRGB c;
+   Magick::PixelPacket pix;
+}
+EOF
+
+
+emcc test.cpp $(pkg-config --cflags --libs Magick++)
+
+
+
 # Install custom LLVM and flang which includes patch for common symbols
 LLVM_DIR="$(pwd)/llvm_dir"
 LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
@@ -82,18 +101,14 @@ export gl_cv_const_PTHREAD_PROCESS_SHARED=no
 export gl_cv_func_svid_putenv=yes
 
 
-# set pkg config path to prefix
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
-export MAGICKCORE_HDRI_ENABLE=0
-export MAGICKCORE_QUANTUM_DEPTH=8
 
 
-sed -i "1s|.*|prefix=$PREFIX|" $PREFIX/lib/pkgconfig/Magick++.pc
 
-cp $PREFIX/lib/pkgconfig/Magick++.pc $PREFIX/lib/pkgconfig/ImageMagick++.pc
+
+
 
 # try to find ImageMagick++ with pkg-config
-pkg-config --cflags --libs ImageMagick++
+pkg-config --cflags --libs Magick++
 
 emconfigure ../configure \
    --prefix="${PREFIX}" \
@@ -131,7 +146,7 @@ emconfigure ../configure \
    --without-framework-carbon \
    --without-framework-opengl \
    --without-qt \
-   --with-magick=ImageMagick++ \
+   --with-magick=Magick++ \
 || cat config.log
 
 
