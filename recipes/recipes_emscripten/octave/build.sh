@@ -110,6 +110,8 @@ export gl_cv_func_svid_putenv=yes
 # try to find ImageMagick++ with pkg-config
 pkg-config --cflags --libs Magick++
 
+# link zlib
+export LDFLAGS="$LDFLAGS -lz"
 
 # make sure LDFLAGS contain -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16
 export LDFLAGS="$LDFLAGS -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16"
@@ -118,8 +120,6 @@ export LDFLAGS="$LDFLAGS -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16"
 # link bz2, libtiff and libpng 
 export LDFLAGS="$LDFLAGS -lbz2 -ltiff -lpng"
 
-# link zlib
-export LDFLAGS="$LDFLAGS -lz"
 
 # jpeg
 export LDFLAGS="$LDFLAGS -ljpeg"
@@ -170,7 +170,7 @@ emconfigure ../configure \
    --with-magick=Magick++ \ 
    MAGICK_CFLAGS="$(pkg-config --cflags Magick++)" \
    MAGICK_LIBS="$(pkg-config --libs Magick++)" \
-   LIBS="-lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lz -lbz2 -ltiff -lpng -ljpeg -lxml2" \
+   LIBS="-lz  -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2" \
 || cat config.log
 
 
