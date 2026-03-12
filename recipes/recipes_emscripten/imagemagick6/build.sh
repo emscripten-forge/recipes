@@ -41,8 +41,6 @@ pkg-config --libs libpng
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --prefix=$PREFIX \
-    --with-quantum-depth=8 \
-    --disable-hdri \
     --disable-docs \
     --disable-static \
     --disable-openmp \
