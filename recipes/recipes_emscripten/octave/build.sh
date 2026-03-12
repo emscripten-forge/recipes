@@ -146,7 +146,10 @@ emconfigure ../configure \
    --without-framework-carbon \
    --without-framework-opengl \
    --without-qt \
-   --with-magick=Magick++ \
+   --with-magick=Magick++ \ 
+   MAGICK_CFLAGS="$(pkg-config --cflags Magick++)" \
+   MAGICK_LIBS="$(pkg-config --libs Magick++)" \
+   LIBS="-lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16" \
 || cat config.log
 
 
