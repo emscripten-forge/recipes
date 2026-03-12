@@ -1,0 +1,29 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index abcdef1..1234567 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -36,6 +36,15 @@ endif()
+ # Dependencies
+ # ────────────────────────────────────────────
+ # PyBind11
++
++# On Emscripten, FindPython only provides Python::Module, not Python::Python
++# (there is no shared libpython to link against). pybind11_add_module internally
++# calls python_add_library which expects Python::Python, so we provide a dummy
++# IMPORTED target to satisfy that requirement.
++if(EMSCRIPTEN AND NOT TARGET Python::Python)
++  add_library(Python::Python INTERFACE IMPORTED)
++endif()
++
+ find_package(pybind11 REQUIRED CONFIG)
+
+ # DuckDB
+@@ -100,7 +109,7 @@ if(APPLE)
+   target_link_options(
+     _duckdb PRIVATE "LINKER:-exported_symbol,_duckdb_adbc_init"
+     "LINKER:-exported_symbol,_PyInit__duckdb")
+-elseif(UNIX AND NOT APPLE)
++elseif(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+   target_link_options(
+     _duckdb PRIVATE "LINKER:--export-dynamic-symbol=duckdb_adbc_init"
+     "LINKER:--export-dynamic-symbol=PyInit__duckdb")
