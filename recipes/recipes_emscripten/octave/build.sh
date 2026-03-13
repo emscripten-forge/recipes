@@ -130,9 +130,12 @@ export LDFLAGS="$LDFLAGS -lxml2"
 
 # ensure $PREFIX/lib is considered for finding libraries
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
-
 export LIBS="-lz -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2"
 
+
+# delete shared zlib
+rm -f $PREFIX/lib/libz.so
+rm -f $PREFIX/lib/libz.so.*
 
 emconfigure ../configure \
    --prefix="${PREFIX}" \
