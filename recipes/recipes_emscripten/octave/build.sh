@@ -9,7 +9,6 @@ set -eux
 # set pkg config path to prefix
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
 
-
 # Install custom LLVM and flang which includes patch for common symbols
 LLVM_DIR="$(pwd)/llvm_dir"
 LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
@@ -88,6 +87,9 @@ export gl_cv_func_svid_putenv=yes
 
 # ensure $PREFIX/lib is considered for finding libraries
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+
+# link
+export LIBS="-lz -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2"
 
 # delete shared zlib
 rm -f $PREFIX/lib/libz.so
