@@ -8,21 +8,6 @@ set -eux
 
 # set pkg config path to prefix
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
-# export MAGICKCORE_HDRI_ENABLE=0
-# export MAGICKCORE_QUANTUM_DEPTH=8
-# create test program
-cat > test.cpp << 'EOF'
-#include <Magick++.h>
-
-int main() {
-   Magick::ColorRGB c;
-   Magick::PixelPacket pix;
-}
-EOF
-
-
-emcc test.cpp $(pkg-config --cflags --libs Magick++)
-
 
 
 # Install custom LLVM and flang which includes patch for common symbols
@@ -101,37 +86,8 @@ export gl_cv_const_PTHREAD_PROCESS_SHARED=no
 export gl_cv_func_svid_putenv=yes
 
 
-
-
-
-
-
-
-# try to find ImageMagick++ with pkg-config
-pkg-config --cflags --libs Magick++
-
-# link zlib
-export LDFLAGS="$LDFLAGS -lz"
-
-# make sure LDFLAGS contain -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16
-export LDFLAGS="$LDFLAGS -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16"
-
-
-# link bz2, libtiff and libpng 
-export LDFLAGS="$LDFLAGS -lbz2 -ltiff -lpng"
-
-
-# jpeg
-export LDFLAGS="$LDFLAGS -ljpeg"
-
-# libxml2
-export LDFLAGS="$LDFLAGS -lxml2"
-
-
 # ensure $PREFIX/lib is considered for finding libraries
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
-export LIBS="-lz -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2"
-
 
 # delete shared zlib
 rm -f $PREFIX/lib/libz.so
@@ -176,7 +132,6 @@ emconfigure ../configure \
    --with-magick=Magick++ \
    MAGICK_CFLAGS="$(pkg-config --cflags Magick++)" \
    MAGICK_LIBS="$(pkg-config --libs Magick++)" \
-   LIBS="-lz  -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2" \
 || cat config.log
 
 
