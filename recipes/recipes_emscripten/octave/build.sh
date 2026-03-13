@@ -163,7 +163,7 @@ emconfigure ../configure \
    --without-qhull_r \
    --without-qrupdate \
    --without-umfpack \
-   --without-z \
+   --with-z \
    --without-framework-carbon \
    --without-framework-opengl \
    --without-qt \
