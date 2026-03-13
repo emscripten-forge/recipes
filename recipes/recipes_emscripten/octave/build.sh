@@ -131,6 +131,9 @@ export LDFLAGS="$LDFLAGS -lxml2"
 # ensure $PREFIX/lib is considered for finding libraries
 export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 
+export LIBS="-lz -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2"
+
+
 emconfigure ../configure \
    --prefix="${PREFIX}" \
    --build="${BUILD}"\
