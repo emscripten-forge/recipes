@@ -6,6 +6,9 @@ set -eux
 # CONFIGURE BUILD ENVIRONMENT #
 ###############################
 
+# set pkg config path to prefix
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+
 # Install custom LLVM and flang which includes patch for common symbols
 LLVM_DIR="$(pwd)/llvm_dir"
 LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
@@ -81,6 +84,17 @@ export gl_cv_const_PTHREAD_PROCESS_SHARED=no
 # Assume putenv is compatible
 export gl_cv_func_svid_putenv=yes
 
+
+# ensure $PREFIX/lib is considered for finding libraries
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
+
+# link
+export LIBS="-lz -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2"
+
+# delete shared zlib
+rm -f $PREFIX/lib/libz.so
+rm -f $PREFIX/lib/libz.so.*
+
 emconfigure ../configure \
    --prefix="${PREFIX}" \
    --build="${BUILD}"\
@@ -113,10 +127,13 @@ emconfigure ../configure \
    --without-qhull_r \
    --without-qrupdate \
    --without-umfpack \
-   --without-z \
+   --with-z \
    --without-framework-carbon \
    --without-framework-opengl \
    --without-qt \
+   --with-magick=Magick++ \
+   MAGICK_CFLAGS="$(pkg-config --cflags Magick++)" \
+   MAGICK_LIBS="$(pkg-config --libs Magick++)" \
 || cat config.log
 
 
