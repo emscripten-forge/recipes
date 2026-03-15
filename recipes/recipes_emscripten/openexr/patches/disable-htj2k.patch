@@ -11,3 +11,27 @@ index b748cde..d2d1284 100644
      internal_dwa.c
      internal_dwa_table.c
      internal_dwa_table_init.c
+diff --git a/src/lib/OpenEXRCore/compression.c b/src/lib/OpenEXRCore/compression.c
+index dc0c973..81a5273 100644
+--- a/src/lib/OpenEXRCore/compression.c
++++ b/src/lib/OpenEXRCore/compression.c
+@@ -380,7 +380,7 @@ exr_compress_chunk (exr_encode_pipeline_t* encode)
+         case EXR_COMPRESSION_DWAB: rv = internal_exr_apply_dwab (encode); break;
+         case EXR_COMPRESSION_HTJ2K32:
+         case EXR_COMPRESSION_HTJ2K256:
+-            rv = internal_exr_apply_ht (encode); break;
++            return EXR_ERR_INVALID_ARGUMENT;
+         case EXR_COMPRESSION_LAST_TYPE:
+         default:
+             return ctxt->print_error (
+@@ -459,9 +459,7 @@ decompress_data (
+             break;
+         case EXR_COMPRESSION_HTJ2K256:
+         case EXR_COMPRESSION_HTJ2K32:
+-            rv = internal_exr_undo_ht (
+-                decode, packbufptr, packsz, unpackbufptr, unpacksz);
+-            break;
++            return EXR_ERR_INVALID_ARGUMENT;
+         case EXR_COMPRESSION_LAST_TYPE:
+         default:
+             return ctxt->print_error (
