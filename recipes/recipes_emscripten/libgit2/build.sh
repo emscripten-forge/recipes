@@ -8,6 +8,7 @@ export ALLOWED_WARNINGS="-Wno-builtin-macro-redefined -Wno-incompatible-pointer-
 
 emcmake cmake ${CMAKE_ARGS} .. \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_FIND_ROOT_PATH=$PREFIX \
     -DCMAKE_PREFIX_PATH=$PREFIX \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_C_FLAGS="${EM_FORGE_CFLAGS_BASE} -fPIC -DNO_MMAP ${ALLOWED_WARNINGS}" \
@@ -17,10 +18,10 @@ emcmake cmake ${CMAKE_ARGS} .. \
     -DBUILD_EXAMPLES=OFF \
     -DBUILD_SHARED_LIBS=OFF \
     -DBUILD_TESTS=OFF \
+    -DREGEX_BACKEND=pcre2 \
     -DUSE_HTTPS=OFF \
     -DUSE_NSEC=OFF \
     -DUSE_THREADS=OFF \
-    -DZLIB_INCLUDE_DIR=${PREFIX}/include \
     -DZLIB_LIBRARY=${PREFIX}/lib/libz.a
 
 emmake make install -j$CPU_COUNT

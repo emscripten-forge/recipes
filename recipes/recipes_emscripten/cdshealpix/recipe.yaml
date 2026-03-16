@@ -1,0 +1,61 @@
+context:
+  name: cdshealpix
+  version: 0.8.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b5c23d66f22a67b5a4429aa9ebd3b60a9c94467f2de8218ee46cff37338cab7c
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . -vvv
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - setuptools-rust
+  - rust-nightly
+  - maturin
+  host:
+  - python
+  run:
+  - astropy
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_cdshealpix.py
+
+about:
+  homepage: https://github.com/cds-astro/cds-healpix-python/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: HEALPix sky tesselation manipulation
+  description: |
+    CDS-HEALPix allows to manipulate the HEALPix sky tesselation in the nested and ring
+    schemes. The library includes geometry-based healpix selections (cone, polygon, 
+    boxes...) and SkyMaps IO and visualization.
+  documentation: https://cds-astro.github.io/cds-healpix-python/
+  repository: https://github.com/cds-astro/cds-healpix-python/
