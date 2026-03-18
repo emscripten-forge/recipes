@@ -40,6 +40,9 @@ pkg-config --libs libpng
 
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
+    --disable-shared \
+    --enable-static \
+    --without-modules \
     --prefix=$PREFIX \
     --disable-docs \
     --disable-static \
