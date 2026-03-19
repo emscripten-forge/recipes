@@ -6,6 +6,9 @@ export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
 
 # Point Fiona to GDAL (this is critical)
 export GDAL_VERSION=$(gdal-config --version || echo "unknown")
+echo "******"
+echo $GDAL_VERSION
+echo "******"
 export GDAL_INCLUDE_PATH=$PREFIX/include
 export GDAL_LIBRARY_PATH=$PREFIX/lib
 
