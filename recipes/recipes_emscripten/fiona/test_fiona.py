@@ -9,10 +9,3 @@ def test_fiona_env():
     # Basic context manager test (does not require filesystem)
     with Env():
         assert True
-
-
-# def test_supported_drivers():
-#     import fiona
-
-#     drivers = fiona.supported_drivers
-#     assert isinstance(drivers, dict)
