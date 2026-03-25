@@ -1,10 +1,7 @@
-# Replace src/libgit2/transports/http.c with emscripten-based implementation.
-cp $RECIPE_DIR/http.c src/libgit2/transports/
-
 mkdir build
 cd build
 
-export ALLOWED_WARNINGS="-Wno-builtin-macro-redefined -Wno-incompatible-pointer-types-discards-qualifiers -Wno-unused-parameter"
+export ALLOWED_WARNINGS="-Wno-incompatible-pointer-types"
 
 emcmake cmake ${CMAKE_ARGS} .. \
     -DCMAKE_BUILD_TYPE=Release \
