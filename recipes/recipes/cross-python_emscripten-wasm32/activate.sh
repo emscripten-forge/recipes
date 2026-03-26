@@ -82,26 +82,18 @@ export CMAKE_ARGS="${CMAKE_ARGS} \
     -DPYTHON_IS_DEBUG=0 \
     -DPYTHON_VERSION=${PY_VER}"
 
-
-
-
-
-
-
-
-
 ################################################################################################
 # Additional fixes for the mac!
 ################################################################################################
 
 # only use these when building on the mac, otherwise we mess up the linux build
-if [[ "$OSTYPE" == "darwin"* ]]; then
- 
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+  
 
-# in ctypes/__init_.py there is 
-#  if _os.name == "posix" and _sys.platform == "darwin":
+  # in ctypes/__init_.py there is 
+  #  if _os.name == "posix" and _sys.platform == "darwin":
 
-# we need to replace this with if False: because otherwise we run into issues:
-# * just replacing _sys.platform  with a smth else fails at other places...
-sed 's/_sys.platform == "darwin"/False/g' "$CTYPES_INIT_FILE" > "$CTYPES_INIT_FILE.tmp" && mv "$CTYPES_INIT_FILE.tmp" "$CTYPES_INIT_FILE"
+  # we need to replace this with if False: because otherwise we run into issues:
+  # * just replacing _sys.platform  with a smth else fails at other places...
+  sed 's/_sys.platform == "darwin"/False/g' "$CTYPES_INIT_FILE" > "$CTYPES_INIT_FILE.tmp" && mv "$CTYPES_INIT_FILE.tmp" "$CTYPES_INIT_FILE"
 fi
