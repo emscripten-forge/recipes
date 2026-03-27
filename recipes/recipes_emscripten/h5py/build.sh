@@ -2,7 +2,7 @@
 # add ad-hoc code to load the shared libs
 tmp_file="$(mktemp)"
 printf 'import ctypes;ctypes.CDLL("/lib/libhdf5.so");ctypes.CDLL("/lib/libhdf5_hl.so")\n' > "$tmp_file"
-cat h5py/__init__.py" >> "$tmp_file"
+cat "h5py/__init__.py" >> "$tmp_file"
 mv "$tmp_file" "h5py/__init__.py"
 
 
