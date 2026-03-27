@@ -26,3 +26,10 @@ export HDF5_MPI=OFF
 export HDF5_VERSION=1.12.3
 
 ${PYTHON} -m pip install . -vvv
+
+
+# add ad-hoc code to load the shared libs
+tmp_file="$(mktemp)"
+printf 'import ctypes;ctypes.CDLL("/lib/libhdf5.so");ctypes.CDLL("/lib/libhdf5_hl.so")\n' > "$tmp_file"
+cat "$PREFIX/python3.13/site-packages/h5py/__init__.py" >> "$tmp_file"
+mv "$tmp_file" "$PREFIX/python3.13/site-packages/h5py/__init__.py"
