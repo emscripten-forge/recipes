@@ -1,0 +1,87 @@
+context:
+  name: scikit-bio
+  version: 0.7.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
+  sha256: d0a991818882c88ca47d9f6441321a440439e1a8a6716a101a931d590c395fe8
+
+build:
+  number: 0
+  script: |
+    export DISABLE_OPENMP=1
+    ${PYTHON} -m pip install . -vv --no-deps --no-build-isolation ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy
+  - ${{ compiler('c') }}
+  - cython
+  - pip
+  - setuptools
+  host:
+  - python
+  - pip
+  - setuptools
+  - numpy
+  - cython
+  run:
+  - python
+  - requests >=2.20.0
+  - decorator >=3.4.2
+  - natsort >=4.0.3
+  - pandas >=1.5.0
+  - scipy >=1.9.0
+  - h5py >=3.6.0
+  - statsmodels >=0.14.0
+  - patsy >=0.5.0
+  - array-api-compat >=1.3
+  - biom-format >=2.1.16
+  # - setuptools
+
+
+
+tests:
+- script: echo "FIXME:"
+# This package has been tested with xeus-python.
+# The following fails because of issues when invluding scipuy in the test environment.
+# See https://github.com/emscripten-forge/recipes/issues/4364
+
+# tests:
+# - script: pytester
+#   files:
+#     recipe:
+#     - test_scikit_bio.py
+#   requirements:
+#     build:
+#     - pytester
+#     run:
+#     - pytester-run
+
+about:
+  homepage: https://scikit.bio
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Data structures, algorithms and educational resources for bioinformatics.
+  documentation: https://scikit.bio
+  repository: https://github.com/scikit-bio/scikit-bio
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
