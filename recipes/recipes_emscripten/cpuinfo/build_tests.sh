@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-export PYTHON=$BUILD_PREFIX/bin/python
-
 emcmake cmake -S tests -B build_tests \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH=$PREFIX \
