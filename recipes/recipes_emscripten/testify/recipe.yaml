@@ -1,0 +1,62 @@
+context:
+  version: 0.1.0
+  name: testify
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+ 
+build:
+  number: 3
+
+
+requirements:
+  run:
+  - python
+  - scipy
+
+tests:
+# main thread only
+- script: pytester   --no-worker-skip-preload --no-worker-preload
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_testify.py
+
+# worker-with-preload
+- script: pytester   --no-worker-skip-preload --no-browser-main
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_testify.py
+
+# worker-skip-preload
+- script: pytester   --no-worker-preload --no-browser-main
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_testify.py
+
+
+
+about:
+  homepage: https://idontexist.com/testify
+  license: Python-2.0
+  license_file: LICENSE.txt
+  summary: just for testing
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

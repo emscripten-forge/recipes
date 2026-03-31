@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import sys
 import pprint
+import argparse
 # dir of this file
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 MAIN_MOUNT_DIR= Path(THIS_DIR) /"main_mount"
@@ -24,6 +25,37 @@ def find_free_port():
 
 
 def main():
+
+
+    parser = argparse.ArgumentParser(description="Run tests with pytester")
+
+    # optional keyword argument --slow-mo with default value 0
+    parser.add_argument("--slow-mo", type=int, default=1, help="slow mo in ms")
+
+    # headless
+    parser.add_argument( "--no-headless",dest="headless",action="store_false",help="Disable headless mode")
+    parser.set_defaults(headless=True)
+    
+    # use worker_preload
+    parser.add_argument( "--no-worker-preload",dest="worker_preload",action="store_false",help="Disable worker-preload backend")    
+    parser.set_defaults(worker_preload=True)
+
+    # use worker-no-preload
+    parser.add_argument( "--no-worker-skip-preload",dest="worker_skip_preload",action="store_false",help="Disable worker-skip-preload backend")
+    parser.set_defaults(worker_skip_preload=True)
+
+    # use browser-main
+    parser.add_argument( "--no-browser-main",dest="browser_main",action="store_false",help="Disable browser-main backend")
+    parser.set_defaults(browser_main=True)
+
+
+
+    # parse the arguments
+    args = parser.parse_args()
+
+
+
+
     print("Running the main function")
     # get the conda env from the env var "PREFIX"
     prefix = os.environ["PREFIX"]
@@ -66,20 +98,29 @@ def main():
     
 
 
-    backends = [
-        (
-            BackendType.browser_worker,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=False)
-        ),
-        (
-            BackendType.browser_worker,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=True)
-        ),
-        (
-            BackendType.browser_main,
-            lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
+
+    backends = []
+    if args.worker_preload:
+        backends.append(
+            (
+                BackendType.browser_worker,
+                lambda: dict(port=find_free_port(), slow_mo=args.slow_mo, headless=args.headless, preload_shared_libs=True)
+            )
         )
-    ]
+    if args.worker_skip_preload:
+        backends.append(
+            (
+                BackendType.browser_worker,
+                lambda: dict(port=find_free_port(), slow_mo=args.slow_mo, headless=args.headless, preload_shared_libs=False)
+            )
+        )
+    if args.browser_main:
+        backends.append(
+            (
+                BackendType.browser_main,
+                lambda: dict(port=find_free_port(), slow_mo=args.slow_mo, headless=args.headless),
+            )
+        )
     print(
         "================================================================================"
     )
