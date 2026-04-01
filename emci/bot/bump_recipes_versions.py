@@ -154,21 +154,20 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     # use the last directory in the path as the branch name
     name = recipe_dir.name
 
-    # check if the recipe has test section
-    # load recipe
+    # automerge is only enabled if the recipe has a tests section
     automerge = True
     with open(recipe_file) as file:
         recipe = YAML().load(file)
 
         # Multi-outputs recipe
-        if hasattr(recipe, "outputs"):
-            for i, output in enumerate(recipe["outputs"]):
+        if 'outputs' in recipe:
+            for output in recipe['outputs']:
                 if "tests" not in output:
+                    print(f"Missing tests in package: {output['package']['name']}")
                     automerge = False
                     break
         elif 'tests' not in recipe:
             automerge = False
-
 
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
 
