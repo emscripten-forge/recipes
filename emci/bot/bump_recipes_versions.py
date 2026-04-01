@@ -162,7 +162,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         # Multi-outputs recipe
         if 'outputs' in recipe:
             for output in recipe['outputs']:
-                if "tests" not in output:
+                if 'tests' not in output:
                     automerge = False
                     break
         elif 'tests' not in recipe:
