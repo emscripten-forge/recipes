@@ -1,0 +1,57 @@
+From 992749c4b366e6c81340005ec73dcc0018a047b8 Mon Sep 17 00:00:00 2001
+From: George Stagg <george.stagg@posit.co>
+Date: Mon, 31 Jul 2023 14:54:35 +0100
+Subject: [PATCH 2/3] Add Makevars for webR
+
+---
+ src/Makevars | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/src/Makevars b/src/Makevars
+index b7b99ed1..017d5d2c 100644
+--- a/src/Makevars
++++ b/src/Makevars
+@@ -3,9 +3,12 @@ UNAME := $(shell uname)
+ LIBUV := libuv-1.44.2
+ 
+ PKG_LIBS = ./$(LIBUV)/.libs/libuv.pa -pthread
++PKG_CPPFLAGS = -I./$(LIBUV)/include -I. -pthread
+ 
+ SOURCES = $(wildcard *.cc unix/*.cc)
+ OBJECTS = $(SOURCES:.cc=.o)
++CONFIGURE = ./configure
++STD = -std=c99
+ 
+ ifeq ($(UNAME), SunOS)
+ PKG_LIBS += -lkstat -lsendfile -lsocket -lxnet
+@@ -23,8 +26,13 @@ endif
+ ifneq ($(filter $(UNAME), Linux AIX OS400),)
+ OBJECTS +=  bsd/setmode.o bsd/strmode.o bsd/reallocarray.o
+ endif
++ifeq ($(UNAME), Emscripten)
++PKG_LIBS = ./$(LIBUV)/.libs/libuv.pa
++PKG_CPPFLAGS = -I./$(LIBUV)/include -I.
++CONFIGURE = emconfigure ./configure --build=$(BUILD_PLATFORM) --host=wasm32-unknown-emscripten
++STD =
++endif
+ 
+-PKG_CPPFLAGS = -I./$(LIBUV)/include -I. -pthread
+ 
+ all: $(SHLIB)
+ 
+@@ -35,10 +43,10 @@ $(SHLIB): $(LIBUV)/.libs/libuv.pa
+ $(LIBUV)/Makefile:
+ 	touch $(LIBUV)/aclocal.m4 && touch $(LIBUV)/configure && touch $(LIBUV)/Makefile.in
+ 	(cd $(LIBUV) \
+-	&& CC="$(CC)" CPPFLAGS="$(CPPFLAGS)" CFLAGS="$(CFLAGS) $(CPICFLAGS) $(C_VISIBILITY) -std=c99" AR="$(AR)" RANLIB="$(RANLIB)" LDFLAGS="$(LDFLAGS)" ./configure $(R_CONFIGURE_FLAGS) --quiet)
++	&& CC="$(CC)" CPPFLAGS="$(CPPFLAGS)" CFLAGS="$(CFLAGS) $(CPICFLAGS) $(C_VISIBILITY) $(STD)" AR="$(AR)" RANLIB="$(RANLIB)" LDFLAGS="$(LDFLAGS)" $(CONFIGURE) $(R_CONFIGURE_FLAGS) --quiet)
+ 
+ $(LIBUV)/.libs/libuv.pa: $(LIBUV)/Makefile
+-	$(MAKE) --directory=$(LIBUV) \
++	AR="$(AR)" RANLIB="$(RANLIB)" $(MAKE) --directory=$(LIBUV) \
+ 		HAVE_DTRACE=0
+ 	@mv $(LIBUV)/.libs/libuv.a $(LIBUV)/.libs/libuv.pa
+ 
+-- 
+2.52.0
+
