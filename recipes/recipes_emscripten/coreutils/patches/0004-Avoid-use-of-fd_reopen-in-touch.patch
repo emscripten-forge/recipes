@@ -1,0 +1,25 @@
+From 541081b4132f94fc3e81fb65c49a031ca27eebcc Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Wed, 1 Apr 2026 13:55:25 +0100
+Subject: [PATCH 4/4] Avoid use of fd_reopen in touch
+
+---
+ src/touch.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/touch.c b/src/touch.c
+index d92a77a..d771588 100644
+--- a/src/touch.c
++++ b/src/touch.c
+@@ -129,7 +129,7 @@ touch (char const *file)
+   else if (! (no_create || no_dereference))
+     {
+       /* Try to open FILE, creating it if necessary.  */
+-      fd = fd_reopen (STDIN_FILENO, file,
++      fd = open (file,
+                       O_WRONLY | O_CREAT | O_NONBLOCK | O_NOCTTY, MODE_RW_UGO);
+       if (fd < 0)
+         open_errno = errno;
+-- 
+2.50.1 (Apple Git-155)
+

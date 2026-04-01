@@ -1,0 +1,213 @@
+From e614de13b330a70915852bfe160927a5acfe28d4 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Wed, 1 Apr 2026 13:54:05 +0100
+Subject: [PATCH 3/4] Avoid use of freopen in uniq
+
+---
+ lib/closeout.c |  8 +++++++-
+ lib/closeout.h |  3 +++
+ src/uniq.c     | 50 +++++++++++++++++++++++++++++++-------------------
+ 3 files changed, 41 insertions(+), 20 deletions(-)
+
+diff --git a/lib/closeout.c b/lib/closeout.c
+index a41758e..9655cec 100644
+--- a/lib/closeout.c
++++ b/lib/closeout.c
+@@ -115,7 +115,13 @@ close_stdout_set_ignore_EPIPE (bool ignore)
+ void
+ close_stdout (void)
+ {
+-  if (close_stream (stdout) != 0
++  close_stdout_impl(stdout);
++}
++
++void
++close_stdout_impl(FILE* out)
++{
++  if (close_stream (out) != 0
+       && !(ignore_EPIPE && errno == EPIPE))
+     {
+       char const *write_error = _("write error");
+diff --git a/lib/closeout.h b/lib/closeout.h
+index 689f06c..5a1cda7 100644
+--- a/lib/closeout.h
++++ b/lib/closeout.h
+@@ -19,6 +19,8 @@
+ #ifndef CLOSEOUT_H
+ # define CLOSEOUT_H 1
+ 
++#include <stdio.h>
++
+ # ifdef __cplusplus
+ extern "C" {
+ # endif
+@@ -26,6 +28,7 @@ extern "C" {
+ void close_stdout_set_file_name (const char *file);
+ void close_stdout_set_ignore_EPIPE (bool ignore);
+ void close_stdout (void);
++void close_stdout_impl(FILE* out);
+ 
+ # ifdef __cplusplus
+ }
+diff --git a/src/uniq.c b/src/uniq.c
+index eebff4b..346c16d 100644
+--- a/src/uniq.c
++++ b/src/uniq.c
+@@ -71,6 +71,8 @@ static bool output_later_repeated = false;
+ /* If true, ignore case when comparing.  */
+ static bool ignore_case;
+ 
++static FILE* global_out = NULL;
++
+ enum delimit_method
+ {
+   /* No delimiters output.  --all-repeated[=none] */
+@@ -316,7 +318,7 @@ different (char *old, char *new, idx_t oldlen, idx_t newlen)
+ 
+ static void
+ writeline (struct linebuffer const *line,
+-           bool match, intmax_t linecount)
++           bool match, intmax_t linecount, FILE* out)
+ {
+   if (! (linecount == 0 ? output_unique
+          : !match ? output_first_repeated
+@@ -326,7 +328,7 @@ writeline (struct linebuffer const *line,
+   if (count_occurrences)
+     printf ("%7jd ", linecount + 1);
+ 
+-  if (fwrite (line->buffer, sizeof (char), line->length, stdout)
++  if (fwrite (line->buffer, sizeof (char), line->length, out)
+       != line->length)
+     write_error ();
+ }
+@@ -339,13 +341,17 @@ check_file (char const *infile, char const *outfile, char delimiter)
+ {
+   struct linebuffer lb1, lb2;
+   struct linebuffer *thisline, *prevline;
++  FILE* in = stdin;
++  FILE* out = stdout;
+ 
+-  if (! (streq (infile, "-") || freopen (infile, "r", stdin)))
++  if (!streq(infile, "-") && (in = fopen(infile, "r")) == NULL)
+     error (EXIT_FAILURE, errno, "%s", quotef (infile));
+-  if (! (streq (outfile, "-") || freopen (outfile, "w", stdout)))
++  if (!streq(outfile, "-") && (out = fopen(outfile, "w")) == NULL)
+     error (EXIT_FAILURE, errno, "%s", quotef (outfile));
+ 
+-  fadvise (stdin, FADVISE_SEQUENTIAL);
++  global_out = out;  /* So that the atexit handler closes the correct stream */
++
++  fadvise (in, FADVISE_SEQUENTIAL);
+ 
+   thisline = &lb1;
+   prevline = &lb2;
+@@ -374,8 +380,8 @@ check_file (char const *infile, char const *outfile, char delimiter)
+       idx_t prevlen;
+       bool first_group_printed = false;
+ 
+-      while (!feof (stdin)
+-             && readlinebuffer_delim (thisline, stdin, delimiter))
++      while (!feof (in)
++             && readlinebuffer_delim (thisline, in, delimiter))
+         {
+           idx_t thislen;
+           char *thisfield = find_field (thisline, &thislen);
+@@ -387,12 +393,12 @@ check_file (char const *infile, char const *outfile, char delimiter)
+               && (grouping == GM_PREPEND || grouping == GM_BOTH
+                   || (first_group_printed && (grouping == GM_APPEND
+                                               || grouping == GM_SEPARATE))))
+-            putchar (delimiter);
++            putc (delimiter, out);
+ 
+           if (new_group || grouping != GM_NONE)
+             {
+               if (fwrite (thisline->buffer, sizeof (char), thisline->length,
+-                  stdout) != thisline->length)
++                  out) != thisline->length)
+                 write_error ();
+ 
+               swap_lines (&prevline, &thisline);
+@@ -402,11 +408,11 @@ check_file (char const *infile, char const *outfile, char delimiter)
+             }
+         }
+       if ((grouping == GM_BOTH || grouping == GM_APPEND) && first_group_printed)
+-        putchar (delimiter);
++        putc (delimiter, out);
+     }
+   else
+     {
+-      if (!readlinebuffer_delim (prevline, stdin, delimiter))
++      if (!readlinebuffer_delim (prevline, in, delimiter))
+         goto closefiles;
+ 
+       idx_t prevlen;
+@@ -414,11 +420,11 @@ check_file (char const *infile, char const *outfile, char delimiter)
+       intmax_t match_count = 0;
+       bool first_delimiter = true;
+ 
+-      while (!feof (stdin))
++      while (!feof (in))
+         {
+-          if (!readlinebuffer_delim (thisline, stdin, delimiter))
++          if (!readlinebuffer_delim (thisline, in, delimiter))
+             {
+-              if (ferror (stdin))
++              if (ferror (in))
+                 goto closefiles;
+               break;
+             }
+@@ -446,13 +452,13 @@ check_file (char const *infile, char const *outfile, char delimiter)
+                   if ((delimit_groups == DM_PREPEND)
+                       || (delimit_groups == DM_SEPARATE
+                           && !first_delimiter))
+-                    putchar (delimiter);
++                    putc (delimiter, out);
+                 }
+             }
+ 
+           if (!match || output_later_repeated)
+             {
+-              writeline (prevline, match, match_count);
++              writeline (prevline, match, match_count, out);
+               swap_lines (&prevline, &thisline);
+               prevfield = thisfield;
+               prevlen = thislen;
+@@ -461,11 +467,11 @@ check_file (char const *infile, char const *outfile, char delimiter)
+             }
+         }
+ 
+-      writeline (prevline, false, match_count);
++      writeline (prevline, false, match_count, out);
+     }
+ 
+  closefiles:
+-  if (ferror (stdin) || fclose (stdin) != 0)
++  if (ferror (in) || fclose (in) != 0)
+     error (EXIT_FAILURE, errno, _("error reading %s"), quoteaf (infile));
+ 
+   /* stdout is handled via the atexit-invoked close_stdout function.  */
+@@ -481,6 +487,11 @@ enum Skip_field_option_type
+     SFO_NEW
+   };
+ 
++void local_close_stdout(void)
++{
++  close_stdout_impl(global_out);
++}
++
+ int
+ main (int argc, char **argv)
+ {
+@@ -499,7 +510,8 @@ main (int argc, char **argv)
+   bindtextdomain (PACKAGE, LOCALEDIR);
+   textdomain (PACKAGE);
+ 
+-  atexit (close_stdout);
++  global_out = stdout;
++  atexit (local_close_stdout);
+ 
+   while (true)
+     {
+-- 
+2.50.1 (Apple Git-155)
+
