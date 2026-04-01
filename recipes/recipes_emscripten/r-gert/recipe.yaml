@@ -1,0 +1,79 @@
+context:
+  name: r-gert
+  version: 2.3.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cran.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 8b2a053a02826198ec29baf3e4b89bda313656d9d959def873bfa4be0c94d845
+
+build:
+  number: 0
+  script: |
+    $R CMD INSTALL \
+    --no-docs \
+    --no-html \
+    --no-test-load \
+    --no-staged-install \
+    --no-byte-compile \
+    $R_ARGS .
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cross-r-base_${{ target_platform }}
+    - pkg-config
+    - libgit2
+    - r-base
+    - r-askpass
+    - r-credentials >=1.2.1
+    - r-openssl >=2.0.3
+    - r-rstudioapi >=0.11
+    - r-sys
+    - r-zip >=2.1.0
+  host:
+    - libgit2
+    - r-base
+    - r-askpass
+    - r-credentials >=1.2.1
+    - r-openssl >=2.0.3
+    - r-rstudioapi >=0.11
+    - r-sys
+    - r-zip >=2.1.0
+  run:
+    - libgit2
+    - r-base
+    - r-askpass
+    - r-credentials >=1.2.1
+    - r-openssl >=2.0.3
+    - r-rstudioapi >=0.11
+    - r-sys
+    - r-zip >=2.1.0
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://docs.ropensci.org/gert/
+  license: MIT
+  summary: |
+    Simple git client for R based on 'libgit2' <https://libgit2.org> with support for
+    SSH and HTTPS remotes. All functions in 'gert' use basic R data types (such as vectors
+    and data-frames) for their arguments and return values. User credentials are shared
+    with command line 'git' through the git-credential store and ssh keys stored on
+    disk or ssh-agent.
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
