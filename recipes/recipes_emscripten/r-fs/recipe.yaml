@@ -1,0 +1,53 @@
+context:
+  name: r-fs
+  version: 1.6.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 57d3a0844e2fec28e6fe9901d18e07d32a437dfe43c4b547757eb07360f5850a
+  patches:
+  # Sourced from https://github.com/r-wasm/fs/tree/webr
+  - patches/0001-Modify-vendored-libuv-source-for-webR-compat.patch
+  - patches/0002-Add-Makevars-for-webR.patch
+  # Select Emscripten as the target
+  - patches/0003-Set-UNAME-to-Emscripten.patch
+
+build:
+  number: 0
+  script: |
+    $R CMD INSTALL \
+    --no-docs \
+    --no-html \
+    --no-test-load \
+    --no-staged-install \
+    --no-byte-compile \
+    $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  - pkg-config
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://fs.r-lib.org
+  license: MIT
+  summary: A cross-platform interface to file system operations, built on top of the 'libuv'
+    C library.
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
