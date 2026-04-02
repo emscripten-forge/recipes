@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Blake <adam@coursekata.org>
+Date: Wed, 2 Apr 2026 15:20:00 -0700
+Subject: [PATCH 6/6] Fix narrowing conversion in descriptor for wasm32
+
+On wasm32, size_t is 4 bytes but sizeInBytes() returns uint64_t.
+Brace initialization treats this as a narrowing error. Use
+parenthesized initialization which allows the implicit conversion.
+---
+ flang-rt/lib/runtime/descriptor.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/flang-rt/lib/runtime/descriptor.cpp
++++ b/flang-rt/lib/runtime/descriptor.cpp
+@@ -85,7 +85,7 @@
+ RT_API_ATTRS void Descriptor::Establish(const typeInfo::DerivedType &dt,
+     void *p, int rank, const SubscriptValue *extent,
+     ISO::CFI_attribute_t attribute) {
+-  std::size_t elementBytes{dt.sizeInBytes()};
++  std::size_t elementBytes(dt.sizeInBytes());
+   ISO::EstablishDescriptor(
+       &raw_, p, attribute, CFI_type_struct, elementBytes, rank, extent);
+   if (elementBytes == 0) {
