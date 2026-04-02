@@ -1,0 +1,13 @@
+--- a/src/library/grDevices/src/cairo/cairoFns.c
++++ b/src/library/grDevices/src/cairo/cairoFns.c
+@@ -1756,6 +1756,10 @@ static cairo_font_face_t *FC_getFont(const char *family, int style)
+
+     /* find candidate fonts via FontConfig */
+     if (!fc_loaded) {
++#ifdef __EMSCRIPTEN__
++	/* Compiled-in config path doesn't survive wasm relocation */
++	setenv("FONTCONFIG_FILE", "/etc/fonts/fonts.conf", 0);
++#endif
+ 	if (!FcInit()) {
+ 	    warning("unable to initialize FontConfig in cairo-ft font selection");
+ 	    return NULL;
