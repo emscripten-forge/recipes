@@ -1,0 +1,92 @@
+--- a/src/library/grDevices/src/cairo/cairoFns.c	2026-03-30 15:26:57
++++ b/src/library/grDevices/src/cairo/cairoFns.c	2026-03-31 09:47:14
+@@ -1884,7 +1884,6 @@
+ {
+     pX11Desc xd = (pX11Desc) dd->deviceSpecific;
+     int face = gc->fontface;
+-    double size = gc->cex * gc->ps *fs;
+     cairo_font_face_t *cairo_face = NULL;
+     const char *family;
+ #ifdef Win32
+@@ -1911,9 +1910,10 @@
+ 	Rc_addFont(family, face, cairo_face);
+     }
+     cairo_set_font_face (xd->cc, cairo_face);
+-    /* FIXME: this should really use cairo_set_font_matrix
+-       if pixels are non-square on a screen device. */
+-    cairo_set_font_size (xd->cc, size);
++    /* Font size is applied via CTM scaling in Cairo_Text, Cairo_StrWidth,
++     * and Cairo_MetricInfo because cairo_set_font_size does not work
++     * correctly in emscripten-wasm32 builds. */
++    cairo_set_font_size (xd->cc, 1.0);
+ }
+ 
+ #else
+@@ -1997,11 +1997,20 @@
+ 	str[0] = (char)c; str[1] = 0;
+     }
+ 
++    double size = gc->cex * gc->ps * xd->fontscale;
+     FT_getFont(gc, dd, xd->fontscale);
++    /* cairo_set_font_size is broken on emscripten-wasm32; query the
++     * actual (stuck) font size and compute a CTM scale ratio. */
++    cairo_matrix_t fm;
++    cairo_get_font_matrix(xd->cc, &fm);
++    double scale = (fm.xx > 0) ? size / fm.xx : size;
++    cairo_save(xd->cc);
++    cairo_scale(xd->cc, scale, scale);
+     cairo_text_extents(xd->cc, str, &exts);
+-    *ascent  = -exts.y_bearing;
+-    *descent = exts.height + exts.y_bearing;
+-    *width = exts.x_advance;
++    cairo_restore(xd->cc);
++    *ascent  = -exts.y_bearing * scale;
++    *descent = (exts.height + exts.y_bearing) * scale;
++    *width = exts.x_advance * scale;
+ }
+ 
+ static double Cairo_StrWidth(const char *str, pGEcontext gc, pDevDesc dd)
+@@ -2020,9 +2029,16 @@
+     } else {
+         textstr = str;
+     }
++    double size = gc->cex * gc->ps * xd->fontscale;
+     FT_getFont(gc, dd, xd->fontscale);
++    cairo_matrix_t fm;
++    cairo_get_font_matrix(xd->cc, &fm);
++    double scale = (fm.xx > 0) ? size / fm.xx : size;
++    cairo_save(xd->cc);
++    cairo_scale(xd->cc, scale, scale);
+     cairo_text_extents(xd->cc, textstr, &exts);
+-    return exts.x_advance;
++    cairo_restore(xd->cc);
++    return exts.x_advance * scale;
+ }
+ 
+ static void Cairo_Text(double x, double y,
+@@ -2051,15 +2067,20 @@
+             grouping = cairoBegin(xd);
+         }
+ 
++	double size = gc->cex * gc->ps * xd->fontscale;
+ 	FT_getFont(gc, dd, xd->fontscale);
+-	cairo_move_to(xd->cc, x, y);
+-	if (hadj != 0.0 || rot != 0.0) {
++	cairo_matrix_t fm;
++	cairo_get_font_matrix(xd->cc, &fm);
++	double scale = (fm.xx > 0) ? size / fm.xx : size;
++	cairo_translate(xd->cc, x, y);
++	if (rot != 0.0) cairo_rotate(xd->cc, -rot/180.*M_PI);
++	cairo_scale(xd->cc, scale, scale);
++	if (hadj != 0.0) {
+ 	    cairo_text_extents_t te;
+ 	    cairo_text_extents(xd->cc, textstr, &te);
+-	    if (rot != 0.0) cairo_rotate(xd->cc, -rot/180.*M_PI);
+-	    if (hadj != 0.0)
+-		cairo_rel_move_to(xd->cc, -te.x_advance * hadj, 0);
++	    cairo_translate(xd->cc, -te.x_advance * hadj, 0);
+ 	}
++	cairo_move_to(xd->cc, 0, 0);
+         if (!xd->appending) {
+             CairoColor(gc->col, xd);
+             cairo_show_text(xd->cc, textstr);
