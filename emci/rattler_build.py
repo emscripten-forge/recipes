@@ -36,6 +36,13 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
 
     cmd.extend(["-m", RATTLER_CONDA_BUILD_CONFIG_PATH])
 
+    # add extra channels (highest priority) if configured via env var
+    extra_channels = os.environ.get("EXTRA_CHANNELS", "")
+    for ch in extra_channels.split(","):
+        ch = ch.strip()
+        if ch:
+            cmd.extend(["-c", ch])
+
     # add conda forge and emscripten-forge channels
     cmd.extend([
         "-c", "https://repo.prefix.dev/emscripten-forge-4x",

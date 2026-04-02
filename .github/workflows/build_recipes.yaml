@@ -22,6 +22,8 @@ jobs:
       FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
+      EXTRA_CHANNELS: ${{ vars.EXTRA_CHANNELS }}
+      PREFIX_UPLOAD_CHANNEL: ${{ vars.PREFIX_UPLOAD_CHANNEL }}
     strategy:
       fail-fast: false
 
@@ -97,9 +99,10 @@ jobs:
         continue-on-error: true
 
       - name: Upload packages to prefix channel
-        if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
+        if: github.event_name == 'push' && (github.repository == 'emscripten-forge/recipes' || env.PREFIX_UPLOAD_CHANNEL != '')
         shell: bash -l {0}
         run: |
+          CHANNEL="${PREFIX_UPLOAD_CHANNEL:-emscripten-forge-4x}"
           overall_success=true
 
           # Loop over {emscripten-wasm32, linux-64, noarch}
@@ -109,10 +112,10 @@ jobs:
               files=$(ls *.tar.bz2 2> /dev/null)
               if [ -n "$files" ]; then
                 for package in $files; do
-                  echo "Uploading ${package} for ${platform}"
+                  echo "Uploading ${package} for ${platform} to ${CHANNEL}"
 
                   rattler-build upload prefix \
-                    --channel emscripten-forge-4x \
+                    --channel "${CHANNEL}" \
                     --generate-attestation \
                     ${package}
 
