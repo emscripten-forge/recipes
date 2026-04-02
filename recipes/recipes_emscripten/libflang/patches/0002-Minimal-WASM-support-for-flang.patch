@@ -8,14 +8,13 @@ Original patch from https://gws.phd/posts/fortran_wasm/
  flang/lib/Optimizer/CodeGen/Target.cpp | 41 ++++++++++++++++++++++++++
  1 file changed, 41 insertions(+)
 
-diff --git a/flang/lib/Optimizer/CodeGen/Target.cpp b/flang/lib/Optimizer/CodeGen/Target.cpp
-index 2a1eb0bc3..726ce9dc5 100644
 --- a/flang/lib/Optimizer/CodeGen/Target.cpp
 +++ b/flang/lib/Optimizer/CodeGen/Target.cpp
-@@ -1656,6 +1656,44 @@ struct TargetLoongArch64 : public GenericTarget<TargetLoongArch64> {
+@@ -1874,7 +1874,45 @@
+   }
  };
  } // namespace
- 
++
 +//===----------------------------------------------------------------------===//
 +// WebAssembly (wasm32) target specifics.
 +//===----------------------------------------------------------------------===//
@@ -25,7 +24,7 @@ index 2a1eb0bc3..726ce9dc5 100644
 +  using GenericTarget::GenericTarget;
 +
 +  static constexpr int defaultWidth = 32;
-+
+ 
 +  CodeGenSpecifics::Marshalling
 +  complexArgumentType(mlir::Location, mlir::Type eleTy) const override {
 +    assert(fir::isa_real(eleTy));
@@ -57,7 +56,7 @@ index 2a1eb0bc3..726ce9dc5 100644
  // Instantiate the overloaded target instance based on the triple value.
  // TODO: Add other targets to this file as needed.
  std::unique_ptr<fir::CodeGenSpecifics>
-@@ -1711,6 +1749,9 @@ fir::CodeGenSpecifics::get(mlir::MLIRContext *ctx, llvm::Triple &&trp,
+@@ -1933,6 +1971,9 @@
    case llvm::Triple::ArchType::loongarch64:
      return std::make_unique<TargetLoongArch64>(
          ctx, std::move(trp), std::move(kindMap), targetCPU, targetFeatures, dl);

@@ -6,7 +6,12 @@ export CFLAGS="$CFLAGS -fPIC"
 export CXXFLAGS="$CXXFLAGS -fPIC"
 
 # See https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
-emcmake cmake -S flang/runtime -B _fbuild_runtime -GNinja \
+# LLVM 21 moved the runtime from flang/runtime to flang-rt/lib/runtime
+# and requires cmake module path for the new flang-rt build infrastructure
+emcmake cmake -S flang-rt/lib/runtime -B _fbuild_runtime -GNinja \
+                -DCMAKE_MODULE_PATH="$(pwd)/flang-rt/cmake/modules;$(pwd)/flang/cmake/modules" \
+                -DFLANG_RT_SOURCE_DIR="$(pwd)/flang-rt" \
+                -DFLANG_SOURCE_DIR="$(pwd)/flang" \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=$PREFIX
 $(which cmake) --build _fbuild_runtime
