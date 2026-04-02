@@ -221,7 +221,7 @@ def try_to_merge_pr(pr, recipe_dir=None, ping=False):
             message += "\nPing the maintainers: "
             for maintainer in maintainers:
                 message += f"@{maintainer} "
-            message += "\nIf you believe you are wrongly pinned, please comment here or open a PR removing you from the maintainers list."
+            message += "\nIf you believe you are wrongly pinged, please comment here or open a PR removing you from the maintainers list."
 
         try:
             # Running edit-last in case there was already a comment, we don't want to spam with comments
