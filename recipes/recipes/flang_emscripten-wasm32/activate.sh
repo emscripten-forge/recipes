@@ -3,7 +3,7 @@
 # Using flang as a WASM cross-compiler
 # https://github.com/serge-sans-paille/llvm-project/blob/feature/flang-wasm/README.wasm.md
 # https://github.com/conda-forge/flang-feedstock/pull/69
-if [ ! -f "$BUILD_PREFIX/bin/flang-new" ]; then
+if [ ! -f "$BUILD_PREFIX/bin/flang" ]; then
     FLANG_CHANNEL="${FLANG_CHANNEL:-conda-forge/label/emscripten}"
     micromamba install -p $BUILD_PREFIX \
         "${FLANG_CHANNEL}::flang==$PKG_VERSION" \
@@ -16,13 +16,13 @@ if [ ! -f "$BUILD_PREFIX/bin/flang-new" ]; then
     ln -s $BUILD_PREFIX/opt/emsdk/upstream/lib/clang $BUILD_PREFIX/lib/clang
 fi
 
-export FC=flang-new
-export F77=flang-new
-export F90=flang-new
-export F95=flang-new
-export F18=flang-new
-export FLANG=flang-new
+export FC=flang
+export F77=flang
+export F90=flang
+export F95=flang
+export F18=flang
+export FLANG=flang
 
 export FFLAGS="--target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-export FCLIBS="-lFortranRuntime"
+export FCLIBS="-lflang_rt.runtime"

@@ -51,7 +51,7 @@ pushd _build_linux
     export PREFIX=$BUILD_PREFIX
     export CC=gcc
     export CXX=g++
-    export FC=flang-new
+    export FC=flang
     export CPPFLAGS="-I$BUILD_PREFIX/include"
     export LDFLAGS="-L$BUILD_PREFIX/lib"
     export FC_LEN_T=size_t
@@ -128,4 +128,4 @@ sed -i '/DOCTYPE/d' "$PREFIX/etc/fonts/fonts.conf"
 sed -i 's|<dir>/usr/share/fonts</dir>|<dir>/fonts</dir>|' "$PREFIX/etc/fonts/fonts.conf"
 sed -i 's|<include ignore_missing="yes">conf.d</include>|<include ignore_missing="yes">/etc/fonts/conf.d</include>\n<include ignore_missing="yes">/etc/fonts/config.d</include>|' "$PREFIX/etc/fonts/fonts.conf"
 
-rm $PREFIX/lib/libFortranRuntime.a
+rm $PREFIX/lib/libflang_rt.runtime.a
