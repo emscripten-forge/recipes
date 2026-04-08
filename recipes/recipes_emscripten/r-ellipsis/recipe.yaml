@@ -12,13 +12,15 @@ source:
   - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: da1782bce5c1baf1cf8c69877078db51fabf2693a393b55ff044fd2e32966873
 
+# TODO: remove from emscripten-forge once the noarch version is available on
+# conda-forge
 build:
   number: 0
+  noarch: generic
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - ${{ compiler('c') }}
   - cross-r-base_${{ target_platform }}
   - r-rlang
   host:
@@ -28,8 +30,8 @@ requirements:
 
 tests:
 - package_contents:
-    lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    files:
+    - lib/R/library/${{ name[2:] }}/R/${{ name[2:] }}*
 
 about:
   homepage: https://ellipsis.r-lib.org
