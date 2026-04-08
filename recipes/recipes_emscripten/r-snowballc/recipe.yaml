@@ -1,0 +1,45 @@
+context:
+  name: r-SnowballC
+  version: 0.7.1
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 753cf13f3206751662c03b1cf39bce9e680024f6d9f8503b836a83797181c034
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }}
+  host:
+  run:
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://github.com/nalimilan/R.TeMiS
+  license: BSD-3-Clause
+  summary: An R interface to the C 'libstemmer' library that implements Porter's word stemming
+    algorithm for collapsing words to a common root to aid comparison of vocabulary.
+    Currently supported languages are Arabic, Basque, Catalan, Danish, Dutch, English,
+    Finnish, French, German, Greek, Hindi, Hungarian, Indonesian, Irish, Italian, Lithuanian,
+    Nepali, Norwegian, Portuguese, Romanian, Russian, Spanish, Swedish, Tamil and Turkish.
+  license_family: BSD
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
