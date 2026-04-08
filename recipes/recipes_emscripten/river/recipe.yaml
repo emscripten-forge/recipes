@@ -11,7 +11,7 @@ source:
   sha256: f174cb8e5984be1a193827faf8e09a03ceb110a055290628accc72ec987390f1
 
 build:
-  number: 2
+  number: 3
   script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
   files:
@@ -25,6 +25,7 @@ build:
   python:
     skip_pyc_compilation:
     - '**/*.py'
+
 requirements:
   build:
   - ${{ compiler('c') }}
@@ -45,23 +46,18 @@ requirements:
   - numpy >=1.23.0
   - pandas >=2.2.3,<3.0.0
   - scipy >=1.14.1,<2.0.0
+  - typing_extensions
 
 tests:
-- script:
-  - echo "FIXME:"
-# river v0.23.0 passes the tests. It has been tested with xeus-python.
-# The following tests fail because of how shared libs are loaded in the test
-# environment.
-
-# - script: pytester
-#   files:
-#     recipe:
-#     - test_import_river.py
-#   requirements:
-#     build:
-#     - pytester
-#     run:
-#     - pytester-run
+- script: pytester
+  files:
+    recipe:
+    - test_import_river.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   license: BSD-3-Clause
