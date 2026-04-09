@@ -7,7 +7,7 @@ from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, skip_existing="local"):
 
-    cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "fancy"]
+    cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "simple"]
 
     # build single recipe or all recipes in a directory ?
     if recipe is not None and recipes_dir is not None:
