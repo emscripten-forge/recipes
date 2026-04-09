@@ -1,0 +1,42 @@
+context:
+  version: 7.1.2-18
+package:
+  name: imagemagick
+  version: ${{ version | replace("-","_") }}
+
+source:
+  url: https://github.com/ImageMagick/ImageMagick/archive/${{ version}}.tar.gz
+  sha256: 2db8a1f9bac19831c76574e4fd514ecb80a71a49911ee5dc8c1f3fb6d9d550df
+build:
+  number: 0
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - libtool
+  - ${{ compiler('c') }}
+  - make
+  - pkg-config
+  host:
+  - libtiff
+  - libpng
+  - libjpeg-turbo
+  - bzip2
+  - libxml2
+  - openjpeg
+  - zlib
+
+tests:
+- package_contents:
+    files:
+    - lib/libMagick++-7.Q8.a
+    - include/ImageMagick-7/Magick++.h
+
+about:
+  homepage: http://www.imagemagick.org/
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Software suite to create, edit, compose, or convert bitmap images.
+

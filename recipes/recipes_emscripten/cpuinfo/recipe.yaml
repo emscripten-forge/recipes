@@ -1,0 +1,59 @@
+context:
+  name: cpuinfo
+  version: "7364b490b5f78d58efe23ea76e74210fd6c3c76f"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/pytorch/cpuinfo/archive/${{ version }}.tar.gz
+  sha256: 67093420590f97c84d0c38cc020f134579494089d06de387bb48c7455eb5b8af
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - python
+
+tests:
+- package_contents:
+    include:
+    - cpuinfo.h
+    lib:
+    - libcpuinfo.a
+    files:
+    - share/cpuinfo/cpuinfo-config.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/pytorch/cpuinfo
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: CPU INFOrmation library for aarch64, x86, and WebAssembly
+  description: |
+    cpuinfo is a library to detect essential for performance optimization
+    information about host CPU. It includes detection of CPU topology,
+    supported instruction sets, cache sizes, and other properties.
+    It has native Emscripten/WebAssembly support.
+  repository: https://github.com/pytorch/cpuinfo
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

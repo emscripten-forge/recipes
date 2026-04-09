@@ -1,45 +1,65 @@
 context:
-  version: 10.8.1
-
-package:
-  name: passagemath-environment
-  version: ${{ version }}
+  version: 10.8.3
 
 source:
 - url: https://pypi.org/packages/source/p/passagemath-environment/passagemath_environment-${{ version }}.tar.gz
-  sha256: 51477339171cdfa88aaae838d77f244f3fbae75293794078153eeffa80fa7d65
+  sha256: 1a0304f908ab02900f441996f79826258f1386ec9041c15ec37ff7894fc44ee8
 
 build:
-  script: ${{ PYTHON }} -m pip install .
-  noarch: python
+  number: 0
 
-requirements:
+outputs:
+- package:
+    name: passagemath-environment
+    version: ${{ version }}
+
   build:
-  - python
-  - crossenv >=1.2
-  - cross-python_emscripten-wasm32
-  - ${{ compiler("c") }}
-  - pip
-  host:
-  - python
-  - setuptools
-  - wheel
-  - pip
-  run:
-  - python
-  - packaging
-  - platformdirs
+    script: ${{ PYTHON }} -m pip install .
+    noarch: python
 
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_passagemath_environment.py
   requirements:
     build:
-    - pytester
+    - python
+    - crossenv >=1.2
+    - cross-python_emscripten-wasm32
+    - ${{ compiler("c") }}
+    - pip
+    - passagemath-abi == ${{ version }}
+    host:
+    - python
+    - setuptools
+    - wheel
+    - pip
     run:
-    - pytester-run
+    - python
+    - packaging
+    - platformdirs
+    - passagemath-abi == ${{ version }}
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_passagemath_environment.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+- package:
+    name: passagemath-abi
+    version: ${{ version }}
+
+  build:
+    noarch: generic
+    script: echo "passagemath-abi is built"
+  requirements:
+    run_exports:
+      strong:
+      - ${{ pin_subpackage('passagemath-abi', exact=True) }}
+  tests:
+  - script: echo "passagemath-abi is an empty package."
 
 about:
   summary: 'passagemath: System and software environment'

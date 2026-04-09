@@ -1,0 +1,42 @@
+context:
+  version: 6.9.13-43
+package:
+  name: imagemagick
+  version: ${{ version | replace("-","_") }}
+
+source:
+  url: https://github.com/ImageMagick/ImageMagick6/archive/refs/tags/${{ version}}.tar.gz
+  sha256: aca5db60e8a2cdc32696e72d1685fe137b1e6da826e9b4fbfe711f79992fa372
+build:
+  number: 0
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - libtool
+  - ${{ compiler('c') }}
+  - make
+  - pkg-config
+  host:
+  - libtiff
+  - libpng
+  - libjpeg-turbo
+  - bzip2
+  - libxml2
+  - openjpeg
+  - zlib
+
+tests:
+- package_contents:
+    files:
+    - lib/libMagick++-6.Q16.a
+    - include/ImageMagick-6/Magick++.h
+
+about:
+  homepage: http://www.imagemagick.org/
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Software suite to create, edit, compose, or convert bitmap images.
+

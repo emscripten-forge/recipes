@@ -1,58 +1,58 @@
 context:
-  version: 2.14.1
+  version: 2.14.3
 
 recipe:
   name: freetype-split
 
 source:
   url: https://download.savannah.gnu.org/releases/freetype/freetype-${{ version }}.tar.gz
-  sha256: 174d9e53402e1bf9ec7277e22ec199ba3e55a6be2c0740cb18c0ee9850fc8c34
+  sha256: e61b31ab26358b946e767ed7eb7f4bb2e507da1cfefeb7a8861ace7fd5c899a1
 
 build:
-  number: 2
+  number: 0
 
 outputs:
-  - package:
-      name: freetype
-      version: ${{ version }}
+- package:
+    name: freetype
+    version: ${{ version }}
 
+  build:
+    script: build_static.sh
+  requirements:
     build:
-      script: build_static.sh
-    requirements:
-      build:
-      - ${{ compiler('c') }}
-      - cmake
-      - make
-      host:
-      - libpng
-      - zlib
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+    host:
+    - libpng
+    - zlib
 
-    tests:
-    - script:
-      - test -f $PREFIX/include/freetype2/freetype/freetype.h
-      - test -f $PREFIX/include/freetype2/ft2build.h
-      - test -f $PREFIX/lib/libfreetype.a
+  tests:
+  - script:
+    - test -f $PREFIX/include/freetype2/freetype/freetype.h
+    - test -f $PREFIX/include/freetype2/ft2build.h
+    - test -f $PREFIX/lib/libfreetype.a
 
-  - package:
-      name: freetype-shared
-      version: ${{ version }}
+- package:
+    name: freetype-shared
+    version: ${{ version }}
 
+  build:
+    script: build_shared.sh
+  requirements:
     build:
-      script: build_shared.sh
-    requirements:
-      build:
-      - ${{ compiler('c') }}
-      - cmake
-      - ninja
-      host:
-      - libpng
-      - zlib
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+    host:
+    - libpng
+    - zlib
 
-    tests:
-    - script:
-      - test -f $PREFIX/include/freetype2/freetype/freetype.h
-      - test -f $PREFIX/include/freetype2/ft2build.h
-      - test -f $PREFIX/lib/libfreetype.so
+  tests:
+  - script:
+    - test -f $PREFIX/include/freetype2/freetype/freetype.h
+    - test -f $PREFIX/include/freetype2/ft2build.h
+    - test -f $PREFIX/lib/libfreetype.so
 
 about:
   homepage: https://www.freetype.org/

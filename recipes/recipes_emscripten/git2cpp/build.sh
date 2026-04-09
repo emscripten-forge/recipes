@@ -1,19 +1,17 @@
+export EMCC_CFLAGS="${EMCC_CFLAGS} -Os"
+
 export CONFIG_CXXFLAGS="\
-    -Os \
     -I$BUILD_PREFIX/include \
-    -Wno-deprecated-declarations \
     "
 
 # stringToNewUTF8 and writeArrayToMemory are used by libgit2.
 export CONFIG_LDFLAGS="\
-    -Os \
     --minify=0 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sEXIT_RUNTIME=1 \
     -sEXPORTED_RUNTIME_METHODS=FS,ENV,PROXYFS,TTY,stringToNewUTF8,writeArrayToMemory \
     -sFORCE_FILESYSTEM=1 \
     -sMODULARIZE=1 \
-    --pre-js $RECIPE_DIR/pre.js \
     -sSTACK_SIZE=1MB \
     -lproxyfs.js \
     "
