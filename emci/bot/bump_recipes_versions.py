@@ -307,7 +307,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
         # Merge PRs if possible
-        if pr_target_branch in ["main", "emscripten-3x"]:
+        if pr_target_branch in ["main"]:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
