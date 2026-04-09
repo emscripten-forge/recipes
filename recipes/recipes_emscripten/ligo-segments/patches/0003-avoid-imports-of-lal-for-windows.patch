@@ -1,0 +1,53 @@
+From 066c8d7558e80342e5d5d5fa89b9d93b627375b1 Mon Sep 17 00:00:00 2001
+From: "duncan.macleod" <duncan.macleod@ligo.org>
+Date: Thu, 13 Apr 2023 12:35:25 +0100
+Subject: [PATCH 3/5] avoid imports of lal for windows
+
+---
+ ligo/segments/utils.py | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/ligo/segments/utils.py b/ligo/segments/utils.py
+index 8152849..5d6dca0 100644
+--- a/ligo/segments/utils.py
++++ b/ligo/segments/utils.py
+@@ -31,9 +31,6 @@ This module provides additional utilities for use with ligo.segments.
+ 
+ import re
+ 
+-from lal import LIGOTimeGPS
+-from lal.utils import CacheEntry
+-
+ from ligo import segments
+ from ligo.segments import __version__
+ 
+@@ -104,6 +101,7 @@ def fromlalcache(cachefile, coltype = int):
+ 
+ 	lal.utils.CacheEntry
+ 	"""
++	from lal.utils import CacheEntry
+ 	return segments.segmentlist(CacheEntry(l, coltype = coltype).segment for l in cachefile)
+ 
+ 
+@@ -192,7 +190,7 @@ def tosegwizard(fileobj, seglist, header = True, coltype = int):
+ #
+ 
+ 
+-def fromtama(fileobj, coltype = LIGOTimeGPS):
++def fromtama(fileobj, coltype = None):
+ 	"""
+ 	Read a segmentlist from the file object fileobj containing TAMA
+ 	locked-segments data.  Parsing stops on the first line that cannot
+@@ -208,6 +206,9 @@ def fromtama(fileobj, coltype = LIGOTimeGPS):
+ 	then thusly shall be the output of this function.  It is
+ 	recommended that this function's output be coalesced before use.
+ 	"""
++	if coltype is None:
++		from lal import LIGOTimeGPS
++		coltype = LIGOTimeGPS
+ 	segmentpat = re.compile(r"\A\s*\S+\s+\S+\s+\S+\s+([\d.+-eE]+)\s+([\d.+-eE]+)")
+ 	l = segments.segmentlist()
+ 	for line in fileobj:
+-- 
+2.39.5
+

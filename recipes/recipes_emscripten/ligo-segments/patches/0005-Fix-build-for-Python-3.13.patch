@@ -1,0 +1,67 @@
+From f211a1f6e0352ba96e720be619fb903f41d287db Mon Sep 17 00:00:00 2001
+From: Leo Singer <leo.singer@ligo.org>
+Date: Mon, 7 Oct 2024 07:53:58 -0400
+Subject: [PATCH 5/5] Fix build for Python 3.13
+
+Use PyList_Extend for Python >= 3.13, and provide replacement
+using _PyList_Extend for Python < 3.13. In Python 3.13, the
+function _PyList_Extend was removed and the public API method
+PyList_Extend was added in its place.
+
+Fixes #21.
+---
+ src/segmentlist.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/src/segmentlist.c b/src/segmentlist.c
+index f666487..233775d 100644
+--- a/src/segmentlist.c
++++ b/src/segmentlist.c
+@@ -240,7 +240,8 @@ static PyObject *make_segment(PyObject *lo, PyObject *hi)
+ }
+ 
+ 
+-static int pylist_extend(PyListObject *l, PyObject *v)
++#if PY_VERSION_HEX < 0x030D0000
++static int PyList_Extend(PyListObject *l, PyObject *v)
+ {
+ 	if(!PyList_Check(l)) {
+ 		PyErr_SetObject(PyExc_TypeError, (PyObject *) l);
+@@ -252,6 +253,7 @@ static int pylist_extend(PyListObject *l, PyObject *v)
+ 	Py_DECREF(result);
+ 	return 0;
+ }
++#endif
+ 
+ 
+ static PyListObject *segments_SegmentList_New(PyTypeObject *type, PyObject *sequence)
+@@ -263,7 +265,7 @@ static PyListObject *segments_SegmentList_New(PyTypeObject *type, PyObject *sequ
+ 	}
+ 	new = (PyListObject *) type->tp_alloc(type, 0);
+ 	if(new && sequence)
+-		if(pylist_extend(new, sequence)) {
++		if(PyList_Extend(new, sequence)) {
+ 			Py_DECREF(new);
+ 			new = NULL;
+ 		}
+@@ -817,7 +819,7 @@ static PyObject *__ior__(PyObject *self, PyObject *other)
+ 	/* Faster algorithm when the two lists have very different sizes.
+ 	 * OK to not test size functions for error return values */
+ 	if(PySequence_Size(other) > PyList_GET_SIZE(self) / 2) {
+-		if(pylist_extend((PyListObject *) self, other))
++		if(PyList_Extend((PyListObject *) self, other))
+ 			return NULL;
+ 		return PyObject_CallMethod(self, "coalesce", NULL);
+ 	}
+@@ -988,7 +990,7 @@ static PyObject *__xor__(PyObject *self, PyObject *other)
+ 		Py_XDECREF(other);
+ 		return NULL;
+ 	}
+-	if(pylist_extend((PyListObject *) new, other)) {
++	if(PyList_Extend((PyListObject *) new, other)) {
+ 		Py_DECREF(new);
+ 		Py_DECREF(other);
+ 		return NULL;
+-- 
+2.39.5
+
