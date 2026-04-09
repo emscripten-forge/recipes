@@ -9,7 +9,7 @@ export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path} -DCMAK
 
 # DuckDB-specific CMake flags for wasm passed via scikit-build-core config settings
 ${PYTHON} -m pip install . ${PIP_ARGS} \
-  -Ccmake.define.OVERRIDE_GIT_DESCRIBE="v${PKG_VERSION}" \
+  -Cbuild-dir="_build" \
   -Ccmake.define.BUILD_EXTENSIONS="parquet;json;autocomplete" \
   -Ccmake.define.BUILD_SHELL=OFF \
   -Ccmake.define.BUILD_UNITTESTS=OFF \
