@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Blake <adam@coursekata.org>
+Date: Thu, 10 Apr 2026 00:00:00 -0700
+Subject: [PATCH 7/7] Fix complex reduction ABI mismatch for wasm32
+
+The ADAPT_REDUCTION macro in complex-reduction.c declares the C++
+CppReduce* functions with a struct return type. On native targets,
+the struct return ABI matches C++'s void-with-reference-param ABI.
+On wasm32, struct returns use an sret parameter, creating a signature
+mismatch (11 params vs 9 params) that causes wasm-ld errors.
+
+Fix by declaring the C++ functions as void-returning, matching
+their actual C++ definition in reduce.cpp.
+---
+ flang-rt/lib/runtime/complex-reduction.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/flang-rt/lib/runtime/complex-reduction.c
++++ b/flang-rt/lib/runtime/complex-reduction.c
+@@ -104,7 +104,7 @@
+ 
+ #define CPP_NAME(name) Cpp##name
+ #define ADAPT_REDUCTION(name, cComplex, cpptype, cmplxMacro, ARGS, ARG_NAMES) \
+-  struct cpptype RTNAME(CPP_NAME(name))(struct cpptype *, ARGS); \
++  void RTNAME(CPP_NAME(name))(struct cpptype *, ARGS); \
+   cComplex RTNAME(name)(ARGS) { \
+     struct cpptype result; \
+     RTNAME(CPP_NAME(name))(&result, ARG_NAMES); \
