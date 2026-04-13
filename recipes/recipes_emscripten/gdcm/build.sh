@@ -106,4 +106,4 @@ emcmake cmake ..  $CMAKE_ARGS \
 find . -name "gdcmswigPYTHON_wrap.cxx" -exec sed -i \
   's/PyEval_CallObject/PyObject_CallObject/g' {} +
 
-emmake make -j$CPU_COUNT
+emmake make -j$CPU_COUNT install
