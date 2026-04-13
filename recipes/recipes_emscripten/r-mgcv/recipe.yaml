@@ -13,13 +13,16 @@ source:
   sha256: a98159698afb269e06a46cac1f945bf2b3427a2dd587c6f2efd67ede90089372
 
 build:
-  number: 3
+  number: 4
+  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  # TODO: flang needs to be rebuilt to install r-base in build environment.
+  skip: ${{ r_abi_build_tag == 453 }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-nlme
   - r-matrix
   host:

@@ -1,6 +1,6 @@
 context:
-  version: 1.4.0
   name: ligo-segments
+  version: 1.4.0
 
 package:
   name: ${{ name }}
@@ -10,51 +10,52 @@ source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: e072a844713c5b02efdcaf5bfe4c3a8cd9ef225b08cfd3202a4e185e0f71f5dc
   patches:
-    - patches/0001-use-PEP-420-implicit-namespace-packages.patch
-    - patches/0004-Initialize-PyTypeObjects-with-PyVarObject_HEAD_INIT.patch
-    - patches/0005-Fix-build-for-Python-3.13.patch
+    - 0001-use-PEP-420-implicit-namespace-packages.patch
+    - 0004-Initialize-PyTypeObjects-with-PyVarObject_HEAD_INIT.patch
+    - 0005-Fix-build-for-Python-3.13.patch
+
 build:
   number: 0
-  script: "${{ PYTHON }} -m pip install . -vv"
-
+  script: ${{ PYTHON }} -m pip install . -vv
 
   files:
     exclude:
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-    - '**/test_*.py'
+      - '**/__pycache__/**'
+      - '**/*.pyc'
   python:
     skip_pyc_compilation:
-    - '**/*.py'
+      - '**/*.py'
+
 requirements:
   build:
-  - python
-  - cross-python_emscripten-wasm32
-  - ${{ compiler("c") }}
-  - pip
+    - ${{ compiler('c') }}
+    - cross-python_emscripten-wasm32
+    - python
   host:
-  - python
+    - pip
+    - python
+    - setuptools
   run:
-  - python
-  - six
+    - python
+    - six
 
 tests:
-- script: pytester
-  requirements:
-    build:
-    - pytester
-    run:
-    - pytester-run
-  files:
-    recipe:
-    - test_ligo_segments.py
-
+  - script: pytester
+    files:
+      recipe:
+        - test_ligo_segments.py
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
 
 about:
-  homepage:  https://git.ligo.org/lscsoft/ligo-segments/
+  homepage: https://git.ligo.org/lscsoft/ligo-segments/
   license: GPL-3.0-or-later
   license_file: LICENSE
-  summary:  Representations of semi-open intervals
+  summary: Representations of semi-open intervals
+
 extra:
   recipe-maintainers:
-  - DerThorsten
+    - arjxn-py
