@@ -51,6 +51,9 @@ export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
 pkg-config --libs openssl
 
 
+export CXX_FLAGS="${CXXFLAGS} -s SIDE_MODULE=1 -fPIC -fwasm-exceptions"
+export C_FLAGS="${CFLAGS} -s SIDE_MODULE=1 -fPIC -fwasm-exceptions"
+
  
 emcmake cmake ..  $CMAKE_ARGS \
     -Wno-dev \
