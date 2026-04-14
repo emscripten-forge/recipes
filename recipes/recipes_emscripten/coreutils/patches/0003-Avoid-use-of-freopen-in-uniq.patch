@@ -1,4 +1,4 @@
-From e614de13b330a70915852bfe160927a5acfe28d4 Mon Sep 17 00:00:00 2001
+From 4d0f268f8c18201c87335ba532d7f5ffcd012568 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Wed, 1 Apr 2026 13:54:05 +0100
 Subject: [PATCH 3/4] Avoid use of freopen in uniq
@@ -6,8 +6,8 @@ Subject: [PATCH 3/4] Avoid use of freopen in uniq
 ---
  lib/closeout.c |  8 +++++++-
  lib/closeout.h |  3 +++
- src/uniq.c     | 50 +++++++++++++++++++++++++++++++-------------------
- 3 files changed, 41 insertions(+), 20 deletions(-)
+ src/uniq.c     | 52 +++++++++++++++++++++++++++++++-------------------
+ 3 files changed, 42 insertions(+), 21 deletions(-)
 
 diff --git a/lib/closeout.c b/lib/closeout.c
 index a41758e..9655cec 100644
@@ -50,7 +50,7 @@ index 689f06c..5a1cda7 100644
  # ifdef __cplusplus
  }
 diff --git a/src/uniq.c b/src/uniq.c
-index eebff4b..346c16d 100644
+index eebff4b..d764dc6 100644
 --- a/src/uniq.c
 +++ b/src/uniq.c
 @@ -71,6 +71,8 @@ static bool output_later_repeated = false;
@@ -71,9 +71,12 @@ index eebff4b..346c16d 100644
  {
    if (! (linecount == 0 ? output_unique
           : !match ? output_first_repeated
-@@ -326,7 +328,7 @@ writeline (struct linebuffer const *line,
+@@ -324,9 +326,9 @@ writeline (struct linebuffer const *line,
+     return;
+ 
    if (count_occurrences)
-     printf ("%7jd ", linecount + 1);
+-    printf ("%7jd ", linecount + 1);
++    fprintf (out, "%7jd ", linecount + 1);
  
 -  if (fwrite (line->buffer, sizeof (char), line->length, stdout)
 +  if (fwrite (line->buffer, sizeof (char), line->length, out)
