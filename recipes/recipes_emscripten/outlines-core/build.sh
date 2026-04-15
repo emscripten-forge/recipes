@@ -1,5 +1,5 @@
 #!/bin/bash
-
+rm ./rust-toolchain
 rustup target add wasm32-unknown-emscripten
 
 cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
