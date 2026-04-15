@@ -1,14 +1,14 @@
 context:
   name: less
-  version: 668
+  version: 692
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 2819f55564d86d542abbecafd82ff61e819a3eec967faa36cd3e68f1596a44b8
+  url: https://github.com/gwsw/less/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 5e2ba1936f9d19d903d8b224c3af39c8693bf3add8de42fef3a18b2cde964b35
 
 build:
   number: 0
@@ -20,6 +20,7 @@ requirements:
   - autoconf
   host:
   - ncurses <6.5
+  - pcre2
 
 tests:
 - script:
@@ -28,7 +29,7 @@ tests:
   - test -f $PREFIX/bin/less.wasm
 - script: |
     OUTPUT=$(run_modularized $PREFIX/bin/less.js --version | head -1 | cut -c -9)
-    if [[ "$OUTPUT" != "less 668 " ]]; then
+    if [[ "$OUTPUT" != "less ${{ version }} " ]]; then
       echo "Unexpected output: $OUTPUT"
       exit 1
     fi
