@@ -51,7 +51,7 @@ pushd _build_linux
     export PREFIX=$BUILD_PREFIX
     export CC=gcc
     export CXX=g++
-    export FC=flang-new
+    export FC=flang
     export CPPFLAGS="-I$BUILD_PREFIX/include"
     export LDFLAGS="-L$BUILD_PREFIX/lib"
     export FC_LEN_T=size_t
@@ -109,4 +109,23 @@ pushd _build_wasm
 )
 popd
 
-rm $PREFIX/lib/libFortranRuntime.a
+#-------------------------------------------------------------------------------
+# FONTCONFIG SETUP
+#-------------------------------------------------------------------------------
+# At runtime the WASM filesystem prefix is /, but fontconfig's compiled-in
+# config path points to the build host prefix. Set FONTCONFIG_FILE so
+# fontconfig can find its config, and add /fonts/ (where font-ttf-dejavu
+# installs) as a font directory.
+
+# Wasm expat can't resolve the fontconfig DOCTYPE URN, so strip it from
+# all config files. Also patch fonts.conf to use /fonts/ (where
+# font-ttf-dejavu installs) and add an absolute include for config.d/
+# (where DejaVu's family alias configs live).
+for f in "$PREFIX"/etc/fonts/conf.d/*.conf "$PREFIX"/etc/fonts/config.d/*.conf; do
+  [ -f "$f" ] && sed -i '/DOCTYPE/d' "$f"
+done
+sed -i '/DOCTYPE/d' "$PREFIX/etc/fonts/fonts.conf"
+sed -i 's|<dir>/usr/share/fonts</dir>|<dir>/fonts</dir>|' "$PREFIX/etc/fonts/fonts.conf"
+sed -i 's|<include ignore_missing="yes">conf.d</include>|<include ignore_missing="yes">/etc/fonts/conf.d</include>\n<include ignore_missing="yes">/etc/fonts/config.d</include>|' "$PREFIX/etc/fonts/fonts.conf"
+
+rm $PREFIX/lib/libflang_rt.runtime.a

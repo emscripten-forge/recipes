@@ -118,11 +118,19 @@ CPPFLAGS="${OPT_FLAG} -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -I$PREFIX/include
 ## The command which runs the Fortran compiler.
 ## Used for both fixed-form and free-form Fortran
 ## If this is a wrapper it should pass on --version to the real compiler.
-FC=flang-new
+FC=flang
 
 ## Options for the Fortran compiler.
 ## Use this to specify compilation flags for fixed-form Fortran.
 FFLAGS="-g --target=wasm32-unknown-emscripten -fPIC -O2"
+## Fortran runtime library for linking. In LLVM 21, the runtime was renamed
+## from FortranRuntime to flang_rt.runtime but flang still reports the old name.
+FLIBS="-lflang_rt.runtime"
+## Skip the dummy main linking test — it can't run wasm binaries to check.
+## flang doesn't need a dummy main (confirmed by the native Linux build).
+ac_cv_fc_dummy_main=none
+## Fortran name-mangling: flang uses lowercase, no underscores
+ac_cv_fc_mangling="lower case, no underscore, no extra underscore"
 ## Ditto for free-form Fortran.
 ## FCFLAGS=
 ## If just one of these is set, it is used for both.
