@@ -129,8 +129,12 @@ FLIBS="-lflang_rt.runtime"
 ## Skip the dummy main linking test — it can't run wasm binaries to check.
 ## flang doesn't need a dummy main (confirmed by the native Linux build).
 ac_cv_fc_dummy_main=none
-## Fortran name-mangling: flang uses lowercase, no underscores
-ac_cv_fc_mangling="lower case, no underscore, no extra underscore"
+## Fortran name-mangling: LLVM flang appends a trailing underscore by default,
+## matching gfortran. (An earlier comment here said "no underscores" — that
+## was true for Classic Flang, not LLVM flang / flang-new, and the resulting
+## HAVE_F77_UNDERSCORE=undef caused stats.so to import e.g. `dqrls` while
+## libR.so exported `dqrls_`, crashing lm() with a dynamic-linking error.)
+ac_cv_fc_mangling="lower case, underscore, no extra underscore"
 ## Ditto for free-form Fortran.
 ## FCFLAGS=
 ## If just one of these is set, it is used for both.
