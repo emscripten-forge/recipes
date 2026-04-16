@@ -1,0 +1,72 @@
+context:
+  name: keyring
+  version: 25.7.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fe01bd85eb3f8fb3dd0405defdeac9a5b4f6f0439edbb3149577f244a2e8245b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    entry_points:
+    - keyring = keyring.cli:main
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools >=56
+  - setuptools-scm >=3.4.1
+  - toml
+  host:
+  - python
+  - pip
+  - setuptools >=56
+  - setuptools-scm >=3.4.1
+  run:
+  - python
+  - importlib-metadata >=4.11.4
+  - importlib-resources
+  - jaraco.classes
+  - jaraco.context
+  - jaraco.functools
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_keyring.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/jaraco/keyring
+  repository: https://github.com/jaraco/keyring
+  documentation: https://pypi.org/project/keyring/
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Store and access your passwords safely
+
+extra:
+  recipe-maintainers:
+  - copilot
