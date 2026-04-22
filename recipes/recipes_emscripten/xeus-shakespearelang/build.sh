@@ -4,25 +4,51 @@
 SIDE_PATH=$PREFIX/lib/python$PY_VER/site-packages
 KERNEL_DIR=$PREFIX/share/jupyter/kernels/xeus_shakespearelang
 
-echo "PREFIX: $PREFIX"
-echo "SIDE_PATH: $SIDE_PATH"
-echo "KERNEL_DIR: $KERNEL_DIR"
+mkdir build
+cd build
 
-# copy 
-mkdir -p $KERNEL_DIR
-cp -r examples/xeus_shakespearelang/kernelspec/xeus_shakespearelang/kernel.json.in  $KERNEL_DIR/kernel.json
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  # macOS / BSD
-  sed -i '' "s|@XEUS_PYWRAP_KERNELSPEC_PATH@|/bin/|g" "$KERNEL_DIR/kernel.json"
-else
-  # Linux / GNU
-  sed -i "s|@XEUS_PYWRAP_KERNELSPEC_PATH@|/bin/|g" "$KERNEL_DIR/kernel.json"
-fi
+# remove all the fake pythons
+rm -f $PREFIX/bin/python*
 
 
-# show $KERNEL_DIR/kernel.json 
-cat $KERNEL_DIR/kernel.json
+export CMAKE_PREFIX_PATH=$PREFIX
+export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
-# copy module
-cp -r  examples/xeus_shakespearelang/module/* $SIDE_PATH/xeus_shakespearelang
+echo "PYTHON VER" $PY_VER
+
+# Configure step    
+cmake ${CMAKE_ARGS} ..                                      \
+    -GNinja                                                 \
+    -DCMAKE_BUILD_TYPE=Release                              \
+    -DCMAKE_PREFIX_PATH=$PREFIX                             \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX                          \
+    -DXEUS_PYWRAP_INSTALL_XEUS_ECHO_KERNEL=OFF              \
+    -DXEUS_PYWRAP_INSTALL_XEUS_SHAKESPEARELANG_KERNEL=ON    \
+    -DPYTHON_SITE_PACKAGES=$PREFIX/lib/python${PY_VER}/site-packages \
+    -DPython_INCLUDE_DIRS=$PREFIX/include/python${PY_VER} \
+    -DPython_LIBRARY=$PREFIX/lib/libpython${PY_VER}.a \
+    -DPython_LIBRARIES=$PREFIX/lib/libpython${PY_VER}.a \
+    -DPython_Interpreter_FOUND=TRUE \
+    -DPython_EXECUTABLE=$BUILD_PREFIX/bin/python${PY_VER} \
+    -DPYTHON_MODULE_EXTENSION=.so \
+    -DPYTHON_MODULE_DEBUG_POSTFIX="" \
+    -DPYTHON_MODULE_EXT_SUFFIX=.so \
+    -DPython_FOUND=TRUE \
+    -DXEUS_PYWRAP_PYTHON_SITEARCH=$PREFIX/lib/python$PY_VER/site-packages
+
+
+
+# Build step
+ninja
+
+ninja install
+
+# remove raw-kernel
+rm -rf $PREFIX/lib/python$PY_VER/site-packages/xpywrap
+rm -rf $PREFIX/bin/xpywrap
+rm -rf $PREFIX/lib/cmake/xeus-pywrap/
+
+
+# show content of $PREFIX/share/jupyter/kernels/xeus_shakespearelang/kernel.json
+
+cat $PREFIX/share/jupyter/kernels/xeus_shakespearelang/kernel.json
