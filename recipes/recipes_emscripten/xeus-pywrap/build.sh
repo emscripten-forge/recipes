@@ -28,7 +28,8 @@ cmake ${CMAKE_ARGS} ..                                      \
     -DPYTHON_MODULE_DEBUG_POSTFIX="" \
     -DPYTHON_MODULE_EXT_SUFFIX=.so \
     -DPython_FOUND=TRUE \
-    -DXEUS_PYWRAP_PYTHON_SITEARCH=$PREFIX/lib/python$PYVER/site-packages
+    -DXEUS_PYWRAP_PYTHON_SITEARCH=$PREFIX/lib/python$PY_VER/site-packages
+
 
 
 # Build step

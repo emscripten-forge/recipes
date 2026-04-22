@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PYVER=3.13
-SIDE_PATH=$PREFIX/lib/python$PYVER/site-packages
+
+SIDE_PATH=$PREFIX/lib/python$PY_VER/site-packages
 KERNEL_DIR=$PREFIX/share/jupyter/kernels/xeus_shakespearelang
 
 echo "PREFIX: $PREFIX"
