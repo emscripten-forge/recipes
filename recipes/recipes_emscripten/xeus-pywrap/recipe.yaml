@@ -1,0 +1,55 @@
+context:
+  version: 0.1.1
+
+package:
+  name: xeus-pywrap
+  version: ${{ version }}
+
+source:
+  url: https://github.com/DerThorsten/xeus-pywrap/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 6be2c4b922ef3c0cb0e4de82a04119490e05f5b60d08f9638f5ac27b22479f0d
+
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake >=4
+  - ninja
+  - python
+  host:
+  - python
+  - libpython
+  - nlohmann_json
+  - nlohmann_json-abi
+  - xeus
+  - xeus-lite >=5.0.0
+  - pybind11<3
+  - pybind11_json
+  - xtl
+  - pyjs >=4.0.1
+  - zstd
+  - openssl < 4
+  run:
+  - python
+  - pyjs-rt >=4.0.1
+
+tests:
+- package_contents:
+    files:
+    - bin/xpywrap.wasm
+    - bin/xpywrap.js
+    - lib/python3.13/site-packages/xpywrap/__init__.py
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-pywrap
+  homepage: https://github.com/DerThorsten/xeus-pywrap
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
