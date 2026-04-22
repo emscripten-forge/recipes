@@ -8,6 +8,7 @@ rm -f $PREFIX/bin/python*
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
+echo "PYTHON VER" $PY_VER
 
 # Configure step    
 cmake ${CMAKE_ARGS} ..                                      \
@@ -16,12 +17,17 @@ cmake ${CMAKE_ARGS} ..                                      \
     -DCMAKE_PREFIX_PATH=$PREFIX                             \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                          \
     -DXEUS_PYWRAP_INSTALL_XEUS_ECHO_KERNEL=OFF              \
-    -DXEUS_PYWRAP_INSTALL_XEUS_SHAKESPEARELANG_KERNEL=ON    \
-    -DPython_INCLUDE_DIR=$PREFIX/include/python${PY_VER} \
-    -DPYTHONLIBS_FOUND=TRUE \
-    -DPYTHON_LIBRARIES=$PREFIX/lib/libpython${PY_VER}.a \
-    -DPYTHON_INCLUDE_DIRS=$PREFIX/include/python${PY_VER} \
+    -DXEUS_PYWRAP_INSTALL_XEUS_SHAKESPEARELANG_KERNEL=OFF   \
     -DPYTHON_SITE_PACKAGES=$PREFIX/lib/python${PY_VER}/site-packages \
+    -DPython_INCLUDE_DIRS=$PREFIX/include/python${PY_VER} \
+    -DPython_LIBRARY=$PREFIX/lib/libpython${PY_VER}.a \
+    -DPython_LIBRARIES=$PREFIX/lib/libpython${PY_VER}.a \
+    -DPython_Interpreter_FOUND=TRUE \
+    -DPython_EXECUTABLE=$BUILD_PREFIX/bin/python${PY_VER} \
+    -DPYTHON_MODULE_EXTENSION=.so \
+    -DPYTHON_MODULE_DEBUG_POSTFIX="" \
+    -DPYTHON_MODULE_EXT_SUFFIX=.so \
+    -DPython_FOUND=TRUE \
     -DXEUS_PYWRAP_PYTHON_SITEARCH=$PREFIX/lib/python$PYVER/site-packages
 
 
