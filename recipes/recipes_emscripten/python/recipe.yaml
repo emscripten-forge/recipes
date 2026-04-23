@@ -1,9 +1,9 @@
 context:
-  version: 3.13.1
+  version: 3.14.3
   name: python
-  ver2: '3.13'
+  ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring}}
-  build_number: 11
+  build_number: 1
   abi_tag: cp${{ ver2nd }}
 
 package:
@@ -12,9 +12,14 @@ package:
 
 source:
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
-  sha256: 9cf9427bee9e2242e3877dd0f6b641c1853ca461f39d6503ce260a59c80bf0d9
+  sha256: a97d5549e9ad81fe17159ed02c68774ad5d266c72f8d9a0b5a9c371fe85d902b
   patches:
   - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
+  - patches/0006-Use-emcc-for-emscripten_trampoline_inner.wasm.patch
+  - patches/0007-Compat-for-missing-builtin_wasm_test_function_pointer_signature.patch
+  - patches/0009-wasm_assets-allow-sysconfig-data-path-for-cross.patch
+  - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
+  - patches/0011-disable-uuid-generate-time-safe-on-emscripten.patch
 build:
   number: ${{ build_number }}
   string: h_${{ hash }}_${{build_number}}_${{ abi_tag }}
@@ -50,11 +55,13 @@ requirements:
   - patch   # only needed on MacOS
   - sed   # only needed on MacOS
   - wget
-  - python=3.13
+  - python=3.14
   host:
   - openssl
   - libffi
   - liblzma
+  - zstd
+  - libuuid
   run:
   - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
   run_exports:
