@@ -1,0 +1,69 @@
+context:
+  version: 3.2.2
+  name: gdcm
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/malaterre/GDCM/archive/refs/tags/v${{version}}.tar.gz
+  sha256: 133078bfff4fe850a1faaea44b0a907ba93579fd16f34c956f4d665b24b590e5
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+    - python
+    - crossenv >=1.2
+    - cross-python_emscripten-wasm32
+    - ${{ compiler("c") }}
+    - swig
+    - pkg-config
+    - cmake
+    - make
+  host:
+    - python
+    - libuuid
+    - zlib
+    - openjpeg
+    - expat
+    - json-c
+    - libpython
+    - libjpeg-turbo
+    - openssl
+  run:
+    - json-c
+    - python
+    - zlib
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_gdcm.py
+
+
+about:
+  homepage: https://sourceforge.net/p/gdcm/gdcm/ 
+  license: BSD-2-Clause
+  license_file: Copyright.txt
+  summary:  Grassroots DICOM, cross-platform DICOM implementation.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
