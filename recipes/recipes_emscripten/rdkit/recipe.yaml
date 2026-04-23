@@ -1,0 +1,62 @@
+context:
+  name: rdkit
+  version: 2024.09.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/rdkit/rdkit/archive/Release_${{ version | replace('.', '_') }}.tar.gz
+  sha256: 13e65ef0587e9e53c6507e8326c550ebc2146e84539498abd08c1e2a2a5f0138
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cmake
+  - make
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy
+  host:
+  - python
+  - numpy
+  - boost-cpp
+  - boost-python
+  - freetype
+  - eigen
+  - zlib
+  run:
+  - python
+  - numpy
+  - boost-cpp
+  - boost-python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_rdkit.py
+
+about:
+  homepage: https://www.rdkit.org/
+  license: BSD-3-Clause
+  license_file: license.txt
+  summary: Open-Source Cheminformatics Software
+  description: |
+    RDKit is a collection of cheminformatics and machine-learning software
+    written in C++ and Python.
+  repository: https://github.com/rdkit/rdkit
+
+extra:
+  recipe-maintainers:
+  - wolfv
