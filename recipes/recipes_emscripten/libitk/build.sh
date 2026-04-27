@@ -29,7 +29,7 @@ emcmake cmake ${CMAKE_ARGS} \
     -DModule_ITKReview=ON \
     -DModule_ITKTBB=OFF \
     -DITK_FORBID_DOWNLOADS=ON \
-    ..
+    "${SRC_DIR}"
 
 ninja -j${CPU_COUNT}
 ninja install
