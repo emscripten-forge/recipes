@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+mkdir -p build
+cd build
+
+emcmake cmake ${CMAKE_ARGS} \
+    -GNinja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_EXAMPLES=OFF \
+    -DITK_USE_GPU=OFF \
+    -DITK_DEFAULT_THREADER=Sequential \
+    -DITK_USE_FFTWD=OFF \
+    -DITK_USE_FFTWF=OFF \
+    -DITK_USE_SYSTEM_FFTW=OFF \
+    -DITK_DYNAMIC_LOADING=OFF \
+    -DITK_USE_SYSTEM_EXPAT=ON \
+    -DITK_USE_SYSTEM_HDF5=ON \
+    -DITK_USE_SYSTEM_JPEG=ON \
+    -DITK_USE_SYSTEM_PNG=ON \
+    -DITK_USE_SYSTEM_TIFF=ON \
+    -DITK_USE_SYSTEM_ZLIB=ON \
+    -DITK_USE_SYSTEM_EIGEN=ON \
+    -DITK_BUILD_DEFAULT_MODULES=ON \
+    -DModule_ITKReview=ON \
+    -DModule_ITKTBB=OFF \
+    -DITK_FORBID_DOWNLOADS=ON \
+    ..
+
+ninja -j${CPU_COUNT}
+ninja install
