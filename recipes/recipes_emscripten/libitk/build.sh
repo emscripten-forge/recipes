@@ -31,8 +31,10 @@ emcmake cmake ${CMAKE_ARGS} \
     -DITK_BUILD_DEFAULT_MODULES=ON \
     -DModule_ITKReview=ON \
     -DModule_ITKTBB=OFF \
+    -DModule_ITKHDF5=OFF \
     -DModule_ITKIOHDF5=OFF \
     -DModule_ITKIOTransformHDF5=OFF \
+    -DModule_ITKIOTransformFactory=OFF \
     -DITK_FORBID_DOWNLOADS=ON \
     "${SRC_DIR}"
 
