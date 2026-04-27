@@ -23,7 +23,6 @@ emcmake cmake ${CMAKE_ARGS} \
     -DITK_USE_SYSTEM_FFTW=OFF \
     -DITK_DYNAMIC_LOADING=OFF \
     -DITK_USE_SYSTEM_EXPAT=ON \
-    -DITK_USE_SYSTEM_HDF5=ON \
     -DITK_USE_SYSTEM_JPEG=ON \
     -DITK_USE_SYSTEM_PNG=ON \
     -DITK_USE_SYSTEM_TIFF=ON \
@@ -32,6 +31,8 @@ emcmake cmake ${CMAKE_ARGS} \
     -DITK_BUILD_DEFAULT_MODULES=ON \
     -DModule_ITKReview=ON \
     -DModule_ITKTBB=OFF \
+    -DModule_ITKIOHDF5=OFF \
+    -DModule_ITKIOTransformHDF5=OFF \
     -DITK_FORBID_DOWNLOADS=ON \
     "${SRC_DIR}"
 
