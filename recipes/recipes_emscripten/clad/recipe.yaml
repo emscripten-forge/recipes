@@ -1,0 +1,50 @@
+context:
+  version: 2.1
+  llvm_version: 21.1.8
+
+package:
+  name: clad
+  version: ${{ version }}
+
+source:
+  url: https://github.com/vgvassilev/clad/archive/v${{ version }}.tar.gz
+  sha256: cc646c09fcb121e2947263b9f22ad95badb56a5ee06ee45e7601902f46933c78
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - sed
+  host:
+    - llvm == ${{ llvm_version }}
+  run:
+    - clang-resource-headers == ${{ llvm_version }}
+  run_exports:
+    - ${{ pin_subpackage("clad", upper_bound="x.x") }}
+
+tests:
+  - package_contents:
+      files:
+        - lib/clad.so
+        - include/clad/Differentiator/Differentiator.h
+        - lib/cmake/clad/AddClad.cmake
+
+about:
+  license: LGPL-2.0-or-later
+  license_family: LGPL
+  license_file: License.txt
+  summary: clad -- automatic differentiation for C/C++
+  description: |
+    Clad enables automatic differentiation for C++. It is based on the LLVM
+    compiler infrastructure and is implemented as a Clang plugin.
+  homepage: https://github.com/vgvassilev/clad
+  documentation: https://clad.readthedocs.io/en/latest/index.html
+  repository: https://github.com/vgvassilev/clad
+
+extra:
+  recipe-maintainers:
+    - anutosh491
