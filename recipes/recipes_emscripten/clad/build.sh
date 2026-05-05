@@ -58,6 +58,7 @@ emcmake cmake \
     -DCMAKE_PREFIX_PATH="$PREFIX" \
     -DCMAKE_INSTALL_PREFIX="$PREFIX" \
     -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
     -DLLVM_DIR="$PREFIX/lib/cmake/llvm" \
     -DLLD_DIR="$PREFIX/lib/cmake/lld" \
     -DClang_DIR="$PREFIX/lib/cmake/clang" \
