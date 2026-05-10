@@ -1,0 +1,29 @@
+From 07a351a7a33500e1130cfce5ab11d5c5831b6d8f Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Sat, 7 Mar 2026 19:40:28 -0800
+Subject: [PATCH] src/generic_files/profiler.c [__EMSCRIPTEN__]: Do not use BSD
+ calls
+
+---
+ src/generic_files/profiler.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/generic_files/profiler.c b/src/generic_files/profiler.c
+index 9203875ff..7f2482e20 100644
+--- a/src/generic_files/profiler.c
++++ b/src/generic_files/profiler.c
+@@ -154,6 +154,11 @@ void fprint_memory_usage(FILE * fs)
+     sprint_size(line + 40, 1024 * rss);
+     sprint_size(line + 50, 1024 * rsspeak);
+     fputs(line, fs);
++
++#elif defined(__EMSCRIPTEN__)
++
++    /* Nothing */
++
+ #else
+         
+     char line[] = "virt/rss/peak: 1234567 / 1234567 / 1234567\n";
+-- 
+2.51.1
+
