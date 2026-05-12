@@ -1,36 +1,57 @@
 context:
+  name: pyzmq
   version: 27.1.0
-  build_number: '0'
 
 package:
-  name: pyzmq
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://pypi.org/packages/source/p/pyzmq/pyzmq-${{ version }}.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: ac0765e3d44455adb6ddbf4417dcce460fc40a05978c08efdf2948072f6db540
 
 build:
-  number: ${{ build_number }}
+  number: 0
   script: ${{ PYTHON }} -m pip install .
 
 requirements:
-  host:
-  - python >=3.8
-  - cffi; implementation_name == 'pypy'
-  - cython>=3.0.0; implementation_name != 'pypy'
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - cffi>=1.0.1
+  - cython>=3.0.0
   - packaging
   - scikit-build-core>=0.10
+  - zeromq
+  host:
+  - python
   - pip
+  - cffi>=1.0.1
+  - cython>=3.0.0
+  - packaging
+  - scikit-build-core>=0.10
+  - zeromq
   run:
-  - python >=3.8
-  # - cffi  # implementation_name == "pypy"
+  - python
+  - pip
+  - cffi>=1.0.1
+  - cython>=3.0.0
+  - packaging
+  - scikit-build-core>=0.10
 
 tests:
-- python:
-    imports:
-    - pyzmq
-    pip_check: true
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyzmq.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   summary: Python bindings for 0MQ
@@ -116,4 +137,10 @@ about:
   # and may not map to the correct SPDX license. Please verify:
   #   - BSD License
   license: BSD-3-Clause
+  license_file:
+  - LICENSE.md
   documentation: https://pyzmq.readthedocs.org
+
+extra:
+  recipe-maintainers:
+  - bmorris3
