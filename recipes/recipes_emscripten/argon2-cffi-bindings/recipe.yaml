@@ -1,37 +1,43 @@
 context:
+  name: argon2_cffi_bindings
   version: 25.1.0
-  build_number: '0'
 
 package:
-  name: argon2-cffi-bindings
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-- url: https://pypi.org/packages/source/a/argon2-cffi-bindings/argon2_cffi_bindings-${{ version }}.tar.gz
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: b957f3e6ea4d55d820e40ff76f450952807013d361a65d7f28acc0acbf29229d
 
 build:
-  number: ${{ build_number }}
+  number: 0
   script: ${{ PYTHON }} -m pip install .
 
 requirements:
-  host:
-  - python >=3.9
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
   - setuptools>=77
-  - setuptools_scm[toml]>=6.2
-  - cffi>=1.0.1; python_version < '3.14'
-  - cffi>=2.0.0b1; python_version >= '3.14'
+  - setuptools_scm>=6.2
+  - cffi>=1.0.1
+  - pip
+  host:
+  - python
+  - setuptools>=77
+  - cffi>=1.0.1
   - pip
   run:
-  - python >=3.9
-  - cffi>=1.0.1; python_version < '3.14'
-  - cffi>=2.0.0b1; python_version >= '3.14'
+  - python
+  - cffi>=1.0.1
 
 tests:
 - script: pytester
   files:
     recipe:
-    - test_import_argon2-cffi-bindings.py
+    - test_import_argon2_cffi_bindings.py
   requirements:
     build:
     - pytester
