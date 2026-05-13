@@ -21,6 +21,7 @@ get_filename_component(_ORT_IMPORT_PREFIX "${_ORT_IMPORT_PREFIX}" PATH)
 
 set(_ORT_LIB "${_ORT_IMPORT_PREFIX}/lib/libonnxruntime_webassembly.a")
 set(_ORT_INCLUDE_DIR "${_ORT_IMPORT_PREFIX}/include")
+set(_ORT_EMDAWNWEBGPU_PORT "${_ORT_IMPORT_PREFIX}/share/emdawnwebgpu/emdawnwebgpu.port.py")
 
 # Verify the library is present
 if(NOT EXISTS "${_ORT_LIB}")
@@ -46,9 +47,17 @@ if(NOT TARGET onnxruntime::onnxruntime_webassembly)
     # Consumers that build shared-side-modules or Python extensions may need to
     # override / remove these according to their own linker requirements.
     if(EMSCRIPTEN)
+        set(_ORT_WEBGPU_LINK_OPTION -sUSE_WEBGPU=1)
+        if(EXISTS "${_ORT_EMDAWNWEBGPU_PORT}")
+            set(_ORT_WEBGPU_LINK_OPTION "--use-port=${_ORT_EMDAWNWEBGPU_PORT}")
+        elseif(DEFINED EMSCRIPTEN_VERSION AND EMSCRIPTEN_VERSION VERSION_GREATER_EQUAL "4.0.10")
+            set(_ORT_WEBGPU_LINK_OPTION --use-port=emdawnwebgpu)
+        endif()
+
         set_property(TARGET onnxruntime::onnxruntime_webassembly APPEND PROPERTY
             INTERFACE_LINK_OPTIONS
                 -msimd128
+                ${_ORT_WEBGPU_LINK_OPTION}
                 -sALLOW_MEMORY_GROWTH=1
                 -sINITIAL_MEMORY=64MB
                 -sEXIT_RUNTIME=1
@@ -70,3 +79,5 @@ set(ONNXRUNTIME_WASM_LIBRARIES    "${_ORT_LIB}")
 unset(_ORT_IMPORT_PREFIX)
 unset(_ORT_LIB)
 unset(_ORT_INCLUDE_DIR)
+unset(_ORT_EMDAWNWEBGPU_PORT)
+unset(_ORT_WEBGPU_LINK_OPTION)
