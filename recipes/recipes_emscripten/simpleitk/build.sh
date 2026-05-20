@@ -36,23 +36,15 @@ cd ..
 mkdir -p build_python
 cd build_python
 
-cmake ${CMAKE_ARGS} \
-    -GNinja \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
-    -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
-    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
-    -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
-    -DCMAKE_PROJECT_INCLUDE="${RECIPE_DIR}/overwriteProp.cmake" \
-    -DSimpleITK_BUILD_DISTRIBUTE=ON \
-    -DSimpleITK_PYTHON_THREADS=OFF \
-    -DSimpleITK_PYTHON_USE_VIRTUALENV=OFF \
-    -DSimpleITK_PYTHON_USE_LIMITED_API=OFF \
-    -DPython_EXECUTABLE="${PYTHON}" \
-    -DSWIG_EXECUTABLE="$(which swig)" \
-    "${SRC_DIR}/Wrapping/Python"
+emcmake cmake ${CMAKE_ARGS} \
+    -G Ninja \
+    -D CMAKE_BUILD_TYPE:STRING=Release \
+    -D SimpleITK_BUILD_DISTRIBUTE:BOOL=ON \
+    -D SimpleITK_BUILD_STRIP:BOOL=ON \
+    -D BUILD_SHARED_LIBS:BOOL=OFF \
+    -D BUILD_TESTING:BOOL=OFF \
+    -D SimpleITK_PYTHON_USE_VIRTUALENV:BOOL=OFF \
+    "${SRC_DIR}"/Wrapping/Python
 
-ninja -j${CPU_COUNT}
-
-# Install the Python package
-"${PYTHON}" -m pip install . ${PIP_ARGS}
+emmake cmake --build . --config Release
+"${PYTHON}" -m pip install .

@@ -12,6 +12,7 @@ emcmake cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
     -DBUILD_STATIC_LIBS=OFF \
+    -DHDF5_BUILD_CPP_LIB=ON \
     -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
     -DONLY_SHARED_LIBS=ON \
     -DBUILD_TESTING=OFF \

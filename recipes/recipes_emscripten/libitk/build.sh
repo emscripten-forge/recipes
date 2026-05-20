@@ -27,7 +27,6 @@ emcmake cmake ${CMAKE_ARGS} \
     -DCMAKE_FIND_ROOT_PATH=$PREFIX \
     -DBUILD_TESTING=OFF \
     -DModule_ITKTestKernel=OFF \
-    -DModule_ITKIOTransformBase=OFF \
     -DBUILD_EXAMPLES=OFF \
     -DITK_USE_GPU=OFF \
     -DITK_DEFAULT_THREADER=Platform \
@@ -54,11 +53,11 @@ emcmake cmake ${CMAKE_ARGS} \
     -DITK_USE_SYSTEM_TIFF=ON \
     -DITK_USE_SYSTEM_ZLIB=ON \
     -DITK_USE_SYSTEM_EIGEN=ON \
-    -DITK_BUILD_DEFAULT_MODULES=OFF \
+    -DITK_USE_SYSTEM_HDF5=ON \
+    -DITK_BUILD_DEFAULT_MODULES=ON \
     -DModule_ITKReview=OFF \
     -DModule_ITKTBB=OFF \
-    -DModule_ITKIOTransformHDF5=OFF \
-    -DModule_ITKTransformIO=ON \
+    -DModule_ITKIOTransformHDF5=ON \
     -DModule_ITKDisplacementFields=ON \
     -DModule_ITKCommon=ON \
     -DModule_ITKDisplacementField=ON \
@@ -72,8 +71,8 @@ emcmake cmake ${CMAKE_ARGS} \
     -DModule_ITKOptimizersv4=ON \
     -DModule_ITKRegistrationMethodsv4=ON \
     -DModule_ITKTransform=ON \
-    -DModule_ITKHDF5=OFF \
-    -DModule_ITKIOTransformFactory=OFF \
+    -DModule_ITKHDF5=ON \
+    -DModule_ITKIOTransformFactory=ON \
     -DITK_FORBID_DOWNLOADS=ON \
     -DDO_NOT_BUILD_ITK_TEST_DRIVER=ON \
     "${SRC_DIR}"
