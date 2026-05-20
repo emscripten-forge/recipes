@@ -7,8 +7,12 @@ set -e
 mkdir -p build_cpp
 cd build_cpp
 
+
+
 cmake ${CMAKE_ARGS} \
     -GNinja \
+    -DITK_DIR="${PREFIX}/lib/cmake/ITK-5.4" \
+    -DCMAKE_PROJECT_INCLUDE="${RECIPE_DIR}/overwriteProp.cmake" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
