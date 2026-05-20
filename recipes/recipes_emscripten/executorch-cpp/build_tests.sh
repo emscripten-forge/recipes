@@ -5,6 +5,13 @@ set -euo pipefail
 export CXXFLAGS="${CXXFLAGS:-} ${EM_FORGE_CFLAGS_BASE:-} -I${PREFIX}/include"
 export LDFLAGS="${LDFLAGS:-} ${EM_FORGE_LDFLAGS_BASE:-}"
 
+download_model() {
+    local destination="$1"
+    local url="$2"
+
+    curl --fail --location --retry 3 --output "${destination}" "${url}"
+}
+
 emcmake cmake -S tests -B build_tests \
     -GNinja \
     -DCMAKE_BUILD_TYPE=Release \
@@ -21,21 +28,7 @@ default_model_url="${EXECUTORCH_MODEL_URL:-https://raw.githubusercontent.com/pyt
 mkdir -p "${default_model_cache_dir}"
 
 if [ ! -f "${default_model_path}" ]; then
-    "${PYTHON:-python}" - "${default_model_path}" "${default_model_url}" <<'PY'
-import pathlib
-import sys
-import urllib.request
-
-destination = pathlib.Path(sys.argv[1])
-url = sys.argv[2]
-
-with urllib.request.urlopen(url) as response, destination.open("wb") as output:
-    while True:
-        chunk = response.read(1024 * 1024)
-        if not chunk:
-            break
-        output.write(chunk)
-PY
+    download_model "${default_model_path}" "${default_model_url}"
 fi
 
 node build_tests/test_model_metadata.js \
@@ -52,21 +45,7 @@ if [ -n "${smollm3_model_url}" ] && [ -z "${smollm3_model_path}" ]; then
     mkdir -p "${smollm3_cache_dir}"
 
     if [ ! -f "${smollm3_model_path}" ]; then
-        "${PYTHON:-python}" - "${smollm3_model_path}" "${smollm3_model_url}" <<'PY'
-import pathlib
-import sys
-import urllib.request
-
-destination = pathlib.Path(sys.argv[1])
-url = sys.argv[2]
-
-with urllib.request.urlopen(url) as response, destination.open("wb") as output:
-    while True:
-        chunk = response.read(1024 * 1024)
-        if not chunk:
-            break
-        output.write(chunk)
-PY
+        download_model "${smollm3_model_path}" "${smollm3_model_url}"
     fi
 fi
 
