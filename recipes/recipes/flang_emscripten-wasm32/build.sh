@@ -26,7 +26,7 @@ cmake -G Ninja \
     -DMLIR_DIR=$PREFIX/lib/cmake/mlir \
     ../flang
 
-cmake --build . -j4
+cmake --build . -j1
 cmake --install .
 
 # Copy the [de]activate scripts to $PREFIX/etc/conda/[de]activate.d.
