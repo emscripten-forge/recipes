@@ -9,8 +9,8 @@
 # of the upstream feedstock to merge changes more easily.
 
 context:
-  version: "1.37.1"
-  polars_runtime: "32"
+  version: 1.38.0
+  polars_runtime: '32'
 
 recipe:
   name: polars
@@ -18,68 +18,69 @@ recipe:
 
 source:
   url: https://pypi.org/packages/source/p/polars-runtime-32/polars_runtime_32-${{ version }}.tar.gz
-  sha256: 68779d4a691da20a5eb767d74165a8f80a2bdfbde4b54acf59af43f7fa028d8f
+  sha256: 69ba986bff34f70d7eab931005e5d81dd4dc6c5c12e3532a4bd0fc7022671692
   target_directory: polars-runtime-32
 
 build:
   number: 0
 
 outputs:
-  - package:
-      name: polars-runtime-${{ polars_runtime }}
+- package:
+    name: polars-runtime-${{ polars_runtime }}
+  build:
+    script:
+      file: build_polars_runtime
+    python:
+      version_independent: true
+  requirements:
     build:
-      script:
-        file: build_polars_runtime
-      python:
-        version_independent: true
+    - python
+    - cross-python_${{ target_platform }}
+    - cffi
+    - rust-nightly
+    - setuptools-rust
+    - maturin >=1.3.2,<2
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+    - cargo-bundle-licenses
+    host:
+    - python
+    - cffi
+    - pip
+    run:
+    - cffi
+
+  tests:
+  - package_contents:
+      site_packages:
+      - _polars_runtime_${{ polars_runtime }}/__init__.py
+      - _polars_runtime_${{ polars_runtime }}/_polars_runtime.abi3.so
+      - polars_runtime_${{ polars_runtime }}-${{ version }}.dist-info/*
+  - script: pytester
     requirements:
       build:
-        - python
-        - cross-python_${{ target_platform }}
-        - cffi
-        - rust-nightly
-        - setuptools-rust
-        - maturin >=1.3.2,<2
-        - ${{ compiler('c') }}
-        - ${{ compiler('cxx') }}
-        - cmake
-        - make
-        - cargo-bundle-licenses
-      host:
-        - python
-        - cffi
-        - pip
+      - pytester
       run:
-        - cffi
-
-    tests:
-      - package_contents:
-          site_packages:
-            - _polars_runtime_${{ polars_runtime }}/__init__.py
-            - _polars_runtime_${{ polars_runtime }}/_polars_runtime.abi3.so
-            - polars_runtime_${{ polars_runtime }}-${{ version }}.dist-info/*
-      - script: pytester
-        requirements:
-          build:
-            - pytester
-          run:
-            - pytester-run
-            - polars
-        files:
-          recipe:
-            - test_polars.py
-    about:
-      license_file:
-        - polars-runtime-${{ polars_runtime }}/LICENSE
-        - polars-runtime-${{ polars_runtime }}/THIRDPARTY.yml
+      - pytester-run
+      - polars
+    files:
+      recipe:
+      - test_polars.py
+  about:
+    license_file:
+    - polars-runtime-${{ polars_runtime }}/LICENSE
+    - polars-runtime-${{ polars_runtime }}/THIRDPARTY.yml
 
 about:
   homepage: https://github.com/pola-rs/polars
   license: MIT
   license_file:
-    - polars-runtime-${{ polars_runtime }}/LICENSE
-    - polars-runtime-${{ polars_runtime }}/THIRDPARTY.yml
+  - polars-runtime-${{ polars_runtime }}/LICENSE
+  - polars-runtime-${{ polars_runtime }}/THIRDPARTY.yml
   summary: Dataframes powered by a multithreaded, vectorized query engine, written in Rust
-  description: Polars is a DataFrame interface on top of an OLAP Query Engine implemented in Rust using Apache Arrow Columnar Format as the memory model.
+  description: Polars is a DataFrame interface on top of an OLAP Query Engine implemented in Rust using Apache Arrow 
+    Columnar Format as the memory model.
   documentation: https://docs.pola.rs
   repository: https://github.com/pola-rs/polars
