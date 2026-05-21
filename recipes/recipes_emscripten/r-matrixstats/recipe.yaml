@@ -1,0 +1,49 @@
+context:
+  version: 2.2-1
+  name: r-sp
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 277a4533bc784a08fdbb710757b6af0c7a492691bfb07d8f0b2aa8ad7c857652
+
+build:
+  number: 2
+  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-lattice
+  host:
+  - r-lattice
+  run:
+  - r-lattice
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://edzer.github.io/sp/
+  repository: https://github.com/edzer/sp/
+  license: GPL-2.0-or-later
+  license_file: GPL-3
+  summary: Classes and Methods for Spatial Data
+  description: |
+    Classes and methods for spatial data; the classes document where the spatial
+    location information resides, for 2D or 3D data. Utility functions are
+    provided, e.g. for plotting data as maps, spatial selection, as well as
+    methods for retrieving coordinates, for subsetting, print, summary, etc.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
