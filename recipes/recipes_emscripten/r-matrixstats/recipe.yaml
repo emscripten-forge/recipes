@@ -1,16 +1,17 @@
 context:
-  version: 2.2-1
-  name: r-sp
+  version: 1.5.0
+  name: r-matrixstats
+  ccname: matrixStats
 
 package:
-  name: ${{ name }}
-  version: ${{ version | replace('-', '_') }}
+  name: ${{ name | lower }}
+  version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 277a4533bc784a08fdbb710757b6af0c7a492691bfb07d8f0b2aa8ad7c857652
+  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  sha256: 12996c5f3e6fc202a43e1087f16a71b7fa93d7e908f512542c7ee89cf95dcc15
 
 build:
   number: 2
@@ -20,30 +21,26 @@ build:
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
-  - ${{ compiler('c') }}
-  - r-lattice
-  host:
-  - r-lattice
-  run:
-  - r-lattice
+  - ${{ compiler('cxx') }}
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ ccname }}/libs/${{ ccname }}.so
 
 about:
-  homepage: https://edzer.github.io/sp/
-  repository: https://github.com/edzer/sp/
-  license: GPL-2.0-or-later
-  license_file: GPL-3
-  summary: Classes and Methods for Spatial Data
+  homepage: https://cran.r-project.org/package=matrixStats
+  repository: https://github.com/HenrikBengtsson/matrixStats
+  license: Artistic-2.0
+  license_family: Artistic
+  license_file: LICENSE
+  summary: High-performing functions operating on rows and columns of matrices
   description: |
-    Classes and methods for spatial data; the classes document where the spatial
-    location information resides, for 2D or 3D data. Utility functions are
-    provided, e.g. for plotting data as maps, spatial selection, as well as
-    methods for retrieving coordinates, for subsetting, print, summary, etc.
+    High-performing functions operating on rows and columns of matrices, e.g. col / rowMedians(), col / rowRanks(), and col / rowSds().
+    Functions optimized per data type and for subsetted calculations such that both memory usage and processing time is minimized.
+    There are also optimized vector-based methods, e.g.
+    binMeans(), madDiff() and weightedMedian().
 
 extra:
   recipe-maintainers:
-  - IsabelParedes
+  - DerThorsten
