@@ -15,7 +15,7 @@ target_link_libraries(
     test_model_metadata
     PRIVATE executorch extension_data_loader extension_module extension_tensor
 )
-target_link_options(test_model_metadata PRIVATE "SHELL:-sNODERAWFS=1")
+target_link_options(test_model_metadata PRIVATE "SHELL:-sNODERAWFS=1" "SHELL:-sALLOW_MEMORY_GROWTH=1" "SHELL:-sMAXIMUM_MEMORY=4GB")
 
 set_target_properties(test_executorch PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}

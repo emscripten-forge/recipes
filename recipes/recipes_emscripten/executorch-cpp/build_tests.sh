@@ -37,7 +37,7 @@ node build_tests/test_model_metadata.js \
     "ExecuTorch fixture"
 
 smollm3_model_path="${EXECUTORCH_SMOLLM3_MODEL_PATH:-}"
-smollm3_model_url="${EXECUTORCH_SMOLLM3_MODEL_URL:-}"
+smollm3_model_url="${EXECUTORCH_SMOLLM3_MODEL_URL:-https://huggingface.co/pytorch/SmolLM3-3B-INT8-INT4/resolve/main/model.pte}"
 
 if [ -n "${smollm3_model_url}" ] && [ -z "${smollm3_model_path}" ]; then
     smollm3_cache_dir="${EXECUTORCH_SMOLLM3_CACHE_DIR:-$PWD/smollm3-cache}"
