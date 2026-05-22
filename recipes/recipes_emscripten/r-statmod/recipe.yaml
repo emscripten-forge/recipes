@@ -1,0 +1,43 @@
+context:
+  version: 1.5.2
+  name: r-statmod
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 5f83d82043c5e26f1048fc0139580da1b7e40becf95fb4cb26ed3afcd46a581d
+
+build:
+  number: 0
+  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  # TODO: flang needs to be rebuilt to install r-base in build environment.
+  skip: ${{ r_abi_build_tag == 453 }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - cross-r-base_${{ target_platform }} ==${{ r_base }}
+    - ${{ compiler('c') }}
+    - flang_${{ target_platform }}
+  host:
+    - libflang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://cran.r-project.org/package=statmod
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  license_file: GPL-3
+  summary: A collection of algorithms and functions to aid statistical modeling
+extra:
+  recipe-maintainers:
+    - DerThorsten
