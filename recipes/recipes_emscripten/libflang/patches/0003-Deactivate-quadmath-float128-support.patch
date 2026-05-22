@@ -1,0 +1,41 @@
+From a92612c06dddd544b4958cc63ad61fa6c2133bc2 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 21 May 2026 15:13:43 +0200
+Subject: [PATCH 3/3] Deactivate quadmath (float128) support
+
+---
+ flang-rt/lib/CMakeLists.txt         | 3 ++-
+ flang-rt/lib/runtime/CMakeLists.txt | 6 +++---
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/flang-rt/lib/CMakeLists.txt b/flang-rt/lib/CMakeLists.txt
+index aee51dcc9fa2..3ebe28c6bac1 100644
+--- a/flang-rt/lib/CMakeLists.txt
++++ b/flang-rt/lib/CMakeLists.txt
+@@ -6,7 +6,8 @@
+ #
+ #===------------------------------------------------------------------------===#
+ 
+-add_subdirectory(quadmath)
++# add_subdirectory(quadmath)
++add_library(FortranFloat128MathILib INTERFACE)
+ add_subdirectory(runtime)
+ if (FLANG_RT_INCLUDE_CUF)
+   add_subdirectory(cuda)
+diff --git a/flang-rt/lib/runtime/CMakeLists.txt b/flang-rt/lib/runtime/CMakeLists.txt
+index 7fa8c2cb9541..6a2c7eb4ab47 100644
+--- a/flang-rt/lib/runtime/CMakeLists.txt
++++ b/flang-rt/lib/runtime/CMakeLists.txt
+@@ -152,9 +152,9 @@ file(GLOB_RECURSE private_headers
+ 
+ 
+ # Import changes from flang_rt.quadmath
+-get_target_property(f128_sources
+-  FortranFloat128MathILib INTERFACE_SOURCES
+-  )
++# get_target_property(f128_sources
++#   FortranFloat128MathILib INTERFACE_SOURCES
++#   )
+ if (f128_sources)
+   # The interface may define special macros for Float128Math files,
+   # so we need to propagate them.
