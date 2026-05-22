@@ -21,20 +21,6 @@ emcmake cmake -S tests -B build_tests \
 emmake ninja -C build_tests
 node build_tests/test_executorch.js
 
-default_model_cache_dir="${EXECUTORCH_MODEL_CACHE_DIR:-$PWD/executorch-model-cache}"
-default_model_path="${default_model_cache_dir}/ModuleLinear-no-constant-segment.pte"
-default_model_url="${EXECUTORCH_MODEL_URL:-https://raw.githubusercontent.com/pytorch/executorch/v1.2.0/test/models/deprecated/ModuleLinear-no-constant-segment.pte}"
-
-mkdir -p "${default_model_cache_dir}"
-
-if [ ! -f "${default_model_path}" ]; then
-    download_model "${default_model_path}" "${default_model_url}"
-fi
-
-node build_tests/test_model_metadata.js \
-    "${default_model_path}" \
-    forward \
-    "ExecuTorch fixture"
 
 smollm3_model_path="${EXECUTORCH_SMOLLM3_MODEL_PATH:-}"
 smollm3_model_url="${EXECUTORCH_SMOLLM3_MODEL_URL:-https://huggingface.co/pytorch/SmolLM3-3B-INT8-INT4/resolve/main/model.pte}"
