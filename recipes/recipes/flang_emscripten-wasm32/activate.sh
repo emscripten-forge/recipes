@@ -9,4 +9,4 @@ export FLANG=flang
 
 export FFLAGS="--target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-export FCLIBS="-lFortranRuntime"
+export FCLIBS="-lflang_rt.runtime"
