@@ -1,0 +1,65 @@
+context:
+  name: curl
+  version: 8.20.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/curl/curl/releases/download/curl-8_20_0/curl-8.20.0.tar.gz
+  sha256: fc5819cad3f9f5482669adcdc49a782c15f36d2a0715b395b06d9173593d2dc0
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - ninja
+  host:
+  - openssl
+  - zlib
+  run:
+  - openssl
+  - zlib
+
+tests:
+- package_contents:
+    files:
+    - include/curl/curl.h
+    - lib/libcurl.a
+    - lib/cmake/CURL/CURLConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - cmake
+    - make
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://curl.se/
+  license: curl
+  license_family: MIT
+  license_file: COPYING
+  summary: Library for transferring data with URLs
+  description: |
+    Curl is a command line tool and library for transferring data with URL
+    syntax, supporting DICT, FILE, FTP, FTPS, GOPHER, GOPHERS, HTTP, HTTPS,
+    IMAP, IMAPS, LDAP, LDAPS, MQTT, POP3, POP3S, RTMP, RTMPS, RTSP, SCP,
+    SFTP, SMB, SMBS, SMTP, SMTPS, TELNET, TFTP, WS and WSS. This package
+    provides the libcurl static library for emscripten-wasm32.
+  documentation: https://curl.se/docs/
+  repository: https://github.com/curl/curl
+
+extra:
+  recipe-maintainers:
+  - Alex-Placet
