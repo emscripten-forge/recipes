@@ -40,15 +40,3 @@ export LDFLAGS="-L$PREFIX/lib -lflang_rt.runtime"
 flang $FFLAGS -c $RECIPE_DIR/hello.f90 -o hello.o
 emcc hello.o $LDFLAGS -o hello.js -sEXIT_RUNTIME=1
 node hello.js | grep -F "Hello, Fortran!"
-
-################################################################################
-# BUILD libFortranDecimal #
-################################################################################
-
-# # Build libFortranDecimal.a
-# export BUILD_DECIMAL="_build_decimal"
-# emcmake cmake -S flang/lib/Decimal -B $BUILD_DECIMAL -GNinja \
-#                 -DCMAKE_BUILD_TYPE=Release \
-#                 -DCMAKE_INSTALL_PREFIX=$PREFIX
-# $(which cmake) --build $BUILD_DECIMAL
-# $(which cmake) --build $BUILD_DECIMAL --target install
