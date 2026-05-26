@@ -1,0 +1,66 @@
+context:
+  name: protobuf-cpp
+  version: 35.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/protocolbuffers/protobuf/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: e127ea69dd7be4e88abdd95845fb6c30d25d96971d95827e92b70e2e910d46a1
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - libabseil
+  - zlib
+  run:
+  - libabseil
+  - zlib
+
+tests:
+- package_contents:
+    lib:
+    - libprotobuf.a
+    - libprotobuf-lite.a
+    include:
+    - google/protobuf/message.h
+    - google/protobuf/descriptor.h
+    - google/protobuf/descriptor.proto
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://protobuf.dev/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Protocol Buffers C++ Libraries
+  description: |
+    Protocol Buffers are a language-neutral, platform-neutral extensible
+    mechanism for serializing structured data. This package provides the C++
+    runtime libraries: libprotobuf and libprotobuf-lite.
+  documentation: https://protobuf.dev/reference/cpp/
+  repository: https://github.com/protocolbuffers/protobuf
+
+extra:
+  recipe-maintainers:
+  - Copilot
