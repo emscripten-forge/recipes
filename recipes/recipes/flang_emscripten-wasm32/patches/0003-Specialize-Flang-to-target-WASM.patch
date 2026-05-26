@@ -1,16 +1,16 @@
-From 83dd3230bd2d43a46792ade5353a0a9acd626961 Mon Sep 17 00:00:00 2001
-From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Thu, 21 May 2026 15:08:10 +0200
-Subject: [PATCH 2/3] Specialize Flang to target WASM
+From 4ea31e6e5bf2eb92198cc8a90cefaffe65d1ba46 Mon Sep 17 00:00:00 2001
+From: serge-sans-paille <sguelton@mozilla.com>
+Date: Tue, 26 May 2026 14:29:03 +0200
+Subject: [PATCH 3/4] Specialize Flang to target WASM
 
 ---
  .../Optimizer/Builder/Runtime/RTBuilder.h     | 39 ++++++++++---------
- .../flang/Optimizer/Support/DataLayout.h      | 17 ++++++++
+ .../flang/Optimizer/Support/DataLayout.h      | 18 +++++++++
  flang/lib/Optimizer/CodeGen/CodeGen.cpp       |  7 ++--
- 3 files changed, 40 insertions(+), 23 deletions(-)
+ 3 files changed, 41 insertions(+), 23 deletions(-)
 
 diff --git a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
-index 960405ee0006..1c01ffca3baf 100644
+index 960405ee0006..af7792c3faa3 100644
 --- a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 +++ b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 @@ -21,6 +21,7 @@
@@ -26,7 +26,7 @@ index 960405ee0006..1c01ffca3baf 100644
            context, mlir::IntegerType::get(context, 8));                        \
        auto size_tTy =                                                          \
 -          mlir::IntegerType::get(context, 8 * sizeof(std::size_t));            \
-+          mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SIZE_T);            \
++          mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SIZE_T);     \
        auto refTy = fir::ReferenceType::get(f(context));                        \
        return mlir::FunctionType::get(                                          \
            context, {refTy, size_tTy, refTy, refTy, size_tTy, size_tTy},        \
@@ -146,7 +146,7 @@ index 960405ee0006..1c01ffca3baf 100644
      // See TODO at the top of the file. This is configuring for the host system
      // - it might be incorrect when cross-compiling!
 -    constexpr size_t size = sizeof(long double);
-+    constexpr size_t size = FLANG_TARGET_SIZEOF_LONG_DOUBLE;
++    constexpr size_t size = FLANG_TARGET_SIZEOF_LONGDOUBLE;
      static_assert(size == 16 || size == 10 || size == 8,
                    "unsupported long double size");
      if constexpr (size == 16)
@@ -155,7 +155,7 @@ index 960405ee0006..1c01ffca3baf 100644
    return [](mlir::MLIRContext *context) -> mlir::Type {
      return mlir::IntegerType::get(
 -        context, 8 * sizeof(unsigned short),
-+        context, 8 * FLANG_TARGET_SIZEOF_SHORT,
++        context, 8 * FLANG_TARGET_SIZEOF_USHORT,
          mlir::IntegerType::SignednessSemantics::Unsigned);
    };
  }
@@ -164,7 +164,7 @@ index 960405ee0006..1c01ffca3baf 100644
    return [](mlir::MLIRContext *context) -> mlir::Type {
      return fir::ReferenceType::get(
 -        mlir::IntegerType::get(context, 8 * sizeof(unsigned short)));
-+        mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SHORT));
++        mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_USHORT));
    };
  }
  template <>
@@ -187,16 +187,17 @@ index 960405ee0006..1c01ffca3baf 100644
  }
  template <>
 diff --git a/flang/include/flang/Optimizer/Support/DataLayout.h b/flang/include/flang/Optimizer/Support/DataLayout.h
-index 957ea99162c5..cbd63c0e3684 100644
+index 957ea99162c5..48fa44a1e0c4 100644
 --- a/flang/include/flang/Optimizer/Support/DataLayout.h
 +++ b/flang/include/flang/Optimizer/Support/DataLayout.h
-@@ -27,6 +27,23 @@ namespace llvm {
+@@ -27,6 +27,24 @@ namespace llvm {
  class DataLayout;
  } // namespace llvm
  
 +constexpr size_t FLANG_TARGET_SIZEOF_UINT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_INT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_SHORT = 2;
++constexpr size_t FLANG_TARGET_SIZEOF_USHORT = 2;
 +constexpr size_t FLANG_TARGET_SIZEOF_CHAR = 1;
 +constexpr size_t FLANG_TARGET_SIZEOF_SCHAR = 1;
 +constexpr size_t FLANG_TARGET_SIZEOF_UCHAR = 1;
@@ -209,7 +210,7 @@ index 957ea99162c5..cbd63c0e3684 100644
 +constexpr size_t FLANG_TARGET_SIZEOF_SIZE_T = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_FLOAT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_DOUBLE = 8;
-+constexpr size_t FLANG_TARGET_SIZEOF_LONG_DOUBLE = 16;
++constexpr size_t FLANG_TARGET_SIZEOF_LONGDOUBLE = 16;
 +
  namespace fir::support {
  /// Create an mlir::DataLayoutSpecInterface attribute from an llvm::DataLayout
