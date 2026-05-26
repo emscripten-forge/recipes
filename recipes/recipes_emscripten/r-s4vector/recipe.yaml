@@ -1,0 +1,41 @@
+context:
+  version: 0.50.1
+  name: r-s4vector
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/S4Vectors_${{ version }}.tar.gz
+  sha256: a85dac9e625424bc06501a47ab57abb0d2b4c53aeb4714bd88397cc3cd9c690e
+
+build:
+  number: 2
+  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  # - r-lattice
+  # host:
+  # - r-lattice
+  # run:
+  # - r-lattice
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  repository: https://github.com/Bioconductor/S4Vectors
+  license: Artistic-2.0
+  summary: S4 implementation of vector-like and list-like objects
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
