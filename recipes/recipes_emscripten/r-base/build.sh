@@ -64,7 +64,7 @@ pushd _build_linux
 
     ../configure \
         --prefix=$BUILD_PREFIX \
-        $CONFIG_ARGS
+        $CONFIG_ARGS || echo "OOO" && cat config.log
 
     make -j${CPU_COUNT}
     # No need to install, we just need the R binary
