@@ -1,0 +1,61 @@
+context:
+  version: 2022.12.0
+
+package:
+  name: onedpl
+  version: ${{ version }}
+
+source:
+  url: https://github.com/uxlfoundation/oneDPL/archive/refs/tags/oneDPL-release-${{ version }}.tar.gz
+  sha256: 8df403b6a66b2fde36a882427e52e48252b926d4ac9d592bd0bf75f4f418adc1
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - onetbb
+  run:
+  - onetbb
+
+tests:
+- package_contents:
+    files:
+    - include/oneapi/dpl/algorithm
+    - include/oneapi/dpl/execution
+    - include/oneapi/dpl/numeric
+    - lib/cmake/oneDPL/oneDPLConfig.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  license: Apache-2.0 WITH LLVM-exception
+  license_family: Apache
+  license_file: LICENSE.txt
+  summary: oneAPI DPC++ Library - parallel STL implementations for heterogeneous computing
+  description: |
+    oneAPI DPC++ Library (oneDPL) is a high-productivity C++ library that provides
+    parallel implementations of standard C++ algorithms for heterogeneous computing.
+    It implements the oneAPI specification for the oneDPL component and works with
+    Data Parallel C++ (DPC++) programming across CPUs, GPUs, and FPGAs.
+  homepage: https://github.com/uxlfoundation/oneDPL
+  documentation: https://uxlfoundation.github.io/oneDPL
+  repository: https://github.com/uxlfoundation/oneDPL
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
