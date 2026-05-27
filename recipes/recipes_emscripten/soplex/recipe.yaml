@@ -1,0 +1,43 @@
+context:
+  version: 8.0.2
+
+package:
+  name: soplex
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipopt/soplex/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9304fd377e506b380c6b234f6aec221bfc8754541e9ad5f5584f5fbb786a8392
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - boost-cpp
+  - gmp
+  - mpfr
+  - zlib
+  - bzip2
+  # omitted for now: papilo
+
+tests:
+- script:
+  - test -d ${PREFIX}/include/soplex
+- package_contents:
+    files:
+    - lib/libsoplex.a
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Linear optimization solver using the revised simplex method
+  homepage: https://github.com/scipopt/soplex
+
+extra:
+  recipe-maintainers:
+  - mkoeppe

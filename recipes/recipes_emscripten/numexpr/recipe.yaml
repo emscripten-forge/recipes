@@ -1,0 +1,60 @@
+context:
+  name: numexpr
+  version: 2.14.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4be00b1086c7b7a5c32e31558122b7b80243fe098579b170967da83f3152b48b
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - numpy
+  - pip
+  - setuptools
+  host:
+  - python
+  - numpy
+  - pip
+  - setuptools
+  run:
+  - python
+  - numpy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_numexpr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/pydata/numexpr
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Fast numerical expression evaluator for NumPy.
+  description: |
+    Numexpr is a fast numerical expression evaluator for NumPy. With it,
+    expressions that operate on arrays (like "3*a+4*b") are accelerated and
+    use less memory than doing the same calculation in Python.
+  documentation: https://numexpr.readthedocs.io
+  repository: https://github.com/pydata/numexpr
+
+extra:
+  recipe-maintainers:
+  - Copilot

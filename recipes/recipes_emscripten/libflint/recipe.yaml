@@ -1,0 +1,43 @@
+context:
+  name: libflint
+  version: 3.5.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/flintlib/flint/releases/download/v${{ version }}/flint-${{ version }}.tar.gz
+  sha256: 3982f385f00610a944e0152eb0a29893b2366fa640e8f5f3076c47564cf7e2a6
+  patches:
+  - patches/0001-src-generic_files-profiler.c-__EMSCRIPTEN__-Do-not-u.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - libtool
+  - m4
+  - make
+  - gnuconfig
+  host:
+  - gmp
+  - mpfr
+
+tests:
+- package_contents:
+    files:
+    - include/flint/flint.h
+    - lib/libflint.a
+
+about:
+  license: GPL-3.0-or-later OR LGPL-3.0-or-later
+  license_file: COPYING
+  summary: Fast Library for Number Theory
+  homepage: http://www.flintlib.org
+
+extra:
+  recipe-maintainers:
+  - mkoeppe

@@ -1,0 +1,67 @@
+context:
+  name: onetbb
+  version: 2023.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/uxlfoundation/oneTBB/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f8767b971ec6aea25dde58ae0f593e94e7aa75a739a86f67967012f69e2199b1
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    lib:
+    - libtbb.a
+    - libtbbmalloc.a
+    include:
+    - tbb/tbb.h
+    - tbb/parallel_for.h
+    - tbb/concurrent_vector.h
+    - tbb/task_arena.h
+    - oneapi/tbb.h
+    files:
+    - lib/cmake/TBB/TBBConfig.cmake
+    - lib/pkgconfig/tbb32.pc
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/uxlfoundation/oneTBB
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE.txt
+  summary: oneAPI Threading Building Blocks (oneTBB)
+  description: |
+    oneAPI Threading Building Blocks (oneTBB) is a flexible C++ library that
+    simplifies the work of adding parallelism to complex applications. The library
+    lets you easily write parallel programs that take full advantage of multi-core
+    performance. Such programs are portable, composable and have a future-proof
+    scalability.
+  documentation: https://uxlfoundation.github.io/oneTBB/
+  repository: https://github.com/uxlfoundation/oneTBB
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

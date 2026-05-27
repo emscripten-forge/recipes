@@ -1,0 +1,37 @@
+diff --git a/cextern/numpy/ieee754.h b/cextern/numpy/ieee754.h
+--- a/cextern/numpy/ieee754.h
++++ b/cextern/numpy/ieee754.h
+@@ -70,14 +70,18 @@ static void _npy_set_floatstatus_invalid(void)
+     fp_raise_xcp(FP_INVALID);
+ }
+
+-#elif defined(_MSC_VER) || (defined(__osf__) && defined(__alpha))
++#elif defined(_MSC_VER) || (defined(__osf__) && defined(__alpha)) || defined(__EMSCRIPTEN__)
+
+ /*
+  * By using a volatile floating point value,
+  * the compiler is forced to actually do the requested
+  * operations because of potential concurrency.
+  *
+  * We shouldn't write multiple values to a single
+  * global here, because that would cause
+  * a race condition.
++ *
++ * Note: Emscripten is included here because its fenv.h implementation
++ * provides stub functions that don't actually manipulate floating-point
++ * state (WebAssembly has limited access to hardware exception mechanisms).
+  */
+ static volatile double _npy_floatstatus_x, _npy_floatstatus_inf;
+
+diff --git a/cextern/astrometry.net/qsort_reentrant.c b/cextern/astrometry.net/qsort_reentrant.c
+--- a/cextern/astrometry.net/qsort_reentrant.c
++++ b/cextern/astrometry.net/qsort_reentrant.c
+@@ -37,7 +37,7 @@
+ #ifdef _MSC_VER
+ # include <stdio.h>
+ #else
+-#if __sun
++#if defined(__sun) || defined(__EMSCRIPTEN__)
+ # include <stdio.h>
+ #else
+ # include <sys/cdefs.h>

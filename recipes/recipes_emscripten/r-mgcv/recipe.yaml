@@ -13,19 +13,21 @@ source:
   sha256: a98159698afb269e06a46cac1f945bf2b3427a2dd587c6f2efd67ede90089372
 
 build:
-  number: 3
+  number: 5
+  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-nlme
   - r-matrix
   host:
-  - libblas>=3.12
-  - liblapack>=3.12
-  - libflang                  # for FortranRuntime
+  - r-base ==${{ r_base }}
+  - libblas
+  - liblapack
+  - libflang
   - r-nlme
   - r-matrix
   run:

@@ -1,71 +1,19 @@
-From f3d5084842d3b1479c966b355d7fdca500670410 Mon Sep 17 00:00:00 2001
+From 96553932444116fdb213e717b8281076352fdf4b Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
-Date: Fri, 9 Jan 2026 10:16:09 +0000
-Subject: [PATCH 03/15] Set fortran linker to emcc
+Date: Sun, 11 Jan 2026 12:33:34 +0000
+Subject: [PATCH 04/17] Set fortran linker to emcc
 
 ---
- scipy/integrate/meson.build                   | 10 +++++-----
- scipy/interpolate/meson.build                 |  4 ++--
- scipy/io/meson.build                          |  2 +-
- scipy/odr/meson.build                         |  2 +-
- scipy/sparse/linalg/_eigen/arpack/meson.build |  2 +-
- scipy/sparse/linalg/_propack/meson.build      |  2 +-
- 6 files changed, 11 insertions(+), 11 deletions(-)
+ scipy/interpolate/meson.build | 4 ++--
+ scipy/linalg/meson.build      | 6 +++---
+ scipy/odr/meson.build         | 2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/scipy/integrate/meson.build b/scipy/integrate/meson.build
-index 206d504f44..4c6b36ed75 100644
---- a/scipy/integrate/meson.build
-+++ b/scipy/integrate/meson.build
-@@ -75,7 +75,7 @@ py3.extension_module('_odepack',
-   link_args: version_link_args,
-   dependencies: [lapack_dep, np_dep],
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/integrate'
- )
- 
-@@ -86,7 +86,7 @@ py3.extension_module('_vode',
-   link_args: version_link_args,
-   dependencies: [lapack_dep, blas_dep, fortranobject_dep],
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/integrate'
- )
- 
-@@ -97,7 +97,7 @@ py3.extension_module('_lsoda',
-   dependencies: [lapack_dep, fortranobject_dep],
-   link_args: version_link_args,
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/integrate'
- )
- 
-@@ -108,7 +108,7 @@ py3.extension_module('_dop',
-   dependencies: [fortranobject_dep],
-   link_args: version_link_args,
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/integrate'
- )
- 
-@@ -127,7 +127,7 @@ py3.extension_module('_test_odeint_banded',
-   link_args: version_link_args,
-   dependencies: [lapack_dep, fortranobject_dep],
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/integrate',
-   install_tag: 'tests'
- )
 diff --git a/scipy/interpolate/meson.build b/scipy/interpolate/meson.build
-index e0e2867b18..9c0af5f809 100644
+index 33783fc034..f9d4c87982 100644
 --- a/scipy/interpolate/meson.build
 +++ b/scipy/interpolate/meson.build
-@@ -146,7 +146,7 @@ py3.extension_module('_fitpack',
+@@ -156,7 +156,7 @@ py3.extension_module('_fitpack',
    include_directories: 'src/',
    dependencies: np_dep,
    link_args: version_link_args,
@@ -74,7 +22,7 @@ index e0e2867b18..9c0af5f809 100644
    install: true,
    subdir: 'scipy/interpolate'
  )
-@@ -160,7 +160,7 @@ py3.extension_module('_dfitpack',
+@@ -176,7 +176,7 @@ py3.extension_module('_dfitpack',
    link_with: [fitpack_lib],
    override_options: ['b_lto=false'],
    install: true,
@@ -83,58 +31,50 @@ index e0e2867b18..9c0af5f809 100644
    subdir: 'scipy/interpolate'
  )
  
-diff --git a/scipy/io/meson.build b/scipy/io/meson.build
-index 60f71c6968..abdf2855eb 100644
---- a/scipy/io/meson.build
-+++ b/scipy/io/meson.build
-@@ -8,7 +8,7 @@ py3.extension_module('_test_fortran',
+diff --git a/scipy/linalg/meson.build b/scipy/linalg/meson.build
+index 397a1a5ff3..ad37538392 100644
+--- a/scipy/linalg/meson.build
++++ b/scipy/linalg/meson.build
+@@ -69,7 +69,7 @@ py3.extension_module('_fblas',
    link_args: version_link_args,
-   dependencies: [lapack_dep, fortranobject_dep],
+   dependencies: [lapack_lp64_dep, fortranobject_dep],
    install: true,
 -  link_language: 'fortran',
 +  link_language: 'c',
-   subdir: 'scipy/io',
-   install_tag: 'tests'
+   subdir: 'scipy/linalg'
  )
+ 
+@@ -134,7 +134,7 @@ if use_ilp64
+     include_directories: ['../_build_utils/src'],   # for npy_cblas.h
+     dependencies: [lapack_dep, fortranobject_dep],  # lapack_dep is ILP64 if use_ilp64==true
+     install: true,
+-    link_language: 'fortran',
++    link_language: 'c',
+     subdir: 'scipy/linalg'
+   )
+ 
+@@ -151,7 +151,7 @@ if use_ilp64
+     include_directories: ['../_build_utils/src'],   # for npy_cblas.h
+     dependencies: [lapack_dep, fortranobject_dep],
+     install: true,
+-    link_language: 'fortran',
++    link_language: 'c',
+     subdir: 'scipy/linalg'
+   )
+ endif
 diff --git a/scipy/odr/meson.build b/scipy/odr/meson.build
-index c7f53bc236..eedf439916 100644
+index 921710074f..59cffede5e 100644
 --- a/scipy/odr/meson.build
 +++ b/scipy/odr/meson.build
 @@ -16,7 +16,7 @@ py3.extension_module('__odrpack',
    link_args: version_link_args,
-   dependencies: [blas_dep, np_dep],
+   dependencies: [blas_lp64_dep, np_dep],
    install: true,
 -  link_language: 'fortran',
 +  link_language: 'c',
    subdir: 'scipy/odr'
  )
  
-diff --git a/scipy/sparse/linalg/_eigen/arpack/meson.build b/scipy/sparse/linalg/_eigen/arpack/meson.build
-index 52c8ab968b..9bbf053505 100644
---- a/scipy/sparse/linalg/_eigen/arpack/meson.build
-+++ b/scipy/sparse/linalg/_eigen/arpack/meson.build
-@@ -107,7 +107,7 @@ _arpack = py3.extension_module('_arpack',
-   link_args: version_link_args,
-   dependencies: [lapack_dep, blas_dep, fortranobject_dep],
-   install: true,
--  link_language: 'fortran',
-+  link_language: 'c',
-   subdir: 'scipy/sparse/linalg/_eigen/arpack'
- )
- 
-diff --git a/scipy/sparse/linalg/_propack/meson.build b/scipy/sparse/linalg/_propack/meson.build
-index d33cdc0e76..75ba1a3ea8 100644
---- a/scipy/sparse/linalg/_propack/meson.build
-+++ b/scipy/sparse/linalg/_propack/meson.build
-@@ -107,7 +107,7 @@ foreach ele: elements
-     dependencies: [lapack_dep, blas_dep, fortranobject_dep],
-     link_args: version_link_args,
-     install: true,
--    link_language: 'fortran',
-+    link_language: 'c',
-     subdir: 'scipy/sparse/linalg/_propack'
-   )
- endforeach
 -- 
 2.51.0
 

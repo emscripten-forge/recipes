@@ -4,7 +4,9 @@ import json
 from contextlib import contextmanager
 
 def find_files_with_changes(old, new):
-    cmd = ["git", "diff", "--name-only", old, new]
+    # `origin/main...HEAD` shows the unique files changed in HEAD
+    # and ignores changes in origin/main after the branch split
+    cmd = ["git", "diff", "--name-only", f"{old}...{new}"]
     result = subprocess.run(
         cmd,
         shell=False,
@@ -17,6 +19,7 @@ def find_files_with_changes(old, new):
         print(error_str)
 
     files_with_changes = output_str.splitlines()
+
     return files_with_changes
 
 def set_git_user(user, email):
@@ -112,10 +115,6 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
             '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
             '--label', 'Automerge' if automerge else 'Needs Tests'
     ]
-
-    # this is not necessary, it can be removed later
-    if target_branch_name == "main":
-        args.extend(['--label', '4.X'])
 
     # call gh to create a PR
     subprocess.check_call(args, cwd=os.getcwd())

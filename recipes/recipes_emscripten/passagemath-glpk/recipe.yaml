@@ -1,0 +1,67 @@
+context:
+  version: 10.8.4
+
+package:
+  name: passagemath-glpk
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-glpk/passagemath_glpk-${{ version }}.tar.gz
+  sha256: 5da2b3345a437c74a47ad12d1bd9535cf2588fdd3b5b9567dc485ecadafb2bed
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - glpk
+  - zlib
+  - gmp
+  - passagemath-categories
+  run:
+  - python
+  - cysignals
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_glpk.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Linear and mixed integer linear optimization backend using GLPK'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides a backend for linear and mixed integer linear optimization backend using GLPK.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_glpk.py
+  recipe-maintainers:
+  - mkoeppe

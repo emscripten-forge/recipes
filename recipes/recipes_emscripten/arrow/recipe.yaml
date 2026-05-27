@@ -3,7 +3,7 @@ context:
   name: arrow
 
 build:
-  number: 4
+  number: 6
 
 cache:
   source:
@@ -30,7 +30,6 @@ cache:
       - setuptools-scm
       - numpy
       - pip
-
       - cross-r-base_${{ target_platform }}
       - pkg-config
       - r-assertthat
@@ -59,7 +58,6 @@ cache:
       - xsimd
       - thrift-cpp = 0.22.0
       - snappy
-
       - r-assertthat
       - r-bit64
       - r-cpp11
@@ -69,7 +67,10 @@ cache:
       - r-rlang
       - r-tidyselect
       - r-vctrs
-
+    ignore_run_exports:
+      from_package:
+        - cross-r-base_${{ target_platform }}
+        - python
   build:
     script: build.sh
 
@@ -266,7 +267,6 @@ outputs:
         exclude:
         - '**/*.pyc'
         - '**/__pycache__/**'
-        - '**.dist-info/**'
         - '**/test_*.py'
       python:
         skip_pyc_compilation:
@@ -297,7 +297,7 @@ outputs:
         - libutf8proc
       run:
         - numpy
-        - python
+        - python_abi 3.13.* *_cp313
         - libffi
         - pycparser
         - cloudpickle
@@ -336,13 +336,14 @@ outputs:
           - lib/R/library/arrow/NAMESPACE
           - lib/R/library/arrow/R/*.R
     requirements:
-      
+
       run:
       - arrow-cpp =${{ version }}
       - arrow-cpp-acero =${{ version }}
       - arrow-cpp-dataset =${{ version }}
       - arrow-cpp-parquet =${{ version }}
       - arrow-cpp-compute =${{ version }}
+      - r-base-abi 4.5.*
       - r-assertthat
       - r-bit64
       - r-cpp11
@@ -352,6 +353,7 @@ outputs:
       - r-rlang
       - r-tidyselect
       - r-vctrs
+
     tests:
     - package_contents:
         lib:
