@@ -1,19 +1,17 @@
 context:
+  name : S4Vectors
   version: 0.50.1
-  name: bioconductor-s4vectors
-  ccame : S4Vectors
+
 package:
-  name: ${{ name }}
-  version: ${{ version | replace('-', '_') }}
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
 
 source:
-  url:
-  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ ccame }}_${{ version }}.tar.gz
+  url: https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: a85dac9e625424bc06501a47ab57abb0d2b4c53aeb4714bd88397cc3cd9c690e
 
 build:
-  number: 0
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -22,6 +20,7 @@ requirements:
   - ${{ compiler('c') }}
   - bioconductor-biocgenerics
   host:
+  - r-base ==${{ r_base }}
   - bioconductor-biocgenerics
   run:
   - bioconductor-biocgenerics
@@ -29,7 +28,7 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccame }}/libs/${{ ccame }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
 
 about:
   repository: https://github.com/Bioconductor/S4Vectors
