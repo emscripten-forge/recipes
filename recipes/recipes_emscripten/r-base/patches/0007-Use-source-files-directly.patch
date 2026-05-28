@@ -1,15 +1,16 @@
-From ba76cd2f752f47c109da2a5d68c23f8c3420d1cd Mon Sep 17 00:00:00 2001
+From 7dd68205dc74ca1fcb4ff397eace91201cfe2d38 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Wed, 16 Apr 2025 17:07:05 +0200
-Subject: [PATCH 08/13] Use source files directly
+Date: Wed, 27 May 2026 19:02:03 +0200
+Subject: [PATCH 07/12] Use source files directly
 
 ---
  share/make/basepkg.mk         | 19 ++++++++++++++-----
- src/library/tools/Makefile.in | 10 +++++++---
- 2 files changed, 21 insertions(+), 8 deletions(-)
+ src/library/Makefile.in       |  4 +++-
+ src/library/tools/Makefile.in |  5 ++++-
+ 3 files changed, 21 insertions(+), 7 deletions(-)
 
 diff --git a/share/make/basepkg.mk b/share/make/basepkg.mk
-index c0a69c8a0a..cf1bdd236d 100644
+index c0a69c8..cf1bdd2 100644
 --- a/share/make/basepkg.mk
 +++ b/share/make/basepkg.mk
 @@ -1,5 +1,6 @@
@@ -60,11 +61,26 @@ index c0a69c8a0a..cf1bdd236d 100644
  	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE)
  
  
+diff --git a/src/library/Makefile.in b/src/library/Makefile.in
+index 8f4748c..bc387f2 100644
+--- a/src/library/Makefile.in
++++ b/src/library/Makefile.in
+@@ -129,7 +129,9 @@ install: installdirs
+ 	  (cd $(top_builddir)/library; \
+ 	    $(TAR) -cf - . | (cd "$(DESTDIR)$(rhome)/library"; $(TAR) -xmof -))
+ 	@$(ECHO) "  building HTML index ..."
+-	@$(ECHO) "utils:::make.packages.html(.Library, verbose=FALSE, docdir=\"$(DESTDIR)${rdocdir}\")" | \
++	@(cat $(utilsdir)/R/linkhtml.R; \
++	  cat $(utilsdir)/R/indices.R; \
++	  $(ECHO) "make.packages.html(.Library, verbose=FALSE, docdir=\"$(DESTDIR)${rdocdir}\")") | \
+           R_DEFAULT_PACKAGES=NULL LC_ALL=C ${R_EXE} >/dev/null
+ installdirs:
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(rhome)/library"
 diff --git a/src/library/tools/Makefile.in b/src/library/tools/Makefile.in
-index 08bbda3410..897216f7a3 100644
+index 7274513..e57e18f 100644
 --- a/src/library/tools/Makefile.in
 +++ b/src/library/tools/Makefile.in
-@@ -42,7 +42,10 @@ all: Makefile DESCRIPTION
+@@ -45,7 +45,10 @@ all: Makefile DESCRIPTION
  	  fi \
  	fi
  	@$(MAKE) sysdata
@@ -76,16 +92,3 @@ index 08bbda3410..897216f7a3 100644
  	  R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null
  
  mkR: mkR1
-@@ -68,9 +71,10 @@ Rsimple: mkR mkRsimple
- 
- Rlazy: mkR mkRsimple
- 	@$(INSTALL_DATA) all.R $(top_builddir)/library/$(pkg)/R/$(pkg)
--	@(cat $(srcdir)/R/makeLazyLoad.R; \
-+	R_SYSTEM_ABI='@R_SYSTEM_ABI@'
-+	(cat $(srcdir)/R/makeLazyLoad.R; \
- 	  $(ECHO) "makeLazyLoading(\"$(pkg)\")") | \
- 	  R_SYSTEM_ABI='@R_SYSTEM_ABI@' \
--	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE) > /dev/null
-+	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE)
- 
- Rlazycomp: mkR mkRsimple mklazycomp
