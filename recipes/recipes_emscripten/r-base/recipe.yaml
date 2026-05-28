@@ -26,46 +26,48 @@ source:
   - patches/0013-Use-source-files-when-installing.patch
 
 build:
-  number: 1
+  number: 3
 
   files:
     exclude:
     - share/man/man1/**
+
 requirements:
   build:
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
-  - flang_${{ target_platform }}
+  - ${{ compiler('fortran') }}
   - libtool
   - pkg-config
   - cmake
   - make
   # Dependencies to build R in the build environment
+  - libflang-rt
   - gcc
-  - libiconv >=1.18
-  - zlib >=1.2.13
+  - libiconv
+  - zlib
   - bzip2
-  - xz >=5.8
-  - pcre2 >=10.43
+  - xz
+  - pcre2
   - libpng
   - libtiff
-  - cairo >=1.18
+  - cairo
   host:
   - libflang
-  - libiconv >=1.18
-  - zlib >=1.2.13
+  - libiconv
+  - zlib
   - bzip2
   - liblzma
-  - pcre2 >=10.43
+  - pcre2
   - libpng
   - libtiff
-  - cairo >=1.18
-  - fontconfig >=2.15
+  - cairo
+  - fontconfig
   - pixman
   - expat
   - freetype
   run_exports:
-  - ${{ pin_subpackage("r-base", exact=True) }}
+  - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
 
 tests:
 - package_contents:

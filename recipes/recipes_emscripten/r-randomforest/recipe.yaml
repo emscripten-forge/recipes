@@ -1,45 +1,47 @@
 context:
   version: 4.7-1.2
-  name: r-randomforest
-  ccname: randomForest
+  name: r-randomForest
 
 package:
-  name: ${{ name }}
-  version: ${{ version }}
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-    - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: aad33227b648bad50412849d7e0fed00fd07f1d1d4a14fa015b4b9f939b04a11
 
 build:
   number: 0
   string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
-  # TODO: flang needs to be rebuilt to install r-base in build environment.
-  skip: ${{ r_abi_build_tag == 453 }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
     - cross-r-base_${{ target_platform }} ==${{ r_base }}
     - ${{ compiler('c') }}
-    - flang_${{ target_platform }}
+    - ${{ compiler('fortran') }}
   host:
+    - r-base ==${{ r_base }}
     - libflang
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
-  homepage: https://jeroen.r-universe.dev/sys
-  repository: https://github.com/jeroen/sys/
+  homepage: https://www.stat.berkeley.edu/~breiman/RandomForests/
   license: GPL-2.0-or-later
   license_family: GPL3
   license_file: GPL-3
-  summary: Classification and regression based on a forest of trees using random inputs, based on Breiman (2001)
+  summary: |
+    Breiman and Cutlers Random Forests for Classification and Regression
+  description: |
+    Classification and regression based on a forest of trees using random
+    inputs, based on Breiman (2001) <doi:10.1023/A:1010933404324>.
+
 extra:
   recipe-maintainers:
     - DerThorsten

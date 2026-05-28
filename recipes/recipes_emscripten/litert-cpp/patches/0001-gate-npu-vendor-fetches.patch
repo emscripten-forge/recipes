@@ -1,0 +1,48 @@
+diff --git a/litert/vendors/CMakeLists.txt b/litert/vendors/CMakeLists.txt
+index 675debe..a58a7e8 100644
+--- a/litert/vendors/CMakeLists.txt
++++ b/litert/vendors/CMakeLists.txt
+@@ -18,7 +18,7 @@ set(NEUROPILOT_HEADERS_DIR "" CACHE PATH "Path to pre-downloaded NeuroPilot h
+ set(QAIRT_HEADERS_DIR "" CACHE PATH "Path to pre-downloaded QAIRT/QNN headers (root containing Qnn*.h)")
+ set(LITECORE_HEADERS_DIR "" CACHE PATH "Path to Samsung AI LiteCore headers (root containing graph_wrapper_api.h)")
+ 
+-if(NOT NEUROPILOT_HEADERS_DIR)
++if(LITERT_ENABLE_NPU AND NOT NEUROPILOT_HEADERS_DIR)
+   if(NOT NEUROPILOT_HEADERS_URL AND NOT NEUROPILOT_GIT_REPO)
+     set(NEUROPILOT_HEADERS_URL "https://s3.ap-southeast-1.amazonaws.com/mediatek.neuropilot.com/66f2c33a-2005-4f0b-afef-2053c8654e4f.gz")
+   endif()
+@@ -57,7 +57,7 @@ endif()
+ 
+ # LINT.IfChange(qairt_headers_dir)
+-if(NOT QAIRT_HEADERS_DIR)
++if(LITERT_ENABLE_NPU AND NOT QAIRT_HEADERS_DIR)
+   if(NOT QAIRT_HEADERS_URL AND NOT QAIRT_GIT_REPO)
+     set(QAIRT_HEADERS_URL "https://softwarecenter.qualcomm.com/api/download/software/sdks/Qualcomm_AI_Runtime_Community/All/2.44.0.260225/v2.44.0.260225.zip")
+     set(QAIRT_HEADERS_SUBDIR "qairt/2.44.0.260225")
+@@ -100,7 +100,7 @@ endif()
+ 
+ # LINT.IfChange(litecore_headers_dir)
+-if(NOT LITECORE_HEADERS_DIR)
++if(LITERT_ENABLE_NPU AND NOT LITECORE_HEADERS_DIR)
+   if(NOT LITECORE_HEADERS_URL AND NOT LITECORE_GIT_REPO)
+     set(LITECORE_HEADERS_URL "https://soc-developer.semiconductor.samsung.com/api/v1/resource/download-file/1.1.0/ai-litecore-ubuntu2404-v1.1.0.tar.gz")
+   endif()
+@@ -301,7 +301,7 @@ else()
+ endif()
+ 
+ # Qualcomm
+ option(LITERT_ENABLE_QUALCOMM "Enable Qualcomm dispatch build (requires QNN SDK headers/libs)" OFF)
+-if(QAIRT_HEADERS_DIR AND NOT LITERT_ENABLE_QUALCOMM)
++if(LITERT_ENABLE_NPU AND QAIRT_HEADERS_DIR AND NOT LITERT_ENABLE_QUALCOMM)
+   message(STATUS "Enabling Qualcomm dispatch: QNN headers detected at ${QAIRT_HEADERS_DIR}")
+   set(LITERT_ENABLE_QUALCOMM ON CACHE BOOL "" FORCE)
+ endif()
+@@ -314,7 +314,7 @@ endif()
+ 
+ # Samsung
+ option(LITERT_ENABLE_SAMSUNG "Enable Samsung NPU build" ON)
+-if(LITECORE_HEADERS_DIR AND NOT LITERT_ENABLE_SAMSUNG)
++if(LITERT_ENABLE_NPU AND LITECORE_HEADERS_DIR AND NOT LITERT_ENABLE_SAMSUNG)
+   message(STATUS "Enabling Samsung dispatch: Samsung headers detected at ${LITECORE_HEADERS_DIR}")
+   set(LITERT_ENABLE_SAMSUNG ON CACHE BOOL "" FORCE)
+ endif()

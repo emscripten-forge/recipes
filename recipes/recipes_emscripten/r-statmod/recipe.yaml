@@ -13,18 +13,17 @@ source:
   sha256: 5f83d82043c5e26f1048fc0139580da1b7e40becf95fb4cb26ed3afcd46a581d
 
 build:
-  number: 0
+  number: 1
   string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
-  # TODO: flang needs to be rebuilt to install r-base in build environment.
-  skip: ${{ r_abi_build_tag == 453 }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
     - cross-r-base_${{ target_platform }} ==${{ r_base }}
     - ${{ compiler('c') }}
-    - flang_${{ target_platform }}
+    - ${{ compiler('fortran') }}
   host:
+    - r-base ==${{ r_base }}
     - libflang
 
 tests:
@@ -38,6 +37,7 @@ about:
   license_family: GPL3
   license_file: GPL-3
   summary: A collection of algorithms and functions to aid statistical modeling
+
 extra:
   recipe-maintainers:
     - DerThorsten

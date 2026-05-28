@@ -1,0 +1,99 @@
+diff --git a/litert/runtime/CMakeLists.txt b/litert/runtime/CMakeLists.txt
+index 3ba7e20..2255c63 100644
+--- a/litert/runtime/CMakeLists.txt
++++ b/litert/runtime/CMakeLists.txt
+@@ -17,9 +17,7 @@ set(LITERT_RUNTIME_SOURCES
+     accelerators/auto_registration.cc
+     accelerators/cpu_registry.cc
+     accelerators/dispatch/dispatch_accelerator.cc
+-    accelerators/gpu_registry.cc
+     accelerators/npu_registry.cc
+     accelerators/registration_helper.cc
+     accelerators/webnn_registry.cc
+-    accelerators/xnnpack/xnnpack_accelerator.cc
+     ahwb_buffer.cc
+     ahwb_wrapper.cc
+     compiled_model.cc
+@@ -31,7 +29,6 @@ set(LITERT_RUNTIME_SOURCES
+     event.cc
+     external_litert_buffer_context.cc
+     fastrpc_buffer.cc
+-    gpu_environment.cc
+     # Always compile GL buffer/texture sources; they contain internal stubs
+     # when LITERT_HAS_OPENGL_SUPPORT is 0 so they are safe to include on CPU-only builds.
+     gl_buffer.cc
+@@ -52,6 +49,17 @@ set(LITERT_RUNTIME_SOURCES
+     ${TFLITE_SOURCE_DIR}/profiling/time.cc
+ )
+ 
++if(LITERT_ENABLE_GPU)
++  list(APPEND LITERT_RUNTIME_SOURCES
++      accelerators/gpu_registry.cc
++      gpu_environment.cc
++      open_cl_memory.cc
++      open_cl_sync.cc
++  )
++endif()
++
++if(TFLITE_ENABLE_XNNPACK)
++  list(APPEND LITERT_RUNTIME_SOURCES accelerators/xnnpack/xnnpack_accelerator.cc)
++endif()
++
+ # Runtime library
+ add_library(litert_runtime STATIC ${LITERT_RUNTIME_SOURCES})
+ 
+@@ -59,20 +67,31 @@ set(LITERT_XNNPACK_INCLUDE_DIR "${CMAKE_BINARY_DIR}/xnnpack/include" CACHE PATH "Path to XNNPACK public headers used by LiteRT")
+ set(LITERT_PTHREADPOOL_INCLUDE_DIR "${CMAKE_BINARY_DIR}/pthreadpool-source/include" CACHE PATH "Path to pthreadpool headers used by LiteRT")
+ 
+ # Optional GPU-related sources
+ if(APPLE)
+   target_sources(litert_runtime PRIVATE metal_info.cc)
+ endif()
+-target_sources(litert_runtime PRIVATE open_cl_memory.cc open_cl_sync.cc)
+ 
+ # Link Apple frameworks for Metal and OpenGL interop
+ if(APPLE)
+   set_source_files_properties(metal_info.cc PROPERTIES COMPILE_FLAGS "-x objective-c++")
+   target_link_libraries(litert_runtime PRIVATE "-framework Metal" "-framework Foundation" "-framework OpenGL")
+ endif()
+ 
+-target_compile_options(litert_runtime PRIVATE
+-    -DLITERT_USE_XNNPACK
+-)
++if(TFLITE_ENABLE_XNNPACK)
++  target_compile_options(litert_runtime PRIVATE -DLITERT_USE_XNNPACK)
++else()
++  target_compile_options(litert_runtime PRIVATE -DLITERT_DISABLE_CPU)
++endif()
++
++set(LITERT_RUNTIME_PUBLIC_INCLUDE_DIRS
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
++    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../..>
++    $<BUILD_INTERFACE:${TENSORFLOW_SOURCE_DIR}>
++)
++
++if(TFLITE_ENABLE_XNNPACK)
++  list(APPEND LITERT_RUNTIME_PUBLIC_INCLUDE_DIRS
++      $<BUILD_INTERFACE:${LITERT_XNNPACK_INCLUDE_DIR}>
++      $<BUILD_INTERFACE:${LITERT_PTHREADPOOL_INCLUDE_DIR}>
++  )
++endif()
++
++if(LITERT_ENABLE_GPU)
++  list(APPEND LITERT_RUNTIME_PUBLIC_INCLUDE_DIRS
++      $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/opencl_headers>
++  )
++endif()
+ 
+ target_include_directories(litert_runtime
+     PUBLIC
+-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
+-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../..>
+-        $<BUILD_INTERFACE:${TENSORFLOW_SOURCE_DIR}>
+-        $<BUILD_INTERFACE:${LITERT_XNNPACK_INCLUDE_DIR}>
+-        $<BUILD_INTERFACE:${LITERT_PTHREADPOOL_INCLUDE_DIR}>
+-        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/opencl_headers>
++        ${LITERT_RUNTIME_PUBLIC_INCLUDE_DIRS}
+     PRIVATE
+         ${CMAKE_CURRENT_SOURCE_DIR}
+ )
