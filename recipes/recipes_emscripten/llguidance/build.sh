@@ -13,12 +13,16 @@ rustup target add wasm32-unknown-emscripten
 # Disable wasm feature (uses instant crate which calls _emscripten_get_now,
 #   not available in side modules; std::time::Instant works instead)
 # Keep lark (grammar syntax) and referencing (JSON $ref support)
-cargo build \
+# Use cargo rustc with --crate-type staticlib to avoid cdylib build,
+# which fails on emscripten when SIDE_MODULE=2 exports Rust-mangled symbols
+# (e.g. serde_json::value::Index) that contain invalid export name characters.
+cargo rustc \
     --target wasm32-unknown-emscripten \
     --release \
     --package llguidance \
     --no-default-features \
-    --features "lark,referencing"
+    --features "lark,referencing" \
+    --crate-type staticlib
 
 echo "Installing library and headers..."
 
