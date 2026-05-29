@@ -1,7 +1,6 @@
 context:
+  name: r-matrixStats
   version: 1.5.0
-  name: r-matrixstats
-  ccname: matrixStats
 
 package:
   name: ${{ name | lower }}
@@ -9,24 +8,25 @@ package:
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: 12996c5f3e6fc202a43e1087f16a71b7fa93d7e908f512542c7ee89cf95dcc15
 
 build:
-  number: 2
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 3
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('cxx') }}
+  host:
+  - r-base ==${{ r_base }}
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://cran.r-project.org/package=matrixStats
@@ -36,10 +36,11 @@ about:
   license_file: LICENSE
   summary: High-performing functions operating on rows and columns of matrices
   description: |
-    High-performing functions operating on rows and columns of matrices, e.g. col / rowMedians(), col / rowRanks(), and col / rowSds().
-    Functions optimized per data type and for subsetted calculations such that both memory usage and processing time is minimized.
-    There are also optimized vector-based methods, e.g.
-    binMeans(), madDiff() and weightedMedian().
+    High-performing functions operating on rows and columns of matrices, e.g.
+    col / rowMedians(), col / rowRanks(), and col / rowSds(). Functions
+    optimized per data type and for subsetted calculations such that both memory
+    usage and processing time is minimized. There are also optimized vector-
+    based methods, e.g. binMeans(), madDiff() and weightedMedian().
 
 extra:
   recipe-maintainers:

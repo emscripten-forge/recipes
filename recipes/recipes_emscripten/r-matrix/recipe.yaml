@@ -1,20 +1,19 @@
 context:
-  name: r-matrix
+  name: r-Matrix
   version: 1.7-5
 
 package:
-  name: ${{ name }}
-  version: ${{ version|replace('-', '_') }}
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/Matrix_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/Matrix_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: 308b0edd7bcb023a8bb50cc5cec98e66b3658c94a5badfb1ce6024e595fa8a83
 
 build:
-  number: 1
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 2
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -23,17 +22,18 @@ requirements:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-lattice
   host:
+  - r-base ==${{ r_base }}
   - r-lattice
-  - libblas>=3.12
-  - liblapack>=3.12
-  - libflang                  # for FortranRuntime
+  - libblas
+  - liblapack
+  - libflang
   run:
   - r-lattice
 
 tests:
 - package_contents:
     lib:
-    - R/library/Matrix/libs/Matrix.so
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: http://Matrix.R-forge.R-project.org/

@@ -4,26 +4,27 @@ context:
 
 package:
   name: ${{ name }}
-  version: ${{ version | replace('-', '_') }}
+  version: ${{ version }}
 
 source:
   url: https://cran.r-project.org/src/contrib/${{ name[2:]}}_${{ version }}.tar.gz
   sha256: dee9b6c1152db1a5dc427d074b32bbbb738708683f17a95e0e95e4d79fdf174b
 
 build:
-  number: 5
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 6
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:]  }}/libs/${{ name[2:]  }}.so
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
 about:
   homepage: https://cran.r-project.org/package=gtools
@@ -31,7 +32,6 @@ about:
   license: GPL-2.0-only
   license_family: GPL2
   license_file: GPL-2
-
 
 extra:
   recipe-maintainers:
