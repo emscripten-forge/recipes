@@ -1,0 +1,47 @@
+context:
+  name : IRanges
+  version: 2.46.0
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: a61e97812b0357411b770c5886b684fc6c0b59c05441f7336e46404e6898b3e9
+
+build:
+  number: 2
+  # Dependencies not yet available for R 4.6.0 on bioconda
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - bioconductor-biocgenerics # Not yet available for R 4.6.0
+  - bioconductor-s4vectors # Not yet available for R 4.6.0
+  host:
+  - r-base ==${{ r_base }}
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  run:
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+
+about:
+  repository: https://github.com/Bioconductor/IRanges 
+  license: Artistic-2.0
+  license_file: LICENSE
+  summary: Provides efficient low-level and highly reusable S4 classes for storing, manipulating and aggregating over annotated ranges of integers
+
+
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
