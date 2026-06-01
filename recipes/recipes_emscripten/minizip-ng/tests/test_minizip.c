@@ -2,11 +2,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <mz.h>
-#include <mz_zip.h>
-#include <mz_zip_rw.h>
-#include <mz_strm.h>
-#include <mz_strm_mem.h>
+#include <minizip/mz.h>
+#include <minizip/mz_os.h>
+#include <minizip/mz_strm.h>
+#include <minizip/mz_strm_mem.h>
+#include <minizip/mz_zip.h>
+#include <minizip/mz_zip_rw.h>
 
 static const char *test_data = "Hello from minizip-ng! This is test content for the zip archive.";
 static const char *test_filename = "test_file.txt";
@@ -20,7 +21,7 @@ static int test_create_zip(void) {
     printf("  Creating in-memory zip...\n");
 
     /* Create memory stream */
-    mz_stream_mem_create(&mem_stream);
+    mem_stream = mz_stream_mem_create();
     mz_stream_mem_set_grow_size(mem_stream, 128 * 1024);
     err = mz_stream_open(mem_stream, NULL, MZ_OPEN_MODE_CREATE);
     if (err != MZ_OK) {
@@ -29,7 +30,7 @@ static int test_create_zip(void) {
     }
 
     /* Create zip writer */
-    mz_zip_writer_create(&writer);
+    writer = mz_zip_writer_create();
     err = mz_zip_writer_open(writer, mem_stream, 0);
     if (err != MZ_OK) {
         printf("  FAIL: mz_zip_writer_open failed with error %d\n", err);
@@ -52,7 +53,7 @@ static int test_create_zip(void) {
     }
 
     err = mz_zip_writer_entry_write(writer, test_data, (int32_t)strlen(test_data));
-    if (err != MZ_OK) {
+    if (err < 0) {
         printf("  FAIL: mz_zip_writer_entry_write failed with error %d\n", err);
         return 1;
     }
@@ -73,7 +74,7 @@ static int test_create_zip(void) {
     printf("  Reading back zip...\n");
 
     void *reader = NULL;
-    mz_zip_reader_create(&reader);
+    reader = mz_zip_reader_create();
 
     /* Seek memory stream to beginning */
     mz_stream_seek(mem_stream, 0, MZ_SEEK_SET);
