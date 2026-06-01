@@ -10,7 +10,10 @@ wget --quiet https://github.com/IsabelParedes/llvm-project/releases/download/v20
 tar -xf $LLVM_PKG --directory $LLVM_DIR
 
 export FC=$LLVM_DIR/bin/flang
-export FFLAGS="--target=wasm32-unknown-emscripten"
+export FFLAGS="--target=wasm32-unknown-emscripten -fPIC"
+export CXXFLAGS="-fPIC"
+export CFLAGS="-fPIC"
+export LDFLAGS="-fPIC"
 
 emcmake cmake -S . -B _build \
     -DCMAKE_BUILD_TYPE=Release \
