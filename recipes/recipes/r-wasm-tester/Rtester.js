@@ -4,6 +4,7 @@ const wasmRHome = "/R";
 const hostRHome = path.join(process.env.PREFIX, "lib", "R");
 const rExecDir = path.join(hostRHome, "bin", "exec");
 const rLibDir = path.join(hostRHome, "lib");
+
 const rScriptPath = process.argv[2];
 const rScriptBody = require("node:fs").readFileSync(rScriptPath, "utf8");
 const rArgs = ["--no-restore", "--vanilla", "-e", rScriptBody];
@@ -35,11 +36,8 @@ var Module = {
       }
     };
 
-    // Populate the virtual FS with what R needs at runtime.
-    copyTree(`${hostRHome}/etc`, `${wasmRHome}/etc`);
-    copyTree(`${hostRHome}/share`, `${wasmRHome}/share`);
-    copyTree(`${hostRHome}/library`, `${wasmRHome}/library`);
-    copyTree(`${hostRHome}/modules`, `${wasmRHome}/modules`);
+    // R_HOME tree (etc, share, library, modules) and /lib for dynload paths.
+    copyTree(hostRHome, wasmRHome);
     copyTree(rLibDir, "/lib");
   }],
   onRuntimeInitialized() {
@@ -50,9 +48,6 @@ var Module = {
 let glue = require("node:fs").readFileSync(path.join(rExecDir, "R"), "utf8");
 const envLiteral = JSON.stringify({
   R_HOME: wasmRHome,
-  R_SHARE_DIR: `${wasmRHome}/share`,
-  R_INCLUDE_DIR: `${wasmRHome}/include`,
-  R_DOC_DIR: `${wasmRHome}/doc`,
 });
 glue = glue.replace("var ENV={};", `var ENV=${envLiteral};`);
 eval(glue);
