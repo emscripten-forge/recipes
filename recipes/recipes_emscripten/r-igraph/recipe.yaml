@@ -1,0 +1,82 @@
+context:
+  name: r-igraph
+  version: 2.3.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 4a394e2933ef4c75e2517cd8cf46cf82e8a76eee2ef7c9fc19fd08f2e2ed0bd6
+  patches:
+  - patches/0001-Use-external-arpack.patch
+  - patches/0002-Fix-lapack-function-signatures.patch
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('fortran') }}
+  - r-cli
+  - r-cpp11
+  - r-lifecycle
+  - r-magrittr
+  - r-matrix
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+  - arpack
+  - glpk
+  - gmp
+  - libxml2
+  - r-cli
+  - r-cpp11
+  - r-lifecycle
+  - r-magrittr
+  - r-matrix
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+  run:
+  - r-cli
+  - r-cpp11
+  - r-lifecycle
+  - r-magrittr
+  - r-matrix
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://r.igraph.org/
+  repository: https://github.com/igraph/rigraph
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  license_family: GPL3
+  summary: Network Analysis and Visualization
+  description: |
+    Routines for simple graphs and network analysis. It can handle large graphs
+    very well and provides functions for generating random and regular graphs,
+    graph visualization, centrality methods and much more.Routines for simple
+    graphs and network analysis. It can handle large graphs very well and
+    provides functions for generating random and regular graphs, graph
+    visualization, centrality methods and much more.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
