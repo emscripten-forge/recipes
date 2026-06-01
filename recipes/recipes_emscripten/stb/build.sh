@@ -3,7 +3,6 @@ set -e
 
 mkdir -p $PREFIX/include
 cp *.h $PREFIX/include/
-cp stb_vorbis.c $PREFIX/include/
 
 # Install CMake config files
 mkdir -p $PREFIX/lib/cmake/stb
