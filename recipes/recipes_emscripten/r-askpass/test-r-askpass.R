@@ -1,6 +1,6 @@
 library(askpass)
 
-stopifnot(is.function(askpassion))
+stopifnot(is.function(askpass))
 stopifnot(is.function(ssh_askpass))
 
 # Non-interactive, must not prompt, returns NULL per package docs
