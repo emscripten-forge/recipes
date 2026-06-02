@@ -1,0 +1,55 @@
+context:
+  name: r-rbibutils
+  version: 2.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: da313d920a0f35ffdf30a54929ba8904b2b5a0d7f11a519db8674148129c8f32
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_rbibutils.R
+  files:
+    recipe:
+    - test_rbibutils.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=rbibutils
+  documentation: https://geobosh.github.io/rbibutils/
+  repository: https://github.com/geobosh/rbibutils
+  license: GPL-2.0-only
+  license_family: GPL
+  license_file: GPL-2
+  summary: Read 'Bibtex' Files and Convert Between Bibliography Formats
+  description: |
+    Read and write 'Bibtex' files. Convert between bibliography formats,
+    including 'Bibtex', 'Biblatex', 'PubMed', 'Endnote', and 'Bibentry'.
+    Includes a port of the 'bibutils' utilities by Chris Putnam
+    <https://sourceforge.net/projects/bibutils/>. Supports all bibliography
+    formats and character encodings implemented in 'bibutils'.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
