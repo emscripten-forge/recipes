@@ -4,6 +4,7 @@ const wasmRHome = "/R";
 const hostRHome = path.join(process.env.PREFIX, "lib", "R");
 const rExecDir = path.join(hostRHome, "bin", "exec");
 const rLibDir = path.join(hostRHome, "lib");
+const prefixLibDir = path.join(process.env.PREFIX, "lib");
 
 const rScriptPath = process.argv[2];
 const rScriptBody = require("node:fs").readFileSync(rScriptPath, "utf8");
@@ -13,6 +14,23 @@ var Module = {
   noInitialRun: true,
   locateFile: (file) => {
     const fs = require("node:fs");
+    const normalized = file.replace("$PREFIX", process.env.PREFIX);
+    if (fs.existsSync(normalized)) {
+      return normalized;
+    }
+    const base = path.basename(normalized);
+    for (const dir of [prefixLibDir, rExecDir, rLibDir]) {
+      const candidate = path.join(dir, base);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    for (const dir of [prefixLibDir, rExecDir, rLibDir]) {
+      const candidate = path.join(dir, normalized);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
     for (const dir of [rExecDir, rLibDir]) {
       const candidate = path.join(dir, file);
       if (fs.existsSync(candidate)) {
