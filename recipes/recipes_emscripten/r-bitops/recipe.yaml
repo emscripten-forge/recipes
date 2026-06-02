@@ -1,23 +1,19 @@
 context:
   name: r-bitops
-  version: '1.0.9'
-  version_major: ${{(version | split("."))[0:1] | join(".") }}
-  version_minor: ${{(version | split("."))[1:2] | join(".") }}
-  version_patch: ${{(version | split("."))[2:3] | join(".") }}
-  version_in_url: ${{ version_major }}.${{ version_minor }}-${{ version_patch }}
+  version: '1.0-9' 
 
 package:
   name: ${{ name }}
-  version: ${{ version }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version_in_url }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version_in_url }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   sha256: cff3a5b77b72bb3b8fde92b690d0f803466d218a3ead6b731ae7c77ac1740d08
 
 build:
-  number: 0
+  number: 1
   skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
