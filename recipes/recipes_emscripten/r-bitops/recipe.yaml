@@ -1,0 +1,51 @@
+context:
+  name: r-bitops
+  version: '1.0-9'
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: cff3a5b77b72bb3b8fde92b690d0f803466d218a3ead6b731ae7c77ac1740d08
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test-r-bitops.R
+  files:
+    recipe:
+    - test-r-bitops.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/web/packages/bitops/index.html
+  repository: https://github.com/cran/bitops
+  license:  GPL-2.0-or-later
+  license_file: GLP-3
+  summary: Bitwise Operations for R
+  description: |
+    Tools for performing bitwise operations in R.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
