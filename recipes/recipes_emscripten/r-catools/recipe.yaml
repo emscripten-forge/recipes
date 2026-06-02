@@ -1,0 +1,59 @@
+context:
+  name: r-catools
+  ccname: caTools
+  version: '1.18.3'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ccname }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ccname }}_${{ version }}.tar.gz
+  sha256: e71b3942a7a239779028b1104c262ec5f70183128638ac7fb649c8d62c0468d8
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-bitops
+  host:
+  - r-base ==${{ r_base }}
+  - r-bitops
+  run:
+  - r-bitops
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+- script: run_r_test test-r-catools.R
+  files:
+    recipe:
+    - test-r-catools.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/web/packages/caTools/index.html
+  repository: https://github.com/cran/caTools
+  license:  GPL-3.0-only
+  license_file: GPL3
+  description: |
+    Contains several basic utility functions including:
+    moving (rolling, running) window statistic functions, 
+    read/write for GIF and ENVI binary files, 
+    fast calculation of AUC, LogitBoost classifier, 
+    base64 encoder/decoder, 
+    round-off-error-free sum and cumsum, etc.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
