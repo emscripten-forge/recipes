@@ -15,5 +15,8 @@ emcmake cmake -S tests -B build_tests \
 
 emmake make -C build_tests -j"${CPU_COUNT}"
 
-echo "Running test..."
+echo "Running TBB threading test..."
 node build_tests/test_onetbb.js
+
+echo "Running TBB malloc test..."
+node build_tests/test_onetbb_malloc.js

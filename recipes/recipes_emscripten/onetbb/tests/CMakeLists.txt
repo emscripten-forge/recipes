@@ -11,5 +11,10 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pthread")
 
 find_package(TBB CONFIG REQUIRED)
 
+# Test TBB threading library
 add_executable(test_onetbb test_onetbb.cpp)
 target_link_libraries(test_onetbb TBB::tbb)
+
+# Test TBB malloc library (needed by oneDAL)
+add_executable(test_onetbb_malloc test_onetbb_malloc.cpp)
+target_link_libraries(test_onetbb_malloc TBB::tbbmalloc)

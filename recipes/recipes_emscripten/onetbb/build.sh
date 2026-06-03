@@ -9,8 +9,16 @@ CXXFLAGS="${CXXFLAGS:-}"
 LDFLAGS="${LDFLAGS:-}"
 
 # Disable ucontext-based resumable tasks — ucontext symbols
-# (getcontext/makecontext/swapcontext) are not linkable on WASM.
-# This forces oneTBB to use pthread-based coroutines instead.
+# (getcontext/makecontext/swapcontext) are not linkable on WASM
+# as a main module. Force oneTBB to use pthread-based coroutines.
+#
+# Both approaches are needed:
+# 1. CMake variable (TBB_RESUMABLE_TASKS_USE_THREADS) overrides the
+#    auto-detection in cmake/resumable_tasks.cmake which finds
+#    getcontext in the build-host sysroot and would otherwise use
+#    the ucontext code path.
+# 2. Compiler flags in CFLAGS/CXXFLAGS as a belt-and-suspenders
+#    measure for any source compiled outside the CMake target.
 export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -D__TBB_RESUMABLE_TASKS_USE_THREADS=1"
 export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -D__TBB_RESUMABLE_TASKS_USE_THREADS=1"
 export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
@@ -24,6 +32,7 @@ emcmake cmake -GNinja \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DTBB_RESUMABLE_TASKS_USE_THREADS="__TBB_RESUMABLE_TASKS_USE_THREADS=1" \
     -DBUILD_SHARED_LIBS=OFF \
     -DTBB_STRICT=OFF \
     -DTBB_DISABLE_HWLOC_AUTOMATIC_SEARCH=ON \
@@ -33,6 +42,7 @@ emcmake cmake -GNinja \
     -DTBBMALLOC_BUILD=ON \
     -DTBBMALLOC_PROXY_BUILD=ON \
     -DTBB_INSTALL=ON \
+    -DCMAKE_C_FLAGS="-Wno-unused-command-line-argument ${CFLAGS}" \
     -DCMAKE_CXX_FLAGS="-Wno-unused-command-line-argument ${CXXFLAGS}" \
     ..
 
