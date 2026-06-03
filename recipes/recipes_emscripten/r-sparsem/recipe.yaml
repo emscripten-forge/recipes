@@ -1,0 +1,56 @@
+context:
+  name: r-SparseM
+  version: 1.84-2
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 2580fdbb8679e76c92b9f0c5bd9bb503c4cb6a750ef6ae96595441690ce98665
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+  run:
+  - r-mass
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_sparsem.R
+  files:
+    recipe:
+    - test_sparsem.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=SparseM
+  repository: https://github.com/cran/SparseM
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Sparse Linear Algebra
+  description: |
+    Some basic linear algebra functionality for sparse matrices is provided:
+    including Cholesky decomposition and backsolving as well as standard R
+    subsetting and Kronecker products.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
