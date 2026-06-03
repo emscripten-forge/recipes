@@ -1,0 +1,76 @@
+context:
+  name : Rsamtools
+  version: 2.26.0
+  bioc: 3.22
+
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 80b520c984e9da13fe06a2a6bdf712fffa6275705f3d0fb16af60eb5fb28609d
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
+
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  - bioconductor-iranges
+  - bioconductor-xvector
+  - bioconductor-biostrings
+  - bioconductor-seqinfo
+  - bioconductor-genomicranges
+  - r-bitops
+  host:
+  - r-base ==${{ r_base }}
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  - bioconductor-iranges
+  - bioconductor-xvector
+  - bioconductor-biostrings
+  - bioconductor-seqinfo
+  - bioconductor-genomicranges
+  - r-bitops
+  run:
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  - bioconductor-iranges
+  - bioconductor-xvector
+  - bioconductor-biostrings
+  - bioconductor-seqinfo
+  - bioconductor-genomicranges
+  - r-bitops
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  repository: https://git.bioconductor.org/packages/XVector
+  license: Artistic-2.0
+  license_file: LICENSE
+  summary: Binary alignment (BAM), FASTA, variant call (BCF), and tabix file import
+
+
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
