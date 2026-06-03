@@ -1,16 +1,27 @@
 context:
   name : IRanges
-  version: 2.46.0
+  version: 2.44.0
+  bioc: 3.22
 package:
   name: bioconductor-${{ name | lower }}
   version: ${{ version }}
 
+# source:
+  # url: https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  # sha256: a61e97812b0357411b770c5886b684fc6c0b59c05441f7336e46404e6898b3e9
+
+
+
 source:
-  url: https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
-  sha256: a61e97812b0357411b770c5886b684fc6c0b59c05441f7336e46404e6898b3e9
+  url: 
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 244e55ca485805ae2fcae8621dec7bb35e9fcd0da707271eb5ef984b88605042
 
 build:
-  number: 2
+  number: 0
   # Dependencies not yet available for R 4.6.0 on bioconda
   skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
