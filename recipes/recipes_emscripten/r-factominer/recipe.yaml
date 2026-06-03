@@ -4,7 +4,7 @@ context:
 
 package:
   name: ${{ name }}
-  version: ${{ version | replace('-', '_') }}
+  version: ${{ version }}
 
 source:
   url:
@@ -13,15 +13,14 @@ source:
   sha256: fd6f934e9dd1e80a4b094cdeba12a1bb305357a742e9241b1a87dfe4e455c168
 
 build:
-  number: 5
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
-  
   - r-car
   - r-cluster
   - r-dt
@@ -33,10 +32,6 @@ requirements:
   - r-mass
   - r-multcompview
   - r-scatterplot3d
-  - r-stats
-  - r-utils
- 
-
   host:
   - r-car
   - r-cluster
@@ -49,10 +44,6 @@ requirements:
   - r-mass
   - r-multcompview
   - r-scatterplot3d
-  - r-stats
-  - r-utils
-
-
   run:
   - r-car
   - r-cluster
@@ -65,8 +56,6 @@ requirements:
   - r-mass
   - r-multcompview
   - r-scatterplot3d
-  - r-stats
-  - r-utils
 
 tests:
 - package_contents:
