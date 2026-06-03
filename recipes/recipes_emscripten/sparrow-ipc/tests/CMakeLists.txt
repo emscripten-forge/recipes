@@ -4,13 +4,7 @@ project(sparrow_ipc_test CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# For emscripten, find lz4 and create alias if needed (workaround for conda packages)
-find_library(LZ4_LIBRARY NAMES lz4 liblz4)
-if(LZ4_LIBRARY AND NOT TARGET lz4::lz4)
-    add_library(lz4::lz4 UNKNOWN IMPORTED)
-    set_target_properties(lz4::lz4 PROPERTIES IMPORTED_LOCATION "${LZ4_LIBRARY}")
-endif()
-
+find_package(lz4 REQUIRED CONFIG)
 find_package(sparrow-ipc REQUIRED)
 
 add_executable(test_simple test_simple.cpp)

@@ -1,0 +1,48 @@
+context:
+  name : S4Vectors
+  version: 0.48.0
+  bioc: 3.22
+
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 5b54d27f1283a1e29b956a5eb0cad739e054fd3b067942f3beaf84d444b241ef
+
+build:
+  number: 2
+  # Dependencies not yet available for R 4.6.0 on bioconda
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - bioconductor-biocgenerics # Not yet available for R 4.6.0
+  host:
+  - r-base ==${{ r_base }}
+  - bioconductor-biocgenerics
+  run:
+  - bioconductor-biocgenerics
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+
+about:
+  repository: https://github.com/Bioconductor/S4Vectors
+  license: Artistic-2.0
+  license_file: LICENSE
+  summary: S4 implementation of vector-like and list-like objects
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
