@@ -1,0 +1,76 @@
+context:
+  name: r-quantreg
+  version: 6.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: f42292c5ab25a15f39295b93391deafef192fe09eefde563399a64eba7e0169a
+  patches:
+  - patches/0001-Prevent-double-linking-flang_rt.runtime.patch
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - r-sparsem
+  - r-matrix
+  - r-matrixmodels
+  - r-survival
+  - r-mass
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+  - r-sparsem
+  - r-matrix
+  - r-matrixmodels
+  - r-survival
+  - r-mass
+  run:
+  - r-sparsem
+  - r-matrix
+  - r-matrixmodels
+  - r-survival
+  - r-mass
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_quantreg.R
+  files:
+    recipe:
+    - test_quantreg.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=quantreg
+  repository: https://github.com/cran/quantreg
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Quantile Regression
+  description: |
+    Estimation and inference methods for models of conditional quantiles: Linear
+    and nonlinear parametric and non-parametric (semi-parametric) models for
+    conditional quantiles of a univariate response and several methods for
+    handling censored regression data. The models can contain explanatory
+    variables in factor form, linear forms, and nonlinear forms.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
