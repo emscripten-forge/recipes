@@ -1,6 +1,3 @@
-# remove all shared zlib instances
-rm $PREFIX/lib/libz.so* || true
-
 
 # remove BiocParallel,  from DESCRIPTION to avoid it being pulled in as a dependency, which causes issues with the build
 sed -i.bak 's/BiocParallel, //g' DESCRIPTION
