@@ -1,0 +1,55 @@
+context:
+  name : Rhtslib
+  version: 3.6.0
+  bioc: 3.22
+
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 8b5fc0dfba39efb7371b5b0f930445047c7e06238d07c2293a50317612da6692
+
+build:
+  number: 0
+  skip: ${{ r_base != '4.6.0' }}
+
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+  - zlib
+  - bzip2
+  - liblzma
+
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  repository: https://git.bioconductor.org/packages/Rhtslib
+  license: LGPL-2.0-or-later
+  license_file: LICENSE
+  summary: Provides memory efficient S4 classes for storing sequences "externally" (e.g. behind an R external pointer, or on disk).
+
+
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
