@@ -1,0 +1,46 @@
+context:
+  version: 1.5.4
+  name: r-writexl
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: d0574a29ea22bd78785f50c7cd23c6e10036f65321e26d55a694e931467660d3
+
+build:
+  number: 2
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+  - zlib
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://libxlsxwriter.github.io/
+  repository: https://github.com/ropensci/writexl
+  documentation: https://docs.ropensci.org/writexl/
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Portable, light-weight data frame to xlsx exporter for R
+  description: |
+    Wraps the libxlsxwriter library to create files in Microsoft Excel 'xlsx'
+    format.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes

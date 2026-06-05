@@ -1,0 +1,85 @@
+context:
+  name: minizip-ng
+  version: 4.2.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/zlib-ng/minizip-ng/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 3cc35c2cb925dbe67cc801e3234b31b0f30197812a99377352fa1b551ab3d011
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - ninja
+  host:
+  - zlib
+  - bzip2
+  - liblzma
+  - zstd
+  - openssl
+  run:
+  - zlib
+  - bzip2
+  - liblzma
+  - zstd
+  - openssl
+
+tests:
+- package_contents:
+    lib:
+    - libminizip.a
+    include:
+    - minizip/mz.h
+    - minizip/mz_zip.h
+    - minizip/mz_zip_rw.h
+    - minizip/mz_strm.h
+    - minizip/mz_strm_buf.h
+    - minizip/mz_strm_mem.h
+    - minizip/mz_strm_os.h
+    - minizip/mz_strm_zlib.h
+    - minizip/mz_strm_bzip.h
+    - minizip/mz_strm_lzma.h
+    - minizip/mz_strm_zstd.h
+    - minizip/mz_strm_pkcrypt.h
+    - minizip/mz_strm_wzaes.h
+    - minizip/mz_os.h
+    - minizip/mz_crypt.h
+    - minizip/mz_strm_split.h
+    files:
+    - lib/cmake/minizip/minizip-config.cmake
+    - lib/cmake/minizip/minizip-config-version.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/zlib-ng/minizip-ng
+  license: Zlib
+  license_file: LICENSE
+  summary: Fork of the popular zip manipulation library found in the zlib distribution
+  description: |
+    minizip-ng is a zip manipulation library written in C that is supported on
+    Windows, macOS, and Linux. It is a fork of the minizip library found in the
+    zlib distribution, with additional features including ZSTD, LZMA, and BZIP2
+    compression support, AES encryption, and WinZIP encryption.
+  repository: https://github.com/zlib-ng/minizip-ng
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

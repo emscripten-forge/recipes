@@ -51,7 +51,8 @@ pushd _build_linux
     export PREFIX=$BUILD_PREFIX
     export CC=gcc
     export CXX=g++
-    export FC=flang-new
+    export FC=flang
+    export FCLIBS="-lflang_rt.runtime"
     export CPPFLAGS="-I$BUILD_PREFIX/include"
     export LDFLAGS="-L$BUILD_PREFIX/lib"
     export FC_LEN_T=size_t
@@ -108,5 +109,3 @@ pushd _build_wasm
 
 )
 popd
-
-rm $PREFIX/lib/libFortranRuntime.a

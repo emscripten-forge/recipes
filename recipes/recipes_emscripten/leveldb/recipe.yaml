@@ -1,0 +1,53 @@
+context:
+  name: leveldb
+  version: "1.23"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/leveldb/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9a37f8a6174f09bd622bc723b55881dc541cd50747cbd08831c2a82d620f6d76
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - ${{ compiler("c") }}
+  - cmake
+  - make
+
+tests:
+- package_contents:
+    files:
+    - include/leveldb/c.h
+    - include/leveldb/db.h
+    - lib/libleveldb.a
+    - lib/cmake/leveldb/leveldbConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/google/leveldb
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Fast key-value storage library
+  description: |
+    LevelDB is a fast key-value storage library written at Google that
+    provides an ordered mapping from string keys to string values.
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
