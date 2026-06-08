@@ -1,0 +1,59 @@
+context:
+  version: 0.3.3
+  name: r-slider
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 7ad3a7c7ff56c472fcf55a5a9fc8f11879e0d232f8a7a5a736c38b0ecac6f0ac
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }} 
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-cli >=3.4.1
+  - r-rlang >=1.0.6
+  - r-vctrs >=0.5.0
+  - r-warp
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli >=3.4.1
+  - r-rlang >=1.0.6
+  - r-vctrs >=0.5.0
+  - r-warp
+  run:
+  - r-cli >=3.4.1
+  - r-rlang >=1.0.6
+  - r-vctrs >=0.5.0
+  - r-warp
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://github.com/DavisVaughan/slider
+  license:  MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Provides type-stable rolling window functions over any R data type. Cumulative and expanding windows are also supported. For more advanced usage, an index can be used as a secondary vector that defines how sliding windows are to be created.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
