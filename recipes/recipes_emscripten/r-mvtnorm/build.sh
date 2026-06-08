@@ -13,6 +13,10 @@ tar -xf $LLVM_PKG --directory $LLVM_DIR
 $LLVM_DIR/bin/flang --version
 $LLVM_DIR/bin/llvm-nm --version
 
+
+# ensure $LLVM_DIR/bin is in PATH
+export PATH="$LLVM_DIR/bin:$PATH"
+
 # Set flags
 export EM_LLVM_ROOT=$LLVM_DIR
 export FLANG=$LLVM_DIR/bin/flang
