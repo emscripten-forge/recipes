@@ -1,6 +1,5 @@
 library(urca)
 
-# punitroot/qunitroot expect numeric values, not the formal arg names q/p
 q95 <- qunitroot(0.95, trend = "nc", statistic = "t")
 print(q95)
 stopifnot(is.numeric(q95), length(q95) == 1L, is.finite(q95))
