@@ -51,5 +51,6 @@ export CXXFLAGS="-g0 -fPIC -fwasm-exceptions"
 
 
 
+cp $RECIPE_DIR/Makevars $SRC_DIR/src/Makevars
 
 $R CMD INSTALL $R_ARGS .
