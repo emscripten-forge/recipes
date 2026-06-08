@@ -1,0 +1,80 @@
+context:
+  version: 1.4.0
+  name: r-yardstick
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 579f2b3db310297ddd9413aa076fe4d0d74e4fbd87784a4597ac84718c74888b
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat >=1.4.3
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat >=1.4.3
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+  run:
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat >=1.4.3
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://github.com/tidymodels/yardstick
+  license:  MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |
+    Computes multivariate normal and t probabilities, quantiles, random deviates, and densities. Log-likelihoods for multivariate Gaussian models and Gaussian copulae parameterised by Cholesky factors of covariance or precision matrices are implemented for interval-censored and exact data, or a mix thereof. 
+    Score functions for these log-likelihoods are available. A class representing multiple lower triangular matrices and corresponding methods are part of this package.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
