@@ -1,0 +1,67 @@
+context:
+  name: sentencepiece
+  version: 0.2.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/sentencepiece/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c1a59e9259c9653ad0ade653dadff074cd31f0a6ff2a11316f67bee4189a8f1b
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - libabseil
+  run:
+  - libabseil
+
+tests:
+- package_contents:
+    lib:
+    - libsentencepiece.a
+    include:
+    - sentencepiece_processor.h
+    - sentencepiece_trainer.h
+    files:
+    - lib/cmake/sentencepiece/sentencepieceConfig.cmake
+    - lib/cmake/sentencepiece/sentencepieceConfigVersion.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/google/sentencepiece
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Unsupervised text tokenizer for Neural Network-based text generation
+  description: |
+    SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
+    Neural Network-based text generation systems where the vocabulary size is
+    predetermined prior to the neural model training. It implements subword
+    units (BPE and unigram language model) with the extension of direct training
+    from raw sentences.
+  documentation: https://github.com/google/sentencepiece
+  repository: https://github.com/google/sentencepiece
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
