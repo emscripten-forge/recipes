@@ -1,6 +1,6 @@
 context:
-  version: 1.8-15
-  name: r-xts
+  version: 0.14.2
+  name: r-zoo
 
 package:
   name: ${{ name }}
@@ -10,23 +10,23 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: d4b68584b2b64664163850af6cb936b9bf14485bfb725d048c272cee0812dc6f
+  sha256: c0d139b7d3dee4f28202bc8d82fd76109af26530c43e39a051b1eb145d1861ea
 
 build:
-  number: 7
+  number: 0
   script: $R CMD INSTALL $R_ARGS .
   skip: ${{ r_base == '4.6.0' }}
-
+  
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
-  - r-zoo >=1.7_12
+  - r-lattice
   host:
   - r-base ==${{ r_base }}
-  - r-zoo >=1.7_12
+  - r-lattice
   run:
-  - r-zoo >=1.7_12
+  - r-lattice
 tests:
 - package_contents:
     lib:
@@ -43,8 +43,7 @@ about:
   license: GPL-2.0-or-later
   license_family: GPL
   license_file: GPL-2
-  summary: An S3 class with methods for totally ordered indexed observations. It is particularly aimed at irregular time series of numeric vectors/matrices and factors. zoo's key design goals are independence of a particular index/date/time class and consistency with ts and base R by providing methods to extend standard
-    generics.
+  summary: Provide for uniform handling of R's different time-based data classes by extending zoo, maximizing native format information preservation and allowing for user level customization and extension, while simplifying cross-class interoperability.
 
 extra:
   recipe-maintainers:
