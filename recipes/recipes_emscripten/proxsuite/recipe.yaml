@@ -1,0 +1,72 @@
+context:
+  name: proxsuite-cpp
+  version: 0.7.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Simple-Robotics/${{ name }}/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1178721869898401e0a9d7c46803486c87d6ede3356770507dfb1022500a442b
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - eigen
+  - simde
+  run:
+  - eigen
+  - simde
+  run_exports:
+    weak:
+    - ${{ name }}
+
+tests:
+- package_contents:
+    include:
+    - proxsuite/fwd.hpp
+    - proxsuite/proxqp/dense/solver.hpp
+    - proxsuite/proxqp/sparse/solver.hpp
+    - proxsuite/linalg/dense/core.hpp
+    files:
+    - lib/cmake/proxsuite/proxsuiteConfig.cmake
+    - lib/cmake/proxsuite/proxsuiteConfigVersion.cmake
+    - lib/cmake/proxsuite/proxsuiteTargets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/Simple-Robotics/proxsuite
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Quadratic Programming Solver for Robotics and beyond
+  description: |
+    ProxSuite is a collection of open-source, numerically robust, precise,
+    and efficient numerical solvers (LPs, QPs, etc.) rooted in revisited
+    primal-dual proximal algorithms. It is a header-only C++ template library
+    offering dense, sparse, and matrix-free factorization backends with
+    advanced warm-starting options.
+  documentation: https://simple-robotics.github.io/proxsuite/
+  repository: https://github.com/Simple-Robotics/proxsuite
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
