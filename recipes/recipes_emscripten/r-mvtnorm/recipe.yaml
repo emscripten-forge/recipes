@@ -1,0 +1,44 @@
+context:
+  version: 1.4-1
+  name: r-mvtnorm
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: cda87fb2bbf99e0bed40f9ea7bdaca647fba42845f12cc54bed8f3892e07c236
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://codeberg.org/thothorn/mvtnorm
+  license:  GPL-2.0-only
+  license_family: GPL2
+  license_file: GPL-2
+  summary: |
+    Computes multivariate normal and t probabilities, quantiles, random deviates, and densities. Log-likelihoods for multivariate Gaussian models and Gaussian copulae parameterised by Cholesky factors of covariance or precision matrices are implemented for interval-censored and exact data, or a mix thereof. 
+    Score functions for these log-likelihoods are available. A class representing multiple lower triangular matrices and corresponding methods are part of this package.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
