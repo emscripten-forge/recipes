@@ -1,0 +1,51 @@
+context:
+  name: r-warp
+  version: '0.2.3'
+
+package:
+  name: ${{ name }}
+  version: ${{ version|replace("-", "_") }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: bdf3404b90ea5d1754242d87512b9d44c9a5825207d0010a956354266bda112a
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://CRAN.R-project.org/package=splus2R
+  license:  MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Tooling to group dates by a variety of periods
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
