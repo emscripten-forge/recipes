@@ -1,1 +1,1 @@
-library(import)
+library(dicedesign)
