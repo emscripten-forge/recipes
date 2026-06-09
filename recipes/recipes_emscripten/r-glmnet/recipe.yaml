@@ -1,0 +1,70 @@
+context:
+  name: r-glmnet
+  version: "5.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: f0b23da6383a45d502cd138b64da6300422d9b8d7b2c4f14627d412cde79d2a0
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - r-matrix
+  - r-rcpp
+  - r-rcppeigen
+  - r-foreach
+  - r-shape
+  - r-survival
+  host:
+  - r-base ==${{ r_base }}
+  - r-matrix
+  - r-rcpp
+  - r-rcppeigen
+  - r-foreach
+  - r-shape
+  - r-survival
+  run:
+  - r-matrix
+  - r-rcpp
+  - r-rcppeigen
+  - r-foreach
+  - r-shape
+  - r-survival
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_glmnet.R
+  files:
+    recipe:
+    - test_glmnet.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://glmnet.stanford.edu
+  repository: https://github.com/cran/glmnet
+  license: GPL-2.0-only
+  license_family: GPL2
+  license_file: GPL-2
+  summary: Lasso and Elastic-Net Regularized Generalized Linear Models
+
+extra:
+  recipe-maintainers:
+  - anutosh491
