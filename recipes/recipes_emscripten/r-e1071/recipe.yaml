@@ -1,0 +1,55 @@
+context:
+  name: r-e1071
+  version: "1.7-17"
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/e1071_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/e1071_${{ version }}.tar.gz
+  sha256: 6debc371ad478c2aa6de1f6510e254e80e797de4974b855f63b35509a3c2ac87
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }}
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - r-class
+  - r-proxy
+  host:
+  - r-base ==${{ r_base }}
+  - r-class
+  - r-proxy
+  run:
+  - r-class
+  - r-proxy
+
+tests:
+- package_contents:
+    lib:
+    - R/library/e1071/libs/e1071.so
+- script: run_r_test test_e1071.R
+  files:
+    recipe:
+    - test_e1071.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=e1071
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  summary: Misc Functions of the Department of Statistics, Probability Theory Group (Formerly E1071), TU Wien
+
+extra:
+  recipe-maintainers:
+  - anutosh491
