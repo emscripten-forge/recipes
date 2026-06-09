@@ -1,1 +1,1 @@
-library(dicedesign)
+library(DiceDesign)
