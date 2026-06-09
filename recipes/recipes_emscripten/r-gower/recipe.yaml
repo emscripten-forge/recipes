@@ -1,0 +1,47 @@
+context:
+  version: 1.0.2
+  name: r-gower
+
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 4fd569a50326133bd5629647ad0581340c9b9f8cd7f95572315f206f78185751
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}  
+  host:
+  - r-base ==${{ r_base }}
+  
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://github.com/markvanderloo/gower
+  license: GPL-3.0-only
+  license_file: GPL-3
+    summary: Compute Gower's distance (or similarity) coefficient between records. Compute  the top-n matches between records. Core algorithms are executed in parallel on systems supporting OpenMP.
+
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
