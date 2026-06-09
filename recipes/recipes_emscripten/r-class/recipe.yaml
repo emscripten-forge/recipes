@@ -1,0 +1,53 @@
+context:
+  version: 7.3-23
+  name: r-class
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 4d1adb12eae045f15641516d795177dd1d3074c0a86ac633000507c4822891f1
+
+
+build:
+  number: 8
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-mass
+  host:
+  - r-base ==${{ r_base }}
+  - r-mass
+  run:
+  - r-mass
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: http://www.stats.ox.ac.uk/pub/MASS4/
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  license_file: GPL-2
+  summary: Various functions for classification, including k-nearest neighbour, Learning Vector Quantization and Self-Organizing Maps.
+
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
