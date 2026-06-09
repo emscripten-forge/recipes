@@ -1,0 +1,78 @@
+context:
+  name: r-RSQLite
+  version: 3.53.1
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 0f73240f6d935ce80fa5199684ff8bc86b827590ae85dc2a9ec1cc6049a26b7a
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-bit64
+  - r-blob
+  - r-cpp11
+  - r-dbi
+  - r-memoise
+  - r-pkgconfig
+  - r-rlang
+  host:
+  - r-base ==${{ r_base }}
+  - r-bit64
+  - r-blob
+  - r-cpp11
+  - r-dbi
+  - r-memoise
+  - r-pkgconfig
+  - r-rlang
+  run:
+  - r-bit64
+  - r-blob
+  - r-cpp11
+  - r-dbi
+  - r-memoise
+  - r-pkgconfig
+  - r-rlang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_rsqlite.R
+  files:
+    recipe:
+    - test_rsqlite.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=RSQLite
+  repository: https://github.com/r-dbi/RSQLite
+  license: LGPL-2.1-or-later
+  license_family: LGPL
+  license_file: LGPL-2.1
+  summary: SQLite Interface for R
+  description: |
+    Embeds the SQLite database engine in R and provides an interface compliant
+    with the DBI package. The source for the SQLite engine and for various
+    extensions is included. System libraries will never be consulted because
+    this package relies on static linking for the plugins it includes; this also
+    ensures a consistent experience across all installations.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
