@@ -1,4 +1,4 @@
 library(proxy)
 
-d <- dist(iris[, 1:4], method = "euclidean")
-stopifnot(length(d) == choose(nrow(iris), 2))
+s <- simil(iris[, 1:4], method = "cosine")
+stopifnot(length(s) == choose(nrow(iris), 2))
