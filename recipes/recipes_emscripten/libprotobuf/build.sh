@@ -39,5 +39,14 @@ emcmake cmake -GNinja \
 
 ninja install
 
+# Protobuf's static runtime also depends on utf8_range support archives.
+find . -name "libutf8_range.a" -exec cp {} "${PREFIX}/lib/" \; 2>/dev/null || true
+find . -name "libutf8_validity.a" -exec cp {} "${PREFIX}/lib/" \; 2>/dev/null || true
+
+# Install a lightweight CMake package config for downstream consumers.
+mkdir -p "${PREFIX}/lib/cmake/protobuf"
+cp "${RECIPE_DIR}/protobufConfig.cmake" "${PREFIX}/lib/cmake/protobuf/"
+cp "${RECIPE_DIR}/protobufTargets.cmake" "${PREFIX}/lib/cmake/protobuf/"
+
 # Remove .la files if any
 find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true
