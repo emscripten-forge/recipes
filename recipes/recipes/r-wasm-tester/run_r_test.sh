@@ -30,14 +30,17 @@ if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
 fi
 
 if [ "$#" -eq 0 ]; then
-    mapfile -t R_SCRIPTS < <(find . -maxdepth 1 -type f -name "*.R" | sort)
-    if [ "${#R_SCRIPTS[@]}" -eq 0 ]; then
+    found=0
+    
+    while IFS= read -r script; do
+        found=1
+        "$0" "$script"
+    done < <(find . -maxdepth 1 -type f -name "*.R" | sort)
+
+    if [ "$found" -eq 0 ]; then
         echo "[R-TESTER] Error: no .R files found in current directory" >&2
         exit 1
     fi
-    for script in "${R_SCRIPTS[@]}"; do
-        "$0" "$script"
-    done
     exit 0
 fi
 
