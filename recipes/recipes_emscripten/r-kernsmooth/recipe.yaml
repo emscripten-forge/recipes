@@ -1,53 +1,50 @@
 context:
-  version: 2.23-26  
-  name: r-kernsmooth
-  ccname: KernSmooth
-
+  version: 2.23-26
+  name: KernSmooth
 
 package:
-  name: ${{ name | lower }}
+  name: r-${{ name | lower }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ ccname}}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ ccname}}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: b465bdac197f7faa787e625412ae03d1b7c2c134b1c924cfeb775faf9c4da73e
 
 build:
-  number: 0
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
+
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
-  - ${{ compiler('c') }}  
+  - ${{ compiler('c') }}
   - ${{ compiler('fortran') }}
   host:
   - r-base ==${{ r_base }}
-  - openblas
   - libflang
-  run:
-  - openblas
-  
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccname}}/libs/${{ ccname}}.so
-- script: run_r_test 
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test
   files:
     recipe:
     - test_import.R
   requirements:
     build:
     - r-wasm-tester
+
 about:
   homepage: https://CRAN.R-project.org/package=KernSmooth
   license: LicenseRef-Unlimited
   license_file: LICENSE-UNLIMITED
-  summary: |
-    Functions for kernel smoothing (and density estimation) corresponding to the book: Wand, M.P. and Jones, M.C. (1995) "Kernel Smoothing".
-
+  summary: Functions for Kernel Smoothing Supporting Wand & Jones (1995)
+  description: |
+    Functions for kernel smoothing (and density estimation) corresponding to the
+    book: Wand, M.P. and Jones, M.C. (1995) "Kernel Smoothing".
 
 extra:
   recipe-maintainers:
