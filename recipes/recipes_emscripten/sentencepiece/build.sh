@@ -22,11 +22,15 @@ emcmake cmake -GNinja \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DProtobuf_INCLUDE_DIR="${PREFIX}/include" \
+    -DProtobuf_LIBRARY="${PREFIX}/lib/libprotobuf.a" \
+    -DProtobuf_PROTOC_EXECUTABLE="${BUILD_PREFIX}/bin/protoc" \
+    -DProtobuf_PROTOC_LIBRARY="${PREFIX}/lib/libprotoc.a" \
     -DSPM_ENABLE_SHARED=OFF \
     -DSPM_BUILD_TEST=OFF \
     -DSPM_ENABLE_TCMALLOC=OFF \
     -DSPM_ABSL_PROVIDER=package \
-    -DSPM_PROTOBUF_PROVIDER=internal \
+    -DSPM_PROTOBUF_PROVIDER=package \
     -DSPM_ENABLE_NFKC_COMPILE=OFF \
     ..
 
