@@ -29,6 +29,8 @@ set -eux
 #     │ │ >>> defined as (i32, i32, i32, i32, i32) -> i32 in $PREFIX/lib/R/lib/libR.so
 
 
-rm src/dummy.c
+# delete shared libz (this forces static linking of zlib)
+rm -f $PREFIX/lib/R/lib/libz.so
 
+rm src/dummy.c
 R CMD INSTALL $R_ARGS .
