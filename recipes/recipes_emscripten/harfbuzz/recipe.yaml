@@ -1,0 +1,46 @@
+context:
+  name: harfbuzz
+  version: 14.2.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/harfbuzz/harfbuzz/releases/download/${{ version }}/harfbuzz-${{ version }}.tar.xz
+  sha256: a54a5d8e9380a41fbb762ce367bcbf7704792dfca0d93f1bbca86c5a57902e0e
+  patches:
+  - patches/0001-Disable-threads.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - meson
+  - ninja
+  - pkg-config
+  host:
+  - freetype
+
+tests:
+  - package_contents:
+      include:
+      - harfbuzz/hb.h
+      - harfbuzz/hb-version.h
+      lib:
+      - libharfbuzz.a
+
+about:
+  homepage: https://harfbuzz.github.io/
+  license: MIT
+  license_file: COPYING
+  summary: An OpenType text shaping engine.
+  description: |
+    HarfBuzz is a text shaping library. New Harbuzz targets various font
+    technologies while Old HarfBuzz targets only OpenType fonts.
+
+extra:
+  recipe-maintainers:
+  - ianthomas23
