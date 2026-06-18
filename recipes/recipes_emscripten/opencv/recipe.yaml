@@ -1,0 +1,84 @@
+context:
+  version: 5.0.0
+
+package:
+  name: opencv
+  version: ${{ version }}
+
+source:
+  url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
+  sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - zlib
+  - libpng
+  - jpeg
+  - libtiff
+  - libwebp
+  - openjpeg
+  run:
+  - zlib
+  - libpng
+  - jpeg
+  - libtiff
+  - libwebp
+  - openjpeg
+
+tests:
+- package_contents:
+    include:
+    - opencv2/core.hpp
+    - opencv2/imgproc.hpp
+    - opencv2/imgcodecs.hpp
+    - opencv2/flann.hpp
+    - opencv2/features.hpp
+    - opencv2/geometry.hpp
+    - opencv2/stereo.hpp
+    - opencv2/photo.hpp
+    lib:
+    - libopencv_core.a
+    - libopencv_imgproc.a
+    - libopencv_imgcodecs.a
+    - libopencv_flann.a
+    - libopencv_features.a
+    - libopencv_photo.a
+    files:
+    - lib/cmake/opencv5/OpenCVConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://opencv.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Open Source Computer Vision Library
+  description: |
+    OpenCV (Open Source Computer Vision Library) is an open source computer
+    vision and machine learning software library. It includes several hundreds
+    of computer vision algorithms.
+  documentation: https://docs.opencv.org/5.x/
+  repository: https://github.com/opencv/opencv
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
