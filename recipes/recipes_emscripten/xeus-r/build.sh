@@ -5,6 +5,9 @@ set -eux
 rm $PREFIX/lib/libz.so* || true
 
 export CFLAGS="-fPIC"
+export CXXFLAGS="-fPIC"
+unset DEBUG_CFLAGS
+unset DEBUG_CXXFLAGS
 printenv
 
 # Install r-hera
