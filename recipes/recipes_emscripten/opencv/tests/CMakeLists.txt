@@ -33,7 +33,6 @@ target_link_options(test_opencv PRIVATE
     -sNO_INVOKE_RUN=0
     -sNODEJS_CATCH_EXIT=0
     -sNODEJS_CATCH_REJECTION=0
-    "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/logo.png@/logo.png"
 )
 
 set_target_properties(test_opencv PROPERTIES

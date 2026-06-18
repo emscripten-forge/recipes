@@ -154,9 +154,3 @@ fi
 
 # Remove .la files if any
 find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true
-
-# Download test image for WASM preloading (best-effort, non-fatal)
-LOGO_PNG="$(dirname "$0")/tests/logo.png"
-if [ ! -f "$LOGO_PNG" ] && command -v curl &>/dev/null; then
-    curl -sL -o "$LOGO_PNG" "https://opencv.org/wp-content/uploads/2020/07/OpenCV_logo_no_text_.png" || true
-fi
