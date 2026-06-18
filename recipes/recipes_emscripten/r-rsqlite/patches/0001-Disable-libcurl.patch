@@ -1,20 +1,20 @@
-From 84f1e78fa8059b5bb66cc090ae048c2dba9d80e7 Mon Sep 17 00:00:00 2001
+From e4d448638d5b784b83bf55dc89c26a82a7c2d33e Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Thu, 18 Jun 2026 11:48:12 +0200
+Date: Thu, 18 Jun 2026 11:52:27 +0200
 Subject: [PATCH] Disable libcurl
 
 ---
- configure | 72 +++++++++++++++++++++++++++----------------------------
- 1 file changed, 36 insertions(+), 36 deletions(-)
+ configure | 39 ---------------------------------------
+ 1 file changed, 39 deletions(-)
 
 diff --git a/configure b/configure
-index 819f105..ffd85b2 100755
+index 819f105..b8f516e 100755
 --- a/configure
 +++ b/configure
-@@ -29,45 +29,45 @@ update_makevars_var() {
+@@ -29,45 +29,6 @@ update_makevars_var() {
    mv "$tmp" "$file"
  }
- 
+
 -# Try pkg-config first
 -if command -v pkg-config >/dev/null 2>&1; then
 -  if pkg-config --exists libcurl; then
@@ -22,25 +22,13 @@ index 819f105..ffd85b2 100755
 -    CURL_LIBS="$(pkg-config --libs libcurl)"
 -  fi
 -fi
-+# # Try pkg-config first
-+# if command -v pkg-config >/dev/null 2>&1; then
-+#   if pkg-config --exists libcurl; then
-+#     CURL_CFLAGS="$(pkg-config --cflags libcurl)"
-+#     CURL_LIBS="$(pkg-config --libs libcurl)"
-+#   fi
-+# fi
- 
+-
 -# Fallback: curl-config
 -if [ -z "$CURL_LIBS" ] && command -v curl-config >/dev/null 2>&1; then
 -  CURL_CFLAGS="$(curl-config --cflags 2>/dev/null || true)"
 -  CURL_LIBS="$(curl-config --libs 2>/dev/null || true)"
 -fi
-+# # Fallback: curl-config
-+# if [ -z "$CURL_LIBS" ] && command -v curl-config >/dev/null 2>&1; then
-+#   CURL_CFLAGS="$(curl-config --cflags 2>/dev/null || true)"
-+#   CURL_LIBS="$(curl-config --libs 2>/dev/null || true)"
-+# fi
- 
+-
 -# If found, enable the build-time macro for httpvfs
 -dedup_libs() {
 -  # Deduplicate space-separated libs/flags while preserving first occurrence order.
@@ -53,19 +41,7 @@ index 819f105..ffd85b2 100755
 -  done
 -  echo "$out" | sed -e 's/^ *//' -e 's/  */ /g'
 -}
-+# # If found, enable the build-time macro for httpvfs
-+# dedup_libs() {
-+#   # Deduplicate space-separated libs/flags while preserving first occurrence order.
-+#   out=""
-+#   for tok in $1; do
-+#     case " $out " in
-+#       *" $tok "*) ;; # already present
-+#       *) out="$out $tok" ;;
-+#     esac
-+#   done
-+#   echo "$out" | sed -e 's/^ *//' -e 's/  */ /g'
-+# }
- 
+-
 -if [ -n "$CURL_LIBS" ] && [ -f "src/vendor/extensions/http.c" ]; then
 -  CURL_LIBS_DEDUP=$(dedup_libs "$CURL_LIBS")
 -  echo "Found libcurl (deduped): $CURL_LIBS_DEDUP"
@@ -78,18 +54,6 @@ index 819f105..ffd85b2 100755
 -  update_makevars_var "CURL_CFLAGS" ""
 -  update_makevars_var "CURL_LIBS" ""
 -fi
-+# if [ -n "$CURL_LIBS" ] && [ -f "src/vendor/extensions/http.c" ]; then
-+#   CURL_LIBS_DEDUP=$(dedup_libs "$CURL_LIBS")
-+#   echo "Found libcurl (deduped): $CURL_LIBS_DEDUP"
-+#   update_makevars_var "HTTPVFS_CPPFLAGS" "-DRSQLITE_ENABLE_HTTPVFS"
-+#   update_makevars_var "CURL_CFLAGS" "$CURL_CFLAGS"
-+#   update_makevars_var "CURL_LIBS" "$CURL_LIBS_DEDUP"
-+# else
-+#   echo "libcurl not found; building without httpvfs (ok)"
-+#   update_makevars_var "HTTPVFS_CPPFLAGS" ""
-+#   update_makevars_var "CURL_CFLAGS" ""
-+#   update_makevars_var "CURL_LIBS" ""
-+# fi
- 
+
  # Optional suppression of noisy third-party warnings (off by default).
  # Enable by exporting RSQLITE_SILENCE_WARNINGS=1 before install.
