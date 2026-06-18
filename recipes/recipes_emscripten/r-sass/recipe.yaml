@@ -1,0 +1,70 @@
+context:
+  name: sass
+  version: 0.4.10
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 4adb4c243f74d811276529e346deaa064bce28dbfbb837208fc85f2c47b79b30
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-fs
+  - r-rlang
+  - r-htmltools
+  - r-r6
+  - r-rappdirs
+  host:
+  - r-base ==${{ r_base }}
+  - r-fs
+  - r-rlang
+  - r-htmltools
+  - r-r6
+  - r-rappdirs
+  run:
+  - r-fs
+  - r-rlang
+  - r-htmltools
+  - r-r6
+  - r-rappdirs
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test-${{ name }}.R
+  files:
+    recipe:
+    - test-${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/rstudio/sass/
+  license: MIT
+  license_file: LICENSE
+  summary: Syntactically Awesome Style Sheets ('Sass')
+  description: |
+    An 'SCSS' compiler, powered by the 'LibSass' library. With this, R
+    developers can use variables, inheritance, and functions to generate dynamic
+    style sheets. The package uses the 'Sass CSS' extension language, which is
+    stable, powerful, and CSS compatible.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes
