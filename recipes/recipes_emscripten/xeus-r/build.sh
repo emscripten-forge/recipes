@@ -4,6 +4,8 @@ set -eux
 
 rm $PREFIX/lib/libz.so* || true
 
+printenv
+
 # Install r-hera
 $R CMD INSTALL $R_ARGS hera
 
