@@ -16,9 +16,6 @@ emcmake cmake \
     -B "$BUILD_DIR" \
     -GNinja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_PREFIX_PATH="${PREFIX}" \
-    -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
-    -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
     -DOpenCV_DIR="${PREFIX}/lib/cmake/opencv5"
 
 ninja -C "$BUILD_DIR"

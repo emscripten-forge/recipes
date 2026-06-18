@@ -144,12 +144,22 @@ if [ -d "${PREFIX}/lib/cmake/opencv5" ]; then
         -exec sed -i 's|include/opencv5/|include/|g' {} + 2>/dev/null || true
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
         -exec sed -i 's|/include/opencv5/|/include/|g' {} + 2>/dev/null || true
+    # The package itself is built as side modules, but downstream test executables
+    # must not inherit SIDE_MODULE link flags from imported OpenCV targets.
+    find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
+        -exec sed -i 's|-sSIDE_MODULE=1||g' {} + 2>/dev/null || true
+    find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
+        -exec sed -i 's|-sSIDE_MODULE||g' {} + 2>/dev/null || true
+    find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
+        -exec sed -i 's|SIDE_MODULE=1||g' {} + 2>/dev/null || true
     # Fix libz.so -> libz.a (zlib recipe provides .so, but wasm-ld needs .a)
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
         -exec sed -i 's|libz\.so|libz.a|g' {} + 2>/dev/null || true
-    # Fix missing libsharpyuv.a
+    # Fix missing libsharpyuv.a in exported imgcodecs dependencies.
+    # OpenCV links libwebp, but libwebp itself requires sharpyuv and that
+    # dependency is not propagated in the generated OpenCV CMake exports.
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
-        -exec sed -i 's|\("${_IMPORT_PREFIX}/lib/libwebp\.a"\)|\1 "${_IMPORT_PREFIX}/lib/libsharpyuv.a"|g' {} + 2>/dev/null || true
+        -exec sed -i 's|lib/libwebp\.a|lib/libwebp.a;${_IMPORT_PREFIX}/lib/libsharpyuv.a|g' {} + 2>/dev/null || true
 fi
 
 # Remove .la files if any
