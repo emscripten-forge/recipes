@@ -4,6 +4,13 @@ set -eux
 
 rm $PREFIX/lib/libz.so* || true
 
+export CFLAGS="-fPIC"
+export CXXFLAGS="-fPIC"
+export LDFLAGS="-L$PREFIX/lib"
+unset DEBUG_CFLAGS
+unset DEBUG_CXXFLAGS
+unset LDFLAGS_LD
+
 # Install r-hera
 $R CMD INSTALL $R_ARGS hera
 
