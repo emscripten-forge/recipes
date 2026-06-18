@@ -10,7 +10,6 @@ export LDFLAGS="-L$PREFIX/lib"
 unset DEBUG_CFLAGS
 unset DEBUG_CXXFLAGS
 unset LDFLAGS_LD
-printenv
 
 # Install r-hera
 $R CMD INSTALL $R_ARGS hera
