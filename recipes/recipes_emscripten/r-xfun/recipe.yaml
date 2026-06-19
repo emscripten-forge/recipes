@@ -1,15 +1,15 @@
 context:
-  name: r-xfun
+  name: xfun
   version: '0.59'
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: ea0e0d75563bfb6e6ea7f69ac5f99f621e4072cb633229989bf9dd7ccd8adc44
 
 build:
@@ -26,10 +26,18 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_xfun.R
+  files:
+    recipe:
+    - test_xfun.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
-  homepage: https://git.yihui.org/xfun/
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://git.yihui.org/xfun/
   repository: https://github.com/yihui/xfun
   license: MIT
   license_file: LICENSE
