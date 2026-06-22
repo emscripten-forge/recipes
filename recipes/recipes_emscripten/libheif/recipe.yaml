@@ -14,6 +14,7 @@ source:
 
 build:
   number: 0
+  script: build.sh
 
 requirements:
   build:
@@ -26,12 +27,31 @@ requirements:
   - zlib
   - libtiff
   - libpng
+  run:
+  - zlib
+  - libtiff
+  - libpng
 
 tests:
 - package_contents:
+    include:
+    - libheif/heif.h
+    lib:
+    - libheif.a
     files:
-    - include/libheif/heif.h
-    - lib/libheif.a
+    - lib/cmake/libheif/libheif-config.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
 
 about:
   license: LGPL-3.0-or-later
@@ -45,4 +65,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - emscripten-forge
+  - Alex-PLACET
