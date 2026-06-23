@@ -1,0 +1,139 @@
+context:
+  name: scikit-plots
+  version: 0.4.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # original source URL: https://github.com/scikit-plots/scikit-plots/archive/refs/tags/v0.4.0.tar.gz
+  # url: https://github.com/scikit-plots/scikit-plots/archive/v0.4.0.tar.gz
+  url: https://github.com/${{ name }}/${{ name }}/archive/${{ "v" ~ version }}.tar.gz
+  # curl -L https://github.com/scikit-plots/scikit-plots/archive/v0.4.0.tar.gz | sha256sum
+  sha256: 715b1ca1b65ff966b05f8fd9bc2537515f8096fe9948da674518e597c36b5ac1
+  # patches:
+  # - patches/0001-Patch-away-urllib.patch
+
+build:
+  number: 11
+  # Removing tests and `__pycache__` from the source directory
+  # halves the size of the decompressed package and reduces
+  # the number of files to extract and to link in the prefix.
+  files:
+    exclude:
+    - '**/tests/'
+    - '**/__pycache__/'
+    - '**/tests/**'
+    - '**/*.pxi'
+    - '**/*.tp'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python                            
+  - cross-python_{{ target_platform }}                       
+  - pkg-config
+  # - meson                             
+  # - ninja                             
+  - meson-python                      
+  - cython                            
+  - pybind11                          
+  # - pythran                           
+  - numpy                             
+  - scipy       
+  - pip
+  - setuptools
+  # - llvm_${{ target_platform }} # Installing custom LLVM in build.sh
+  # - llvm-openmp  # [osx]
+  # - libgomp      # [linux]
+  # - clang        # [win]
+  # - ${{ stdlib('c') }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  # - ${{ compiler('fortran') }}
+  host:
+  - python
+  - openblas
+  - pybind11
+  # - pythran
+  - numpy
+  - scipy                  
+  - matplotlib                        
+  - scikit-learn
+  - joblib >=1.0.0
+  - threadpoolctl >=2.0.0
+  run:
+  - python
+  - openblas
+  - numpy
+  - scipy                         
+  - matplotlib                        
+  - scikit-learn   
+  - joblib >=1.0.0
+  - threadpoolctl >=2.0.0
+  - requests
+  - narwhals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_scikitplot.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://scikit-plots.github.io/dev
+  # The doc_url and dev_url are optional.
+  # doc_url: https://scikit-plots.github.io/dev
+  # dev_url: https://github.com/scikit-plots/scikit-plots
+  # https://github.com/scikit-plots/scikit-plots?tab=BSD-3-Clause-1-ov-file
+  # license_url: https://scikit-plots.github.io/dev/project/license.html
+  # https://spdx.org/licenses
+  # license: BSD-3-Clause AND MIT AND Apache-2.0 AND GPL-3.0-only
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file:
+    - LICENSE.txt    
+    - LICENSES/  # folder
+    # - LICENSE_NumCpp
+    # - LICENSE_annoy
+    # - LICENSE_appdirs
+    # - LICENSE_array-api-compat
+    # - LICENSE_array-api-extra
+    # - LICENSE_astropy
+    # - LICENSE_boost-math
+    # - LICENSE_husl
+    # - LICENSE_kds
+    # - LICENSE_matplotlib
+    # - LICENSE_modelplotpy
+    # - LICENSE_mpl-probscale
+    # - LICENSE_numpydoc
+    # - LICENSE_packaging
+    # - LICENSE_scikit-learn
+    # - LICENSE_scikit-plot
+    # - LICENSE_scikit-plots
+    # - LICENSE_scipy
+    # - LICENSE_seaborn
+    # - LICENSE_tweedie
+    # - LICENSE_visualkeras
+  summary: |-
+    scikit-plots: Machine Learning Visualization in Python
+  description: |-
+    An intuitive library that seamlessly adds plotting capabilities and functionality
+    to any model objects or outputs, compatible with tools like scikit-learn, XGBoost,
+    TensorFlow, and more.
+
+extra:
+  recipe-maintainers:
+  # GitHub IDs for maintainers of the recipe.
+  - celik-muhammed
