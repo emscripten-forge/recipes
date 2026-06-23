@@ -67,9 +67,10 @@ echo "python = '${PYTHON}'" >> "$SRC_DIR/emscripten.meson.cross"
 # PIP_ARGS --no-deps
 # ${PIP_ARGS:-} is intentionally unquoted: it may hold multiple
 # space-separated arguments that pip needs to see as separate words.
+# python -m build --sdist -Csetup-args=-Dallow-noblas=true -Csetup-args=-Dcpu-baseline=none -Csetup-args=-Dcpu-dispatch=none
 ${PYTHON} -m pip install . --no-build-isolation --no-cache-dir --no-deps -vvv ${PIP_ARGS:-} \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
-    -Csetup-args="-Dfortran_std=none" \
-    -Csetup-args="-Duse-pythran=false" \
+    -Csetup-args="-Dcpu-baseline=none" \
+    -Csetup-args="-Dcpu-dispatch=none" \
     -Ccompile-args="--verbose"
 # -Cbuild-dir="_build" \
