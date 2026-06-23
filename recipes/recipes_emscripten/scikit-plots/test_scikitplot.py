@@ -40,7 +40,7 @@ def test_scikit_learn():
 # FIXME: downloading does not work, it is an issue from pyjs.
 # Uncaught (in promise) TypeError: can't access property "buffer", handle is undefined
 #    __emval_get_property http://localhost:9007/xeus/.../bin/xpython.js
-def test_dl():
-    from scikitplot.datasets import load_dataset
-    df = load_dataset("autoscout24")
-    df
+# def test_dl():
+#     from scikitplot.datasets import load_dataset
+#     df = load_dataset("autoscout24")
+#     df
