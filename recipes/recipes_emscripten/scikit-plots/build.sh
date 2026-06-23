@@ -39,12 +39,13 @@ export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
 # Write the new flags as single tokens from the start so nothing here
 # depends on a later sed pass to be safe for the Fortran link step.
-export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
-export CXXFLAGS="${CXXFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
+# export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
+# export CXXFLAGS="${CXXFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
 export LDFLAGS="${LDFLAGS} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
 
 # Use local flang-new-wrapper that does some arg mangling.
 cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
+chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
 
 export EM_LLVM_ROOT="$LLVM_DIR"
 export FC="$LLVM_DIR/bin/flang-new-wrapper"
@@ -68,7 +69,7 @@ echo "python = '${PYTHON}'" >> "$SRC_DIR/emscripten.meson.cross"
 # ${PIP_ARGS:-} is intentionally unquoted: it may hold multiple
 # space-separated arguments that pip needs to see as separate words.
 # python -m build --sdist -Csetup-args=-Dallow-noblas=true -Csetup-args=-Dcpu-baseline=none -Csetup-args=-Dcpu-dispatch=none
-${PYTHON} -m pip install . --no-build-isolation --no-cache-dir --no-deps -vvv ${PIP_ARGS:-} \
+${PYTHON} -m pip install . --no-build-isolation --no-cache-dir -vvv ${PIP_ARGS:-} \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
     -Csetup-args="-Dcpu-baseline=none" \
     -Csetup-args="-Dcpu-dispatch=none" \
