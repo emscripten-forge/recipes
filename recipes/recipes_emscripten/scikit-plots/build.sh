@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set (set -Eeuox pipefail)
+set -Eeuox pipefail
 
 # --- Build-harness contract variables -------------------------------------
 : "${RECIPE_DIR:?RECIPE_DIR not set by build harness}"
