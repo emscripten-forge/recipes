@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -Eeuox pipefail
+set (set -Eeuox pipefail)
 
 # --- Build-harness contract variables -------------------------------------
 : "${RECIPE_DIR:?RECIPE_DIR not set by build harness}"
@@ -37,7 +37,8 @@ fi
 # Remove whitespace after '-s' in LDFLAGS
 export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
-# FIX: Removed -fexceptions from global LDFLAGS to stop flang-20 from crashing
+# replace -fexceptions with -fwasm-exceptions in numpy/_core
+# sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
 # Write the new flags as single tokens from the start so nothing here
 # depends on a later sed pass to be safe for the Fortran link step.
 # export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
@@ -66,10 +67,6 @@ sed -i '1i#!/usr/bin/env python' "$BUILD_PREFIX/bin/cython"
 # or meson never sees the python= line we just added.
 cp "$RECIPE_DIR/emscripten.meson.cross" "$SRC_DIR/emscripten.meson.cross"
 echo "python = '${PYTHON}'" >> "$SRC_DIR/emscripten.meson.cross"
-
-# FIX: WebAssembly single-threaded hot-patch
-# Strips the sub-interpreter tag since Emscripten / pybind11 doesn't support it here.
-find . -type f \( -name "*.cpp" -o -name "*.h" \) -exec sed -i -E 's/,?[[:space:]]*py::multiple_interpreters::per_interpreter_gil\(\)//g' {} +
 
 # PIP_ARGS --no-deps
 # ${PIP_ARGS:-} is intentionally unquoted: it may hold multiple
