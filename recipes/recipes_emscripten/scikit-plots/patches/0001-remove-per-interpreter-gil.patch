@@ -1,23 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: emscripten-forge patcher <patch@emscripten-forge>
+Date: Tue, 23 Jun 2026 00:00:00 +0000
+Subject: [PATCH] Remove per-interpreter GIL unsupported in pybind11 < 3.0
+
+py::multiple_interpreters::per_interpreter_gil() was introduced in
+pybind11 3.0.0.  The emscripten-wasm32 host environment resolves
+pybind11 2.13.6, which does not expose the multiple_interpreters
+namespace, causing hard compile errors in all three PYBIND11_MODULE
+call-sites:
+
+  error: no member named 'multiple_interpreters' in namespace 'pybind11'
+
+Fix: remove the unsupported py::multiple_interpreters::per_interpreter_gil()
+argument from the PYBIND11_MODULE macro invocation in each file, and
+drop the now-trailing comma from py::mod_gil_not_used().
+
+py::mod_gil_not_used() is intentionally RETAINED: it was introduced in
+pybind11 2.12.0 and correctly opts the module into the Python 3.13
+free-threading (no-GIL) ABI, matching the -Xfreethreading_compatible=True
+flag used for the Cython extensions in the same build.
+
+Affected files
+  scikitplot/nc/_linalg/src/module_linalg.cpp    (build error at line 25)
+  scikitplot/nc/_version/src/module_version.cpp  (build error at line 104)
+  tools/submodules/vendored_NumCpp/src/nc.cpp    (same pattern, preemptive fix)
+
+Ref: https://pybind11.readthedocs.io/en/stable/changelog.html
+---
+ scikitplot/nc/_linalg/src/module_linalg.cpp   | 3 +--
+ scikitplot/nc/_version/src/module_version.cpp | 3 +--
+ tools/submodules/vendored_NumCpp/src/nc.cpp   | 3 +--
+ 3 files changed, 3 insertions(+), 6 deletions(-)
+
 diff --git a/scikitplot/nc/_linalg/src/module_linalg.cpp b/scikitplot/nc/_linalg/src/module_linalg.cpp
 --- a/scikitplot/nc/_linalg/src/module_linalg.cpp
 +++ b/scikitplot/nc/_linalg/src/module_linalg.cpp
-@@
+@@ -21,8 +21,7 @@ using scikitplot_nc::linalg::dot_doc;
+ PYBIND11_MODULE(
+     _linalg,  // <module_name>, so Python sees scikitplot.nc._linalg._linalg
+     m,
 -    py::mod_gil_not_used(),
 -    py::multiple_interpreters::per_interpreter_gil()
++    py::mod_gil_not_used()
  ){
-
+     // -------- Module Docstring --------
+     m.doc() = R"pbdoc(
 diff --git a/scikitplot/nc/_version/src/module_version.cpp b/scikitplot/nc/_version/src/module_version.cpp
 --- a/scikitplot/nc/_version/src/module_version.cpp
 +++ b/scikitplot/nc/_version/src/module_version.cpp
-@@
+@@ -100,8 +100,7 @@ namespace py = pybind11;
+ PYBIND11_MODULE(
+     __version,  // <module_name>
+     m,
 -    py::mod_gil_not_used(),
 -    py::multiple_interpreters::per_interpreter_gil()
++    py::mod_gil_not_used()
  ){
-
+     // -------- Module Docstring --------
+     m.doc() = R"pbdoc(
 diff --git a/tools/submodules/vendored_NumCpp/src/nc.cpp b/tools/submodules/vendored_NumCpp/src/nc.cpp
 --- a/tools/submodules/vendored_NumCpp/src/nc.cpp
 +++ b/tools/submodules/vendored_NumCpp/src/nc.cpp
-@@
+@@ -92,8 +92,7 @@ namespace py = pybind11;
+ PYBIND11_MODULE(
+     nc,
+     m,
 -    py::mod_gil_not_used(),
 -    py::multiple_interpreters::per_interpreter_gil()
++    py::mod_gil_not_used()
  ){
+     // -------- Module Docstring --------
+     m.doc() = R"pbdoc(
+-- 
+2.53.0
