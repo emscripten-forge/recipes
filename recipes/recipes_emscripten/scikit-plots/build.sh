@@ -37,6 +37,7 @@ fi
 # Remove whitespace after '-s' in LDFLAGS
 export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
+# FIX: Removed -fexceptions from global LDFLAGS to stop flang-20 from crashing
 # Write the new flags as single tokens from the start so nothing here
 # depends on a later sed pass to be safe for the Fortran link step.
 # export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
@@ -45,6 +46,7 @@ export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
 # Use local flang-new-wrapper that does some arg mangling.
 cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
+# Explicitly ensure the wrapper script is executable
 chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
 
 export EM_LLVM_ROOT="$LLVM_DIR"
@@ -64,6 +66,10 @@ sed -i '1i#!/usr/bin/env python' "$BUILD_PREFIX/bin/cython"
 # or meson never sees the python= line we just added.
 cp "$RECIPE_DIR/emscripten.meson.cross" "$SRC_DIR/emscripten.meson.cross"
 echo "python = '${PYTHON}'" >> "$SRC_DIR/emscripten.meson.cross"
+
+# FIX: WebAssembly single-threaded hot-patch
+# Strips the sub-interpreter tag since Emscripten / pybind11 doesn't support it here.
+find . -type f \( -name "*.cpp" -o -name "*.h" \) -exec sed -i -E 's/,?[[:space:]]*py::multiple_interpreters::per_interpreter_gil\(\)//g' {} +
 
 # PIP_ARGS --no-deps
 # ${PIP_ARGS:-} is intentionally unquoted: it may hold multiple
