@@ -1,7 +1,7 @@
-From 030d84d5d728c5cfbfe844d02bca4d5822777d30 Mon Sep 17 00:00:00 2001
+From 87fe22b847c4ac0635d40759d51102884ed989c6 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Tue, 9 Dec 2025 10:12:57 +0000
-Subject: [PATCH 16/17] Extra char length args to f2py source files
+Subject: [PATCH 15/15] Extra char length args to f2py source files
 
 ---
  scipy/linalg/fblas_l2.pyf.src            | 117 +++---
@@ -10,10 +10,10 @@ Subject: [PATCH 16/17] Extra char length args to f2py source files
  scipy/linalg/flapack_gen_banded.pyf.src  |   7 +-
  scipy/linalg/flapack_gen_tri.pyf.src     |  37 +-
  scipy/linalg/flapack_other.pyf.src       | 460 ++++++++++++++---------
- scipy/linalg/flapack_pos_def.pyf.src     |  65 ++--
+ scipy/linalg/flapack_pos_def.pyf.src     | 109 +++---
  scipy/linalg/flapack_pos_def_tri.pyf.src |  28 +-
  scipy/linalg/flapack_sym_herm.pyf.src    | 407 ++++++++++++--------
- 9 files changed, 847 insertions(+), 521 deletions(-)
+ 9 files changed, 869 insertions(+), 543 deletions(-)
 
 diff --git a/scipy/linalg/fblas_l2.pyf.src b/scipy/linalg/fblas_l2.pyf.src
 index 27b9972c0d..177dbc4892 100644
@@ -1265,7 +1265,7 @@ index ed94563f34..8fbdc3c1e3 100644
  
  
 diff --git a/scipy/linalg/flapack_other.pyf.src b/scipy/linalg/flapack_other.pyf.src
-index 1db51bbd83..eb7080de1d 100644
+index 049344ae5e..cab4078d4c 100644
 --- a/scipy/linalg/flapack_other.pyf.src
 +++ b/scipy/linalg/flapack_other.pyf.src
 @@ -1,7 +1,7 @@
@@ -2549,9 +2549,9 @@ index 1db51bbd83..eb7080de1d 100644
 +    integer intent(hide) :: len2 = 1
  end function <prefix>lantr
  
- subroutine <prefix>larfg(n, alpha, x, incx, tau, lx)
+ subroutine <prefix>larfg(n, alpha, x, incx, tau)
 diff --git a/scipy/linalg/flapack_pos_def.pyf.src b/scipy/linalg/flapack_pos_def.pyf.src
-index d264f80dad..8111ec0ce7 100644
+index c3ec41e4c5..23ac69a942 100644
 --- a/scipy/linalg/flapack_pos_def.pyf.src
 +++ b/scipy/linalg/flapack_pos_def.pyf.src
 @@ -1,7 +1,7 @@
@@ -2563,17 +2563,19 @@ index d264f80dad..8111ec0ce7 100644
      ! c,x,info = pstrf(a,b,lower=0,overwrite_a=0,overwrite_b=0)
      ! Solve A * X = B.
      ! A is symmetric/hermitian positive semidefinite
-@@ -10,8 +10,8 @@ subroutine <prefix>pstrf(n,a,lda,piv,rank_c,tol,work,info,lower)
+@@ -10,9 +10,9 @@ subroutine <prefix>pstrf(n,a,lda,piv,rank_c,tol,work,info,lower)
      ! where U is an upper triangular matrix and L is lower triangular, and
      ! P is stored as vector PIV.
  
 -    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,piv,&rank_c,&tol,work,&info)
 -    callprotoargument char*,F_INT*,<ctype>*,F_INT*,F_INT*,F_INT*,<ctypereal>*,<ctypereal>*,F_INT*
+-    
 +    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,piv,&rank_c,&tol,work,&info,len0)
 +    callprotoargument char*,F_INT*,<ctype>*,F_INT*,F_INT*,F_INT*,<ctypereal>*,<ctypereal>*,F_INT*,F_INT
-     
++
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
      integer depend(a),intent(hide):: n = shape(a,0)
+     <ftype> dimension(n,n),check(shape(a,0)==shape(a,1)),intent(in,out,copy,out=c) :: a
 @@ -22,10 +22,11 @@ subroutine <prefix>pstrf(n,a,lda,piv,rank_c,tol,work,info,lower)
      <ftypereal> optional, intent(in) :: tol = -1.0
      <ftypereal> intent(hide),dimension(2*n),depend(n) :: work
@@ -2622,7 +2624,7 @@ index d264f80dad..8111ec0ce7 100644
  
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
  
-@@ -70,14 +72,15 @@ subroutine <prefix>posv(n,nrhs,a,b,info,lower)
+@@ -70,15 +72,16 @@ subroutine <prefix>posv(n,nrhs,a,b,info,lower)
      check(shape(a,0)==shape(b,0)) :: b
      integer intent(out) :: info
  
@@ -2636,15 +2638,19 @@ index d264f80dad..8111ec0ce7 100644
      threadsafe
 -    callstatement (*f2py_func)(fact,(lower?"L":"U"),&n,&nrhs,a,&lda,af,&ldaf,equed,s,b,&ldb,x,&ldx,&rcond,ferr,berr,work,irwork,&info)
 -    callprotoargument char*,char*,F_INT*,F_INT*,<ctype>*,F_INT*,<ctype>*,F_INT*,char*,<ctypereal>*,<ctype>*,F_INT*,<ctype>*,F_INT*,<ctypereal>*,<ctypereal>*,<ctypereal>*,<ctype>*,<F_INT,F_INT,float,double>*,F_INT*
+- 
 +    callstatement (*f2py_func)(fact,(lower?"L":"U"),&n,&nrhs,a,&lda,af,&ldaf,equed,s,b,&ldb,x,&ldx,&rcond,ferr,berr,work,irwork,&info,len0,len1,len2)
 +    callprotoargument char*,char*,F_INT*,F_INT*,<ctype>*,F_INT*,<ctype>*,F_INT*,char*,<ctypereal>*,<ctype>*,F_INT*,<ctype>*,F_INT*,<ctypereal>*,<ctypereal>*,<ctypereal>*,<ctype>*,<F_INT,F_INT,float,double>*,F_INT*,F_INT,F_INT,F_INT
-  
++
      character optional,intent(in):: fact = "E"
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
-@@ -100,14 +103,17 @@ subroutine <prefix>posvx(fact,n,nrhs,a,lda,af,ldaf,equed,s,b,ldb,x,ldx,rcond,fer
+     integer depend(a),intent(hide):: n = shape(a,0)
+@@ -99,16 +102,19 @@ subroutine <prefix>posvx(fact,n,nrhs,a,lda,af,ldaf,equed,s,b,ldb,x,ldx,rcond,fer
+     <ftype> intent(hide),dimension(<3*n,3*n,2*n,2*n>),depend(n):: work
      <integer,integer,real,double precision> intent(hide),dimension(n),depend(n):: irwork
      integer intent(out):: info
-  
+- 
++
 +    integer intent(hide) :: len0 = 1
 +    integer intent(hide) :: len1 = 1
 +    integer intent(hide) :: len2 = 1
@@ -2657,103 +2663,131 @@ index d264f80dad..8111ec0ce7 100644
      threadsafe
 -    callstatement (*f2py_func)(uplo,&n,a,&lda,&anorm,&rcond,work,irwork,&info)
 -    callprotoargument char*,F_INT*,<ctype>*,F_INT*,<ctypereal>*,<ctypereal>*,<ctype>*,<F_INT,F_INT,float,double>*,F_INT*
+- 
 +    callstatement (*f2py_func)(uplo,&n,a,&lda,&anorm,&rcond,work,irwork,&info,len0)
 +    callprotoargument char*,F_INT*,<ctype>*,F_INT*,<ctypereal>*,<ctypereal>*,<ctype>*,<F_INT,F_INT,float,double>*,F_INT*,F_INT
-  
++
      character optional,intent(in):: uplo = 'U'
      integer depend(a),intent(hide):: n = shape(a,0)
-@@ -119,9 +125,10 @@ subroutine <prefix>pocon(uplo,n,a,lda,anorm,rcond,work,irwork,info)
+     <ftype> dimension(n,n),check(shape(a,0)==shape(a,1)),intent(in):: a
+@@ -118,62 +124,65 @@ subroutine <prefix>pocon(uplo,n,a,lda,anorm,rcond,work,irwork,info)
+     <ftype> depend(n),dimension(<3*n,3*n,2*n,2*n>),intent(hide,cache):: work
      <integer,integer,real, double precision> depend(n),dimension(n),intent(hide,cache):: irwork
      integer intent(out):: info
-  
+- 
++
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix>pocon
-  
+- 
 -subroutine <prefix2>potrf(n,a,lda,info,lower,clean)
++
 +subroutine <prefix2>potrf(n,a,lda,info,lower,clean,len0)
      ! c,info = potrf(a,lower=0,clean=1,overwrite_a=0)
      ! Compute Cholesky decomposition of symmetric positive defined matrix:
      ! A = U^T * U, C = U if lower = 0
-@@ -129,8 +136,8 @@ subroutine <prefix2>potrf(n,a,lda,info,lower,clean)
+     ! A = L * L^T, C = L if lower = 1
      ! C is triangular matrix of the corresponding Cholesky decomposition.
      ! clean==1 zeros strictly lower or upper parts of U or L, respectively
-  
+- 
 -    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,&info); if(clean){Py_ssize_t i,j;if(lower){for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) *(a+j*n+i)=0.0;} else {for(i=0;i\<n;++i) for(j=i+1;j<n;++j) *(a+i*n+j)=0.0;}}
 -    callprotoargument char*,F_INT*,<ctype2>*,F_INT*,F_INT*
+- 
++
 +    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,&info,len0); if(clean){Py_ssize_t i,j;if(lower){for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) *(a+j*n+i)=0.0;} else {for(i=0;i\<n;++i) for(j=i+1;j<n;++j) *(a+i*n+j)=0.0;}}
 +    callprotoargument char*,F_INT*,<ctype2>*,F_INT*,F_INT*,F_INT
-  
++
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
      integer optional,intent(in),check(clean==0||clean==1) :: clean = 1
-@@ -139,9 +146,10 @@ subroutine <prefix2>potrf(n,a,lda,info,lower,clean)
+     integer depend(a),intent(hide) :: n = shape(a,0)
+     <ftype2> dimension(n,n),check(shape(a,0)==shape(a,1)),intent(in,out,copy,out=c) :: a
      integer depend(n),intent(hide) :: lda = MAX(1,n)
      integer intent(out) :: info
-  
+- 
++
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix2>potrf
-  
+- 
 -subroutine <prefix2c>potrf(n,a,lda,info,lower,clean)
++
 +subroutine <prefix2c>potrf(n,a,lda,info,lower,clean,len0)
      ! c,info = potrf(a,lower=0,clean=1,overwrite_a=0)
      ! Compute Cholesky decomposition of symmetric positive defined matrix:
      ! A = U^H * U, C = U if lower = 0
-@@ -149,8 +157,8 @@ subroutine <prefix2c>potrf(n,a,lda,info,lower,clean)
+     ! A = L * L^H, C = L if lower = 1
      ! C is triangular matrix of the corresponding Cholesky decomposition.
      ! clean==1 zeros strictly lower or upper parts of U or L, respectively
-  
--    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,&info); if(clean){F_INT i,j,k;if(lower){for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=j*n+i;(a+k)->r=(a+k)->i=0.0;}} else {for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=i*n+j;(a+k)->r=(a+k)->i=0.0;}}}
+- 
+-    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,&info); if(clean){Py_ssize_t i,j,k;if(lower){for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=j*n+i;(a+k)->r=(a+k)->i=0.0;}} else {for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=i*n+j;(a+k)->r=(a+k)->i=0.0;}}}
 -    callprotoargument char*,F_INT*,<ctype2c>*,F_INT*,F_INT*
-+    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,&info,len0); if(clean){F_INT i,j,k;if(lower){for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=j*n+i;(a+k)->r=(a+k)->i=0.0;}} else {for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=i*n+j;(a+k)->r=(a+k)->i=0.0;}}}
+- 
++
++    callstatement (*f2py_func)((lower?"L":"U"),&n,a,&lda,&info,len0); if(clean){Py_ssize_t i,j,k;if(lower){for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=j*n+i;(a+k)->r=(a+k)->i=0.0;}} else {for(i=0;i\<n;++i) for(j=i+1;j\<n;++j) {k=i*n+j;(a+k)->r=(a+k)->i=0.0;}}}
 +    callprotoargument char*,F_INT*,<ctype2c>*,F_INT*,F_INT*,F_INT
-  
++
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
      integer optional,intent(in),check(clean==0||clean==1) :: clean = 1
-@@ -159,9 +167,10 @@ subroutine <prefix2c>potrf(n,a,lda,info,lower,clean)
+     integer depend(a),intent(hide):: n = shape(a,0)
+     <ftype2c> dimension(n,n),check(shape(a,0)==shape(a,1)),intent(in,out,copy,out=c) :: a
      integer depend(n),intent(hide) :: lda = MAX(1,n)
      integer intent(out) :: info
-  
+- 
++
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix2c>potrf
-  
+- 
 -subroutine <prefix>potrs(n,nrhs,c,b,info,lower)
++
 +subroutine <prefix>potrs(n,nrhs,c,b,info,lower,len0)
       ! x,info = potrs(c,b,lower=0=1,overwrite_b=0)
      ! Solve A * X = B.
      ! A is symmetric positive defined
-@@ -169,8 +178,8 @@ subroutine <prefix>potrs(n,nrhs,c,b,info,lower)
+     ! A = U^T * U, C = U if lower = 0
      ! A = L * L^T, C = L if lower = 1
      ! C is triangular matrix of the corresponding Cholesky decomposition.
-  
+- 
 -    callstatement (*f2py_func)((lower?"L":"U"),&n,&nrhs,c,&n,b,&n,&info)
 -    callprotoargument char*,F_INT*,F_INT*,<ctype>*,F_INT*,<ctype>*,F_INT*,F_INT*
+- 
++
 +    callstatement (*f2py_func)((lower?"L":"U"),&n,&nrhs,c,&n,b,&n,&info,len0)
 +    callprotoargument char*,F_INT*,F_INT*,<ctype>*,F_INT*,<ctype>*,F_INT*,F_INT*,F_INT
-  
++
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
-  
-@@ -182,17 +191,18 @@ subroutine <prefix>potrs(n,nrhs,c,b,info,lower)
+- 
++
+     integer depend(c),intent(hide):: n = shape(c,0)
+     integer depend(b),intent(hide):: nrhs = shape(b,1)
+     <ftype> dimension(n,n),intent(in) :: c
+@@ -181,24 +190,26 @@ subroutine <prefix>potrs(n,nrhs,c,b,info,lower)
+     <ftype> dimension(n,nrhs),intent(in,out,copy,out=x),depend(n):: b
      check(shape(c,0)==shape(b,0)) :: b
      integer intent(out) :: info
-  
+- 
++
 +    integer intent(hide) :: len0 = 1
  end subroutine <prefix>potrs
-  
+- 
 -subroutine <prefix>potri(n,c,info,lower)
++
 +subroutine <prefix>potri(n,c,info,lower,len0)
      ! inv_a,info = potri(c,lower=0,overwrite_c=0)
      ! Compute A inverse A^-1.
      ! A = U^T * U, C = U if lower = 0
      ! A = L * L^T, C = L if lower = 1
      ! C is triangular matrix of the corresponding Cholesky decomposition.
-  
+- 
 -    callstatement (*f2py_func)((lower?"L":"U"),&n,c,&n,&info)
 -    callprotoargument char*,F_INT*,<ctype>*,F_INT*,F_INT*
+- 
++
 +    callstatement (*f2py_func)((lower?"L":"U"),&n,c,&n,&info,len0)
 +    callprotoargument char*,F_INT*,<ctype>*,F_INT*,F_INT*,F_INT
-  
++
      integer optional,intent(in),check(lower==0||lower==1) :: lower = 0
-  
-@@ -201,4 +211,5 @@ subroutine <prefix>potri(n,c,info,lower)
+- 
++
+     integer depend(c),intent(hide):: n = shape(c,0)
+     <ftype> dimension(n,n),intent(in,out,copy,out=inv_a) :: c
      check(shape(c,0)==shape(c,1)) :: c
      integer intent(out) :: info
  
@@ -3988,5 +4022,5 @@ index 48133ba237..7dc74f2e8d 100644
  
  subroutine <prefix2>sytri(lower,n,a,lda,ipiv,work,info)
 -- 
-2.51.0
+2.53.0
 
