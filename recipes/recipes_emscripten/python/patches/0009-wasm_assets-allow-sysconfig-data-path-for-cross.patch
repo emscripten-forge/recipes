@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 1 Jan 2024 00:00:00 +0000
+Subject: [PATCH] wasm_assets: allow sysconfig data path via env (cross-build)
+
+When building with host Python for wasm target, sysconfig uses host name.
+Allow overriding via PYTHON_SYSCONFIGDATA_PATH so the Makefile does not
+need to be patched.
+---
+ Tools/wasm/emscripten/wasm_assets.py | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/Tools/wasm/emscripten/wasm_assets.py b/Tools/wasm/emscripten/wasm_assets.py
+index 0000000..1111111 100644
+--- a/Tools/wasm/emscripten/wasm_assets.py
++++ b/Tools/wasm/emscripten/wasm_assets.py
+@@ -15,6 +15,7 @@ The WASM asset bundles are pre-loaded by the final WASM build. The bundle
+ """
+ 
+ import argparse
++import os
+ import pathlib
+ import sys
+ import sysconfig
+@@ -102,6 +103,13 @@ def get_builddir(args: argparse.Namespace) -> pathlib.Path:
+ 
+ 
+ def get_sysconfigdata(args: argparse.Namespace) -> pathlib.Path:
++    """Get path to sysconfigdata; overridable via PYTHON_SYSCONFIGDATA_PATH for cross-build."""
++    env_path = os.environ.get("PYTHON_SYSCONFIGDATA_PATH")
++    if env_path:
++        return pathlib.Path(env_path).resolve()
+     """Get path to sysconfigdata relative to build root"""
+     assert isinstance(args.builddir, pathlib.Path)
+     data_name: str = sysconfig._get_sysconfigdata_name() # type: ignore[attr-defined]

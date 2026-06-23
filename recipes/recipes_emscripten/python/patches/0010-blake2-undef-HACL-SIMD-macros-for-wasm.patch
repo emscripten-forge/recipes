@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 1 Jan 2024 00:00:00 +0000
+Subject: [PATCH] blake2: undef HACL SIMD macros for wasm32
+
+HACL SIMD128/SIMD256 objects are not built for Emscripten (x86-only).
+Undef the macros so blake2module uses the portable Blake2 path.
+---
+ Modules/blake2module.c | 6 ++++++
+ 1 file changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/Modules/blake2module.c b/Modules/blake2module.c
+index 0000000..1111111 100644
+--- a/Modules/blake2module.c
++++ b/Modules/blake2module.c
+@@ -49,6 +49,12 @@
+ #if defined(__APPLE__) && defined(__arm64__)
+ # undef _Py_HACL_CAN_COMPILE_VEC128
+ # undef _Py_HACL_CAN_COMPILE_VEC256
+ #endif
++
++/* Emscripten/wasm32: HACL SIMD objects are not built (x86-only), use portable Blake2. */
++#if defined(__wasm32__)
++# undef _Py_HACL_CAN_COMPILE_VEC128
++# undef _Py_HACL_CAN_COMPILE_VEC256
++#endif
+ 
+ // ECX
