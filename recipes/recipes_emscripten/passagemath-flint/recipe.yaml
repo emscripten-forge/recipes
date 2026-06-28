@@ -1,0 +1,73 @@
+context:
+  version: 10.8.1
+
+package:
+  name: passagemath-flint
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-flint/passagemath_flint-${{ version }}.tar.gz
+  sha256: e67d98f8ba8c91ed408f554ef984d799a3d302eb5839ad8e0f0074cd4d4962f1
+
+build:
+  number: 0
+  script: |
+    export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
+    ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  - numpy
+  host:
+  - python
+  - gmp
+  - mpc
+  - mpfi
+  - mpfr
+  - flint
+  - passagemath-ntl
+  run:
+  - python
+  - cysignals
+  - numpy
+  - passagemath-ntl
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_flint.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Fast computations with MPFI and FLINT'
+  description: |
+    Distribution of a small part of the Sage library for use with passagemath-modules.
+    It provides Cython interfaces to the MPFI and FLINT libraries.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_flint.py
+  recipe-maintainers:
+  - mkoeppe
