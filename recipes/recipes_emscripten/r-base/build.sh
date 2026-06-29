@@ -109,3 +109,8 @@ pushd _build_wasm
 
 )
 popd
+
+
+
+# move everythig from $PREFIX/lib/R to $PREFIX/lib/RPY
+mv $PREFIX/lib/R $PREFIX/lib/RPY

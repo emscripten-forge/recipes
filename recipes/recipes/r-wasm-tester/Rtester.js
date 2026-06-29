@@ -1,7 +1,7 @@
 const path = require("node:path");
 
 const wasmRHome = "/R";
-const hostRHome = path.join(process.env.PREFIX, "lib", "R");
+const hostRHome = path.join(process.env.PREFIX, "lib", "RPY");
 const rExecDir = path.join(hostRHome, "bin", "exec");
 const rLibDir = path.join(hostRHome, "lib");
 const prefixLibDir = path.join(process.env.PREFIX, "lib");
