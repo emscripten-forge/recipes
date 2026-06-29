@@ -17,7 +17,7 @@ export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
 # Configure step with Emscripten's emcmake
 emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
-    -DCMAKE_BUILD_TYPE=Release                             \
+    -DCMAKE_BUILD_TYPE=Debug                               \
     -DCMAKE_PREFIX_PATH=$PREFIX                            \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                         \
     -DXEUS_R_EMSCRIPTEN_WASM_BUILD=ON                      \

@@ -24,6 +24,9 @@ EOF
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RTESTER_JS="${SCRIPT_DIR}/Rtester.js"
 
+
+
+
 if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
     show_help
     exit 0
@@ -65,6 +68,37 @@ if [ ! -f "$R_SCRIPT" ]; then
     echo "[R-TESTER] Error: R script not found: ${R_SCRIPT}" >&2
     exit 1
 fi
+
+
+
+
+R_BINARTY="$PREFIX/lib/R/bin/exec/R"
+TARGET_FILE=$R_BINARTY
+
+
+# ensure file exists
+if [ ! -f "$TARGET_FILE" ]; then
+    echo "ERROR: Target file not found: $TARGET_FILE" >&2
+    exit 1
+fi
+
+
+
+SEARCH='jsArg.replace("*","")'
+REPLACE='jsArg.replace("**","").replace("*","")'
+
+
+if grep -Fq "$SEARCH" "$TARGET_FILE"; then
+    echo "Found"
+else
+    echo "Not found"
+    exit 1
+fi
+
+
+perl -pi -e 's/\Q'"$SEARCH"'\E/'"$REPLACE"'/g' $TARGET_FILE
+
+
 
 echo "[R-TESTER] Running test script: ${R_SCRIPT}"
 exec env PREFIX="$PREFIX" node "$RTESTER_JS" "$R_SCRIPT"
