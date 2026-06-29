@@ -1,0 +1,29 @@
+diff --git a/pytensor/compile/mode.py b/pytensor/compile/mode.py
+--- a/pytensor/compile/mode.py
++++ b/pytensor/compile/mode.py
+@@ -4,6 +4,7 @@
+ """
+ 
+ import logging
++import sys
+ import warnings
+ from typing import Any
+ 
+@@ -311,7 +312,7 @@
+         if linker is None:
+             linker = config.linker
+         if isinstance(linker, str) and linker == "auto":
+-            linker = "numba"
++            linker = "vm" if sys.platform == "emscripten" else "numba"
+         if isinstance(optimizer, str) and optimizer == "default":
+             optimizer = config.optimizer
+ 
+@@ -518,7 +519,7 @@
+     if upper_string == "FAST_RUN":
+         linker = config.linker
+         if linker == "auto":
+-            return NUMBA
++            return Mode("vm", "fast_run") if sys.platform == "emscripten" else NUMBA
+         return fast_run_linkers_to_mode[linker]
+ 
+     global _CACHED_RUNTIME_MODES
