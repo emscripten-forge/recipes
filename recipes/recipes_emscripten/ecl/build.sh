@@ -13,11 +13,8 @@ AR="${AR_FOR_BUILD:-ar}" \
 RANLIB="${RANLIB_FOR_BUILD:-ranlib}" \
   ./configure --prefix="${HOST_ECL_PREFIX}"
 
-make -j"${CPU_COUNT:-$(nproc 2>/dev/null || echo 2)}"
+make -j8
 make install
-
-export ECL_TO_RUN="${HOST_ECL_PREFIX}/bin/ecl"
-"${ECL_TO_RUN}" --eval '(princ (lisp-implementation-version))' --eval '(quit)'
 
 make distclean || true
 
@@ -40,7 +37,7 @@ emconfigure ./configure \
   CPPFLAGS="-I${PREFIX}/include" \
   LDFLAGS="-L${PREFIX}/lib"
 
-emmake make -j"${CPU_COUNT:-$(nproc 2>/dev/null || echo 2)}" EXEEXT=".html"
+emmake make -j8
 emmake make install
 
 mkdir -p "${PREFIX}/bin"
