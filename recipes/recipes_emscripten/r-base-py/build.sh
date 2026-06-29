@@ -80,6 +80,12 @@ popd
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
 
+
+# remove shared libs to force static linking of dependencies
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
+rm $PREFIX/lib/libz.so* || true
+
 mkdir -p _build_wasm
 pushd _build_wasm
 (
@@ -93,7 +99,7 @@ pushd _build_wasm
 
 
     # to link in python
-    EXTRTA_LIBS="-lbz2.a -lz.a -lsqlite3.a -lffi.a -lzstd.a -lssl.a -lcrypto.a -llzma.a -lpython3.13.a"
+    EXTRTA_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython3.13"
     PKG_LIBS="-L$PREFIX/lib $EXTRTA_LIBS"
     export PKG_LIBS
 
