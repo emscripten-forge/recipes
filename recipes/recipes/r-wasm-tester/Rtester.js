@@ -2,8 +2,6 @@ const path = require("node:path");
 
 const wasmRHome = "/R";
 const hostRHome = path.join(process.env.PREFIX, "lib", "R");
-const prefix = process.env.PREFIX;
-const pythonDir = path.join(prefix, "lib", "python3.13");
 const rExecDir = path.join(hostRHome, "bin", "exec");
 const rLibDir = path.join(hostRHome, "lib");
 const prefixLibDir = path.join(process.env.PREFIX, "lib");
@@ -59,8 +57,6 @@ var Module = {
     // R_HOME tree (etc, share, library, modules) and /lib for dynload paths.
     copyTree(hostRHome, wasmRHome);
     copyTree(rLibDir, "/lib");
-    copyTree(prefixLibDir, "/lib");
-    copyTree(pythonDir, "/lib/python3.13");
   }],
   onRuntimeInitialized() {
     Module.callMain(rArgs);
@@ -70,7 +66,6 @@ var Module = {
 let glue = require("node:fs").readFileSync(path.join(rExecDir, "R"), "utf8");
 const envLiteral = JSON.stringify({
   R_HOME: wasmRHome,
-  PREFIX: "/"
 });
 glue = glue.replace("var ENV={};", `var ENV=${envLiteral};`);
 eval(glue);
