@@ -13,8 +13,10 @@ AR="${AR_FOR_BUILD:-ar}" \
 RANLIB="${RANLIB_FOR_BUILD:-ranlib}" \
   ./configure --prefix="${HOST_ECL_PREFIX}"
 
-make -j"$(nproc 2>/dev/null || echo 2)"
+make -j8
 make install
+
+export ECL_TO_RUN="${HOST_ECL_PREFIX}/bin/ecl"
 
 make distclean || true
 
@@ -37,7 +39,7 @@ emconfigure ./configure \
   CPPFLAGS="-I${PREFIX}/include" \
   LDFLAGS="-L${PREFIX}/lib"
 
-emmake make -j"$(nproc 2>/dev/null || echo 2)" EXEEXT=".html"
+emmake make -j8 EXEEXT=".html"
 emmake make install
 
 mkdir -p "${PREFIX}/bin"
