@@ -1,0 +1,39 @@
+From ae3be7e38d3989f6b68347bc31f04801d8c61e34 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 20 Nov 2024 15:14:59 +0100
+Subject: [PATCH 05/13] Add sigsuspend stub for Emscripten compatibility
+
+Emscripten does not support sigsuspend, so a stub function is added.
+---
+ src/unix/sys-unix.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/src/unix/sys-unix.c b/src/unix/sys-unix.c
+index 017c575cc7..c427848303 100644
+--- a/src/unix/sys-unix.c
++++ b/src/unix/sys-unix.c
+@@ -467,6 +467,15 @@ static void timeout_handler(int sig)
+     /* tost.child_pid is -1 when child process no longer exists */
+ }
+ 
++#ifdef EMSCRIPTEN
++/* sigsuspend is not supported in Emscripten */
++int sigsuspend(const sigset_t *mask)
++{
++    errno = EINVAL;
++    return -1;
++}
++#endif
++
+ static pid_t timeout_wait(int *wstatus)
+ {
+     pid_t wres;
+@@ -480,7 +489,7 @@ static pid_t timeout_wait(int *wstatus)
+ 
+     int saveerrno = errno;
+     while((wres = waitpid(tost.child_pid, wstatus, WNOHANG)) == 0)
+-	sigsuspend(&unblocked_ss);
++		sigsuspend(&unblocked_ss);
+ 
+     if (errno == EINTR)
+ 	/* EINTR is not really an error but expected situation here, however,
