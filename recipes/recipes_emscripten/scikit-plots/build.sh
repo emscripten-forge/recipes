@@ -9,51 +9,6 @@ set -Eeuox pipefail
 : "${PYTHON:?PYTHON not set by build harness}"
 : "${PY_VER:?PY_VER not set by build harness}"
 
-# TODO: Fortran can not hanle LDFLAGS -s flags cause error while compiler detection
-# Fortran Compiler Needed meson-build config: https://github.com/scikit-plots/scikit-plots/blob/main/meson.build#L339
-# Install custom LLVM and flang which includes patch for common symbols.
-# If building locally then you can replace $(pwd) with a fixed location such as $HOME
-# to avoid re-downloading on each rebuild.
-# export LLVM_DIR="$(pwd)/llvm_dir"
-# LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
-# if [ ! -x "$LLVM_DIR/bin/flang" ]; then
-#     mkdir -p "$LLVM_DIR"
-#     wget --quiet "https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG"
-#     tar -xf "$LLVM_PKG" --directory "$LLVM_DIR"
-# fi
-# Check install
-# "$LLVM_DIR/bin/flang" --version
-# "$LLVM_DIR/bin/llvm-nm" --version
-
-# Use local flang-new-wrapper that does some arg mangling.
-# Explicitly ensure the wrapper script is executable
-# cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
-# chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
-# export EM_LLVM_ROOT="$LLVM_DIR"
-# export FC="$LLVM_DIR/bin/flang-new-wrapper"
-
-# flang-new-wrapper drops ANY argument token starting with "-s" (see
-# flang-new-wrapper: `[[ "${arg}" != -s* ]]`). A *two-token* flag like
-# "-s SIDE_MODULE=1" only has its "-s" half stripped -- the bare
-# "SIDE_MODULE=1" leaks through to flang-new as a stray positional arg.
-# Collapsing to a single token "-sSIDE_MODULE=1" makes the whole flag
-# disappear as intended.
-#
-# This pass cleans up whatever LDFLAGS the build harness/activation
-# scripts already injected (CFLAGS/CXXFLAGS aren't routed through
-# flang-new-wrapper, so they don't need this).
-# Remove whitespace after '-s' in LDFLAGS
-# export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
-
-# new_ldflags=""
-# for arg in ${LDFLAGS:-}; do
-#     case "$arg" in
-#         -s*) ;;
-#         *) new_ldflags="$new_ldflags $arg" ;;
-#     esac
-# done
-# export LDFLAGS="${new_ldflags# }"
-
 # replace -fexceptions with -fwasm-exceptions in numpy/_core
 # sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
 # Write the new flags as single tokens from the start so nothing here
