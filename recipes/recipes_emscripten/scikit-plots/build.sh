@@ -9,7 +9,7 @@ set -Eeuox pipefail
 : "${PYTHON:?PYTHON not set by build harness}"
 : "${PY_VER:?PY_VER not set by build harness}"
 
-# Fortran Compiler Needed meson-build config: https://github.com/scikit-plots/scikit-plots/blob/main/meson.build#L339
+# TODO: Fortran Compiler Needed meson-build config: https://github.com/scikit-plots/scikit-plots/blob/main/meson.build#L339
 # Install custom LLVM and flang which includes patch for common symbols.
 # If building locally then you can replace $(pwd) with a fixed location such as $HOME
 # to avoid re-downloading on each rebuild.
@@ -56,7 +56,7 @@ export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 echo "add shebang to cython file"
 sed -i '1i#!/usr/bin/env python' "$BUILD_PREFIX/bin/cython"
 
-# TODO: fix into main repo
+# TODO: fix into main repo cause error cython redefinition
 sed -i '/^__version__: Final\[str\] = "1\.0\.1"$/d' scikitplot/memmap/_memmap/mem_map.pyx
 
 # Cross file lives in SRC_DIR (writable, per-build copy) -- the upstream

@@ -32,7 +32,7 @@ def test_logistic_regression():
     print("2.7")
     import scikitplot.seaborn as sp
     print("2.8")
-    sp.evalplot(x=y_val, y=y_val_pred, kind="all")
+    sp.evalplot(x=y, y=clf.predict(X))
 
 
 # skip_non_worker = pytest.mark.skipif(
