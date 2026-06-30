@@ -9,7 +9,8 @@ set -Eeuox pipefail
 : "${PYTHON:?PYTHON not set by build harness}"
 : "${PY_VER:?PY_VER not set by build harness}"
 
-# TODO: Fortran Compiler Needed meson-build config: https://github.com/scikit-plots/scikit-plots/blob/main/meson.build#L339
+# TODO: Fortran can not hanle LDFLAGS -s flags cause error while compiler detection
+# Fortran Compiler Needed meson-build config: https://github.com/scikit-plots/scikit-plots/blob/main/meson.build#L339
 # Install custom LLVM and flang which includes patch for common symbols.
 # If building locally then you can replace $(pwd) with a fixed location such as $HOME
 # to avoid re-downloading on each rebuild.
