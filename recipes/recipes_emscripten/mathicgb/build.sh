@@ -1,17 +1,11 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-sed -i '/friend void mathic::PairQueueNamespace::constructPairData/{n;s/Index/mathic::PairQueueNamespace::Index/g;}' src/mathicgb/SPairs.hpp
-sed -i '/friend void mathic::PairQueueNamespace::destructPairData/{n;s/Index/mathic::PairQueueNamespace::Index/g;}' src/mathicgb/SPairs.hpp
-sed -i '466s/Coefficient coef/Coefficient coef_in/' src/mathicgb/MathicIO.hpp
-sed -i '470a \      typename std::remove_const<Coefficient>::type coef = coef_in;' src/mathicgb/MathicIO.hpp
-sed -i '1i #include <type_traits>' src/mathicgb/MathicIO.hpp
-
 ./autogen.sh
 
 CPPFLAGS="-I${PREFIX}/include" \
 LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=gnu++11 -fdelayed-template-parsing" \
+CXXFLAGS="-std=gnu++14" \
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --with-tbb=no \
