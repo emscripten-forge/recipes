@@ -1,0 +1,27 @@
+diff --git a/pytensor/link/c/op.py b/pytensor/link/c/op.py
+--- a/pytensor/link/c/op.py
++++ b/pytensor/link/c/op.py
+@@ -1,5 +1,6 @@
+ import inspect
+ import re
++import sys
+ import warnings
+ from collections.abc import Callable, Collection, Iterable
+ from pathlib import Path
+@@ -318,10 +319,13 @@
+         self.func_name = func_name
+         self.code_sections: dict[str, str] = dict()
+ 
+-        self.load_c_code(self.func_files)
++        # On emscripten C compilation is unavailable and the C source files
++        # are not present in the virtual filesystem, so skip loading them.
++        if sys.platform != "emscripten":
++            self.load_c_code(self.func_files)
+ 
+-        if len(self.code_sections) == 0:
+-            raise ValueError("No sections where defined in the C files")
++            if len(self.code_sections) == 0:
++                raise ValueError("No sections where defined in the C files")
+ 
+         if self.func_name is not None:
+             if "op_code" in self.code_sections:
