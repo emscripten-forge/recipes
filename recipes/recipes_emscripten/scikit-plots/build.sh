@@ -42,7 +42,22 @@ set -Eeuox pipefail
 # scripts already injected (CFLAGS/CXXFLAGS aren't routed through
 # flang-new-wrapper, so they don't need this).
 # Remove whitespace after '-s' in LDFLAGS
-# export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
+export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
+
+new_ldflags=""
+skip_next=0
+for arg in ${LDFLAGS:-}; do
+    if [ "$skip_next" = 1 ]; then
+        skip_next=0
+        continue
+    fi
+    if [ "$arg" = "-s" ]; then
+        skip_next=1
+        continue
+    fi
+    new_ldflags="$new_ldflags $arg"
+done
+export LDFLAGS="${new_ldflags# }"
 
 # replace -fexceptions with -fwasm-exceptions in numpy/_core
 # sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
