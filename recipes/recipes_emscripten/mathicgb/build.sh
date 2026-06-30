@@ -11,7 +11,7 @@ sed -i '1i #include <type_traits>' src/mathicgb/MathicIO.hpp
 
 CPPFLAGS="-I${PREFIX}/include" \
 LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=gnu++11" \
+CXXFLAGS="-std=gnu++11 -fdelayed-template-parsing" \
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --with-tbb=no \
