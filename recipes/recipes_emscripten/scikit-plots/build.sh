@@ -24,8 +24,8 @@ fi
 "$LLVM_DIR/bin/llvm-nm" --version
 
 # Use local flang-new-wrapper that does some arg mangling.
-# cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
 # Explicitly ensure the wrapper script is executable
+cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
 chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
 export EM_LLVM_ROOT="$LLVM_DIR"
 export FC="$LLVM_DIR/bin/flang-new-wrapper"
