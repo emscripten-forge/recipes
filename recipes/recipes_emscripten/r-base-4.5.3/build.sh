@@ -49,6 +49,9 @@ pushd _build_linux
 (
     export PKG_CONFIG_PATH=$BUILD_PREFIX/lib/pkgconfig
     export PREFIX=$BUILD_PREFIX
+    # Ensure conda's build tools shadow system ones (PATH may not be set up
+    # correctly in the rattler-build cache context).
+    export PATH="$BUILD_PREFIX/bin:$PATH"
     export CC=gcc
     export CXX=g++
     export FC=flang
@@ -64,7 +67,8 @@ pushd _build_linux
 
     ../configure \
         --prefix=$BUILD_PREFIX \
-        $CONFIG_ARGS
+        $CONFIG_ARGS \
+        --without-python
 
     make -j${CPU_COUNT}
     # No need to install, we just need the R binary
@@ -87,6 +91,12 @@ pushd _build_wasm
 (
     cp $RECIPE_DIR/config.site .
 
+    # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
+    # (see patch 0015). This statically links libpython and its transitive deps
+    # into RPY only; the standard R executable is unaffected.
+    PY_VER=$(basename "$(ls $PREFIX/lib/libpython*.a)" .a | sed 's/^libpython//')
+    export RPY_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython${PY_VER}"
+
     export CROSS_COMPILING="true"
     export R_EXECUTABLE=$(realpath ..)/_build_linux/bin/exec/R # binary not shell wrapper
     export R_SCRIPT_EXECUTABLE=$(realpath ..)/_build_linux/bin/Rscript
@@ -101,7 +111,8 @@ pushd _build_wasm
         --build="x86_64-conda-linux-gnu" \
         --host="wasm32-unknown-emscripten" \
         --enable-R-shlib \
-        $CONFIG_ARGS
+        $CONFIG_ARGS \
+        --without-python
 
     emmake make -j${CPU_COUNT}
 
@@ -109,24 +120,8 @@ pushd _build_wasm
 
     emmake make install
 
-    #---------------------------------------------------------------------------
-    # r-py OUTPUT: Re-link R main executable with static libpython
-    #---------------------------------------------------------------------------
-    # Produce RPY + RPY.wasm: same as R but with libpython statically linked in.
-    # Only the link step is re-run (src/main/*.o already compiled above).
-    PYTHON_LFLAG="-l$(basename "$(ls $PREFIX/lib/libpython*.a)" .a | sed 's/^lib//')"
-    STATIC_LIBPYTHON_LDFLAGS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma ${PYTHON_LFLAG}"
-
-    # Append libpython flags to MAIN_LDFLAGS in Makeconf so only R.bin is affected.
-    sed -i "s|-sERROR_ON_UNDEFINED_SYMBOLS=0|-sERROR_ON_UNDEFINED_SYMBOLS=0 ${STATIC_LIBPYTHON_LDFLAGS}|" Makeconf
-
-    # Touch object files so make re-links without recompiling.
-    touch src/main/*.o
-
-    emmake make -C src/main
-
-    # Install as RPY / RPY.wasm alongside the standard R executable.
-    cp src/main/R.bin "$PREFIX/lib/R/bin/exec/RPY"
-    cp src/main/R.bin.wasm "$PREFIX/lib/R/bin/exec/RPY.wasm"
+    # Install RPY and RPY.wasm built alongside R.bin by the patched Makefile.in.
+    cp src/main/RPY "$PREFIX/lib/R/bin/exec/RPY"
+    cp src/main/RPY.wasm "$PREFIX/lib/R/bin/exec/RPY.wasm"
 )
 popd

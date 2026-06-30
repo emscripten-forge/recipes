@@ -2,81 +2,91 @@ context:
   name: r-base
   version: 4.5.3
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
-source:
-  url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  sha256: aa5c1ed4293c7271ac513d654670356ac0e8a6ad5e42be014365d11150b5b8f2
-  patches:
-  # https://github.com/IsabelParedes/r-source/tree/R-4.5.0-wasm
-  - patches/0001-Add-emscripten-platform-to-configure-script.patch
-  - patches/0002-Disable-libcurl.patch
-  - patches/0003-Disable-internet-module.patch
-  - patches/0004-Fix-iconv-checks-when-using-internal-lapack-blas.patch
-  - patches/0005-Add-sigsuspend-stub-for-Emscripten-compatibility.patch
-  - patches/0006-Disable-which-for-emscripten.patch
-  - patches/0007-Set-cairo-as-default-bitmap-type.patch
-  - patches/0008-Use-source-files-directly.patch
-  - patches/0009-Install-.wasm-files.patch
-  - patches/0010-Fix-extern-C-error-expected-an-identifier.patch
-  - patches/0011-Remove-png-lib-from-bitmap-libs.patch
-  - patches/0012-Use-linux-executables.patch
-  - patches/0013-Use-source-files-when-installing.patch
-  - patches/0014-Fix-cairo-font-scaling-in-emscripten.patch
-
 build:
   number: 6
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - ${{ compiler('fortran') }}
-  - libtool
-  - pkg-config
-  - cmake
-  - make
-  # Dependencies to build R in the build environment
-  - libflang-rt
-  - gcc
-  - libiconv
-  - zlib
-  - bzip2
-  - xz
-  - pcre2
-  - libpng
-  - libtiff
-  - cairo
-  host:
-  - libflang
-  - libiconv
-  - zlib
-  - bzip2
-  - liblzma
-  - pcre2
-  - libpng
-  - libtiff
-  - cairo
-  - fontconfig
-  - pixman
-  - expat
-  - freetype
-  # For the r-py output: libpython statically linked into RPY executable.
-  - python
-  - libpython
-  - libffi
-  - sqlite
-  - openssl
-  - zstd
-
 outputs:
+# Staging output: runs build.sh once; r-base and r-py inherit from here.
+- staging:
+    name: r-base-build
+
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - libtool
+    - pkg-config
+    - cmake
+    - make
+    # Dependencies to build R in the build environment
+    - libflang-rt
+    - gcc
+    - libiconv
+    - zlib
+    - bzip2
+    - xz
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    host:
+    - libflang
+    - libiconv
+    - zlib
+    - bzip2
+    - liblzma
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    - fontconfig
+    - pixman
+    - expat
+    - freetype
+    # For the r-py output: libpython statically linked into RPY executable.
+    - python
+    - libpython
+    - libffi
+    - sqlite
+    - openssl
+    - zstd
+    ignore_run_exports:
+      from_package:
+      - python
+
+  source:
+    url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
+    sha256: aa5c1ed4293c7271ac513d654670356ac0e8a6ad5e42be014365d11150b5b8f2
+    patches:
+    # https://github.com/IsabelParedes/r-source/tree/R-4.5.0-wasm
+    - patches/0001-Add-emscripten-platform-to-configure-script.patch
+    - patches/0002-Disable-libcurl.patch
+    - patches/0003-Disable-internet-module.patch
+    - patches/0004-Fix-iconv-checks-when-using-internal-lapack-blas.patch
+    - patches/0005-Add-sigsuspend-stub-for-Emscripten-compatibility.patch
+    - patches/0006-Disable-which-for-emscripten.patch
+    - patches/0007-Set-cairo-as-default-bitmap-type.patch
+    - patches/0008-Use-source-files-directly.patch
+    - patches/0009-Install-.wasm-files.patch
+    - patches/0010-Fix-extern-C-error-expected-an-identifier.patch
+    - patches/0011-Remove-png-lib-from-bitmap-libs.patch
+    - patches/0012-Use-linux-executables.patch
+    - patches/0013-Use-source-files-when-installing.patch
+    - patches/0014-Fix-cairo-font-scaling-in-emscripten.patch
+    - patches/0015-Add-RPY-target-linked-with-libpython.patch
+
+  build:
+    script: build.sh
+
 - package:
     name: r-base
     version: ${{ version }}
 
+  inherit: r-base-build
+
   build:
+    script: 'true'
     files:
       exclude:
       - lib/R/bin/exec/RPY
@@ -100,29 +110,23 @@ outputs:
       build:
       - nodejs
 
-  about:
-    homepage: http://www.r-project.org/
-    license: GPL-2.0-or-later
-    license_family: GPL
-    license_file: COPYING
-    summary: |
-      R is a free software environment for statistical computing and graphics.
-
-  extra:
-    recipe-maintainers:
-    - IsabelParedes
-
 - package:
     name: r-py
     version: ${{ version }}
 
+  inherit: r-base-build
+
   build:
+    script: 'true'
     files:
       include:
       - lib/R/bin/exec/RPY
       - lib/R/bin/exec/RPY.wasm
 
   requirements:
+    host:
+    - r-base ==${{ version }}
+    - python
     run:
     - r-base ==${{ version }}
     - python
@@ -135,14 +139,14 @@ outputs:
       - lib/R/bin/exec/RPY
       - lib/R/bin/exec/RPY.wasm
 
-  about:
-    homepage: http://www.r-project.org/
-    license: GPL-2.0-or-later
-    license_family: GPL
-    license_file: COPYING
-    summary: |
-      R executable with libpython statically linked (enables R/Python interop via reticulate).
+about:
+  homepage: http://www.r-project.org/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: COPYING
+  summary: |
+    R is a free software environment for statistical computing and graphics.
 
-  extra:
-    recipe-maintainers:
-    - IsabelParedes
+extra:
+  recipe-maintainers:
+  - IsabelParedes
