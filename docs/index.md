@@ -18,6 +18,7 @@ The recipes repository not only stores the recipe files for multiple packages, b
   * [Local builds](development/local_builds)
   * [Conda build config](development/conda_build_config)
   * [Troubleshooting](development/troubleshooting)
+  * [Code of conduct](development/code_of_conduct)
 
 ### Usage
 

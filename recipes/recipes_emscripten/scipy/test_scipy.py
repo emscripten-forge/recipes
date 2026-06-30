@@ -113,7 +113,13 @@ def test_sparse():
         [0, 5, 0],
         [-0.526315789, 0, 0.526315789]
     ])
-    soln = scipy.sparse.linalg.spsolve(A, [1.1, 0.2, -0.3])
+    b = np.array([1.1, 0.2, -0.3])
+    soln = scipy.sparse.linalg.spsolve(A, b)
+    assert_allclose(soln, [1.173684211, 1, -0.736842105])
+
+    # Repeat using superlu
+    lu = scipy.sparse.linalg.splu(A)
+    soln = lu.solve(b)
     assert_allclose(soln, [1.173684211, 1, -0.736842105])
 
 

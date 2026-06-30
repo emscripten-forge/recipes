@@ -1,0 +1,62 @@
+context:
+  name: xnnpack
+  version: "d89bf2f383ea5005b4dee58d45079ae5c9a22ef8"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/google/XNNPACK/archive/${{ version }}.tar.gz
+  sha256: 8ef965a96447a3f6cf713a453ec881cecb0d61858116f70cbf914c1fc60a2e60
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - python
+
+tests:
+- package_contents:
+    include:
+    - xnnpack.h
+    lib:
+    - libXNNPACK.a
+    - libxnnpack-microkernels-prod.a
+    files:
+    - lib/cmake/xnnpack/XNNPACKConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/google/XNNPACK
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Highly optimized neural network inference library
+  description: |
+    XNNPACK is a highly optimized library of floating-point neural network
+    inference operators for ARM, WebAssembly, and x86 platforms. It is used
+    as a backend by TensorFlow Lite, PyTorch, ONNX Runtime, and other ML
+    frameworks for accelerating inference on mobile and web.
+  documentation: https://github.com/google/XNNPACK
+  repository: https://github.com/google/XNNPACK
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

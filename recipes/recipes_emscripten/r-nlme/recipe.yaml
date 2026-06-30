@@ -13,19 +13,19 @@ source:
   sha256: 51b92f1b543d2eb5915478965dab05a9094e1675a160138d49963eb3a0e7fdb8
 
 build:
-  number: 1
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
-  # TODO: flang needs to be rebuilt to install r-base in build environment.
-  skip: ${{ r_abi_build_tag == 453 }}
+  number: 4
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - flang_${{ target_platform }}
+  - ${{ compiler('fortran') }}
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-lattice
   host:
+  - r-base ==${{ r_base }}
   - r-lattice
   - libflang
   run:

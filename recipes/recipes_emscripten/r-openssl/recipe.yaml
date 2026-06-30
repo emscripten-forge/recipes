@@ -1,0 +1,67 @@
+context:
+  name: r-openssl
+  version: 2.4.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 1fc030ad0a008472eac7f086666a7623bdbe6d27c5fdb07b5510f56545d2f4e7
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-askpass
+  host:
+  - r-base ==${{ r_base }}
+  - r-askpass
+  - openssl
+  run:
+  - r-askpass
+  - openssl
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_openssl.R
+  files:
+    recipe:
+    - test_openssl.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://jeroen.r-universe.dev/openssl
+  repository: https://github.com/jeroen/openssl
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Toolkit for Encryption, Signatures and Certificates Based on OpenSSL
+  description: |
+    Bindings to OpenSSL libssl and libcrypto, plus custom SSH key parsers.
+    Supports RSA, DSA and EC curves P-256, P-384, P-521, and curve25519.
+    Cryptographic signatures can either be created and verified manually or via
+    x509 certificates. AES can be used in cbc, ctr or gcm mode for symmetric
+    encryption; RSA for asymmetric (public key) encryption or EC for Diffie
+    Hellman. High-level envelope functions combine RSA and AES for encrypting
+    arbitrary sized data. Other utilities include key generators, hash functions
+    (md5, sha1, sha256, etc), base64 encoder, a secure random number generator,
+    and 'bignum' math methods for manually performing crypto calculations on
+    large multibyte integers.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

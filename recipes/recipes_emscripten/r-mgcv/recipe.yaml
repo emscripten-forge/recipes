@@ -4,7 +4,7 @@ context:
 
 package:
   name: ${{ name }}
-  version: ${{ version|replace('-', '_') }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
@@ -13,10 +13,9 @@ source:
   sha256: a98159698afb269e06a46cac1f945bf2b3427a2dd587c6f2efd67ede90089372
 
 build:
-  number: 4
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
-  # TODO: flang needs to be rebuilt to install r-base in build environment.
-  skip: ${{ r_abi_build_tag == 453 }}
+  number: 7
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -26,9 +25,10 @@ requirements:
   - r-nlme
   - r-matrix
   host:
-  - libblas>=3.12
-  - liblapack>=3.12
-  - libflang                  # for FortranRuntime
+  - r-base ==${{ r_base }}
+  - libblas
+  - liblapack
+  - libflang
   - r-nlme
   - r-matrix
   run:

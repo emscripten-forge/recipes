@@ -1,22 +1,23 @@
 context:
+  name: later
   version: 1.4.8
-  name: r-later
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: ce5d88b3fd1df409eaa21aa53bf20b1a9331f75cd69e7e9b2a27b40d2290d219
   patches:
-  - patches/0001-Do-not-link-with-atomic-lib.patch
+  - patches/0001-Disable-multi-threading.patch
 
 build:
-  number: 2
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 5
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -26,7 +27,9 @@ requirements:
   - ${{ compiler('cxx') }}
   - r-rcpp
   - r-rlang
+  - r-base ==4.5.3 h15dba0b_1
   host:
+  - r-base ==${{ r_base }}
   - r-rcpp
   - r-rlang
   run:
@@ -36,7 +39,14 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_later.R
+  files:
+    recipe:
+    - test_later.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://r-lib.github.io/later/
@@ -44,8 +54,9 @@ about:
   license: MIT
   license_file: LICENSE
   summary: |
-    Schedule an R function or formula to run after a specified period of time.
+    Utilities for Scheduling Functions to Execute Later with Event Loops
   description: |
+    This WebAssembly version is experimental.
     Executes arbitrary R or C functions some time after the current time, after
     the R execution stack has emptied. The functions are scheduled in an event loop.
 

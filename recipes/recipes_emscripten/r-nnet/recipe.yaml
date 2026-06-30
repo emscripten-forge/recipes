@@ -1,0 +1,50 @@
+context:
+  name: r-nnet
+  version: 7.3-20
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 8f33e17e0eb161cfbc1bfee4875baa23c66fcdba8215a64a63402b099db2b555
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test-r-nnet.R
+  files:
+    recipe:
+    - test-r-nnet.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: http://www.stats.ox.ac.uk/pub/MASS4/
+  license: GPL-2.0-or-later
+  license_family: GPL3
+  license_file: GPL-3
+  summary: Feed-Forward Neural Networks and Multinomial Log-Linear Models
+  description: |
+    Software for feed-forward neural networks with a single hidden layer, and
+    for multinomial log-linear models.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
