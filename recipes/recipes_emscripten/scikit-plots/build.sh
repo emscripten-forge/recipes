@@ -12,17 +12,23 @@ set -Eeuox pipefail
 # Install custom LLVM and flang which includes patch for common symbols.
 # If building locally then you can replace $(pwd) with a fixed location such as $HOME
 # to avoid re-downloading on each rebuild.
-export LLVM_DIR="$(pwd)/llvm_dir"
-LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
-if [ ! -x "$LLVM_DIR/bin/flang" ]; then
-    mkdir -p "$LLVM_DIR"
-    wget --quiet "https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG"
-    tar -xf "$LLVM_PKG" --directory "$LLVM_DIR"
-fi
-
+# export LLVM_DIR="$(pwd)/llvm_dir"
+# LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
+# if [ ! -x "$LLVM_DIR/bin/flang" ]; then
+#     mkdir -p "$LLVM_DIR"
+#     wget --quiet "https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG"
+#     tar -xf "$LLVM_PKG" --directory "$LLVM_DIR"
+# fi
 # Check install
-"$LLVM_DIR/bin/flang" --version
-"$LLVM_DIR/bin/llvm-nm" --version
+# "$LLVM_DIR/bin/flang" --version
+# "$LLVM_DIR/bin/llvm-nm" --version
+
+# Use local flang-new-wrapper that does some arg mangling.
+# cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
+# Explicitly ensure the wrapper script is executable
+# chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
+# export EM_LLVM_ROOT="$LLVM_DIR"
+# export FC="$LLVM_DIR/bin/flang-new-wrapper"
 
 # flang-new-wrapper drops ANY argument token starting with "-s" (see
 # flang-new-wrapper: `[[ "${arg}" != -s* ]]`). A *two-token* flag like
@@ -35,7 +41,7 @@ fi
 # scripts already injected (CFLAGS/CXXFLAGS aren't routed through
 # flang-new-wrapper, so they don't need this).
 # Remove whitespace after '-s' in LDFLAGS
-export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
+# export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
 # replace -fexceptions with -fwasm-exceptions in numpy/_core
 # sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
@@ -44,17 +50,6 @@ export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 # export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
 # export CXXFLAGS="${CXXFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
 # export LDFLAGS="${LDFLAGS} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
-
-# Use local flang-new-wrapper that does some arg mangling.
-cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
-# Explicitly ensure the wrapper script is executable
-chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
-
-export EM_LLVM_ROOT="$LLVM_DIR"
-export FC="$LLVM_DIR/bin/flang-new-wrapper"
-
-# Meson finds numpy_config via pkg_config and numpy.pc
-export PKG_CONFIG_PATH="$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/lib/pkgconfig"
 
 # otherwise "cython" is not properly executable
 echo "add shebang to cython file"
@@ -67,6 +62,9 @@ sed -i '1i#!/usr/bin/env python' "$BUILD_PREFIX/bin/cython"
 # or meson never sees the python= line we just added.
 cp "$RECIPE_DIR/emscripten.meson.cross" "$SRC_DIR/emscripten.meson.cross"
 echo "python = '${PYTHON}'" >> "$SRC_DIR/emscripten.meson.cross"
+
+# Meson finds numpy_config via pkg_config and numpy.pc
+export PKG_CONFIG_PATH="$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/lib/pkgconfig"
 
 # PIP_ARGS --no-deps
 # ${PIP_ARGS:-} is intentionally unquoted: it may hold multiple

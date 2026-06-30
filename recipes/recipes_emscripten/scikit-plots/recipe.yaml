@@ -15,7 +15,8 @@ source:
   sha256: 100bc5f13e9414addeecd6295b74c7c1e8a1714a884a4c0b6868439641b747df
   # Rattler-build natively handles patch orchestration relative to $SRC_DIR
   patches:
-  - patches/0001-remove-per-interpreter-gil.patch
+  # py::multiple_interpreters::per_interpreter_gil() was introduced in 3.0.0
+  # - patches/0001-remove-per-interpreter-gil.patch
   - patches/0002-remove-annoy-static-library-duplicate-pyinit-wasm32.patch
 
 build:
@@ -41,21 +42,16 @@ requirements:
   build:
   - python                            
   - cross-python_${{ target_platform }}                       
-  - pkg-config
-  # - meson                             
-  # - ninja                             
+  - pkg-config                        
   - meson-python                      
-  - cython                            
-  - pybind11                          
+  - cython   
+  # py::multiple_interpreters::per_interpreter_gil() was introduced in 3.0.0
+  - pybind11 >= 3.0.0
   # - pythran                           
   - numpy                             
   - scipy       
   - pip
   - setuptools
-  # - llvm_${{ target_platform }} # Installing custom LLVM in build.sh
-  # - llvm-openmp  # [osx]
-  # - libgomp      # [linux]
-  # - clang        # [win]
   # - ${{ stdlib('c') }}
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
@@ -63,7 +59,8 @@ requirements:
   host:
   - python
   - openblas
-  - pybind11
+  # py::multiple_interpreters::per_interpreter_gil() was introduced in 3.0.0
+  - pybind11 >= 3.0.0
   # - pythran
   - numpy
   - scipy                  
