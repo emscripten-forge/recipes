@@ -624,41 +624,6 @@ index 241fd44a..ec5a672c 100644
  ######################################################################
  ## Installation tags
  ## https://mesonbuild.com/Installing.html#installing
-@@ -1489,10 +1672,34 @@ message(
-   '@0@'.format(py.get_install_dir())
- )
- 
-+# ── 1. Install _meson_features into the active meson's module directory ─────
-+#
-+#   run_command() executes BEFORE import() is evaluated, so the copy is in
-+#   place by the time meson resolves import('features').
-+#
-+#   The script is idempotent: subsequent `meson setup` calls are cheap.
-+#
-+_build_utils = meson.project_source_root() / 'scikitplot/_build_utils'
-+run_command(
-+    [
-+        py,
-+        files(_build_utils / 'install_meson_features.py'),
-+        _build_utils / '_meson_features',
-+    ],
-+    check: true,
-+)
-+# ── 2. Now import resolves to mesonbuild.modules.features ───────────────────
-+mod_features = import('features')
-+
- ######################################################################
- ## Next
- ######################################################################
- 
-+# Rule of thumb — declare all args before any build targets
-+# before any static_library() call cause
-+# ERROR: Tried to use 'add_project_arguments' after a build target has been declared.
-+subdir('meson_cpu')
-+
- # Not Need anymore we copying all submodules into 'scikitplot'
- # subdir('third_party')
- subdir('scikitplot')
 diff --git a/scikitplot/config/meson.build b/scikitplot/config/meson.build
 index feecdb8d..012403ab 100644
 --- a/scikitplot/config/meson.build
