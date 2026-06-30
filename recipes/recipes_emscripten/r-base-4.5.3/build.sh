@@ -64,7 +64,8 @@ pushd _build_linux
 
     ../configure \
         --prefix=$BUILD_PREFIX \
-        $CONFIG_ARGS
+        $CONFIG_ARGS \
+        --without-python
 
     make -j${CPU_COUNT}
     # No need to install, we just need the R binary
@@ -76,14 +77,24 @@ popd
 #-------------------------------------------------------------------------------
 # Building R for WebAssembly using the R binary from the Linux build.
 
-# libz.so has an invalid ELF header which causes an error when looking for
-# opendir during the configure step. Link with libz.a instead.
+# Remove shared libs to force static linking of dependencies (libz.so also has
+# an invalid ELF header which breaks configure unless libz.a is used).
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
 rm $PREFIX/lib/libz.so* || true
 
 mkdir -p _build_wasm
 pushd _build_wasm
 (
     cp $RECIPE_DIR/config.site .
+
+    # Static-libpython variant: link libpython and its transitive deps into the
+    # R executable only (MAIN_LDFLAGS in config.site applies to R.bin, not libR.so).
+    if [[ "${R_BASE_STATIC_LIBPYTHON:-0}" == "1" ]]; then
+        PYTHON_LFLAG="-l$(basename "$(ls $PREFIX/lib/libpython*.a)" .a | sed 's/^lib//')"
+        STATIC_LIBPYTHON_LDFLAGS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma ${PYTHON_LFLAG}"
+        sed -i "s|-sERROR_ON_UNDEFINED_SYMBOLS=0\"|-sERROR_ON_UNDEFINED_SYMBOLS=0 ${STATIC_LIBPYTHON_LDFLAGS}\"|" config.site
+    fi
 
     export CROSS_COMPILING="true"
     export R_EXECUTABLE=$(realpath ..)/_build_linux/bin/exec/R # binary not shell wrapper
@@ -99,7 +110,8 @@ pushd _build_wasm
         --build="x86_64-conda-linux-gnu" \
         --host="wasm32-unknown-emscripten" \
         --enable-R-shlib \
-        $CONFIG_ARGS
+        $CONFIG_ARGS \
+        --without-python
 
     emmake make -j${CPU_COUNT}
 

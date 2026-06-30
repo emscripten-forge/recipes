@@ -1,6 +1,8 @@
 context:
   name: r-base
   version: 4.5.3
+  build_number: 6
+  build_variant_prefix: ${{ "static_libpython_h" if r_base_static_libpython == "1" else "h" }}
 
 package:
   name: ${{ name }}
@@ -27,7 +29,24 @@ source:
   - patches/0014-Fix-cairo-font-scaling-in-emscripten.patch
 
 build:
-  number: 5
+  number: 6
+  # Explicit build strings so downstream recipes can pin the static-libpython
+  # variant, e.g. `r-base ==${{ version }} static_libpython*`.
+  string: ${{ build_variant_prefix ~ (hash ~ "_" ~ build_number) }}
+
+  # Pass the variant into build.sh (not inferred from the script by rattler-build).
+  script:
+    file: build.sh
+    env:
+      R_BASE_STATIC_LIBPYTHON: ${{ r_base_static_libpython }}
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - r_base_static_libpython
+    # Deprioritize the static-libpython variant so the default build stays
+    # preferred by the solver (via down_prioritize_variant / track_features).
+    down_prioritize_variant: ${{ 1 if r_base_static_libpython == "1" else 0 }}
 
   files:
     exclude:
@@ -67,6 +86,22 @@ requirements:
   - pixman
   - expat
   - freetype
+  # Static libpython for the wasm target (emscripten has no shared libpython).
+  # Linked into the R executable via MAIN_LDFLAGS in config.site, not libR.so.
+  - if: r_base_static_libpython == "1"
+    then:
+    - python
+    - libpython
+    - libffi
+    - sqlite
+    - openssl
+    - zstd
+  run:
+  - if: r_base_static_libpython == "1"
+    then:
+    - python
+    - libpython
+    - zstd
   run_exports:
   - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
 
@@ -94,3 +129,4 @@ about:
 extra:
   recipe-maintainers:
   - IsabelParedes
+
