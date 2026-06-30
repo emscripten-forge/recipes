@@ -20,3 +20,5 @@ emconfigure ./configure \
 
 emmake make -j8
 emmake make install
+
+cp mgb.wasm "${PREFIX}/bin/"

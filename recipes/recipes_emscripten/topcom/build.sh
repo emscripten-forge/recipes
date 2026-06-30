@@ -16,3 +16,5 @@ find . -name Makefile -exec sed -i 's/-pthread//g' {} +
 
 emmake make -j8
 emmake make install
+
+cp src/*.wasm "${PREFIX}/bin/"
