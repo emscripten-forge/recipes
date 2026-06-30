@@ -5,7 +5,7 @@ set -euxo pipefail
 ln -s "${PREFIX}/include/cddlib" ./cdd
 
 # Clang flags to forgive legacy C++ template and access rules
-export CXXFLAGS="-std=c++11 -fno-access-control -fdelayed-template-parsing"
+export CXXFLAGS="-std=c++11 -fdelayed-template-parsing"
 
 export CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/cddlib"
 export LDFLAGS="-L${PREFIX}/lib"
