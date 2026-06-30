@@ -5,7 +5,7 @@ set -euxo pipefail
 
 CPPFLAGS="-I${PREFIX}/include" \
 LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=gnu++0x -fno-access-control -fdelayed-template-parsing" \
+CXXFLAGS="-std=gnu++0x -fdelayed-template-parsing" \
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --with-gtest=no \
