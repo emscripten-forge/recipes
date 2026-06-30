@@ -16,7 +16,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         raise ValueError("recipe or recipes_dir must be set")
     elif recipe is not None:
         cmd.extend(["--recipe", str(recipe)])
-        if (recipe == "arrow") or (recipe == "thrift"):
+        if (recipe == "arrow") or (recipe == "thrift") or (recipe == "r-base-4.5.3"):
             cmd.extend(["--experimental"])
     elif recipes_dir is not None:
         cmd.extend(["--recipe-dir", str(recipes_dir)])
@@ -24,7 +24,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         recipes_path = Path(recipes_dir)
         if recipes_path.is_dir():
             folder_names = {p.name for p in recipes_path.iterdir() if p.is_dir()}
-            if "thrift" in folder_names or "arrow" in folder_names:
+            if "thrift" in folder_names or "arrow" in folder_names or "r-base-4.5.3" in folder_names:
                 cmd.extend(["--experimental"])
 
     cmd.extend(["--skip-existing", skip_existing])

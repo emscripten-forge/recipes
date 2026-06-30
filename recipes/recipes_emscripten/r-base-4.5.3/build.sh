@@ -76,8 +76,10 @@ popd
 #-------------------------------------------------------------------------------
 # Building R for WebAssembly using the R binary from the Linux build.
 
-# libz.so has an invalid ELF header which causes an error when looking for
-# opendir during the configure step. Link with libz.a instead.
+# Remove shared libs to force static linking of dependencies (libz.so also has
+# an invalid ELF header which breaks configure unless libz.a is used).
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
 rm $PREFIX/lib/libz.so* || true
 
 mkdir -p _build_wasm
@@ -107,5 +109,24 @@ pushd _build_wasm
 
     emmake make install
 
+    #---------------------------------------------------------------------------
+    # r-py OUTPUT: Re-link R main executable with static libpython
+    #---------------------------------------------------------------------------
+    # Produce RPY + RPY.wasm: same as R but with libpython statically linked in.
+    # Only the link step is re-run (src/main/*.o already compiled above).
+    PYTHON_LFLAG="-l$(basename "$(ls $PREFIX/lib/libpython*.a)" .a | sed 's/^lib//')"
+    STATIC_LIBPYTHON_LDFLAGS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma ${PYTHON_LFLAG}"
+
+    # Append libpython flags to MAIN_LDFLAGS in Makeconf so only R.bin is affected.
+    sed -i "s|-sERROR_ON_UNDEFINED_SYMBOLS=0|-sERROR_ON_UNDEFINED_SYMBOLS=0 ${STATIC_LIBPYTHON_LDFLAGS}|" Makeconf
+
+    # Touch object files so make re-links without recompiling.
+    touch src/main/*.o
+
+    emmake make -C src/main
+
+    # Install as RPY / RPY.wasm alongside the standard R executable.
+    cp src/main/R.bin "$PREFIX/lib/R/bin/exec/RPY"
+    cp src/main/R.bin.wasm "$PREFIX/lib/R/bin/exec/RPY.wasm"
 )
 popd

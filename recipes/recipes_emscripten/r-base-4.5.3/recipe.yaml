@@ -27,11 +27,7 @@ source:
   - patches/0014-Fix-cairo-font-scaling-in-emscripten.patch
 
 build:
-  number: 5
-
-  files:
-    exclude:
-    - share/man/man1/**
+  number: 6
 
 requirements:
   build:
@@ -67,30 +63,86 @@ requirements:
   - pixman
   - expat
   - freetype
-  run_exports:
-  - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+  # For the r-py output: libpython statically linked into RPY executable.
+  - python
+  - libpython
+  - libffi
+  - sqlite
+  - openssl
+  - zstd
 
-tests:
-- package_contents:
-    lib:
-    - R/lib/libR.so
-    - R/lib/libRblas.so
-    - R/lib/libRlapack.so
-    - R/library/grDevices/libs/cairo.so
-- script:
-  - node ${PREFIX}/lib/R/bin/Rscript --version
+outputs:
+- package:
+    name: r-base
+    version: ${{ version }}
+
+  build:
+    files:
+      exclude:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+      - share/man/man1/**
+
   requirements:
-    build:
-    - nodejs
+    run_exports:
+    - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
 
-about:
-  homepage: http://www.r-project.org/
-  license: GPL-2.0-or-later
-  license_family: GPL
-  license_file: COPYING
-  summary: |
-    R is a free software environment for statistical computing and graphics.
+  tests:
+  - package_contents:
+      lib:
+      - R/lib/libR.so
+      - R/lib/libRblas.so
+      - R/lib/libRlapack.so
+      - R/library/grDevices/libs/cairo.so
+  - script:
+    - node ${PREFIX}/lib/R/bin/Rscript --version
+    requirements:
+      build:
+      - nodejs
 
-extra:
-  recipe-maintainers:
-  - IsabelParedes
+  about:
+    homepage: http://www.r-project.org/
+    license: GPL-2.0-or-later
+    license_family: GPL
+    license_file: COPYING
+    summary: |
+      R is a free software environment for statistical computing and graphics.
+
+  extra:
+    recipe-maintainers:
+    - IsabelParedes
+
+- package:
+    name: r-py
+    version: ${{ version }}
+
+  build:
+    files:
+      include:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+
+  requirements:
+    run:
+    - r-base ==${{ version }}
+    - python
+    - libpython
+    - zstd
+
+  tests:
+  - package_contents:
+      files:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+
+  about:
+    homepage: http://www.r-project.org/
+    license: GPL-2.0-or-later
+    license_family: GPL
+    license_file: COPYING
+    summary: |
+      R executable with libpython statically linked (enables R/Python interop via reticulate).
+
+  extra:
+    recipe-maintainers:
+    - IsabelParedes
