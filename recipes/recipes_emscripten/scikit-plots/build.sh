@@ -45,17 +45,11 @@ set -Eeuox pipefail
 export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
 new_ldflags=""
-skip_next=0
 for arg in ${LDFLAGS:-}; do
-    if [ "$skip_next" = 1 ]; then
-        skip_next=0
-        continue
-    fi
-    if [ "$arg" = "-s" ]; then
-        skip_next=1
-        continue
-    fi
-    new_ldflags="$new_ldflags $arg"
+    case "$arg" in
+        -s*) ;;
+        *) new_ldflags="$new_ldflags $arg" ;;
+    esac
 done
 export LDFLAGS="${new_ldflags# }"
 
