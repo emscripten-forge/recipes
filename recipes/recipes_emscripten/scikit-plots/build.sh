@@ -42,16 +42,16 @@ set -Eeuox pipefail
 # scripts already injected (CFLAGS/CXXFLAGS aren't routed through
 # flang-new-wrapper, so they don't need this).
 # Remove whitespace after '-s' in LDFLAGS
-export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
+# export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
-new_ldflags=""
-for arg in ${LDFLAGS:-}; do
-    case "$arg" in
-        -s*) ;;
-        *) new_ldflags="$new_ldflags $arg" ;;
-    esac
-done
-export LDFLAGS="${new_ldflags# }"
+# new_ldflags=""
+# for arg in ${LDFLAGS:-}; do
+#     case "$arg" in
+#         -s*) ;;
+#         *) new_ldflags="$new_ldflags $arg" ;;
+#     esac
+# done
+# export LDFLAGS="${new_ldflags# }"
 
 # replace -fexceptions with -fwasm-exceptions in numpy/_core
 # sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
@@ -59,7 +59,7 @@ export LDFLAGS="${new_ldflags# }"
 # depends on a later sed pass to be safe for the Fortran link step.
 # export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -Wno-implicit-function-declaration -fexceptions"
 # export CXXFLAGS="${CXXFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
-# export LDFLAGS="${LDFLAGS} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
+export LDFLAGS="${LDFLAGS} -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
 
 # otherwise "cython" is not properly executable
 echo "add shebang to cython file"
