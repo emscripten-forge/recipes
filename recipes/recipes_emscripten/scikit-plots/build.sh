@@ -13,23 +13,23 @@ set -Eeuox pipefail
 # Install custom LLVM and flang which includes patch for common symbols.
 # If building locally then you can replace $(pwd) with a fixed location such as $HOME
 # to avoid re-downloading on each rebuild.
-export LLVM_DIR="$(pwd)/llvm_dir"
-LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
-if [ ! -x "$LLVM_DIR/bin/flang" ]; then
-    mkdir -p "$LLVM_DIR"
-    wget --quiet "https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG"
-    tar -xf "$LLVM_PKG" --directory "$LLVM_DIR"
-fi
+# export LLVM_DIR="$(pwd)/llvm_dir"
+# LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
+# if [ ! -x "$LLVM_DIR/bin/flang" ]; then
+#     mkdir -p "$LLVM_DIR"
+#     wget --quiet "https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG"
+#     tar -xf "$LLVM_PKG" --directory "$LLVM_DIR"
+# fi
 # Check install
-"$LLVM_DIR/bin/flang" --version
-"$LLVM_DIR/bin/llvm-nm" --version
+# "$LLVM_DIR/bin/flang" --version
+# "$LLVM_DIR/bin/llvm-nm" --version
 
 # Use local flang-new-wrapper that does some arg mangling.
 # Explicitly ensure the wrapper script is executable
-cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
-chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
-export EM_LLVM_ROOT="$LLVM_DIR"
-export FC="$LLVM_DIR/bin/flang-new-wrapper"
+# cp "$RECIPE_DIR/flang-new-wrapper" "$LLVM_DIR/bin/flang-new-wrapper"
+# chmod +x "$LLVM_DIR/bin/flang-new-wrapper"
+# export EM_LLVM_ROOT="$LLVM_DIR"
+# export FC="$LLVM_DIR/bin/flang-new-wrapper"
 
 # flang-new-wrapper drops ANY argument token starting with "-s" (see
 # flang-new-wrapper: `[[ "${arg}" != -s* ]]`). A *two-token* flag like
@@ -42,7 +42,7 @@ export FC="$LLVM_DIR/bin/flang-new-wrapper"
 # scripts already injected (CFLAGS/CXXFLAGS aren't routed through
 # flang-new-wrapper, so they don't need this).
 # Remove whitespace after '-s' in LDFLAGS
-export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
+# export LDFLAGS="$(echo "${LDFLAGS:-}" | sed -E 's/-s +/-s/g')"
 
 # replace -fexceptions with -fwasm-exceptions in numpy/_core
 # sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
