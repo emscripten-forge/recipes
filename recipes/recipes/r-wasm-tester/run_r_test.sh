@@ -4,7 +4,7 @@ set -euo pipefail
 
 show_help() {
     cat <<'EOF'
-Usage: run_r_test [<test.R>]
+Usage: run_r_test [--rpy] [<test.R>]
        run_r_test --help
 
 Run an R test script in the wasm R environment via Rtester.js.
@@ -14,6 +14,7 @@ Arguments:
               If omitted, runs all .R files in the current directory
 
 Options:
+      --rpy   Use the RPY executable (R linked with libpython) instead of R
   -h, --help  Show this help message and exit
 
 Environment:
@@ -29,12 +30,18 @@ if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
     exit 0
 fi
 
+USE_RPY=""
+if [ "$#" -ge 1 ] && [ "$1" = "--rpy" ]; then
+    USE_RPY=1
+    shift
+fi
+
 if [ "$#" -eq 0 ]; then
     found=0
-    
+
     while IFS= read -r script; do
         found=1
-        "$0" "$script"
+        "$0" ${USE_RPY:+--rpy} "$script"
     done < <(find . -maxdepth 1 -type f -name "*.R" | sort)
 
     if [ "$found" -eq 0 ]; then
@@ -67,4 +74,4 @@ if [ ! -f "$R_SCRIPT" ]; then
 fi
 
 echo "[R-TESTER] Running test script: ${R_SCRIPT}"
-exec env PREFIX="$PREFIX" node "$RTESTER_JS" "$R_SCRIPT"
+exec env PREFIX="$PREFIX" ${USE_RPY:+USE_RPY=1} node "$RTESTER_JS" "$R_SCRIPT"
