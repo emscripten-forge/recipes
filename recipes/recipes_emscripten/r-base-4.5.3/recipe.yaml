@@ -27,6 +27,8 @@ source:
 build:
   number: ${{ build_number }}
 
+#-------------------------------------------------------------------------------
+
 outputs:
 # Staging output: runs build.sh once; r-base and r-py inherit from here.
 - staging:
@@ -80,6 +82,8 @@ outputs:
   build:
     script: build.sh
 
+#-------------------------------------------------------------------------------
+
 - package:
     name: r-base
     version: ${{ version }}
@@ -117,6 +121,8 @@ outputs:
       - nodejs
       - r-wasm-tester
 
+#-------------------------------------------------------------------------------
+
 - package:
     name: r-py
     version: ${{ version }}
@@ -145,6 +151,15 @@ outputs:
       files:
       - lib/R/bin/exec/RPY
       - lib/R/bin/exec/RPY.wasm
+  - script: run_r_test --rpy test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
 
 about:
   homepage: http://www.r-project.org/
