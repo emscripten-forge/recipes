@@ -1,5 +1,5 @@
 
-def test_import_pytensor():
+def test_import_pytensor_base():
     import pytensor
 
 
