@@ -67,8 +67,7 @@ pushd _build_linux
 
     ../configure \
         --prefix=$BUILD_PREFIX \
-        $CONFIG_ARGS \
-        --without-python
+        $CONFIG_ARGS
 
     make -j${CPU_COUNT}
     # No need to install, we just need the R binary
@@ -94,7 +93,6 @@ pushd _build_wasm
     # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
     # (see patch 0015). This statically links libpython and its transitive deps
     # into RPY only; the standard R executable is unaffected.
-    PY_VER=$(basename "$(ls $PREFIX/lib/libpython*.a)" .a | sed 's/^libpython//')
     export RPY_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython${PY_VER}"
 
     export CROSS_COMPILING="true"
