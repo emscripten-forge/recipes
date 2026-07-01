@@ -1,6 +1,6 @@
 context:
-  name: r-base
-  version: 4.6.0
+  name: r-base-py
+  version: 4.5.3
 
 package:
   name: ${{ name }}
@@ -8,24 +8,25 @@ package:
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  sha256: b8dc9b4543660c7b596b87938df532394350360976527d344228ee0ed12e45ec
+  sha256: aa5c1ed4293c7271ac513d654670356ac0e8a6ad5e42be014365d11150b5b8f2
   patches:
+  # https://github.com/IsabelParedes/r-source/tree/R-4.5.0-wasm
   - patches/0001-Add-emscripten-platform-to-configure-script.patch
   - patches/0002-Disable-libcurl.patch
   - patches/0003-Disable-internet-module.patch
-  - patches/0004-Add-sigsuspend-stub-for-Emscripten-compatibility.patch
-  - patches/0005-Disable-which-for-emscripten.patch
-  - patches/0006-Set-cairo-as-default-bitmap-type.patch
-  - patches/0007-Use-source-files-directly.patch
-  - patches/0008-Install-.wasm-files.patch
-  - patches/0009-Use-linux-executables.patch
-  - patches/0010-Fix-iconv-checks-when-using-internal-lapack-blas.patch
-  - patches/0011-Guard-Rlog1p-C-linkage-and-avoid-local-symbol-clash.patch
-  - patches/0012-Remove-png-lib-from-bitmap-libs.patch
-  - patches/0013-Fix-cairo-font-scaling-in-emscripten.patch
+  - patches/0004-Fix-iconv-checks-when-using-internal-lapack-blas.patch
+  - patches/0005-Add-sigsuspend-stub-for-Emscripten-compatibility.patch
+  - patches/0006-Disable-which-for-emscripten.patch
+  - patches/0007-Set-cairo-as-default-bitmap-type.patch
+  - patches/0008-Use-source-files-directly.patch
+  - patches/0009-Install-.wasm-files.patch
+  - patches/0010-Fix-extern-C-error-expected-an-identifier.patch
+  - patches/0011-Remove-png-lib-from-bitmap-libs.patch
+  - patches/0012-Use-linux-executables.patch
+  - patches/0013-Use-source-files-when-installing.patch
 
 build:
-  number: 1
+  number: 3
 
   files:
     exclude:
@@ -65,16 +66,20 @@ requirements:
   - pixman
   - expat
   - freetype
+  # dependencies to link in python
+  - libpython
+  - zstd
+  - openssl <4
   run_exports:
-  - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+  - ${{ pin_subpackage('r-base-py', upper_bound='x.x') }}
 
 tests:
 - package_contents:
     lib:
-    - RPY/lib/libR.so
-    - RPY/lib/libRblas.so
-    - RPY/lib/libRlapack.so
-    - RPY/library/grDevices/libs/cairo.so
+    - R/lib/libR.so
+    - R/lib/libRblas.so
+    - R/lib/libRlapack.so
+    - R/library/grDevices/libs/cairo.so
 - script:
   - node ${PREFIX}/lib/R/bin/Rscript --version
   requirements:
@@ -92,3 +97,4 @@ about:
 extra:
   recipe-maintainers:
   - IsabelParedes
+  - DerThorsten

@@ -80,6 +80,12 @@ popd
 # opendir during the configure step. Link with libz.a instead.
 rm $PREFIX/lib/libz.so* || true
 
+
+# remove shared libs to force static linking of dependencies
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
+rm $PREFIX/lib/libz.so* || true
+
 mkdir -p _build_wasm
 pushd _build_wasm
 (
@@ -90,6 +96,15 @@ pushd _build_wasm
     export R_SCRIPT_EXECUTABLE=$(realpath ..)/_build_linux/bin/Rscript
     export LINUX_BUILD_DIR=$(realpath ..)/_build_linux
     export WASM_BUILD_DIR=$(pwd)
+
+
+    # to link in python
+    EXTRTA_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython3.13"
+    PKG_LIBS="-L$PREFIX/lib $EXTRTA_LIBS"
+    export PKG_LIBS
+
+
+
 
     # NOTE: the host and build systems are explicitly set to enable the cross-
     # compiling options even though it's not fully supported.
@@ -109,8 +124,3 @@ pushd _build_wasm
 
 )
 popd
-
-
-
-# move everythig from $PREFIX/lib/R to $PREFIX/lib/RPY
-mv $PREFIX/lib/R $PREFIX/lib/RPY

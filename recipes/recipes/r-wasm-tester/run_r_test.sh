@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+
+
 set -euo pipefail
 
 show_help() {
@@ -44,7 +47,7 @@ if [ "$#" -eq 0 ]; then
     exit 0
 fi
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 1 ]; then 
     echo "[R-TESTER] Error: expected zero or one argument (path to an .R file); try --help" >&2
     exit 1
 fi
@@ -65,6 +68,9 @@ if [ ! -f "$R_SCRIPT" ]; then
     echo "[R-TESTER] Error: R script not found: ${R_SCRIPT}" >&2
     exit 1
 fi
+
+rm -rf $PREFIX/lib/R/
+mv $PREFIX/lib/RPY $PREFIX/lib/R
 
 echo "[R-TESTER] Running test script: ${R_SCRIPT}"
 exec env PREFIX="$PREFIX" node "$RTESTER_JS" "$R_SCRIPT"

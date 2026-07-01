@@ -1,0 +1,87 @@
+context:
+  name: r-reticulate
+  version: 1.46.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  # path: /Users/thorstenbeier/src/reticulate
+  git:  https://github.com/DerThorsten/reticulate.git
+  branch: web
+
+
+build:
+  number: 78
+  # # Dependencies not yet available for R 4.6.0 on conda-forge
+  # skip: ${{ r_base == '4.6.0' }}
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base_${{ target_platform }} == 4.5.3
+  - r-matrix
+  - r-rcpp >=1.0.7
+  - r-rcpptoml
+  - r-here
+  - r-jsonlite
+  - r-png
+  - r-rappdirs
+  - r-rlang
+  - r-withr
+  host:
+  - r-base-py
+  - r-matrix
+  - r-rcpp >=1.0.7
+  - r-rcpptoml
+  - r-here
+  - r-jsonlite
+  - r-png
+  - r-rappdirs
+  - r-rlang
+  - r-withr
+  - python  
+  - bzip2
+  - zlib
+  - libffi
+  - sqlite
+  - liblzma
+  - openssl
+  - numpy
+  run:
+  - r-matrix
+  - r-rcpp >=1.0.7
+  - r-rcpptoml
+  - r-here
+  - r-jsonlite
+  - r-png
+  - r-rappdirs
+  - r-rlang
+  - r-withr
+  - python
+  - numpy
+  ignore_run_exports:
+    by_name:
+      - r-base
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage:  https://github.com/rstudio/reticulate
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: APACHE
+  summary: Interface to 'Python' modules, classes, and functions. When calling into 'Python', R data types are automatically converted to their equivalent 'Python' types. When values are returned from 'Python' to R they are converted back to R types. Compatible with all versions of 'Python' >= 2.7.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
