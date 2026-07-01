@@ -1,0 +1,45 @@
+context:
+  name: r-zip
+  version: 3.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 5f92c09979bc278c94c8ee53bc6c2a5443227ffdb10ad8db6d015e2a57327e7f
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - make
+    - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  host:
+    - r-base ==${{ r_base }}
+    - r-cli
+  run:
+    - r-cli
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://r-lib.github.io/zip/
+  repository: https://github.com/r-lib/zip
+  summary: Cross-Platform 'zip' Compression Library. A replacement for the 'zip' function, that
+    does not require any additional external tools on any platform.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rgaiacs
