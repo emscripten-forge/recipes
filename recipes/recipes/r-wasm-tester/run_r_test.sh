@@ -10,20 +10,21 @@ Usage: run_r_test [--rpy] [<test.R>]
 Run an R test script in the wasm R environment via Rtester.js.
 
 Arguments:
-  <test.R>    Path to one R test script (e.g. ./test-r-bit.R)
-              If omitted, runs all .R files in the current directory
+  <test.R>    Path to one R test script (e.g. ./test-r-bit.R).
+              If omitted, runs all .R files in the current directory.
 
 Options:
-      --rpy   Use the RPY executable (R linked with libpython) instead of R
-  -h, --help  Show this help message and exit
+      --rpy   Use the RPY executable (R linked with libpython).
+  -h, --help  Show this help message and exit.
 
 Environment:
-  PREFIX      Conda environment prefix with r-base (WebAssembly) installed
+  PREFIX      Conda environment prefix with r-base (WebAssembly) installed.
 EOF
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RTESTER_JS="${SCRIPT_DIR}/Rtester.js"
+R_TAG="R-TESTER"
 
 if [ "$#" -eq 1 ] && { [ "$1" = "-h" ] || [ "$1" = "--help" ]; }; then
     show_help
@@ -33,6 +34,7 @@ fi
 USE_RPY=""
 if [ "$#" -ge 1 ] && [ "$1" = "--rpy" ]; then
     USE_RPY=1
+    R_TAG="RPY-TESTER"
     shift
 fi
 
@@ -45,33 +47,33 @@ if [ "$#" -eq 0 ]; then
     done < <(find . -maxdepth 1 -type f -name "*.R" | sort)
 
     if [ "$found" -eq 0 ]; then
-        echo "[R-TESTER] Error: no .R files found in current directory" >&2
+        echo "[$R_TAG] Error: no .R files found in current directory" >&2
         exit 1
     fi
     exit 0
 fi
 
 if [ "$#" -ne 1 ]; then
-    echo "[R-TESTER] Error: expected zero or one argument (path to an .R file); try --help" >&2
+    echo "[$R_TAG] Error: expected zero or one argument (path to an .R file); try --help" >&2
     exit 1
 fi
 
 R_SCRIPT="$1"
 
 if [ -z "${PREFIX:-}" ] || [ ! -d "$PREFIX" ]; then
-    echo "[R-TESTER] Error: PREFIX is not set or does not exist: ${PREFIX:-}" >&2
+    echo "[$R_TAG] Error: PREFIX is not set or does not exist: ${PREFIX:-}" >&2
     exit 1
 fi
 
 if [ ! -f "$RTESTER_JS" ]; then
-    echo "[R-TESTER] Error: Rtester.js not found: ${RTESTER_JS}" >&2
+    echo "[$R_TAG] Error: Rtester.js not found: ${RTESTER_JS}" >&2
     exit 1
 fi
 
 if [ ! -f "$R_SCRIPT" ]; then
-    echo "[R-TESTER] Error: R script not found: ${R_SCRIPT}" >&2
+    echo "[$R_TAG] Error: R script not found: ${R_SCRIPT}" >&2
     exit 1
 fi
 
-echo "[R-TESTER] Running test script: ${R_SCRIPT}"
+echo "[$R_TAG] Running test script: ${R_SCRIPT}"
 exec env PREFIX="$PREFIX" ${USE_RPY:+USE_RPY=1} node "$RTESTER_JS" "$R_SCRIPT"
