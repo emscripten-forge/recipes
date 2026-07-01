@@ -49,6 +49,9 @@ pushd _build_linux
 (
     export PKG_CONFIG_PATH=$BUILD_PREFIX/lib/pkgconfig
     export PREFIX=$BUILD_PREFIX
+    # Ensure conda's build tools shadow system ones (PATH may not be set up
+    # correctly in the rattler-build cache context).
+    export PATH="$BUILD_PREFIX/bin:$PATH"
     export CC=gcc
     export CXX=g++
     export FC=flang
@@ -76,14 +79,21 @@ popd
 #-------------------------------------------------------------------------------
 # Building R for WebAssembly using the R binary from the Linux build.
 
-# libz.so has an invalid ELF header which causes an error when looking for
-# opendir during the configure step. Link with libz.a instead.
+# Remove shared libs to force static linking of dependencies (libz.so also has
+# an invalid ELF header which breaks configure unless libz.a is used).
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
 rm $PREFIX/lib/libz.so* || true
 
 mkdir -p _build_wasm
 pushd _build_wasm
 (
     cp $RECIPE_DIR/config.site .
+
+    # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
+    # (see patch 0015). This statically links libpython and its transitive deps
+    # into RPY only; the standard R executable is unaffected.
+    export RPY_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython${PY_VER}"
 
     export CROSS_COMPILING="true"
     export R_EXECUTABLE=$(realpath ..)/_build_linux/bin/exec/R # binary not shell wrapper
@@ -107,5 +117,8 @@ pushd _build_wasm
 
     emmake make install
 
+    # Install RPY and RPY.wasm built alongside R.bin by the patched Makefile.in.
+    cp src/main/RPY "$PREFIX/lib/R/bin/exec/RPY"
+    cp src/main/RPY.wasm "$PREFIX/lib/R/bin/exec/RPY.wasm"
 )
 popd

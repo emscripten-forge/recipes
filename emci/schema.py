@@ -82,6 +82,9 @@ class Recipe(BaseModel):
         if 'tests' not in values or values['tests'] is None:
             if 'outputs' in values:
                 for output_dict in values['outputs']:
+                    # Staging outputs don't support a 'tests' field in rattler-build.
+                    if 'staging' in output_dict:
+                        continue
                     if 'tests' not in output_dict:
                         pkg_name = output_dict.get('package', {}).get('name', 'unknown')
                         raise AttributeError(f"Output '{pkg_name}' must have a 'tests' section.")
