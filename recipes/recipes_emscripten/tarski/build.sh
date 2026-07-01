@@ -9,6 +9,8 @@ sed -i "s|/upstream/emscripten/system/lib|$PREFIX/lib|g" interpreter/Makefile
 
 yes | TOOLCHAIN=emmake READLINE=0 bash ./build.sh
 
+mkdir -p "$PREFIX/bin"
+
 cp ../tarski.js ../tarski-advanced.js ../tarski-jt-advanced.js "${PREFIX}/bin/"
 cp interpreter/src/html/jquery.terminal-white.css interpreter/src/html/tarski-loader.js interpreter/src/html/*.html  "${PREFIX}/bin/"
 cp interpreter/src/*.h "${PREFIX}/include/"
