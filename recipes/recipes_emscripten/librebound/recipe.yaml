@@ -1,0 +1,76 @@
+context:
+  name: librebound
+  version: 5.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/r/rebound/rebound-${{ version }}.tar.gz
+  sha256: 9012bc4ceac42da8c1344f54e72b64da4720149875dc069d8e0dd1be0285dc04
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+
+tests:
+- package_contents:
+    lib:
+    - librebound.so
+    include:
+    - rebound.h
+    - rebound_internal.h
+    - boundary.h
+    - collision.h
+    - derivatives.h
+    - display.h
+    - fmemopen.h
+    - frequency_analysis.h
+    - gravity.h
+    - integrator_bs.h
+    - integrator_eos.h
+    - integrator_ias15.h
+    - integrator_janus.h
+    - integrator_leapfrog.h
+    - integrator_mercurius.h
+    - integrator_saba.h
+    - integrator_sei.h
+    - integrator_trace.h
+    - integrator_whfast.h
+    - integrator_whfast512.h
+    - output.h
+    - particle.h
+    - rebound.h
+    - rotations.h
+    - server.h
+    - simulation.h
+    - simulationarchive.h
+    - tools.h
+    - transformations.h
+    - tree.h
+    - binarydata.h
+- script: build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+  files:
+    source:
+    - src/
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/hannorein/rebound
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: C library for REBOUND, an open-source multi-purpose N-body code
+  documentation: https://rebound.hanno-rein.de
+
+extra:
+  recipe-maintainers:
+  - mmesch
