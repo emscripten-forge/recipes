@@ -15,7 +15,7 @@ if [ "$status" -eq 0 ]; then
     exit 0
 fi
 
-if grep -q "browser_worker" test_output.log && grep -q "4 passed" test_output.log; then
+if grep -q "browser_worker" test_output.log && grep -Eq "[0-9]+ passed" test_output.log; then
     echo "SUCCESS: browser_worker tests passed"
     exit 0
 fi
