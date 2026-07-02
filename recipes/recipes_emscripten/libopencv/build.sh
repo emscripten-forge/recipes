@@ -1,12 +1,17 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 mkdir -p _build
 cd _build
 
-export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
-export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
-export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+TARGET_PYTHON_SITE_PACKAGES="${PREFIX}/lib/python${PY_VER}/site-packages"
+TARGET_PYTHON_EXT_SUFFIX=".cpython-${PY_VER/./}-wasm32-emscripten.so"
+TARGET_PYTHON_LOADER_DIR="${TARGET_PYTHON_SITE_PACKAGES}/cv2/python-${PY_VER}"
+BUILD_PYTHON="${BUILD_PREFIX}/bin/python"
+
+export CFLAGS="${CFLAGS:-} $EM_FORGE_SIDE_MODULE_CFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+export CXXFLAGS="${CXXFLAGS:-} $EM_FORGE_SIDE_MODULE_CFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+export LDFLAGS="${LDFLAGS:-} $EM_FORGE_SIDE_MODULE_LDFLAGS -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
 
 emcmake cmake -GNinja \
     -DCMAKE_BUILD_TYPE=Release \
@@ -17,6 +22,26 @@ emcmake cmake -GNinja \
     -DCMAKE_CXX_FLAGS_RELEASE="$CXXFLAGS" \
     -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
     -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
+    -DPython3_EXECUTABLE="${BUILD_PYTHON}" \
+    -DPython3_INCLUDE_DIR="${PREFIX}/include/python${PY_VER}" \
+    -DPython3_INCLUDE_DIRS="${PREFIX}/include/python${PY_VER}" \
+    -DPython3_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a" \
+    -DPython3_LIBRARIES="${PREFIX}/lib/libpython${PY_VER}.a" \
+    -DPYTHON3_EXECUTABLE="${BUILD_PYTHON}" \
+    -DPYTHON3_INCLUDE_DIR="${PREFIX}/include/python${PY_VER}" \
+    -DPYTHON3_INCLUDE_PATH="${PREFIX}/include/python${PY_VER}" \
+    -DPYTHON3_INCLUDE_DIRS="${PREFIX}/include/python${PY_VER}" \
+    -DPYTHON3_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a" \
+    -DPYTHON3_LIBRARIES="${PREFIX}/lib/libpython${PY_VER}.a" \
+    -DPYTHON_DEFAULT_EXECUTABLE="${BUILD_PYTHON}" \
+    -DPython3_NumPy_INCLUDE_DIRS="${TARGET_PYTHON_SITE_PACKAGES}/numpy/_core/include" \
+    -DPYTHON3_NUMPY_INCLUDE_DIR="${TARGET_PYTHON_SITE_PACKAGES}/numpy/_core/include" \
+    -DPYTHON3_NUMPY_INCLUDE_DIRS="${TARGET_PYTHON_SITE_PACKAGES}/numpy/_core/include" \
+    -DPYTHON3_PACKAGES_PATH="lib/python${PY_VER}/site-packages" \
+    -DPYTHON3_CVPY_SUFFIX="${TARGET_PYTHON_EXT_SUFFIX}" \
+    -DOPENCV_PYTHON_INSTALL_PATH="lib/python${PY_VER}/site-packages" \
+    -DOPENCV_PYTHON3_INSTALL_PATH="lib/python${PY_VER}/site-packages" \
+    -DOPENCV_PYTHON_SKIP_LINKER_EXCLUDE_LIBS=ON \
     -DBUILD_SHARED_LIBS=OFF \
     -DENABLE_PIC=FALSE \
     -DCPU_BASELINE='' \
@@ -111,7 +136,7 @@ emcmake cmake -GNinja \
     -DBUILD_opencv_ml=OFF \
     -DBUILD_opencv_gapi=OFF \
     -DBUILD_opencv_js=OFF \
-    -DBUILD_opencv_python3=OFF \
+    -DBUILD_opencv_python3=ON \
     -DBUILD_opencv_java=OFF \
     -DBUILD_opencv_apps=OFF \
     -DBUILD_EXAMPLES=OFF \
@@ -132,18 +157,41 @@ ninja install
 
 # OpenCV 5 installs under versioned subdirectories for side-by-side installs.
 # Fix up the layout. All steps are best-effort (non-fatal).
+
 # 1. Headers: include/opencv5/opencv2/ -> include/opencv2/
 if [ -d "${PREFIX}/include/opencv5" ]; then
     mv "${PREFIX}/include/opencv5"/* "${PREFIX}/include/" 2>/dev/null || true
     rmdir "${PREFIX}/include/opencv5" 2>/dev/null || true
 fi
-# 2. Fix paths in CMake config
+
+# 2. 3rdparty libs: lib/opencv5/3rdparty/ -> lib/
+if [ -d "${PREFIX}/lib/opencv5/3rdparty" ]; then
+    mv "${PREFIX}/lib/opencv5/3rdparty"/* "${PREFIX}/lib/" 2>/dev/null || true
+    rmdir "${PREFIX}/lib/opencv5/3rdparty" 2>/dev/null || true
+fi
+# Also move any main-level versioned libs: lib/opencv5/libopencv_*.a -> lib/
+if [ -d "${PREFIX}/lib/opencv5" ]; then
+    mv "${PREFIX}/lib/opencv5"/libopencv_*.a "${PREFIX}/lib/" 2>/dev/null || true
+    rmdir "${PREFIX}/lib/opencv5" 2>/dev/null || true
+fi
+
+# 3. Fix paths in CMake config
 if [ -d "${PREFIX}/lib/cmake/opencv5" ]; then
-    # Fix include paths (opencv5 -> standard)
+    # Fix all versioned path references: eliminate /opencv5/ segments
+    # Pattern A: .../opencv5/...  -> .../...
+    find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
+        -exec sed -i 's|/opencv5/|/|g' {} + 2>/dev/null || true
+    # Pattern B: include/opencv5/ (no leading slash, e.g. in INTERFACE_INCLUDE_DIRECTORIES)
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
         -exec sed -i 's|include/opencv5/|include/|g' {} + 2>/dev/null || true
+    # Pattern C: isolated ".../opencv5" at end of path (quoted string, no trailing slash)
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
-        -exec sed -i 's|/include/opencv5/|/include/|g' {} + 2>/dev/null || true
+        -exec sed -i 's|/include/opencv5"|/include"|g' {} + 2>/dev/null || true
+    find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
+        -exec sed -i 's|/lib/opencv5"|/lib"|g' {} + 2>/dev/null || true
+    # Pattern D: leftover /3rdparty/ from moved 3rdparty libs
+    find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
+        -exec sed -i 's|/3rdparty/|/|g' {} + 2>/dev/null || true
     # The package itself is built as side modules, but downstream test executables
     # must not inherit SIDE_MODULE link flags from imported OpenCV targets.
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
@@ -160,6 +208,65 @@ if [ -d "${PREFIX}/lib/cmake/opencv5" ]; then
     # dependency is not propagated in the generated OpenCV CMake exports.
     find "${PREFIX}/lib/cmake/opencv5" -type f -name "*.cmake" \
         -exec sed -i 's|lib/libwebp\.a|lib/libwebp.a;${_IMPORT_PREFIX}/lib/libsharpyuv.a|g' {} + 2>/dev/null || true
+fi
+
+# 4. Remove Python bytecode caches from the staged package.
+if [ -d "${TARGET_PYTHON_SITE_PACKAGES}/cv2" ]; then
+    find "${TARGET_PYTHON_SITE_PACKAGES}/cv2" -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
+fi
+
+# 5. Emscripten/CMake archives the Python extension target instead of linking a
+# real wasm side module. Re-link it manually into a loadable module.
+python_archive="${PWD}/lib/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
+if [ -f "${python_archive}" ]; then
+    opencv_python_libs=(
+        "3rdparty/lib/liblibopenjp2.a"
+        "lib/libopencv_core.a"
+        "lib/libopencv_features.a"
+        "lib/libopencv_flann.a"
+        "lib/libopencv_geometry.a"
+        "lib/libopencv_imgcodecs.a"
+        "lib/libopencv_imgproc.a"
+        "lib/libopencv_photo.a"
+        "lib/libopencv_ptcloud.a"
+        "lib/libopencv_stereo.a"
+    )
+
+    transitive_codec_libs=()
+    for candidate in \
+        "${PREFIX}/lib/libjpeg.a" \
+        "${PREFIX}/lib/libpng.a" \
+        "${PREFIX}/lib/libtiff.a" \
+        "${PREFIX}/lib/libwebp.a" \
+        "${PREFIX}/lib/libwebpmux.a" \
+        "${PREFIX}/lib/libwebpdemux.a" \
+        "${PREFIX}/lib/libsharpyuv.a" \
+        "${PREFIX}/lib/libz.a" \
+        "${PREFIX}/lib/libz.so"; do
+        if [ -f "${candidate}" ]; then
+            transitive_codec_libs+=("${candidate}")
+        fi
+    done
+
+    em++ \
+        ${EM_FORGE_SIDE_MODULE_LDFLAGS} \
+        -sSUPPORT_LONGJMP=wasm \
+        -fwasm-exceptions \
+        -Wl,--whole-archive "${python_archive}" -Wl,--no-whole-archive \
+        -Wl,--start-group \
+        "${opencv_python_libs[@]}" \
+        "${transitive_codec_libs[@]}" \
+        -Wl,--end-group \
+        -o "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
+fi
+
+# 6. Move the loadable extension into the loader path with the canonical cv2
+# name expected by cv2/__init__.py.
+if [ -f "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}" ]; then
+    mkdir -p "${TARGET_PYTHON_LOADER_DIR}"
+    mv \
+        "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}" \
+        "${TARGET_PYTHON_LOADER_DIR}/cv2${TARGET_PYTHON_EXT_SUFFIX}"
 fi
 
 # Remove .la files if any
