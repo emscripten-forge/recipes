@@ -18,7 +18,7 @@ self.Module.preRun.push(function() {
             (export (find-symbol "BUILD-PROGRAM" "C") "C")
             
             ;; Boot FriCAS
-            (ext:chdir "/fricas0")
+            (ext:chdir "/fricas0-data")
             (load "fricas")
             `;
             FS.writeFile('/home/web_user/.eclrc', startupScript);
