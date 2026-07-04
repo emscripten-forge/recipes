@@ -1,0 +1,65 @@
+context:
+  version: 10.8.4
+
+package:
+  name: passagemath-nauty
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-nauty/passagemath_nauty-${{ version }}.tar.gz
+  sha256: 17c20f475241f3a44970f665fcdf8eb321b74e105ce946f96df453971fb05180
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - nauty
+  - passagemath-categories
+  run:
+  - python
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_nauty.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Find automorphism groups of graphs, generate non-isomorphic graphs with nauty'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to nauty and traces, the programs for computing
+    automorphism groups of graphs and digraphs.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_nauty.py
+  recipe-maintainers:
+  - mkoeppe
