@@ -1,0 +1,83 @@
+context:
+  version: 10.8.4
+
+package:
+  name: passagemath-pari
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-pari/passagemath_pari-${{ version }}.tar.gz
+  sha256: aa4a6318dafbaf8eb0bebf3772c0e746e2349b22ad4fce75c28e7a19908bbdb5
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - givaro
+  - libflint
+  - pari
+  - numpy
+  - cysignals
+  - memory-allocator
+  - mpmath
+  - passagemath-categories
+  - passagemath-flint
+  - passagemath-modules
+  run:
+  - python
+  - conway-polynomials
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_pari.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-modules
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Computational Number Theory with PARI/GP'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides modules that depend on PARI/GP, the computer algebra
+    system designed for fast computations in number theory: factorizations,
+    algebraic number theory, elliptic curves, modular forms, L-functions...
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_pari.py
+  recipe-maintainers:
+  - mkoeppe
