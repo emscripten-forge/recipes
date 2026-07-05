@@ -1,0 +1,78 @@
+context:
+  version: 10.8.4
+
+package:
+  name: passagemath-ntl
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-ntl/passagemath_ntl-${{ version }}.tar.gz
+  sha256: c5ea2bcc97b8d2eb5c29d7306cb50259d7ae5c8265b7c99689775fb17aa4cdb2
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - ntl
+  - mpfi
+  - m4ri
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_ntl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-modules
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Computational Number Theory with NTL'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides modules that depend on NTL, the library for doing number theory.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_ntl.py
+  recipe-maintainers:
+  - mkoeppe
