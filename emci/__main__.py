@@ -26,12 +26,6 @@ app.add_typer(upload_app, name="upload")
 def extract_channel(pkg_file):
     print(extract_channel_from_pkg(pkg_file))
 
-
-
-
-
-
-
 @build_app.command()
 def changed(
     root_dir,
