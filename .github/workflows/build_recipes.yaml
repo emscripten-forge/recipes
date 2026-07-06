@@ -100,8 +100,11 @@ jobs:
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -l {0}
         run: |
-          overall_success=true
 
+          # add github workspace to python path
+          export PYTHONPATH="${GITHUB_WORKSPACE}:${PYTHONPATH}"
+          
+          overall_success=true
           # Loop over {emscripten-wasm32, linux-64, noarch}
           for platform in emscripten-wasm32 linux-64 noarch; do
             if [ -d "${GITHUB_WORKSPACE}/output/${platform}" ]; then
