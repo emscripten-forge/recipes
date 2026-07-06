@@ -109,10 +109,15 @@ jobs:
               files=$(ls *.tar.bz2 2> /dev/null)
               if [ -n "$files" ]; then
                 for package in $files; do
+
+                  # get the channel
+                  CHANNEL=$(python -m emci upload extract-channel ${package})
+                  echo "Extracted channel: ${CHANNEL}"
+
                   echo "Uploading ${package} for ${platform}"
 
                   rattler-build upload prefix \
-                    --channel emscripten-forge-4x \
+                    --channel ${CHANNEL} \
                     --generate-attestation \
                     ${package}
 

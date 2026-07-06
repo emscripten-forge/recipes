@@ -2,6 +2,7 @@ from .rattler_build import build_with_rattler
 from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 from .schema import Recipe
+from .upload import extract_channel_from_pkg
 
 import sys
 import os
@@ -16,6 +17,19 @@ import yaml
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
 app.add_typer(build_app, name="build")
+
+
+upload_app = typer.Typer()
+app.add_typer(upload_app, name="upload")
+
+@upload_app.command()
+def extract_channel(pkg_file):
+    print(extract_channel_from_pkg(pkg_file))
+
+
+
+
+
 
 
 @build_app.command()

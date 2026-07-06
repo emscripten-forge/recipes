@@ -24,3 +24,6 @@ if CONDA_PREFIX is None:
     )
 CONDA_BLD_DIR = os.path.join(CONDA_PREFIX, "conda-bld")
 Path(CONDA_BLD_DIR).mkdir(exist_ok=True)
+
+DEFAULT_EMSCRIPTEN_FORGE_CHANNEL = "emscripten-forge-4x"
+EXPERIMENTAL_EMSCRIPTEN_FORGE_CHANNEL = "emscripten-forge-4x-experimental"
