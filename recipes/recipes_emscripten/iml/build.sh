@@ -3,7 +3,7 @@ set -euxo pipefail
 
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
-    -with-gmp-include="${PREFIX}/include" \
+    --with-gmp-include="${PREFIX}/include" \
     --with-gmp-lib="${PREFIX}/lib" \
     --with-cblas="-L${PREFIX}/lib -lopenblas" \
     --disable-shared \
