@@ -14,9 +14,9 @@ export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
 # Upstream creates non-suffixed alias symlinks for dot (circo, fdp, ...),
 # but Emscripten installs executables with a .js suffix. Make the alias names
 # include the executable suffix so `ninja install` can find circo.js, etc.
-perl -0pi -e 's/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:dot>\n        \$\{cmd_alias\}/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:dot>\n        \$\{cmd_alias\}\$\{CMAKE_EXECUTABLE_SUFFIX\}/' \
+sed -i '/create_symlink \$<TARGET_FILE_NAME:dot>/{n;s/${cmd_alias}/${cmd_alias}${CMAKE_EXECUTABLE_SUFFIX}/;}' \
     "${SRC_DIR}/cmd/dot/CMakeLists.txt"
-perl -0pi -e 's/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:gxl2gv>\n          \$\{cmd_alias\}/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:gxl2gv>\n          \$\{cmd_alias\}\$\{CMAKE_EXECUTABLE_SUFFIX\}/' \
+sed -i '/create_symlink \$<TARGET_FILE_NAME:gxl2gv>/{n;s/${cmd_alias}/${cmd_alias}${CMAKE_EXECUTABLE_SUFFIX}/;}' \
     "${SRC_DIR}/cmd/tools/CMakeLists.txt"
 
 mkdir -p build
