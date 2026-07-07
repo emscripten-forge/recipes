@@ -8,3 +8,6 @@ if [[ ! "${OUTPUT}" =~ \<svg ]]; then
     echo "${OUTPUT}"
     exit 1
 fi
+
+echo "dot rendered SVG output successfully"
+echo "${OUTPUT}"
