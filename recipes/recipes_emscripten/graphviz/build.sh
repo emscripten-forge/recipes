@@ -11,6 +11,14 @@ export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
 export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
 export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
 
+# Upstream creates non-suffixed alias symlinks for dot (circo, fdp, ...),
+# but Emscripten installs executables with a .js suffix. Make the alias names
+# include the executable suffix so `ninja install` can find circo.js, etc.
+perl -0pi -e 's/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:dot>\n        \$\{cmd_alias\}/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:dot>\n        \$\{cmd_alias\}\$\{CMAKE_EXECUTABLE_SUFFIX\}/' \
+    "${SRC_DIR}/cmd/dot/CMakeLists.txt"
+perl -0pi -e 's/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:gxl2gv>\n          \$\{cmd_alias\}/COMMAND \$\{CMAKE_COMMAND\} -E create_symlink \$<TARGET_FILE_NAME:gxl2gv>\n          \$\{cmd_alias\}\$\{CMAKE_EXECUTABLE_SUFFIX\}/' \
+    "${SRC_DIR}/cmd/tools/CMakeLists.txt"
+
 mkdir -p build
 cd build
 
@@ -24,7 +32,7 @@ emcmake cmake -GNinja \
     -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
     -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=BOTH \
     -DBUILD_SHARED_LIBS=OFF \
-    -DGRAPHVIZ_CLI=OFF \
+    -DGRAPHVIZ_CLI=ON \
     -Dwith_cxx_api=ON \
     -DENABLE_LTDL=OFF \
     -DENABLE_SWIG=OFF \
@@ -32,6 +40,7 @@ emcmake cmake -GNinja \
     -DWITH_EXPAT=ON \
     -DWITH_WEBP=ON \
     -DWITH_ZLIB=ON \
+    -DZLIB_LIBRARY="${PREFIX}/lib/libz.a" \
     -DWITH_GDK=OFF \
     -DWITH_GHOSTSCRIPT=OFF \
     -DWITH_GTK=OFF \
@@ -64,6 +73,10 @@ emcmake cmake -GNinja \
     -DMATH_LIB= \
     "${SRC_DIR}"
 
+# The zlib recipe exposes libz.so as well, but wasm-ld requires the static
+# archive. Force any generated CMake metadata to use libz.a.
+find . -type f -name '*.cmake' -exec sed -i 's|libz\.so|libz.a|g' {} + 2>/dev/null || true
+
 ninja install
 
 # Upstream only installs a subset of the static archives. The remaining
@@ -84,6 +97,13 @@ do
         install -Dm644 "${archive}" "${PREFIX}/lib/$(basename "${archive}")"
     fi
 done
+
+if [ -f "${PWD}/cmd/dot/dot.js" ]; then
+    install -Dm755 "${PWD}/cmd/dot/dot.js" "${PREFIX}/bin/dot.js"
+fi
+if [ -f "${PWD}/cmd/dot/dot.wasm" ]; then
+    install -Dm644 "${PWD}/cmd/dot/dot.wasm" "${PREFIX}/bin/dot.wasm"
+fi
 
 mkdir -p "${PREFIX}/lib/cmake/Graphviz"
 install -Dm644 "${RECIPE_DIR}/GraphvizConfig.cmake" \

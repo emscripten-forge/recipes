@@ -5,14 +5,8 @@
 #include <graphviz/gvc.h>
 #include <graphviz/gvcext.h>
 
-#ifdef _WIN32
-#define IMPORT __declspec(dllimport)
-#else
-#define IMPORT /* nothing */
-#endif
-
-IMPORT extern gvplugin_library_t gvplugin_dot_layout_LTX_library;
-IMPORT extern gvplugin_library_t gvplugin_core_LTX_library;
+extern gvplugin_library_t gvplugin_dot_layout_LTX_library;
+extern gvplugin_library_t gvplugin_core_LTX_library;
 
 int main(void)
 {

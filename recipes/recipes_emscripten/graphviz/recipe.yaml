@@ -118,6 +118,36 @@ outputs:
             - build_tests.sh
             - tests/
 
+  - package:
+      name: graphviz-cli
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: 0
+      script: echo "Collecting CLI files from cache"
+      files:
+        include:
+          - bin/dot.js
+          - bin/dot.wasm
+    requirements:
+      run:
+        - expat
+        - zlib
+        - libwebp
+    tests:
+      - package_contents:
+          files:
+            - bin/dot.js
+            - bin/dot.wasm
+      - script:
+          - bash test_cli.sh
+        requirements:
+          build:
+            - nodejs
+        files:
+          recipe:
+            - test_cli.sh
+
 about:
   homepage: https://graphviz.org
   license: EPL-2.0
