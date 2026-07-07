@@ -3,8 +3,8 @@ set -euxo pipefail
 
 OPENBLAS_LIB="${PREFIX}/lib/libopenblas.a"
 
-export CXXFLAGS="${CXXFLAGS:-} -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
-export LDFLAGS="${LDFLAGS:-} -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
+export CXXFLAGS="${CXXFLAGS:-} -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
+export LDFLAGS="${LDFLAGS:-} -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
 
 emcmake cmake . \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
@@ -25,5 +25,5 @@ emcmake cmake . \
     -DBLA_VENDOR=OpenBLAS \
     -DSUITESPARSE_ENABLE_PROJECTS="all"
 
-emmake make -j1
+emmake make -j8
 emmake make install
