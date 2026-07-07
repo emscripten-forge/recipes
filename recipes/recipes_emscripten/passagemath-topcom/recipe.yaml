@@ -1,0 +1,69 @@
+context:
+  version: 10.8.4
+
+package:
+  name: passagemath-topcom
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-topcom/passagemath_topcom-${{ version }}.tar.gz
+  sha256: a46f89a5acc46142fbdb97d6b7fc74b165bc369d47c2413c792aff97973f2723
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - topcom
+  - passagemath-categories
+  run:
+  - python
+  - topcom
+  - passagemath-categories
+  - passagemath-environment
+  - passagemath-polyhedra
+  - pexpect
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_topcom.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Triangulations of point configurations and oriented matroids with TOPCOM'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to TOPCOM, a package for computing triangulations
+    of point configurations and oriented matroids.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_topcom.py
+  recipe-maintainers:
+  - mkoeppe
