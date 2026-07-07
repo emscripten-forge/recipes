@@ -25,5 +25,5 @@ emcmake cmake . \
     -DBLA_VENDOR=OpenBLAS \
     -DSUITESPARSE_ENABLE_PROJECTS="all"
 
-emmake make -j8
+emmake make -j1
 emmake make install
