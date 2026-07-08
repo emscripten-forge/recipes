@@ -1,0 +1,43 @@
+diff --git a/cmake/FindONNX.cmake b/cmake/FindONNX.cmake
+index 65d3524..0d12ebd 100644
+--- a/cmake/FindONNX.cmake
++++ b/cmake/FindONNX.cmake
+@@ -18,10 +18,12 @@ set(__ort_hint_roots "")
+ # Prefer CMake config packages if present i.e system-installed ORT
+ find_package(onnxruntime CONFIG QUIET)
+ find_package(ONNXRuntime CONFIG QUIET)
++find_package(onnxruntime-wasm CONFIG QUIET)
+ 
+ set(__ort_target "")
+ foreach(t
+     onnxruntime::onnxruntime
++    onnxruntime::onnxruntime_webassembly
+     ONNXRuntime::onnxruntime
+     ONNXRuntime::onnxruntime_shared
+ )
+@@ -46,7 +48,10 @@ endif()
+ 
+ # Locate headers and libraries via find_* in system paths and/or ONNXRT_ROOT_DIR.
+ if(NOT ORT_LIB)
+-  find_library(ORT_LIB NAMES onnxruntime
++  find_library(ORT_LIB NAMES
++    onnxruntime
++    onnxruntime_webassembly
++    libonnxruntime_webassembly
+     HINTS ${__ort_hint_roots}
+     PATH_SUFFIXES lib lib64
+     CMAKE_FIND_ROOT_PATH_BOTH)
+@@ -121,8 +126,11 @@ if(ORT_LIB AND ORT_INCLUDE)
+ 
+   # Link target with associated interface headers
+   set(ONNX_LIBRARY "onnxruntime" CACHE STRING "ONNX Link Target")
+-  if(NOT TARGET ${ONNX_LIBRARY})
+-    ocv_add_library(${ONNX_LIBRARY} SHARED IMPORTED)
++  if(NOT TARGET ${ONNX_LIBRARY} AND TARGET onnxruntime::onnxruntime_webassembly)
++    add_library(${ONNX_LIBRARY} INTERFACE IMPORTED)
++    target_link_libraries(${ONNX_LIBRARY} INTERFACE onnxruntime::onnxruntime_webassembly)
++  elseif(NOT TARGET ${ONNX_LIBRARY})
++    ocv_add_library(${ONNX_LIBRARY} SHARED IMPORTED)
+   endif()
+ 
+   if(WIN32)
