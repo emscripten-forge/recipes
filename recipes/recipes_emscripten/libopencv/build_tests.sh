@@ -20,12 +20,19 @@ emcmake cmake \
 
 ninja -C "$BUILD_DIR"
 
-OUTPUT="$(cd "$BUILD_DIR" && node test_opencv.js 2>&1)"
-echo "$OUTPUT"
-if grep -q "All tests passed" <<<"$OUTPUT"; then
+echo "=== Running test ==="
+# Capture output to a file so we can inspect it regardless of crashes
+set +e
+(cd "$BUILD_DIR" && node test_opencv.js) > "$BUILD_DIR/test_output.txt" 2>&1
+NODE_EXIT=$?
+echo "=== Test output ==="
+cat "$BUILD_DIR/test_output.txt"
+echo "=== Test end (exit=$NODE_EXIT) ==="
+
+if grep -q "All tests passed" "$BUILD_DIR/test_output.txt"; then
     echo "Test PASSED"
     exit 0
 fi
 
-echo "Test FAILED"
+echo "Test FAILED (node exit=$NODE_EXIT)"
 exit 1

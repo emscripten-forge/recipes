@@ -63,12 +63,13 @@ cmake_args=(
     -DOPENCV_PYTHON_INSTALL_PATH="lib/python${PY_VER}/site-packages"
     -DOPENCV_PYTHON3_INSTALL_PATH="lib/python${PY_VER}/site-packages"
     -DOPENCV_PYTHON_SKIP_LINKER_EXCLUDE_LIBS=ON
+    -DOPENCV_EXTRA_MODULES_PATH="../opencv_contrib/modules"
     -DBUILD_SHARED_LIBS=OFF
     -DENABLE_PIC=FALSE
     -DCPU_BASELINE=
     -DCPU_DISPATCH=
     -DCV_TRACE=OFF
-    -DCV_ENABLE_INTRINSICS=OFF
+    -DCV_ENABLE_INTRINSICS=ON
     -DENABLE_PRECOMPILED_HEADERS=OFF
 )
 
@@ -91,14 +92,14 @@ cmake_args+=(
     -DWITH_QT=OFF
     -DWITH_WIN32UI=OFF
     -DWITH_VTK=OFF
-    -DWITH_EIGEN=OFF
+    -DWITH_EIGEN=ON
     -DWITH_CUDA=OFF
     -DWITH_VULKAN=OFF
     -DWITH_OPENVX=OFF
     -DWITH_OPENNI=OFF
     -DWITH_OPENNI2=OFF
-    -DWITH_GDAL=OFF
-    -DWITH_GDCM=OFF
+    -DWITH_GDAL=ON
+    -DWITH_GDCM=ON
     -DWITH_GPHOTO2=OFF
     -DWITH_XIMEA=OFF
     -DWITH_UEYE=OFF
@@ -120,10 +121,10 @@ cmake_args+=(
     -DWITH_ZLIB_NG=OFF
     -DWITH_CLP=OFF
     -DWITH_QUIRC=OFF
-    -DWITH_JASPER=OFF
+    -DWITH_JASPER=ON
     -DWITH_UNIFONT=OFF
-    -DWITH_PROTOBUF=OFF
-    -DWITH_FLATBUFFERS=OFF
+    -DWITH_PROTOBUF=ON
+    -DWITH_FLATBUFFERS=ON
 )
 
 cmake_args+=(
@@ -157,15 +158,15 @@ cmake_args+=(
     -DBUILD_opencv_python3=ON
     -DBUILD_opencv_dnn=OFF
     -DBUILD_opencv_highgui=OFF
-    -DBUILD_opencv_videoio=OFF
-    -DBUILD_opencv_video=OFF
-    -DBUILD_opencv_videostab=OFF
-    -DBUILD_opencv_shape=OFF
-    -DBUILD_opencv_stitching=OFF
-    -DBUILD_opencv_objdetect=OFF
+    -DBUILD_opencv_videoio=ON
+    -DBUILD_opencv_video=ON
+    -DBUILD_opencv_videostab=ON
+    -DBUILD_opencv_shape=ON
+    -DBUILD_opencv_stitching=ON
+    -DBUILD_opencv_objdetect=ON
     -DBUILD_opencv_superres=OFF
     -DBUILD_opencv_ml=OFF
-    -DBUILD_opencv_gapi=OFF
+    -DBUILD_opencv_gapi=ON
     -DBUILD_opencv_js=OFF
     -DBUILD_opencv_java=OFF
     -DBUILD_opencv_apps=OFF
@@ -224,6 +225,14 @@ if [ -d "${PREFIX}/lib/cmake/opencv5" ]; then
     rewrite_cmake_exports 's|SIDE_MODULE=1||g'
     # Fix libz.so -> libz.a (zlib recipe provides .so, but wasm-ld needs .a)
     rewrite_cmake_exports 's|libz\.so|libz.a|g'
+    # OpenCV's exported package can spell protobuf static archives as
+    # liblibprotobuf*.a even though the libprotobuf recipe installs the
+    # canonical libprotobuf*.a names.
+    rewrite_cmake_exports 's|liblibprotobuf-lite\.a|libprotobuf-lite.a|g'
+    rewrite_cmake_exports 's|liblibprotobuf\.a|libprotobuf.a|g'
+    # GDAL's static archive depends on several static libraries, but the
+    # generated OpenCV exports do not propagate them for downstream consumers.
+    rewrite_cmake_exports 's|lib/libgdal\.a|lib/libgdal.a;${_IMPORT_PREFIX}/lib/libgeos_c.a;${_IMPORT_PREFIX}/lib/libgeos.a;${_IMPORT_PREFIX}/lib/libproj.a;${_IMPORT_PREFIX}/lib/libiconv.a;${_IMPORT_PREFIX}/lib/libsqlite3.a|g'
     # Fix missing libsharpyuv.a in exported imgcodecs dependencies.
     # OpenCV links libwebp, but libwebp itself requires sharpyuv and that
     # dependency is not propagated in the generated OpenCV CMake exports.
@@ -239,18 +248,13 @@ fi
 # real wasm side module. Re-link it manually into a loadable module.
 python_archive="${PWD}/lib/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
 if [ -f "${python_archive}" ]; then
-    opencv_python_libs=(
-        "3rdparty/lib/liblibopenjp2.a"
-        "lib/libopencv_core.a"
-        "lib/libopencv_features.a"
-        "lib/libopencv_flann.a"
-        "lib/libopencv_geometry.a"
-        "lib/libopencv_imgcodecs.a"
-        "lib/libopencv_imgproc.a"
-        "lib/libopencv_photo.a"
-        "lib/libopencv_ptcloud.a"
-        "lib/libopencv_stereo.a"
-    )
+    opencv_python_libs=()
+    while IFS= read -r -d '' lib; do
+        opencv_python_libs+=("${lib}")
+    done < <(find "${PWD}/lib" -maxdepth 1 -type f -name 'libopencv_*.a' -print0 | sort -z)
+    if [ -f "${PWD}/3rdparty/lib/liblibopenjp2.a" ]; then
+        opencv_python_libs+=("${PWD}/3rdparty/lib/liblibopenjp2.a")
+    fi
 
     transitive_codec_libs=()
     for candidate in \
@@ -268,6 +272,20 @@ if [ -f "${python_archive}" ]; then
         fi
     done
 
+    transitive_gdal_libs=()
+    for candidate in \
+        "${PREFIX}/lib/libade.a" \
+        "${PREFIX}/lib/libgdal.a" \
+        "${PREFIX}/lib/libgeos_c.a" \
+        "${PREFIX}/lib/libgeos.a" \
+        "${PREFIX}/lib/libproj.a" \
+        "${PREFIX}/lib/libiconv.a" \
+        "${PREFIX}/lib/libsqlite3.a"; do
+        if [ -f "${candidate}" ]; then
+            transitive_gdal_libs+=("${candidate}")
+        fi
+    done
+
     em++ \
         ${EM_FORGE_SIDE_MODULE_LDFLAGS} \
         -sSUPPORT_LONGJMP=wasm \
@@ -276,6 +294,7 @@ if [ -f "${python_archive}" ]; then
         -Wl,--start-group \
         "${opencv_python_libs[@]}" \
         "${transitive_codec_libs[@]}" \
+        "${transitive_gdal_libs[@]}" \
         -Wl,--end-group \
         -o "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
 fi

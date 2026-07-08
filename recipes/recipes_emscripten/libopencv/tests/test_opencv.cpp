@@ -1,6 +1,12 @@
 #include <opencv2/core.hpp>
+#include <opencv2/gapi.hpp>
+#include <opencv2/gapi/s11n.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/objdetect.hpp>
+#include <opencv2/shape.hpp>
+#include <opencv2/stitching.hpp>
+#include <opencv2/video/tracking.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -68,6 +74,28 @@ int main() {
     cv::Mat blurred;
     cv::GaussianBlur(resized, blurred, cv::Size(3, 3), 0);
     CHECK(blurred.rows == 8 && blurred.cols == 8, "blurred image size wrong");
+
+    cv::KalmanFilter kf(2, 1);
+    CHECK(kf.statePre.rows == 2, "KalmanFilter state size wrong");
+
+    cv::QRCodeDetector qr_detector;
+    qr_detector.setEpsX(0.3).setEpsY(0.4).setUseAlignmentMarkers(true);
+    CHECK(true, "QRCodeDetector basic configuration failed");
+
+    auto hausdorff = cv::createHausdorffDistanceExtractor();
+    CHECK(static_cast<bool>(hausdorff), "HausdorffDistanceExtractor creation failed");
+
+    auto stitcher = cv::Stitcher::create(cv::Stitcher::PANORAMA);
+    CHECK(static_cast<bool>(stitcher), "Stitcher creation failed");
+
+    cv::GMat in;
+    cv::GComputation graph(in, in);
+    CHECK(!cv::gapi::serialize(graph).empty(), "G-API graph serialization failed");
+
+    const std::string build_info = cv::getBuildInformation();
+    CHECK(build_info.find("GDAL") != std::string::npos, "build info missing GDAL");
+    CHECK(build_info.find("GDCM") != std::string::npos, "build info missing GDCM");
+    CHECK(build_info.find("Protobuf") != std::string::npos, "build info missing Protobuf");
 
     std::vector<uchar> processed_png_buf;
     bool processed_png_ok = cv::imencode(".png", blurred, processed_png_buf);
