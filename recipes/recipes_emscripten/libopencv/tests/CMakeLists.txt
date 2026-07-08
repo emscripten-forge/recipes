@@ -3,6 +3,7 @@ project(test_opencv CXX)
 
 find_package(OpenCV REQUIRED COMPONENTS
     core
+    dnn
     gapi
     imgproc
     imgcodecs
@@ -19,6 +20,7 @@ target_compile_options(test_opencv PRIVATE
     -fwasm-exceptions
 )
 target_link_libraries(test_opencv PRIVATE
+    opencv_dnn
     opencv_gapi
     opencv_imgcodecs
     opencv_shape

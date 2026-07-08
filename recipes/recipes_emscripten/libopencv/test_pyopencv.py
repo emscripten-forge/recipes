@@ -36,7 +36,7 @@ def test_basic_core_ops():
 
 def test_imencode_imdecode():
     img = np.zeros((10, 10, 3), dtype=np.uint8)
-    img[2:8, 2:8] = [255, 0, 0]  # Blue square
+    img[2:8, 2:8] = [255, 0, 0]
     ok, buf = cv2.imencode(".png", img)
     assert ok, "imencode failed"
     assert len(buf) > 0
@@ -99,3 +99,6 @@ def test_enabled_module_entry_points_exist():
 
     stitcher = cv2.Stitcher.create()
     assert stitcher is not None
+
+    blob = cv2.dnn.blobFromImage(np.ones((2, 2, 3), dtype=np.float32))
+    assert blob.ndim == 4

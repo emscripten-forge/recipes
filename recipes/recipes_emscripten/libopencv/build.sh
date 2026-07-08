@@ -110,8 +110,8 @@ cmake_args+=(
     -DWITH_FASTCV=OFF
     -DWITH_ARMPL=OFF
     -DWITH_OPENVINO=OFF
-    -DWITH_ONNXRUNTIME=OFF
-    -DWITH_WEBNN=OFF
+    -DWITH_ONNXRUNTIME=ON
+    -DWITH_WEBNN=ON
     -DWITH_TIMVX=OFF
     -DWITH_CANN=OFF
     -DWITH_OPENEXR=OFF
@@ -125,6 +125,7 @@ cmake_args+=(
     -DWITH_UNIFONT=OFF
     -DWITH_PROTOBUF=ON
     -DWITH_FLATBUFFERS=ON
+    -DBUILD_PROTOBUF=ON
 )
 
 cmake_args+=(
@@ -156,7 +157,7 @@ cmake_args+=(
     -DBUILD_opencv_3d=ON
     -DBUILD_opencv_photo=ON
     -DBUILD_opencv_python3=ON
-    -DBUILD_opencv_dnn=OFF
+    -DBUILD_opencv_dnn=ON
     -DBUILD_opencv_highgui=OFF
     -DBUILD_opencv_videoio=ON
     -DBUILD_opencv_video=ON
@@ -165,7 +166,7 @@ cmake_args+=(
     -DBUILD_opencv_stitching=ON
     -DBUILD_opencv_objdetect=ON
     -DBUILD_opencv_superres=OFF
-    -DBUILD_opencv_ml=OFF
+    -DBUILD_opencv_ml=ON
     -DBUILD_opencv_gapi=ON
     -DBUILD_opencv_js=OFF
     -DBUILD_opencv_java=OFF
@@ -192,66 +193,39 @@ emcmake cmake "${cmake_args[@]}"
 
 ninja install
 
-# OpenCV 5 installs under versioned subdirectories for side-by-side installs.
-# Fix up the layout. All steps are best-effort (non-fatal).
-
-# 1. Headers: include/opencv5/opencv2/ -> include/opencv2/
 move_dir_contents "${PREFIX}/include/opencv5" "${PREFIX}/include"
-
-# 2. 3rdparty libs: lib/opencv5/3rdparty/ -> lib/
 move_dir_contents "${PREFIX}/lib/opencv5/3rdparty" "${PREFIX}/lib"
-# Also move any main-level versioned libs: lib/opencv5/libopencv_*.a -> lib/
+
 if [ -d "${PREFIX}/lib/opencv5" ]; then
     mv "${PREFIX}/lib/opencv5"/libopencv_*.a "${PREFIX}/lib/" 2>/dev/null || true
     rmdir "${PREFIX}/lib/opencv5" 2>/dev/null || true
 fi
 
-# 3. Fix paths in CMake config
 if [ -d "${PREFIX}/lib/cmake/opencv5" ]; then
-    # Fix all versioned path references: eliminate /opencv5/ segments
-    # Pattern A: .../opencv5/...  -> .../...
     rewrite_cmake_exports 's|/opencv5/|/|g'
-    # Pattern B: include/opencv5/ (no leading slash, e.g. in INTERFACE_INCLUDE_DIRECTORIES)
     rewrite_cmake_exports 's|include/opencv5/|include/|g'
-    # Pattern C: isolated ".../opencv5" at end of path (quoted string, no trailing slash)
     rewrite_cmake_exports 's|/include/opencv5"|/include"|g'
     rewrite_cmake_exports 's|/lib/opencv5"|/lib"|g'
-    # Pattern D: leftover /3rdparty/ from moved 3rdparty libs
     rewrite_cmake_exports 's|/3rdparty/|/|g'
-    # The package itself is built as side modules, but downstream test executables
-    # must not inherit SIDE_MODULE link flags from imported OpenCV targets.
     rewrite_cmake_exports 's|-sSIDE_MODULE=1||g'
     rewrite_cmake_exports 's|-sSIDE_MODULE||g'
     rewrite_cmake_exports 's|SIDE_MODULE=1||g'
-    # Fix libz.so -> libz.a (zlib recipe provides .so, but wasm-ld needs .a)
     rewrite_cmake_exports 's|libz\.so|libz.a|g'
-    # OpenCV's exported package can spell protobuf static archives as
-    # liblibprotobuf*.a even though the libprotobuf recipe installs the
-    # canonical libprotobuf*.a names.
-    rewrite_cmake_exports 's|liblibprotobuf-lite\.a|libprotobuf-lite.a|g'
-    rewrite_cmake_exports 's|liblibprotobuf\.a|libprotobuf.a|g'
-    # GDAL's static archive depends on several static libraries, but the
-    # generated OpenCV exports do not propagate them for downstream consumers.
     rewrite_cmake_exports 's|lib/libgdal\.a|lib/libgdal.a;${_IMPORT_PREFIX}/lib/libgeos_c.a;${_IMPORT_PREFIX}/lib/libgeos.a;${_IMPORT_PREFIX}/lib/libproj.a;${_IMPORT_PREFIX}/lib/libiconv.a;${_IMPORT_PREFIX}/lib/libsqlite3.a|g'
-    # Fix missing libsharpyuv.a in exported imgcodecs dependencies.
-    # OpenCV links libwebp, but libwebp itself requires sharpyuv and that
-    # dependency is not propagated in the generated OpenCV CMake exports.
     rewrite_cmake_exports 's|lib/libwebp\.a|lib/libwebp.a;${_IMPORT_PREFIX}/lib/libsharpyuv.a|g'
 fi
 
-# 4. Remove Python bytecode caches from the staged package.
 if [ -d "${TARGET_PYTHON_SITE_PACKAGES}/cv2" ]; then
     find "${TARGET_PYTHON_SITE_PACKAGES}/cv2" -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
 fi
 
-# 5. Emscripten/CMake archives the Python extension target instead of linking a
-# real wasm side module. Re-link it manually into a loadable module.
 python_archive="${PWD}/lib/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
 if [ -f "${python_archive}" ]; then
     opencv_python_libs=()
     while IFS= read -r -d '' lib; do
         opencv_python_libs+=("${lib}")
     done < <(find "${PWD}/lib" -maxdepth 1 -type f -name 'libopencv_*.a' -print0 | sort -z)
+
     if [ -f "${PWD}/3rdparty/lib/liblibopenjp2.a" ]; then
         opencv_python_libs+=("${PWD}/3rdparty/lib/liblibopenjp2.a")
     fi
@@ -286,6 +260,15 @@ if [ -f "${python_archive}" ]; then
         fi
     done
 
+    transitive_dnn_libs=()
+    for candidate in \
+        "${PREFIX}/lib/liblibprotobuf.a" \
+        "${PREFIX}/lib/liblibprotobuf-lite.a"; do
+        if [ -f "${candidate}" ]; then
+            transitive_dnn_libs+=("${candidate}")
+        fi
+    done
+
     em++ \
         ${EM_FORGE_SIDE_MODULE_LDFLAGS} \
         -sSUPPORT_LONGJMP=wasm \
@@ -295,12 +278,11 @@ if [ -f "${python_archive}" ]; then
         "${opencv_python_libs[@]}" \
         "${transitive_codec_libs[@]}" \
         "${transitive_gdal_libs[@]}" \
+        "${transitive_dnn_libs[@]}" \
         -Wl,--end-group \
         -o "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
 fi
 
-# 6. Move the loadable extension into the loader path with the canonical cv2
-# name expected by cv2/__init__.py.
 if [ -f "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}" ]; then
     mkdir -p "${TARGET_PYTHON_LOADER_DIR}"
     mv \
@@ -308,5 +290,4 @@ if [ -f "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX
         "${TARGET_PYTHON_LOADER_DIR}/cv2${TARGET_PYTHON_EXT_SUFFIX}"
 fi
 
-# Remove .la files if any
 find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true

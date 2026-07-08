@@ -1,4 +1,5 @@
 #include <opencv2/core.hpp>
+#include <opencv2/dnn.hpp>
 #include <opencv2/gapi.hpp>
 #include <opencv2/gapi/s11n.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -87,6 +88,11 @@ int main() {
 
     auto stitcher = cv::Stitcher::create(cv::Stitcher::PANORAMA);
     CHECK(static_cast<bool>(stitcher), "Stitcher creation failed");
+
+    cv::Mat dnn_input(2, 2, CV_32FC3, cv::Scalar(1.0f, 2.0f, 3.0f));
+    cv::Mat blob = cv::dnn::blobFromImage(dnn_input);
+    CHECK(!blob.empty(), "dnn blobFromImage returned empty blob");
+    CHECK(blob.dims == 4, "dnn blob should be 4-dimensional");
 
     cv::GMat in;
     cv::GComputation graph(in, in);
