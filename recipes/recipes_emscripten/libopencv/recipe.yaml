@@ -1,7 +1,7 @@
 context:
   version: 5.0.0
   name: opencv
-  build_number: 3
+  build_number: 4
 
 build:
   number: ${{ build_number }}
@@ -19,6 +19,7 @@ outputs:
       - ninja
       - python
       - cross-python_emscripten-wasm32
+      - numpy
       host:
       - zlib
       - libpng
@@ -39,6 +40,7 @@ outputs:
       ignore_run_exports:
         from_package:
           - python
+          - numpy
     source:
       - url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
         sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
@@ -52,6 +54,7 @@ outputs:
     inherit: build-cache
     build:
       number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
       script: echo "Collecting C++ files from cache"
       files:
         include:
@@ -127,6 +130,7 @@ outputs:
     inherit: build-cache
     build:
       number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
       script: echo "Collecting Python files from cache"
       files:
         include:
