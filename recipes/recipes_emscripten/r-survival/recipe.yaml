@@ -1,21 +1,21 @@
 context:
-  name: r-survival
-  version: 3.8-6
+  name: survival
+  version: 3.8-9
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 9a4c0a35d86c64ec5a6e6cf179ab22dcffb5ce1d313d2880a09f1e53422699d7
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 9aa8fadd4fb185ac48f260c9d0f69fd6dfff4a4e2724920618057aa1f5d5bfbe
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -32,7 +32,7 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
 - script: run_r_test test_survival.R
   files:
     recipe:
