@@ -17,9 +17,7 @@ outputs:
       - ${{ compiler('cxx') }}
       - cmake
       - ninja
-      - python
       - cross-python_emscripten-wasm32
-      - numpy
       host:
       - zlib
       - libpng
@@ -41,6 +39,7 @@ outputs:
         from_package:
           - python
           - numpy
+          - cross-python_emscripten-wasm32
     source:
       - url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
         sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
@@ -82,6 +81,8 @@ outputs:
         - sqlitecpp
         - jasper
         - gdcm
+      run_exports:
+      - ${{ pin_subpackage('libopencv', exact=True) }}
     tests:
       - package_contents:
           include:
@@ -125,12 +126,11 @@ outputs:
             - tests/
 
   - package:
-      name: opencv
+      name: py-opencv
       version: ${{ version }}
     inherit: build-cache
     build:
       number: ${{ build_number }}
-      string: h${{ hash }}_${{ build_number }}
       script: echo "Collecting Python files from cache"
       files:
         include:
@@ -143,11 +143,12 @@ outputs:
         skip_pyc_compilation:
           - '**/*.py'
     requirements:
-      run:
+      host:
         - python
-        - python_abi 3.13.* *_cp313
         - numpy
+      run:
         - libopencv =${{ version }}
+
     tests:
       - script: pytester
         files:
@@ -158,6 +159,20 @@ outputs:
             - pytester
           run:
             - pytester-run
+
+  - package:
+      name: opencv
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
+      script: echo "OpenCV meta-package"
+    requirements:
+      run:
+        - ${{ pin_subpackage('libopencv', exact=True) }}
+        - ${{ pin_subpackage('py-opencv', exact=True) }}
+    tests:
+      - script: echo "OpenCV meta-package"
 
 about:
   homepage: https://opencv.org/
