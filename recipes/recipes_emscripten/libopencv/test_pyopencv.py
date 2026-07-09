@@ -7,6 +7,14 @@ def test_version():
     assert len(cv2.__version__) > 0
 
 
+def test_build_configuration_includes_enabled_backends():
+    info = cv2.getBuildInformation()
+
+    assert "GDAL" in info
+    assert "GDCM" in info
+    assert "Protobuf" in info
+
+
 def test_mat_creation():
     m = np.zeros((3, 3), dtype=np.float32)
     assert m.shape == (3, 3)
@@ -28,7 +36,7 @@ def test_basic_core_ops():
 
 def test_imencode_imdecode():
     img = np.zeros((10, 10, 3), dtype=np.uint8)
-    img[2:8, 2:8] = [255, 0, 0]  # Blue square
+    img[2:8, 2:8] = [255, 0, 0]
     ok, buf = cv2.imencode(".png", img)
     assert ok, "imencode failed"
     assert len(buf) > 0
@@ -78,3 +86,19 @@ def test_photo_denoise_preserves_shape():
 
     assert denoised.shape == img.shape
     assert denoised.dtype == np.uint8
+
+
+def test_enabled_module_entry_points_exist():
+    kalman = cv2.KalmanFilter(2, 1)
+    assert kalman.statePre.shape == (2, 1)
+
+    qr_detector = cv2.QRCodeDetector()
+    qr_detector.setEpsX(0.3)
+    qr_detector.setEpsY(0.4)
+    qr_detector.setUseAlignmentMarkers(True)
+
+    stitcher = cv2.Stitcher.create()
+    assert stitcher is not None
+
+    blob = cv2.dnn.blobFromImage(np.ones((2, 2, 3), dtype=np.float32))
+    assert blob.ndim == 4
