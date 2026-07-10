@@ -8,19 +8,9 @@ if [ ! -f src/Makevars ]; then
   exit 1
 fi
 
-# setup debug flags
-export OPT_FLAG="-g -O0"
 
 rm -f src/libpython.cpp
 rm -f src/libpython.h
 
-# show all static libraries in $PREFIX/lib
-echo "Static libraries in $PREFIX/lib:"
-ls $PREFIX/lib/*.a
-
-# remove shared ssl to force static linking
-rm -f $PREFIX/lib/libssl.so
-
-echo "Building reticulate package.........."
 
 $R CMD INSTALL $R_ARGS .
