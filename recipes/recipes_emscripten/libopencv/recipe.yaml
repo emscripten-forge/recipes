@@ -1,71 +1,159 @@
 context:
   version: 5.0.0
-
-package:
-  name: libopencv
-  version: ${{ version }}
-
-source:
-  url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
-  sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
+  name: opencv
+  build_number: 3
 
 build:
-  number: 0
-  script: build.sh
+  number: ${{ build_number }}
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - cmake
-  - ninja
-  host:
-  - zlib
-  - libpng
-  - jpeg
-  - libtiff
-  - libwebp
-  - openjpeg
-  run:
-  - zlib
-  - libpng
-  - jpeg
-  - libtiff
-  - libwebp
-  - openjpeg
-  
-tests:
-- package_contents:
-    include:
-    - opencv2/core.hpp
-    - opencv2/imgproc.hpp
-    - opencv2/imgcodecs.hpp
-    - opencv2/flann.hpp
-    - opencv2/features.hpp
-    - opencv2/geometry.hpp
-    - opencv2/stereo.hpp
-    - opencv2/photo.hpp
-    lib:
-    - libopencv_core.a
-    - libopencv_imgproc.a
-    - libopencv_imgcodecs.a
-    - libopencv_flann.a
-    - libopencv_features.a
-    - libopencv_photo.a
-    files:
-    - lib/cmake/opencv5/OpenCVConfig.cmake
-- script:
-  - build_tests.sh
-  requirements:
+outputs:
+  - staging:
+      name: build-cache
     build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - cmake
-    - ninja
-  files:
-    recipe:
-    - build_tests.sh
-    - tests/
+      script: build.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - cmake
+      - ninja
+      - python
+      - cross-python_emscripten-wasm32
+      host:
+      - zlib
+      - libpng
+      - jpeg
+      - libtiff
+      - libwebp
+      - openjpeg
+      - python
+      - numpy
+      - eigen
+      - libgdal-core-static
+      - geos-static
+      - proj-static
+      - libiconv
+      - sqlitecpp
+      - jasper
+      - gdcm
+      ignore_run_exports:
+        from_package:
+          - python
+    source:
+      - url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
+        sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
+      - target_directory: opencv_contrib
+        url: https://github.com/opencv/opencv_contrib/archive/refs/tags/${{ version }}.tar.gz
+        sha256: c58f6344170c39abf187c56f3843b59cab1fd3e89cf19ba2ce25dc061659b27f
+
+  - package:
+      name: libopencv
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: ${{ build_number }}
+      script: echo "Collecting C++ files from cache"
+      files:
+        include:
+          - lib/libopencv_*.a
+          - lib/libade.a
+          - lib/liblibprotobuf*.a
+          - lib/liblibopenjp2.a
+          - lib/cmake/opencv5/
+          - include/opencv2/**
+        exclude:
+          - include/opencv2/python/**
+    requirements:
+      run:
+        - zlib
+        - libpng
+        - jpeg
+        - libtiff
+        - libwebp
+        - openjpeg
+        - eigen
+        - libgdal-core-static
+        - geos-static
+        - proj-static
+        - libiconv
+        - sqlitecpp
+        - jasper
+        - gdcm
+    tests:
+      - package_contents:
+          include:
+            - opencv2/core.hpp
+            - opencv2/imgproc.hpp
+            - opencv2/imgcodecs.hpp
+            - opencv2/flann.hpp
+            - opencv2/features.hpp
+            - opencv2/geometry.hpp
+            - opencv2/stereo.hpp
+            - opencv2/photo.hpp
+          lib:
+            - libopencv_core.a
+            - libopencv_imgproc.a
+            - libopencv_imgcodecs.a
+            - libopencv_flann.a
+            - libopencv_features.a
+            - libopencv_photo.a
+            - libopencv_video.a
+            - libopencv_videoio.a
+            - libopencv_shape.a
+            - libopencv_objdetect.a
+            - libopencv_stitching.a
+            - libopencv_gapi.a
+            - libopencv_dnn.a
+            - libade.a
+            - liblibprotobuf.a
+          files:
+            - lib/cmake/opencv5/OpenCVConfig.cmake
+      - script:
+          - build_tests.sh
+        requirements:
+          build:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+        files:
+          recipe:
+            - build_tests.sh
+            - tests/
+
+  - package:
+      name: opencv
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: ${{ build_number }}
+      script: echo "Collecting Python files from cache"
+      files:
+        include:
+          - lib/python*/site-packages/cv2/**
+        exclude:
+          - '**/__pycache__/**'
+          - '**/*.pyc'
+          - '**/test_*.py'
+      python:
+        skip_pyc_compilation:
+          - '**/*.py'
+    requirements:
+      run:
+        - python
+        - python_abi 3.13.* *_cp313
+        - numpy
+        - libopencv =${{ version }}
+    tests:
+      - script: pytester
+        files:
+          recipe:
+            - test_pyopencv.py
+        requirements:
+          build:
+            - pytester
+          run:
+            - pytester-run
 
 about:
   homepage: https://opencv.org/
@@ -81,4 +169,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - Alex-PLACET
+    - Alex-PLACET
