@@ -1,10 +1,17 @@
 context:
   version: 5.0.0
   name: opencv
-  build_number: 3
+  build_number: 4
 
 build:
   number: ${{ build_number }}
+
+source:
+  - url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
+    sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
+  - target_directory: opencv_contrib
+    url: https://github.com/opencv/opencv_contrib/archive/refs/tags/${{ version }}.tar.gz
+    sha256: c58f6344170c39abf187c56f3843b59cab1fd3e89cf19ba2ce25dc061659b27f
 
 outputs:
   - staging:
@@ -17,7 +24,6 @@ outputs:
       - ${{ compiler('cxx') }}
       - cmake
       - ninja
-      - python
       - cross-python_emscripten-wasm32
       host:
       - zlib
@@ -39,12 +45,8 @@ outputs:
       ignore_run_exports:
         from_package:
           - python
-    source:
-      - url: https://github.com/opencv/opencv/archive/refs/tags/${{ version }}.tar.gz
-        sha256: b0528f5a1d379d59d4701cb28c36e22214cc51cf64594e5b56f2d3e6c0233095
-      - target_directory: opencv_contrib
-        url: https://github.com/opencv/opencv_contrib/archive/refs/tags/${{ version }}.tar.gz
-        sha256: c58f6344170c39abf187c56f3843b59cab1fd3e89cf19ba2ce25dc061659b27f
+          - numpy
+          - cross-python_emscripten-wasm32
 
   - package:
       name: libopencv
@@ -52,6 +54,7 @@ outputs:
     inherit: build-cache
     build:
       number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
       script: echo "Collecting C++ files from cache"
       files:
         include:
@@ -79,6 +82,8 @@ outputs:
         - sqlitecpp
         - jasper
         - gdcm
+      run_exports:
+      - ${{ pin_subpackage('libopencv', exact=True) }}
     tests:
       - package_contents:
           include:
@@ -122,7 +127,7 @@ outputs:
             - tests/
 
   - package:
-      name: opencv
+      name: py-opencv
       version: ${{ version }}
     inherit: build-cache
     build:
@@ -139,11 +144,12 @@ outputs:
         skip_pyc_compilation:
           - '**/*.py'
     requirements:
-      run:
+      host:
         - python
-        - python_abi 3.13.* *_cp313
         - numpy
+      run:
         - libopencv =${{ version }}
+
     tests:
       - script: pytester
         files:
@@ -154,6 +160,20 @@ outputs:
             - pytester
           run:
             - pytester-run
+
+  - package:
+      name: opencv
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
+      script: echo "OpenCV meta-package"
+    requirements:
+      run:
+        - ${{ pin_subpackage('libopencv', exact=True) }}
+        - ${{ pin_subpackage('py-opencv', exact=True) }}
+    tests:
+      - script: echo "OpenCV meta-package"
 
 about:
   homepage: https://opencv.org/
