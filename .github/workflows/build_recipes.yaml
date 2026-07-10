@@ -100,8 +100,11 @@ jobs:
         if: (github.event_name == 'push' && github.repository == 'emscripten-forge/recipes')
         shell: bash -l {0}
         run: |
-          overall_success=true
 
+          # add github workspace to python path
+          export PYTHONPATH="${GITHUB_WORKSPACE}:${PYTHONPATH}"
+          
+          overall_success=true
           # Loop over {emscripten-wasm32, linux-64, noarch}
           for platform in emscripten-wasm32 linux-64 noarch; do
             if [ -d "${GITHUB_WORKSPACE}/output/${platform}" ]; then
@@ -109,10 +112,15 @@ jobs:
               files=$(ls *.tar.bz2 2> /dev/null)
               if [ -n "$files" ]; then
                 for package in $files; do
+
+                  # get the channel
+                  CHANNEL=$(python -m emci upload extract-channel ${package})
+                  echo "Extracted channel: ${CHANNEL}"
+
                   echo "Uploading ${package} for ${platform}"
 
                   rattler-build upload prefix \
-                    --channel emscripten-forge-4x \
+                    --channel ${CHANNEL} \
                     --generate-attestation \
                     ${package}
 
