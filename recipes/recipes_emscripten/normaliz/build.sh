@@ -20,4 +20,4 @@ emconfigure ./configure \
 
 emmake make -j8
 emmake make install
-cp sources/normaliz.wasm "${PREFIX}/bin"
+cp source/normaliz.wasm "${PREFIX}/bin"
