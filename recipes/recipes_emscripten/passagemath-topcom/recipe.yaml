@@ -2,12 +2,12 @@ context:
   version: 10.8.5
 
 package:
-  name: passagemath-highs
+  name: passagemath-topcom
   version: ${{ version }}
 
 source:
-- url: https://pypi.org/packages/source/p/passagemath-highs/passagemath_highs-${{ version }}.tar.gz
-  sha256: 8347e1a57471d1e1eb47af8dd6fa095fc63680b795e12648bd057430f35801ae
+- url: https://pypi.org/packages/source/p/passagemath-topcom/passagemath_topcom-${{ version }}.tar.gz
+  sha256: 3b5667de90aad0cfaa022c93ac2bcdb9e67357a51374a69ef8c5cda854832baa
 
 build:
   script: ${{ PYTHON }} -m pip install .
@@ -29,20 +29,21 @@ requirements:
   - passagemath-abi == ${{ version }}
   host:
   - python
-  - highs
-  - zlib
-  - gmp
+  - topcom
   - passagemath-categories
   run:
   - python
-  - cysignals
+  - topcom
   - passagemath-categories
+  - passagemath-environment
+  - passagemath-polyhedra
+  - pexpect
 
 tests:
 - script: pytester
   files:
     recipe:
-    - test_passagemath_highs.py
+    - test_passagemath_topcom.py
   requirements:
     build:
     - pytester
@@ -53,15 +54,16 @@ tests:
 about:
   license: GPL-2.0-or-later
   license_file: README.rst
-  summary: 'passagemath: Linear and mixed integer linear optimization backend using HiGHS'
+  summary: 'passagemath: Triangulations of point configurations and oriented matroids with TOPCOM'
   description: |
     Distribution of a part of the Sage library.
-    It provides a backend for linear and mixed integer linear optimization backend using HiGHS.
+    It provides an interface to TOPCOM, a package for computing triangulations
+    of point configurations and oriented matroids.
 
 extra:
   emscripten_tests:
     python:
       pytest_files:
-      - test_passagemath_highs.py
+      - test_passagemath_topcom.py
   recipe-maintainers:
   - mkoeppe
