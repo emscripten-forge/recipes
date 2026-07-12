@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+CPPFLAGS="-I${PREFIX}/include" \
+LDFLAGS="-L${PREFIX}/lib" \
+CXXFLAGS="-std=c++11" \
+
+emcmake cmake . \
+    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+    -DBUILD_PRIMECOUNT=ON \
+    -DBUILD_LIBPRIMECOUNT=ON \
+    -DWITH_OPENMP=OFF \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_TESTS=OFF
+
+emmake make -j8 
+emmake make install
+
+cp primecount.wasm "${PREFIX}/bin/"
