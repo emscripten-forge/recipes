@@ -11,7 +11,7 @@ onmessage = (msg) => {
     FS.chdir('/src/CoCoA-5'); 
   });
 
-  importScripts("CoCoAInterpreter");
+  importScripts("CoCoAInterpreter.js");
   importScripts("CoCoAInterpreter.data.js");
 
   emscriptenHack(new TtyClient(msg.data));

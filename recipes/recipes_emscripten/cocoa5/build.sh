@@ -10,8 +10,8 @@ echo 'echo "30810"' >> configuration/normaliz-version.sh
 chmod +x configuration/normaliz-version.sh
 
 # Fix Readline check
-echo '#!/usr/bin/env bash' > configuration/readline-check-cxxflags.sh
-echo 'echo "-L'"${PREFIX}"'/lib -lncurses -ltinfo"' >> configuration/readline-check-cxxflags.sh
+# echo '#!/usr/bin/env bash' > configuration/readline-check-cxxflags.sh
+# echo 'echo "-L'"${PREFIX}"'/lib -lncurses -ltinfo"' >> configuration/readline-check-cxxflags.sh
 chmod +x configuration/readline-check-cxxflags.sh
 
 sed -i.bak 's/ret\[i\]=a.vectormultiply(b.column(i));/assert(false);/g' "${PREFIX}/include/gfanlib_matrix.h"
@@ -23,9 +23,11 @@ sed -i.bak 's/( --with-libntl )/( --with-libntl=* )/g' configure
 sed -i.bak 's@NTL_LIB="/usr/local/lib/libntl.a".*@NTL_LIB=`echo "$option" | cut -f 2- -d=` ;;@g' configure
 sed -i.bak 's/-lntl-symlink  -lpthread/-lntl-symlink/g' configure
 
-export USER_LDFLAGS="-sTOTAL_STACK=32mb -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4gb -s FORCE_FILESYSTEM=1 -Wl,--allow-multiple-definition"
+export USER_LDFLAGS="-s TOTAL_STACK=32mb -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4gb -s FORCE_FILESYSTEM=1 -Wl,--allow-multiple-definition -s JSPI=1"
 
 sed -i.bak 's|COCOA5_LDLIBS=-L|COCOA5_LDLIBS='"$USER_LDFLAGS"' -L|g' configure
+
+export CXXFLAGS="-I${PREFIX}/include -DBOOST_ASIO_DISABLE_THREADS -DBOOST_ASIO_DISABLE_SIGNAL_BLOCKER"
 
 emconfigure ./configure \
     --with-cxx=em++ \
@@ -38,9 +40,9 @@ emconfigure ./configure \
     --with-libgsl="${PREFIX}/lib/libgsl.a" \
     --with-libnormaliz="${PREFIX}/lib/libnormaliz.a" \
     --with-libntl="${PREFIX}/lib/libntl.a" \
-    --with-libreadline="${PREFIX}/lib/libreadline.a" \
     --disable-mempool \
     --no-qt-gui \
+    --no-readline \
     --prefix="${PREFIX}" 
 
 # Patch LineProviders.C to add `#` before prompt
@@ -50,19 +52,20 @@ cout << CurrPrompt << flush;
 
 sed -i.bak 's|\./check-version-defines|true|g' src/CoCoA-5/Makefile
 
-emmake make -j1 library
-emmake make -j1 cocoa5 LDFLAGS="$USER_LDFLAGS"
+emmake make -j8 library
+emmake make -j8 cocoa5 LDFLAGS="$USER_LDFLAGS"
 emmake make install
 
 mkdir -p "${PREFIX}/bin"
-cp src/CoCoA-5/CoCoAInterpreter src/CoCoA-5/CoCoAInterpreter.wasm "${PREFIX}/bin/"
+cp src/CoCoA-5/CoCoAInterpreter "${PREFIX}/bin/CoCoAInterpreter.js"
+cp src/CoCoA-5/CoCoAInterpreter.wasm "${PREFIX}/bin/"
 
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   "${PREFIX}/bin/CoCoAInterpreter.data" \
-  --preload-file "${SRC_DIR}/packages@/src/CoCoA-5/packages" \
-  --preload-file "${SRC_DIR}/tests@/src/CoCoA-5/tests" \
-  --preload-file "${SRC_DIR}/CoCoAManual@/src/CoCoA-5/CoCoAManual" \
+  --preload "${SRC_DIR}/src/CoCoA-5/packages@/src/CoCoA-5/packages" \
+  --preload "${SRC_DIR}/src/CoCoA-5/tests@/src/CoCoA-5/tests" \
+  --preload "${SRC_DIR}/src/CoCoA-5/CoCoAManual@/src/CoCoA-5/CoCoAManual" \
   --js-output="${PREFIX}/bin/CoCoAInterpreter.data.js"
 
 cp -r "${RECIPE_DIR}/web"/* "${PREFIX}/bin/"
