@@ -88,7 +88,7 @@ if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
     emconfigure ./configure ABI=32 \
     --with-gmp=$AUX_PREFIX \
     --with-zlib=$AUX_PREFIX \
-    LDFLAGS="-s ASYNCIFY=1 -O2"
+    LDFLAGS="-s JSPI -O2"
 fi;
 
 # Get full required packages
@@ -109,7 +109,7 @@ fi
 
 # The EXEEXT is usually for windows, but here it lets us set GAP's extension,
 # which lets us produce a html page to run GAP in.
-emmake make -j8 LDFLAGS="-lidbfs.js -s ASYNCIFY=1 -sTOTAL_STACK=32mb -sASYNCIFY_STACK_SIZE=32000000 -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
+emmake make -j8 LDFLAGS="-lidbfs.js -s JSPI -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
 emmake install
 
 bash etc/emscripten/assemble-website.sh
