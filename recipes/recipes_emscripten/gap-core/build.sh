@@ -91,6 +91,16 @@ if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
     LDFLAGS="-s JSPI -O2"
 fi;
 
+# Strip dynamic versioning and set extensions to .a
+sed -i 's/SHLIB_EXT.*/SHLIB_EXT = .a/' GNUmakefile
+sed -i 's/LIBGAP_FULL.*/LIBGAP_FULL = libgap.a/' GNUmakefile
+
+# Swap the C++ shared linker for the Archive tool
+sed -i 's/.*$(CXX) $(LINK_SHLIB_FLAGS).*/\t$(q)$(AR) rcs $@ $^/' Makefile.rules
+
+# Remove the symlink command in the install step
+sed -i 's/.*ln -sf $(LIBGAP_FULL).*//' Makefile.rules
+
 # Get full required packages
 emmake make bootstrap-pkg-minimal
 
