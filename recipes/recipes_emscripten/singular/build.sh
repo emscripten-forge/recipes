@@ -71,4 +71,4 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   --preload "${SRC_DIR}/doc@/info" \
   --js-output="${PREFIX}/bin/Singular.data.js"
 
-cp -r "${RECIPE_DIR}/web"/* "${PREFIX}/bin/"
+cp -r "web"/* "${PREFIX}/bin/"

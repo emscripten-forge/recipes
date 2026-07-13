@@ -68,4 +68,4 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   --preload "${SRC_DIR}/src/CoCoA-5/CoCoAManual@/src/CoCoA-5/CoCoAManual" \
   --js-output="${PREFIX}/bin/CoCoAInterpreter.data.js"
 
-cp -r "${RECIPE_DIR}/web"/* "${PREFIX}/bin/"
+cp -r "web"/* "${PREFIX}/bin/"
