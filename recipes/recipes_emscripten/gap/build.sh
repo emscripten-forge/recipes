@@ -113,4 +113,4 @@ emmake make -j8 LDFLAGS="-lidbfs.js -s JSPI -sTOTAL_STACK=32mb -sINITIAL_MEMORY=
 emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
 bash etc/emscripten/assemble-website.sh
-cp web-example/* "${PREFIX}/bin/"
+cp -r web-example/* "${PREFIX}/bin/"
