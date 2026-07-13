@@ -59,4 +59,4 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   --preload "${SRC_DIR}/fricas0-data@/fricas0-data" \
   --js-output="${PREFIX}/bin/ecl.data.js"
 
-cp -r "${RECIPE_DIR}/web"/* "${PREFIX}/bin/"
+cp -r "web"/* "${PREFIX}/bin/"
