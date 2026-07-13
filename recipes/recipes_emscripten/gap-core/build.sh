@@ -85,7 +85,7 @@ mkdir -p "$AUX_PREFIX"
 # Run configure if we don't have a makefile, or someone configured this
 # GAP for standard building (emscripten builds will use 'emcc')
 if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
-    emconfigure ./configure ABI=32 \
+    emconfigure ./configure --prefix="${PREFIX}" ABI=32 \
     --with-gmp=$AUX_PREFIX \
     --with-zlib=$AUX_PREFIX \
     LDFLAGS="-s JSPI -O2"
