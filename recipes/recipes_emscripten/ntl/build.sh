@@ -6,7 +6,7 @@ cd src
 
 emconfigure ./configure \
     CXX="em++" \
-    CXXFLAGS="-O2 -fexceptions -s WASM=1 -s NODERAWFS=1" \
+    CXXFLAGS="-O2 -fwasm-exceptions -s WASM=1 -s NODERAWFS=1" \
     PREFIX="$PREFIX" \
     GMP_PREFIX="$PREFIX" \
     NTL_GMP_LIP=on \
