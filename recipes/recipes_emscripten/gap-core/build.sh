@@ -91,15 +91,19 @@ if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
     LDFLAGS="-s JSPI -O2"
 fi;
 
-# Strip dynamic versioning and set extensions to .a
-sed -i 's/SHLIB_EXT.*/SHLIB_EXT = .a/' GNUmakefile
-sed -i 's/LIBGAP_FULL.*/LIBGAP_FULL = libgap.a/' GNUmakefile
+# Target the Linux/Unix block to redefine shared lib extensions to static
+sed -i 's/SHLIB_EXT=\.so/SHLIB_EXT=.a/' Makefile.rules
+sed -i 's/LIBGAP_FULL = libgap$(SHLIB_EXT)\.$(SHLIB_MAJOR)/LIBGAP_FULL = libgap.a/' Makefile.rules
 
-# Swap the C++ shared linker for the Archive tool
-sed -i 's/.*$(CXX) $(LINK_SHLIB_FLAGS).*/\t$(q)$(AR) rcs $@ $^/' Makefile.rules
+# Swap the dynamic linker command for the static archiver
+sed -i 's/.*$(QUIET_LINK)$(LINK) -o $@ $(LINK_SHLIB_FLAGS).*/\t$(QUIET_LINK)$(AR) rcs $@ $(OBJS)/' Makefile.rules
 
-# Remove the symlink command in the install step
-sed -i 's/.*ln -sf $(LIBGAP_FULL).*//' Makefile.rules
+# Prevent a circular dependency from deleting the archive
+sed -i 's/libgap$(SHLIB_EXT): $(LIBGAP_FULL)/libgap_avoid_circular: $(LIBGAP_FULL)/' Makefile.rules
+
+# Remove symlink creation from the install step
+sed -i '/ln -sf $(LIBGAP_FULL) $(DESTDIR)$(libdir)\/libgap$(SHLIB_EXT)/d' Makefile.rules
+sed -i '/$(INSTALL_NAME_TOOL) -id/d' Makefile.rules
 
 # Get full required packages
 emmake make bootstrap-pkg-minimal
