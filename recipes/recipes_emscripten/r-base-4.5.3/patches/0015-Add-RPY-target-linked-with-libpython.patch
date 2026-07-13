@@ -1,0 +1,17 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] Add RPY target linked with libpython
+
+Build RPY alongside R.bin, linking in $(RPY_LIBS) so that
+libpython and its transitive dependencies are statically included.
+RPY_LIBS is set by the build script before configure.
+
+--- a/src/main/Makefile.in
++++ b/src/main/Makefile.in
+@@ -148,6 +148,7 @@ R: Makedeps
+ 
+ $(R_binary): $(R_bin_OBJECTS) $(R_bin_DEPENDENCIES)
+ 	$(MAIN_LINK) -o $@ $(R_bin_OBJECTS) $(R_bin_LDADD)
++	$(MAIN_LINK) -o RPY $(R_bin_OBJECTS) $(R_bin_LDADD) $(RPY_LIBS)
+ 
+ libR.a: $(OBJECTS) $(STATIC_LIBS)
+ 	-@mkdir libs

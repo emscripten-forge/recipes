@@ -1,0 +1,137 @@
+context:
+  name: scikit-plots
+  version: 0.4.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  # original source URL: https://github.com/scikit-plots/scikit-plots/archive/refs/tags/v0.4.0.tar.gz
+  # url: https://github.com/scikit-plots/scikit-plots/archive/v0.4.0.tar.gz
+  url: https://github.com/${{ name }}/${{ name }}/archive/v${{ version }}.tar.gz
+  # curl -L https://github.com/scikit-plots/scikit-plots/archive/v0.4.0.tar.gz | sha256sum
+  sha256: 100bc5f13e9414addeecd6295b74c7c1e8a1714a884a4c0b6868439641b747df
+  # Rattler-build natively handles patch orchestration relative to $SRC_DIR
+  patches:
+  - patches/0001-meson-build.patch
+  - patches/0002-remove-annoy-static-library-duplicate-pyinit-wasm32.patch
+
+build:
+  number: 10  # match PyPI version 0.4.0.post10
+  # Removing tests and `__pycache__` from the source directory
+  # halves the size of the decompressed package and reduces
+  # the number of files to extract and to link in the prefix.
+  files:
+    exclude:
+    - '**/tests/'
+    - '**/__pycache__/'
+    - '**/tests/**'
+    - '**/*.pxi'
+    - '**/*.tp'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python                            
+  - cross-python_${{ target_platform }}                       
+  - pkg-config                        
+  - meson-python                      
+  - cython
+  - pybind11 >= 3.0.0  # py::multiple_interpreters::per_interpreter_gil() was introduced in 3.0.0
+  - numpy                             
+  - scipy       
+  - pip
+  - setuptools
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  # - ${{ compiler('fortran') }}  # flang-new-wrapper drops ANY argument token starting with "-s"
+  # - ${{ stdlib('c') }}
+  # - llvm_${{ target_platform }} # Installing custom LLVM in build.sh
+  host:
+  - python
+  - openblas  
+  - pybind11 >= 3.0.0
+  - numpy
+  - scipy                  
+  - matplotlib                        
+  - scikit-learn
+  - joblib >=1.0.0
+  - threadpoolctl >=2.0.0
+  run:
+  - python
+  - openblas  
+  - pip
+  - numpy
+  - scipy                       
+  - matplotlib 
+  - pandas                           
+  - scikit-learn   
+  - joblib >=1.0.0
+  - threadpoolctl >=2.0.0
+  - requests
+  - narwhals   
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_scikitplot.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://scikit-plots.github.io/dev
+  # The doc_url and dev_url are optional.
+  documentation: https://scikit-plots.github.io/dev
+  repository: https://github.com/scikit-plots/scikit-plots
+  # https://github.com/scikit-plots/scikit-plots?tab=BSD-3-Clause-1-ov-file
+  # license_url: https://scikit-plots.github.io/dev/project/license.html
+  # https://spdx.org/licenses
+  # license: BSD-3-Clause AND MIT AND Apache-2.0 AND GPL-3.0-only
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file:
+    - LICENSE.txt    
+    - LICENSES/  # folder
+    # - LICENSE_NumCpp
+    # - LICENSE_annoy
+    # - LICENSE_appdirs
+    # - LICENSE_array-api-compat
+    # - LICENSE_array-api-extra
+    # - LICENSE_astropy
+    # - LICENSE_boost-math
+    # - LICENSE_husl
+    # - LICENSE_kds
+    # - LICENSE_matplotlib
+    # - LICENSE_modelplotpy
+    # - LICENSE_mpl-probscale
+    # - LICENSE_numpydoc
+    # - LICENSE_packaging
+    # - LICENSE_scikit-learn
+    # - LICENSE_scikit-plot
+    # - LICENSE_scikit-plots
+    # - LICENSE_scipy
+    # - LICENSE_seaborn
+    # - LICENSE_tweedie
+    # - LICENSE_visualkeras
+  summary: |-
+    scikit-plots: Machine Learning Visualization in Python
+  description: |-
+    An intuitive library that seamlessly adds plotting capabilities and functionality
+    to any model objects or outputs, compatible with tools like scikit-learn, XGBoost,
+    TensorFlow, and more.
+
+extra:
+  recipe-maintainers:
+  # GitHub IDs for maintainers of the recipe.
+  - celik-muhammed
