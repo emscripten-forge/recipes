@@ -12,19 +12,20 @@ export PYTHON="${BUILD_PREFIX}/bin/python3"
 # Makefile variable of the same name.
 unset SUBDIR
 
-export CFLAGS="-I${PREFIX}/include ${CFLAGS:-}"
-export LDFLAGS="-L${PREFIX}/lib ${LDFLAGS:-}"
+export CFLAGS="-I${PREFIX}/include -pthread ${CFLAGS:-}"
+export LDFLAGS="-L${PREFIX}/lib -pthread ${LDFLAGS:-}"
 
 # llvm-nm avoids the broken packaged emnm Python launcher.
 ./configure \
   --prefix="${PREFIX}" \
-  --target-os=none --arch=x86_32 --enable-cross-compile \
-  --disable-asm --disable-stripping --disable-programs \
+  --target-os=none --arch=wasm --enable-cross-compile \
+  --disable-stripping \
   --disable-doc --disable-debug --disable-runtime-cpudetect \
-  --disable-autodetect --disable-pthreads --disable-w32threads \
+  --disable-autodetect --enable-pthreads --disable-w32threads \
   --disable-os2threads --disable-ffplay --disable-network \
   --enable-static --disable-shared \
   --enable-gpl --enable-version3 \
+  --enable-ffmpeg --enable-ffprobe \
   --nm=llvm-nm --ar=emar --ranlib=emranlib \
   --cc=emcc --cxx=em++ --objcc=emcc --dep-cc=emcc \
   --enable-avcodec --enable-avformat --enable-avutil \
@@ -32,8 +33,23 @@ export LDFLAGS="-L${PREFIX}/lib ${LDFLAGS:-}"
   --enable-avfilter --enable-avdevice \
   --enable-protocol=file
 
-make -j"${CPU_COUNT:-4}"
-make install
+make EXESUF=.js -j"${CPU_COUNT:-4}"
+make EXESUF=.js install
+
+# FFmpeg's Emscripten link creates *_g.wasm and copies only the JavaScript
+# launcher during install. Give each launcher a stable adjacent wasm file.
+for tool in ffmpeg ffprobe; do
+  if [[ ! -s "${tool}_g.wasm" || ! -s "${PREFIX}/bin/${tool}.js" ]]; then
+    echo "error: ${tool} CLI was not built; expected ${tool}_g.wasm and ${PREFIX}/bin/${tool}.js" >&2
+    exit 1
+  fi
+  install -Dm755 "${tool}_g.wasm" "${PREFIX}/bin/${tool}.wasm"
+  sed -i "s/${tool}_g\\.wasm/${tool}.wasm/g" "${PREFIX}/bin/${tool}.js"
+  if [[ ! -s "${PREFIX}/bin/${tool}.wasm" ]]; then
+    echo "error: failed to install ${PREFIX}/bin/${tool}.wasm" >&2
+    exit 1
+  fi
+done
 
 install -Dm644 "${RECIPE_DIR}/cmake/FFmpegConfig.cmake" \
   "${PREFIX}/lib/cmake/FFmpeg/FFmpegConfig.cmake"
