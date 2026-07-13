@@ -1,0 +1,119 @@
+context:
+  name: rebound
+  version: 5.0.1
+
+source:
+- url: https://pypi.io/packages/source/r/rebound/rebound-${{ version }}.tar.gz
+  sha256: 0ddf41cfe48153c60bc97c7c7232a558bc31c98861a3506d12aef8c161b26fc5
+  patches:
+  - patches/0001-skip-c-extension-on-emscripten.patch
+  - patches/0002-load-librebound-from-prefix.patch
+  - patches/0003-fix-pyodide-import.patch
+  - patches/0004-remove-emscripten-sleep.patch
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: librebound
+    version: ${{ version }}
+  build:
+    script: build_librebound.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+  tests:
+  - package_contents:
+      lib:
+      - librebound.so
+      include:
+      - rebound.h
+      - rebound_internal.h
+      - boundary.h
+      - collision.h
+      - derivatives.h
+      - display.h
+      - fmemopen.h
+      - frequency_analysis.h
+      - gravity.h
+      - integrator_bs.h
+      - integrator_eos.h
+      - integrator_ias15.h
+      - integrator_janus.h
+      - integrator_leapfrog.h
+      - integrator_mercurius.h
+      - integrator_saba.h
+      - integrator_sei.h
+      - integrator_trace.h
+      - integrator_whfast.h
+      - integrator_whfast512.h
+      - output.h
+      - particle.h
+      - rebound.h
+      - rotations.h
+      - server.h
+      - simulation.h
+      - simulationarchive.h
+      - tools.h
+      - transformations.h
+      - tree.h
+      - binarydata.h
+  - script: build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+    files:
+      source:
+      - src/
+      recipe:
+      - build_tests.sh
+      - tests/
+
+- package:
+    name: rebound
+    version: ${{ version }}
+  build:
+    script: ${PYTHON} -m pip install . ${PIP_ARGS} --no-deps --no-build-isolation
+    files:
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/*.so'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    build:
+    - cross-python_${{ target_platform }}
+    - python
+    - setuptools
+    - wheel
+    - pip
+    host:
+    - python
+    run:
+    - python
+    - librebound
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_rebound.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+      - librebound
+
+about:
+  homepage: https://github.com/hannorein/rebound
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: An open-source multi-purpose N-body code
+  documentation: https://rebound.hanno-rein.de
+
+extra:
+  recipe-maintainers:
+  - mmesch

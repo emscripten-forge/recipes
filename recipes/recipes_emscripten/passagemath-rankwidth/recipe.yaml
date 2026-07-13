@@ -1,0 +1,68 @@
+context:
+  version: 10.8.5
+
+package:
+  name: passagemath-rankwidth
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-rankwidth/passagemath_rankwidth-${{ version }}.tar.gz
+  sha256: f57ca516a6bc5fd5913241816afe6d9a8e9b0ee3f8c58fe893f3400694d4c64b
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - rw
+  - passagemath-categories
+  run:
+  - python
+  - cysignals
+  - passagemath-categories
+  - passagemath-graphs
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_rankwidth.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-graphs
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Rankwidth and rank decompositions of graphs with rw'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides a Cython interface to rw,
+    which calculates rank width and rank decompositions.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_rankwidth.py
+  recipe-maintainers:
+  - mkoeppe

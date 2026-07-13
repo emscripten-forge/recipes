@@ -1,0 +1,31 @@
+Remove emscripten_sleep calls that require ASYNCIFY.
+
+Upstream uses emscripten_sleep(0) in the integration loop to yield to the
+browser for drawing, and emscripten_sleep(100) in the pause loop to poll.
+Both require -sASYNCIFY which we do not compile with (no display server).
+Without ASYNCIFY these calls abort at runtime with "Please compile your
+program with async support".
+
+For the integration loop: simply drop the yield — without a display server
+there is nothing to draw and synchronous WASM cannot yield anyway.
+For the pause loop: break immediately rather than spinning; the simulation
+resumes as if it was never paused (pause is not meaningful without ASYNCIFY).
+--- a/src/simulation.c
++++ b/src/simulation.c
+@@ -300,7 +300,8 @@ static int reb_check_exit(struct reb_simulation* const r, const double tmax, do
+     while(r->status == REB_STATUS_PAUSED || r->status == REB_STATUS_SCREENSHOT){
+         // Wait for user to disable paused simulation
+ #ifdef __EMSCRIPTEN__
+-        emscripten_sleep(100);
++        r->status = REB_STATUS_RUNNING; // ASYNCIFY not available; resume immediately
++        break;
+ #else
+         usleep(1000);
+ #endif
+@@ -399,7 +399,6 @@ static void* reb_simulation_integrate_raw(void* args){
+         if (t1-t0>1000./120.){ // max framerate 120Hz
+             t0 = t1;
+-            emscripten_sleep(0); // allow drawing and event handling
+         }
+
+ #endif
