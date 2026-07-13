@@ -42,14 +42,18 @@ Source = Union[PathSource, UrlSource]
 
 class Build(BaseModel):
     """Build configuration for the recipe"""
-    number: int
+    number: int | str
 
     @field_validator("number")
     @classmethod
-    def validate_build_number(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError("build.number must be >= 0")
-        return v
+    def validate_build_number(cls, v: int | str) -> int | str:
+        if isinstance(v, int):
+            if v < 0:
+                raise ValueError("build.number must be >= 0")
+            return v
+        if v == "${{ build_number }}":
+            return v
+        raise ValueError("build.number must be an integer >= 0 or ${{ build_number }}")
 
 class About(BaseModel):
     license: str
@@ -73,15 +77,26 @@ class Recipe(BaseModel):
         build = values['build']
         if isinstance(build, dict):
             if 'number' not in build:
-                raise AttributeError("build.number is required and must be >= 0")
-            number = build.get('number')
-            if not isinstance(number, int) or number < 0:
-                raise ValueError("build.number must be an integer >= 0")
+                raise AttributeError("build.number is required")
+            number = build['number']
+            if isinstance(number, int):
+                if number < 0:
+                    raise ValueError("build.number must be an integer >= 0")
+            elif number == "${{ build_number }}":
+                context = values.get('context', {})
+                context_build_number = context.get('build_number') if isinstance(context, dict) else None
+                if not isinstance(context_build_number, int) or context_build_number < 0:
+                    raise ValueError("context.build_number must be an integer >= 0")
+            else:
+                raise ValueError("build.number must be an integer >= 0 or ${{ build_number }}")
 
         # Check tests
         if 'tests' not in values or values['tests'] is None:
             if 'outputs' in values:
                 for output_dict in values['outputs']:
+                    # Staging outputs don't support a 'tests' field in rattler-build.
+                    if 'staging' in output_dict:
+                        continue
                     if 'tests' not in output_dict:
                         pkg_name = output_dict.get('package', {}).get('name', 'unknown')
                         raise AttributeError(f"Output '{pkg_name}' must have a 'tests' section.")

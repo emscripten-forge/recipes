@@ -101,7 +101,10 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
     context['version'] = new_version
 
     # reset build number
-    recipe['build']['number'] = 0
+    if 'build_number' in context:
+        context['build_number'] = 0
+    else:
+        recipe['build']['number'] = 0
 
     # update sha256 in source
     source = recipe['source']

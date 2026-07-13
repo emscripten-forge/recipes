@@ -1,0 +1,73 @@
+context:
+  name: pytensor-base
+  version: 3.1.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/pytensor/pytensor-${{ version }}.tar.gz
+  sha256: 76dcc74417edfe24fbbe0b5687b8be7bc069c53e9ee93e08cb245f3b3d2c612f
+  patches:
+  - patches/0001-skip-c-code-loading-on-emscripten.patch
+  - patches/0002-use-vm-linker-on-emscripten.patch
+  - patches/0003-avoid-setuptools-import-on-emscripten.patch
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/tests/**'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - numpy
+  - versioneer
+  host:
+  - python
+  - numpy
+  - scipy
+  run:
+  - python
+  - numpy
+  - scipy
+  - filelock
+  - etuples
+  - logical-unification
+  - minikanren
+  - cons
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pytensor_base.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/pymc-devs/pytensor
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Optimizing compiler for evaluating mathematical expressions on CPUs and GPUs
+  documentation: https://pytensor.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+  - mmesch

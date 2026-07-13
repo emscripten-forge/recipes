@@ -1,16 +1,16 @@
 context:
-  name: r-igraph
-  version: 2.3.2
+  name: igraph
+  version: 2.3.3
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 4a394e2933ef4c75e2517cd8cf46cf82e8a76eee2ef7c9fc19fd08f2e2ed0bd6
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 942522d815eb1de840d5cdc60745dab8f815398cda279dd4bd98444b0c07a699
   patches:
   - patches/0001-Use-external-arpack.patch
   - patches/0002-Fix-lapack-function-signatures.patch
@@ -18,7 +18,7 @@ source:
 build:
   number: 0
   # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base == '4.6.1' }}
 
 requirements:
   build:
@@ -60,10 +60,18 @@ requirements:
 tests:
 - package_contents:
     files:
-    - lib/R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - lib/R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_igraph.R
+  files:
+    recipe:
+    - test_igraph.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
-  homepage: https://r.igraph.org/
+  homepage: https://cran.r-project.org/package=igraph
+  documentation: https://r.igraph.org/
   repository: https://github.com/igraph/rigraph
   license: GPL-2.0-or-later
   license_file: GPL-2

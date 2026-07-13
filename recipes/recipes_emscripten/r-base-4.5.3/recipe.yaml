@@ -1,10 +1,7 @@
 context:
   name: r-base
   version: 4.5.3
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  build_number: 7
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
@@ -25,63 +22,144 @@ source:
   - patches/0012-Use-linux-executables.patch
   - patches/0013-Use-source-files-when-installing.patch
   - patches/0014-Fix-cairo-font-scaling-in-emscripten.patch
+  - patches/0015-Add-RPY-target-linked-with-libpython.patch
 
 build:
-  number: 5
+  number: ${{ build_number }}
 
-  files:
-    exclude:
-    - share/man/man1/**
+#-------------------------------------------------------------------------------
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - ${{ compiler('fortran') }}
-  - libtool
-  - pkg-config
-  - cmake
-  - make
-  # Dependencies to build R in the build environment
-  - libflang-rt
-  - gcc
-  - libiconv
-  - zlib
-  - bzip2
-  - xz
-  - pcre2
-  - libpng
-  - libtiff
-  - cairo
-  host:
-  - libflang
-  - libiconv
-  - zlib
-  - bzip2
-  - liblzma
-  - pcre2
-  - libpng
-  - libtiff
-  - cairo
-  - fontconfig
-  - pixman
-  - expat
-  - freetype
-  run_exports:
-  - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+outputs:
+# Staging output: runs build.sh once; r-base and r-py inherit from here.
+- staging:
+    name: r-base-build
 
-tests:
-- package_contents:
-    lib:
-    - R/lib/libR.so
-    - R/lib/libRblas.so
-    - R/lib/libRlapack.so
-    - R/library/grDevices/libs/cairo.so
-- script:
-  - node ${PREFIX}/lib/R/bin/Rscript --version
   requirements:
     build:
-    - nodejs
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - libtool
+    - pkg-config
+    - cmake
+    - make
+    # Dependencies to build R in the build environment
+    - libflang-rt
+    - gcc
+    - libiconv
+    - zlib
+    - bzip2
+    - xz
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    host:
+    - libflang
+    - libiconv
+    - zlib
+    - bzip2
+    - liblzma
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    - fontconfig
+    - pixman
+    - expat
+    - freetype
+    # For the r-py output: libpython statically linked into RPY executable.
+    - python
+    - libpython
+    - libffi
+    - sqlite
+    - openssl
+    - zstd
+    ignore_run_exports:
+      from_package:
+      - python
+
+  build:
+    script: build.sh
+
+#-------------------------------------------------------------------------------
+
+- package:
+    name: r-base
+    version: ${{ version }}
+
+  inherit: r-base-build
+
+  build:
+    script: 'true'
+    string: h${{ hash }}_${{ build_number }}
+    files:
+      exclude:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+      - share/man/man1/**
+
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+
+  tests:
+  - package_contents:
+      lib:
+      - R/lib/libR.so
+      - R/lib/libRblas.so
+      - R/lib/libRlapack.so
+      - R/library/grDevices/libs/cairo.so
+  - script:
+    - node ${PREFIX}/lib/R/bin/Rscript --version
+    - run_r_test test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - nodejs
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
+
+- package:
+    name: r-py
+    version: ${{ version }}
+
+  inherit: r-base-build
+
+  build:
+    script: 'true'
+    files:
+      include:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+
+  requirements:
+    host:
+    - r-base ==${{ version }}
+    - python
+    run:
+    - r-base ==${{ version }}
+    - python
+    - libpython
+    - zstd
+
+  tests:
+  - package_contents:
+      files:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+  - script: run_r_test --rpy test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
 
 about:
   homepage: http://www.r-project.org/
