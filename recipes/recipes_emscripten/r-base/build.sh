@@ -91,6 +91,11 @@ pushd _build_wasm
     export LINUX_BUILD_DIR=$(realpath ..)/_build_linux
     export WASM_BUILD_DIR=$(pwd)
 
+    # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
+    # (see patch 0015). This statically links libpython and its transitive deps
+    # into RPY only; the standard R executable is unaffected.
+    export RPY_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython${PY_VER}"
+
     # NOTE: the host and build systems are explicitly set to enable the cross-
     # compiling options even though it's not fully supported.
     # Otherwise, it assumes it's not cross-compiling.
@@ -106,6 +111,10 @@ pushd _build_wasm
     $RECIPE_DIR/cross_libraries.sh --restore $(pwd)
 
     emmake make install
+
+    # Install RPY and RPY.wasm built alongside R.bin by the patched Makefile.in.
+    cp src/main/RPY "$PREFIX/lib/R/bin/exec/RPY"
+    cp src/main/RPY.wasm "$PREFIX/lib/R/bin/exec/RPY.wasm"
 
 )
 popd
