@@ -28,8 +28,8 @@ app.add_typer(generate_app, name="generate")
 
 
 @generate_app.command(name="recipe")
-def regenerate_recipe(name: str, type: PackageType, outdir: Path):
-    generate_recipe_impl(name, type, outdir)
+def regenerate_recipe(name: str, type: PackageType, maintainer:str, outdir: Path):
+    generate_recipe_impl(name, type, maintainer, outdir)
 
 
 
