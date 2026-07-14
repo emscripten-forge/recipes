@@ -1,7 +1,7 @@
 context:
   name: r-base
   version: 4.5.3
-  build_number: 7
+  build_number: 8
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
@@ -23,6 +23,7 @@ source:
   - patches/0013-Use-source-files-when-installing.patch
   - patches/0014-Fix-cairo-font-scaling-in-emscripten.patch
   - patches/0015-Add-RPY-target-linked-with-libpython.patch
+  - patches/0016-Route-plotmath-symbols-through-Unicode-font.patch
 
 build:
   number: ${{ build_number }}
@@ -100,6 +101,12 @@ outputs:
       - share/man/man1/**
 
   requirements:
+    run:
+    # DejaVu provides /fonts at runtime: one family covering Latin/Greek/math
+    # across all four faces (the cairo FreeType path does no per-glyph fallback).
+    # The shipped fonts.conf aliases R's families to it.
+    - font-ttf-dejavu >=2.37
+    - font-ttf-dejavu-sans-mono >=2.37
     run_exports:
     - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
 
