@@ -3,7 +3,8 @@ from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 from .schema import Recipe
 from .upload import extract_channel_from_pkg
-
+from .generate import generate_recipe as generate_recipe_impl
+from .generate import PackageType
 import sys
 import os
 import tempfile
@@ -21,6 +22,16 @@ app.add_typer(build_app, name="build")
 
 upload_app = typer.Typer()
 app.add_typer(upload_app, name="upload")
+
+generate_app = typer.Typer()
+app.add_typer(generate_app, name="generate")
+
+
+@generate_app.command(name="recipe")
+def regenerate_recipe(name: str, type: PackageType, outdir: Path):
+    generate_recipe_impl(name, type, outdir)
+
+
 
 @upload_app.command()
 def extract_channel(pkg_file):
