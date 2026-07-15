@@ -1,0 +1,74 @@
+context:
+  version: 10.8.5
+
+package:
+  name: passagemath-gsl
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-gsl/passagemath_gsl-${{ version }}.tar.gz
+  sha256: 6280e538e314a60a8a911c9b71ea6776283cec81ac39f17bde7da6235d72b01a
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - numpy
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gsl
+  - gmp
+  - memory-allocator
+  - numpy
+  - passagemath-categories
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - numpy
+  - passagemath-categories
+  - passagemath-environment
+  - passagemath-modules
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_gsl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Numerics with the GNU Scientific Library'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides modules that depend on the GNU Scientific Library.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_gsl.py
+  recipe-maintainers:
+  - mkoeppe
