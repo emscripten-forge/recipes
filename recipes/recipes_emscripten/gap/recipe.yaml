@@ -1,9 +1,8 @@
 context:
-  name: gap
   version: 4.16.0
 
-package:
-  name: ${{ name }}
+recipe:
+  name: gap
   version: ${{ version }}
 
 source:
@@ -13,23 +12,48 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-  - autoconf
-  - automake
-  - libtool
-  - make
-  - python                            
-  - ${{ compiler('c') }}              
-  - ${{ compiler('cxx') }}
+outputs:
+  - package:
+      name: gap-core
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - autoconf
+        - automake
+        - libtool
+        - make
+        - python                            
+        - ${{ compiler('c') }}              
+        - ${{ compiler('cxx') }}
+    tests:
+      - package_contents:
+          files:
+            - lib/libgap.a
+            - include/gap/gap.h
+            - bin/gap.js
+            - bin/gap.wasm             
 
-tests:
-- package_contents:
-    files:
-    - lib/libgap.a
-    - include/gap/gap.h
-    - bin/gap.js
-    - bin/gap.wasm            
+  - package:
+      name: gap
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - autoconf
+        - automake
+        - libtool
+        - make
+        - python                            
+        - ${{ compiler('c') }}              
+        - ${{ compiler('cxx') }}
+    tests:
+      - package_contents:
+          files:
+            - lib/libgap.a
+            - include/gap/gap.h
+            - bin/gap.js
+            - bin/gap.wasm  
 
 about:
   homepage: https://www.gap-system.org/
@@ -39,4 +63,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - wangyenshu
+    - wangyenshu
