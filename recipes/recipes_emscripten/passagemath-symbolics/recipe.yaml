@@ -1,0 +1,89 @@
+context:
+  version: 10.8.5
+
+package:
+  name: passagemath-symbolics
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-symbolics/passagemath_symbolics-${{ version }}.tar.gz
+  sha256: 525b9a830e3af814702382751256ebda33d1da7e9515e5b4962a405d719e6809
+
+build:
+  script: |
+    export LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
+    ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - gsl
+  - libflint
+  - ntl
+  - singular
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - numpy
+  - sympy
+  - passagemath-categories
+  - passagemath-environment
+  - passagemath-flint
+  - passagemath-gsl
+  - passagemath-modules
+  - passagemath-ntl
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_symbolics.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Symbolic calculus'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides symbolic calculus based on Pynac, the fork of GiNaC,
+    arithmetic, elementary, and special functions, asymptotic expansions,
+    SageManifolds, and hyperbolic geometry.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_symbolics.py
+  recipe-maintainers:
+  - mkoeppe
