@@ -5,6 +5,19 @@ echo "=========================================="
 echo "Building FFmpeg tests..."
 echo "=========================================="
 
+test_type="${1:?usage: build_tests.sh {libs|cli}}"
+
+if [[ "${test_type}" == "cli" ]]; then
+  node "${PREFIX}/bin/ffmpeg.js" -version
+  node "${PREFIX}/bin/ffprobe.js" -version
+  exit 0
+fi
+
+if [[ "${test_type}" != "libs" ]]; then
+  echo "error: unknown test type: ${test_type}" >&2
+  exit 2
+fi
+
 export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 export CFLAGS="${CFLAGS:-}"
 export LDFLAGS="${LDFLAGS:-}"
@@ -22,8 +35,6 @@ emmake ninja
 
 echo "Running FFmpeg tests..."
 node test_ffmpeg.js
-node "${PREFIX}/bin/ffmpeg.js" -version
-node "${PREFIX}/bin/ffprobe.js" -version
 
 echo "=========================================="
 echo "All FFmpeg tests passed!"

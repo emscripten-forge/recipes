@@ -2,67 +2,111 @@ context:
   name: ffmpeg
   version: 8.1.1
 
-package:
-  name: ${{ name }}
+recipe:
+  name: ffmpeg
   version: ${{ version }}
 
-source:
-  url: https://ffmpeg.org/releases/${{ name }}-${{ version }}.tar.xz
-  sha256: b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3
-
 build:
-  number: 1
-  script: build.sh
+  number: 2
 
-requirements:
-  build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - make
-    - pkg-config
-  host: []
-  run: []
+source:
+  - url: https://ffmpeg.org/releases/${{ name }}-${{ version }}.tar.xz
+    sha256: b6863adde98898f42602017462871b5f6333e65aec803fdd7a6308639c52edf3
 
-tests:
-  - package_contents:
-      lib:
-        - libavcodec.a
-        - libavformat.a
-        - libavutil.a
-        - libswscale.a
-        - libswresample.a
-        - libavfilter.a
-        - libavdevice.a
-      bin:
-        # Rattler adds .js and .wasm for Emscripten bin entries.
-        - ffmpeg
-        - ffprobe
-      files:
-        # Check both members of each Emscripten executable explicitly.
-        - bin/ffmpeg.js
-        - bin/ffmpeg.wasm
-        - bin/ffprobe.js
-        - bin/ffprobe.wasm
-      include:
-        - libavcodec/avcodec.h
-        - libavformat/avformat.h
-        - libavutil/avutil.h
-        - libswscale/swscale.h
-        - libswresample/swresample.h
-        - libavfilter/avfilter.h
-  - script:
-      - build_tests.sh
+outputs:
+  - staging:
+      name: ffmpeg-build
     requirements:
       build:
         - ${{ compiler('c') }}
         - ${{ compiler('cxx') }}
-        - cmake
-        - ninja
-        - nodejs
-    files:
-      recipe:
-        - build_tests.sh
-        - tests/
+        - make
+        - pkg-config
+      host: []
+    build:
+      script: build.sh
+
+  - package:
+      name: ffmpeg
+      version: ${{ version }}
+    inherit: ffmpeg-build
+    build:
+      files:
+        include:
+          - lib/libavcodec.a
+          - lib/libavformat.a
+          - lib/libavutil.a
+          - lib/libswscale.a
+          - lib/libswresample.a
+          - lib/libavfilter.a
+          - lib/libavdevice.a
+          - lib/pkgconfig/*.pc
+          - lib/cmake/FFmpeg/**
+          - include/**
+    tests:
+      - package_contents:
+          lib:
+            - libavcodec.a
+            - libavformat.a
+            - libavutil.a
+            - libswscale.a
+            - libswresample.a
+            - libavfilter.a
+            - libavdevice.a
+          include:
+            - libavcodec/avcodec.h
+            - libavformat/avformat.h
+            - libavutil/avutil.h
+            - libswscale/swscale.h
+            - libswresample/swresample.h
+            - libavfilter/avfilter.h
+          files:
+            - lib/cmake/FFmpeg/FFmpegConfig.cmake
+      - script:
+          - bash build_tests.sh libs
+        requirements:
+          build:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+        files:
+          recipe:
+            - build_tests.sh
+            - tests/
+
+  - package:
+      name: ffmpeg-cli
+      version: ${{ version }}
+    inherit: ffmpeg-build
+    build:
+      files:
+        include:
+          - bin/ffmpeg.js
+          - bin/ffmpeg.wasm
+          - bin/ffprobe.js
+          - bin/ffprobe.wasm
+    requirements:
+      run:
+        - ffmpeg =${{ version }}
+    tests:
+      - package_contents:
+          bin:
+            - ffmpeg
+            - ffprobe
+          files:
+            - bin/ffmpeg.js
+            - bin/ffmpeg.wasm
+            - bin/ffprobe.js
+            - bin/ffprobe.wasm
+      - script:
+          - bash build_tests.sh cli
+        requirements:
+          build:
+            - nodejs
+        files:
+          recipe:
+            - build_tests.sh
 
 about:
   homepage: https://ffmpeg.org/
