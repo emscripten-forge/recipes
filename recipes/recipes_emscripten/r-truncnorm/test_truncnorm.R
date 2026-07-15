@@ -1,8 +1,53 @@
 library(truncnorm)
 
-dtruncnorm(x, a=-Inf, b=Inf, mean = 0, sd = 1)
-ptruncnorm(q, a=-Inf, b=Inf, mean = 0, sd = 1)
-qtruncnorm(p, a=-Inf, b=Inf, mean = 0, sd = 1)
-rtruncnorm(n, a=-Inf, b=Inf, mean = 0, sd = 1)
-etruncnorm(a=-Inf, b=Inf, mean=0, sd=1)
-vtruncnorm(a=-Inf, b=Inf, mean=0, sd=1)
+# Density
+dtruncnorm(
+  x = 0,
+  a = -Inf,
+  b = Inf,
+  mean = 0,
+  sd = 1
+)
+
+# Cumulative distribution function
+ptruncnorm(
+  q = 0,
+  a = -Inf,
+  b = Inf,
+  mean = 0,
+  sd = 1
+)
+
+# Quantile function
+qtruncnorm(
+  p = 0.95,
+  a = -Inf,
+  b = Inf,
+  mean = 0,
+  sd = 1
+)
+
+# Random generation
+rtruncnorm(
+  n = 100,
+  a = -Inf,
+  b = Inf,
+  mean = 0,
+  sd = 1
+)
+
+# Expected value (mean)
+etruncnorm(
+  a = -Inf,
+  b = Inf,
+  mean = 0,
+  sd = 1
+)
+
+# Variance
+vtruncnorm(
+  a = -Inf,
+  b = Inf,
+  mean = 0,
+  sd = 1
+)
