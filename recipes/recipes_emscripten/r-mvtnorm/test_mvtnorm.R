@@ -9,6 +9,6 @@ library(mvtnorm)
 dmvnorm(x, mean = rep(0, p), sigma = diag(p), log = FALSE, checkSymmetry = TRUE)
 
 # This generates n random samples from the multivariate normal distribution
-rmvnorm(n, mean = rep(0, nrow(sigma)), sigma = diag(length(mean)),
+rmvnorm(n, mean = rep(0, p), sigma = diag(p),
         method = c("eigen", "svd", "chol"), pre0.9_9994 = FALSE, 
         checkSymmetry = TRUE, rnorm = stats::rnorm)
