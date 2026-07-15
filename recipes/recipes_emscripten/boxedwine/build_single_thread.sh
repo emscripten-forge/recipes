@@ -7,7 +7,7 @@ unset BUILD_DIR
 
 make release
 
-OUT_DIR="$PREFIX/share/boxedwine"
+OUT_DIR="$PREFIX/share/boxedwine-single-thread"
 mkdir -p "$OUT_DIR"
 
 cp -r Build/Release/* "$OUT_DIR/"
