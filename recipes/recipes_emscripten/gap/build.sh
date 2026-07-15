@@ -85,11 +85,25 @@ mkdir -p "$AUX_PREFIX"
 # Run configure if we don't have a makefile, or someone configured this
 # GAP for standard building (emscripten builds will use 'emcc')
 if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
-    emconfigure ./configure ABI=32 \
+    emconfigure ./configure --prefix="${PREFIX}" ABI=32 \
     --with-gmp=$AUX_PREFIX \
     --with-zlib=$AUX_PREFIX \
-    LDFLAGS="-s ASYNCIFY=1 -O2"
+    LDFLAGS="-s JSPI -O2"
 fi;
+
+# Target the Linux/Unix block to redefine shared lib extensions to static
+sed -i 's/SHLIB_EXT=\.so/SHLIB_EXT=.a/' Makefile.rules
+sed -i 's/LIBGAP_FULL = libgap$(SHLIB_EXT)\.$(SHLIB_MAJOR)/LIBGAP_FULL = libgap.a/' Makefile.rules
+
+# Swap the dynamic linker command for the static archiver
+sed -i 's/.*$(QUIET_LINK)$(LINK) -o $@ $(LINK_SHLIB_FLAGS).*/\t$(QUIET_LINK)$(AR) rcs $@ $(OBJS)/' Makefile.rules
+
+# Prevent a circular dependency from deleting the archive
+sed -i 's/libgap$(SHLIB_EXT): $(LIBGAP_FULL)/libgap_avoid_circular: $(LIBGAP_FULL)/' Makefile.rules
+
+# Remove symlink creation from the install step
+sed -i '/ln -sf $(LIBGAP_FULL) $(DESTDIR)$(libdir)\/libgap$(SHLIB_EXT)/d' Makefile.rules
+sed -i '/$(INSTALL_NAME_TOOL) -id/d' Makefile.rules
 
 if [[ "$PKG_NAME" == "gap" ]]; then
     echo "Building full packages for $PKG_NAME..."
@@ -117,8 +131,8 @@ fi
 
 # The EXEEXT is usually for windows, but here it lets us set GAP's extension,
 # which lets us produce a html page to run GAP in.
-emmake make -j8 LDFLAGS="-lidbfs.js -s ASYNCIFY=1 -sTOTAL_STACK=32mb -sASYNCIFY_STACK_SIZE=32000000 -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
-emmake install
+emmake make -j8 LDFLAGS="-lidbfs.js -s JSPI -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
+emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
 bash etc/emscripten/assemble-website.sh
-cp web-example/* "${PREFIX}/bin/"
+cp -r web-example/* "${PREFIX}/bin/"
