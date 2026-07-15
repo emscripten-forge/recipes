@@ -1,0 +1,56 @@
+context:
+  version: '26R1.0'
+
+recipe:
+  name: boxedwine
+  version: ${{ version }}
+
+source:
+  url: https://github.com/danoon2/Boxedwine/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 36b43beb46e7f9a3df263a476b761a9a89274d4fbb0b92b4686df2d99f767642
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: boxedwine-single-thread
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - make
+    tests:
+      - package_contents:
+          files:
+            - share/boxedwine/boxedwine.wasm
+            - share/boxedwine/boxedwine.js
+            - share/boxedwine/boxedwine.html
+    build:
+      script: build_single_thread.sh
+
+  - package:
+      name: boxedwine-multi-thread
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - make
+    tests:
+      - package_contents:
+          files:
+            - share/boxedwine/boxedwine.wasm
+            - share/boxedwine/boxedwine.js
+            - share/boxedwine/boxedwine.html
+    build:
+      script: build_multi_thread.sh
+
+about:
+  homepage: https://www.boxedwine.org/
+  license: GPL-2.0-only
+  license_file: license.txt
+  summary: Emulator that can run 32-bit Windows programs/games on multiple platforms via Wine 
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
