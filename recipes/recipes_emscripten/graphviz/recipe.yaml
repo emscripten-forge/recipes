@@ -20,13 +20,23 @@ outputs:
         - bison
         - flex
         - pkg-config
+        - swig
+        - cross-python_emscripten-wasm32
+        - python
       host:
         - expat
         - zlib
         - libwebp
+        - python
+      ignore_run_exports:
+        from_package:
+          - python
+          - cross-python_emscripten-wasm32
     source:
       url: https://gitlab.com/graphviz/graphviz/-/archive/${{ version }}/${{ name }}-${{ version }}.tar.gz
       sha256: cc673e3eb9013f40761590b2b071c0fb89ad5c5d694e25d4e1238c74df86c697
+      patches:
+        - patches/0001-preload-python-builtin-plugins.patch
 
   - package:
       name: graphviz
@@ -147,6 +157,46 @@ outputs:
         files:
           recipe:
             - test_cli.sh
+
+  - package:
+      name: graphviz-python
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: ${{ build_number }}
+      script: echo "Collecting Python files from cache"
+      files:
+        include:
+          - lib/_gv_python3.*
+          - lib/graphviz/python3/**
+          - lib/python*/site-packages/_gv_python3.so
+          - lib/python*/site-packages/gv.py
+        exclude:
+          - '**/*.pyc'
+          - '**/__pycache__/**'
+      python:
+        skip_pyc_compilation:
+          - '**/*.py'
+    requirements:
+      run:
+        - graphviz =${{ version }}
+        - python
+    tests:
+      - package_contents:
+          lib:
+            - _gv_python3.a
+          files:
+            - lib/graphviz/python3/gv.py
+            - lib/python*/site-packages/_gv_python3.so
+      - script: pytester
+        files:
+          recipe:
+            - test_graphviz_python.py
+        requirements:
+          build:
+            - pytester
+          run:
+            - pytester-run
 
 about:
   homepage: https://graphviz.org
