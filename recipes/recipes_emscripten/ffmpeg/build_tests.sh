@@ -5,7 +5,8 @@ echo "=========================================="
 echo "Building FFmpeg tests..."
 echo "=========================================="
 
-test_type="${1:?usage: build_tests.sh {libs|cli}}"
+raw_test_type="${1:?usage: build_tests.sh libs or cli}"
+test_type="${raw_test_type%\}}"
 
 if [[ "${test_type}" == "cli" ]]; then
   node "${PREFIX}/bin/ffmpeg.js" -version
