@@ -1,0 +1,42 @@
+context:
+  version: '10.9'
+
+package:
+  name: sagemath-v86
+  version: ${{ version }}
+
+source:
+- url: https://github.com/sagemath/sage/archive/refs/tags/${{ version }}.tar.gz
+  sha256: c4cebeebf45412830e35672aab40260852b92e64a29f852c7b467209c9654ebe
+- git: https://github.com/wangyenshu/sagemath-v86-tools
+  target_directory: v86
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - docker
+    - nodejs >=18            
+    - python                  
+    - zstandard               
+    - zstd                   
+    - coreutils
+  host:
+    - v86
+
+tests:
+- package_contents:
+    files:
+    - share/sagemath-v86/images/debian-base-fs.json
+    - share/sagemath-v86/images/debian-state-base.bin.zst.part1
+
+about:
+  license: GPL-2.0-or-later
+  license_file: COPYING.txt
+  summary: Sage is open source mathematical software released under the GNU General Public Licence GPLv2+, and includes packages that have compatible software licenses.
+  homepage: https://www.sagemath.org/
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
