@@ -1,0 +1,71 @@
+context:
+  version: 10.8.5
+
+package:
+  name: passagemath-libecm
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-libecm/passagemath_libecm-${{ version }}.tar.gz
+  sha256: 46542c971d60a7b4f9a390eeb5c47963bd21e05b1b60cb8976a513b32d444290
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - ecm
+  - gmp
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_libecm.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Elliptic curve method for integer factorization using GMP-ECM'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides interfaces to GMP-ECM, the implementation
+    of the Elliptic Curve Method for integer factorization.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_libecm.py
+  recipe-maintainers:
+  - mkoeppe
