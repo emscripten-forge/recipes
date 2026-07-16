@@ -1,0 +1,70 @@
+context:
+  name: energy
+  version: 1.7-12
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: ac2224befa4c6ab62f99816ff670b1ee35288cabb7db362257e9af21c87e6f72
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp >= 0.12.6
+  - r-boot
+  - r-gsl
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp >= 0.12.6
+  - r-boot
+  - r-gsl
+  run:
+  - r-rcpp >= 0.12.6
+  - r-boot
+  - r-gsl
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://github.com/mariarizzo/energy
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/mariarizzo/energy
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: 'E-Statistics: Multivariate Inference via the Energy of Data'
+  description: |-
+    E-statistics (energy) tests and statistics for multivariate and univariate inference,
+    including distance correlation, one-sample, two-sample, and multi-sample tests for
+    comparing multivariate distributions, are implemented. Measuring and testing
+    multivariate independence based on distance correlation, partial distance correlation,
+    multivariate goodness-of-fit tests, k-groups and hierarchical clustering based on energy
+    distance, testing for multivariate normality, distance components (disco) for non-parametric
+    analysis of structured data, and other energy statistics/methods are implemented.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
