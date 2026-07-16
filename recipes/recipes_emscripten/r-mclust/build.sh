@@ -49,6 +49,6 @@ export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1"
 export CFLAGS="-O2 -g0 -fPIC -fwasm-exceptions"
 export CXXFLAGS="-g0 -fPIC -fwasm-exceptions"
 
-
+cp $RECIPE_DIR/Makevars $SRC_DIR/src/Makevars
 
 $R CMD INSTALL $R_ARGS .
