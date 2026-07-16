@@ -1,0 +1,61 @@
+context:
+  name: gsl
+  version: 2.1-9
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 56dec6105a882c7d976765b879d0832b436f0371c174e34a3e37bc390c56ed80
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: |
+     export CFLAGS=""
+     export CXXFLAGS=""
+     export LDFLAGS=""
+     export CPPFLAGS=""
+     $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+  - gsl
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+ 
+about:
+  homepage: https://github.com/RobinHankin/gsl
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/RobinHankin/gsl
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Wrapper for the Gnu Scientific Library
+  description: |-
+    An R wrapper for some of the functionality of the
+    Gnu Scientific Library.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
