@@ -1,4 +1,7 @@
+print('Loading pspline package')
 library(pspline)
+print('... pspline package loaded successfully')
+
 test_1 <- function() {
     example(smooth.Pspline)
     ## smoother line is given by
@@ -19,9 +22,9 @@ test_2 <- function() {
     lines(sm.spline(speed, dist, df=10), lty=2, col = "red")
 }
 
-cat("Running test_1\n")
+print("Running test_1")
 test_1()
 
-cat("Running test_2\n")
+print("Running test_2")
 test_2()
 
