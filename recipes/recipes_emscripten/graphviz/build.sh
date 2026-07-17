@@ -9,7 +9,17 @@ LDFLAGS="${LDFLAGS:-}"
 
 export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
 export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
+# Graphviz links several executables from object libraries and their static
+# archives. SIDE_MODULE makes wasm-ld use --whole-archive, which links those
+# objects twice and produces duplicate-symbol errors. The Python binding is a
+# static archive on Emscripten, so it does not need SIDE_MODULE at this stage.
+LDFLAGS="${LDFLAGS//-s SIDE_MODULE=1/}"
+LDFLAGS="${LDFLAGS//-sSIDE_MODULE=1/}"
 export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
+
+TARGET_PYTHON_INCLUDE="${PREFIX}/include/python${PY_VER}"
+TARGET_PYTHON_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a"
+BUILD_PYTHON="${BUILD_PREFIX}/bin/python"
 
 # Upstream creates non-suffixed alias symlinks for dot (circo, fdp, ...),
 # but Emscripten installs executables with a .js suffix. Make the alias names
@@ -28,6 +38,16 @@ emcmake cmake -GNinja \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DPython3_EXECUTABLE="${BUILD_PYTHON}" \
+    -DPython3_INCLUDE_DIR="${TARGET_PYTHON_INCLUDE}" \
+    -DPython3_INCLUDE_DIRS="${TARGET_PYTHON_INCLUDE}" \
+    -DPython3_LIBRARY="${TARGET_PYTHON_LIBRARY}" \
+    -DPython3_LIBRARIES="${TARGET_PYTHON_LIBRARY}" \
+    -DPYTHON3_EXECUTABLE="${BUILD_PYTHON}" \
+    -DPYTHON3_INCLUDE_DIR="${TARGET_PYTHON_INCLUDE}" \
+    -DPYTHON3_INCLUDE_PATH="${TARGET_PYTHON_INCLUDE}" \
+    -DPYTHON3_LIBRARY="${TARGET_PYTHON_LIBRARY}" \
+    -DPYTHON3_LIBRARIES="${TARGET_PYTHON_LIBRARY}" \
     -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
     -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
     -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=BOTH \
@@ -35,8 +55,8 @@ emcmake cmake -GNinja \
     -DGRAPHVIZ_CLI=ON \
     -Dwith_cxx_api=ON \
     -DENABLE_LTDL=OFF \
-    -DENABLE_SWIG=OFF \
-    -DENABLE_PYTHON=OFF \
+    -DENABLE_SWIG=ON \
+    -DENABLE_PYTHON=ON \
     -DWITH_EXPAT=ON \
     -DWITH_WEBP=ON \
     -DWITH_ZLIB=ON \
@@ -78,6 +98,36 @@ emcmake cmake -GNinja \
 find . -type f -name '*.cmake' -exec sed -i 's|libz\.so|libz.a|g' {} + 2>/dev/null || true
 
 ninja install
+
+# UseSWIG generates the Python proxy module next to the binding target, but
+# Graphviz's CMake install rules only install the compiled extension. Keep the
+# proxy alongside it so `import gv` works from the packaged Python output.
+gv_python_proxy="$(find "${PWD}/tclpkg/gv" -type f -name gv.py -print -quit)"
+if [ -z "${gv_python_proxy}" ]; then
+    echo "Unable to locate the SWIG-generated gv.py proxy" >&2
+    exit 1
+fi
+install -Dm644 "${gv_python_proxy}" "${PREFIX}/lib/graphviz/python3/gv.py"
+
+# Emscripten maps CMake MODULE libraries to static archives. Python cannot
+# import that archive directly, so link the SWIG wrapper and Graphviz archives
+# into a side module for the runtime package.
+mapfile -t graphviz_archives < <(
+    find "${PWD}" -type f -name '*.a' \
+        ! -path "${PWD}/tclpkg/gv/_gv_python3.a" | sort
+)
+mkdir -p "${PREFIX}/lib/python${PY_VER}/site-packages"
+em++ -shared -sSIDE_MODULE=1 \
+    -o "${PREFIX}/lib/python${PY_VER}/site-packages/_gv_python3.so" \
+    -Wl,--start-group \
+    "${PWD}/tclpkg/gv/_gv_python3.a" \
+    "${graphviz_archives[@]}" \
+    -Wl,--end-group \
+    "${PREFIX}/lib/libexpat.a" \
+    "${PREFIX}/lib/libz.a" \
+    "${PREFIX}/lib/libwebp.a"
+install -Dm644 "${gv_python_proxy}" \
+    "${PREFIX}/lib/python${PY_VER}/site-packages/gv.py"
 
 # Upstream only installs a subset of the static archives. The remaining
 # support libraries and built-in plugins are still required to consume libgvc
