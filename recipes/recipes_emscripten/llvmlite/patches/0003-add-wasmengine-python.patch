@@ -1,9 +1,9 @@
 diff --git a/llvmlite/binding/wasmengine.py b/llvmlite/binding/wasmengine.py
 new file mode 100644
-index 00000000..4f89f547
+index 00000000..8daa5b5f
 --- /dev/null
 +++ b/llvmlite/binding/wasmengine.py
-@@ -0,0 +1,613 @@
+@@ -0,0 +1,616 @@
 +"""
 +WASM Execution Engine for llvmlite.
 +
@@ -285,7 +285,7 @@ index 00000000..4f89f547
 +            obj_path = os.path.join(tmpdir, 'mod.o')
 +            wasm_path = os.path.join(tmpdir, 'output.wasm')
 +
-+            print(f'[WasmEngine] linking round={self._round} {module_name!r}',
++            _dbg(f'linking round={self._round} {module_name!r}',
 +                  flush=True)
 +
 +            with open(obj_path, 'wb') as fh:
@@ -583,6 +583,9 @@ index 00000000..4f89f547
 +    if target_machine is None:
 +        triple = ('wasm32-unknown-emscripten' if _ON_EMSCRIPTEN
 +                  else 'wasm32-unknown-unknown')
++        from llvmlite.binding import initfini as _initfini
++        _initfini.initialize_all_targets()
++        _initfini.initialize_all_asmprinters()
 +        target = _targets.Target.from_triple(triple)
 +        reloc = 'pic' if _ON_EMSCRIPTEN else 'default'
 +        target_machine = target.create_target_machine(reloc=reloc)
