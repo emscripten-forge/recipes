@@ -12,16 +12,30 @@ cp -r "${DATA_DIR}"/* ./fricas0-data/
 # Explicitly use the build-machine compiler, not emcc,
 HOST_ECL_PREFIX="${SRC_DIR}/host-install"
 
-CC="${CC_FOR_BUILD:-gcc}" \
-CXX="${CXX_FOR_BUILD:-g++}" \
+CC="${CC_FOR_BUILD:-gcc} -m32" \
+CXX="${CXX_FOR_BUILD:-g++} -m32" \
+CFLAGS="-m32 -O2" \
+CXXFLAGS="-m32 -O2" \
+LDFLAGS="-m32" \
 AR="${AR_FOR_BUILD:-ar}" \
 RANLIB="${RANLIB_FOR_BUILD:-ranlib}" \
-  ./configure --prefix="${HOST_ECL_PREFIX}"
+  ./configure --prefix="${HOST_ECL_PREFIX}" \
+  --with-gmp=included \
+  --disable-shared
 
 make -j8
 make install
 
 export ECL_TO_RUN="${HOST_ECL_PREFIX}/bin/ecl"
+
+cd ./fricas0-data
+
+$ECL_TO_RUN -eval '(progn (load "lisp/load-lisp.lisp") (load "lisp/compile-interp.lisp") (quit))'
+echo ')lisp (progn (load "lisp/compile-algebra.lisp") (quit))' | $ECL_TO_RUN -load fricas
+
+find interp -maxdepth 1 -type f -name "*.lisp" -delete
+find algebra -maxdepth 1 -type f -name "*.lsp" -delete
+cd ..
 
 make distclean || true
 
