@@ -1,0 +1,67 @@
+diff --git a/llvmlite/binding/__init__.py b/llvmlite/binding/__init__.py
+index 824c2039..d773d49b 100644
+--- a/llvmlite/binding/__init__.py
++++ b/llvmlite/binding/__init__.py
+@@ -1,8 +1,14 @@
+ """
+ Things that rely on the LLVM library
+ """
++import sys
++
+ from .dylib import *
+-from .executionengine import *
++# executionengine.cpp (MCJIT) and orcjit.cpp are excluded from the
++# Emscripten build — skip both on that platform.
++if sys.platform != 'emscripten':
++    from .executionengine import *
++    from .orcjit import *
+ from .initfini import *
+ from .linker import *
+ from .module import *
+@@ -14,5 +20,7 @@ from .typeref import *
+ from .analysis import *
+ from .object_file import *
+ from .context import *
+-from .orcjit import *
+ from .config import *
++from .wasmengine import (WasmExecutionEngine, WasmFunction, WasmtimeBackend,
++                         EmscriptenBackend, create_wasm_engine,
++                         WasmRuntimeError, WasmToolNotFoundError)
+diff --git a/llvmlite/binding/executionengine.py b/llvmlite/binding/executionengine.py
+index 1ba0985e..dc7eccf9 100644
+--- a/llvmlite/binding/executionengine.py
++++ b/llvmlite/binding/executionengine.py
+@@ -1,4 +1,5 @@
+ import platform
++import sys
+ from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
+                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
+                     py_object, Structure)
+@@ -6,8 +7,10 @@ from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
+ from llvmlite.binding import ffi, targets, object_file
+ 
+ 
+-# Just check these weren't optimized out of the DLL.
+-ffi.lib.LLVMPY_LinkInMCJIT
++# MCJIT is not available on Emscripten (executionengine.cpp excluded from build).
++if sys.platform != 'emscripten':
++    # Just check these weren't optimized out of the DLL.
++    ffi.lib.LLVMPY_LinkInMCJIT
+ 
+ 
+ def create_mcjit_compiler(module, target_machine, use_lmm=None):
+diff --git a/llvmlite/utils.py b/llvmlite/utils.py
+index e07ecd37..64650492 100644
+--- a/llvmlite/utils.py
++++ b/llvmlite/utils.py
+@@ -9,6 +9,10 @@ def get_library_name():
+     """
+     Return the name of the llvmlite shared library file.
+     """
++    # When cross-compiling for Emscripten, the output is always .so regardless
++    # of the host OS (cmake SHARED library on wasm32-unknown-emscripten).
++    if os.environ.get('EMSCRIPTEN') or os.environ.get('EM_CONFIG') or os.environ.get('EMSDK'):
++        return 'libllvmlite.so'
+     if os.name == 'posix':
+         if sys.platform == 'darwin':
+             return 'libllvmlite.dylib'
