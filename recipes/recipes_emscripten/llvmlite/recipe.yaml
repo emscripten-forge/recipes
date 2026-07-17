@@ -1,0 +1,65 @@
+context:
+  name: llvmlite
+  version: "0.48.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 543b19f9ef8f3c7c60d1468191e4ee1b1537bf9f8a3d56f64c0ddd98de92edd2
+  patches:
+  - patches/0001-emscripten-cmake-build-system.patch
+  - patches/0002-add-wasmlinker-cpp.patch
+  - patches/0003-add-wasmengine-python.patch
+  - patches/0004-emscripten-python-compat.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  - cmake
+  - make
+
+  host:
+  - python
+  - setuptools
+  # llvm 22.* matches llvmlite 0.48's official LLVM support range.
+  # liblldWasm.a + liblldCommon.a (for wasmlinker.cpp) are bundled in the
+  # llvm package on emscripten-forge alongside the LLVM static archives.
+  - llvm 22.*
+
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_llvmlite.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: http://llvmlite.pydata.org
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: >
+    A lightweight LLVM python binding for writing JIT compilers.
+    Includes WasmExecutionEngine for JIT-like execution inside Emscripten/JupyterLite.
+  documentation: http://llvmlite.pydata.org/
+  repository: https://github.com/numba/llvmlite
+
+extra:
+  recipe-maintainers:
+  - anutosh491
+
