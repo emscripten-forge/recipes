@@ -1,4 +1,7 @@
+print('Loading copula package')
 library(copula)
+print('... copula package loaded successfully')
+
 test_1 <- function() {
     ## Some of the more important functions (and their examples) are
 
@@ -3160,348 +3163,348 @@ test_115 <- function() {
     xvCopula(plackettCopula(),x, k=5)
 }
 
-cat("Running test_1\n")
+print("Running test_1")
 test_1()
 
-cat("Running test_2\n")
+print("Running test_2")
 test_2()
 
-cat("Running test_3\n")
+print("Running test_3")
 test_3()
 
-cat("Running test_4\n")
+print("Running test_4")
 test_4()
 
-cat("Running test_5\n")
+print("Running test_5")
 test_5()
 
-cat("Running test_6\n")
+print("Running test_6")
 test_6()
 
-cat("Running test_7\n")
+print("Running test_7")
 test_7()
 
-cat("Running test_8\n")
+print("Running test_8")
 test_8()
 
-cat("Running test_9\n")
+print("Running test_9")
 test_9()
 
-cat("Running test_10\n")
+print("Running test_10")
 test_10()
 
-cat("Running test_11\n")
+print("Running test_11")
 test_11()
 
-cat("Running test_12\n")
+print("Running test_12")
 test_12()
 
-cat("Running test_13\n")
+print("Running test_13")
 test_13()
 
-cat("Running test_14\n")
+print("Running test_14")
 test_14()
 
-cat("Running test_15\n")
+print("Running test_15")
 test_15()
 
-cat("Running test_16\n")
+print("Running test_16")
 test_16()
 
-cat("Running test_17\n")
+print("Running test_17")
 test_17()
 
-cat("Running test_18\n")
+print("Running test_18")
 test_18()
 
-cat("Running test_19\n")
+print("Running test_19")
 test_19()
 
-cat("Running test_20\n")
+print("Running test_20")
 test_20()
 
-cat("Running test_21\n")
+print("Running test_21")
 test_21()
 
-cat("Running test_22\n")
+print("Running test_22")
 test_22()
 
-cat("Running test_23\n")
+print("Running test_23")
 test_23()
 
-cat("Running test_24\n")
+print("Running test_24")
 test_24()
 
-cat("Running test_25\n")
+print("Running test_25")
 test_25()
 
-cat("Running test_26\n")
+print("Running test_26")
 test_26()
 
-cat("Running test_27\n")
+print("Running test_27")
 test_27()
 
-cat("Running test_28\n")
+print("Running test_28")
 test_28()
 
-cat("Running test_29\n")
+print("Running test_29")
 test_29()
 
-cat("Running test_30\n")
+print("Running test_30")
 test_30()
 
-cat("Running test_31\n")
+print("Running test_31")
 test_31()
 
-cat("Running test_32\n")
+print("Running test_32")
 test_32()
 
-cat("Running test_33\n")
+print("Running test_33")
 test_33()
 
-cat("Running test_34\n")
+print("Running test_34")
 test_34()
 
-cat("Running test_35\n")
+print("Running test_35")
 test_35()
 
-cat("Running test_36\n")
+print("Running test_36")
 test_36()
 
-cat("Running test_37\n")
+print("Running test_37")
 test_37()
 
-cat("Running test_38\n")
+print("Running test_38")
 test_38()
 
-cat("Running test_39\n")
+print("Running test_39")
 test_39()
 
-cat("Running test_40\n")
+print("Running test_40")
 test_40()
 
-cat("Running test_41\n")
+print("Running test_41")
 test_41()
 
-cat("Running test_42\n")
+print("Running test_42")
 test_42()
 
-cat("Running test_43\n")
+print("Running test_43")
 test_43()
 
-cat("Running test_44\n")
+print("Running test_44")
 test_44()
 
-cat("Running test_45\n")
+print("Running test_45")
 test_45()
 
-cat("Running test_46\n")
+print("Running test_46")
 test_46()
 
-cat("Running test_47\n")
+print("Running test_47")
 test_47()
 
-cat("Running test_48\n")
+print("Running test_48")
 test_48()
 
-cat("Running test_49\n")
+print("Running test_49")
 test_49()
 
-cat("Running test_50\n")
+print("Running test_50")
 test_50()
 
-cat("Running test_51\n")
+print("Running test_51")
 test_51()
 
-cat("Running test_52\n")
+print("Running test_52")
 test_52()
 
-cat("Running test_53\n")
+print("Running test_53")
 test_53()
 
-cat("Running test_54\n")
+print("Running test_54")
 test_54()
 
-cat("Running test_55\n")
+print("Running test_55")
 test_55()
 
-cat("Running test_56\n")
+print("Running test_56")
 test_56()
 
-cat("Running test_57\n")
+print("Running test_57")
 test_57()
 
-cat("Running test_58\n")
+print("Running test_58")
 test_58()
 
-cat("Running test_59\n")
+print("Running test_59")
 test_59()
 
-cat("Running test_60\n")
+print("Running test_60")
 test_60()
 
-cat("Running test_61\n")
+print("Running test_61")
 test_61()
 
-cat("Running test_62\n")
+print("Running test_62")
 test_62()
 
-cat("Running test_63\n")
+print("Running test_63")
 test_63()
 
-cat("Running test_64\n")
+print("Running test_64")
 test_64()
 
-cat("Running test_65\n")
+print("Running test_65")
 test_65()
 
-cat("Running test_66\n")
+print("Running test_66")
 test_66()
 
-cat("Running test_67\n")
+print("Running test_67")
 test_67()
 
-cat("Running test_68\n")
+print("Running test_68")
 test_68()
 
-cat("Running test_69\n")
+print("Running test_69")
 test_69()
 
-cat("Running test_70\n")
+print("Running test_70")
 test_70()
 
-cat("Running test_71\n")
+print("Running test_71")
 test_71()
 
-cat("Running test_72\n")
+print("Running test_72")
 test_72()
 
-cat("Running test_73\n")
+print("Running test_73")
 test_73()
 
-cat("Running test_74\n")
+print("Running test_74")
 test_74()
 
-cat("Running test_75\n")
+print("Running test_75")
 test_75()
 
-cat("Running test_76\n")
+print("Running test_76")
 test_76()
 
-cat("Running test_77\n")
+print("Running test_77")
 test_77()
 
-cat("Running test_78\n")
+print("Running test_78")
 test_78()
 
-cat("Running test_79\n")
+print("Running test_79")
 test_79()
 
-cat("Running test_80\n")
+print("Running test_80")
 test_80()
 
-cat("Running test_81\n")
+print("Running test_81")
 test_81()
 
-cat("Running test_82\n")
+print("Running test_82")
 test_82()
 
-cat("Running test_83\n")
+print("Running test_83")
 test_83()
 
-cat("Running test_84\n")
+print("Running test_84")
 test_84()
 
-cat("Running test_85\n")
+print("Running test_85")
 test_85()
 
-cat("Running test_86\n")
+print("Running test_86")
 test_86()
 
-cat("Running test_87\n")
+print("Running test_87")
 test_87()
 
-cat("Running test_88\n")
+print("Running test_88")
 test_88()
 
-cat("Running test_89\n")
+print("Running test_89")
 test_89()
 
-cat("Running test_90\n")
+print("Running test_90")
 test_90()
 
-cat("Running test_91\n")
+print("Running test_91")
 test_91()
 
-cat("Running test_92\n")
+print("Running test_92")
 test_92()
 
-cat("Running test_93\n")
+print("Running test_93")
 test_93()
 
-cat("Running test_94\n")
+print("Running test_94")
 test_94()
 
-cat("Running test_95\n")
+print("Running test_95")
 test_95()
 
-cat("Running test_96\n")
+print("Running test_96")
 test_96()
 
-cat("Running test_97\n")
+print("Running test_97")
 test_97()
 
-cat("Running test_98\n")
+print("Running test_98")
 test_98()
 
-cat("Running test_99\n")
+print("Running test_99")
 test_99()
 
-cat("Running test_100\n")
+print("Running test_100")
 test_100()
 
-cat("Running test_101\n")
+print("Running test_101")
 test_101()
 
-cat("Running test_102\n")
+print("Running test_102")
 test_102()
 
-cat("Running test_103\n")
+print("Running test_103")
 test_103()
 
-cat("Running test_104\n")
+print("Running test_104")
 test_104()
 
-cat("Running test_105\n")
+print("Running test_105")
 test_105()
 
-cat("Running test_106\n")
+print("Running test_106")
 test_106()
 
-cat("Running test_107\n")
+print("Running test_107")
 test_107()
 
-cat("Running test_108\n")
+print("Running test_108")
 test_108()
 
-cat("Running test_109\n")
+print("Running test_109")
 test_109()
 
-cat("Running test_110\n")
+print("Running test_110")
 test_110()
 
-cat("Running test_111\n")
+print("Running test_111")
 test_111()
 
-cat("Running test_112\n")
+print("Running test_112")
 test_112()
 
-cat("Running test_113\n")
+print("Running test_113")
 test_113()
 
-cat("Running test_114\n")
+print("Running test_114")
 test_114()
 
-cat("Running test_115\n")
+print("Running test_115")
 test_115()
 
