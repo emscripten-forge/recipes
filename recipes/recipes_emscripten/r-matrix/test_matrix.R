@@ -1,4 +1,4 @@
-library(Matrix)
+library(NotMatrix)
 
 dat <- data.frame(Days = 1:5, y = rnorm(5))
 # 1) Dense Matrix API
