@@ -283,31 +283,6 @@ test_13 <- function() {
       for (i in 1:k.max)        plot (oBIC, k = i, f.x = "lambda")
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 print("Running test_1\n")
 test_1()
 
