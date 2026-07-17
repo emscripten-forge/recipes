@@ -12,13 +12,11 @@ cp -r "${DATA_DIR}"/* ./fricas0-data/
 # Explicitly use the build-machine compiler, not emcc,
 HOST_ECL_PREFIX="${SRC_DIR}/host-install"
 
-CC="${CC_FOR_BUILD:-gcc} -m32" \
-CXX="${CXX_FOR_BUILD:-g++} -m32" \
+CC="${CC_FOR_BUILD:-gcc}" \
+CXX="${CXX_FOR_BUILD:-g++}" \
 AR="${AR_FOR_BUILD:-ar}" \
 RANLIB="${RANLIB_FOR_BUILD:-ranlib}" \
-  ./configure --prefix="${HOST_ECL_PREFIX}" \
-  --with-gmp=included \
-  --disable-shared
+  ./configure --prefix="${HOST_ECL_PREFIX}"
 
 make -j8
 make install
