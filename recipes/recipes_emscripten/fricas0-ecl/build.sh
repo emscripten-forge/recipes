@@ -14,9 +14,9 @@ HOST_ECL_PREFIX="${SRC_DIR}/host-install"
 
 CC="${CC_FOR_BUILD:-gcc} -m32" \
 CXX="${CXX_FOR_BUILD:-g++} -m32" \
-CFLAGS="-m32 -O2" \
-CXXFLAGS="-m32 -O2" \
-LDFLAGS="-m32 -L${BUILD_PREFIX}/lib -Wl,-rpath,${BUILD_PREFIX}/lib ${LDFLAGS:-}" \
+CFLAGS="${CFLAGS:-} -m32 -O2" \
+CXXFLAGS="${CXXFLAGS:-} -m32 -O2" \
+LDFLAGS="${LDFLAGS:-} -m32" \
 AR="${AR_FOR_BUILD:-ar}" \
 RANLIB="${RANLIB_FOR_BUILD:-ranlib}" \
   ./configure --prefix="${HOST_ECL_PREFIX}" \
