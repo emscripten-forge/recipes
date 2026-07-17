@@ -283,6 +283,20 @@ test_13 <- function() {
       for (i in 1:k.max)        plot (oBIC, k = i, f.x = "lambda")
 }
 
+test_14 <- function() {
+      # multivariate data with outliers
+      library(mvtnorm)
+      x <- rbind(rmvnorm(200, rep(0, 6), diag(c(5, rep(1,5)))),
+            rmvnorm( 15, c(0, rep(20, 5)), diag(rep(1, 6))))
+      plotcov(covPCAproj(x),covPCAgrid(x))
+}
+
+test_15 <- function() {
+      # data with outliers
+      x <- c(rnorm(100), rnorm(10, 10))
+      qn(x)
+}
+
 print("Running test_1\n")
 test_1()
 
@@ -321,3 +335,9 @@ test_12()
 
 print("Running test_13\n")
 test_13()
+
+print("Running test_14\n")
+test_14()
+
+print("Running test_15\n")
+test_15()
