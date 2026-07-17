@@ -2,6 +2,9 @@ print('Loading copula package')
 library(copula)
 print('... copula package loaded successfully')
 
+# mass library
+library(MASS)
+
 test_1 <- function() {
     ## Some of the more important functions (and their examples) are
 
