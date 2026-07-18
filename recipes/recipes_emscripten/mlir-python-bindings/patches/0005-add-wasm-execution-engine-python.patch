@@ -1,0 +1,147 @@
+diff --git a/mlir/python/mlir/wasm_execution_engine.py b/mlir/python/mlir/wasm_execution_engine.py
+new file mode 100644
+index 000000000000..bb9bcaf64fef
+--- /dev/null
++++ b/mlir/python/mlir/wasm_execution_engine.py
+@@ -0,0 +1,141 @@
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++
++"""MLIR Wasm Execution Engine — Emscripten / JupyterLite only.
++
++Provides :class:`WasmExecutionEngine`, the counterpart of
++:class:`mlir.execution_engine.ExecutionEngine` for environments where ORC JIT
++is unavailable (wasm32-unknown-emscripten).
++
++Execution pipeline (all in-process):
++
++    MLIR module (LLVM dialect)
++         │  mlirWasmCompileModule
++         ▼
++    <name>.o  (wasm32 object, written to MEMFS)
++         │  mlirWasmLinkLoadModule → lld::wasm::link in-process
++         ▼
++    <name>.wasm  (SIDE_MODULE)
++         │  dlopen(RTLD_GLOBAL)
++         ▼
++    symbols globally visible to ctypes + subsequent modules
++
++Cross-module symbol resolution is automatic because every dlopen uses
++RTLD_GLOBAL, mirroring the pattern used by llvmlite's EmscriptenBackend and
++the original clang-repl/Wasm.cpp approach.
++"""
++
++import ctypes
++import random
++import string
++import sys
++
++if sys.platform != "emscripten":
++    raise ImportError(
++        "mlir.wasm_execution_engine is only available on the Emscripten "
++        "platform (sys.platform == 'emscripten')."
++    )
++
++from ._mlir_libs import _mlirWasmExecutionEngine  # noqa: E402
++from .ir import Module, StringAttr  # noqa: E402
++
++__all__ = ["WasmExecutionEngine"]
++
++
++class WasmExecutionEngine:
++    """Execute an MLIR module (lowered to the LLVM dialect) inside Emscripten.
++
++    The module is compiled to a wasm32 object file, linked in-process via
++    ``lld::wasm::link``, and loaded with ``dlopen(RTLD_GLOBAL)``.  Once
++    loaded, functions can be looked up by name and called via ctypes.
++
++    Parameters
++    ----------
++    module_op:
++        An :class:`mlir.ir.Operation` or :class:`mlir.ir.Module` that
++        contains only LLVM dialect ops.  The ``llvm.target_triple`` attribute
++        is set automatically if absent.
++    opt_level:
++        Optimisation level passed to the LLVM wasm32 code generator.
++        Must be in ``[0, 3]``.
++    module_name:
++        Base name used for the generated ``.o`` / ``.wasm`` files.
++        Auto-generated (8 random lowercase letters) when *None*.
++    target_triple:
++        LLVM target triple.  Defaults to ``wasm32-unknown-emscripten``.
++    """
++
++    def __init__(
++        self,
++        module_op,
++        opt_level: int = 2,
++        module_name: str | None = None,
++        target_triple: str = "wasm32-unknown-emscripten",
++    ):
++        if isinstance(module_op, Module):
++            module_op = module_op.operation
++
++        if "llvm.target_triple" not in module_op.attributes:
++            module_op.attributes["llvm.target_triple"] = StringAttr.get(
++                target_triple
++            )
++
++        if module_name is None:
++            module_name = "".join(random.choices(string.ascii_lowercase, k=8))
++
++        object_fn = _mlirWasmExecutionEngine.compile_module(
++            module_op, module_name, opt_level
++        )
++        binary_fn = f"{module_name}.wasm"
++        _mlirWasmExecutionEngine.link_load_module(object_fn, binary_fn)
++        self._module_name = module_name
++
++    # ------------------------------------------------------------------
++    # Symbol lookup
++    # ------------------------------------------------------------------
++
++    @staticmethod
++    def lookup(name: str, return_type=None):
++        """Return a ctypes callable for *name* (looked up as
++        ``_mlir_ciface_<name>`` in the global symbol table).
++
++        Parameters
++        ----------
++        name:
++            Function name *without* the ``_mlir_ciface_`` prefix.
++        return_type:
++            ctypes return type, or ``None`` for void functions.
++
++        Raises
++        ------
++        ValueError
++            If *name* is ``"main"`` (unsupported on wasm).
++        RuntimeError
++            If the symbol cannot be found.
++        """
++        if name == "main":
++            raise ValueError(
++                "Functions named 'main' are not supported on wasm; rename "
++                "the function or use a different entry point."
++            )
++        addr = _mlirWasmExecutionEngine.get_symbol_address(
++            "_mlir_ciface_" + name
++        )
++        if not addr:
++            raise RuntimeError(
++                f"mlir.wasm_execution_engine: unknown function {name!r} "
++                "(symbol '_mlir_ciface_" + name + "' not found)"
++            )
++        return ctypes.CFUNCTYPE(return_type, ctypes.c_void_p)(addr)
++
++    def invoke(self, name: str, *ctypes_args):
++        """Invoke *name* with a list of ctypes pointer arguments.
++
++        All arguments must be convertible to ``ctypes.c_void_p``.
++        """
++        func = self.lookup(name)
++        packed = (ctypes.c_void_p * len(ctypes_args))()
++        for i, a in enumerate(ctypes_args):
++            packed[i] = ctypes.cast(a, ctypes.c_void_p)
++        func(packed)

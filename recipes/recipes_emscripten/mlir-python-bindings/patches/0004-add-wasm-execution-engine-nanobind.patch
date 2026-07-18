@@ -1,0 +1,76 @@
+diff --git a/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp b/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp
+new file mode 100644
+index 000000000000..b212f4f3158c
+--- /dev/null
++++ b/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp
+@@ -0,0 +1,70 @@
++//===- WasmExecutionEngineModule.cpp - Python bindings for Wasm EE --------===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM
++// Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++//
++// nanobind extension module "_mlirWasmExecutionEngine" (Emscripten only).
++//
++// Exposes three functions to Python:
++//   compile_module(module, module_name, opt_level=2) -> str
++//   link_load_module(object_filename, binary_filename)
++//   get_symbol_address(name) -> int
++//
++//===----------------------------------------------------------------------===//
++
++#ifdef __EMSCRIPTEN__
++
++#include "mlir-c/WasmExecutionEngine.h"
++#include "mlir/Bindings/Python/Nanobind.h"
++#include "mlir/Bindings/Python/NanobindAdaptors.h"
++
++#include <string>
++
++namespace nb = nanobind;
++using namespace nb::literals;
++
++NB_MODULE(_mlirWasmExecutionEngine, m) {
++  m.doc() = "MLIR Wasm Execution Engine (Emscripten / JupyterLite only)";
++
++  m.def(
++      "compile_module",
++      [](MlirOperation module, const std::string &moduleName, int optLevel) {
++        MlirStringRef ref = mlirWasmCompileModule(
++            module,
++            mlirStringRefCreate(moduleName.c_str(), moduleName.size()),
++            optLevel);
++        return std::string(ref.data, ref.length);
++      },
++      "module"_a, "module_name"_a, "opt_level"_a = 2,
++      "Compile the MLIR operation (must be a module containing only LLVM "
++      "dialect ops with llvm.target_triple set to wasm32-unknown-emscripten) "
++      "to a wasm32 object file.  Returns the object file path.");
++
++  m.def(
++      "link_load_module",
++      [](const std::string &objectFileName, const std::string &binaryFileName) {
++        mlirWasmLinkLoadModule(
++            mlirStringRefCreate(objectFileName.c_str(), objectFileName.size()),
++            mlirStringRefCreate(binaryFileName.c_str(), binaryFileName.size()));
++      },
++      "object_filename"_a, "binary_filename"_a,
++      "Link the wasm object file into a SIDE_MODULE .wasm binary using "
++      "lld::wasm::link in-process, then load it via dlopen(RTLD_GLOBAL).");
++
++  m.def(
++      "get_symbol_address",
++      [](const std::string &name) -> uintptr_t {
++        void *sym = mlirWasmGetSymbolAddress(
++            mlirStringRefCreate(name.c_str(), name.size()));
++        return reinterpret_cast<uintptr_t>(sym);
++      },
++      "name"_a,
++      "Look up a symbol in the global dlopen symbol table.  Returns 0 if "
++      "not found.");
++}
++
++#endif // __EMSCRIPTEN__

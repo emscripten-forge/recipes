@@ -1,0 +1,194 @@
+diff --git a/mlir/CMakeLists.txt b/mlir/CMakeLists.txt
+index 9e1e9314511e..44093f2cd1b7 100644
+--- a/mlir/CMakeLists.txt
++++ b/mlir/CMakeLists.txt
+@@ -14,6 +14,28 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+   set(MLIR_STANDALONE_BUILD TRUE)
+ endif()
+ 
++# Emscripten does not support shared libraries by default.  Override the global
++# property early (after project() so the toolchain has already run) so that
++# nanobind MODULE libraries are linked with emcc as wasm SIDE_MODULEs instead
++# of being archived as static libs.  Must be set before any add_library() call.
++if(EMSCRIPTEN)
++  set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++  # Use the llvmlite pattern: inject SIDE_MODULE=1 via the CREATE_CXX_FLAGS
++  # variables so every SHARED target is linked as a wasm SIDE_MODULE.
++  # nanobind creates MODULE targets (not SHARED), which use CMAKE_MODULE_LINKER_FLAGS
++  # for their LINK_FLAGS — keep that separately so Python extensions also get the flag.
++  set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS   "-s SIDE_MODULE=1")
++  set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
++  set(CMAKE_MODULE_LINKER_FLAGS "-s SIDE_MODULE=1" CACHE STRING "" FORCE)
++  set(CMAKE_STRIP FALSE)
++  # Pre-set NB_SUFFIX as INTERNAL cache — nanobind cmake checks DEFINED CACHE{NB_SUFFIX}
++  # before querying the native Python executable for the extension suffix.  The
++  # placeholder version (313) is updated dynamically in MLIRDetectPythonEnv.cmake
++  # once find_package(Python3) has set Python3_VERSION_MAJOR/MINOR.
++  set(NB_SUFFIX ".cpython-313-wasm32-emscripten.so" CACHE INTERNAL "" FORCE)
++  set(NB_SUFFIX_S ".abi3.so" CACHE INTERNAL "" FORCE)
++endif()
++
+ # Must go below project(..)
+ include(GNUInstallDirs)
+ set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+@@ -32,6 +54,16 @@ if(MLIR_STANDALONE_BUILD)
+ 
+   include_directories(${LLVM_INCLUDE_DIRS})
+ 
++  # On Emscripten, cmake imported targets (lldWasm, lldCommon) should resolve to
++  # full library paths.  As a safety net for local builds where wasm-ld may not
++  # find them by name, add the host-prefix lib dir to the module linker search path.
++  # LLVM_LIBRARY_DIR is set by find_package(LLVM) above.
++  # Note: the recipe CI has $PREFIX/lib in the default wasm-ld search path so this
++  # is effectively a no-op there.
++  if(EMSCRIPTEN)
++    string(APPEND CMAKE_MODULE_LINKER_FLAGS " --library-path=${LLVM_LIBRARY_DIR}")
++  endif()
++
+   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+     "${CMAKE_CURRENT_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}")
+   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+diff --git a/mlir/cmake/modules/MLIRDetectPythonEnv.cmake b/mlir/cmake/modules/MLIRDetectPythonEnv.cmake
+index 01dd7437cc8f..7a549b81c843 100644
+--- a/mlir/cmake/modules/MLIRDetectPythonEnv.cmake
++++ b/mlir/cmake/modules/MLIRDetectPythonEnv.cmake
+@@ -43,6 +43,21 @@ macro(mlir_configure_python_dev_packages)
+     find_package(Python ${MLIR_MINIMUM_PYTHON_VERSION}
+       COMPONENTS Interpreter ${_python_development_component} REQUIRED)
+ 
++    # On Emscripten the Python executable is the native build-host Python, so
++    # find_package reports the host (darwin/linux) SOABI.  Override with the
++    # correct wasm32 value now that VERSION_MAJOR/MINOR are known.  Also refresh
++    # NB_SUFFIX in the cache so nanobind (found below) uses the right suffix
++    # without querying the native Python.
++    if(EMSCRIPTEN)
++      set(Python3_SOABI
++          "cpython-${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}-wasm32-emscripten")
++      set(Python_SOABI
++          "cpython-${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}-wasm32-emscripten")
++      set(NB_SUFFIX
++          ".cpython-${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR}-wasm32-emscripten.so"
++          CACHE INTERNAL "" FORCE)
++    endif()
++
+     unset(_python_development_component)
+     message(STATUS "Found python include dirs: ${Python3_INCLUDE_DIRS}")
+     message(STATUS "Found python libraries: ${Python3_LIBRARIES}")
+diff --git a/mlir/lib/CAPI/CMakeLists.txt b/mlir/lib/CAPI/CMakeLists.txt
+index 6c438508425b..a753b35b4fc2 100644
+--- a/mlir/lib/CAPI/CMakeLists.txt
++++ b/mlir/lib/CAPI/CMakeLists.txt
+@@ -16,7 +16,7 @@ add_subdirectory(RegisterEverything)
+ add_subdirectory(Transforms)
+ add_subdirectory(Target)
+ 
+-if(MLIR_ENABLE_EXECUTION_ENGINE)
++if(MLIR_ENABLE_EXECUTION_ENGINE OR EMSCRIPTEN)
+   add_subdirectory(ExecutionEngine)
+ endif()
+ 
+diff --git a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
+index bf7dff897ab6..1049e4f0b5ae 100644
+--- a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
++++ b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
+@@ -1,16 +1,50 @@
+-set(LLVM_LINK_COMPONENTS
+-  nativecodegen
+-  native
+-  orcjit
+-  support
+-)
+-
+-# Main API shared library.
+-add_mlir_upstream_c_api_library(MLIRCAPIExecutionEngine
+-  ExecutionEngine.cpp
+-
+-  LINK_LIBS PUBLIC
+-  MLIRBuiltinToLLVMIRTranslation
+-  MLIRExecutionEngine
+-  MLIRLLVMToLLVMIRTranslation
+-)
++if(EMSCRIPTEN)
++  # Bring in lldWasm and lldCommon cmake targets from the pre-built LLD
++  # installation (set LLD_DIR to the LLD cmake config directory).
++  find_package(LLD REQUIRED CONFIG)
++
++  # lld/Common/Driver.h lives in LLD_INCLUDE_DIRS (same host prefix as
++  # LLVM_INCLUDE_DIRS).  Make it findable explicitly in case the include
++  # path is not yet populated when this directory is processed.
++  include_directories(${LLD_INCLUDE_DIRS})
++
++  # On Emscripten, ORC JIT is unavailable.  Build the Wasm Execution Engine
++  # using lld::lldMain (same approach as clang-repl's Wasm backend).
++  # lldWasm provides the wasm driver; lldCommon provides lldMain itself.
++  # PARTIAL_SOURCES_INTENDED: ExecutionEngine.cpp stays uncompiled on Emscripten.
++  set(LLVM_LINK_COMPONENTS support)
++
++  add_mlir_upstream_c_api_library(MLIRCAPIWasmExecutionEngine
++    WasmExecutionEngine.cpp
++
++    PARTIAL_SOURCES_INTENDED
++
++    LINK_LIBS PUBLIC
++    MLIRBuiltinToLLVMIRTranslation
++    MLIRLLVMToLLVMIRTranslation
++    MLIRTargetLLVMIRExport
++    MLIRCAPIIR
++    lldWasm
++    lldCommon
++  )
++else()
++  set(LLVM_LINK_COMPONENTS
++    nativecodegen
++    native
++    orcjit
++    support
++  )
++
++  # Main API shared library.
++  # PARTIAL_SOURCES_INTENDED: WasmExecutionEngine.cpp stays uncompiled on native.
++  add_mlir_upstream_c_api_library(MLIRCAPIExecutionEngine
++    ExecutionEngine.cpp
++
++    PARTIAL_SOURCES_INTENDED
++
++    LINK_LIBS PUBLIC
++    MLIRBuiltinToLLVMIRTranslation
++    MLIRExecutionEngine
++    MLIRLLVMToLLVMIRTranslation
++  )
++endif()
+diff --git a/mlir/python/CMakeLists.txt b/mlir/python/CMakeLists.txt
+index 003a06b16daa..867f2c3b90b2 100644
+--- a/mlir/python/CMakeLists.txt
++++ b/mlir/python/CMakeLists.txt
+@@ -45,6 +45,7 @@ declare_mlir_python_sources(MLIRPythonSources.ExecutionEngine
+   ADD_TO_PARENT MLIRPythonSources
+   SOURCES
+     execution_engine.py
++    wasm_execution_engine.py
+     _mlir_libs/_mlirExecutionEngine.pyi
+   SOURCES_GLOB
+     runtime/*.py
+@@ -714,6 +715,21 @@ if(MLIR_ENABLE_EXECUTION_ENGINE)
+     EMBED_CAPI_LINK_LIBS
+       MLIRCAPIExecutionEngine
+   )
++elseif(EMSCRIPTEN)
++  # On Emscripten, ORC JIT is unavailable; expose the Wasm Execution Engine
++  # instead.  The Python-side module name matches the eudsl convention so that
++  # wasm_execution_engine.py can import _mlirWasmExecutionEngine unchanged.
++  declare_mlir_python_extension(MLIRPythonExtension.WasmExecutionEngine
++    MODULE_NAME _mlirWasmExecutionEngine
++    ADD_TO_PARENT MLIRPythonSources.ExecutionEngine
++    ROOT_DIR "${PYTHON_SOURCE_DIR}"
++    SOURCES
++      WasmExecutionEngineModule.cpp
++    PRIVATE_LINK_LIBS
++      LLVMSupport
++    EMBED_CAPI_LINK_LIBS
++      MLIRCAPIWasmExecutionEngine
++  )
+ endif()
+ 
+ declare_mlir_python_extension(MLIRPythonExtension.GPUDialectPasses
