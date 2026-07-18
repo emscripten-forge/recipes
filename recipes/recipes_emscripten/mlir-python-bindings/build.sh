@@ -14,6 +14,10 @@ cd build
 #   LLVM_NATIVE_TOOL_DIR     – native mlir-tblgen / llvm-tblgen / mlir-linalg-ods-yaml-gen
 #   LLVM_TABLEGEN            – explicit path (also picked up via NATIVE_TOOL_DIR)
 #   MLIR_TABLEGEN_EXE        – same
+#   LLVM_BUILD_TOOLS=OFF     – prevents wasm tools (mlir-tblgen.js, mlir-pdll.js etc.)
+#                              from being compiled during `make install` (wasted build time)
+#   MLIR_BINDINGS_PYTHON_INSTALL_PREFIX – override default python_packages/mlir_core/mlir
+#                              so files land in site-packages/mlir (xeus-python search path)
 #   Python3_*/Python_*       – split: executable = build-prefix (native Python),
 #                              include/library = host-prefix (wasm Python headers/stub)
 emcmake cmake ../mlir \
@@ -27,6 +31,8 @@ emcmake cmake ../mlir \
     -DMLIR_ENABLE_EXECUTION_ENGINE=OFF \
     -DMLIR_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_BENCHMARKS=OFF \
+    -DLLVM_BUILD_TOOLS=OFF \
+    -DMLIR_BINDINGS_PYTHON_INSTALL_PREFIX="lib/python3.13/site-packages/mlir" \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin" \
     -DLLVM_TABLEGEN="${BUILD_PREFIX}/bin/llvm-tblgen" \
     -DMLIR_TABLEGEN_EXE="${BUILD_PREFIX}/bin/mlir-tblgen" \

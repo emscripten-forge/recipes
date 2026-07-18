@@ -1,5 +1,5 @@
 diff --git a/mlir/CMakeLists.txt b/mlir/CMakeLists.txt
-index 9e1e9314511e..44093f2cd1b7 100644
+index 9e1e9314511e..77353eff0bd3 100644
 --- a/mlir/CMakeLists.txt
 +++ b/mlir/CMakeLists.txt
 @@ -14,6 +14,28 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -31,7 +31,7 @@ index 9e1e9314511e..44093f2cd1b7 100644
  # Must go below project(..)
  include(GNUInstallDirs)
  set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
-@@ -32,6 +54,16 @@ if(MLIR_STANDALONE_BUILD)
+@@ -32,6 +54,23 @@ if(MLIR_STANDALONE_BUILD)
  
    include_directories(${LLVM_INCLUDE_DIRS})
  
@@ -42,6 +42,13 @@ index 9e1e9314511e..44093f2cd1b7 100644
 +  # Note: the recipe CI has $PREFIX/lib in the default wasm-ld search path so this
 +  # is effectively a no-op there.
 +  if(EMSCRIPTEN)
++    # find_package(LLD) here (top level) so the imported targets lldWasm / lldCommon
++    # are globally visible.  If called only from a subdirectory (e.g.
++    # lib/CAPI/ExecutionEngine/), cmake-imported targets are scoped to that
++    # directory and siblings like python/ cannot resolve them — falling back to
++    # the -l flag form which wasm-ld then cannot find.
++    find_package(LLD REQUIRED CONFIG)
++    include_directories(${LLD_INCLUDE_DIRS})
 +    string(APPEND CMAKE_MODULE_LINKER_FLAGS " --library-path=${LLVM_LIBRARY_DIR}")
 +  endif()
 +
@@ -88,45 +95,36 @@ index 6c438508425b..a753b35b4fc2 100644
  endif()
  
 diff --git a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
-index bf7dff897ab6..1049e4f0b5ae 100644
+index bf7dff897ab6..153614a3758c 100644
 --- a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
 +++ b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
-@@ -1,16 +1,50 @@
+@@ -1,16 +1,43 @@
 -set(LLVM_LINK_COMPONENTS
 -  nativecodegen
 -  native
 -  orcjit
 -  support
 -)
--
++if(EMSCRIPTEN)
++  # On Emscripten, ORC JIT is unavailable.  Build the Wasm Execution Engine
++  # using lld::lldMain (same approach as clang-repl's Wasm backend).
++  # lldWasm provides the wasm driver; lldCommon provides lldMain itself.
++  # find_package(LLD) and include_directories(LLD_INCLUDE_DIRS) are done at
++  # the top-level mlir/CMakeLists.txt so the imported targets are globally visible.
++  # PARTIAL_SOURCES_INTENDED: ExecutionEngine.cpp stays uncompiled on Emscripten.
++  set(LLVM_LINK_COMPONENTS support)
+ 
 -# Main API shared library.
 -add_mlir_upstream_c_api_library(MLIRCAPIExecutionEngine
 -  ExecutionEngine.cpp
--
++  add_mlir_upstream_c_api_library(MLIRCAPIWasmExecutionEngine
++    WasmExecutionEngine.cpp
+ 
 -  LINK_LIBS PUBLIC
 -  MLIRBuiltinToLLVMIRTranslation
 -  MLIRExecutionEngine
 -  MLIRLLVMToLLVMIRTranslation
 -)
-+if(EMSCRIPTEN)
-+  # Bring in lldWasm and lldCommon cmake targets from the pre-built LLD
-+  # installation (set LLD_DIR to the LLD cmake config directory).
-+  find_package(LLD REQUIRED CONFIG)
-+
-+  # lld/Common/Driver.h lives in LLD_INCLUDE_DIRS (same host prefix as
-+  # LLVM_INCLUDE_DIRS).  Make it findable explicitly in case the include
-+  # path is not yet populated when this directory is processed.
-+  include_directories(${LLD_INCLUDE_DIRS})
-+
-+  # On Emscripten, ORC JIT is unavailable.  Build the Wasm Execution Engine
-+  # using lld::lldMain (same approach as clang-repl's Wasm backend).
-+  # lldWasm provides the wasm driver; lldCommon provides lldMain itself.
-+  # PARTIAL_SOURCES_INTENDED: ExecutionEngine.cpp stays uncompiled on Emscripten.
-+  set(LLVM_LINK_COMPONENTS support)
-+
-+  add_mlir_upstream_c_api_library(MLIRCAPIWasmExecutionEngine
-+    WasmExecutionEngine.cpp
-+
 +    PARTIAL_SOURCES_INTENDED
 +
 +    LINK_LIBS PUBLIC

@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
 new file mode 100644
-index 000000000000..546a9bf87e9d
+index 000000000000..d070c1b1e7c7
 --- /dev/null
 +++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
-@@ -0,0 +1,179 @@
+@@ -0,0 +1,180 @@
 +//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -95,9 +95,10 @@ index 000000000000..546a9bf87e9d
 +        "mlirWasmCompileModule: module has no target triple; set "
 +        "llvm.target_triple to \"wasm32-unknown-emscripten\" before calling");
 +
++  llvm::Triple triple(tripleStr);
 +  std::string errorStr;
 +  const llvm::Target *target =
-+      llvm::TargetRegistry::lookupTarget(tripleStr, errorStr);
++      llvm::TargetRegistry::lookupTarget(triple, errorStr);
 +  if (!target)
 +    llvm::report_fatal_error(
 +        ("mlirWasmCompileModule: no target for triple '" + tripleStr +
@@ -106,7 +107,7 @@ index 000000000000..546a9bf87e9d
 +
 +  llvm::TargetOptions to;
 +  std::unique_ptr<llvm::TargetMachine> targetMachine(
-+      target->createTargetMachine(llvm::Triple(tripleStr), /*CPU=*/"",
++      target->createTargetMachine(triple, /*CPU=*/"",
 +                                  /*Features=*/"", to, llvm::Reloc::PIC_));
 +  assert(optLevel >= 0 && optLevel <= 3 && "optLevel must be in [0,3]");
 +  targetMachine->setOptLevel(static_cast<llvm::CodeGenOptLevel>(optLevel));
