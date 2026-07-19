@@ -46,3 +46,11 @@ emcmake cmake ../mlir \
 
 emmake make MLIRPythonModules -j${CPU_COUNT:-4}
 emmake make install
+
+# MLIR Python bindings are designed as namespace packages (no __init__.py in the
+# source tree for mlir/, mlir/dialects/, mlir/extras/). Emscripten's MEMFS does
+# not handle namespace packages reliably, so create empty __init__.py files to
+# make `import mlir` and `from mlir.dialects import arith` work in JupyterLite.
+touch "${PREFIX}/lib/python3.13/site-packages/mlir/__init__.py"
+touch "${PREFIX}/lib/python3.13/site-packages/mlir/dialects/__init__.py"
+touch "${PREFIX}/lib/python3.13/site-packages/mlir/extras/__init__.py"
