@@ -1,0 +1,78 @@
+context:
+  version: 10.8.6
+
+package:
+  name: passagemath-groups
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-groups/passagemath_groups-${{ version }}.tar.gz
+  sha256: 39a117b68a487d94eae3c99afeeaaaaead6988f8f0ec547819a1c643b3c0d6df
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - gsl
+  - gmpy2
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-flint
+  - passagemath-gap
+  - passagemath-modules
+  run:
+  - python
+  - passagemath-categories
+  - passagemath-gap
+  - passagemath-modules
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_groups.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Groups and Invariant Theory'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides a small subset of the modules for computations with groups.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_groups.py
+  recipe-maintainers:
+  - mkoeppe
