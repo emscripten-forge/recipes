@@ -1,0 +1,339 @@
+From: MLIR Python bindings utils
+Subject: [PATCH 0006] Add mlir.utils: CFG visualization using Python IR API
+
+Adds mlir/python/mlir/utils.py providing show_cfg() and get_function_cfg()
+for MLIR function CFG visualization in Jupyter notebooks.  Uses
+block.successors from the MLIR Python IR API for control-flow edges
+(analogous to llvmlite's get_function_cfg / view_dot_graph pair).  On
+Emscripten/JupyterLite renders via @hpcc-js/wasm CDN; on native Python
+uses the graphviz subprocess.
+
+diff --git a/mlir/python/CMakeLists.txt b/mlir/python/CMakeLists.txt
+--- a/mlir/python/CMakeLists.txt
++++ b/mlir/python/CMakeLists.txt
+@@ -29,5 +29,6 @@ declare_mlir_python_sources(MLIRPythonSources.Core.Python
+     ir.py
+     passmanager.py
+     rewrite.py
++    utils.py
+     dialects/_ods_common.py
+ )
+
+diff --git a/mlir/python/mlir/utils.py b/mlir/python/mlir/utils.py
+new file mode 100644
+--- /dev/null
++++ b/mlir/python/mlir/utils.py
+@@ -0,0 +1,313 @@
++"""
++Utilities for MLIR Python bindings.
++
++Provides CFG visualization for MLIR functions using graphviz.  Works on both
++native Python (renders via the ``dot`` subprocess) and Emscripten / JupyterLite
++(renders via ``@hpcc-js/wasm`` loaded from CDN, because ``subprocess.Popen``
++is unavailable on that platform).
++
++This is analogous to ``llvmlite``'s ``get_function_cfg`` / ``view_dot_graph``
++pair, built on the MLIR Python IR API rather than an LLVM built-in printer.
++
++Usage::
++
++    import mlir.ir as ir
++    from mlir.utils import show_cfg
++
++    with ir.Context():
++        module = ir.Module.parse(src)
++        show_cfg(module, title='My CFG')
++"""
++
++import re
++import sys
++import html as _html
++import uuid
++
++try:
++    import graphviz as _gv
++except ImportError:
++    _gv = None
++
++
++# ── Internal helpers ──────────────────────────────────────────────────────────
++
++def _node_label(hdr, ops, show_ops):
++    hdr_esc = _html.escape(hdr)
++    rows = [
++        '<TR><TD ALIGN="LEFT" BGCOLOR="#b8d8ed"><B>'
++        f'<FONT FACE="Courier" POINT-SIZE="10">{hdr_esc}</FONT>'
++        '</B></TD></TR>'
++    ]
++    if show_ops:
++        for op_str in ops:
++            rows.append(
++                '<TR><TD ALIGN="LEFT">'
++                f'<FONT FACE="Courier" POINT-SIZE="9">{_html.escape(op_str)}</FONT>'
++                '</TD></TR>'
++            )
++    table = (
++        '<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="3">'
++        + ''.join(rows)
++        + '</TABLE>'
++    )
++    return f'<{table}>'
++
++
++def _parse_block_text(func_text, block_list, id_to_name):
++    """
++    Parse the textual form of a function op to extract the printed header
++    (with argument names/types as MLIR prints them) and op lines for each block.
++
++    Edges are NOT derived here — callers use ``block.successors`` instead.
++    """
++    block_hdr = {}
++    block_ops = {}
++    current = None
++    text_idx = 0  # counts named block headers seen (0 = entry is implicit)
++
++    for raw in func_text.splitlines():
++        line = raw.strip()
++        if not line:
++            continue
++
++        # Named block header: ^bb1 or ^bb1(%arg0: i32, ...):
++        m = re.match(r'^\^(\w+)(\([^)]*\))?\s*:', line)
++        if m:
++            text_idx += 1
++            bname = (
++                id_to_name.get(id(block_list[text_idx]))
++                if text_idx < len(block_list)
++                else f'bb{text_idx}'
++            )
++            current = bname
++            args = m.group(2) or ''
++            block_hdr[bname] = f'^{m.group(1)}{args}:'
++            block_ops.setdefault(bname, [])
++            continue
++
++        # Entry block begins at the func/llvm.func declaration line
++        if re.match(r'(?:func\.func|llvm\.func)\s+@', line):
++            current = 'entry'
++            sig_m = re.search(r'@\w+(\([^)]*\))', line)
++            block_hdr['entry'] = (
++                f'^entry{sig_m.group(1)}:' if sig_m else '^entry:'
++            )
++            block_ops.setdefault('entry', [])
++            continue
++
++        if current is None or line in ('{', '}'):
++            continue
++
++        block_ops.setdefault(current, []).append(line)
++
++    return block_hdr, block_ops
++
++
++def _cfg_from_op(func_op, show_ops):
++    """
++    Build a graphviz.Digraph using:
++    - ``block.successors`` from the MLIR Python IR API for edges (reliable,
++      handles all branch ops: cf, llvm, scf, omp, ...)
++    - Text parsing of ``str(func_op)`` for block headers and op lines
++      (to get MLIR's canonical printed argument names and types).
++    """
++    if _gv is None:
++        raise ImportError("graphviz package is not installed")
++
++    region = func_op.regions[0]
++    block_list = list(region.blocks)
++    if not block_list:
++        return None
++
++    id_to_name = {
++        id(b): ('entry' if i == 0 else f'bb{i}')
++        for i, b in enumerate(block_list)
++    }
++
++    block_hdr, block_ops = _parse_block_text(str(func_op), block_list, id_to_name)
++
++    dot = _gv.Digraph(
++        'CFG',
++        graph_attr={'rankdir': 'TB', 'bgcolor': '#fafafa', 'splines': 'ortho'},
++        edge_attr={'fontname': 'Courier', 'fontsize': '9'},
++    )
++
++    seen_edges: set = set()
++    for b in block_list:
++        name = id_to_name[id(b)]
++        hdr = block_hdr.get(name, f'^{name}:')
++        ops = block_ops.get(name, [])
++        dot.node(name, label=_node_label(hdr, ops, show_ops), shape='none', margin='0')
++
++        # Use block.successors from the MLIR Python IR API for edges.
++        # This is equivalent to what LLVM's get_function_cfg does via
++        # Function::viewCFG() — iterate successors of each block's terminator.
++        for succ in b.successors:
++            succ_name = id_to_name.get(id(succ))
++            if succ_name:
++                key = (name, succ_name)
++                if key not in seen_edges:
++                    dot.edge(name, succ_name)
++                    seen_edges.add(key)
++
++    return dot
++
++
++def _cfg_from_text(text, show_ops):
++    """Fallback: build DOT from raw MLIR textual IR using regex only."""
++    if _gv is None:
++        raise ImportError("graphviz package is not installed")
++
++    blocks: dict = {}
++    block_hdr: dict = {}
++    block_ops: dict = {}
++    current = None
++
++    for raw in text.splitlines():
++        line = raw.strip()
++        if not line:
++            continue
++        m = re.match(r'^\^(\w+)(\([^)]*\))?\s*:', line)
++        if m:
++            current = m.group(1)
++            args = m.group(2) or ''
++            blocks.setdefault(current, [])
++            block_hdr[current] = f'^{current}{args}:'
++            block_ops.setdefault(current, [])
++            continue
++        if re.match(r'(?:func\.func|llvm\.func)\s+@', line):
++            current = 'entry'
++            blocks.setdefault(current, [])
++            sig_m = re.search(r'@\w+(\([^)]*\))', line)
++            block_hdr[current] = (
++                f'^entry{sig_m.group(1)}:' if sig_m else '^entry:'
++            )
++            block_ops.setdefault(current, [])
++            continue
++        if current is None or line in ('{', '}'):
++            continue
++        block_ops.setdefault(current, []).append(line)
++        succs = blocks[current]
++        for t in re.findall(r'cf\.br\s+\^(\w+)', line):
++            if t not in succs:
++                succs.append(t)
++        if 'cond_br' in line:
++            for t in re.findall(r'\^(\w+)(?:\(|\s*[:,])', line)[:2]:
++                if t not in succs:
++                    succs.append(t)
++        for t in re.findall(r'llvm\.br\s+\^(\w+)', line):
++            if t not in succs:
++                succs.append(t)
++        if 'llvm.cond_br' in line:
++            for t in re.findall(r'\^(\w+)', line)[:2]:
++                if t not in succs:
++                    succs.append(t)
++
++    if not blocks:
++        return None
++
++    dot = _gv.Digraph(
++        'CFG',
++        graph_attr={'rankdir': 'TB', 'bgcolor': '#fafafa', 'splines': 'ortho'},
++        edge_attr={'fontname': 'Courier', 'fontsize': '9'},
++    )
++    seen_edges: set = set()
++    for name in blocks:
++        hdr = block_hdr.get(name, f'^{name}:')
++        ops = block_ops.get(name, [])
++        dot.node(name, label=_node_label(hdr, ops, show_ops), shape='none', margin='0')
++    for name, succs in blocks.items():
++        for s in succs:
++            key = (name, s)
++            if key not in seen_edges:
++                dot.edge(name, s)
++                seen_edges.add(key)
++    return dot
++
++
++# ── Public API ────────────────────────────────────────────────────────────────
++
++def get_function_cfg(source, show_ops=True):
++    """
++    Return a ``graphviz.Digraph`` for the first function in *source*.
++
++    Uses ``block.successors`` from the MLIR Python IR API for control-flow
++    edges (analogous to ``llvmlite``'s ``get_function_cfg`` which uses
++    LLVM's ``Function::viewCFG``).  Block headers and operation text come
++    from MLIR's own textual printer via ``str()``.
++
++    Parameters
++    ----------
++    source : mlir.ir.Module | mlir.ir.Operation | str
++        The IR to visualize.  If a Module, the first function op is used.
++    show_ops : bool
++        Whether to include operation lines in each block's node label.
++
++    Returns
++    -------
++    graphviz.Digraph | None
++        None if no function was found.
++    """
++    try:
++        import mlir.ir as _ir
++        if isinstance(source, _ir.Module):
++            for op in source.body.operations:
++                if op.name in ('func.func', 'llvm.func'):
++                    return _cfg_from_op(op, show_ops)
++            return None
++        if isinstance(source, _ir.Operation):
++            return _cfg_from_op(source, show_ops)
++    except (ImportError, AttributeError):
++        pass
++
++    return _cfg_from_text(str(source), show_ops)
++
++
++def show_cfg(source, title='', show_ops=True):
++    """
++    Display the CFG of an MLIR function in the current Jupyter environment.
++
++    On Emscripten / JupyterLite, subprocess is unavailable, so the DOT graph
++    is rendered via ``@hpcc-js/wasm`` (a pure JS/WASM graphviz port) loaded
++    from CDN — the same approach used by ``llvmlite``'s ``view_dot_graph``.
++    On native Python, the regular ``graphviz`` subprocess is used.
++
++    Parameters
++    ----------
++    source : mlir.ir.Module | mlir.ir.Operation | str
++        Anything accepted by :func:`get_function_cfg`.
++    title : str
++        Optional bold heading displayed above the graph.
++    show_ops : bool
++        Whether to show operation lines inside each block node.
++    """
++    from IPython.display import HTML, display as _display
++
++    dot = get_function_cfg(source, show_ops=show_ops)
++    if not dot:
++        print('(no CFG — no function found in source)')
++        return
++
++    if title:
++        _display(HTML(f'<b>{title}</b>'))
++
++    if sys.platform == 'emscripten':
++        div_id = 'cfg-' + uuid.uuid4().hex[:8]
++        src = dot.source
++        dot_escaped = (
++            src.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
++        )
++        html_str = (
++            f'<div id="{div_id}"></div>\n'
++            '<script type="module">\n'
++            'import { Graphviz } from '
++            '"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/dist/index.js";\n'
++            'const graphviz = await Graphviz.load();\n'
++            f'document.getElementById("{div_id}").innerHTML = '
++            f'graphviz.dot(`{dot_escaped}`);\n'
++            '</script>'
++        )
++        _display(HTML(html_str))
++    else:
++        _display(HTML(dot.pipe(format='svg').decode()))
