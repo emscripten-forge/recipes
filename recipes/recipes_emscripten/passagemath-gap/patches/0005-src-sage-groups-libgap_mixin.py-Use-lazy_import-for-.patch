@@ -1,0 +1,39 @@
+From 589977ba7d3eee904cf6aadd7e0d1b9e5619d2dc Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Sun, 19 Jul 2026 10:43:09 -0700
+Subject: [PATCH 5/5] src/sage/groups/libgap_mixin.py: Use lazy_import for
+ ClassFunction_libgap
+
+---
+ src/sage/groups/libgap_mixin.py | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/sage/groups/libgap_mixin.py b/src/sage/groups/libgap_mixin.py
+index b26e33ef792..0a01d374a29 100644
+--- a/src/sage/groups/libgap_mixin.py
++++ b/src/sage/groups/libgap_mixin.py
+@@ -17,10 +17,12 @@ from sage.libs.gap.libgap import libgap
+ from sage.libs.gap.element import GapElement
+ from sage.structure.element import parent
+ from sage.misc.cachefunc import cached_method
++from sage.misc.lazy_import import lazy_import
+ from sage.misc.randstate import current_randstate
+-from sage.groups.class_function import ClassFunction_libgap
+ from sage.groups.libgap_wrapper import ElementLibGAP
+ 
++lazy_import('sage.groups.class_function', 'ClassFunction_libgap')
++
+ 
+ class GroupMixinLibGAP:
+     def __contains__(self, elt) -> bool:
+@@ -341,7 +343,6 @@ class GroupMixinLibGAP:
+             sage: list(chi)                                                             # needs sage.rings.number_field
+             [0, 1, 2, 3, 4, 5, 6, 7]
+         """
+-        from sage.groups.class_function import ClassFunction_libgap
+         return ClassFunction_libgap(self, values)
+ 
+     @cached_method
+-- 
+2.51.1
+
