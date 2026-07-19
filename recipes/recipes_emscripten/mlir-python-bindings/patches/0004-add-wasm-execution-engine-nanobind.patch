@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp b/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp
 new file mode 100644
-index 000000000000..b212f4f3158c
+index 000000000000..85b591c436ce
 --- /dev/null
 +++ b/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,86 @@
 +//===- WasmExecutionEngineModule.cpp - Python bindings for Wasm EE --------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -71,6 +71,22 @@ index 000000000000..b212f4f3158c
 +      "name"_a,
 +      "Look up a symbol in the global dlopen symbol table.  Returns 0 if "
 +      "not found.");
++
++  m.def(
++      "translate_to_llvmir",
++      [](MlirOperation module) -> std::string {
++        std::string result;
++        mlirWasmTranslateToLLVMIR(
++            module,
++            [](MlirStringRef s, void *ud) {
++              reinterpret_cast<std::string *>(ud)->assign(s.data, s.length);
++            },
++            &result);
++        return result;
++      },
++      "module"_a,
++      "Translate an MLIR module (LLVM dialect) to LLVM IR text.  Returns the "
++      "LLVM IR as a string suitable for llvmlite.binding.parse_assembly().");
 +}
 +
 +#endif // __EMSCRIPTEN__

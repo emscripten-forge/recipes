@@ -1,9 +1,9 @@
 diff --git a/mlir/python/mlir/wasm_execution_engine.py b/mlir/python/mlir/wasm_execution_engine.py
 new file mode 100644
-index 000000000000..bb9bcaf64fef
+index 000000000000..0a3a7bec7ba0
 --- /dev/null
 +++ b/mlir/python/mlir/wasm_execution_engine.py
-@@ -0,0 +1,141 @@
+@@ -0,0 +1,163 @@
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 +# See https://llvm.org/LICENSE.txt for license information.
 +# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -46,7 +46,29 @@ index 000000000000..bb9bcaf64fef
 +from ._mlir_libs import _mlirWasmExecutionEngine  # noqa: E402
 +from .ir import Module, StringAttr  # noqa: E402
 +
-+__all__ = ["WasmExecutionEngine"]
++__all__ = ["WasmExecutionEngine", "translate_to_llvmir"]
++
++
++def translate_to_llvmir(module_op) -> str:
++    """Translate an MLIR LLVM-dialect module to LLVM IR text.
++
++    This is the bridge between the MLIR stack and llvmlite: the returned
++    string can be passed directly to ``llvmlite.binding.parse_assembly()``.
++
++    Parameters
++    ----------
++    module_op:
++        An :class:`mlir.ir.Operation` or :class:`mlir.ir.Module` whose top-level
++        functions contain only LLVM dialect ops.
++
++    Returns
++    -------
++    str
++        The LLVM IR in textual form (``; ModuleID = ...`` header format).
++    """
++    if isinstance(module_op, Module):
++        module_op = module_op.operation
++    return _mlirWasmExecutionEngine.translate_to_llvmir(module_op)
 +
 +
 +class WasmExecutionEngine:

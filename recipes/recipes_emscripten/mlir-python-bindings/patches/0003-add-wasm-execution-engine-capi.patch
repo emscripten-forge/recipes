@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
 new file mode 100644
-index 000000000000..d070c1b1e7c7
+index 000000000000..d8d4385fdbb8
 --- /dev/null
 +++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,209 @@
 +//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -66,13 +66,21 @@ index 000000000000..d070c1b1e7c7
 +
 +MlirStringRef mlirWasmCompileModule(MlirOperation module,
 +                                    MlirStringRef moduleName, int optLevel) {
-+  // Initialize the WebAssembly target once.  On Emscripten,
-+  // InitializeNativeTarget selects WebAssembly because wasm32 IS the native
-+  // target in this environment.
++  // Initialize the WebAssembly target once.  Skip if wasm32 is already
++  // registered (e.g. by llvmlite's initialize_all_targets).  On Emscripten
++  // each SIDE_MODULE has its own copy of static variables, so call_once /
++  // once_flag does NOT deduplicate across modules.  Calling
++  // InitializeNativeTarget() twice from two SIDE_MODULEs double-registers
++  // CodeGen passes with incompatible function-table entries, corrupting the
++  // global PassRegistry.
 +  static bool initOnce = [] {
-+    llvm::InitializeNativeTarget();
-+    llvm::InitializeNativeTargetAsmParser();
-+    llvm::InitializeNativeTargetAsmPrinter();
++    llvm::Triple triple("wasm32-unknown-emscripten");
++    std::string err;
++    if (!llvm::TargetRegistry::lookupTarget(triple, err)) {
++      llvm::InitializeNativeTarget();
++      llvm::InitializeNativeTargetAsmParser();
++      llvm::InitializeNativeTargetAsmPrinter();
++    }
 +    return true;
 +  }();
 +  (void)initOnce;
@@ -179,6 +187,27 @@ index 000000000000..d070c1b1e7c7
 +void *mlirWasmGetSymbolAddress(MlirStringRef name) {
 +  std::string nameStr(name.data, name.length);
 +  return dlsym(RTLD_DEFAULT, nameStr.c_str());
++}
++
++void mlirWasmTranslateToLLVMIR(MlirOperation module,
++                                MlirStringCallback callback, void *userData) {
++  // Re-use the same translation path as mlirWasmCompileModule but stop
++  // after translateModuleToLLVMIR — before code generation.
++  mlir::Operation *op = unwrap(module);
++  mlir::registerBuiltinDialectTranslation(*op->getContext());
++  mlir::registerLLVMDialectTranslation(*op->getContext());
++
++  llvm::LLVMContext ctx;
++  auto llvmModule = mlir::translateModuleToLLVMIR(op, ctx);
++  if (!llvmModule)
++    llvm::report_fatal_error(
++        "mlirWasmTranslateToLLVMIR: failed to translate MLIR module");
++
++  std::string ir;
++  llvm::raw_string_ostream os(ir);
++  llvmModule->print(os, nullptr);
++  os.flush();
++  callback(mlirStringRefCreate(ir.data(), ir.size()), userData);
 +}
 +
 +} // extern "C"

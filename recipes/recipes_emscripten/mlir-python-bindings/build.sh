@@ -55,6 +55,5 @@ emmake make install
 # order) before any extension module's dlopen triggers neededDynlib resolution.
 # Emscripten's dynamic linker resolves SIDE_MODULE dependencies by name, not by
 # searching inside package directories, so these must be loaded with full paths.
-cp "${RECIPE_DIR}/mlir_init.py" "${PREFIX}/lib/python3.13/site-packages/mlir/__init__.py"
 touch "${PREFIX}/lib/python3.13/site-packages/mlir/dialects/__init__.py"
 touch "${PREFIX}/lib/python3.13/site-packages/mlir/extras/__init__.py"

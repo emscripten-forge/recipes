@@ -1,9 +1,9 @@
 diff --git a/mlir/include/mlir-c/WasmExecutionEngine.h b/mlir/include/mlir-c/WasmExecutionEngine.h
 new file mode 100644
-index 000000000000..ade5f375eeee
+index 000000000000..f6428c4f8eb0
 --- /dev/null
 +++ b/mlir/include/mlir-c/WasmExecutionEngine.h
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,82 @@
 +//===-- mlir-c/WasmExecutionEngine.h - MLIR Wasm Execution Engine --*- C -*-===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -70,6 +70,14 @@ index 000000000000..ade5f375eeee
 +/// Look up \p name in the global dynamic-linker symbol table via dlsym.
 +/// Returns NULL if the symbol is not found.
 +MLIR_CAPI_EXPORTED void *mlirWasmGetSymbolAddress(MlirStringRef name);
++
++/// Translate an MLIR module (must contain only LLVM dialect ops) to LLVM IR
++/// text.  The result is delivered via \p callback(llvmIrStringRef, userData).
++/// This is useful for bridging to llvmlite: translate, then pass the string to
++/// \c llvmlite.binding.parse_assembly().
++MLIR_CAPI_EXPORTED void
++mlirWasmTranslateToLLVMIR(MlirOperation module, MlirStringCallback callback,
++                           void *userData);
 +
 +#ifdef __cplusplus
 +}
