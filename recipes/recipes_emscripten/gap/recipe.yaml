@@ -1,0 +1,66 @@
+context:
+  version: 4.16.0
+
+recipe:
+  name: gap
+  version: ${{ version }}
+
+source:
+  url: https://github.com/gap-system/gap/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3cace2c09bd4ba5fe06d53e54d23ce38184f565e3db69b720a48fbc527ff80f8
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: gap-core
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - autoconf
+        - automake
+        - libtool
+        - make
+        - python                            
+        - ${{ compiler('c') }}              
+        - ${{ compiler('cxx') }}
+    tests:
+      - package_contents:
+          files:
+            - lib/libgap.a
+            - include/gap/gap.h
+            - bin/gap.js
+            - bin/gap.wasm             
+
+  - package:
+      name: gap
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - autoconf
+        - automake
+        - libtool
+        - make
+        - python                            
+        - ${{ compiler('c') }}              
+        - ${{ compiler('cxx') }}
+    tests:
+      - package_contents:
+          files:
+            - lib/libgap.a
+            - include/gap/gap.h
+            - bin/gap.js
+            - bin/gap.wasm  
+
+about:
+  homepage: https://www.gap-system.org/
+  license: GPL-2.0-only
+  license_file: LICENSE
+  summary: GAP is a system for computational discrete algebra, with particular emphasis on computational group theory.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
