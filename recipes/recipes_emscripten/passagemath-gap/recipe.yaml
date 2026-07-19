@@ -1,0 +1,81 @@
+context:
+  version: 10.8.6
+
+package:
+  name: passagemath-gap
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-gap/passagemath_gap-${{ version }}.tar.gz
+  sha256: 54d7a49506ff4182ccdab99f9185678cf1b899cead706d11688e83b9b5b58550
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - gmpy2
+  - cysignals
+  - jinja2
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - gap
+  - gmpy2
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-modules
+  run:
+  - python
+  - gap
+  - gmpy2
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+  - mpmath
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_gap.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Computational Group Theory with GAP'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides provides modules that depend on the GAP system.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_gap.py
+  recipe-maintainers:
+  - mkoeppe
