@@ -49,8 +49,12 @@ emmake make install
 
 # MLIR Python bindings are designed as namespace packages (no __init__.py in the
 # source tree for mlir/, mlir/dialects/, mlir/extras/). Emscripten's MEMFS does
-# not handle namespace packages reliably, so create empty __init__.py files to
-# make `import mlir` and `from mlir.dialects import arith` work in JupyterLite.
-touch "${PREFIX}/lib/python3.13/site-packages/mlir/__init__.py"
+# not handle namespace packages reliably, so we supply __init__.py files.
+#
+# mlir/__init__.py pre-loads the three shared libraries (in correct dependency
+# order) before any extension module's dlopen triggers neededDynlib resolution.
+# Emscripten's dynamic linker resolves SIDE_MODULE dependencies by name, not by
+# searching inside package directories, so these must be loaded with full paths.
+cp "${RECIPE_DIR}/mlir_init.py" "${PREFIX}/lib/python3.13/site-packages/mlir/__init__.py"
 touch "${PREFIX}/lib/python3.13/site-packages/mlir/dialects/__init__.py"
 touch "${PREFIX}/lib/python3.13/site-packages/mlir/extras/__init__.py"
