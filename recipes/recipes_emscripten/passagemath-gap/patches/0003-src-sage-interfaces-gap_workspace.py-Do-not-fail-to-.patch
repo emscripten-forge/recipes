@@ -1,0 +1,30 @@
+From d03a9e4e5719eb171e5f2e4abf84c30bc26ac668 Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Sun, 19 Jul 2026 10:21:27 -0700
+Subject: [PATCH 3/3] src/sage/interfaces/gap_workspace.py: Do not fail to
+ compute workspace hash on emscripten
+
+---
+ src/sage/interfaces/gap_workspace.py | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/sage/interfaces/gap_workspace.py b/src/sage/interfaces/gap_workspace.py
+index 9d3c28b9374..63803903d3b 100644
+--- a/src/sage/interfaces/gap_workspace.py
++++ b/src/sage/interfaces/gap_workspace.py
+@@ -69,7 +69,11 @@ def gap_workspace_file(system='gap', name='workspace', dir=None):
+             continue
+         sysinfo = os.path.join(path, "sysinfo.gap")
+         if os.path.exists(sysinfo):
+-            data += subprocess.getoutput(f'. "{sysinfo}" && echo ":$GAP_VERSION:$GAParch"')
++            try:
++                data += subprocess.getoutput(f'. "{sysinfo}" && echo ":$GAP_VERSION:$GAParch"')
++                break
++            except OSError:  # emscripten
++                pass
+     h = hashlib.sha1(data.encode('utf-8')).hexdigest()
+     return os.path.join(dir, f'{system}-{name}-{HOSTNAME}-{h}')
+ 
+-- 
+2.51.1
+
