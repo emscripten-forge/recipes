@@ -1,0 +1,58 @@
+context:
+  name: rngWELL
+  version: 0.10-10
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 844499ce38622955a1d428a0ef62abe192bb2151a928c5bd933f34c062fd576f
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: BSD-3-Clause
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/BSD_3_clause
+  - LICENSE
+  summary: Toolbox for WELL Random Number Generators
+  description: |-
+    It is a dedicated package to WELL pseudo random generators,
+    which were introduced in Panneton et al. (2006), ``Improved Long-Period
+    Generators Based on Linear Recurrences Modulo 2'', see <doi:10.1145/1132973.1132974>.
+    But this package is not intended to be used directly, you are strongly __encouraged__
+    to use the 'randtoolbox' package, which depends on this package.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
