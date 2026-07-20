@@ -1,0 +1,60 @@
+context:
+  name: singular
+  version: 4.4.1p5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/Singular/Singular/releases/download/Release-${{ version | replace(".", "-") }}/singular-${{ version }}.tar.gz
+  sha256: b2b328fb19e9f4396dca89ed69929b241f52d2d1b1cc605c17745130a6cd4943
+- git: https://github.com/wangyenshu/singular-web-assets.git
+  target_directory: web
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  - autoconf-archive
+  host:
+  - gmp
+  - ntl
+  - libflint
+  - mpfr
+  - cddlib
+  - normaliz
+  - memtailor
+  - mathic
+  - mathicgb
+  - glpk
+  - 4ti2
+  - topcom
+tests:
+- package_contents:
+    files:
+    - bin/Singular.js
+    - bin/Singular.wasm
+    - bin/Singular.data
+    - bin/Singular.data.js
+    - lib/libSingular.a
+    - lib/libfactory.a
+    - lib/libpolys.a
+    - include/singular/singularconfig.h
+
+about:
+  homepage: http://www.singular.uni-kl.de/
+  license: GPL-2.0-only OR GPL-3.0-only
+  license_file: COPYING
+  summary: Singular is a computer algebra system for polynomial computations, with special emphasis on commutative and non-commutative algebra, algebraic geometry, and singularity theory.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
