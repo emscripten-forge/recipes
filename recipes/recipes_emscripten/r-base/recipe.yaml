@@ -1,14 +1,11 @@
 context:
   name: r-base
-  version: 4.6.0
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  version: 4.6.1
+  build_number: 1
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  sha256: b8dc9b4543660c7b596b87938df532394350360976527d344228ee0ed12e45ec
+  sha256: 4da6e61d2c0aac5f14a2e7e432cb5fcc269efe83da4293050ba7f03dff4e2cf4
   patches:
   - patches/0001-Add-emscripten-platform-to-configure-script.patch
   - patches/0002-Disable-libcurl.patch
@@ -23,63 +20,154 @@ source:
   - patches/0011-Guard-Rlog1p-C-linkage-and-avoid-local-symbol-clash.patch
   - patches/0012-Remove-png-lib-from-bitmap-libs.patch
   - patches/0013-Fix-cairo-font-scaling-in-emscripten.patch
+  - patches/0015-Add-RPY-target-linked-with-libpython.patch
+  - patches/0016-Route-plotmath-symbols-through-Unicode-font.patch
 
 build:
-  number: 1
+  number: ${{ build_number }}
 
-  files:
-    exclude:
-    - share/man/man1/**
+#-------------------------------------------------------------------------------
+# STAGING: runs build.sh once; r-base and r-py inherit from here.
+#-------------------------------------------------------------------------------
 
-requirements:
+outputs:
+- staging:
+    name: r-base-build
+
   build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - ${{ compiler('fortran') }}
-  - libtool
-  - pkg-config
-  - cmake
-  - make
-  # Dependencies to build R in the build environment
-  - libflang-rt
-  - gcc
-  - libiconv
-  - zlib
-  - bzip2
-  - xz
-  - pcre2
-  - libpng
-  - libtiff
-  - cairo
-  host:
-  - libflang
-  - libiconv
-  - zlib
-  - bzip2
-  - liblzma
-  - pcre2
-  - libpng
-  - libtiff
-  - cairo
-  - fontconfig
-  - pixman
-  - expat
-  - freetype
-  run_exports:
-  - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+    script: build.sh
 
-tests:
-- package_contents:
-    lib:
-    - R/lib/libR.so
-    - R/lib/libRblas.so
-    - R/lib/libRlapack.so
-    - R/library/grDevices/libs/cairo.so
-- script:
-  - node ${PREFIX}/lib/R/bin/Rscript --version
   requirements:
     build:
-    - nodejs
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - libtool
+    - pkg-config
+    - cmake
+    - make
+    # Dependencies to build R in the build environment
+    - libflang-rt
+    - gcc
+    - libiconv
+    - zlib
+    - bzip2
+    - xz
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    host:
+    - libflang
+    - libiconv
+    - zlib
+    - bzip2
+    - liblzma
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    - fontconfig
+    - pixman
+    - expat
+    - freetype
+    # For the r-py output: libpython statically linked into RPY executable.
+    - python
+    - libpython
+    - libffi
+    - sqlite
+    - openssl
+    - zstd
+    ignore_run_exports:
+      from_package:
+      - python
+
+#-------------------------------------------------------------------------------
+# R-BASE
+#-------------------------------------------------------------------------------
+
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+
+  inherit: r-base-build
+
+  build:
+    string: h${{ hash }}_${{ build_number }}
+    files:
+      exclude:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+      - share/man/man1/**
+
+  requirements:
+    run:
+    # DejaVu provides /fonts at runtime: one family covering Latin/Greek/math
+    # across all four faces (the cairo FreeType path does no per-glyph fallback).
+    # The shipped fonts.conf aliases R's families to it.
+    - font-ttf-dejavu >=2.37
+    - font-ttf-dejavu-sans-mono >=2.37
+    run_exports:
+    - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+
+  tests:
+  - package_contents:
+      lib:
+      - R/lib/libR.so
+      - R/lib/libRblas.so
+      - R/lib/libRlapack.so
+      - R/library/grDevices/libs/cairo.so
+  - script:
+    - node ${PREFIX}/lib/R/bin/Rscript --version
+    - run_r_test test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - nodejs
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
+# R-PY: R executables linked with Python
+#-------------------------------------------------------------------------------
+
+- package:
+    name: r-py
+    version: ${{ version }}
+
+  inherit: r-base-build
+
+  build:
+    files:
+      include:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+
+  requirements:
+    host:
+    - r-base ==${{ version }}
+    - python
+    run:
+    - r-base ==${{ version }}
+    - python
+    - libpython
+    - zstd
+
+  tests:
+  - package_contents:
+      files:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+  - script: run_r_test --rpy test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
 
 about:
   homepage: http://www.r-project.org/
