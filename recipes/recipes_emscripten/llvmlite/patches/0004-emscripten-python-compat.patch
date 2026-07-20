@@ -31,7 +31,7 @@ diff --git a/llvmlite/binding/analysis.py b/llvmlite/binding/analysis.py
 index fe2692bf..5d55b45b 100644
 --- a/llvmlite/binding/analysis.py
 +++ b/llvmlite/binding/analysis.py
-@@ -46,6 +46,33 @@ def view_dot_graph(graph, filename=None, view=False):
+@@ -46,6 +46,43 @@ def view_dot_graph(graph, filename=None, view=False):
      - view [bool]: if True, opens the rendered output file.
  
      """
@@ -39,25 +39,35 @@ index fe2692bf..5d55b45b 100644
 +    if sys.platform == 'emscripten':
 +        # subprocess.Popen is unavailable on emscripten; render via
 +        # @hpcc-js/wasm (a pure JS/WASM graphviz build) in the browser.
++        #
++        # Jupyter's HTML output sanitizer strips <script> tags, so a single
++        # HTML blob containing an inline <script type="module"> never
++        # executes. IPython.display.Javascript is exempt from that
++        # sanitization, so the container div and the script that fills it
++        # are displayed separately, and this function displays them itself
++        # (rather than returning one HTML object for the caller to
++        # display, which is how this function behaves on every other
++        # platform).
 +        try:
-+            from IPython.display import HTML
++            from IPython.display import HTML, Javascript, display
 +            import uuid
 +            div_id = 'cfg-' + uuid.uuid4().hex[:8]
 +            dot_escaped = (graph
 +                           .replace('\\', '\\\\')
 +                           .replace('`', '\\`')
 +                           .replace('$', '\\$'))
-+            html = (
-+                f'<div id="{div_id}"></div>\n'
-+                '<script type="module">\n'
-+                'import { Graphviz } from '
-+                '"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/dist/index.js";\n'
-+                'const graphviz = await Graphviz.load();\n'
-+                f'document.getElementById("{div_id}").innerHTML = '
-+                f'graphviz.dot(`{dot_escaped}`);\n'
-+                '</script>'
++            display(HTML(f'<div id="{div_id}">(rendering CFG…)</div>'))
++            js_code = (
++                'import("https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/dist/index.js")'
++                '.then(async ({ Graphviz }) => {\n'
++                '  const graphviz = await Graphviz.load();\n'
++                f'  const svg = graphviz.dot(`{dot_escaped}`);\n'
++                f'  const el = document.getElementById("{div_id}");\n'
++                '  el.innerHTML = svg;\n'
++                '});'
 +            )
-+            return HTML(html)
++            display(Javascript(js_code))
++            return HTML('')
 +        except Exception:
 +            from IPython.display import Code
 +            return Code(graph, language='dot')
