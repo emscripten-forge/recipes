@@ -1,0 +1,85 @@
+context:
+  version: 22.1.8
+
+package:
+  name: mlir-python-bindings
+  version: ${{ version }}
+
+source:
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
+  sha256: ad18b70e287954c3d62bc7e0b86e7b7af2adf87bcfce21c15fe717f101d7aace
+  patches:
+  # CMakeLists changes: emscripten SIDE_MODULE setup, CAPI guards, wasm python extension
+  - patches/0001-emscripten-wasm-execution-engine-cmake.patch
+  # New CAPI header
+  - patches/0002-add-wasm-execution-engine-header.patch
+  # New CAPI implementation (WasmExecutionEngine.cpp)
+  - patches/0003-add-wasm-execution-engine-capi.patch
+  # New nanobind extension module
+  - patches/0004-add-wasm-execution-engine-nanobind.patch
+  # New Python wrapper class
+  - patches/0005-add-wasm-execution-engine-python.patch
+  # mlir.utils: CFG visualization via graphviz + @hpcc-js/wasm CDN on Emscripten
+  - patches/0006-add-mlir-python-utils.patch
+  # mlir/__init__.py: Emscripten shared-library preloader (symlinks + dlopen)
+  - patches/0007-add-mlir-python-init.patch
+  # np_to_memref: parameterize descriptor offset/shape/strides width so 32-bit
+  # index targets (wasm32) can build correct memref descriptors
+  - patches/0008-np-to-memref-32-bit-support.patch
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make    # [unix]
+  # mlir-tblgen + llvm-tblgen + mlir-linalg-ods-yaml-gen (all native, 22.1.8)
+  - llvm-tblgen
+  - cross-python_${{ target_platform }}
+  - nanobind
+
+  host:
+  - python
+  # llvm 22.* bundles: LLVM wasm static libs, liblldWasm.a, liblldCommon.a,
+  # LLVMConfig.cmake, LLDConfig.cmake.  All required for the standalone MLIR
+  # Python bindings build.
+  - llvm 22.*
+  - numpy
+
+  run:
+  - python
+
+tests:
+- package_contents:
+    files:
+    - lib/python3.13/site-packages/mlir/__init__.py
+    - lib/python3.13/site-packages/mlir/dialects/__init__.py
+    - lib/python3.13/site-packages/mlir/_mlir_libs/_mlir.cpython-313-wasm32-emscripten.so
+    - lib/python3.13/site-packages/mlir/wasm_execution_engine.py
+
+about:
+  homepage: https://mlir.llvm.org
+  license: Apache-2.0 WITH LLVM-exception
+  license_family: Apache
+  license_file: LICENSE.TXT
+  summary: >
+    MLIR Python bindings compiled for wasm32-emscripten, including a WasmExecutionEngine
+    that JIT-compiles MLIR (LLVM dialect) modules in-process using lld::wasm::link and
+    dlopen inside JupyterLite / xeus-python kernels.
+  documentation: https://mlir.llvm.org/docs/Bindings/Python/
+  repository: https://github.com/llvm/llvm-project
+
+extra:
+  recipe-maintainers:
+  - anutosh491
