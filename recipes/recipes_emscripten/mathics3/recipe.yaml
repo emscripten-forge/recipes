@@ -1,0 +1,83 @@
+context:
+  version: 10.0.1
+
+package:
+  name: mathics3
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/m/mathics3/mathics3-${{ version }}.tar.gz
+  sha256: fbf153b110245fbfa4e7f4098f13c86e8d616f986b805ede80d3051b400ddd94
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  - cython
+  - setuptools
+  - wheel
+  host:
+  - python
+  - mathics3-scanner
+  - packaging
+  run:
+  - python
+  - mathics3-scanner
+  - mpmath
+  - numpy
+  - palettable
+  - pillow
+  - pint
+  - python-dateutil
+  - pympler
+  - requests
+  - scipy
+  - setuptools
+  - timed-threads
+  - sympy
+  # - pexpect # extra == "dev"
+  # - pytest # extra == "dev"
+  # - ipywidgets # extra == "full"
+  # - llvmlite # extra == "full"
+  # - lxml # extra == "full"
+  # - psutil # extra == "full"
+  # - pyocr # extra == "full"
+  # - scikit-image >=0.17 # extra == "full"
+  # - unidecode # extra == "full"
+  # - wordcloud >=1.9.3 # extra == "full"
+  # - cython # extra == "cython"
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_mathics.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - pexpect
+
+about:
+  summary: 'A general-purpose computer algebra system.'
+  description: |
+    Core of Mathics3, the open-source Mathematica, a general-purpose computer algebra system.
+  license: GPL-3.0-or-later
+  license_file:
+  - COPYING.txt
+  - AUTHORS.txt
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_import_mathics.py
+  recipe-maintainers:
+  - mkoeppe
