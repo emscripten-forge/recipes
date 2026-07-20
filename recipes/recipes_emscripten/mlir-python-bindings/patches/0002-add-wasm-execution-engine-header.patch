@@ -1,9 +1,9 @@
 diff --git a/mlir/include/mlir-c/WasmExecutionEngine.h b/mlir/include/mlir-c/WasmExecutionEngine.h
 new file mode 100644
-index 000000000000..f6428c4f8eb0
+index 000000000000..da2c4e04ed46
 --- /dev/null
 +++ b/mlir/include/mlir-c/WasmExecutionEngine.h
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,87 @@
 +//===-- mlir-c/WasmExecutionEngine.h - MLIR Wasm Execution Engine --*- C -*-===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -54,16 +54,21 @@ index 000000000000..f6428c4f8eb0
 +///
 +/// Returns a MlirStringRef whose data points to an internal static buffer that
 +/// holds the object-file path (e.g. "<moduleName>.o").  The file is written
-+/// into the Emscripten MEMFS current working directory.  The buffer is
-+/// overwritten on the next call; copy the path if you need it longer.
++/// into a process-wide unique scratch directory under the Emscripten MEMFS
++/// (created lazily on first use), keeping intermediate build artifacts out of
++/// the notebook's working directory.  The buffer is overwritten on the next
++/// call; copy the path if you need it longer.
 +MLIR_CAPI_EXPORTED MlirStringRef mlirWasmCompileModule(MlirOperation module,
 +                                                       MlirStringRef moduleName,
 +                                                       int optLevel);
 +
-+/// Link \p objectFileName into a wasm SIDE_MODULE named \p binaryFileName
-+/// using lld::wasm::link in-process (no subprocess, no wasm-ld binary needed).
-+/// After linking, loads the binary with dlopen(RTLD_GLOBAL) so that its
-+/// exported symbols are globally visible to subsequent dlsym lookups.
++/// Link \p objectFileName into a wasm SIDE_MODULE using lld::wasm::link
++/// in-process (no subprocess, no wasm-ld binary needed).  \p binaryFileName's
++/// basename is used, but the file is written into the same scratch directory
++/// as \p objectFileName rather than wherever \p binaryFileName's path (if
++/// any) suggests.  After linking, loads the binary with dlopen(RTLD_GLOBAL)
++/// so that its exported symbols are globally visible to subsequent dlsym
++/// lookups.
 +MLIR_CAPI_EXPORTED void mlirWasmLinkLoadModule(MlirStringRef objectFileName,
 +                                               MlirStringRef binaryFileName);
 +

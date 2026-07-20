@@ -1,9 +1,9 @@
 diff --git a/mlir/python/mlir/utils.py b/mlir/python/mlir/utils.py
 new file mode 100644
-index 000000000000..f9a57ce8ac43
+index 000000000000..6a805dc133bf
 --- /dev/null
 +++ b/mlir/python/mlir/utils.py
-@@ -0,0 +1,339 @@
+@@ -0,0 +1,371 @@
 +"""
 +Utilities for MLIR Python bindings.
 +
@@ -298,14 +298,68 @@ index 000000000000..f9a57ce8ac43
 +    return _cfg_from_text(str(source), show_ops)
 +
 +
++def show_dot(dot, title=''):
++    """
++    Display an arbitrary ``graphviz.Digraph`` (or raw DOT source string) in
++    the current Jupyter environment.
++
++    This is the rendering half of :func:`show_cfg`, split out so any DOT
++    graph — not just an MLIR function's CFG — can be displayed the same
++    way (e.g. a hand-built pipeline-roadmap diagram).  On Emscripten,
++    rendering is done client-side via ``@hpcc-js/wasm`` loaded from CDN
++    since the ``dot`` subprocess is unavailable there.
++
++    Parameters
++    ----------
++    dot : graphviz.Digraph | str
++        The graph to render, or its DOT source text directly.
++    title : str
++        Optional bold heading displayed above the graph.
++    """
++    from IPython.display import display, HTML, Javascript
++
++    if dot is None:
++        print('(no graph to display)')
++        return
++
++    if title:
++        display(HTML(f'<b>{title}</b>'))
++
++    src = dot.source if hasattr(dot, 'source') else str(dot)
++
++    import sys, uuid
++    if sys.platform == 'emscripten':
++        # Jupyter's HTML display sanitizer strips <script> tags, so a plain
++        # `display(HTML(...))` with an inline <script type="module"> never
++        # executes.  IPython.display.Javascript is exempt from that
++        # sanitization and does run, so the container div and the script
++        # that fills it must be sent as two separate display() calls.
++        div_id = 'cfg-' + uuid.uuid4().hex[:8]
++        dot_escaped = src.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
++        display(HTML(f'<div id="{div_id}">(rendering graph…)</div>'))
++        js_code = (
++            'import("https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/dist/index.js")'
++            '.then(async ({ Graphviz }) => {\n'
++            '  const graphviz = await Graphviz.load();\n'
++            f'  const svg = graphviz.dot(`{dot_escaped}`);\n'
++            f'  const el = document.getElementById("{div_id}");\n'
++            '  el.innerHTML = svg;\n'
++            '});'
++        )
++        display(Javascript(js_code))
++    else:
++        import graphviz as _gv
++        graph = dot if hasattr(dot, 'pipe') else _gv.Source(src)
++        display(HTML(f'<div style="overflow-x:auto">{graph.pipe(format="svg").decode()}</div>'))
++
++
 +def show_cfg(source, title='', show_ops=True):
 +    """
 +    Display the CFG of an MLIR function in the current Jupyter environment.
 +
 +    The CFG is built directly from the MLIR block structure and rendered
-+    with graphviz — no dependency on llvmlite.  On Emscripten, rendering is
-+    done client-side via ``@hpcc-js/wasm`` loaded from CDN since the ``dot``
-+    subprocess is unavailable there.
++    with graphviz — no dependency on llvmlite.  Rendering itself is handled
++    by :func:`show_dot`.
 +
 +    Parameters
 +    ----------
@@ -316,30 +370,8 @@ index 000000000000..f9a57ce8ac43
 +    show_ops : bool
 +        Whether to show operation lines inside each block node.
 +    """
-+    from IPython.display import display, HTML
-+
 +    dot = get_function_cfg(source, show_ops=show_ops)
 +    if not dot:
 +        print('(no CFG — no function found in source)')
 +        return
-+
-+    if title:
-+        display(HTML(f'<b>{title}</b>'))
-+
-+    import sys, uuid
-+    if sys.platform == 'emscripten':
-+        div_id = 'cfg-' + uuid.uuid4().hex[:8]
-+        src = dot.source
-+        dot_escaped = src.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
-+        html_str = (
-+            f'<div id="{div_id}"></div>\n'
-+            '<script type="module">\n'
-+            'import { Graphviz } from '
-+            '"https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/dist/index.js";\n'
-+            'const graphviz = await Graphviz.load();\n'
-+            f'document.getElementById("{div_id}").innerHTML = graphviz.dot(`{dot_escaped}`);\n'
-+            '</script>'
-+        )
-+        display(HTML(html_str))
-+    else:
-+        display(HTML(f'<div style="overflow-x:auto">{dot.pipe(format="svg").decode()}</div>'))
++    show_dot(dot, title=title)

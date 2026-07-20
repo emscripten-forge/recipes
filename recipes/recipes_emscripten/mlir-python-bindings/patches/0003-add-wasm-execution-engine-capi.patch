@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
 new file mode 100644
-index 000000000000..d8d4385fdbb8
+index 000000000000..5e37909986a6
 --- /dev/null
 +++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,243 @@
 +//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -51,6 +51,8 @@ index 000000000000..d8d4385fdbb8
 +#include "llvm/IR/LegacyPassManager.h"
 +#include "llvm/IR/Module.h"
 +#include "llvm/MC/TargetRegistry.h"
++#include "llvm/Support/FileSystem.h"
++#include "llvm/Support/Path.h"
 +#include "llvm/Support/TargetSelect.h"
 +#include "llvm/Support/raw_ostream.h"
 +#include "llvm/Target/TargetMachine.h"
@@ -61,6 +63,26 @@ index 000000000000..d8d4385fdbb8
 +
 +// Declare the wasm driver using the standard LLD macro from Driver.h.
 +LLD_HAS_DRIVER(wasm)
++
++namespace {
++// Lazily create (once per process) a unique scratch directory for the
++// intermediate .o / .wasm files, mirroring clang-repl's WasmIncrementalExecutor
++// (clang/lib/Interpreter/Wasm.cpp).  Without this, object/binary files pile up
++// directly in the MEMFS current working directory, which is visible (and
++// confusing clutter) in the JupyterLite virtual filesystem view.
++const llvm::SmallString<256> &getWasmExecTempDir() {
++  static llvm::SmallString<256> tempDir = [] {
++    llvm::SmallString<256> dir;
++    if (auto ec = llvm::sys::fs::createUniqueDirectory("mlir-wasm-exec-", dir))
++      llvm::report_fatal_error(
++          ("mlirWasmCompileModule: failed to create temporary directory: " +
++           ec.message())
++              .c_str());
++    return dir;
++  }();
++  return tempDir;
++}
++} // namespace
 +
 +extern "C" {
 +
@@ -122,7 +144,10 @@ index 000000000000..d8d4385fdbb8
 +  llvmModule->setDataLayout(targetMachine->createDataLayout());
 +
 +  std::string nameStr(moduleName.data, moduleName.length);
-+  std::string objFile = nameStr + ".o";
++
++  llvm::SmallString<256> objFilePath(getWasmExecTempDir());
++  llvm::sys::path::append(objFilePath, nameStr + ".o");
++  std::string objFile(objFilePath.str());
 +
 +  std::error_code ec;
 +  llvm::raw_fd_ostream objStream(llvm::StringRef(objFile), ec);
@@ -151,7 +176,16 @@ index 000000000000..d8d4385fdbb8
 +void mlirWasmLinkLoadModule(MlirStringRef objectFileName,
 +                             MlirStringRef binaryFileName) {
 +  std::string objFile(objectFileName.data, objectFileName.length);
-+  std::string binFile(binaryFileName.data, binaryFileName.length);
++
++  // The Python wrapper always passes a bare "<name>.wasm" filename; place it
++  // in the same scratch directory as the object file rather than the current
++  // working directory (see getWasmExecTempDir() above).
++  llvm::SmallString<256> binFilePath(getWasmExecTempDir());
++  llvm::sys::path::append(
++      binFilePath,
++      llvm::sys::path::filename(
++          llvm::StringRef(binaryFileName.data, binaryFileName.length)));
++  std::string binFile(binFilePath.str());
 +
 +  // Arguments match what llvmlite's EmscriptenBackend passes to wasm-ld.
 +  std::vector<const char *> args = {"wasm-ld",
