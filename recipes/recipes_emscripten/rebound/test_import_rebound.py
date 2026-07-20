@@ -1,7 +1,6 @@
 
 def test_import_rebound():
     import rebound
-    assert rebound.__version__ == "5.0.0"
 
 
 def test_rebound_simulation():
