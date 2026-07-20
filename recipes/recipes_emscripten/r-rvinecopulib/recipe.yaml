@@ -1,0 +1,77 @@
+context:
+  name: rvinecopulib
+  version: 0.7.3.1.0
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: ce0e2d34f49c0dca82f91eb5f31b5d62a818d7ac06708af34724ed66399317b8
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-assertthat
+  - r-kde1d >= 1.1.0
+  - r-lattice
+  - r-rcpp >= 0.12.12
+  host:
+  - r-base ==${{ r_base }}
+  - r-assertthat
+  - r-kde1d >= 1.1.0
+  - r-lattice
+  - r-rcpp >= 0.12.12
+  run:
+  - r-assertthat
+  - r-kde1d >= 1.1.0
+  - r-lattice
+  - r-rcpp >= 0.12.12
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://vinecopulib.github.io/rvinecopulib/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-3.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  - TODO_add_license_file_for_file LICENSE
+  summary: High Performance Algorithms for Vine Copula Modeling
+  description: |-
+    Provides an interface to 'vinecopulib', a C++ library for vine
+    copula modeling. The 'rvinecopulib' package implements the core features of the
+    popular 'VineCopula' package, in particular inference algorithms for both vine
+    copula and bivariate copula models. Advantages over 'VineCopula' are a sleeker
+    and more modern API, improved performances, especially in high dimensions,
+    nonparametric and multi-parameter families, and the ability to model discrete
+    variables. The 'rvinecopulib' package includes 'vinecopulib' as header-only
+    C++ library (currently version 0.7.2). Thus users do not need to install
+    'vinecopulib' itself in order to use 'rvinecopulib'. Since their initial
+    releases, 'vinecopulib' is licensed under the MIT License, and 'rvinecopulib'
+    is licensed under the GNU GPL version 3.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
