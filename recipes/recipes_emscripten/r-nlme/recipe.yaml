@@ -1,21 +1,22 @@
 context:
-  name: r-nlme
-  version: 3.1-169
+  name: nlme
+  version: 3.1-170
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 51b92f1b543d2eb5915478965dab05a9094e1675a160138d49963eb3a0e7fdb8
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: d8e1a92cc295b046c9fd12bc1b875fe7921cc1db58f4407f0b97d625e8197b44
 
 build:
-  number: 4
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  number: 0
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -34,12 +35,19 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://svn.r-project.org/R-packages/trunk/nlme
   license: GPL-2.0-or-later
-  license_file: GPL-3
+  license_file: ${{ PREFIX }}/lib/R/share/licenses/GPL-3
   license_family: GPL3
   summary: Linear and Nonlinear Mixed Effects Models
   description: |

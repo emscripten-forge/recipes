@@ -1,0 +1,67 @@
+context:
+  version: 10.8.6
+
+package:
+  name: passagemath-cliquer
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-cliquer/passagemath_cliquer-${{ version }}.tar.gz
+  sha256: 833ab9d9e269b0a4fa9ad9c0a86ba9a8fa61a1d3eb4515aa2914640a8eabe291
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - cliquer
+  - passagemath-categories
+  run:
+  - python
+  - cysignals
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_cliquer.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-graphs
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Finding cliques in graphs with cliquer'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to cliquer, an exact branch-and-bound
+    algorithm for finding cliques in an arbitrary weighted graph.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_cliquer.py
+  recipe-maintainers:
+  - mkoeppe
