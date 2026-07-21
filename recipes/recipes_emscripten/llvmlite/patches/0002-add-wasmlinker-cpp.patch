@@ -1,0 +1,64 @@
+diff --git a/ffi/wasmlinker.cpp b/ffi/wasmlinker.cpp
+new file mode 100644
+index 00000000..e3ae7708
+--- /dev/null
++++ b/ffi/wasmlinker.cpp
+@@ -0,0 +1,58 @@
++// Only compiled when targeting Emscripten (wasm32-unknown-emscripten).
++// Exposes LLVMPY_WasmLinkSharedModule which calls lld::wasm::link() directly —
++// no subprocess, no wasm-ld binary needed at runtime.
++
++#ifdef __EMSCRIPTEN__
++
++#include "core.h"
++#include <llvm/ADT/ArrayRef.h>
++#include <llvm/Support/raw_ostream.h>
++#include <cstring>
++#include <string>
++
++// Forward declarations matching Wasm.cpp in clang/lib/Interpreter.
++// We deliberately avoid including lld headers here; the forward decls
++// are stable across the LLVM versions we target.
++namespace lld {
++namespace wasm {
++bool link(llvm::ArrayRef<const char *> args, llvm::raw_ostream &stdoutOS,
++          llvm::raw_ostream &stderrOS, bool exitEarly, bool disableOutput);
++} // namespace wasm
++} // namespace lld
++
++extern "C" {
++
++/*
++ * LLVMPY_WasmLinkSharedModule
++ *
++ * Link one or more WASM object files into a WASM shared side-module using
++ * lld::wasm::link() directly (no subprocess).
++ *
++ * args     – argv array for wasm-ld (first element is the program name)
++ * num_args – length of args
++ * out_error – set to an allocated error string on failure (caller must free
++ *             with LLVMPY_DisposeString); NULL on success
++ *
++ * Returns 0 on success, 1 on failure.
++ */
++API_EXPORT(int)
++LLVMPY_WasmLinkSharedModule(const char **args, int num_args,
++                             char **out_error) {
++    std::string err_str;
++    llvm::raw_string_ostream err_os(err_str);
++
++    llvm::ArrayRef<const char *> args_ref(args, static_cast<size_t>(num_args));
++    bool ok = lld::wasm::link(args_ref, llvm::outs(), err_os,
++                               /*exitEarly=*/false, /*disableOutput=*/false);
++
++    if (!ok) {
++        *out_error = strdup(err_os.str().c_str());
++        return 1;
++    }
++    *out_error = nullptr;
++    return 0;
++}
++
++} // extern "C"
++
++#endif // __EMSCRIPTEN__

@@ -1,0 +1,82 @@
+context:
+  version: 10.8.6
+
+package:
+  name: passagemath-flint
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-flint/passagemath_flint-${{ version }}.tar.gz
+  sha256: 946ad8ea7596d3c0c5e6cfb3e056cb5e39cf8d0f0f84bc6cc8a66a9c7ed88b4a
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - gsl
+  - ntl
+  - libflint
+  - mpfi
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-modules
+  - passagemath-ntl
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - numpy
+  - passagemath-categories
+  - passagemath-ntl
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_flint.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-modules
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Fast computations with MPFI and FLINT'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides Cython interfaces to the MPFI and FLINT libraries.
+    It also ships the implementation of number fields.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_flint.py
+  recipe-maintainers:
+  - mkoeppe
