@@ -5,7 +5,23 @@ echo "=========================================="
 echo "Building FFmpeg tests..."
 echo "=========================================="
 
+raw_test_type="${1:?usage: build_tests.sh libs or cli}"
+test_type="${raw_test_type%\}}"
+
+if [[ "${test_type}" == "cli" ]]; then
+  node "${PREFIX}/bin/ffmpeg.js" -version
+  node "${PREFIX}/bin/ffprobe.js" -version
+  exit 0
+fi
+
+if [[ "${test_type}" != "libs" ]]; then
+  echo "error: unknown test type: ${test_type}" >&2
+  exit 2
+fi
+
 export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+export CFLAGS="${CFLAGS:-}"
+export LDFLAGS="${LDFLAGS:-}"
 
 mkdir -p build_tests
 cd build_tests
