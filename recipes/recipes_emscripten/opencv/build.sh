@@ -74,7 +74,15 @@ cmake_args=(
 )
 
 cmake_args+=(
-    -DWITH_LAPACK=OFF
+    -DWITH_LAPACK=ON
+    -DWITH_FFMPEG=ON
+    -DFFMPEG_INCLUDE_DIR="${PREFIX}/include"
+    -DFFMPEG_LIBRARIES="${PREFIX}/lib/libavformat.a;${PREFIX}/lib/libavcodec.a;${PREFIX}/lib/libavutil.a;${PREFIX}/lib/libswscale.a;${PREFIX}/lib/libswresample.a;${PREFIX}/lib/libavfilter.a;${PREFIX}/lib/libavdevice.a"
+    -DFFMPEG_LIBAVFORMAT="${PREFIX}/lib/libavformat.a"
+    -DFFMPEG_LIBAVCODEC="${PREFIX}/lib/libavcodec.a"
+    -DFFMPEG_LIBAVUTIL="${PREFIX}/lib/libavutil.a"
+    -DFFMPEG_LIBSWSCALE="${PREFIX}/lib/libswscale.a"
+    -DFFMPEG_LIBSWRESAMPLE="${PREFIX}/lib/libswresample.a"
     -DWITH_ITT=OFF
     -DWITH_IPP=OFF
     -DWITH_TBB=OFF
@@ -83,7 +91,6 @@ cmake_args+=(
     -DWITH_OPENCL=OFF
     -DWITH_OPENGL=OFF
     -DWITH_1394=OFF
-    -DWITH_FFMPEG=OFF
     -DWITH_GSTREAMER=OFF
     -DWITH_V4L=OFF
     -DWITH_DSHOW=OFF
@@ -212,6 +219,7 @@ if [ -d "${PREFIX}/lib/cmake/opencv5" ]; then
     rewrite_cmake_exports 's|libz\.so|libz.a|g'
     rewrite_cmake_exports 's|lib/libgdal\.a|lib/libgdal.a;${_IMPORT_PREFIX}/lib/libgeos_c.a;${_IMPORT_PREFIX}/lib/libgeos.a;${_IMPORT_PREFIX}/lib/libproj.a;${_IMPORT_PREFIX}/lib/libiconv.a;${_IMPORT_PREFIX}/lib/libsqlite3.a|g'
     rewrite_cmake_exports 's|lib/libwebp\.a|lib/libwebp.a;${_IMPORT_PREFIX}/lib/libsharpyuv.a|g'
+    rewrite_cmake_exports 's|lib/libavformat\.a|lib/libavformat.a;${_IMPORT_PREFIX}/lib/libavcodec.a;${_IMPORT_PREFIX}/lib/libavutil.a;${_IMPORT_PREFIX}/lib/libswscale.a;${_IMPORT_PREFIX}/lib/libswresample.a;${_IMPORT_PREFIX}/lib/libavfilter.a|g'
 fi
 
 if [ -d "${TARGET_PYTHON_SITE_PACKAGES}/cv2" ]; then
@@ -268,6 +276,20 @@ if [ -f "${python_archive}" ]; then
         fi
     done
 
+    transitive_ffmpeg_libs=()
+    for candidate in \
+        "${PREFIX}/lib/libavformat.a" \
+        "${PREFIX}/lib/libavcodec.a" \
+        "${PREFIX}/lib/libavutil.a" \
+        "${PREFIX}/lib/libswscale.a" \
+        "${PREFIX}/lib/libswresample.a" \
+        "${PREFIX}/lib/libavfilter.a" \
+        "${PREFIX}/lib/libavdevice.a"; do
+        if [ -f "${candidate}" ]; then
+            transitive_ffmpeg_libs+=("${candidate}")
+        fi
+    done
+
     em++ \
         ${EM_FORGE_SIDE_MODULE_LDFLAGS} \
         -sSUPPORT_LONGJMP=wasm \
@@ -278,6 +300,7 @@ if [ -f "${python_archive}" ]; then
         "${transitive_codec_libs[@]}" \
         "${transitive_gdal_libs[@]}" \
         "${transitive_dnn_libs[@]}" \
+        "${transitive_ffmpeg_libs[@]}" \
         -Wl,--end-group \
         -o "${TARGET_PYTHON_SITE_PACKAGES}/opencv_python3${TARGET_PYTHON_EXT_SUFFIX}"
 fi
