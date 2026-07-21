@@ -1,0 +1,72 @@
+context:
+  name: libprotobuf
+  version: '35.1'
+  major_version: 7
+
+package:
+  name: ${{ name }}
+  version: ${{ major_version }}.${{ version }}
+
+source:
+  url: https://github.com/protocolbuffers/protobuf/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 22775f9376938295efa2d59a59bde4cd075a42df5a9b4d27aa9b99fa6a413bd2
+
+build:
+  number: 1
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - libabseil
+  - zlib
+  run:
+  - libabseil
+  - zlib
+
+tests:
+- package_contents:
+    lib:
+    - libprotobuf.a
+    - libprotobuf-lite.a
+    - libutf8_range.a
+    - libutf8_validity.a
+    include:
+    - google/protobuf/message.h
+    - google/protobuf/descriptor.h
+    - google/protobuf/descriptor.proto
+    files:
+    - lib/cmake/protobuf/protobufConfig.cmake
+    - lib/cmake/protobuf/protobufTargets.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://protobuf.dev/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Protocol Buffers C++ Libraries
+  description: |
+    Protocol Buffers are a language-neutral, platform-neutral extensible
+    mechanism for serializing structured data. This package provides the C++
+    runtime libraries: libprotobuf and libprotobuf-lite.
+  documentation: https://protobuf.dev/reference/cpp/
+  repository: https://github.com/protocolbuffers/protobuf
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

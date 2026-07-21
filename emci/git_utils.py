@@ -116,9 +116,5 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
             '--label', 'Automerge' if automerge else 'Needs Tests'
     ]
 
-    # this is not necessary, it can be removed later
-    if target_branch_name == "main":
-        args.extend(['--label', '4.X'])
-
     # call gh to create a PR
     subprocess.check_call(args, cwd=os.getcwd())

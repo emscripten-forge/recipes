@@ -1,0 +1,28 @@
+#!/bin/bash
+set -euo pipefail
+
+export CXXFLAGS="${CXXFLAGS:-} ${EM_FORGE_SIDE_MODULE_CFLAGS:-}"
+export LDFLAGS="${LDFLAGS:-} ${EM_FORGE_SIDE_MODULE_LDFLAGS:-}"
+
+emcmake cmake -S . -B build \
+    -GNinja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON \
+    -DFETCHCONTENT_TRY_FIND_PACKAGE_MODE=ALWAYS \
+    -Dnanoarrow_DIR="${PREFIX}/lib/cmake/nanoarrow" \
+    -DZLIB_ROOT="${PREFIX}" \
+    -DZLIB_LIBRARY="${PREFIX}/lib/libz.a" \
+    -DZLIB_INCLUDE_DIR="${PREFIX}/include" \
+    -DICEBERG_BUILD_STATIC=ON \
+    -DICEBERG_BUILD_SHARED=OFF \
+    -DICEBERG_BUILD_TESTS=OFF \
+    -DICEBERG_BUILD_BUNDLE=OFF \
+    -DICEBERG_BUILD_REST=OFF \
+    -DICEBERG_BUILD_REST_INTEGRATION_TESTS=OFF \
+    -DICEBERG_S3=OFF
+
+emmake ninja -C build
+emmake ninja -C build install

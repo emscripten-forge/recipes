@@ -1,19 +1,16 @@
 context:
   name: matplotlib
-  version: 3.10.8
+  version: 3.11.1
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
-  sha256: dbc50c7b15bb8d7dbe51a27a58322ed73f09291772d9e3184f03f11c576693f7
+  sha256: b8a1eae79e86021624b43484bd07cb318ee83aa5f4ed4c3044dcfdcea63b07fe
   patches:
-  - patches/fix-threading-and-font-cache.patch
-  - patches/static-cast.patch
-
+  - patches/0001-Font-cache-path.patch
 build:
-  number: 4
+  number: 0
   files:
     exclude:
     - '**/test_*.py'
-
 outputs:
 - package:
     name: matplotlib-base
@@ -22,15 +19,14 @@ outputs:
     script: build-base.sh
     files:
       exclude:
-      - "**/*.pyi"
-      - "**/tests/**"
-      - "**.dist-info/**"
-      - "**/*.ini"
-      - "**/__pycache__/**"
-      - "**/*.pyx"
-      - "**/*.pxd"
-      - "**/*.pyc"
-      - "**/test_*.py"
+      - '**/*.pyi'
+      - '**/tests/**'
+      - '**/*.ini'
+      - '**/__pycache__/**'
+      - '**/*.pyx'
+      - '**/*.pxd'
+      - '**/*.pyc'
+      - '**/test_*.py'
     python:
       skip_pyc_compilation:
       - '**/*.py'
@@ -47,11 +43,14 @@ outputs:
     - setuptools_scm_git_archive
     - sed
     host:
-    - python
-    - numpy
-    - pybind11
     - freetype
+    - harfbuzz
+    - libraqm
+    - numpy
+    - python
+    - pybind11
     - qhull
+    - sheenbidi
     run:
     - contourpy
     - cycler
@@ -81,6 +80,7 @@ outputs:
       - pytester
       run:
       - pytester-run
+      - pyjs < 4.0.4
 - package:
     name: matplotlib
     version: ${{ version }}
@@ -102,7 +102,7 @@ outputs:
       - pytester
       run:
       - pytester-run
-
+      - pyjs < 4.0.4
 about:
   homepage: http://matplotlib.org/
   license: PSF-2.0
@@ -111,11 +111,14 @@ about:
   - LICENSE/LICENSE
   - LICENSE/LICENSE_AMSFONTS
   - LICENSE/LICENSE_BAKOMA
-  - LICENSE/LICENSE_CARLOGO
   - LICENSE/LICENSE_COLORBREWER
   - LICENSE/LICENSE_COURIERTEN
+  - LICENSE/LICENSE_FREETYPE
+  - LICENSE/LICENSE_HARFBUZZ
   - LICENSE/LICENSE_JSXTOOLS_RESIZE_OBSERVER
-  - LICENSE/LICENSE_QT4_EDITOR
+  - LICENSE/LICENSE_LAST_RESORT_FONT
+  - LICENSE/LICENSE_LIBRAQM
+  - LICENSE/LICENSE_SHEENBIDI
   - LICENSE/LICENSE_SOLARIZED
   - LICENSE/LICENSE_STIX
   - LICENSE/LICENSE_YORICK

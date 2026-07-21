@@ -1,0 +1,61 @@
+context:
+  name: fiona
+  version: 1.10.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/f/fiona/fiona-${{ version }}.tar.gz
+  sha256: b00ae357669460c6491caba29c2022ff0acfcbde86a95361ea8ff5cd14a86b68
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python
+    - cython >=3.0.2,<3.1
+    - cross-python_emscripten-wasm32
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - pip
+    - setuptools
+
+  host:
+    - python
+    - libgdal-core
+    - proj-static
+    - geos-static
+
+  run:
+    - python
+    - libgdal-core
+    - attrs >=19.2.0
+    - click >=8.0,<9
+    - cligj >=0.5
+    - click-plugins >=1.0
+    - pyparsing
+    - shapely
+
+tests:
+- script: pytester
+  requirements:
+    build:
+      - pytester
+    run:
+      - pytester-run
+  files:
+    recipe:
+      - test_fiona.py
+
+about:
+  homepage: https://github.com/Toblerity/Fiona
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Fiona reads and writes spatial data files using GDAL
+
+extra:
+  recipe-maintainers:
+  - arjxn-py

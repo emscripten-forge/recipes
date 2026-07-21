@@ -1,16 +1,16 @@
 context:
-  version: 1.1.7
-  name: r-rlang
+  version: 1.3.0
+  name: rlang
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 123c91e7eaacd3514a368a31c30617d36a874def37f6cafdacc0c7d1409be373
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 80aa537d49e72265f443a15e8936128af583caa5e572086518b503cbf064279c
 
 build:
   number: 0
@@ -18,13 +18,22 @@ build:
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: http://rlang.r-lib.org

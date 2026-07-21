@@ -1,6 +1,6 @@
 context:
   name: pycalphad
-  version: 0.11.1
+  version: 0.11.2
 
 package:
   name: ${{ name }}
@@ -8,23 +8,23 @@ package:
 
 source:
   url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 57b5c8618d7168c02648b99de6545b24dd60591f96bcc3fd2a260e57663e727e
+  sha256: 588ad2c0c207aa35d263c16283559eff566a8fcdf33ecdc77a9ec9176cde1378
 
 build:
-  number: 1
+  number: 0
   script: ${PYTHON} -m pip install .
 
   files:
     exclude:
     - '**/tests/**'
     - '**/*.pxd'
-    - '**.dist-info/**'
     - '**/__pycache__/**'
     - '**/*.pyc'
     - '**/test_*.py'
   python:
     skip_pyc_compilation:
     - '**/*.py'
+
 requirements:
   build:
   - cross-python_${{ target_platform }}
@@ -51,20 +51,15 @@ requirements:
   - xarray
 
 tests:
-- script: echo "FIXME:"
-# The tests for v0.11.0 pass. This package has been tested with xeus-python.
-# The following fails because of issues with the test environment.
-# See https://github.com/emscripten-forge/recipes/issues/4364
-# tests:
-#   - script: pytester
-#     requirements:
-#       build:
-#         - pytester
-#       run:
-#         - pytester-run
-#     files:
-#       recipe:
-#         - test_pycalphad.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pycalphad.py
 
 about:
   homepage: https://pycalphad.org/

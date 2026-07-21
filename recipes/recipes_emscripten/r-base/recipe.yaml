@@ -1,84 +1,173 @@
 context:
   name: r-base
-  version: 4.5.2
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  version: 4.6.1
+  build_number: 1
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
-  sha256: 0d71ff7106ec69cd7c67e1e95ed1a3cee355880931f2eb78c530014a9e379f20
+  sha256: 4da6e61d2c0aac5f14a2e7e432cb5fcc269efe83da4293050ba7f03dff4e2cf4
   patches:
-  # https://github.com/IsabelParedes/r-source/tree/R-4.5.0-wasm
   - patches/0001-Add-emscripten-platform-to-configure-script.patch
   - patches/0002-Disable-libcurl.patch
   - patches/0003-Disable-internet-module.patch
-  - patches/0004-Fix-iconv-checks-when-using-internal-lapack-blas.patch
-  - patches/0005-Add-sigsuspend-stub-for-Emscripten-compatibility.patch
-  - patches/0006-Disable-which-for-emscripten.patch
-  - patches/0007-Set-cairo-as-default-bitmap-type.patch
-  - patches/0008-Use-source-files-directly.patch
-  - patches/0009-Install-.wasm-files.patch
-  - patches/0010-Fix-extern-C-error-expected-an-identifier.patch
-  - patches/0011-Remove-png-lib-from-bitmap-libs.patch
-  - patches/0012-Use-linux-executables.patch
-  - patches/0013-Use-source-files-when-installing.patch
+  - patches/0004-Add-sigsuspend-stub-for-Emscripten-compatibility.patch
+  - patches/0005-Disable-which-for-emscripten.patch
+  - patches/0006-Set-cairo-as-default-bitmap-type.patch
+  - patches/0007-Use-source-files-directly.patch
+  - patches/0008-Install-.wasm-files.patch
+  - patches/0009-Use-linux-executables.patch
+  - patches/0010-Fix-iconv-checks-when-using-internal-lapack-blas.patch
+  - patches/0011-Guard-Rlog1p-C-linkage-and-avoid-local-symbol-clash.patch
+  - patches/0012-Remove-png-lib-from-bitmap-libs.patch
+  - patches/0013-Fix-cairo-font-scaling-in-emscripten.patch
+  - patches/0015-Add-RPY-target-linked-with-libpython.patch
+  - patches/0016-Route-plotmath-symbols-through-Unicode-font.patch
 
 build:
-  number: 3
+  number: ${{ build_number }}
 
-  files:
-    exclude:
-    - share/man/man1/**
-requirements:
+#-------------------------------------------------------------------------------
+# STAGING: runs build.sh once; r-base and r-py inherit from here.
+#-------------------------------------------------------------------------------
+
+outputs:
+- staging:
+    name: r-base-build
+
   build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - flang_${{ target_platform }}
-  - libtool
-  - pkg-config
-  - cmake
-  - make
-  # Dependencies to build R in the build environment
-  - gcc
-  - libiconv >=1.18
-  - zlib >=1.2.13
-  - bzip2
-  - xz >=5.8
-  - pcre2 >=10.43
-  - libpng
-  - libtiff
-  - cairo >=1.18
-  host:
-  - libflang
-  - libiconv >=1.18
-  - zlib >=1.2.13
-  - bzip2
-  - liblzma
-  - pcre2 >=10.43
-  - libpng
-  - libtiff
-  - cairo >=1.18
-  - fontconfig >=2.15
-  - pixman
-  - expat
-  - freetype
-  run_exports:
-  - ${{ pin_subpackage("r-base", exact=True) }}
+    script: build.sh
 
-tests:
-- package_contents:
-    lib:
-    - R/lib/libR.so
-    - R/lib/libRblas.so
-    - R/lib/libRlapack.so
-    - R/library/grDevices/libs/cairo.so
-- script:
-  - node ${PREFIX}/lib/R/bin/Rscript --version
   requirements:
     build:
-    - nodejs
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - libtool
+    - pkg-config
+    - cmake
+    - make
+    # Dependencies to build R in the build environment
+    - libflang-rt
+    - gcc
+    - libiconv
+    - zlib
+    - bzip2
+    - xz
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    host:
+    - libflang
+    - libiconv
+    - zlib
+    - bzip2
+    - liblzma
+    - pcre2
+    - libpng
+    - libtiff
+    - cairo
+    - fontconfig
+    - pixman
+    - expat
+    - freetype
+    # For the r-py output: libpython statically linked into RPY executable.
+    - python
+    - libpython
+    - libffi
+    - sqlite
+    - openssl
+    - zstd
+    ignore_run_exports:
+      from_package:
+      - python
+
+#-------------------------------------------------------------------------------
+# R-BASE
+#-------------------------------------------------------------------------------
+
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+
+  inherit: r-base-build
+
+  build:
+    string: h${{ hash }}_${{ build_number }}
+    files:
+      exclude:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+      - share/man/man1/**
+
+  requirements:
+    run:
+    # DejaVu provides /fonts at runtime: one family covering Latin/Greek/math
+    # across all four faces (the cairo FreeType path does no per-glyph fallback).
+    # The shipped fonts.conf aliases R's families to it.
+    - font-ttf-dejavu >=2.37
+    - font-ttf-dejavu-sans-mono >=2.37
+    run_exports:
+    - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+
+  tests:
+  - package_contents:
+      lib:
+      - R/lib/libR.so
+      - R/lib/libRblas.so
+      - R/lib/libRlapack.so
+      - R/library/grDevices/libs/cairo.so
+  - script:
+    - node ${PREFIX}/lib/R/bin/Rscript --version
+    - run_r_test test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - nodejs
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
+# R-PY: R executables linked with Python
+#-------------------------------------------------------------------------------
+
+- package:
+    name: r-py
+    version: ${{ version }}
+
+  inherit: r-base-build
+
+  build:
+    files:
+      include:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+
+  requirements:
+    host:
+    - r-base ==${{ version }}
+    - python
+    run:
+    - r-base ==${{ version }}
+    - python
+    - libpython
+    - zstd
+
+  tests:
+  - package_contents:
+      files:
+      - lib/R/bin/exec/RPY
+      - lib/R/bin/exec/RPY.wasm
+  - script: run_r_test --rpy test-r.R
+    files:
+      recipe:
+      - test-r.R
+    requirements:
+      build:
+      - r-wasm-tester
+
+#-------------------------------------------------------------------------------
 
 about:
   homepage: http://www.r-project.org/

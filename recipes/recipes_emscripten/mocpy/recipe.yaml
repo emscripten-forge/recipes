@@ -1,0 +1,61 @@
+context:
+  name: mocpy
+  version: 0.20.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a593519e28eef91635ca151fc8b258ac6a56ae6c5c714bfdffc8ab167911f477
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . -vvv
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - setuptools-rust
+  - rust-nightly
+  - maturin
+  host:
+  - python
+  run:
+  - astropy
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_mocpy.py
+
+about:
+  homepage: https://github.com/cds-astro/mocpy/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Multi-Order Coverages manipulation
+  description: |
+    MOCpy allows to read, generate, write and manipulate MOCs. It supports operations
+    between MOCs. The available MOC flavors are Space-MOCs, TimeMOCs, FrequencyMOCs, 
+    Space-TimeMOCs, and SpaceFrequencyMOCs.
+  documentation: https://cds-astro.github.io/mocpy/
+  repository: https://github.com/cds-astro/mocpy/

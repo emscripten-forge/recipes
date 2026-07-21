@@ -1,0 +1,79 @@
+From: MLIR Python bindings Emscripten init
+Subject: [PATCH 0007] Add mlir/__init__.py: Emscripten shared-library preloader
+
+Adds mlir/python/mlir/__init__.py (entirely guarded by
+`if sys.platform == "emscripten"`) to pre-load the three MLIR shared
+libraries before any extension module's dlopen triggers neededDynlib
+resolution.
+
+Background: Emscripten's LDSO resolves neededDynlibs by short name,
+searching /lib/, but ctypes.CDLL with a full path registers the library
+under that full path as its key.  When libMLIRPythonSupport-mlir.so later
+requests libnanobind-mlir.so as a dependency the short-name lookup fails
+with "need to see wasm magic number".  Fix: create /lib/<name> symlinks
+(cheap in MEMFS) and load via those paths.
+
+diff --git a/mlir/python/CMakeLists.txt b/mlir/python/CMakeLists.txt
+--- a/mlir/python/CMakeLists.txt
++++ b/mlir/python/CMakeLists.txt
+@@ -24,6 +24,7 @@ declare_mlir_python_sources(MLIRPythonSources.Core.Python
+   ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/mlir"
+   ADD_TO_PARENT MLIRPythonSources.Core
+   SOURCES
++    __init__.py
+     _mlir_libs/__init__.py
+     _mlir_libs/_mlir/py.typed
+     ir.py
+
+diff --git a/mlir/python/mlir/__init__.py b/mlir/python/mlir/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/mlir/python/mlir/__init__.py
+@@ -0,0 +1,45 @@
++"""
++MLIR Python bindings package initializer.
++
++On Emscripten/JupyterLite, pre-loads the MLIR shared libraries before any
++extension module import triggers neededDynlib resolution.
++
++Background: Emscripten's dynamic linker (LDSO) resolves neededDynlibs by
++short name (e.g. ``libnanobind-mlir.so``), searching directories like
++``/lib/``.  But ``ctypes.CDLL`` with a full path registers the library under
++that full path as its key, so when ``libMLIRPythonSupport-mlir.so`` later
++tries to load ``libnanobind-mlir.so`` as a dependency, the short-name lookup
++fails with "need to see wasm magic number".
++
++Fix: create ``/lib/<name>`` symlinks (cheap in MEMFS — just a directory
++entry) and load the libraries via those symlink paths, so that they are
++registered under both their short name and full path.
++"""
++
++import sys
++
++if sys.platform == "emscripten":
++    import ctypes
++    import os
++
++    _libs_dir = os.path.join(os.path.dirname(__file__), "_mlir_libs")
++
++    for _lib in (
++        "libnanobind-mlir.so",
++        "libMLIRPythonCAPI.so.22.1",
++        "libMLIRPythonSupport-mlir.so",
++    ):
++        _src = os.path.join(_libs_dir, _lib)
++        _dst = f"/lib/{_lib}"
++        if os.path.exists(_src) and not os.path.exists(_dst):
++            try:
++                os.symlink(_src, _dst)
++            except OSError:
++                pass
++
++    for _lib in (
++        "libnanobind-mlir.so",
++        "libMLIRPythonCAPI.so.22.1",
++        "libMLIRPythonSupport-mlir.so",
++    ):
++        _p = f"/lib/{_lib}"
++        if os.path.exists(_p):
++            ctypes.CDLL(_p, ctypes.RTLD_GLOBAL)

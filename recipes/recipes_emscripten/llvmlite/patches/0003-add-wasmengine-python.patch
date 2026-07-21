@@ -1,0 +1,621 @@
+diff --git a/llvmlite/binding/wasmengine.py b/llvmlite/binding/wasmengine.py
+new file mode 100644
+index 00000000..5d2475e8
+--- /dev/null
++++ b/llvmlite/binding/wasmengine.py
+@@ -0,0 +1,615 @@
++"""
++WASM Execution Engine for llvmlite.
++
++Two backends are supported:
++  - WasmtimeBackend  — native platforms (Linux/macOS/Windows); uses the
++                        `wasmtime` Python package to run standalone WASM modules.
++  - EmscriptenBackend — Emscripten/JupyterLite; compiles LLVM IR → WASM
++                        side-module via lld (in-process) and loads it with
++                        dlopen(RTLD_GLOBAL) so that cross-module symbol
++                        resolution works automatically.
++
++Compilation pipeline (Emscripten path, all in-process, no subprocess):
++  ModuleRef  →  target_machine.emit_object()  →  .o bytes  →  tmpfile
++                    ↓
++               LLVMPY_WasmLinkSharedModule (calls lld::wasm::link directly)
++                    ↓
++               .wasm side module (in Emscripten MEMFS tmpdir)
++                    ↓
++               ctypes.CDLL(path, RTLD_GLOBAL)   ←  dlopen
++                    ↓
++               ctypes.cast(lib.funcname, c_void_p).value  →  integer address
++                    ↓
++               ctypes.CFUNCTYPE(ret, *args)(addr)         →  callable
++
++The integer "address" on Emscripten is a WASM function-table index, which is
++exactly what Numba passes to ctypes.CFUNCTYPE(...)() to build a callable.
++Cross-cell symbol resolution works because each dlopen() uses RTLD_GLOBAL.
++"""
++
++import ctypes
++import os
++import shutil
++import sys
++import tempfile
++
++_ON_EMSCRIPTEN = sys.platform == 'emscripten'
++
++# Set LLVMLITE_WASM_DEBUG=1 for verbose pipeline logging.
++_DEBUG = os.environ.get('LLVMLITE_WASM_DEBUG', '0') != '0'
++
++
++def _dbg(*args):
++    if _DEBUG:
++        print('[WasmEngine]', *args, file=sys.stderr, flush=True)
++
++
++__all__ = [
++    'WasmExecutionEngine',
++    'WasmFunction',
++    'WasmtimeBackend',
++    'EmscriptenBackend',
++    'create_wasm_engine',
++    'WasmRuntimeError',
++    'WasmToolNotFoundError',
++]
++
++
++# ---------------------------------------------------------------------------
++# Exceptions
++# ---------------------------------------------------------------------------
++
++class WasmRuntimeError(RuntimeError):
++    """Raised when a WASM trap or execution error occurs."""
++
++
++class WasmToolNotFoundError(RuntimeError):
++    """Raised when neither wasm-ld nor LLVMPY_WasmLinkSharedModule is available."""
++
++
++# ---------------------------------------------------------------------------
++# wasm-ld discovery (native path only)
++# ---------------------------------------------------------------------------
++
++def _find_wasm_ld(wasm_ld_path=None, _which=shutil.which):
++    """Locate wasm-ld: explicit path > WASM_LD env var > PATH lookup."""
++    if _ON_EMSCRIPTEN:
++        return None   # not needed; we call lld directly via FFI
++    if wasm_ld_path is not None:
++        return wasm_ld_path
++    env = os.environ.get('WASM_LD')
++    if env:
++        return env
++    found = _which('wasm-ld')
++    if found:
++        return found
++    raise WasmToolNotFoundError(
++        "wasm-ld not found. Install LLVM/Clang or set the WASM_LD "
++        "environment variable to the path of wasm-ld."
++    )
++
++
++# ---------------------------------------------------------------------------
++# WasmFunction
++# ---------------------------------------------------------------------------
++
++class WasmFunction:
++    """A callable wrapper for a function exported from a loaded WASM module."""
++
++    def __init__(self, name, backend):
++        self._name = name
++        self._backend = backend
++
++    @property
++    def name(self):
++        return self._name
++
++    def __call__(self, *args):
++        return self._backend.call(self._name, *args)
++
++    def address(self):
++        """Return the WASM function-table index (Emscripten) or None."""
++        if hasattr(self._backend, 'get_function_address'):
++            return self._backend.get_function_address(self._name)
++        return None
++
++    def __repr__(self):
++        return f"<WasmFunction {self._name!r}>"
++
++
++# ---------------------------------------------------------------------------
++# WasmtimeBackend  (native: Linux / macOS / Windows)
++# ---------------------------------------------------------------------------
++
++class WasmtimeBackend:
++    """
++    Execute WASM using the `wasmtime` Python package.
++
++    Suitable for native platforms (not Emscripten).  Produces a standalone
++    WASM module; cross-module symbol sharing is not supported (use
++    EmscriptenBackend + dlopen for that).
++    """
++
++    def __init__(self, wasm_ld_path=None):
++        try:
++            import wasmtime
++        except ImportError:
++            raise ImportError(
++                "wasmtime package is required for WASM execution on native "
++                "platforms. Install it with: pip install wasmtime"
++            )
++        self._wasm_ld_path = _find_wasm_ld(wasm_ld_path)
++        self._wasmtime = wasmtime
++        engine = wasmtime.Engine()
++        self._store = wasmtime.Store(engine)
++        self._exports = {}
++
++    # ------------------------------------------------------------------
++    # Internal helpers
++    # ------------------------------------------------------------------
++
++    def _link(self, object_files, output_path):
++        import subprocess
++        cmd = [
++            self._wasm_ld_path,
++            '--no-entry',
++            '--export-all',
++            '--allow-undefined',
++            '-o', str(output_path),
++        ] + [str(f) for f in object_files]
++        result = subprocess.run(cmd, capture_output=True, text=True)
++        if result.returncode != 0:
++            raise WasmRuntimeError(
++                f"wasm-ld failed (exit code {result.returncode}):\n"
++                f"{result.stderr}"
++            )
++
++    def load(self, wasm_bytes):
++        wasmtime = self._wasmtime
++        module = wasmtime.Module(self._store.engine, wasm_bytes)
++        instance = wasmtime.Instance(self._store, module, [])
++        self._exports = {}
++        for export in module.exports:
++            self._exports[export.name] = (
++                instance.exports(self._store).get(export.name)
++            )
++
++    def call(self, name, *args):
++        func = self._exports.get(name)
++        if func is None:
++            raise KeyError(f"No exported function named {name!r}")
++        if not isinstance(func, self._wasmtime.Func):
++            raise KeyError(f"{name!r} is not a function export")
++        try:
++            return func(self._store, *args)
++        except self._wasmtime.WasmtimeError as e:
++            raise WasmRuntimeError(str(e)) from e
++
++    def get_export_names(self):
++        return list(self._exports.keys())
++
++    def get_memory(self):
++        for val in self._exports.values():
++            if isinstance(val, self._wasmtime.Memory):
++                return val
++        return None
++
++    def _memory_base(self):
++        mem = self.get_memory()
++        if mem is None:
++            raise RuntimeError("No memory export in WASM module")
++        base = ctypes.addressof(mem.data_ptr(self._store).contents)
++        return base, mem.data_len(self._store)
++
++    def write_memory(self, offset, data):
++        base, size = self._memory_base()
++        if offset < 0 or offset + len(data) > size:
++            raise IndexError(f"Write [{offset}:{offset+len(data)}] out of bounds ({size})")
++        ctypes.memmove(base + offset, data, len(data))
++
++    def read_memory(self, offset, size):
++        base, mem_size = self._memory_base()
++        if offset < 0 or offset + size > mem_size:
++            raise IndexError(f"Read [{offset}:{offset+size}] out of bounds ({mem_size})")
++        return ctypes.string_at(base + offset, size)
++
++
++# ---------------------------------------------------------------------------
++# EmscriptenBackend  (browser: JupyterLite / xeus-python WASM kernel)
++# ---------------------------------------------------------------------------
++
++def _link_wasm_emscripten(args):
++    """
++    Call lld::wasm::link() via LLVMPY_WasmLinkSharedModule (in-process).
++
++    args: list of strings with layout
++      ["wasm-ld", ...flags..., obj1, ..., "-o", output_path]
++    """
++    from llvmlite.binding import ffi as _ffi
++
++    if not hasattr(_ffi.lib, 'LLVMPY_WasmLinkSharedModule'):
++        raise WasmToolNotFoundError(
++            "LLVMPY_WasmLinkSharedModule is not available in libllvmlite.so. "
++            "libllvmlite.so must be compiled for Emscripten with lldWasm linked in."
++        )
++
++    encoded = [a.encode('utf-8') for a in args]
++    c_arr = (ctypes.c_char_p * len(encoded))(*encoded)
++    err_ptr = ctypes.c_char_p(None)
++
++    ret = _ffi.lib.LLVMPY_WasmLinkSharedModule(c_arr, len(encoded),
++                                                ctypes.byref(err_ptr))
++    if ret != 0:
++        msg = err_ptr.value.decode('utf-8') if err_ptr.value else 'unknown linker error'
++        try:
++            _ffi.lib.LLVMPY_DisposeString(err_ptr)
++        except Exception:
++            pass
++        raise WasmRuntimeError(f"wasm-ld failed: {msg}")
++
++
++class EmscriptenBackend:
++    """
++    WASM execution backend for Emscripten / JupyterLite.
++
++    Compiles LLVM IR → WASM side module via lld (in-process) and loads it
++    with dlopen(RTLD_GLOBAL).  Each module gets its own side module so that
++    multiple libraries (NRT, JIT helpers, main function) can coexist without
++    duplicate-symbol conflicts.
++
++    Cross-module symbol resolution works automatically because every dlopen()
++    uses RTLD_GLOBAL, exactly mirroring what clang-repl/Wasm.cpp does.
++    """
++
++    def __init__(self):
++        if not _ON_EMSCRIPTEN:
++            raise RuntimeError(
++                "EmscriptenBackend is only available inside an Emscripten "
++                "environment (sys.platform == 'emscripten')."
++            )
++        self._lib_handles = []   # ctypes.CDLL handles (kept alive)
++        self._tmpdirs = []       # temp dirs (kept alive for dlopen)
++        self._round = 0          # per-module counter for unique filenames
++        self._fn_cache = {}
++
++    def load_object(self, obj_bytes, module_name='module'):
++        """Compile one object file to a WASM side module and dlopen it."""
++        tmpdir = tempfile.mkdtemp(prefix=f'llvmlite-wasm-{self._round}-')
++        try:
++            obj_path = os.path.join(tmpdir, 'mod.o')
++            wasm_path = os.path.join(tmpdir, 'output.wasm')
++
++            _dbg(f'linking round={self._round} {module_name!r}')
++
++            with open(obj_path, 'wb') as fh:
++                fh.write(obj_bytes)
++
++            link_args = [
++                'wasm-ld', '-shared',
++                '--import-memory', '--stack-first', '--allow-undefined',
++                obj_path, '-o', wasm_path,
++            ]
++            _dbg(f'  linking: {" ".join(link_args)}')
++            _link_wasm_emscripten(link_args)
++
++            lib = ctypes.CDLL(wasm_path, ctypes.RTLD_GLOBAL)
++            _dbg(f'  dlopen OK: {wasm_path}')
++        except Exception:
++            shutil.rmtree(tmpdir, ignore_errors=True)
++            raise
++
++        self._lib_handles.append(lib)
++        self._tmpdirs.append(tmpdir)
++        self._round += 1
++        self._fn_cache.clear()
++
++    def load(self, wasm_bytes):
++        """Load raw WASM bytes as a side module (used by WasmExecutionEngine)."""
++        tmpdir = tempfile.mkdtemp(prefix=f'llvmlite-wasm-{self._round}-')
++        try:
++            wasm_path = os.path.join(tmpdir, 'output.wasm')
++            with open(wasm_path, 'wb') as fh:
++                fh.write(wasm_bytes)
++            lib = ctypes.CDLL(wasm_path, ctypes.RTLD_GLOBAL)
++            _dbg(f'  dlopen OK: {wasm_path}')
++        except Exception:
++            shutil.rmtree(tmpdir, ignore_errors=True)
++            raise
++        self._lib_handles.append(lib)
++        self._tmpdirs.append(tmpdir)
++        self._round += 1
++        self._fn_cache.clear()
++
++    def call(self, name, *args):
++        lib = self._find_lib(name)
++        if lib is None:
++            raise KeyError(f"Symbol {name!r} not found in any loaded WASM module")
++        try:
++            return getattr(lib, name)(*args)
++        except Exception as e:
++            raise WasmRuntimeError(str(e)) from e
++
++    def get_function_address(self, name):
++        """Return WASM function-table index for *name*."""
++        lib = self._find_lib(name)
++        if lib is None:
++            raise WasmRuntimeError(
++                f"Symbol {name!r} not found in any loaded WASM module"
++            )
++        fn = getattr(lib, name)
++        addr = ctypes.cast(fn, ctypes.c_void_p).value
++        _dbg(f'get_function_address({name!r}) → {addr}')
++        return addr
++
++    def get_global_value_address(self, name):
++        """Return linear-memory address of a global variable."""
++        for lib in reversed(self._lib_handles):
++            try:
++                gv = ctypes.c_void_p.in_dll(lib, name)
++                return ctypes.addressof(gv)
++            except OSError:
++                continue
++        raise WasmRuntimeError(
++            f"Global {name!r} not found in any loaded WASM module."
++        )
++
++    def get_export_names(self):
++        names = []
++        for lib in self._lib_handles:
++            # ctypes doesn't enumerate exports; return the cache keys as proxy
++            names.extend(self._fn_cache.keys())
++        return names
++
++    def _find_lib(self, name):
++        for lib in reversed(self._lib_handles):
++            try:
++                getattr(lib, name)
++                return lib
++            except AttributeError:
++                continue
++        return None
++
++    def __del__(self):
++        for tmpdir in self._tmpdirs:
++            if os.path.isdir(tmpdir):
++                shutil.rmtree(tmpdir, ignore_errors=True)
++
++
++# ---------------------------------------------------------------------------
++# Backend detection
++# ---------------------------------------------------------------------------
++
++def _detect_backend(backend=None, wasm_ld_path=None):
++    if backend == 'wasmtime':
++        return WasmtimeBackend(wasm_ld_path)
++    if backend == 'emscripten':
++        return EmscriptenBackend()
++    if backend is not None:
++        raise ValueError(f"Unknown backend: {backend!r}")
++    if _ON_EMSCRIPTEN:
++        return EmscriptenBackend()
++    return WasmtimeBackend(wasm_ld_path)
++
++
++# ---------------------------------------------------------------------------
++# WasmExecutionEngine
++# ---------------------------------------------------------------------------
++
++class WasmExecutionEngine:
++    """
++    Execution engine that compiles LLVM IR to WebAssembly and runs it.
++
++    Mirrors the ``ExecutionEngine`` API so Numba's codegen pipeline can use it
++    with minimal patching.
++
++    On Emscripten, each call to ``add_module()`` compiles and dlopens that
++    module immediately as its own WASM side module.  This avoids multi-module
++    batching bugs (duplicate symbols, conflicting GOT globals) that arise when
++    Numba creates several libraries (NRT, helpers, main function) within a
++    single compilation session.
++
++    On native platforms, modules accumulate until ``finalize_object()`` is
++    called, then wasm-ld links them all and wasmtime loads the result.
++
++    Parameters
++    ----------
++    target_machine : TargetMachineRef
++        A wasm32 TargetMachine (wasm32-unknown-emscripten on Emscripten,
++        wasm32-unknown-unknown elsewhere).
++    wasm_ld_path : str, optional
++        Path to wasm-ld binary (native only; ignored on Emscripten).
++    backend : str or None
++        'wasmtime', 'emscripten', or None (auto-detect).
++    """
++
++    def __init__(self, target_machine, wasm_ld_path=None, backend=None):
++        self._target_machine = target_machine
++        self._backend = _detect_backend(backend, wasm_ld_path)
++        self._pending_modules = []   # native only
++        self._wasm_bytes = None
++
++    # ------------------------------------------------------------------
++    # Module management  (mirrors ExecutionEngine)
++    # ------------------------------------------------------------------
++
++    def add_module(self, module):
++        """
++        Add an LLVM IR module.
++
++        On Emscripten: compiled and dlopen'd immediately (one WASM side module
++        per library, avoiding multi-module batching bugs).
++        On native: queued for the next finalize_object() call.
++        """
++        if _ON_EMSCRIPTEN:
++            mod_name = getattr(module, 'name', '?')
++            if _DEBUG:
++                _dbg(f'--- IR for {mod_name!r} ---')
++                _dbg(str(module))
++                _dbg('--- end IR ---')
++            obj_bytes = self._target_machine.emit_object(module)
++            self._backend.load_object(obj_bytes, mod_name)
++        else:
++            self._pending_modules.append(module)
++
++    def remove_module(self, module):
++        """Remove a pending module (native only)."""
++        try:
++            self._pending_modules.remove(module)
++        except ValueError:
++            raise RuntimeError("Module not found in pending list")
++
++    def add_global_mapping(self, gv, addr):
++        """No-op stub for API compatibility with ExecutionEngine."""
++        pass
++
++    # ------------------------------------------------------------------
++    # Compilation
++    # ------------------------------------------------------------------
++
++    def finalize_object(self):
++        """
++        On Emscripten: no-op (modules compiled eagerly in add_module).
++        On native: emit objects, link with wasm-ld, load with wasmtime.
++        """
++        if _ON_EMSCRIPTEN:
++            return
++
++        if not self._pending_modules:
++            return
++
++        with tempfile.TemporaryDirectory() as tmpdir:
++            from pathlib import Path
++            tmpdir = Path(tmpdir)
++            object_files = []
++            for i, mod in enumerate(self._pending_modules):
++                obj_bytes = self._target_machine.emit_object(mod)
++                obj_path = tmpdir / f'module_{i}.o'
++                obj_path.write_bytes(obj_bytes)
++                object_files.append(obj_path)
++
++            wasm_path = tmpdir / 'output.wasm'
++            self._backend._link(object_files, wasm_path)
++            self._wasm_bytes = wasm_path.read_bytes()
++
++        self._backend.load(self._wasm_bytes)
++        self._pending_modules = []
++
++    # ------------------------------------------------------------------
++    # Execution
++    # ------------------------------------------------------------------
++
++    def get_function(self, name):
++        """Return a WasmFunction for the named export."""
++        return WasmFunction(name, self._backend)
++
++    def get_function_address(self, name):
++        """Return the WASM function-table index (Emscripten) or raise."""
++        if not hasattr(self._backend, 'get_function_address'):
++            raise NotImplementedError(
++                "get_function_address() is only supported on EmscriptenBackend"
++            )
++        return self._backend.get_function_address(name)
++
++    def get_global_value_address(self, name):
++        """Return the linear-memory address of a global variable."""
++        if not hasattr(self._backend, 'get_global_value_address'):
++            raise NotImplementedError(
++                "get_global_value_address() is only supported on EmscriptenBackend"
++            )
++        return self._backend.get_global_value_address(name)
++
++    def get_wasm_bytes(self):
++        """Return the most recently linked WASM binary (native only)."""
++        if self._wasm_bytes is None:
++            raise RuntimeError("No WASM bytes yet; call finalize_object() first")
++        return self._wasm_bytes
++
++    def get_memory(self):
++        return self._backend.get_memory() if hasattr(self._backend, 'get_memory') else None
++
++    def write_memory(self, offset, data):
++        self._backend.write_memory(offset, data)
++
++    def read_memory(self, offset, size):
++        return self._backend.read_memory(offset, size)
++
++    def run_static_constructors(self):
++        """No-op: dlopen() on Emscripten auto-executes .init_array."""
++
++    def run_static_destructors(self):
++        """No-op for API compatibility."""
++
++    def set_object_cache(self, *args, **kwargs):
++        """No-op stub."""
++
++    @property
++    def target_data(self):
++        return self._target_machine.target_data
++
++
++# ---------------------------------------------------------------------------
++# Factory
++# ---------------------------------------------------------------------------
++
++def create_wasm_engine(module=None, target_machine=None, wasm_ld_path=None,
++                       backend=None):
++    """
++    Create a :class:`WasmExecutionEngine`.
++
++    Parameters
++    ----------
++    module : ModuleRef, optional
++        Initial module to add.
++    target_machine : TargetMachineRef, optional
++        WASM target machine.  Auto-created if None.
++    wasm_ld_path : str, optional
++        Path to wasm-ld (native only).
++    backend : str or None
++        'wasmtime', 'emscripten', or None (auto-detect).
++
++    Returns
++    -------
++    WasmExecutionEngine
++    """
++    from llvmlite.binding import targets as _targets
++
++    if target_machine is None:
++        triple = ('wasm32-unknown-emscripten' if _ON_EMSCRIPTEN
++                  else 'wasm32-unknown-unknown')
++        from llvmlite.binding import initfini as _initfini
++        _initfini.initialize_all_targets()
++        _initfini.initialize_all_asmprinters()
++        target = _targets.Target.from_triple(triple)
++        reloc = 'pic' if _ON_EMSCRIPTEN else 'default'
++        target_machine = target.create_target_machine(reloc=reloc)
++
++    engine = WasmExecutionEngine(
++        target_machine=target_machine,
++        wasm_ld_path=wasm_ld_path,
++        backend=backend,
++    )
++
++    if module is not None:
++        engine.add_module(module)
++
++    return engine
++
++
++# ---------------------------------------------------------------------------
++# FFI type declarations (Emscripten only)
++# ---------------------------------------------------------------------------
++
++def _setup_ffi():
++    from llvmlite.binding import ffi as _ffi
++    if not hasattr(_ffi.lib, 'LLVMPY_WasmLinkSharedModule'):
++        return
++    _ffi.lib.LLVMPY_WasmLinkSharedModule.argtypes = [
++        ctypes.POINTER(ctypes.c_char_p),
++        ctypes.c_int,
++        ctypes.POINTER(ctypes.c_char_p),
++    ]
++    _ffi.lib.LLVMPY_WasmLinkSharedModule.restype = ctypes.c_int
++
++
++if _ON_EMSCRIPTEN:
++    _setup_ffi()

@@ -13,16 +13,19 @@ source:
   sha256: 0bc5d10e5a34285d4f9e9c572c058c386b9e1515d8faebc1496b2680138280a8
 
 build:
-  number: 0
+  number: 4
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
   - r-generics
   - r-timechange
   host:
+  - r-base ==${{ r_base }}
   - r-generics
   - r-timechange
   run:

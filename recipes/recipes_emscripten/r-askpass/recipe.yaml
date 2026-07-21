@@ -13,15 +13,18 @@ source:
   sha256: 6c2106a74c44a748f2cea795d9686e27a0058a90debcfd8558b62b06aec0c7dd
 
 build:
-  number: 3
+  number: 8
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
   - r-sys
   host:
+  - r-base ==${{ r_base }}
   - r-sys
   run:
   - r-sys
@@ -30,6 +33,13 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test-r-askpass.R
+  files:
+    recipe:
+    - test-r-askpass.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://r-lib.r-universe.dev/askpass

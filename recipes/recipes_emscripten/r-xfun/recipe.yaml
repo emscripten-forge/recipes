@@ -1,16 +1,16 @@
 context:
-  name: r-xfun
-  version: '0.56'
+  name: xfun
+  version: '0.60'
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 8ef8c56e4d3fe55cec8de3284739ce62e7b73678c58c29549e4a8b29358ab30a
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 6f5d4fe2067bade6d7b33916f86d756a017c068296c885a6e22c30b557b84597
 
 build:
   number: 0
@@ -18,16 +18,26 @@ build:
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_xfun.R
+  files:
+    recipe:
+    - test_xfun.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
-  homepage: https://git.yihui.org/xfun/
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://git.yihui.org/xfun/
   repository: https://github.com/yihui/xfun
   license: MIT
   license_file: LICENSE

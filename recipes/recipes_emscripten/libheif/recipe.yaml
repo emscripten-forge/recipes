@@ -1,6 +1,6 @@
 context:
   name: libheif
-  version: 1.21.2
+  version: 1.23.1
 
 package:
   name: ${{ name }}
@@ -8,12 +8,13 @@ package:
 
 source:
   url: https://github.com/strukturag/libheif/releases/download/v${{ version }}/libheif-${{ version }}.tar.gz
-  sha256: 75f530b7154bc93e7ecf846edfc0416bf5f490612de8c45983c36385aa742b42
+  sha256: 0de0327f60fcd47de90d5654c6fe152232738d60d84fe084ec3e0f35e03b166a
   patches:
   - fix-emscripten-val-set.patch # Fixes error: 'val_set' was not declared in this scope, to remove when https://github.com/strukturag/libheif/pull/1565 is merged
 
 build:
   number: 0
+  script: build.sh
 
 requirements:
   build:
@@ -26,12 +27,31 @@ requirements:
   - zlib
   - libtiff
   - libpng
+  run:
+  - zlib
+  - libtiff
+  - libpng
 
 tests:
 - package_contents:
+    include:
+    - libheif/heif.h
+    lib:
+    - libheif.a
     files:
-    - include/libheif/heif.h
-    - lib/libheif.a
+    - lib/cmake/libheif/libheif-config.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
 
 about:
   license: LGPL-3.0-or-later
@@ -45,4 +65,4 @@ about:
 
 extra:
   recipe-maintainers:
-  - emscripten-forge
+  - Alex-PLACET

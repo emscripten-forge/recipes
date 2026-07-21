@@ -1,0 +1,321 @@
+From 86ace2de309afd1e4164b6b40be27cac78fc5c36 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Tue, 9 Dec 2025 09:55:21 +0000
+Subject: [PATCH 12/15] Change return and char length args in optimize
+
+---
+ scipy/optimize/src/blaslapack_declarations.h | 20 +++++-----
+ scipy/optimize/src/lbfgsb.c                  | 20 +++++-----
+ scipy/optimize/src/nnls.c                    |  4 +-
+ scipy/optimize/src/slsqp.c                   | 42 ++++++++++----------
+ 4 files changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/scipy/optimize/src/blaslapack_declarations.h b/scipy/optimize/src/blaslapack_declarations.h
+index 029b1ccfa0..4327e0ddb8 100644
+--- a/scipy/optimize/src/blaslapack_declarations.h
++++ b/scipy/optimize/src/blaslapack_declarations.h
+@@ -8,20 +8,20 @@ void   BLAS_FUNC(dcopy)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBL
+ double BLAS_FUNC(dnrm2)(CBLAS_INT* n, double* x, CBLAS_INT* incx);
+ double BLAS_FUNC(ddot)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
+ void   BLAS_FUNC(dgelsy)(CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* jpvt, double* rcond, CBLAS_INT* rank, double* work, CBLAS_INT* lwork, CBLAS_INT* info);
+-void   BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy);
++void   BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy, CBLAS_INT);
+ void   BLAS_FUNC(dgeqr2)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* tau, double* work, CBLAS_INT* info);
+ void   BLAS_FUNC(dgeqrf)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* tau, double* work, double* lwork, CBLAS_INT* info);
+ void   BLAS_FUNC(dgerq2)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* tau, double* work, CBLAS_INT* info);
+-void   BLAS_FUNC(dlarf)(char* side, CBLAS_INT* m, CBLAS_INT* n, double* v, CBLAS_INT* incv, double* tau, double* c, CBLAS_INT* ldc, double* work);
++void   BLAS_FUNC(dlarf)(char* side, CBLAS_INT* m, CBLAS_INT* n, double* v, CBLAS_INT* incv, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT);
+ void   BLAS_FUNC(dlarfgp)(CBLAS_INT* n, double* alpha, double* x, CBLAS_INT* incx, double* tau);
+ void   BLAS_FUNC(dlartgp)(double* f, double* g, double* cs, double* sn, double* r);
+-void   BLAS_FUNC(dorm2r)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info);
+-void   BLAS_FUNC(dormr2)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info);
+-void   BLAS_FUNC(dtpmv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx);
+-void   BLAS_FUNC(dtpsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx);
+-void   BLAS_FUNC(dtrsm)(char* side, char* uplo, char* transa, char* diag, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb);
+-void   BLAS_FUNC(dtrsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx);
+-void   BLAS_FUNC(dpotrf)(char* uplo, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info);
+-void   BLAS_FUNC(dtrtrs)(char* uplo, char* trans, char* diag, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* info);
++void   BLAS_FUNC(dorm2r)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dormr2)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dtpmv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx, CBLAS_INT, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dtpsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx, CBLAS_INT, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dtrsm)(char* side, char* uplo, char* transa, char* diag, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT, CBLAS_INT, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dtrsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, CBLAS_INT, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dpotrf)(char* uplo, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info, CBLAS_INT);
++void   BLAS_FUNC(dtrtrs)(char* uplo, char* trans, char* diag, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* info, CBLAS_INT, CBLAS_INT, CBLAS_INT);
+ 
+ #endif
+diff --git a/scipy/optimize/src/lbfgsb.c b/scipy/optimize/src/lbfgsb.c
+index 754f531654..94f21e76d3 100644
+--- a/scipy/optimize/src/lbfgsb.c
++++ b/scipy/optimize/src/lbfgsb.c
+@@ -830,7 +830,7 @@ LINE111:
+             BLAS_FUNC(dcopy)(&n, x, &one_int, z, &one_int);
+             wrk = updatd;
+             nseg = 0;
+-        } 
++        }
+ 
+         // If there are no free variables or B=theta*I, then skip the subspace
+         // minimization.
+@@ -875,7 +875,7 @@ LINE111:
+                 subsm(n, m, nfree, index, l, u, nbd, z, r, xp, ws, wy, theta, x, g, col,
+                     head, &iword, wa, wn, &info);
+             }
+-            
++
+             if (info != 0)
+             {
+                 // singular triangular system detected;
+@@ -1250,7 +1250,7 @@ bmv(CBLAS_INT m, double* sy, double* wt, CBLAS_INT col, double* v, double* p, CB
+ 
+     // Solve the triangular system
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+-    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info);
++    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     // Solve D^(1/2)p1=v1.
+@@ -1266,7 +1266,7 @@ bmv(CBLAS_INT m, double* sy, double* wt, CBLAS_INT col, double* v, double* p, CB
+     // solve J^Tp2=p2.
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+     trans = "N";
+-    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info);
++    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col, &one_int, wt, &m, &p[col], &col, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     // compute p1=-D^(-1/2)(p1-D^(-1/2)L'p2)
+@@ -2213,14 +2213,14 @@ formk(CBLAS_INT n, CBLAS_INT nsub, CBLAS_INT* ind, CBLAS_INT nenter, CBLAS_INT i
+     //                      with L' stored in the upper triangle of wn.
+ 
+     // dpotrf(uplo, n, a, lda, info)
+-    BLAS_FUNC(dpotrf)(uplo, &col, wn, &m2, info);
++    BLAS_FUNC(dpotrf)(uplo, &col, wn, &m2, info, 1);
+     if (*info != 0) { *info = -1; return; }
+ 
+     // Then form L^-1(-L_a'+R_z') in the (1,2) block.
+     col2 = 2*col;
+ 
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+-    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col, &col, wn, &m2, &wn[m2*col], &m2, info);
++    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col, &col, wn, &m2, &wn[m2*col], &m2, info, 1, 1, 1);
+ 
+     // Form S'AA'S*theta + (L^-1(-L_a'+R_z'))'L^-1(-L_a'+R_z') in the upper
+     //  triangle of (2,2) block of wn.
+@@ -2235,7 +2235,7 @@ formk(CBLAS_INT n, CBLAS_INT nsub, CBLAS_INT* ind, CBLAS_INT nenter, CBLAS_INT i
+     // 72
+ 
+     // dpotrf(uplo, n, a, lda, info)
+-    BLAS_FUNC(dpotrf)(uplo, &col, &wn[col + m2*col], &m2, info);
++    BLAS_FUNC(dpotrf)(uplo, &col, &wn[col + m2*col], &m2, info, 1);
+     if (*info != 0) { *info = -2; }
+ 
+     return;
+@@ -2302,7 +2302,7 @@ formt(CBLAS_INT m, double* wt, double* sy, double* ss, CBLAS_INT col,
+ 
+     // Cholesky factorize T to J*J' with J' stored in the upper triangle of wt.
+     // dpotrf(uplo, n, a, lda, info)
+-    BLAS_FUNC(dpotrf)(uplo, &col, wt, &m, info);
++    BLAS_FUNC(dpotrf)(uplo, &col, wt, &m, info, 1);
+     if (*info != 0) { *info = -3; }
+ 
+     return;
+@@ -3017,13 +3017,13 @@ void subsm(CBLAS_INT n, CBLAS_INT m, CBLAS_INT nsub, CBLAS_INT* ind,
+     col2 = 2*col;
+ 
+     // dtrtrs(uplo, trans, diag, n, nrhs, a, lda, b, ldb, info)
+-    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info);
++    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     for (i = 0; i < col; i++) { wv[i] = -wv[i]; }
+ 
+     trans = "N";
+-    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info);
++    BLAS_FUNC(dtrtrs)(uplo, trans, diag, &col2, &one_int, wn, &m2, wv, &m2, info, 1, 1, 1);
+     if (*info != 0) { return; }
+ 
+     // Compute d = (1/theta)d + (1/theta**2)Z'W wv.
+diff --git a/scipy/optimize/src/nnls.c b/scipy/optimize/src/nnls.c
+index 7971f34a62..d2108bd29a 100644
+--- a/scipy/optimize/src/nnls.c
++++ b/scipy/optimize/src/nnls.c
+@@ -72,7 +72,7 @@ __nnls(const CBLAS_INT m, const CBLAS_INT n, double* restrict a, double* restric
+                 tmpint = m - indz;
+                 pivot2 = a[indz + j*m];
+                 a[indz + j*m] = 1.0;
+-                BLAS_FUNC(dlarf)("L", &tmpint, &one, &a[indz + j*m], &one, &tau, &zz[indz], &tmpint, &tmp_work);
++                BLAS_FUNC(dlarf)("L", &tmpint, &one, &a[indz + j*m], &one, &tau, &zz[indz], &tmpint, &tmp_work, 1);
+                 // See if ztest is positive. This is from the original F77 code.
+                 // Probably better to use a sign test instead of a division.
+                 ztest = zz[indz] / pivot;
+@@ -104,7 +104,7 @@ __nnls(const CBLAS_INT m, const CBLAS_INT n, double* restrict a, double* restric
+             for (k = indz; k < n; k++)
+             {
+                 jj = indices[k];
+-                BLAS_FUNC(dlarf)("L", &tmpint, &one, &a[indz - 1 + j*m], &one, &tau, &a[indz - 1 + jj*m], &tmpint, &tmp_work);
++                BLAS_FUNC(dlarf)("L", &tmpint, &one, &a[indz - 1 + j*m], &one, &tau, &a[indz - 1 + jj*m], &tmpint, &tmp_work, 1);
+             }
+         }
+         // Restore the pivot element into a, zero the subdiagonal elements in col j
+diff --git a/scipy/optimize/src/slsqp.c b/scipy/optimize/src/slsqp.c
+index 21a02fe046..2b84b43916 100644
+--- a/scipy/optimize/src/slsqp.c
++++ b/scipy/optimize/src/slsqp.c
+@@ -167,7 +167,7 @@ ITER_START:
+ 
+     // Update multipliers for L1-test
+     for (int64_t i = 0; i < n; i++) { v[i] = gradx[i]; }
+-    BLAS_FUNC(dgemv)("T", &m, &n, &dmone, C, &lda, mult, &one, &done, v, &one);
++    BLAS_FUNC(dgemv)("T", &m, &n, &dmone, C, &lda, mult, &one, &done, v, &one, 1);
+ 
+     S->f0 = *funx;
+     for (int64_t i = 0; i < n; i++) { x0[i] = sol[i]; }
+@@ -304,7 +304,7 @@ MODEM1:
+     // u[i] = gradx[i] - C.T @ mult - v[i]
+ 
+     for (int64_t i = 0; i < n; i++) { u[i] = gradx[i]; }
+-    BLAS_FUNC(dgemv)("T", &m, &n, &dmone, C, &lda, mult, &one, &done, u, &one);
++    BLAS_FUNC(dgemv)("T", &m, &n, &dmone, C, &lda, mult, &one, &done, u, &one, 1);
+     for (int64_t i = 0; i < n; i++)
+     {
+         u[i] = u[i] - v[i];
+@@ -312,7 +312,7 @@ MODEM1:
+ 
+     // L'*S
+     for (int64_t i = 0; i < n; i++) { v[i] = s[i]; }
+-    BLAS_FUNC(dtpmv)("L", "T", "U", &n, bfgs, v, &one);
++    BLAS_FUNC(dtpmv)("L", "T", "U", &n, bfgs, v, &one, 1, 1, 1);
+ 
+     // D*L'*S
+     j = 0;
+@@ -322,7 +322,7 @@ MODEM1:
+     }
+ 
+     // L*D*L'*S
+-    BLAS_FUNC(dtpmv)("L", "N", "U", &n, bfgs, v, &one);
++    BLAS_FUNC(dtpmv)("L", "N", "U", &n, bfgs, v, &one, 1, 1, 1);
+ 
+     S->h1 = BLAS_FUNC(ddot)(&n, s, &one, u, &one);
+     S->h2 = BLAS_FUNC(ddot)(&n, s, &one, v, &one);
+@@ -462,7 +462,7 @@ lsq(
+ 
+     // Compute b = - 1/sqrt(d[]) * inv(Lf[]) * gradx[]. Lf is already in packed format.
+     for (int64_t i = 0; i < n; i++) { wb[i] = gradx[i]; }
+-    BLAS_FUNC(dtpsv)("L", "N", "U", &n, Lf, wb, &one);
++    BLAS_FUNC(dtpsv)("L", "N", "U", &n, Lf, wb, &one, 1, 1, 1);
+     cursor = 0;
+     for (int64_t i = 0; i < n; i++)
+     {
+@@ -678,8 +678,8 @@ lsei(CBLAS_INT ma, CBLAS_INT me, CBLAS_INT mg, CBLAS_INT n,
+     BLAS_FUNC(dgerq2)(&me, &n, e, &lde, tau, lsi_scratch, &info);
+ 
+     // Right triangularize E and apply Q.T to A and G from the right.
+-    BLAS_FUNC(dormr2)("R", "T", &ma, &n, &me, e, &lde, tau, a, &ma, lsi_scratch, &info);
+-    BLAS_FUNC(dormr2)("R", "T", &mg, &n, &me, e, &lde, tau, g, &ldg, lsi_scratch, &info);
++    BLAS_FUNC(dormr2)("R", "T", &ma, &n, &me, e, &lde, tau, a, &ma, lsi_scratch, &info, 1, 1);
++    BLAS_FUNC(dormr2)("R", "T", &mg, &n, &me, e, &lde, tau, g, &ldg, lsi_scratch, &info, 1, 1);
+ 
+     // Check the diagonal elements of E for rank deficiency.
+     for (int64_t i = 0; i < me; i++)
+@@ -689,7 +689,7 @@ lsei(CBLAS_INT ma, CBLAS_INT me, CBLAS_INT mg, CBLAS_INT n,
+     // Solve E*x = f and modify b.
+     // Note: RQ forms R at the right of E instead of [0, 0] position.
+     for (int64_t i = 0; i < me; i++) { x[nvars + i] = f[i]; }
+-    BLAS_FUNC(dtrsv)("U", "N", "N", &me, &e[(nvars)*me], &lde, &x[nvars], &one);
++    BLAS_FUNC(dtrsv)("U", "N", "N", &me, &e[(nvars)*me], &lde, &x[nvars], &one, 1, 1, 1);
+ 
+     *mode = 1;
+     // Zero out the inequality multiplier.
+@@ -702,7 +702,7 @@ lsei(CBLAS_INT ma, CBLAS_INT me, CBLAS_INT mg, CBLAS_INT n,
+     // Copy b into wb
+     for (int64_t i = 0; i < ma; i++) { wb[i] = b[i]; }
+     // Compute wb -= A1*xe
+-    BLAS_FUNC(dgemv)("N", &ma, &me, &dmone, &a[ma*nvars], &ma, &x[nvars], &one, &done, wb, &one);
++    BLAS_FUNC(dgemv)("N", &ma, &me, &dmone, &a[ma*nvars], &ma, &x[nvars], &one, &done, wb, &one, 1);
+ 
+     // Store the transformed A2 and G2 in the buffer
+     for (int64_t j = 0; j < nvars; j++)
+@@ -734,7 +734,7 @@ lsei(CBLAS_INT ma, CBLAS_INT me, CBLAS_INT mg, CBLAS_INT n,
+         for (int64_t i = 0; i < nvars; i++) { x[i] = wb[i]; }
+ 
+         // Compute the residual and its norm, use a since a2 is overwritten.
+-        BLAS_FUNC(dgemv)("N", &ma, &nvars, &done, a, &ma, x, &one, &dmone, wb_orig, &one);
++        BLAS_FUNC(dgemv)("N", &ma, &nvars, &done, a, &ma, x, &one, &dmone, wb_orig, &one, 1);
+         *xnorm = BLAS_FUNC(dnrm2)(&ma, wb_orig, &one);
+ 
+         *mode = 7;
+@@ -745,7 +745,7 @@ lsei(CBLAS_INT ma, CBLAS_INT me, CBLAS_INT mg, CBLAS_INT n,
+ 
+     // Modify h, and solve the inequality constrained least squares problem.
+     // h -= G1*xe
+-    BLAS_FUNC(dgemv)("N", &mg, &me, &dmone, &g[mg*nvars], &ldg, &x[nvars], &one, &done, h, &one);
++    BLAS_FUNC(dgemv)("N", &mg, &me, &dmone, &g[mg*nvars], &ldg, &x[nvars], &one, &done, h, &one, 1);
+ 
+     lsi(ma, mg, nvars, a2, wb, g2, h, x, lsi_scratch, jw, xnorm, mode);
+ 
+@@ -763,17 +763,17 @@ lsei(CBLAS_INT ma, CBLAS_INT me, CBLAS_INT mg, CBLAS_INT n,
+ ORIGINAL_BASIS:
+     // Convert the solution and multipliers to the original basis.
+     // b = A*x - b (residuals)
+-    BLAS_FUNC(dgemv)("N", &ma, &n, &done, a, &ma, x, &one, &dmone, b, &one);
++    BLAS_FUNC(dgemv)("N", &ma, &n, &done, a, &ma, x, &one, &dmone, b, &one, 1);
+     // f = A1^T*b - G1^T*w
+-    BLAS_FUNC(dgemv)("T", &ma, &me, &done, &a[nvars*ma], &ma, b, &one, &dzero, f, &one);
+-    BLAS_FUNC(dgemv)("T", &mg, &me, &dmone, &g[nvars*mg], &ldg, gmults, &one, &done, f, &one);
++    BLAS_FUNC(dgemv)("T", &ma, &me, &done, &a[nvars*ma], &ma, b, &one, &dzero, f, &one, 1);
++    BLAS_FUNC(dgemv)("T", &mg, &me, &dmone, &g[nvars*mg], &ldg, gmults, &one, &done, f, &one, 1);
+ 
+     // x = Q.T*x
+-    BLAS_FUNC(dormr2)("L", "T", &n, &one, &me, e, &lde, tau, x, &n, lsi_scratch, &info);
++    BLAS_FUNC(dormr2)("L", "T", &n, &one, &me, e, &lde, tau, x, &n, lsi_scratch, &info, 1, 1);
+ 
+     // Solve the triangular system for the equality multipliers, emults.
+     for (int64_t i = 0; i < me; i++) { emults[i] = f[i]; }
+-    BLAS_FUNC(dtrsv)("U", "T", "N", &me, &e[(n - me)*me], &lde, emults, &one);
++    BLAS_FUNC(dtrsv)("U", "T", "N", &me, &e[(n - me)*me], &lde, emults, &one, 1, 1, 1);
+ 
+     return;
+ }
+@@ -813,7 +813,7 @@ lsi(CBLAS_INT ma, CBLAS_INT mg, CBLAS_INT n, double* restrict a, double* restric
+     BLAS_FUNC(dgeqr2)(&ma, &n, a, &ma, buffer, &buffer[tmp_int], &info);
+ 
+     // Compute Q^T b
+-    BLAS_FUNC(dorm2r)("L", "T", &ma, &one, &tmp_int, a, &ma, buffer, b, &ma, &buffer[tmp_int], &info);
++    BLAS_FUNC(dorm2r)("L", "T", &ma, &one, &tmp_int, a, &ma, buffer, b, &ma, &buffer[tmp_int], &info, 1, 1);
+ 
+     // Check the diagonal elements of R for rank deficiency.
+     *mode = 5;
+@@ -826,9 +826,9 @@ lsi(CBLAS_INT ma, CBLAS_INT mg, CBLAS_INT n, double* restrict a, double* restric
+     // The result is stored in G.
+     // Note: There is an inherent assumption that ma >= n. This is a bug carried
+     // over here from the original slsqp implementation.
+-    BLAS_FUNC(dtrsm)("R", "U", "N", "N", &mg, &n, &done, a, &ma, g, &mg);
++    BLAS_FUNC(dtrsm)("R", "U", "N", "N", &mg, &n, &done, a, &ma, g, &mg, 1, 1, 1, 1);
+     // h = h - Xf
+-    BLAS_FUNC(dgemv)("N", &mg, &n, &dmone, g, &mg, b, &one, &done, h, &one);
++    BLAS_FUNC(dgemv)("N", &mg, &n, &dmone, g, &mg, b, &one, &done, h, &one, 1);
+ 
+     // Solve the LDP problem.
+     ldp(mg, n, g, h, x, buffer, jw, xnorm, mode);
+@@ -836,7 +836,7 @@ lsi(CBLAS_INT ma, CBLAS_INT mg, CBLAS_INT n, double* restrict a, double* restric
+ 
+     // Convert to the solution of the original problem.
+     BLAS_FUNC(daxpy)(&n, &done, b, &one, x, &one);
+-    BLAS_FUNC(dtrsv)("U", "N", "N", &n, a, &ma, x, &one);
++    BLAS_FUNC(dtrsv)("U", "N", "N", &n, a, &ma, x, &one, 1, 1, 1);
+ 
+     // If any, compute the norm of the tail of b and add to xnorm
+     tmp_int = ma - n;
+@@ -911,7 +911,7 @@ ldp(CBLAS_INT m, CBLAS_INT n, double* restrict g, double* restrict h, double* re
+     if (!((1.0 + fac) - 1.0 > 0.0)) { return; }
+     *mode = 1;
+     fac = 1.0 / fac;
+-    BLAS_FUNC(dgemv)("T", &m, &n, &fac, g, &m, y, &one, &dzero, x, &one);
++    BLAS_FUNC(dgemv)("T", &m, &n, &fac, g, &m, y, &one, &dzero, x, &one, 1);
+     *xnorm = BLAS_FUNC(dnrm2)(&n, x, &one);
+ 
+     // Compute the lagrange multipliers for the primal problem
+-- 
+2.53.0
+

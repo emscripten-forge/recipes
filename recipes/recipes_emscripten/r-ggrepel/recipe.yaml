@@ -1,5 +1,5 @@
 context:
-  version: 0.9.7
+  version: 0.9.8
   name: r-ggrepel
 
 package:
@@ -10,30 +10,35 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 6d51e597ff7a583dacae331be711703169f0e9988926f381ce25636c3a12c237
+  sha256: 0317dff5e11d9dae7225d5c1794fe16ea1bedc7d535ac98e990925670724c027
 
 build:
-  number: 0
+  number: 4
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('cxx') }}
   - r-ggplot2
   - r-rcpp
   - r-rlang
   - r-scales
+  - r-s7
   - r-withr
     # nested dependencies
   - r-magrittr
   - r-tibble
   host:
+  - r-base ==${{ r_base }}
   - r-ggplot2
   - r-magrittr
   - r-rcpp
   - r-rlang
   - r-scales
+  - r-s7
   - r-withr
     # NOTE: these are only needed so that rattler-build can build all R packages
     # in the correct order.
@@ -54,6 +59,7 @@ requirements:
   - r-rcpp
   - r-rlang
   - r-scales
+  - r-s7
   - r-withr
 
 tests:

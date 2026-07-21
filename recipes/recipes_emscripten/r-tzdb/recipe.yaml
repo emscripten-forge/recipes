@@ -13,14 +13,18 @@ source:
   sha256: 380d5237dbfa722fddb7d1d9ad8520a2b26331dbbb77d51850ded332fcf347db
 
 build:
-  number: 3
+  number: 7
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('cxx') }}
+  - r-cpp11
   host:
+  - r-base ==${{ r_base }}
   - r-cpp11
   run:
   - r-cpp11

@@ -7,5 +7,4 @@ LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 export LDFLAGS
 export CFLAGS
 
-
-${PYTHON} -m pip install .
+${PYTHON} -m pip install . --no-build-isolation --no-deps

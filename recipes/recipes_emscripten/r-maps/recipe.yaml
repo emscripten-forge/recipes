@@ -1,0 +1,52 @@
+context:
+  name: maps
+  version: 3.4.3
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 3b6d4945330041280ddb3f89fbe0d7dbcf124befef94e8d77e809122d8d588b8
+  patches:
+  - patches/0001-Build-shared-lib-with-emcc.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - gcc # for Lmake and Gmake
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=maps
+  documentation: https://r.igraph.org/
+  repository: https://github.com/adeckmyn/maps
+  license: GPL-2.0-only
+  license_file: GPL-2
+  summary: Draw Geographical Maps
+  description: |
+    Display of maps. Projection code and larger maps are in separate packages
+    ('mapproj' and 'mapdata').
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

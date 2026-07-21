@@ -1,0 +1,81 @@
+context:
+  version: 1.4.0
+  name: r-yardstick
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 579f2b3db310297ddd9413aa076fe4d0d74e4fbd87784a4597ac84718c74888b
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }}  # Not yet available for R 4.6.0 on bioconda
+                                  # │ r-hardhat >=1.4.3 cannot be installed because there are no viable options:
+                                  # │ └─ r-hardhat 1.4.3 | 1.4.3 would require
+                                  # │    └─ r-base >=4.4,<4.5.0a0, for which no candidates were found.
+                                  # │ 
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+  run:
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://github.com/tidymodels/yardstick
+  license:  MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Tidy tools for quantifying how well model fits to a data set such as confusion matrices, class probability curve summaries, and regression metrics (e.g., RMSE).
+extra:
+  recipe-maintainers:
+    - DerThorsten

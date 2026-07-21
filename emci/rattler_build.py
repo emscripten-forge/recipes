@@ -7,7 +7,7 @@ from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, skip_existing="local"):
 
-    cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "fancy"]
+    cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "simple"]
 
     # build single recipe or all recipes in a directory ?
     if recipe is not None and recipes_dir is not None:
@@ -16,16 +16,11 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         raise ValueError("recipe or recipes_dir must be set")
     elif recipe is not None:
         cmd.extend(["--recipe", str(recipe)])
-        if (recipe == "arrow") or (recipe == "thrift"):
-            cmd.extend(["--experimental"])
     elif recipes_dir is not None:
         cmd.extend(["--recipe-dir", str(recipes_dir)])
-        # Check if thrift or arrow folders exist in recipes_dir
         recipes_path = Path(recipes_dir)
         if recipes_path.is_dir():
             folder_names = {p.name for p in recipes_path.iterdir() if p.is_dir()}
-            if "thrift" in folder_names or "arrow" in folder_names:
-                cmd.extend(["--experimental"])
 
     cmd.extend(["--skip-existing", skip_existing])
 
@@ -41,6 +36,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
         "-c", "https://repo.prefix.dev/emscripten-forge-4x",
         "-c", "microsoft",
         "-c", "conda-forge",
+        "-c", "bioconda"
     ])
 
     # pass existing env vars to subprocess

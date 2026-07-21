@@ -1,0 +1,139 @@
+#!/bin/bash
+
+set -eux
+
+# Skip non-working checks
+export r_cv_header_zlib_h=yes
+export r_cv_have_bzlib=yes
+export r_cv_have_lzma=yes
+export r_cv_have_pcre2utf=yes
+export r_cv_size_max=yes
+export r_cv_has_pangocairo=no # Fails locally, problem with pkg-config
+
+# Not supported
+export ac_cv_have_decl_getrusage=no
+export ac_cv_have_decl_getrlimit=no
+export ac_cv_have_decl_sigaltstack=no
+export ac_cv_have_decl_wcsftime=no
+export ac_cv_have_decl_umask=no
+export ac_cv_have_decl_sched_getaffinity=no
+export ac_cv_have_decl_sched_setaffinity=no
+
+# SIDE_MODULE + pthread is experimental, and pthread_kill is not implemented
+export r_cv_search_pthread_kill=no
+
+# Otherwise set to .not_implemented and cannot be used
+export SHLIB_EXT=".so"
+
+export CONFIG_ARGS="--enable-R-static-lib \
+--without-readline  \
+--without-x \
+--with-static-cairo \
+--enable-java=no \
+--enable-R-profiling=no \
+--enable-byte-compiled-packages=no \
+--disable-openmp \
+--disable-nls \
+--with-internal-tzcode \
+--with-libdeflate-compression=no \
+--with-recommended-packages=no"
+
+#-------------------------------------------------------------------------------
+# LINUX BUILD
+#-------------------------------------------------------------------------------
+# Building R for Linux so that we can use the R and Rscript binaries to build
+# the R internal modules for WebAssembly.
+
+mkdir -p _build_linux
+pushd _build_linux
+(
+    export PKG_CONFIG_PATH=$BUILD_PREFIX/lib/pkgconfig
+    export PREFIX=$BUILD_PREFIX
+    # Ensure conda's build tools shadow system ones (PATH may not be set up
+    # correctly in the rattler-build cache context).
+    export PATH="$BUILD_PREFIX/bin:$PATH"
+    export CC=gcc
+    export CXX=g++
+    export FC=flang
+    export FCLIBS="-lflang_rt.runtime"
+    export CPPFLAGS="-I$BUILD_PREFIX/include"
+    export LDFLAGS="-L$BUILD_PREFIX/lib"
+    export FC_LEN_T=size_t
+    export LINUX_BUILD_DIR=$(pwd)
+
+    unset CROSS_COMPILING
+    unset FFLAGS
+    unset FPICFLAGS
+
+    ../configure \
+        --prefix=$BUILD_PREFIX \
+        $CONFIG_ARGS
+
+    make -j${CPU_COUNT}
+    # No need to install, we just need the R binary
+)
+popd
+
+#-------------------------------------------------------------------------------
+# WASM BUILD
+#-------------------------------------------------------------------------------
+# Building R for WebAssembly using the R binary from the Linux build.
+
+# Remove shared libs to force static linking of dependencies (libz.so also has
+# an invalid ELF header which breaks configure unless libz.a is used).
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
+rm $PREFIX/lib/libz.so* || true
+
+mkdir -p _build_wasm
+pushd _build_wasm
+(
+    cp $RECIPE_DIR/config.site .
+
+    # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
+    # (see patch 0015). This statically links libpython and its transitive deps
+    # into RPY only; the standard R executable is unaffected.
+    export RPY_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython${PY_VER}"
+
+    export CROSS_COMPILING="true"
+    export R_EXECUTABLE=$(realpath ..)/_build_linux/bin/exec/R # binary not shell wrapper
+    export R_SCRIPT_EXECUTABLE=$(realpath ..)/_build_linux/bin/Rscript
+    export LINUX_BUILD_DIR=$(realpath ..)/_build_linux
+    export WASM_BUILD_DIR=$(pwd)
+
+    # cairo's probe can't link-run under wasm; force it onto the FreeType path.
+    export r_cv_cairo_works=yes
+    export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+    export CAIRO_CFLAGS="-I$PREFIX/include/cairo -I$PREFIX/include"
+    export CAIRO_LIBS="-L$PREFIX/lib -lcairo -lfreetype -lfontconfig"
+    export CPPFLAGS="${CPPFLAGS:-} -I$PREFIX/include -I$PREFIX/include/cairo"
+
+    # NOTE: the host and build systems are explicitly set to enable the cross-
+    # compiling options even though it's not fully supported.
+    # Otherwise, it assumes it's not cross-compiling.
+    emconfigure ../configure \
+        --prefix=$PREFIX    \
+        --build="x86_64-conda-linux-gnu" \
+        --host="wasm32-unknown-emscripten" \
+        --enable-R-shlib \
+        $CONFIG_ARGS
+
+    emmake make -j${CPU_COUNT}
+
+    $RECIPE_DIR/cross_libraries.sh --restore $(pwd)
+
+    emmake make install
+
+    # Install RPY and RPY.wasm built alongside R.bin by the patched Makefile.in.
+    cp src/main/RPY "$PREFIX/lib/R/bin/exec/RPY"
+    cp src/main/RPY.wasm "$PREFIX/lib/R/bin/exec/RPY.wasm"
+)
+popd
+
+#-------------------------------------------------------------------------------
+# FONTS
+#-------------------------------------------------------------------------------
+install -Dm644 "$RECIPE_DIR/fonts.conf" "$PREFIX/lib/R/etc/fonts.conf"
+
+# ${R_HOME} must be in direct position: R's Renviron won't expand it in a default.
+echo 'FONTCONFIG_FILE=${R_HOME}/etc/fonts.conf' >> "$PREFIX/lib/R/etc/Renviron"

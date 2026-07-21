@@ -1,27 +1,28 @@
 context:
-  version: 4.6.0-1
   name: r-bit64
+  version: 4.8.2
 
 package:
   name: ${{ name }}
-  version: ${{ version | replace('-', '_') }}
+  version: ${{ version }}
 
 source:
-  url:
-    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: fbc0ce142fc22c9a9fdcbac930a814dfb648563d4b6a77dff739c23cc81319b7
+  url: https://github.com/r-lib/${{ name[2:] }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: b9282f50dadd726896242af5d0788eed6f2df826c40c6f4842fa81dbd31d4e79
 
 build:
-  number: 3
+  number: 7
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
   - r-bit
   host:
+  - r-base ==${{ r_base }}
   - r-bit
   run:
   - r-bit

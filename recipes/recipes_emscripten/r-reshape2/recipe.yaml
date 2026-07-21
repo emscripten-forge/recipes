@@ -1,0 +1,54 @@
+context:
+  name: r-reshape2
+  version: 1.4.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 0ead5acd0153e5073b3c24e8e782982a4eab3aaa768ba17700d796fb13b68cef
+
+build:
+  number: 3
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp
+  - r-stringr
+  - r-plyr
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  - r-stringr
+  - r-plyr
+  run:
+  - r-rcpp
+  - r-stringr
+  - r-plyr
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+
+about:
+  homepage: https://cran.r-project.org/package=reshape2
+  repository: https://github.com/hadley/reshape
+  license: MIT
+  license_file: LICENSE
+  summary: |
+    Flexibly restructure and aggregate data using just two functions, melt and
+    'dcast' (or 'acast').
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

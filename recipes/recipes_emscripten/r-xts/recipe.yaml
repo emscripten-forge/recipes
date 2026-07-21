@@ -1,0 +1,50 @@
+context:
+  version: 0.14.2
+  name: r-xts
+
+package:
+  name: ${{ name }}
+  version: ${{ version|replace("-", "_") }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: d4b68584b2b64664163850af6cb936b9bf14485bfb725d048c272cee0812dc6f
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }}
+  
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-zoo >=1.7_12
+  host:
+  - r-base ==${{ r_base }}
+  - r-zoo >=1.7_12
+  run:
+  - r-zoo >=1.7_12
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: http://www.r-xts.com/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Provide for uniform handling of R's different time-based data classes by extending zoo, maximizing native format information preservation and allowing for user level customization and extension, while simplifying cross-class interoperability.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten

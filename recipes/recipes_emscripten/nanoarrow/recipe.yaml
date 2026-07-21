@@ -1,0 +1,69 @@
+context:
+  name: nanoarrow
+  version: 0.8.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/apache/arrow-nanoarrow/releases/download/apache-arrow-nanoarrow-${{ version }}/apache-arrow-nanoarrow-${{ version }}.tar.gz
+  sha256: 6e61e2819c9138e9092ba32b568ed6f4594928b306171937251eaaafa7dc2b8c
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - lz4-c = 1.10.0
+    - zstd
+  run:
+    - lz4-c = 1.10.0
+    - zstd
+
+tests:
+  - package_contents:
+      files:
+        - include/nanoarrow/nanoarrow.h
+        - include/nanoarrow/nanoarrow.hpp
+        - include/nanoarrow/nanoarrow_config.h
+        - include/nanoarrow/nanoarrow_ipc.h
+        - include/nanoarrow/nanoarrow_ipc.hpp
+        - lib/libnanoarrow_static.a
+        - lib/libnanoarrow_ipc_static.a
+        - lib/cmake/nanoarrow/nanoarrow-config.cmake
+        - lib/cmake/nanoarrow/nanoarrow-targets.cmake
+  - script:
+      - build_tests.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - cmake
+        - ninja
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/
+
+about:
+  homepage: https://arrow.apache.org/nanoarrow/
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - NOTICE.txt
+  summary: Helpers for Arrow C Data and Arrow C Stream interfaces
+  description: |
+    nanoarrow provides small C and C++ helper libraries for producing and
+    consuming Arrow C Data, C Stream, and related interfaces.
+  documentation: https://arrow.apache.org/nanoarrow/latest/
+  repository: https://github.com/apache/arrow-nanoarrow
+
+extra:
+  recipe-maintainers:
+    - Alex-PLACET

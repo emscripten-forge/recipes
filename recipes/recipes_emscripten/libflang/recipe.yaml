@@ -1,6 +1,6 @@
 context:
   name: libflang
-  version: 20.1.8
+  version: 22.1.6
 
 package:
   name: ${{ name }}
@@ -8,14 +8,13 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
-  sha256: a6cbad9b2243b17e87795817cfff2107d113543a12486586f8a055a2bb044963
+  sha256: ba534c6835a5b9c2162c806e269799fe41fca952a3c25baff1afcff23841ec2b
   patches:
-  # from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
-  # - patches/0001-Instructions-for-building-a-functional-Flang-cross-c.patch
-  - patches/0002-Minimal-WASM-support-for-flang.patch
-  - patches/0003-Specialize-Flang-to-target-WASM.patch
-  - patches/0004-Disable-float128-math.patch
-  - patches/0005-Simulate-common-symbols-as-weak.patch
+    # from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
+    - patches/0001-Minimal-WASM-support-for-flang.patch
+    - patches/0002-Deactivate-quadmath-float128-support.patch
+    - patches/0003-Specialize-Flang-to-target-WASM.patch
+    - patches/0004-Fix-wasm32-assumed-size-dummy-array-indexing.patch
 
 build:
   number: 0
@@ -24,14 +23,14 @@ requirements:
   build:
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
+  - ${{ compiler('fortran') }}
   - ninja
   - cmake
 
 tests:
 - package_contents:
-    lib:
-    - libFortranRuntime.a
-    - libFortranDecimal.a
+    files:
+    - lib/clang/*/lib/wasm32-unknown-emscripten/libflang_rt.runtime.a
 
 about:
   homepage: https://flang.llvm.org

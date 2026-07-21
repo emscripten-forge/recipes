@@ -1,52 +1,73 @@
 context:
-  version: 2.10.1
-
-package:
-  name: nlopt
-  version: ${{ version }}
+  version: 2.11.0
 
 source:
 - url: https://github.com/stevengj/nlopt/archive/v${{ version }}.tar.gz
-  sha256: 30d13ce16da119db3e987784f7864e35a562ec62c186352fae55cd003e6c58ff
-- path: src/setup.py
+  sha256: 53e552d83e9294d67db37f0f4a23f15933a9ef698485301a18b98b40004cf0de
 
 build:
-  number: 2
+  number: 0
 
-  files:
-    exclude:
-    - '**.dist-info/**'
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-    - '**/test_*.py'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
+outputs:
+- package:
+    name: nlopt   # python
+    version: ${{ version }}
 
-requirements:
   build:
-  - cross-python_emscripten-wasm32
-  - python
-  - swig
-  - pip
-  - numpy
-  - cmake
-  host:
-  - numpy
-  - python
-  run:
-  - numpy
+    script: build_python.sh
+    files:
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
 
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_import_nlopt.py
   requirements:
     build:
-    - pytester
+    - cross-python_emscripten-wasm32
+    - python
+    - swig
+    - pip
+    - numpy
+    - cmake
+    host:
+    - numpy
+    - python
     run:
-    - pytester-run
+    - numpy
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_nlopt.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+- package:
+    name: libnlopt
+    version: ${{ version }}
+
+  build:
+    script: build_static.sh
+
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+
+  tests:
+  - package_contents:
+      files:
+      - include/nlopt.h
+      - lib/libnlopt.a
+      - lib/pkgconfig/nlopt.pc
 
 about:
   homepage: https://nlopt.readthedocs.io/en/latest/

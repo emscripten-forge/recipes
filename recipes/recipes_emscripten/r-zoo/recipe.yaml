@@ -1,0 +1,51 @@
+context:
+  version: 1.8-15
+  name: r-zoo
+
+package:
+  name: ${{ name }}
+  version: ${{ version|replace("-", "_") }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: c0d139b7d3dee4f28202bc8d82fd76109af26530c43e39a051b1eb145d1861ea
+
+build:
+  number: 7
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }}
+  
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-lattice
+  host:
+  - r-base ==${{ r_base }}
+  - r-lattice
+  run:
+  - r-lattice
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: http://zoo.R-Forge.R-project.org/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: An S3 class with methods for totally ordered indexed observations. It is particularly aimed at irregular time series of numeric vectors/matrices and factors. zoo's key design goals are independence of a particular index/date/time class and consistency with ts and base R by providing methods to extend standard
+    generics.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten

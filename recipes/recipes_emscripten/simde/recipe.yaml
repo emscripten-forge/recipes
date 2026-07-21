@@ -1,0 +1,63 @@
+context:
+  name: simde
+  version: 0.8.4-rc3
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '.') }}
+
+source:
+  url: https://github.com/simd-everywhere/simde/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a5407985439fef1435ac1f091a4d2e6c71981faed213e1be156aca575ce7052c
+
+build:
+  number: 0
+  script: build.sh
+  noarch: generic
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/simde/simde-common.h
+    - include/simde/hedley.h
+    - include/simde/x86/sse.h
+    - lib/cmake/simde/simde-config.cmake
+    - lib/cmake/simde/simde-config-version.cmake
+    - lib/cmake/simde/simde-config-targets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/simd-everywhere/simde
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: Implementations of SIMD instruction sets for systems which don't natively support them
+  description: |
+    SIMDe (SIMD Everywhere) is a header-only library that provides portable,
+    permissively-licensed (MIT) implementations of many platform-specific SIMD
+    intrinsics (SSE, AVX, AVX-512, NEON, SVE, WASM SIMD128, MSA, etc.).
+    It allows using SIMD intrinsics on platforms that don't natively support
+    them through emulation using portable C99.
+  documentation: https://github.com/simd-everywhere/simde
+  repository: https://github.com/simd-everywhere/simde
+
+extra:
+  recipe-maintainers:
+  - Copilot

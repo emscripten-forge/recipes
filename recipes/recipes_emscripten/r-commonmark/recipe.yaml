@@ -1,0 +1,56 @@
+context:
+  name: commonmark
+  version: 2.0.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 7f47d7f9f4ff5d1e2a73a69f6e233d2ddbafae97944ddf664a6000aa94936904
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test-r-commonmark.R
+  files:
+    recipe:
+    - test-r-commonmark.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/r-lib/commonmark/
+  documentation: https://docs.ropensci.org/commonmark/
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: High Performance CommonMark and Github Markdown Rendering in R
+  description: |
+    The CommonMark specification <https://github.github.com/gfm/> defines a
+    rationalized version of markdown syntax. This package uses the 'cmark'
+    reference implementation for converting markdown text into various formats
+    including html, latex and groff man. In addition it exposes the markdown
+    parse tree in xml format. Also includes opt-in support for GFM extensions
+    including tables, autolinks, and strikethrough text.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes

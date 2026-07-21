@@ -1,38 +1,48 @@
 context:
-  name: r-matrix
-  version: 1.7-4
+  name: r-Matrix
+  version: 1.7-5
 
 package:
-  name: ${{ name }}
-  version: ${{ version|replace('-', '_') }}
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/Matrix_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/Matrix_${{ version }}.tar.gz
-  sha256: 7b131ecb6a21ff09a33691dac7bf8a7bc2eab9fd1dd09ef14856d74346eb4779
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 308b0edd7bcb023a8bb50cc5cec98e66b3658c94a5badfb1ce6024e595fa8a83
+  patches:
+  - patches/0001-Correct-length-checks-in-Matrix_memset-Matrix_memcpy.patch
 
 build:
-  number: 3
+  number: 4
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-lattice
   host:
+  - r-base ==${{ r_base }}
   - r-lattice
-  - libblas>=3.12
-  - liblapack>=3.12
-  - libflang                  # for FortranRuntime
+  - libflang
   run:
   - r-lattice
 
 tests:
 - package_contents:
     lib:
-    - R/library/Matrix/libs/Matrix.so
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_matrix.R
+  files:
+    recipe:
+    - test_matrix.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: http://Matrix.R-forge.R-project.org/
