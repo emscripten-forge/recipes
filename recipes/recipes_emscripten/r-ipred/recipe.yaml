@@ -1,0 +1,66 @@
+context:
+  version: 0.9-15
+  name: r-ipred
+
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: a4752de11121262f3f4c43163efa34e05e42cdf4f8496d8897be6f410dc0ee4b
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}  
+  - r-mass
+  - r-class
+  - r-nnet
+  - r-prodlim
+  - r-rpart >=3.1_8
+  - r-survival
+  host:
+  - r-base ==${{ r_base }}
+  - r-mass
+  - r-class
+  - r-nnet
+  - r-prodlim
+  - r-rpart >=3.1_8
+  - r-survival
+  run:
+  - r-mass
+  - r-class
+  - r-nnet
+  - r-prodlim
+  - r-rpart >=3.1_8
+  - r-survival
+  
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://CRAN.R-project.org/package=ipred
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  summary: 'Improved predictive models by indirect classification and bagging for classification, regression and survival problems  as well as resampling based estimators of prediction error. '
+
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
