@@ -1,0 +1,32 @@
+context:
+  version: 0.1.0
+  build_variant_prefix: ${{ "static_libpython_h" if r_main_module_static_libpython == "1" else "vanilla_h" }}
+
+package:
+  name: r-main-module-abi
+  version: ${{ version }}
+
+build:
+  number: 0
+
+
+  # Explicit build strings so downstream recipes can pin the static-libpython
+  # variant, e.g. `r-main-module-abi ==${{ version }} static_libpython*`.
+  string: ${{ build_variant_prefix ~ (hash ~ "_" ~ build_number) }}
+
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - r_main_module_static_libpython
+    # Deprioritize the static-libpython variant so the default build stays
+    # preferred by the solver (via down_prioritize_variant / track_features).
+    down_prioritize_variant: ${{ 1 if r_main_module_static_libpython == "1" else 0 }}
+
+about:
+  summary: "when r-reticulate is in the environment, we require a main-module that has libpython linked in"
+  license: MIT
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
