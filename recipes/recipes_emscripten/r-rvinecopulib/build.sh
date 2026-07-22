@@ -6,6 +6,8 @@ sed -i.bak "s/THE_VERSION/${PACKAGE_VERSION}/g" $SRC_DIR/DESCRIPTION
 # show the file contents of DESCRIPTION
 cat $SRC_DIR/DESCRIPTION
 
+cp $RECIPE_DIR/patches/Makevars $SRC_DIR/src/Makevars
+
 
 cp $RECIPE_DIR/patches/tools_thread_emscripten.hpp $SRC_DIR/inst/include/vinecopulib/misc/tools_thread_emscripten.hpp
 $R CMD INSTALL $R_ARGS .
