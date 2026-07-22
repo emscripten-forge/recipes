@@ -1,0 +1,58 @@
+context:
+  name: wdm
+  version: 0.2.4
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: e2d19c04ea2fb9394cc2b61899c7fd21ae7c6d5825bfdcb74822c7243cd335d3
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  run:
+  - r-rcpp
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://github.com/tnagler/wdm-r
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/tnagler/wdm-r
+  license: MIT
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/MIT
+  - LICENSE
+  summary: Weighted Dependence Measures
+  description: |-
+    Provides efficient implementations of weighted dependence measures and related asymptotic tests for independence. Implemented measures are the Pearson correlation, Spearman's rho, Kendall's tau, Blomqvist's beta, and Hoeffding's D; see, e.g., Nelsen (2006) <doi:10.1007/0-387-28678-0> and Hollander et al. (2015, ISBN:9780470387375).
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
