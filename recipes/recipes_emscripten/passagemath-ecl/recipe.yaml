@@ -2,15 +2,18 @@ context:
   version: 10.8.6
 
 package:
-  name: passagemath-qepcad
+  name: passagemath-ecl
   version: ${{ version }}
 
 source:
-- url: https://pypi.org/packages/source/p/passagemath-qepcad/passagemath_qepcad-${{ version }}.tar.gz
-  sha256: ca5e99a26fd2a26588e6301344f833b5a1436dd5b52480a7f4e9001b440cf729
+- url: https://pypi.org/packages/source/p/passagemath-ecl/passagemath_ecl-${{ version }}.tar.gz
+  sha256: 2147cc300041f146ed48b73f48bdd42e0b2abf225730bd40f74f0857c610c92f
 
 build:
-  script: ${{ PYTHON }} -m pip install .
+  script: |
+    export ECL_CONFIG="${PREFIX}/ecl-config"
+    sed -i.bak "s/'gsl', 'Singular', 'ecl'/'ecl',/" setup.py
+    ${{ PYTHON }} -m pip install .
   number: 0
 
 requirements:
@@ -29,37 +32,39 @@ requirements:
   - passagemath-abi == ${{ version }}
   host:
   - python
+  - ecl
+  - gmp
+  - passagemath-categories
   run:
   - python
-  - tarski
   - cysignals
+  - passagemath-categories
   - passagemath-environment
-  - passagemath-repl
 
 tests:
 - script: pytester
   files:
     recipe:
-    - test_passagemath_qepcad.py
+    - test_passagemath_ecl.py
   requirements:
     build:
     - pytester
     run:
     - pytester-run
-    - passagemath-symbolics
+    - passagemath-repl
 
 about:
   license: GPL-2.0-or-later
   license_file: README.rst
-  summary: 'passagemath: Quantifier elimination by partial cylindrical algebraic decomposition with QEPCAD'
+  summary: 'passagemath: Embeddable Common Lisp'
   description: |
     Distribution of a part of the Sage library.
-    It provides an interface to QEPCAD.
+    It provides the Python and Cython interfaces to Embeddable Common Lisp.
 
 extra:
   emscripten_tests:
     python:
       pytest_files:
-      - test_passagemath_qepcad.py
+      - test_passagemath_ecl.py
   recipe-maintainers:
   - mkoeppe

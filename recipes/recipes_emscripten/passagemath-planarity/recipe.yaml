@@ -2,12 +2,12 @@ context:
   version: 10.8.6
 
 package:
-  name: passagemath-qepcad
+  name: passagemath-planarity
   version: ${{ version }}
 
 source:
-- url: https://pypi.org/packages/source/p/passagemath-qepcad/passagemath_qepcad-${{ version }}.tar.gz
-  sha256: ca5e99a26fd2a26588e6301344f833b5a1436dd5b52480a7f4e9001b440cf729
+- url: https://pypi.org/packages/source/p/passagemath-planarity/passagemath_planarity-${{ version }}.tar.gz
+  sha256: 585780e08837cc2cb1655cadf7dc5c7245aea171e802ea4b1d7d2d4497d045fd
 
 build:
   script: ${{ PYTHON }} -m pip install .
@@ -29,37 +29,36 @@ requirements:
   - passagemath-abi == ${{ version }}
   host:
   - python
+  - planarity
   run:
   - python
-  - tarski
   - cysignals
-  - passagemath-environment
-  - passagemath-repl
+  - passagemath-graphs
 
 tests:
 - script: pytester
   files:
     recipe:
-    - test_passagemath_qepcad.py
+    - test_passagemath_planarity.py
   requirements:
     build:
     - pytester
     run:
     - pytester-run
-    - passagemath-symbolics
+    - passagemath-repl
 
 about:
   license: GPL-2.0-or-later
   license_file: README.rst
-  summary: 'passagemath: Quantifier elimination by partial cylindrical algebraic decomposition with QEPCAD'
+  summary: 'passagemath: Graph planarity with the edge addition planarity suite'
   description: |
     Distribution of a part of the Sage library.
-    It provides an interface to QEPCAD.
+    It provides a Cython interface to the Edge Addition Planarity Suite.
 
 extra:
   emscripten_tests:
     python:
       pytest_files:
-      - test_passagemath_qepcad.py
+      - test_passagemath_planarity.py
   recipe-maintainers:
   - mkoeppe

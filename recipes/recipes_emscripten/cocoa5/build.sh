@@ -69,3 +69,6 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   --js-output="${PREFIX}/bin/CoCoAInterpreter.data.js"
 
 cp -r "web"/* "${PREFIX}/bin/"
+
+rm -rf "${PREFIX}/include/CoCoA"
+mv "${PREFIX}/include/CoCoA-"* "${PREFIX}/include/CoCoA"
