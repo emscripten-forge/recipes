@@ -9,11 +9,12 @@ configure_args=(
     --datadir="${PREFIX}/share"
     --disable-silent-rules
     --disable-dependency-tracking
-    --disable-shared
+    --host=wasm32-unknown-emscripten
+    CFLAGS="$CFLAGS -sSIDE_MODULE=1"
     LDFLAGS="$LDFLAGS -sMODULARIZE=1"
+    ac_cv_func_fmtcheck=no
 )
 
-if [[ "${CONDA_BUILD_CROSS_COMPILATION}" == "1" ]]; then
     CC=$CC_FOR_BUILD CFLAGS=$CFLAGS_FOR_BUILD ./configure \
         --build=${BUILD} \
         --host=${BUILD} \
@@ -24,9 +25,13 @@ if [[ "${CONDA_BUILD_CROSS_COMPILATION}" == "1" ]]; then
 
     make "-j${CPU_COUNT}"
     (cd src && make clean)
-fi
 
-emconfigure ./configure "${configure_args[@]}"
+if ! emconfigure ./configure "${configure_args[@]}"; then
+    cat config.log
+    exit 1
+else
+    cat config.log
+fi
 
 (cd src && emmake make "-j${CPU_COUNT}")
 (cd magic && touch magic.mgc)
