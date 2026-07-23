@@ -1,7 +1,7 @@
 context:
   version: 4.16.0
 
-recipe:
+package:
   name: gap
   version: ${{ version }}
 
@@ -11,31 +11,28 @@ source:
 
 build:
   number: 0
+  script: build.sh
 
-outputs:
-  - package:
-      name: gap
-    build:
-      script: build.sh
-    requirements:
-      build:
-        - autoconf
-        - automake
-        - libtool
-        - make
-        - python                            
-        - ${{ compiler('c') }}              
-        - ${{ compiler('cxx') }}
-      host:
-        - gmp
-        - zlib
-    tests:
-      - package_contents:
-          files:
-            - lib/libgap.a
-            - include/gap/gap.h
-            - bin/gap.js
-            - bin/gap.wasm  
+requirements:
+  build:
+    - autoconf
+    - automake
+    - libtool
+    - make
+    - python
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - gmp
+    - zlib
+
+tests:
+- package_contents:
+    files:
+      - lib/libgap.a
+      - include/gap/gap.h
+      - bin/gap.js
+      - bin/gap.wasm
 
 about:
   homepage: https://www.gap-system.org/
