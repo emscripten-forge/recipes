@@ -1,0 +1,69 @@
+context:
+  name: fOptions
+  version: 3042.86
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url: https://github.com/cran/fOptions/archive/refs/tags/${{version}}.tar.gz
+  sha256: 2bca1bec751160d06b968101b48ac4b7fe0c6adb16626737fdc61d296117c69a
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: |
+    cp $RECIPE_DIR/Makevars src/Makevars
+    $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - r-timedate
+  - r-timeseries
+  - r-fbasics
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+  - r-timedate
+  - r-timeseries
+  - r-fbasics
+  run:
+  - r-timedate
+  - r-timeseries
+  - r-fbasics
+
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+
+
+about:
+  homepage: https://github.com/cran/fOptions
+  documentation: https://github.com/cran/fOptions
+  repository: https://github.com/cran/fOptions
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: "Rmetrics - Pricing and Evaluating Basic Options"
+  description: |-
+    Provides a collection of functions to 
+    valuate basic options. This includes the generalized
+    Black-Scholes option, options on futures and options on
+    commodity futures.
+extra:
+  recipe-maintainers:
+  - DerThorsten
