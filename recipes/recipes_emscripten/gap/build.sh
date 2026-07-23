@@ -35,37 +35,6 @@ fi
     make -j8
 )
 
-AUX_BUILD=$PWD/extern/emscripten/build
-AUX_PREFIX=$PWD/extern/emscripten/install
-
-mkdir -p "$AUX_BUILD"
-mkdir -p "$AUX_PREFIX"
-
-(
-    mkdir -p "$AUX_BUILD/gmp"
-    cd "$AUX_BUILD/gmp" &&
-    if [[ ! -f config.status ]]; then
-        CC_FOR_BUILD=/usr/bin/gcc ABI=standard \
-        emconfigure $BASEDIR/extern/gmp/configure \
-        --build i686-pc-linux-gnu --host none \
-        --disable-assembly --enable-cxx \
-        --prefix=$AUX_PREFIX
-    fi &&
-    emmake make -j8 &&
-    emmake make install
-)
-
-(
-    mkdir -p "$AUX_BUILD/zlib"
-    cd "$AUX_BUILD/zlib" &&
-    if [[ ! -f Makefile ]]; then
-        # --- MODIFICATION: Added --static to prevent shared library linkage errors ---
-        emconfigure $BASEDIR/extern/zlib/configure --static --prefix=$AUX_PREFIX
-    fi;
-    emmake make -j8 &&
-    emmake make install
-)
-
 # There are two problems with building GAP
 # 1) GAP builds some executables (ffgen and gap-nocomp), which it wants to
 #    execute while building. We get these files from 'native-build'.
@@ -86,8 +55,8 @@ mkdir -p "$AUX_PREFIX"
 # GAP for standard building (emscripten builds will use 'emcc')
 if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
     emconfigure ./configure --prefix="${PREFIX}" ABI=32 \
-    --with-gmp=$AUX_PREFIX \
-    --with-zlib=$AUX_PREFIX \
+    --with-gmp=${PREFIX} \
+    --with-zlib=${PREFIX} \
     LDFLAGS="-s JSPI -O2"
 fi;
 
