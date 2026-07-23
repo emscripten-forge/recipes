@@ -1,0 +1,25 @@
+DAOS container detection uses listxattr/getxattr which are declared in
+Emscripten's <sys/xattr.h> but not implemented at runtime — the built .so
+fails to load with "cannot resolve symbol listxattr". DAOS makes no sense
+in a WASM sandbox anyway. Short-circuit isdaoscontainer() under
+__EMSCRIPTEN__ so the xattr code is never reached.
+
+--- a/libdispatch/dinfermodel.c
++++ b/libdispatch/dinfermodel.c
+@@ -1594,6 +1594,10 @@
+ static int
+ isdaoscontainer(const char* path)
+ {
++#ifdef __EMSCRIPTEN__
++    (void)path;
++    return NC_ENOTNC;
++#else
+     int stat = NC_ENOTNC; /* default is that this is not a DAOS container */
+ #ifndef _WIN32
+ #ifdef USE_HDF5
+@@ -1669,6 +1673,7 @@
+ #endif
+     errno = 0; /* reset */
+     return stat;
++#endif /* __EMSCRIPTEN__ */
+ }

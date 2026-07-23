@@ -1,0 +1,28 @@
+Under emscripten the loader dedupes shared libraries by string identity of
+their NEEDED entry, not by realpath. When libhdf5_hl links against libhdf5
+with SOVERSION set, it records NEEDED "libhdf5.so.310.5.1", while consumers
+like h5py link with bare "-lhdf5" and record NEEDED "libhdf5.so". Both paths
+resolve to the same file via symlinks, but the loader sees them as two
+distinct libraries and creates two separate instances — each with its own
+copy of libhdf5.so's file-static globals (H5CX_head_g etc.), which breaks
+the metadata cache when calls cross between the instances.
+
+Skip VERSION/SOVERSION for emscripten builds so every consumer records the
+bare "libhdf5.so" NEEDED entry and the loader deduplicates properly.
+
+--- a/config/cmake/HDF5Macros.cmake
++++ b/config/cmake/HDF5Macros.cmake
+@@ -22,10 +22,10 @@
+     else ()
+       set (LIBHDF_VERSION ${HDF5_${libpackage}_PACKAGE_SOVERSION_MAJOR})
+     endif ()
+-    set_target_properties (${libtarget} PROPERTIES VERSION ${PACKAGE_SOVERSION})
++    if (NOT EMSCRIPTEN)
++      set_target_properties (${libtarget} PROPERTIES VERSION ${PACKAGE_SOVERSION})
++    endif ()
+     if (WIN32)
+         set (${LIB_OUT_NAME} "${LIB_OUT_NAME}-${LIBHDF_VERSION}")
+-    else ()
++    elseif (NOT EMSCRIPTEN)
+         set_target_properties (${libtarget} PROPERTIES SOVERSION ${LIBHDF_VERSION})
+     endif ()
