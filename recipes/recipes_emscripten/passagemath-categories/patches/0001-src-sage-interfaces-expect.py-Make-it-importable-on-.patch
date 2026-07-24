@@ -1,0 +1,32 @@
+From 970220ec7b8e586ebf0ef2a7863553dfa8af7e4d Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Sat, 18 Jul 2026 23:37:30 -0700
+Subject: [PATCH] src/sage/interfaces/expect.py: Make it importable on
+ emscripten
+
+---
+ src/sage/interfaces/expect.py | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/sage/interfaces/expect.py b/src/sage/interfaces/expect.py
+index ade73ee5b2d..a9eabc64961 100644
+--- a/src/sage/interfaces/expect.py
++++ b/src/sage/interfaces/expect.py
+@@ -51,7 +51,13 @@ import weakref
+ from random import randrange
+ 
+ import pexpect
+-from pexpect import ExceptionPexpect
++
++try:
++    from pexpect import ExceptionPexpect
++except ImportError:
++    # emscripten
++    class ExceptionPexpect(Exception):
++        pass
+ 
+ import sage.interfaces.abc
+ from sage.cpython.string import bytes_to_str, str_to_bytes
+-- 
+2.51.1
+
