@@ -1,0 +1,71 @@
+context:
+  name: RSpectra
+  version: 0.16-2
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: a2f149d79519fee79dabe1b174dfb847a916045315d5927a93cc6b005522aa7e
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp >= 0.11.5
+  - r-rcppeigen >= 0.3.3.3.0
+  - r-matrix >= 1.1_0
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp >= 0.11.5
+  - r-rcppeigen >= 0.3.3.3.0
+  - r-matrix >= 1.1_0
+  run:
+  - r-matrix >= 1.1_0
+  - r-rcpp >= 0.11.5
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://github.com/yixuan/RSpectra
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/yixuan/RSpectra
+  license: MPL (>= 2)
+  license_file:
+  - TODO_add_license_file_for_MPL (>= 2)
+  summary: Solvers for Large-Scale Eigenvalue and SVD Problems
+  description: |-
+    R interface to the 'Spectra' library
+    <https://spectralib.org/> for large-scale eigenvalue and SVD
+    problems. It is typically used to compute a few
+    eigenvalues/vectors of an n by n matrix, e.g., the k largest eigenvalues,
+    which is usually more efficient than eigen() if k << n. This package
+    provides the 'eigs()' function that does the similar job as in 'Matlab',
+    'Octave', 'Python SciPy' and 'Julia'. It also provides the 'svds()' function
+    to calculate the largest k singular values and corresponding
+    singular vectors of a real matrix. The matrix to be computed on can be
+    dense, sparse, or in the form of an operator defined by the user.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
