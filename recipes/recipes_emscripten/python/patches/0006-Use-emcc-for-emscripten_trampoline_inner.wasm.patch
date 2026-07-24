@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 1 Jan 2024 00:00:00 +0000
+Subject: [PATCH] Build trampoline with standalone clang without -mgc
+
+The source no longer uses __builtin_wasm_test_function_pointer_signature
+(see 0007 compat patch), so -mgc is not needed. Use standalone clang with
+-nostdlib to produce minimal wasm without pulling in emscripten runtime.
+---
+ Makefile.pre.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.pre.in b/Makefile.pre.in
+index 0000000..1111111 100644
+--- a/Makefile.pre.in
++++ b/Makefile.pre.in
+@@ -3111,5 +3111,5 @@
+ Python/emscripten_trampoline_inner.wasm: $(srcdir)/Python/emscripten_trampoline_inner.c
+  # emcc has a path that ends with emsdk/upstream/emscripten/emcc, we're looking for emsdk/upstream/bin/clang.
+-	$$(dirname $$(dirname $(CC)))/bin/clang -o $@ $< -mgc -O2 -Wl,--no-entry -Wl,--import-table -Wl,--import-memory -target wasm32-unknown-unknown -nostdlib
++	$$(dirname $$(dirname $(CC)))/bin/clang -o $@ $< -O2 -Wl,--no-entry -Wl,--import-table -Wl,--import-memory -target wasm32-unknown-unknown -nostdlib
+
+ Python/emscripten_trampoline_wasm.c: Python/emscripten_trampoline_inner.wasm
+ 	$(PYTHON_FOR_REGEN) $(srcdir)/Tools/wasm/emscripten/prepare_external_wasm.py $< $@ getWasmTrampolineModule
