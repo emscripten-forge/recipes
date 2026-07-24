@@ -8,7 +8,8 @@ emconfigure ./configure \
     --with-gmp=$PREFIX \
     --with-flint=$PREFIX \
     --with-ntl=$PREFIX \
-    --with-pari=$PREFIX
+    --with-pari=$PREFIX \
+    LIBS="-lgmp"
 
 emmake make
 
