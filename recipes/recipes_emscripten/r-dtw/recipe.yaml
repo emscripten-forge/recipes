@@ -1,0 +1,64 @@
+context:
+  name: dtw
+  version: 1.23-3
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 7e0e725b2897ffc623f3ad296619edf17877462f3d7ca8f9b5168ae6d834e786
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-proxy
+  host:
+  - r-base ==${{ r_base }}
+  - r-proxy
+  run:
+  - r-proxy
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://dynamictimewarping.github.io/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Dynamic Time Warping Algorithms
+  description: |-
+    A comprehensive implementation of dynamic time warping
+    (DTW) algorithms in R.  DTW computes the optimal (least cumulative
+    distance) alignment between points of two time series.  Common DTW
+    variants covered include local (slope) and global (window)
+    constraints, subsequence matches, arbitrary distance definitions,
+    normalizations, minimum variance matching, and so on.  Provides
+    cumulative distances, alignments, specialized plot styles, etc.,
+    as described in Giorgino (2009) <doi:10.18637/jss.v031.i07>.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
