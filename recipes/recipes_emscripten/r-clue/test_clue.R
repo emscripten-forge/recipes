@@ -2,6 +2,8 @@ print('Loading clue package')
 library(clue)
 print('... clue package loaded successfully')
 
+library(quadprog)
+
 test_1 <- function() {
     data("Cassini")
     op <- par(mfcol = c(1, 2))
