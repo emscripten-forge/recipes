@@ -1,0 +1,144 @@
+From ccc5282fb1d6a7152553096f4d675e3c53217f40 Mon Sep 17 00:00:00 2001
+From: Matthias Koeppe <mkoeppe@math.ucdavis.edu>
+Date: Sat, 25 Jul 2026 12:40:48 -0700
+Subject: [PATCH] src/sage/features: Catch OSError in addition to
+ CalledProcessError on emscripten
+
+---
+ src/sage/features/__init__.py         | 2 +-
+ src/sage/features/csdp.py             | 3 +++
+ src/sage/features/fricas.py           | 5 ++++-
+ src/sage/features/graph_generators.py | 9 +++++++++
+ src/sage/features/latex.py            | 2 +-
+ src/sage/features/pkg_systems.py      | 6 +++---
+ 6 files changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/src/sage/features/__init__.py b/src/sage/features/__init__.py
+index 42a665fea8a..61abbfe96e2 100644
+--- a/src/sage/features/__init__.py
++++ b/src/sage/features/__init__.py
+@@ -581,7 +581,7 @@ def package_systems():
+             system_name = proc.stdout.strip()
+             if system_name != 'unknown':
+                 _cache_package_systems = [PackageSystem(system_name)]
+-        except CalledProcessError:
++        except (CalledProcessError, OSError):
+             pass
+         more_package_systems = [SagePackageSystem(), PipPackageSystem()]
+         _cache_package_systems += [ps for ps in more_package_systems if ps.is_present()]
+diff --git a/src/sage/features/csdp.py b/src/sage/features/csdp.py
+index 733e8b6ffdf..d4a1ea1ce3d 100644
+--- a/src/sage/features/csdp.py
++++ b/src/sage/features/csdp.py
+@@ -68,6 +68,9 @@ class CSDP(Executable):
+                 return FeatureTestResult(self, False,
+                     reason="Call to `{command}` failed with exit code {e.returncode}."
+                                              .format(command=" ".join(command), e=e))
++            except OSError:
++                return FeatureTestResult(self, False,
++                    reason="Call to `{command}` failed with OSError")
+ 
+         result = bytes_to_str(lines).strip().split('\n')[-1]
+         match = re.match("^The Lovasz Theta Number is (.*)$", result)
+diff --git a/src/sage/features/fricas.py b/src/sage/features/fricas.py
+index 2f9d722eda6..100c4f84848 100644
+--- a/src/sage/features/fricas.py
++++ b/src/sage/features/fricas.py
+@@ -56,7 +56,7 @@ class FriCAS(Executable):
+             version_line = output.decode('utf-8').strip()
+             version = version_line.split()[1]
+             return version
+-        except subprocess.CalledProcessError:
++        except (subprocess.CalledProcessError, OSError):
+             return None
+ 
+     def is_functional(self):
+@@ -75,6 +75,9 @@ class FriCAS(Executable):
+         except subprocess.CalledProcessError as e:
+             return FeatureTestResult(self, False,
+                                      reason="Call `{command}` failed with exit code {e.returncode}".format(command=" ".join(command), e=e))
++        except OSError:
++            return FeatureTestResult(self, False,
++                reason="Call to `{command}` failed with OSError".format(command=" ".join(command))
+ 
+         expected = b"FriCAS"
+         if lines.find(expected) == -1:
+diff --git a/src/sage/features/graph_generators.py b/src/sage/features/graph_generators.py
+index a6e5b5e9607..aee7c7cad73 100644
+--- a/src/sage/features/graph_generators.py
++++ b/src/sage/features/graph_generators.py
+@@ -60,6 +60,9 @@ class Plantri(Executable):
+         except subprocess.CalledProcessError as e:
+             return FeatureTestResult(self, False,
+                     reason="Call `{command}` failed with exit code {e.returncode}".format(command=" ".join(command), e=e))
++        except OSError:
++            return FeatureTestResult(self, False,
++                reason="Call to `{command}` failed with OSError".format(command=" ".join(command))
+ 
+         expected = b"1 triangulations written"
+         if lines.find(expected) == -1:
+@@ -107,6 +110,9 @@ class Buckygen(Executable):
+         except subprocess.CalledProcessError as e:
+             return FeatureTestResult(self, False,
+                     reason="Call `{command}` failed with exit code {e.returncode}".format(command=" ".join(command), e=e))
++        except OSError:
++            return FeatureTestResult(self, False,
++                reason="Call to `{command}` failed with OSError".format(command=" ".join(command))
+ 
+         expected = b"Number of fullerenes generated with 13 vertices: 0"
+         if lines.find(expected) == -1:
+@@ -156,6 +162,9 @@ class Benzene(Executable):
+         except subprocess.CalledProcessError as e:
+             return FeatureTestResult(self, False,
+                     reason="Call `{command}` failed with exit code {e.returncode}".format(command=" ".join(command), e=e))
++        except OSError:
++            return FeatureTestResult(self, False,
++                reason="Call to `{command}` failed with OSError".format(command=" ".join(command))
+ 
+         expected = b">>planar_code<<"
+         if not lines.startswith(expected):
+diff --git a/src/sage/features/latex.py b/src/sage/features/latex.py
+index e2114df9b7c..29ef593aebd 100644
+--- a/src/sage/features/latex.py
++++ b/src/sage/features/latex.py
+@@ -247,7 +247,7 @@ class TeXFile(StaticFile):
+             proc = run(['kpsewhich', self.filename],
+                        capture_output=True, text=True, check=True)
+             return proc.stdout.strip()
+-        except CalledProcessError:
++        except (CalledProcessError, OSError):
+             reason = "{filename!r} not found by kpsewhich".format(filename=self.filename)
+             raise FeatureNotPresentError(self, reason)
+ 
+diff --git a/src/sage/features/pkg_systems.py b/src/sage/features/pkg_systems.py
+index 9ee981d870c..93f4b772e45 100644
+--- a/src/sage/features/pkg_systems.py
++++ b/src/sage/features/pkg_systems.py
+@@ -85,7 +85,7 @@ class PackageSystem(Feature):
+                     lines.append(f'To install {feature} using the {system} package manager, you can try to run:')
+                     lines.append(command)
+                     return '\n'.join(lines)
+-        except CalledProcessError:
++        except (CalledProcessError, OSError):
+             pass
+         return f'No equivalent system packages for {system} are known to Sage.'
+ 
+@@ -127,7 +127,7 @@ class SagePackageSystem(PackageSystem):
+         try:
+             # "sage -p" is a fast way of checking whether sage-spkg is available.
+             run('sage -p', shell=True, stdout=DEVNULL, stderr=DEVNULL, check=True)
+-        except CalledProcessError:
++        except (CalledProcessError, OSError):
+             return False
+         # Check if there are any installation records.
+         try:
+@@ -192,5 +192,5 @@ class PipPackageSystem(PackageSystem):
+         try:
+             run('sage -pip --version', shell=True, stdout=DEVNULL, stderr=DEVNULL, check=True)
+             return True
+-        except CalledProcessError:
++        except (CalledProcessError, OSError):
+             return False
+-- 
+2.51.1
+
