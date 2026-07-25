@@ -9,7 +9,9 @@ emconfigure ./configure \
     --with-ntl=$PREFIX \
     --with-flint=$PREFIX \
     --with-blas-libs="-lblas" \
-    --without-archnative
+    --without-archnative \
+    --disable-shared \
+    --enable-static
 
 emmake make
 
