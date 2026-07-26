@@ -9,7 +9,9 @@ emconfigure ./configure \
     CPPFLAGS="-I$PREFIX/include" \
     CXXFLAGS="-I$PREFIX/include" \
     LDFLAGS="-L$PREFIX/lib" \
-    LIBS="-lgmp"
+    LIBS="-lgmp" \
+    --disable-shared \
+    --enable-static
 
 emmake make
 
