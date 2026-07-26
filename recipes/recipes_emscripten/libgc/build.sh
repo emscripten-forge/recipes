@@ -3,8 +3,8 @@ set -euxo pipefail
 
 CPPFLAGS="-I${PREFIX}/include" \
 LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=c++11" \
-
+CFLAGS="-fPIC" \
+CXXFLAGS="-std=c++11 -fPIC" \
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
     --host=wasm32-unknown-emscripten \
