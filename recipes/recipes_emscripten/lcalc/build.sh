@@ -17,4 +17,4 @@ emmake make
 
 emmake make install
 
-cp src/lcalc/.libs/lcalc.wasm $PREFIX/bin/
+cp src/lcalc/lcalc.wasm ${PREFIX}/bin/
