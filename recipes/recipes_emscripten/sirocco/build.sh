@@ -4,9 +4,11 @@ set -euxo pipefail
 autoreconf --install
 
 emconfigure ./configure \
-    --prefix=$PREFIX \
+    --prefix="${PREFIX}" \
     --disable-shared \
-    --enable-static
+    --enable-static \
+    CPPFLAGS="-I${PREFIX}/include" \
+    LDFLAGS="-L${PREFIX}/lib"
 
 emmake make
 
