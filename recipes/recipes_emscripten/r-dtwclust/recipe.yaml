@@ -1,0 +1,116 @@
+context:
+  name: dtwclust
+  version: 6.0.0
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url: https://github.com/asardaes/dtwclust/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 71af074898d6b00041d2b73f19ad6c4b626d6860596994b89d68cb6ec19c6f96
+  # path: /Users/thorstenbeier/src/dtwclust
+  patches:
+   - patches/no_thread_usage.patch
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+
+   
+
+requirements:
+  build:
+  # - if: linux
+  #   then:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-base
+  # - clang
+  - r-rcpp
+  - r-rcpparmadillo
+  - r-clue
+  - r-cluster
+  - r-dplyr
+  - r-foreach
+  - r-ggplot2
+  - r-ggrepel
+  - r-rlang
+  - r-matrix >= 1.5_0
+  - r-rspectra
+  - r-reshape2
+  - r-proxy >= 0.4_16
+  # # only use these deps when we are building on a linux machine
+  # - if: linux
+  #   then:
+  - r-dtw
+  - r-flexclust
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  - r-rcpparmadillo
+  - r-clue
+  - r-cluster
+  - r-dplyr
+  - r-flexclust
+  - r-foreach
+  - r-ggplot2
+  - r-ggrepel
+  - r-rlang
+  - r-matrix >= 1.5_0
+  - r-rspectra
+  - r-reshape2
+  - r-proxy >= 0.4_16
+  - r-dtw
+  - libflang
+  run:
+  - r-clue
+  - r-cluster
+  - r-dplyr
+  - r-flexclust
+  - r-foreach
+  - r-ggplot2
+  - r-ggrepel
+  - r-rlang
+  - r-matrix >= 1.5_0
+  - r-rspectra
+  - r-rcpp
+  - r-reshape2
+  - r-proxy >= 0.4_16
+  - r-dtw
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://github.com/asardaes/dtwclust
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/asardaes/dtwclust
+  license: GPL-3.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: "Time Series Clustering Along with Optimizations for the Dynamic\nTime Warping Distance"
+  description: |-
+    Time series clustering along with optimized techniques related
+    to the Dynamic Time Warping distance and its corresponding lower bounds.
+    Implementations of partitional, hierarchical, fuzzy, k-Shape and TADPole
+    clustering are available. Functionality can be easily extended with
+    custom distance measures and centroid definitions. Implementations of
+    DTW barycenter averaging, a distance based on global alignment kernels,
+    and the soft-DTW distance and centroid routines are also provided.
+    All included distance functions have custom loops optimized for the
+    calculation of cross-distance matrices, including parallelization support.
+    Several cluster validity indices are included.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
