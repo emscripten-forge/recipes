@@ -1,0 +1,74 @@
+context:
+  name: sensitivity
+  version: 1.31.0
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: f7d7ea89a91ca0461634de23c223fe29e2aa6d55af7f1f06475e58d121d42c83
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp
+  - r-rcpparmadillo
+  - r-boot
+  - r-numbers
+  - r-ggplot2
+  - r-foreach
+  - r-dtwclust
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  - r-rcpparmadillo
+  - r-boot
+  - r-numbers
+  - r-ggplot2
+  - r-foreach
+  - r-dtwclust
+  run:
+  - r-boot
+  - r-numbers
+  - r-ggplot2
+  - r-rcpp
+  - r-foreach
+  - r-dtwclust
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: "Global Sensitivity Analysis of Model Outputs and Importance\nMeasures"
+  description: |-
+    A collection of functions for sensitivity analysis of model outputs (factor screening, global sensitivity analysis and robustness analysis), for variable importance measures of data, as well as for interpretability of machine learning models. Most of the functions have to be applied on scalar output, but several functions support multi-dimensional outputs.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
