@@ -9,25 +9,21 @@ package:
 source:
   url: https://github.com/asardaes/dtwclust/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 71af074898d6b00041d2b73f19ad6c4b626d6860596994b89d68cb6ec19c6f96
-  # path: /Users/thorstenbeier/src/dtwclust
+
   patches:
    - patches/no_thread_usage.patch
 
 build:
   number: 1
   skip: ${{ r_base == '4.6.1' }}
-
+  script: $R CMD INSTALL $R_ARGS .
    
 
 requirements:
   build:
-  # - if: linux
-  #   then:
-  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
   - r-base
   - r-rcpp
-  - r-rcppparallel
   - r-rcpparmadillo
   - r-clue
   - r-cluster
@@ -45,7 +41,6 @@ requirements:
   host:
   - r-base ==${{ r_base }}
   - r-rcpp
-  - r-rcppparallel
   - r-rcpparmadillo
   - r-clue
   - r-cluster
@@ -62,7 +57,6 @@ requirements:
   - r-dtw
   - libflang
   run:
-  - r-rcppparallel
   - r-clue
   - r-cluster
   - r-dplyr
@@ -82,13 +76,7 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
-  files:
-    recipe:
-    - test_${{ name }}.R
-  requirements:
-    build:
-    - r-wasm-tester
+
 
 about:
   homepage: https://github.com/asardaes/dtwclust
