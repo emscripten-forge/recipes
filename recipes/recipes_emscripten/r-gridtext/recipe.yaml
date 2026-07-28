@@ -1,0 +1,43 @@
+context:
+  name: r-gridtext
+  version: 0.1.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:]  }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:]  }}_${{ version }}.tar.gz
+  sha256: 2b380e133719582e37cbb68754b0e0b009d95c7ad7e9d3da40d38dd858ee81de
+
+build:
+  number: 0
+  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] | upper }}/libs/${{ name[2:] | upper }}.so
+
+about:
+  homepage: http://www.stats.ox.ac.uk/pub/MASS4/
+  repository: https://github.com/wilkelab/gridtext 
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Improved text rendering support for grid graphics
+
+
+extra:
+  recipe-maintainers:
+  - DerThorsten 
