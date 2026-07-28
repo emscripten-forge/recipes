@@ -34,6 +34,7 @@ emconfigure ./configure \
   --disable-shared \
   --with-tcp=no \
   --with-cmp=no \
+  --with-defsystem \
   --with-ffi \
   --with-gmp="${PREFIX}" \
   CPPFLAGS="-I${PREFIX}/include" \
