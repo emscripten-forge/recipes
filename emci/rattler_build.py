@@ -35,8 +35,8 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
     cmd.extend([
         "-c", "https://repo.prefix.dev/emscripten-forge-4x",
         "-c", "microsoft",
-        "-c", "bioconda",
         "-c", "conda-forge",
+        "-c", "bioconda"
     ])
 
     # pass existing env vars to subprocess
