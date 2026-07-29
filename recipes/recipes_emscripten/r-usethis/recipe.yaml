@@ -17,11 +17,12 @@ source:
 
 build:
   number: 0
+  noarch: generic
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  - cross-r-base_${{ target_platform }}
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-cli >=3.0.1
   - r-clipr >=0.3.0
   - r-crayon
@@ -40,6 +41,7 @@ requirements:
   - r-withr >=2.3.0
   - r-yaml
   host:
+  - r-base ==${{ r_base }}
   - r-cli >=3.0.1
   - r-clipr >=0.3.0
   - r-crayon
@@ -80,6 +82,13 @@ tests:
 - package_contents:
     files:
     - lib/R/library/${{ name[2:] }}/DESCRIPTION
+- script: run_r_test
+  files:
+    recipe:
+    - test-r-usethis.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://usethis.r-lib.org
