@@ -22,6 +22,5 @@ def changed_recipes_need_playwright(old: str, new: str) -> bool:
             if not meta_path.is_file():
                 continue
             if recipe_needs_playwright(meta_path.read_text()):
-                print(f"Recipe {recipe} needs playwright")
                 return True
     return False
