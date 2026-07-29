@@ -84,6 +84,16 @@ def test_linalg():
     assert_allclose(Ainv, [[-2, 1], [1.5, -0.5]])
 
 
+def test_schur():
+    from scipy.linalg import schur
+    for A in (
+        np.array([[1.0, 2.0], [3.0, 4.0]]),
+        np.array([[1.0, 2.0j], [3.0j, 4.0]]),
+    ):
+        T, Z = schur(A)
+        assert_allclose(Z @ T @ Z.conj().T, A)
+
+
 def test_lsoda():
     import scipy.integrate as integrate
     def exponential_decay(t, y):
