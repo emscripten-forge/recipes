@@ -1,0 +1,82 @@
+context:
+  name: ks
+  version: 1.15.2
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 0d08b3a45cf5b0d6f803322fc3ced74b04203e1b5073512b5abde474ae66d32a
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-fnn >= 1.1
+  - r-kernlab
+  - r-kernsmooth >= 2.22
+  - r-matrix
+  - r-mclust
+  - r-mgcv
+  - r-multicool
+  - r-mvtnorm >= 1.0_0
+  - r-pracma
+  host:
+  - r-base ==${{ r_base }}
+  - r-fnn >= 1.1
+  - r-kernlab
+  - r-kernsmooth >= 2.22
+  - r-matrix
+  - r-mclust
+  - r-mgcv
+  - r-multicool
+  - r-mvtnorm >= 1.0_0
+  - r-pracma
+  run:
+  - r-fnn >= 1.1
+  - r-kernlab
+  - r-kernsmooth >= 2.22
+  - r-matrix
+  - r-mclust
+  - r-mgcv
+  - r-multicool
+  - r-mvtnorm >= 1.0_0
+  - r-pracma
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://mvstat.net/ks/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/cran/ks/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Kernel Smoothing
+  description: |-
+    Kernel smoothers for univariate and multivariate data, with comprehensive visualisation and bandwidth selection capabilities, including for densities, density derivatives, cumulative distributions, clustering, classification, density ridges, significant modal regions, and two-sample hypothesis tests. Chacon & Duong (2018) <doi:10.1201/9780429485572>.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

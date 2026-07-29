@@ -11,7 +11,10 @@ const prefixLibDir = path.join(process.env.PREFIX, "lib");
 
 const rScriptPath = process.argv[2];
 const rScriptBody = nodeFs.readFileSync(rScriptPath, "utf8");
-const rArgs = ["--no-restore", "--vanilla", "-e", rScriptBody];
+
+const fname = path.basename(rScriptPath, ".R");
+
+const rArgs = ["--no-restore", "--vanilla", "-e", `source("/${fname}.R")`];
 
 var Module = {
   noInitialRun: true,
@@ -58,6 +61,9 @@ var Module = {
     // R_HOME tree (etc, share, library, modules) and /lib for dynload paths.
     copyTree(hostRHome, wasmRHome);
     copyTree(rLibDir, "/lib");
+
+    // copy test script to the root of the virtual FS so it can be executed by R.
+    Module.FS.writeFile(`/${path.basename(rScriptPath)}`, rScriptBody);
 
     // For RPY: mount Python stdlib and headers so PYTHONHOME="/" resolves correctly.
     if (useRpy) {

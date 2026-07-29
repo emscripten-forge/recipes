@@ -1,0 +1,178 @@
+diff --git a/ffi/CMakeLists.txt b/ffi/CMakeLists.txt
+index 4025f4f3..372ecce2 100755
+--- a/ffi/CMakeLists.txt
++++ b/ffi/CMakeLists.txt
+@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.13)
+ # This will define the name of the solution file in the build directory
+ project(llvmlite_ffi)
+ 
++# Emscripten: enable SHARED library support (SIDE_MODULE) explicitly.
++# The Emscripten.cmake toolchain does not always set TARGET_SUPPORTS_SHARED_LIBS
++# on all platforms/emsdk versions; without this cmake silently falls back to STATIC.
++if(EMSCRIPTEN)
++    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS TRUE)
++    set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS   "-s SIDE_MODULE=1")
++    set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
++    set(CMAKE_STRIP FALSE)
++endif()
++
+ include(CheckIncludeFiles)
+ include(CheckLibraryExists)
+ include(CheckCXXCompilerFlag)
+@@ -153,11 +163,21 @@ ${LLVM_ENABLE_RTTI}.")
+     endif()
+ endif()
+ 
+-# Define the shared library
+-add_library(llvmlite SHARED assembly.cpp bitcode.cpp config.cpp core.cpp initfini.cpp
+-            module.cpp value.cpp executionengine.cpp type.cpp
+-            targets.cpp dylib.cpp linker.cpp object_file.cpp
+-            custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
++# Define the shared library.
++# On Emscripten, omit all JIT-specific sources (executionengine, orcjit,
++# memorymanager) — we use WasmExecutionEngine instead and don't need MCJIT/OrcJIT.
++if(EMSCRIPTEN)
++    add_library(llvmlite SHARED assembly.cpp bitcode.cpp config.cpp core.cpp initfini.cpp
++                module.cpp value.cpp type.cpp
++                targets.cpp dylib.cpp linker.cpp object_file.cpp
++                custom_passes.cpp newpassmanagers.cpp
++                wasmlinker.cpp)
++else()
++    add_library(llvmlite SHARED assembly.cpp bitcode.cpp config.cpp core.cpp initfini.cpp
++                module.cpp value.cpp executionengine.cpp type.cpp
++                targets.cpp dylib.cpp linker.cpp object_file.cpp
++                custom_passes.cpp orcjit.cpp memorymanager.cpp newpassmanagers.cpp)
++endif()
+ 
+ 
+ # Determine whether libstdc++ should be statically linked (or not).
+@@ -230,12 +250,21 @@ else()
+     # This is a workaround based on knowing what is needed. Do not set llvm_libs
+     # to the cached LLVM_AVAILABLE_LIBS, it may contain the dynamic `LLVM`
+     # library, see https://github.com/numba/llvmlite/pull/1234 for discussion.
+-    set(LLVM_COMPONENTS mcjit
+-                        orcjit
+-                        OrcDebugging
+-                        AsmPrinter
+-                        AllTargetsCodeGens
+-                        AllTargetsAsmParsers)
++    # On Emscripten, lldWasm/lldCommon transitively depend on essentially all of
++    # LLVM (WebAssembly codegen, AsmPrinter, Core, MC, ...). Listing any LLVM
++    # components here would cause them to appear twice on the wasm-ld command line
++    # under --whole-archive, producing duplicate symbol errors. Leave the list
++    # empty; everything we need comes in through the LLD transitive deps below.
++    if(EMSCRIPTEN)
++        set(LLVM_COMPONENTS)
++    else()
++        set(LLVM_COMPONENTS mcjit
++                            orcjit
++                            OrcDebugging
++                            AsmPrinter
++                            AllTargetsCodeGens
++                            AllTargetsAsmParsers)
++    endif()
+ 
+     # Test build specific components, it's not known a priori whether these
+     # components will exist in a given build. On some platforms the components
+@@ -324,10 +353,17 @@ endif()
+ message(STATUS "LLVM target link libraries: ${llvm_libs}")
+ target_link_libraries(llvmlite ${llvm_libs})
+ 
++# Emscripten: link against LLD WASM linker libraries.
++# lldWasm + lldCommon are required by wasmlinker.cpp (LLVMPY_WasmLinkSharedModule).
++if(EMSCRIPTEN)
++    find_package(LLD REQUIRED CONFIG)
++    target_link_libraries(llvmlite lldWasm lldCommon)
++endif()
++
+ # --exclude-libs allow removal of unused parts of LLVM
+ # TODO: these options are just set, they should really be tested for
+ # suitability.
+-if(UNIX AND NOT APPLE)
++if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+     set(FORCED_LINK_FLAGS "-Wl,--exclude-libs,ALL -Wl,--no-undefined")
+     if(NOT LLVMLITE_SHARED)
+         # If LLVM is statically linked, we specify -Bsymbolic to prevent
+@@ -337,7 +373,7 @@ if(UNIX AND NOT APPLE)
+     endif()
+     set_property(TARGET llvmlite APPEND_STRING PROPERTY LINK_FLAGS
+                  "${FORCED_LINK_FLAGS}")
+-elseif(APPLE)
++elseif(APPLE AND NOT EMSCRIPTEN)
+     # On Darwin only include the LLVMPY symbols required and exclude
+     # everything else.
+     set(FORCED_LINK_FLAGS "-Wl,-exported_symbol,_LLVMPY_*")
+diff --git a/ffi/build.py b/ffi/build.py
+index e930b2c5..6cc48385 100755
+--- a/ffi/build.py
++++ b/ffi/build.py
+@@ -99,6 +99,38 @@ def check_cmake():
+                "are available from many package managers.")
+         raise FileNotFoundError(msg) from e
+     # Timeout etc not handled, there's little advice that can be given and the
++
++
++def _is_emscripten_build():
++    """True when cross-compiling for Emscripten (emscripten-forge / emsdk)."""
++    return bool(os.environ.get('EMSCRIPTEN') or os.environ.get('EM_CONFIG')
++                or os.environ.get('EMSDK'))
++
++
++def _cmake_prefix():
++    """
++    Return the cmake command prefix list.
++    On Emscripten: ['emcmake', '/path/to/cmake']
++    Otherwise:     ['cmake']
++    """
++    if _is_emscripten_build():
++        build_prefix = os.environ.get('BUILD_PREFIX', '')
++        cmake_bin = (os.path.join(build_prefix, 'bin', 'cmake')
++                     if build_prefix else 'cmake')
++        return ['emcmake', cmake_bin]
++    return ['cmake']
++
++
++def _plain_cmake():
++    """
++    Return the bare cmake binary path (without emcmake prefix).
++    Used for the cmake --build step where emcmake is not needed.
++    """
++    if _is_emscripten_build():
++        build_prefix = os.environ.get('BUILD_PREFIX', '')
++        return (os.path.join(build_prefix, 'bin', 'cmake')
++                if build_prefix else 'cmake')
++    return 'cmake'
+     # traceback is self explanatory.
+ 
+ 
+@@ -106,7 +138,7 @@ def try_cmake(cmake_dir, build_dir, generator, arch=None, toolkit=None):
+     # first check that CMake tools are present and run ok.
+     check_cmake()
+     old_dir = os.getcwd()
+-    args = ['cmake', '-G', generator]
++    args = _cmake_prefix() + ['-G', generator]
+     if arch is not None:
+         args += ['-A', arch]
+     if toolkit is not None:
+@@ -191,7 +223,7 @@ def main_posix(library_ext):
+     if not os.path.exists(build_dir):
+         os.mkdir(build_dir)
+     try_cmake(here_dir, build_dir, generator)
+-    cmd = ['cmake', '--build', build_dir, "--parallel", '--config', config]
++    cmd = [_plain_cmake(), '--build', build_dir, "--parallel", '--config', config]
+     subprocess.check_call(cmd)
+     shutil.copy(os.path.join(build_dir, 'libllvmlite' + library_ext),
+                 target_dir)
+@@ -199,7 +231,11 @@ def main_posix(library_ext):
+ 
+ def main():
+     ELF_systems = ('linux', 'gnu', 'freebsd', 'openbsd', 'netbsd')
+-    if sys.platform == 'win32':
++    if _is_emscripten_build():
++        # Cross-compiling for wasm32-unknown-emscripten: cmake always produces
++        # libllvmlite.so regardless of the host OS.
++        main_posix('.so')
++    elif sys.platform == 'win32':
+         main_windows()
+     elif sys.platform.startswith(ELF_systems):
+         main_posix('.so')

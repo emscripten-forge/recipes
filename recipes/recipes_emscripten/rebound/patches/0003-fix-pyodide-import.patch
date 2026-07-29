@@ -1,0 +1,18 @@
+--- a/rebound/horizons.py
++++ b/rebound/horizons.py
+@@ -11,12 +11,11 @@
+ 
+ HORIZONSBASEURL = "https://ssd.jpl.nasa.gov/api/horizons.api?"
+ 
+-if "pyodide" in sys.modules:
+-    from urllib.parse import urlencode
++try:
+     from pyodide.http import open_url as urlopen
+-    # Use CORS proxy
++    from urllib.parse import urlencode
+     HORIZONSBASEURL = "https://rebound.hanno-rein.de/api/horizons.api?"
+-else:
++except ImportError:
+     try:
+         from urllib.parse import urlencode
+         from urllib.request import urlopen

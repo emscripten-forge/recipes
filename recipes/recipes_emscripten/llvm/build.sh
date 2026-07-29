@@ -36,7 +36,8 @@ emcmake cmake -S ../llvm -B .         \
     -DCLANG_ENABLE_ARCMT=OFF                        \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
     -DCLANG_BUILD_TOOLS=OFF                         \
-    -DCMAKE_CXX_FLAGS="-Dwait4=__syscall_wait4" \
+    -DCMAKE_C_FLAGS="${EMCC_CFLAGS} -mtail-call"    \
+    -DCMAKE_CXX_FLAGS="${EMCC_CFLAGS} -mtail-call -Dwait4=__syscall_wait4" \
     -DLLVM_NATIVE_TOOL_DIR=$BUILD_PREFIX/bin/
 
 # Build and Install step

@@ -1,0 +1,115 @@
+diff --git a/llvmlite/binding/__init__.py b/llvmlite/binding/__init__.py
+index 824c2039..d773d49b 100644
+--- a/llvmlite/binding/__init__.py
++++ b/llvmlite/binding/__init__.py
+@@ -1,8 +1,14 @@
+ """
+ Things that rely on the LLVM library
+ """
++import sys
++
+ from .dylib import *
+-from .executionengine import *
++# executionengine.cpp (MCJIT) and orcjit.cpp are excluded from the
++# Emscripten build — skip both on that platform.
++if sys.platform != 'emscripten':
++    from .executionengine import *
++    from .orcjit import *
+ from .initfini import *
+ from .linker import *
+ from .module import *
+@@ -14,5 +20,7 @@ from .typeref import *
+ from .analysis import *
+ from .object_file import *
+ from .context import *
+-from .orcjit import *
+ from .config import *
++from .wasmengine import (WasmExecutionEngine, WasmFunction, WasmtimeBackend,
++                         EmscriptenBackend, create_wasm_engine,
++                         WasmRuntimeError, WasmToolNotFoundError)
+diff --git a/llvmlite/binding/analysis.py b/llvmlite/binding/analysis.py
+index fe2692bf..5d55b45b 100644
+--- a/llvmlite/binding/analysis.py
++++ b/llvmlite/binding/analysis.py
+@@ -46,6 +46,43 @@ def view_dot_graph(graph, filename=None, view=False):
+     - view [bool]: if True, opens the rendered output file.
+ 
+     """
++    import sys
++    if sys.platform == 'emscripten':
++        # subprocess.Popen is unavailable on emscripten; render via
++        # @hpcc-js/wasm (a pure JS/WASM graphviz build) in the browser.
++        #
++        # Jupyter's HTML output sanitizer strips <script> tags, so a single
++        # HTML blob containing an inline <script type="module"> never
++        # executes. IPython.display.Javascript is exempt from that
++        # sanitization, so the container div and the script that fills it
++        # are displayed separately, and this function displays them itself
++        # (rather than returning one HTML object for the caller to
++        # display, which is how this function behaves on every other
++        # platform).
++        try:
++            from IPython.display import HTML, Javascript, display
++            import uuid
++            div_id = 'cfg-' + uuid.uuid4().hex[:8]
++            dot_escaped = (graph
++                           .replace('\\', '\\\\')
++                           .replace('`', '\\`')
++                           .replace('$', '\\$'))
++            display(HTML(f'<div id="{div_id}">(rendering CFG…)</div>'))
++            js_code = (
++                'import("https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2/dist/index.js")'
++                '.then(async ({ Graphviz }) => {\n'
++                '  const graphviz = await Graphviz.load();\n'
++                f'  const svg = graphviz.dot(`{dot_escaped}`);\n'
++                f'  const el = document.getElementById("{div_id}");\n'
++                '  el.innerHTML = svg;\n'
++                '});'
++            )
++            display(Javascript(js_code))
++            return HTML('')
++        except Exception:
++            from IPython.display import Code
++            return Code(graph, language='dot')
++
+     # Optionally depends on graphviz package
+     import graphviz as gv
+ 
+diff --git a/llvmlite/binding/executionengine.py b/llvmlite/binding/executionengine.py
+index 1ba0985e..dc7eccf9 100644
+--- a/llvmlite/binding/executionengine.py
++++ b/llvmlite/binding/executionengine.py
+@@ -1,4 +1,5 @@
+ import platform
++import sys
+ from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
+                     c_int, c_uint64, c_size_t, CFUNCTYPE, string_at, cast,
+                     py_object, Structure)
+@@ -6,8 +7,10 @@ from ctypes import (POINTER, c_char_p, c_bool, c_void_p,
+ from llvmlite.binding import ffi, targets, object_file
+ 
+ 
+-# Just check these weren't optimized out of the DLL.
+-ffi.lib.LLVMPY_LinkInMCJIT
++# MCJIT is not available on Emscripten (executionengine.cpp excluded from build).
++if sys.platform != 'emscripten':
++    # Just check these weren't optimized out of the DLL.
++    ffi.lib.LLVMPY_LinkInMCJIT
+ 
+ 
+ def create_mcjit_compiler(module, target_machine, use_lmm=None):
+diff --git a/llvmlite/utils.py b/llvmlite/utils.py
+index e07ecd37..64650492 100644
+--- a/llvmlite/utils.py
++++ b/llvmlite/utils.py
+@@ -9,6 +9,10 @@ def get_library_name():
+     """
+     Return the name of the llvmlite shared library file.
+     """
++    # When cross-compiling for Emscripten, the output is always .so regardless
++    # of the host OS (cmake SHARED library on wasm32-unknown-emscripten).
++    if os.environ.get('EMSCRIPTEN') or os.environ.get('EM_CONFIG') or os.environ.get('EMSDK'):
++        return 'libllvmlite.so'
+     if os.name == 'posix':
+         if sys.platform == 'darwin':
+             return 'libllvmlite.dylib'

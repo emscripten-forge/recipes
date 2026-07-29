@@ -1,0 +1,67 @@
+context:
+  name: randtoolbox
+  version: 2.0.5
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: ab6eb953feb928e205a1d21dd577bef2b71d2108a61c4ce5e3879d7b53fed61f
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }} 
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rngwell >= 0.10_1
+  host:
+  - r-base ==${{ r_base }}
+  - r-rngwell >= 0.10_1
+  run:
+  - r-rngwell >= 0.10_1
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://r-forge.r-project.org/projects/rmetrics/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: BSD-3-Clause
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/BSD_3_clause
+  - LICENSE
+  summary: "Toolbox for Pseudo and Quasi Random Number Generation and Random\nGenerator Tests"
+  description: |-
+    Provides (1) pseudo random generators - general linear congruential generators,
+    multiple recursive generators and generalized feedback shift register (SF-Mersenne Twister
+    algorithm (<doi:10.1007/978-3-540-74496-2_36>) and WELL (<doi:10.1145/1132973.1132974>)
+    generators); (2) quasi random generators - the Torus algorithm, the
+    Sobol sequence, the Halton sequence (including the Van der Corput sequence) and (3) some
+    generator tests - the gap test, the serial test, the poker test, see, e.g.,
+    Gentle (2003) <doi:10.1007/b97336>.
+    Take a look at the Distribution task view of types and tests of random number generators.
+    The package can be provided without the 'rngWELL' dependency on demand.
+    Package in Memoriam of Diethelm and Barbara Wuertz.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

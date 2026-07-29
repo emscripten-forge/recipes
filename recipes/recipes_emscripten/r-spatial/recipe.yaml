@@ -1,0 +1,56 @@
+context:
+  name: spatial
+  version: 7.3-18
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: cc46693d69745af8ec95b557e7a8ee4e1865df69dc0d25723629fd8e9ea43055
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    run:
+    - r-mass
+
+about:
+  homepage: http://www.stats.ox.ac.uk/pub/MASS4/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Functions for Kriging and Point Pattern Analysis
+  description: |-
+    Functions for kriging and point pattern analysis.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
