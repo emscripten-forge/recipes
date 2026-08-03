@@ -4,7 +4,7 @@ import scipy.sparse as spa
 import scipy.sparse.linalg as sla
 
 
-def test_import():
+def test_import_qdldl():
     assert qdldl is not None
 
 
