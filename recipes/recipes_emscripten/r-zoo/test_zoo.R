@@ -55,22 +55,6 @@ zr.qtr1 <- aggregate(z.day, as.yearqtr, mean, regular = TRUE)
 zr.qtr2 <- aggregate(z.day, as.yearqtr, mean, frequency = 4)
 
 
-## aggregate on month and extend to monthly time series
-if(require(chron)) {
-y <- zoo(matrix(11:15, nrow = 5, ncol = 2), chron(c(15, 20, 80, 100, 110)))
-colnames(y) <- c("A", "B")
-
-# aggregate by month using first of month as times for coarser series
-# using first day of month as repesentative time
-y2 <- aggregate(y, as.Date(as.yearmon(time(y))), head, 1)
-
-# fill in missing months by merging with an empty series containing
-# a complete set of 1st of the months
-yrt2 <- range(time(y2))
-y0 <- zoo(,seq(from = yrt2[1], to = yrt2[2], by = "month"))
-merge(y2, y0)
-}
-
 # given daily series keep only first point in each month at
 # day 21 or more
 z <- zoo(101:200, as.Date("2000-01-01") + seq(0, length = 100, by = 2))
