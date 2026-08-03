@@ -1,0 +1,79 @@
+context:
+  version: 0.1.9.post1
+
+package:
+  name: qdldl-python
+  version: ${{ version }}
+
+source:
+  url: https://github.com/osqp/qdldl-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 6f04bed33f6369610e35b4ca73fdb860dbb7e1b6b67eb678fc09a6d581d630fc
+  patches:
+  - patches/0001-use-Ninja-everywhere.patch
+  - patches/0002-build-against-conda-forge-s-libqdldl.patch
+  - patches/0003-build-qdldlamd-as-shared-lib-and-install-it.patch
+  - patches/0004-Do-not-pass-CMAKE_GENERATOR-as-variable.patch
+  - patches/0005-emscripten-shared-libqdldl-and-CMAKE_ARGS.patch
+
+build:
+  number: 0
+  script: build.sh
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - setuptools
+  - numpy
+  - pybind11
+  host:
+  - python
+  - pip
+  - setuptools
+  - numpy
+  - pybind11
+  - libqdldl
+  run:
+  - python
+  - numpy
+  - scipy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_qdldl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - numpy
+    - scipy
+
+about:
+  homepage: https://github.com/osqp/qdldl-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python interface to the QDLDL free LDL factorization routine for quasi-definite linear systems
+  description: |
+    Python interface to the QDLDL free LDL factorization routine for
+    quasi-definite linear systems: `Ax = b`.
+  repository: https://github.com/osqp/qdldl-python
+
+extra:
+  recipe-maintainers:
+  - jjerphan
