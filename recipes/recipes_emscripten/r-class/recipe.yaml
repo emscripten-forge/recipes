@@ -1,22 +1,22 @@
 context:
+  name: class
   version: 7.3-24
-  name: r-class
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: e8c66e57e3f4214ced6fff135a0d9b55f7bd7d6c947b219063de57b275c507e1
 
 
 build:
   number: 0
   script: $R CMD INSTALL $R_ARGS .
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base == '4.6.1' }}
 
 requirements:
   build:
@@ -32,7 +32,7 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
 - script: run_r_test
   files:
     recipe:
@@ -46,9 +46,10 @@ about:
   license: GPL-2.0-or-later
   license_family: GPL2
   license_file: GPL-2
-  summary: Various functions for classification, including k-nearest neighbour, Learning Vector Quantization and 
+  summary: Functions for Classification
+  description: |
+    Various functions for classification, including k-nearest neighbour, Learning Vector Quantization and 
     Self-Organizing Maps.
-
 
 extra:
   recipe-maintainers:
