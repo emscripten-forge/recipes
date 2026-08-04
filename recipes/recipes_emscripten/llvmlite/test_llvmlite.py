@@ -35,3 +35,13 @@ def test_wasm_execution_engine_importable():
     )
     assert WasmExecutionEngine is not None
     assert EmscriptenBackend is not None
+
+
+def test_graphviz_renders_in_process():
+    from llvmlite.binding.analysis import view_dot_graph
+
+    rendered = view_dot_graph("digraph G { A -> B; }")
+    svg = getattr(rendered, "data", rendered)
+    assert "<svg" in svg
+    assert "A" in svg
+    assert "B" in svg
