@@ -5,7 +5,7 @@ from .find_recipes_with_changes import find_recipes_with_changes
 
 
 PLAYWRIGHT_PATTERNS = [
-    re.compile(r"^\s*script:\s*pytester\b", re.MULTILINE),
+    re.compile(r"^\s*-?\s*script:\s*pytester\b", re.MULTILINE),
     re.compile(r"playwright\s+install"),
     re.compile(r"microsoft::playwright"),
 ]
