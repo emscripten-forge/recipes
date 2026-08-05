@@ -18,14 +18,20 @@ def test_import_pytensor_base():
 
 
 def test_pytensor_function():
+    import numba
     import pytensor
     import pytensor.tensor as pt
+    from pytensor.link.numba import NumbaLinker
+
+    assert numba.__version__
+    require_global_nrt()
 
     x = pt.vector("x")
     y = x * 2
     fn = pytensor.function([x], y)
     result = fn([1.0, 2.0, 3.0])
     assert list(result) == [2.0, 4.0, 6.0]
+    assert isinstance(fn.maker.linker, NumbaLinker)
 
 
 def test_pytensor_numba_elementwise_and_reduction():
