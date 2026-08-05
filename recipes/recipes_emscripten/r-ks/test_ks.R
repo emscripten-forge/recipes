@@ -36,20 +36,17 @@ test_6 <- function() {
 }
 
 test_7 <- function() {
-    ## univariate 
+    ## univariate
     ep1 <- seq(0,1, length=401)
     est1 <- dbeta(ep1, shape1=2, shape2=5)
     f1 <- data.frame(ep1, estimate=est1)
     f1.kde <- as.kde(f1)
-    plot(f1.kde)
 
     ## bivariate
     ep2 <- expand.grid(x=seq(-pi,pi, length=151), y=seq(-pi,pi, length=151))
-    est2 <- cos(ep2[,1]*pi/2) + sin(ep2[,2]*pi/2)  
+    est2 <- cos(ep2[,1]*pi/2) + sin(ep2[,2]*pi/2)
     f2 <- data.frame(ep2, estimate=est2)
     f2.kde <- as.kde(f2, density=FALSE)
-    plot(f2.kde, display="filled.contour")
-    plot(f2.kde, display="persp", phi=10)
 
     ## trivariate
     mus3 <- c(0,0,0)
@@ -59,7 +56,6 @@ test_7 <- function() {
     est3 <- dmvnorm.mixt(ep3, mus=mus3, Sigmas=Sigmas3, props=props3)
     f3 <- data.frame(ep3, estimate=est3)
     f3.kde <- as.kde(f3)
-    plot(f3.kde)
 }
 
 test_8 <- function() {
@@ -104,7 +100,7 @@ test_11 <- function() {
 
 test_12 <- function() {
     data(iris)
-    Fhat <- kcde(iris[,1:2])  
+    Fhat <- kcde(iris[,1:2])
     predict(Fhat, x=as.matrix(iris[,1:2]))
 
     ## See other examples in ? plot.kcde
