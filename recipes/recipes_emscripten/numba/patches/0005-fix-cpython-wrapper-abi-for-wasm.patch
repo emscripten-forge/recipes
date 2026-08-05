@@ -1,0 +1,119 @@
+diff --git a/numba/core/pythonapi.py b/numba/core/pythonapi.py
+index a027a79..843c6d6 100644
+--- a/numba/core/pythonapi.py
++++ b/numba/core/pythonapi.py
+@@ -6,6 +6,7 @@ import sys
+ 
+ from llvmlite import ir
+ from llvmlite.ir import Constant
++import llvmlite.binding as ll
+ 
+ import ctypes
+ from numba import _helperlib
+@@ -209,9 +210,13 @@ class PythonAPI(object):
+             if return_pyobject:
+                 fnty = self.builder.function.type.pointee
+                 assert fnty.return_type == self.pyobj
+-                self.err_set_string(
+-                    "PyExc_RuntimeError", f"missing Environment: {debug_msg}",
+-                )
++                if sys.platform == "emscripten":
++                    self._err_bad_argument()
++                else:
++                    self.err_set_string(
++                        "PyExc_RuntimeError",
++                        f"missing Environment: {debug_msg}",
++                    )
+                 self.builder.ret(self.get_null_object())
+             else:
+                 self.context.call_conv.return_user_exc(
+@@ -260,6 +265,8 @@ class PythonAPI(object):
+         return self.builder.call(fn, [args, fmt] + list(objs))
+ 
+     def unpack_tuple(self, args, name, n_min, n_max, *objs):
++        if sys.platform == "emscripten":
++            return self._unpack_tuple_wasm(args, n_min, n_max, objs)
+         charptr = ir.PointerType(ir.IntType(8))
+         argtypes = [self.pyobj, charptr, self.py_ssize_t, self.py_ssize_t]
+         fnty = ir.FunctionType(ir.IntType(32), argtypes, var_arg=True)
+@@ -270,6 +277,32 @@ class PythonAPI(object):
+             name = self.context.insert_const_string(self.builder.module, name)
+         return self.builder.call(fn, [args, name, n_min, n_max] + list(objs))
+ 
++    def _unpack_tuple_wasm(self, args, n_min, n_max, objs):
++        """Non-variadic PyArg_UnpackTuple equivalent for WASM."""
++        i32 = ir.IntType(32)
++        result_ptr = self.builder.alloca(i32, name="unpack_result")
++        self.builder.store(ir.Constant(i32, 0), result_ptr)
++
++        size = self.tuple_size(args)
++        too_few = self.builder.icmp_signed(
++            "<", size, ir.Constant(self.py_ssize_t, int(n_min))
++        )
++        too_many = self.builder.icmp_signed(
++            ">", size, ir.Constant(self.py_ssize_t, int(n_max))
++        )
++        bad_count = self.builder.or_(too_few, too_many)
++
++        with self.builder.if_else(bad_count) as (then, otherwise):
++            with then:
++                self._err_bad_argument()
++            with otherwise:
++                for index, obj_ptr in enumerate(objs):
++                    item = self.tuple_getitem(args, index)
++                    self.builder.store(item, obj_ptr)
++                self.builder.store(ir.Constant(i32, 1), result_ptr)
++
++        return self.builder.load(result_ptr, name="unpack_ok")
++
+     #
+     # Exception and errors
+     #
+@@ -284,6 +317,12 @@ class PythonAPI(object):
+         fn = self._get_function(fnty, name="PyErr_Clear")
+         return self.builder.call(fn, ())
+ 
++    def _err_bad_argument(self):
++        """Set TypeError without referencing an external PyExc_* data global."""
++        fnty = ir.FunctionType(ir.IntType(32), ())
++        fn = self._get_function(fnty, name="PyErr_BadArgument")
++        self.builder.call(fn, ())
++
+     def err_set_string(self, exctype, msg):
+         fnty = ir.FunctionType(ir.VoidType(), [self.pyobj, self.cstring])
+         fn = self._get_function(fnty, name="PyErr_SetString")
+@@ -307,7 +346,14 @@ class PythonAPI(object):
+         Raise an arbitrary exception (type or value or (type, args)
+         or None - if reraising).  A reference to the argument is consumed.
+         """
+-        fnty = ir.FunctionType(ir.VoidType(), [self.pyobj])
++        # The C helper returns an int status. Native ABIs tolerated declaring
++        # it as void because the result is ignored, but WebAssembly validates
++        # function types exactly when a SIDE_MODULE is instantiated.
++        return_type = (
++            ir.IntType(32) if sys.platform == "emscripten"
++            else ir.VoidType()
++        )
++        fnty = ir.FunctionType(return_type, [self.pyobj])
+         fn = self._get_function(fnty, name="numba_do_raise")
+         if exc is None:
+             exc = self.make_none()
+@@ -377,6 +423,17 @@ class PythonAPI(object):
+         (e.g. "PyExc_ValueError").  The underlying variable must be
+         a `PyObject *`, and the value of that pointer is returned.
+         """
++        if sys.platform == "emscripten":
++            # _load_global_helpers() registers Python objects as
++            # name -> id(object). MCJIT can map an external global directly
++            # to that address. Emscripten's loader would instead bind the
++            # real CPython data variable, adding one unwanted indirection.
++            # Embed the registered linear-memory address in the IR.
++            address = ll.address_of_symbol(name)
++            if address is not None:
++                intp = self.context.get_value_type(types.uintp)
++                return ir.Constant(intp, address).inttoptr(self.pyobj)
++
+         # A LLVM global variable is implicitly a pointer to the declared
+         # type, so fix up by using pyobj.pointee.
+         return self.context.get_c_value(self.builder, self.pyobj.pointee, name,
+

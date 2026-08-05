@@ -1,0 +1,139 @@
+diff --git a/numba/core/compiler_machinery.py b/numba/core/compiler_machinery.py
+index 286d4d2..eb03b03 100644
+--- a/numba/core/compiler_machinery.py
++++ b/numba/core/compiler_machinery.py
+@@ -5,7 +5,7 @@ import inspect
+ 
+ 
+ from numba.core.compiler_lock import global_compiler_lock
+-from numba.core import errors, config, transforms, utils
++from numba.core import errors, config, transforms, utils, wasm_trace
+ from numba.core.tracing import event
+ from numba.core.postproc import PostProcessor
+ from numba.core.ir_utils import enforce_no_dels, legalize_single_scope
+@@ -267,6 +267,17 @@ class PassManager(object):
+     @global_compiler_lock  # this need a lock, likely calls LLVM
+     def _runPass(self, index, pss, internal_state):
+         mutated = False
++        pass_name = pss.name()
++        trace_starts = {
++            "translate_bytecode":
++                "Python bytecode -> untyped Numba IR",
++            "nopython_type_inference":
++                "infer a concrete type for every value in Numba IR",
++            "native_lowering":
++                "typed Numba IR -> LLVM IR and a CPython-callable wrapper",
++        }
++        if pass_name in trace_starts:
++            wasm_trace.log("pipeline", trace_starts[pass_name])
+ 
+         def check(func, compiler_state):
+             mangled = func(compiler_state)
+@@ -312,6 +323,33 @@ class PassManager(object):
+             with SimpleTimer() as finalize_time:
+                 mutated |= check(pss.run_finalizer, internal_state)
+ 
++        if pass_name == "translate_bytecode":
++            wasm_trace.log(
++                "numba-ir",
++                f"created {wasm_trace.ir_summary(internal_state.func_ir)}",
++            )
++            if wasm_trace.level() >= 2 and internal_state.func_ir is not None:
++                print("[Numba/WASM:numba-ir] untyped IR follows:", flush=True)
++                internal_state.func_ir.dump()
++        elif pass_name == "nopython_type_inference":
++            typemap = internal_state.typemap or {}
++            wasm_trace.log(
++                "typed-ir",
++                f"typed {len(typemap)} value(s); return type is "
++                f"{internal_state.return_type}",
++            )
++            if wasm_trace.level() >= 2:
++                sample = sorted(
++                    f"{name}: {value}" for name, value in typemap.items()
++                )
++                print(
++                    "[Numba/WASM:typed-ir] value types: "
++                    + ", ".join(sample),
++                    flush=True,
++                )
++        elif pass_name == "native_lowering":
++            wasm_trace.log("lowering", "LLVM/WASM callable is ready")
++
+         # Check that if the pass is an instance of a FunctionPass that it hasn't
+         # emitted ir.Dels.
+         if isinstance(pss, FunctionPass):
+diff --git a/numba/core/dispatcher.py b/numba/core/dispatcher.py
+index 3825173..9f18abf 100644
+--- a/numba/core/dispatcher.py
++++ b/numba/core/dispatcher.py
+@@ -12,7 +12,8 @@ from abc import abstractmethod
+ 
+ from numba import _dispatcher
+ from numba.core import (
+-    utils, types, errors, typing, serialize, config, compiler, sigutils
++    utils, types, errors, typing, serialize, config, compiler, sigutils,
++    wasm_trace,
+ )
+ from numba.core.compiler_lock import global_compiler_lock
+ from numba.core.typeconv.rules import default_type_manager
+@@ -903,6 +904,11 @@ class Dispatcher(serialize.ReduceMixin, _MemoMixin, _DispatcherBase):
+                 )
+                 with ev.trigger_event("numba:compile", data=ev_details):
+                     try:
++                        wasm_trace.log(
++                            "specialize",
++                            f"{self.py_func.__qualname__} for arguments "
++                            f"{tuple(map(str, args))}",
++                        )
+                         cres = self._compiler.compile(args, return_type)
+                     except errors.ForceLiteralArg as e:
+                         def folded(args, kws):
+diff --git a/numba/core/wasm_trace.py b/numba/core/wasm_trace.py
+new file mode 100644
+index 0000000..b39fded
+--- /dev/null
++++ b/numba/core/wasm_trace.py
+@@ -0,0 +1,28 @@
++"""Small, opt-in educational trace for Numba's browser compilation path."""
++
++import os
++import sys
++
++
++def level():
++    if sys.platform != "emscripten":
++        return 0
++    value = os.environ.get("NUMBA_WASM_TRACE", "0").strip().lower()
++    if value in ("", "0", "false", "off", "no"):
++        return 0
++    if value in ("2", "verbose", "full"):
++        return 2
++    return 1
++
++
++def log(stage, message):
++    if level():
++        print(f"[Numba/WASM:{stage}] {message}", flush=True)
++
++
++def ir_summary(func_ir):
++    if func_ir is None:
++        return "no Numba IR"
++    blocks = len(func_ir.blocks)
++    statements = sum(len(block.body) for block in func_ir.blocks.values())
++    return f"{blocks} block(s), {statements} statement(s)"
+diff --git a/numba/cpython/hashing.py b/numba/cpython/hashing.py
+index 836d161..edd5877 100644
+--- a/numba/cpython/hashing.py
++++ b/numba/cpython/hashing.py
+@@ -465,7 +465,7 @@ if _Py_hashfunc_name in ('siphash13', 'siphash24', 'fnv'):
+     # Check for use of the FNV hashing alg, warn users that it's not implemented
+     # and functionality relying of properties derived from hashing will be fine
+     # but hash values themselves are likely to be different.
+-    if _Py_hashfunc_name == 'fnv':
++    if _Py_hashfunc_name == 'fnv' and sys.platform != 'emscripten':
+         msg = ("FNV hashing is not implemented in Numba. See PEP 456 "
+                "https://www.python.org/dev/peps/pep-0456/ "
+                "for rationale over not using FNV. Numba will continue to work, "
+
