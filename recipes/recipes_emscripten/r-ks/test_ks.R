@@ -13,6 +13,7 @@ test_2 <- function() {
 
 test_3 <- function() {
     data(unicef)
+    set.seed(8192)
     Hnm(unicef)
 }
 
