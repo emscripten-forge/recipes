@@ -360,7 +360,9 @@ test_32 <- function() {
     plot(loct, lwd=1)
 
     ## significant curvature regions
-    air20.fs <- kfs(air20)
+    set.seed(8192)
+    air20.s <- air20[sample.int(nrow(air20), 200), ]
+    air20.fs <- kfs(air20.s, binned=TRUE, bgridsize=c(51, 51))
     plot(air20.fs, add=TRUE)
 }
 
