@@ -27,7 +27,7 @@ BUILD_ARCH="${BUILD:-$(${CC_FOR_BUILD:-gcc} -dumpmachine 2>/dev/null \
   || echo x86_64-pc-linux-gnu)}"
 
 # https://github.com/emscripten-forge/recipes/issues/5966#issuecomment-5189295176
-sed -i.bak '/INSTALL_TARGET=.*flatinstall/d' configure
+sed -i.bak '/INSTALL_TARGET=/s/flatinstall/install/' src/configure
 
 emconfigure ./configure \
   --host=wasm32-unknown-emscripten \
