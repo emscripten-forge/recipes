@@ -149,12 +149,12 @@ test_16 <- function() {
 }
 
 test_17 <- function() {
-    ## unit interval data 
-    set.seed(8192)             
+    ## unit interval data
+    set.seed(8192)
     fhat <- kde(runif(10000,0,1), unit.interval=TRUE)
     plot(fhat, ylim=c(0,1.2))
 
-    ## positive data 
+    ## positive data
     data(worldbank)
     wb <- as.matrix(na.omit(worldbank[,2:3]))
     wb[,2] <- wb[,2]/1000
@@ -221,15 +221,6 @@ test_21 <- function() {
     plot(fhat, col=1, xlim=c(0,100), ylim=c(0,100))
     plot(fhat.b, add=TRUE, col=4)
     rect(0,0,100,100, lty=2)
-
-    library(oz)
-    data(grevillea)
-    wa.coast <- ozRegion(section=1)
-    wa.polygon <- cbind(wa.coast$lines[[1]]$x, wa.coast$lines[[1]]$y)
-    fhat1 <- kdde(x=grevillea, deriv.order=1)
-    fhat1 <- kdde.truncate(fhat1, wa.polygon)
-    oz(section=1, xlim=c(113,122), ylim=c(-36,-29))
-    plot(fhat1, add=TRUE, display="filled.contour")
 }
 
 test_22 <- function() {
@@ -279,7 +270,7 @@ test_26 <- function() {
     ## univariate normal mixture
     x <- rnorm.mixt(1000, mus=c(-1,1), sigmas=c(0.5, 0.5), props=c(1/2, 1/2))
 
-    ## bivariate mixtures 
+    ## bivariate mixtures
     mus <- rbind(c(-1,0), c(1, 2/sqrt(3)), c(1,-2/sqrt(3)))
     Sigmas <- 1/25*rbind(invvech(c(9, 63/10, 49/4)), invvech(c(9,0,49/4)), invvech(c(9,0,49/4)))
     props <- c(3,3,1)/7
@@ -344,17 +335,16 @@ test_30 <- function() {
     fhat1 <- kdde(x=tempb[,c("tmin", "tmax")], deriv.order=1)
     ## gradient [df/dx, df/dy]
     plot(fhat1, display="quiver")
-  
 
     fhat2 <- kdde(x=tempb[,c("tmin", "tmax")], deriv.order=2)
     plot(fhat2, which.deriv.ind=2, display="persp", phi=10)
     ## d^2 f/(dx dy): blue=-ve, red=+ve
     plot(fhat2, which.deriv.ind=2, display="filled.contour", lwd=1)
-    ## summary curvature 
+    ## summary curvature
     s2 <- kcurv(fhat2)
     plot(s2, display="filled.contour", lwd=1)
 
-    ## trivariate example  
+    ## trivariate example
     data(iris)
     fhat1 <- kdde(iris[,2:4], deriv.order=1)
     plot(fhat1)
