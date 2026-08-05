@@ -1,0 +1,69 @@
+schema_version: 1
+
+context:
+  version: "7.2.2"
+  sha256: 0746f5f8d406af344fd547f1c8daa5f5c33dbc293bb8d6a16d80b4bb88f59372
+
+package:
+  name: psutil
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/psutil/psutil-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  script:
+    # macOS renamed this variable, but it is `NULL` in either case.
+    # Workaround the missing definition by setting it to `0`.
+    #
+    # xref: https://github.com/giampaolo/psutil/issues/2354
+    - if: osx
+      then: export CFLAGS="${CFLAGS} -DkIOMainPortDefault=0"
+    - ${{ PYTHON }} -m pip install --ignore-installed --no-deps .
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools >=43
+    - wheel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - psutil
+        - if: linux
+          then: psutil._psutil_linux
+        - if: osx
+          then: psutil._psutil_osx
+        - if: win
+          then: psutil._psutil_windows
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A cross-platform process and system utilities module for Python
+  description: |
+    psutil (process and system utilities) is a cross-platform library for
+    retrieving information on running processes and system utilization (CPU,
+    memory, disks, network) in Python. It is useful mainly for system
+    monitoring, profiling and limiting process resources and management of
+    running processes.
+  homepage: https://github.com/giampaolo/psutil
+  repository: https://github.com/giampaolo/psutil
+  documentation: https://psutil.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bocklund
