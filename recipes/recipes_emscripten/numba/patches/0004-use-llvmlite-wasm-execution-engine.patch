@@ -151,22 +151,33 @@ index 39f32fe..76fcf39 100644
  
  
  class Codegen(metaclass=ABCMeta):
-@@ -1184,6 +1248,20 @@ class CPUCodegen(Codegen):
+@@ -1184,6 +1248,31 @@ class CPUCodegen(Codegen):
      def _init(self, llvm_module):
          assert list(llvm_module.global_variables) == [], "Module isn't empty"
  
 +        if sys.platform == "emscripten":
++            wasm_features = config.CPU_FEATURES
++            if wasm_features is None:
++                wasm_features = "+simd128"
 +            wasm_tm = ll.Target.from_triple(
 +                "wasm32-unknown-emscripten"
-+            ).create_target_machine(reloc="pic")
++            ).create_target_machine(
++                features=wasm_features,
++                opt=config.OPT,
++                reloc="pic",
++            )
 +            wasm_engine = ll.create_wasm_engine(target_machine=wasm_tm)
 +            self._tm = wasm_tm
 +            self._engine = WasmJitEngine(wasm_engine)
 +            self._target_data = wasm_tm.target_data
 +            self._data_layout = str(self._target_data)
-+            self._tm_features = ""
-+            self._loopvect = False
-+            self._opt_level = 0
++            self._tm_features = wasm_features
++            if config.OPT.is_opt_max:
++                self._loopvect = True
++                self._opt_level = 3
++            else:
++                self._loopvect = False
++                self._opt_level = 0
 +            return
 +
          target = ll.Target.from_triple(ll.get_process_triple())
@@ -189,4 +200,3 @@ index 39f32fe..76fcf39 100644
          gvaddr = self._engine.get_global_value_address(env_name)
          envptr = (ctypes.c_void_p * 1).from_address(gvaddr)
          envptr[0] = ctypes.c_void_p(id(env))
-
