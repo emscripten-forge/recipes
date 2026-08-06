@@ -144,14 +144,14 @@ index 39f32fe..76fcf39 100644
 +        return self._ee.get_global_value_address(name)
 +
 +    def set_object_cache(self, *args, **kwargs):
-+        pass
++        return self._ee.set_object_cache(*args, **kwargs)
 +
 +    def enable_jit_events(self):
 +        return False
  
  
  class Codegen(metaclass=ABCMeta):
-@@ -1184,6 +1248,31 @@ class CPUCodegen(Codegen):
+@@ -1184,6 +1248,35 @@ class CPUCodegen(Codegen):
      def _init(self, llvm_module):
          assert list(llvm_module.global_variables) == [], "Module isn't empty"
  
@@ -178,12 +178,16 @@ index 39f32fe..76fcf39 100644
 +            else:
 +                self._loopvect = False
 +                self._opt_level = 0
++            self._engine.set_object_cache(
++                self._library_class._object_compiled_hook,
++                self._library_class._object_getbuffer_hook,
++            )
 +            return
 +
          target = ll.Target.from_triple(ll.get_process_triple())
          tm_options = dict(opt=config.OPT)
          self._tm_features = self._customize_tm_features()
-@@ -1412,6 +1490,16 @@ class JITCPUCodegen(CPUCodegen):
+@@ -1412,6 +1494,16 @@ class JITCPUCodegen(CPUCodegen):
  
          Update the GlobalVariable named *env_name* to the address of *env*.
          """

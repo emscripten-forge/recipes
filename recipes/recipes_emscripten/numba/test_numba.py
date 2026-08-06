@@ -52,6 +52,44 @@ def test_array_jit_and_specialization_cache():
     assert len(vector_add.signatures) == 1
 
 
+def test_persistent_wasm_object_cache(tmp_path, monkeypatch):
+    import numba
+    from numba import njit
+
+    require_global_nrt()
+    monkeypatch.setattr(numba.config, "CACHE_DIR", str(tmp_path))
+
+    def cached_vector_add_impl(a, b):
+        out = np.empty_like(a)
+        for i in range(a.size):
+            out[i] = a[i] + b[i]
+        return out
+
+    a = np.array([1.0, 2.0, 3.0])
+    b = np.array([4.0, 5.0, 6.0])
+
+    first = njit(cache=True)(cached_vector_add_impl)
+    np.testing.assert_array_equal(first(a, b), [5.0, 7.0, 9.0])
+
+    # WASM loads Numba helpers as independent side modules.  Every cached
+    # dependency must therefore carry reusable WASM object bytes, not only
+    # LLVM bitcode that would need to be emitted again after a reload.
+    compile_result = next(iter(first.overloads.values()))
+    library_state = compile_result.library.serialize_using_object_code()
+    assert len(library_state) == 4
+    dependencies = library_state[3]
+    assert dependencies
+    assert all(kind == "object" for _, kind, _ in dependencies)
+    assert all(data[0].startswith(b"\x00asm") for _, _, data in dependencies)
+
+    assert list(tmp_path.rglob("*.nbi"))
+    assert list(tmp_path.rglob("*.nbc"))
+
+    second = njit(cache=True)(cached_vector_add_impl)
+    np.testing.assert_array_equal(second(a, b), [5.0, 7.0, 9.0])
+    assert sum(second.stats.cache_hits.values()) == 1
+
+
 def test_wasm_simd_autovectorization():
     from numba import njit
 
@@ -70,3 +108,21 @@ def test_wasm_simd_autovectorization():
     assembly = add_one_inplace.inspect_asm(add_one_inplace.signatures[0])
     assert "f32x4.add" in assembly
     assert '"simd128"' in assembly
+
+
+def test_parallel_guvectorize_falls_back_to_cpu():
+    from numba import guvectorize
+
+    require_global_nrt()
+
+    @guvectorize(
+        ["void(float64[:], float64[:])"],
+        "(n)->(n)",
+        target="parallel",
+        cache=True,
+    )
+    def add_one(values, result):
+        for i in range(values.size):
+            result[i] = values[i] + 1.0
+
+    np.testing.assert_array_equal(add_one(np.arange(4.0)), np.arange(1.0, 5.0))
