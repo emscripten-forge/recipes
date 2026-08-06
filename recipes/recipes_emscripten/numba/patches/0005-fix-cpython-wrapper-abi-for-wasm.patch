@@ -82,6 +82,22 @@ index a027a79..843c6d6 100644
      def err_set_string(self, exctype, msg):
          fnty = ir.FunctionType(ir.VoidType(), [self.pyobj, self.cstring])
          fn = self._get_function(fnty, name="PyErr_SetString")
+@@ -296,8 +335,15 @@ class PythonAPI(object):
+     def err_format(self, exctype, msg, *format_args):
++        if sys.platform == "emscripten":
++            # WebAssembly function imports have exact signatures, so a
++            # variadic PyErr_Format declaration cannot bind to CPython's
++            # exported function. Preserve the exception type and static
++            # format string through the fixed-signature API instead.
++            return self.err_set_string(exctype, msg)
++
+         fnty = ir.FunctionType(ir.VoidType(), [self.pyobj, self.cstring], var_arg=True)
+         fn = self._get_function(fnty, name="PyErr_Format")
+         if isinstance(exctype, str):
+             exctype = self.get_c_object(exctype)
+         if isinstance(msg, str):
+             msg = self.context.insert_const_string(self.module, msg)
+         return self.builder.call(fn, (exctype, msg) + tuple(format_args))
 @@ -307,7 +346,14 @@ class PythonAPI(object):
          Raise an arbitrary exception (type or value or (type, args)
          or None - if reraising).  A reference to the argument is consumed.
@@ -116,4 +132,3 @@ index a027a79..843c6d6 100644
          # A LLVM global variable is implicitly a pointer to the declared
          # type, so fix up by using pyobj.pointee.
          return self.context.get_c_value(self.builder, self.pyobj.pointee, name,
-
