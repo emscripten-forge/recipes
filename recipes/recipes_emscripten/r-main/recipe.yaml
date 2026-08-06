@@ -1,0 +1,60 @@
+context:
+  name: main
+  version: 0.1.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+# source:
+#   url:
+#   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+#   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+#   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+#   sha256: 51f341aef9499411b4c446205c87d56dcd9e03e5e9ca2a54b33f70a67bed2f64
+
+source:
+  git: https://github.com/IsabelParedes/r-main.git
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+  - libiconv
+  - zlib
+  - bzip2
+  - liblzma
+  - pcre2
+  - libpng
+  - libtiff
+  - cairo
+  - fontconfig
+  - pixman
+  - expat
+  - freetype
+  # untarjs
+  - zstd
+  - libarchive
+
+tests:
+- package_contents:
+    files:
+    - bin/Rmain.js
+    - bin/Rmain.wasm
+
+about:
+  repository: https://github.com/IsabelParedes/r-main
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: ${{ PREFIX }}/lib/R/share/licenses/BSD_3_clause
+  summary: Embedded R MAIN_MODULE Front-End for WebAssembly
+
+extra:
+  recipe-maintainers: IsabelParedes
+  channel: emscripten-forge-4x-experimental
