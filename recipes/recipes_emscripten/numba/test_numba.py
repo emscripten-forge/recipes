@@ -52,6 +52,26 @@ def test_array_jit_and_specialization_cache():
     assert len(vector_add.signatures) == 1
 
 
+def test_array_slice_assignment_on_wasm32():
+    from numba import njit
+
+    require_global_nrt()
+
+    @njit
+    def initialize_first_row(result, initial):
+        result[0, :] = initial
+        return result
+
+    initial = np.array([2, 1, 0, 2], dtype=np.int32)
+    result = initialize_first_row(np.zeros((3, 4), dtype=np.int32), initial)
+
+    np.testing.assert_array_equal(result[0], initial)
+    np.testing.assert_array_equal(result[1:], 0)
+
+    with pytest.raises(ValueError, match="cannot assign slice of shape"):
+        initialize_first_row(result, initial[:-1])
+
+
 def test_persistent_wasm_object_cache(tmp_path, monkeypatch):
     import numba
     from numba import njit
