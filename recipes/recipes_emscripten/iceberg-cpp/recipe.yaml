@@ -1,6 +1,6 @@
 context:
   name: iceberg-cpp
-  version: 0.2.0
+  version: 0.3.0
 
 package:
   name: ${{ name }}
@@ -8,9 +8,9 @@ package:
 
 source:
   url: https://github.com/apache/iceberg-cpp/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 16df1b30710a7c70d17e701d3d5ae9ee567c6647bb8d23df369431b2939f590c
+  sha256: fb89fee913e722a094e2288be6b71916743b6b2446dab5e1a37943ae31403046
   patches:
-    - 0001-Prefer-installed-nanoarrow.patch
+  - 0001-Prefer-installed-nanoarrow.patch
 
 build:
   number: 0
@@ -18,45 +18,45 @@ build:
 
 requirements:
   build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - nanoarrow = 0.8.0
+  - nlohmann_json
+  - zlib
+  run:
+  - nanoarrow = 0.8.0
+  - nlohmann_json
+  - zlib
+
+tests:
+- package_contents:
+    files:
+    - include/iceberg/schema.h
+    - include/iceberg/schema_field.h
+    - include/iceberg/type.h
+    - lib/libiceberg.a
+    - lib/cmake/iceberg/iceberg-config.cmake
+    - lib/cmake/iceberg/iceberg-targets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-  host:
-    - nanoarrow = 0.8.0
-    - nlohmann_json
-    - zlib
-  run:
-    - nanoarrow = 0.8.0
-    - nlohmann_json
-    - zlib
-
-tests:
-  - package_contents:
-      files:
-        - include/iceberg/schema.h
-        - include/iceberg/schema_field.h
-        - include/iceberg/type.h
-        - lib/libiceberg.a
-        - lib/cmake/iceberg/iceberg-config.cmake
-        - lib/cmake/iceberg/iceberg-targets.cmake
-  - script:
-      - build_tests.sh
-    requirements:
-      build:
-        - ${{ compiler('cxx') }}
-        - cmake
-        - ninja
-    files:
-      recipe:
-        - build_tests.sh
-        - tests/
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
 
 about:
   homepage: https://iceberg.apache.org/
   license: Apache-2.0
   license_file:
-    - LICENSE
-    - NOTICE
+  - LICENSE
+  - NOTICE
   summary: C++ implementation of Apache Iceberg
   description: |
     Apache Iceberg C++ provides core Iceberg table metadata, schema, and
@@ -66,4 +66,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - Copilot
+  - Copilot
