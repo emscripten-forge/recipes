@@ -6,7 +6,7 @@ source:
   sha256: f7f2fd44441090577b851d8d5341d0bf7d66c7d09dcb56ecfbf2bc029470b95e
 
 build:
-  number: 0
+  number: 1
 
 outputs:
 - package:
@@ -14,7 +14,9 @@ outputs:
     version: ${{ version }}
 
   build:
-    script: ${{ PYTHON }} -m pip install .
+    script: |
+      patch -p2 < ${RECIPE_DIR}/patches/0001-src-sage-features-Catch-OSError-in-addition-to-Calle.patch
+      ${{ PYTHON }} -m pip install .
     noarch: python
 
   requirements:
@@ -47,19 +49,19 @@ outputs:
       run:
       - pytester-run
 
-- package:
-    name: passagemath-abi
-    version: ${{ version }}
+## - package:
+##     name: passagemath-abi
+##     version: ${{ version }}
 
-  build:
-    noarch: generic
-    script: echo "passagemath-abi is built"
-  requirements:
-    run_exports:
-      strong:
-      - ${{ pin_subpackage('passagemath-abi', exact=True) }}
-  tests:
-  - script: echo "passagemath-abi is an empty package."
+##   build:
+##     noarch: generic
+##     script: echo "passagemath-abi is built"
+##   requirements:
+##     run_exports:
+##       strong:
+##       - ${{ pin_subpackage('passagemath-abi') }}
+##   tests:
+##   - script: echo "passagemath-abi is an empty package."
 
 about:
   summary: 'passagemath: System and software environment'

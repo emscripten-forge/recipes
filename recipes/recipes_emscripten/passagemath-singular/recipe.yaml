@@ -1,0 +1,94 @@
+context:
+  version: 10.8.7
+
+package:
+  name: passagemath-singular
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-singular/passagemath_singular-${{ version }}.tar.gz
+  sha256: a48c402cab1f9d8bad322f30d1ef9fd2e68f02391892e3adce798d0116eeb2cf
+  patches:
+    - patches/2495.patch
+
+build:
+  script: |
+    export LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
+    ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - givaro
+  - gsl
+  - libflint
+  - ntl
+  - singular
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-environment
+  - passagemath-flint
+  - passagemath-linbox
+  - passagemath-modules
+  - passagemath-ntl
+  - passagemath-pari
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - numpy
+  - passagemath-categories
+  - passagemath-flint
+  - passagemath-modules
+  - passagemath-pari
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_singular.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Computer algebra, algebraic geometry, singularity theory with Singular'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides interfaces to Singular, the computer algebra system for polynomial
+    computations, with special emphasis on commutative and non-commutative algebra,
+    algebraic geometry, and singularity theory.
+    It also ships various modules of the Sage library that depend on Singular.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_singular.py
+  recipe-maintainers:
+  - mkoeppe
