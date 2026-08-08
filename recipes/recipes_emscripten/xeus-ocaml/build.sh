@@ -6,10 +6,13 @@ set -ex
 # Use a subshell to isolate the environment changes
 # =========================================================================
 (
-  unset CC CXX CFLAGS CXXFLAGS LDFLAGS
+  # --- Disable OCaml-related wasm flags: OCaml needs native builders ---
+  unset CC CXX CFLAGS CXXFLAGS LDFLAGS OPAMSWITCH
+  # --- Private opam root built into the source tree (no cross-build caching) ---
+  export OPAMROOT=$SRC_DIR/opam_root
 
   cd ocaml
-  opam init --disable-sandboxing --no --compiler=5.4.0
+  opam init --disable-sandboxing --no --compiler=5.5.0
   opam install dune
   opam exec -- dune pkg lock
   opam exec -- dune build --profile release
@@ -25,6 +28,11 @@ cp -r ocaml/_build/default/src/* ocaml-build/
 # =========================================================================
 mkdir -p build
 cd build
+
+# Clear the host (native) LDFLAGS: CMake reads LDFLAGS into the linker flags,
+# and the native `-Wl,--no-pie/--sort-common/--as-needed` flags are rejected
+# by wasm-ld.
+unset LDFLAGS
 
 cmake -S ${SRC_DIR} -GNinja ${CMAKE_ARGS}    \
     -DCMAKE_BUILD_TYPE=Release               \
