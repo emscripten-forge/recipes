@@ -9,7 +9,7 @@ set -ex
   unset CC CXX CFLAGS CXXFLAGS LDFLAGS OPAMSWITCH
   export OPAMROOT=$SRC_DIR/opam_root
   cd ocaml
-  opam init --disable-sandboxing --no --compiler=5.4.0
+  opam init --disable-sandboxing --no --compiler=5.5.0
   opam install dune
   opam exec -- dune pkg lock
   opam exec -- dune build --profile release
