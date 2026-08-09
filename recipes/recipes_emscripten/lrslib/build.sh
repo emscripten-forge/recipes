@@ -1,22 +1,39 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-autoreconf -vfi
+export CFLAGS="${CFLAGS:-} -Wno-implicit-function-declaration -fPIC"
 
-export CPPFLAGS="-I${PREFIX}/include"
-export LDFLAGS="-L${PREFIX}/lib"
-export CXXFLAGS="-std=c++11"
-export CFLAGS="-Wno-implicit-function-declaration"
+export CC="emcc"
+export CXX="em++"
+export AR="emar"
+export RANLIB="emranlib"
 
-emconfigure ./configure \
-    --build=i686-pc-linux-gnu \
-    --host=wasm32-unknown-emscripten \
-    --disable-shared \
-    --enable-static \
-    --disable-mplrs \
-    --prefix="${PREFIX}"
+GMP_FLAGS="-DGMP -I${PREFIX}/include -L${PREFIX}/lib -lgmp"
 
-emmake make -j8
-emmake make install
+emmake make liblrs.a lrsgmp \
+    CC="${CC}" \
+    CXX="${CXX}" \
+    AR="${AR}" \
+    RANLIB="${RANLIB}" \
+    GMP="${GMP_FLAGS}" \
+    INCLUDEDIR="${PREFIX}/include" \
+    LIBDIR="${PREFIX}/lib"
 
-cp *.wasm "${PREFIX}/bin/"
+mkdir -p "${PREFIX}/include"
+mkdir -p "${PREFIX}/lib"
+mkdir -p "${PREFIX}/bin"
+
+cp *.h "${PREFIX}/include/"
+
+cp liblrs.a "${PREFIX}/lib/"
+if [ -f liblrsgmp.a ]; then
+    cp liblrsgmp.a "${PREFIX}/lib/"
+fi
+
+shopt -s nullglob
+for f in lrsgmp lrs *.wasm *.js; do
+    if [ -f "$f" ]; then
+        cp "$f" "${PREFIX}/bin/"
+    fi
+done
+shopt -u nullglob
