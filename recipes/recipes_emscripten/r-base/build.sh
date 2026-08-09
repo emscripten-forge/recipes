@@ -91,6 +91,13 @@ pushd _build_wasm
     export LINUX_BUILD_DIR=$(realpath ..)/_build_linux
     export WASM_BUILD_DIR=$(pwd)
 
+    # cairo's probe can't link-run under wasm; force it onto the FreeType path.
+    export r_cv_cairo_works=yes
+    export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+    export CAIRO_CFLAGS="-I$PREFIX/include/cairo -I$PREFIX/include"
+    export CAIRO_LIBS="-L$PREFIX/lib -lcairo -lfreetype -lfontconfig"
+    export CPPFLAGS="${CPPFLAGS:-} -I$PREFIX/include -I$PREFIX/include/cairo"
+
     # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
     # (see patch 0015). This statically links libpython and its transitive deps
     # into RPY only; the standard R executable is unaffected.
@@ -118,3 +125,11 @@ pushd _build_wasm
 
 )
 popd
+
+#-------------------------------------------------------------------------------
+# FONTS
+#-------------------------------------------------------------------------------
+install -Dm644 "$RECIPE_DIR/fonts.conf" "$PREFIX/lib/R/etc/fonts.conf"
+
+# ${R_HOME} must be in direct position: R's Renviron won't expand it in a default.
+echo 'FONTCONFIG_FILE=${R_HOME}/etc/fonts.conf' >> "$PREFIX/lib/R/etc/Renviron"

@@ -1,0 +1,54 @@
+context:
+  name: SLHD
+  version: 2.1-1
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 6b26c91ddc5b5d542667e62458d22498cffccb3dfcdd3a3fd2b3c20b5aa77178
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: LGPL-2.1-only
+  license_family: LGPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/LGPL-2
+  summary: Maximin-Distance (Sliced) Latin Hypercube Designs
+  description: |-
+    Generate the optimal Latin Hypercube Designs (LHDs) for computer experiments with quantitative factors and the optimal Sliced Latin Hypercube Designs (SLHDs) for computer experiments with both quantitative and qualitative factors. Details of the algorithm can be found in Ba, S., Brenneman, W. A. and Myers, W. R. (2015), "Optimal Sliced Latin Hypercube Designs," Technometrics. Important function in this package is "maximinSLHD".
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
