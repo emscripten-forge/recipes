@@ -39,8 +39,8 @@ export CFLAGS="${CFLAGS:-}"
 export CXXFLAGS="${CXXFLAGS:-}"
 export LDFLAGS="${LDFLAGS:-}"
 
-export CFLAGS="${CFLAGS//-fwasm-exceptions/} -mno-exception-handling"
-export CXXFLAGS="${CXXFLAGS//-fwasm-exceptions/} -mno-exception-handling"
+export CFLAGS="${CFLAGS//-fwasm-exceptions/}"
+export CXXFLAGS="${CXXFLAGS//-fwasm-exceptions/}"
 export LDFLAGS="${LDFLAGS//-fwasm-exceptions/}"
 
 AUX_BUILD=$PWD/extern/emscripten/build
