@@ -35,6 +35,10 @@ fi
     make -j8
 )
 
+export CFLAGS="${CFLAGS//-fwasm-exceptions/}"
+export CXXFLAGS="${CXXFLAGS//-fwasm-exceptions/}"
+export LDFLAGS="${LDFLAGS//-fwasm-exceptions/}"
+
 AUX_BUILD=$PWD/extern/emscripten/build
 AUX_PREFIX=$PWD/extern/emscripten/install
 
