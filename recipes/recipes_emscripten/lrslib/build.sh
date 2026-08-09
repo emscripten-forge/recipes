@@ -15,7 +15,8 @@ emmake make default \
     CXX="${CXX}" \
     GMP="${GMP_FLAGS}" \
     INCLUDEDIR="${PREFIX}/include" \
-    LIBDIR="${PREFIX}/lib"
+    LIBDIR="${PREFIX}/lib" \
+    PLRSFLAGS=""
 
 emar rcs liblrs.a \
     lrslong1.o \
@@ -31,7 +32,6 @@ mkdir -p "${PREFIX}/lib"
 mkdir -p "${PREFIX}/bin"
 
 cp lrslib.h lrsdriver.h lrsrestart.h "${PREFIX}/include/lrslib/"
-
 cp lrsarith-011/lrsgmp.h lrsarith-011/lrslong.h lrsarith-011/lrsmp.h "${PREFIX}/include/lrslib/" || true
 
 cp liblrs.a "${PREFIX}/lib/"
