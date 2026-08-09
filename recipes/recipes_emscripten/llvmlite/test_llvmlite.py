@@ -35,3 +35,59 @@ def test_wasm_execution_engine_importable():
     )
     assert WasmExecutionEngine is not None
     assert EmscriptenBackend is not None
+
+
+def test_wasm_execution_engine_object_cache_callbacks(monkeypatch):
+    import llvmlite.binding.wasmengine as wasmengine
+
+    class Module:
+        name = "cached_module"
+
+    class TargetMachine:
+        target_data = None
+
+        def __init__(self):
+            self.emissions = 0
+
+        def emit_object(self, module):
+            self.emissions += 1
+            return b"fresh-object"
+
+    class Backend:
+        def __init__(self):
+            self.loaded = []
+
+        def load_object(self, object_bytes, module_name):
+            self.loaded.append((object_bytes, module_name))
+
+    target_machine = TargetMachine()
+    backend = Backend()
+    monkeypatch.setattr(wasmengine, "_ON_EMSCRIPTEN", True)
+    monkeypatch.setattr(
+        wasmengine,
+        "_detect_backend",
+        lambda backend_name, wasm_ld_path: backend,
+    )
+    engine = wasmengine.WasmExecutionEngine(target_machine)
+    notifications = []
+    engine.set_object_cache(
+        lambda module, buf: notifications.append((module, buf)),
+        lambda module: b"cached-object",
+    )
+
+    module = Module()
+    engine.add_module(module)
+
+    assert target_machine.emissions == 0
+    assert backend.loaded == [(b"cached-object", module.name)]
+    assert notifications == []
+
+
+def test_graphviz_renders_in_process():
+    from llvmlite.binding.analysis import view_dot_graph
+
+    rendered = view_dot_graph("digraph G { A -> B; }")
+    svg = getattr(rendered, "data", rendered)
+    assert "<svg" in svg
+    assert "A" in svg
+    assert "B" in svg

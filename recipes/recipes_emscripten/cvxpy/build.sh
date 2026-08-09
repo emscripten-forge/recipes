@@ -15,5 +15,5 @@ export FLAGS="-DNDEBUG -fPIC -sWASM_BIGINT -s SIDE_MODULE=1 -fwasm-exceptions"
 export CXXFLAGS="${CXXFLAGS:-} ${FLAGS}"
 export CFLAGS="${CFLAGS:-} ${FLAGS}"
 export LDFLAGS="${LDFLAGS:-} -s MODULARIZE=1 -s LINKABLE=1 -s EXPORT_ALL=1 -s WASM=1 -s SIDE_MODULE=1 -sWASM_BIGINT -fwasm-exceptions -L$PREFIX/lib"
-${PYTHON} -m pip install . --no-deps -vvv
+${PYTHON} -m pip install . --no-deps --no-build-isolation ${PIP_ARGS} -vvv
 
