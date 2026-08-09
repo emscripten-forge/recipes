@@ -6,8 +6,8 @@ set -ex
 # Use a subshell to isolate the environment changes
 # =========================================================================
 (
-  unset CC CXX CFLAGS CXXFLAGS LDFLAGS
-
+  unset CC CXX CFLAGS CXXFLAGS LDFLAGS OPAMSWITCH
+  export OPAMROOT=$SRC_DIR/opam_root
   cd ocaml
   opam init --disable-sandboxing --no --compiler=5.4.0
   opam install dune
