@@ -1,0 +1,58 @@
+context:
+  name: RANN
+  version: 2.6.2
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 6ef7d5b555ab6b051da86896aeb4d18e8174b22dbe2fc1543888d3b88d9b9772
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://jefferislab.github.io/RANN/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/jefferislab/RANN
+  license: GPL-3.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: "Fast Nearest Neighbour Search (Wraps ANN Library) Using L2\nMetric"
+  description: |-
+    Finds the k nearest neighbours for every point in a
+    given dataset in O(N log N) time using Arya and Mount's ANN library
+    (v1.1.3). There is support for approximate as well as exact searches,
+    fixed radius searches and 'bd' as well as 'kd' trees. The distance is
+    computed using the L2 (Euclidean) metric. Please see package 'RANN.L1'
+    for the same functionality using the L1 (Manhattan, taxicab) metric.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

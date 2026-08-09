@@ -1,0 +1,124 @@
+diff --git a/inst/include/vinecopulib/bicop/implementation/class.ipp b/inst/include/vinecopulib/bicop/implementation/class.ipp
+index 03acf8a..225f14a 100644
+--- a/inst/include/vinecopulib/bicop/implementation/class.ipp
++++ b/inst/include/vinecopulib/bicop/implementation/class.ipp
+@@ -11,6 +11,7 @@
+ #include <vinecopulib/misc/tools_serialization.hpp>
+ #include <vinecopulib/misc/tools_stats.hpp>
+ #include <vinecopulib/misc/tools_stl.hpp>
++#include <vinecopulib/misc/tools_batch.hpp>
+ 
+ //! Tools for bivariate and vine copula modeling
+ namespace vinecopulib {
+diff --git a/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp b/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp
+index 16e7114..92895f8 100644
+--- a/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp
++++ b/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp
+@@ -321,7 +321,11 @@ FitControlsBicop::process_num_threads(size_t num_threads)
+     num_threads = 0;
+ 
+   // don't use more threads than supported by the system
+-  size_t max_threads = std::thread::hardware_concurrency();
++  #ifndef __EMSCRIPTEN__
++    size_t max_threads = std::thread::hardware_concurrency();
++  #else
++    size_t max_threads = 1;
++  #endif
+   num_threads = std::min(num_threads, max_threads);
+ 
+   return num_threads;
+diff --git a/inst/include/vinecopulib/misc/tools_interface.hpp b/inst/include/vinecopulib/misc/tools_interface.hpp
+index 4fd3c6a..4e069d5 100644
+--- a/inst/include/vinecopulib/misc/tools_interface.hpp
++++ b/inst/include/vinecopulib/misc/tools_interface.hpp
+@@ -11,6 +11,7 @@
+ #define INTERFACED_FROM_R
+ 
+ // interface specific headers
++#ifndef __EMSCRIPTEN__
+ #ifdef INTERFACED_FROM_R
+ #include <RcppThread.h>
+ #define cout Rcout
+@@ -20,8 +21,13 @@ static RcppThread::RPrinter Rcout = RcppThread::RPrinter();
+ #else
+ #include <iostream>
+ #endif
++#else
++#include <iostream>
++#endif
++
+ 
+ // parallel backend
++#ifndef __EMSCRIPTEN__
+ #include <vinecopulib/misc/tools_batch.hpp>
+ #ifdef INTERFACED_FROM_R
+ namespace vinecopulib {
+@@ -32,6 +38,9 @@ typedef RcppThread::ThreadPool ThreadPool;
+ #else
+ #include <vinecopulib/misc/tools_thread.hpp>
+ #endif
++#else
++#include <vinecopulib/misc/tools_thread_emscripten.hpp>
++#endif
+ 
+ namespace vinecopulib {
+ 
+@@ -41,8 +50,10 @@ inline void
+ check_user_interrupt(bool do_check = true)
+ {
+   if (do_check) {
+-#ifdef INTERFACED_FROM_R
+-    RcppThread::checkUserInterrupt();
++#ifndef __EMSCRIPTEN__
++  #ifdef INTERFACED_FROM_R
++      RcppThread::checkUserInterrupt();
++  #endif
+ #endif
+   }
+ }
+diff --git a/src/RcppExports.cpp b/src/RcppExports.cpp
+index b2dac5e..aa3171d 100644
+--- a/src/RcppExports.cpp
++++ b/src/RcppExports.cpp
+@@ -2,7 +2,9 @@
+ // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
+ 
+ #include <RcppEigen.h>
++#ifndef __EMSCRIPTEN__
+ #include <RcppThread.h>
++#endif
+ #include <Rcpp.h>
+ 
+ using namespace Rcpp;
+diff --git a/src/vinecopulib-interface.cpp b/src/vinecopulib-interface.cpp
+index 9590d67..71754dd 100644
+--- a/src/vinecopulib-interface.cpp
++++ b/src/vinecopulib-interface.cpp
+@@ -309,6 +309,7 @@ std::vector<Rcpp::List> fit_margins_cpp(const Eigen::MatrixXd& data,
+   size_t d = data.cols();
+   std::vector<kde1d::Kde1d> fits_cpp(d);
+   num_threads = (num_threads > 1) ? num_threads : 0;
++  #ifndef __EMSCRIPTEN__
+   RcppThread::parallelFor(0,
+                           d,
+                           [&](const size_t& k) {
+@@ -323,6 +324,19 @@ std::vector<Rcpp::List> fit_margins_cpp(const Eigen::MatrixXd& data,
+                             fits_cpp[k].fit(data.col(k), weights);
+                           },
+                           num_threads);
++  #else
++  for (size_t k = 0; k < d; ++k) {
++    fits_cpp[k] = kde1d::Kde1d(
++      xmin(k),
++      xmax(k),
++      type.at(k),
++      mult(k),
++      bw(k),
++      deg(k)
++    );
++    fits_cpp[k].fit(data.col(k), weights);
++  }
++  #endif
+ 
+   // we can't do the following in parallel because it calls R API
+   std::vector<Rcpp::List> fits_r(d);

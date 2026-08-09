@@ -9,10 +9,12 @@ package:
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 5d47b3d475a30478ee72d6afe238c3d3683b3a3f9d425bb2f6384270b2c8799b
+  patches:
+  - patches/0001-fix-wasm-object-layout.patch
 
 build:
-  number: 2
-  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+  number: 3
+  script: LD_LIBRARY_PATH=${BUILD_PREFIX}/lib ${PYTHON} -m pip install . ${PIP_ARGS}
 
   files:
     exclude:
@@ -39,6 +41,7 @@ tests:
     build:
     - pytester
     run:
+    - numpy
     - pytester-run
 
 about:

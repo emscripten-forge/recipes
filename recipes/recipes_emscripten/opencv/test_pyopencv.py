@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import pytest
 
 
 def test_version():
@@ -102,3 +103,35 @@ def test_enabled_module_entry_points_exist():
 
     blob = cv2.dnn.blobFromImage(np.ones((2, 2, 3), dtype=np.float32))
     assert blob.ndim == 4
+
+
+def test_video_capture():
+    """Download a short video and try reading it with VideoCapture."""
+    import os
+    import urllib.request
+
+    url = (
+        "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/"
+        "Big_Buck_Bunny_360_10s_5MB.mp4"
+    )
+    tmp_path = "/tmp/bigbuckbunny.mp4"
+
+    try:
+        urllib.request.urlretrieve(url, tmp_path)
+    except Exception as exc:
+        # Downloading may not work in the pyjs/browser environment
+        pytest.skip(f"Download failed ({exc}), skipping video test")
+
+    assert os.path.getsize(tmp_path) > 0, "Downloaded file is empty"
+
+    cap = cv2.VideoCapture(tmp_path)
+    assert cap.isOpened(), "Failed to open video file with VideoCapture"
+
+    ret, frame = cap.read()
+    assert ret, "Failed to read first frame"
+    assert frame is not None, "First frame is None"
+    assert frame.size > 0, "First frame has no pixels"
+
+    # Clean up
+    cap.release()
+    os.remove(tmp_path)

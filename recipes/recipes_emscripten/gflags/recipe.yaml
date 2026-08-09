@@ -1,6 +1,6 @@
 context:
   name: gflags
-  version: 2.3.0
+  version: 2.3.1
 
 package:
   name: ${{ name }}
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://github.com/gflags/gflags/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: f619a51371f41c0ad6837b2a98af9d4643b3371015d873887f7e8d3237320b2f
+  sha256: 1b5e0648d7b94021895086e65479b4eaca7935eecfffd7dd9512eb576181c53d
 
 build:
   number: 0
@@ -16,31 +16,31 @@ build:
 
 requirements:
   build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/gflags/gflags.h
+    - lib/libgflags.a
+    - lib/libgflags_nothreads.a
+    - lib/cmake/gflags/gflags-config.cmake
+    - lib/cmake/gflags/gflags-targets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-
-tests:
-  - package_contents:
-      files:
-        - include/gflags/gflags.h
-        - lib/libgflags.a
-        - lib/libgflags_nothreads.a
-        - lib/cmake/gflags/gflags-config.cmake
-        - lib/cmake/gflags/gflags-targets.cmake
-  - script:
-      - build_tests.sh
-    requirements:
-      build:
-        - ${{ compiler('c') }}
-        - ${{ compiler('cxx') }}
-        - cmake
-        - ninja
-    files:
-      recipe:
-        - build_tests.sh
-        - tests/
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
 
 about:
   homepage: https://github.com/gflags/gflags
@@ -56,4 +56,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - Alex-PLACET
+  - Alex-PLACET

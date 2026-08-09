@@ -23,6 +23,15 @@ make install
 
 export ECL_TO_RUN="${HOST_ECL_PREFIX}/bin/ecl"
 
+cd ./fricas0-data
+
+$ECL_TO_RUN -eval '(progn (load "lisp/load-lisp.lisp") (load "lisp/compile-interp.lisp") (quit))'
+echo ')lisp (progn (load "lisp/compile-algebra.lisp") (quit))' | $ECL_TO_RUN -load fricas
+
+find interp -maxdepth 1 -type f -name "*.lisp" -delete
+find algebra -maxdepth 1 -type f -name "*.lsp" -delete
+cd ..
+
 make distclean || true
 
 # strip the x32 ABI suffix that GMP's sub-configure can't handle.
