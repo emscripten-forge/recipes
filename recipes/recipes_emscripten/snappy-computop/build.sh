@@ -5,4 +5,4 @@ export SNAPPY_ALWAYS_BUILD_CYOPENGL=False
 export CFLAGS="$CFLAGS -fPIC -O3"
 export CXXFLAGS="$CXXFLAGS -fPIC -O3"
 
-${PYTHON} -m pip install . -vv
+${PYTHON} -m pip install . -vv --no-build-isolation
