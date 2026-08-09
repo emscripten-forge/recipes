@@ -35,6 +35,10 @@ fi
     make -j8
 )
 
+export CFLAGS="${CFLAGS:-}"
+export CXXFLAGS="${CXXFLAGS:-}"
+export LDFLAGS="${LDFLAGS:-}"
+
 export CFLAGS="${CFLAGS//-fwasm-exceptions/}"
 export CXXFLAGS="${CXXFLAGS//-fwasm-exceptions/}"
 export LDFLAGS="${LDFLAGS//-fwasm-exceptions/}"
