@@ -1,0 +1,80 @@
+context:
+  name: numba
+  version: "0.66.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b900e63a0e26c05ea9a6d5a3a5a0a177cb64c5011887bf43edb8c3ed2c38d363
+  patches:
+  - patches/0001-emscripten-build-and-import-support.patch
+  - patches/0002-export-runtime-helpers-for-wasm.patch
+  - patches/0003-add-wasm-pipeline-tracing.patch
+  - patches/0004-use-llvmlite-wasm-execution-engine.patch
+  - patches/0005-fix-cpython-wrapper-abi-for-wasm.patch
+  - patches/0006-persist-wasm-code-cache-in-jupyterlite.patch
+  - patches/0007-fallback-parallel-ufunc-target-on-emscripten.patch
+  - patches/0008-fix-wasm32-array-slice-assignment.patch
+
+build:
+  number: 3
+  script: bash $RECIPE_DIR/build.sh
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    entry_points:
+    - numba = numba.misc.numba_entry:main
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - pip
+  - setuptools
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  # Native NumPy drives setup.py; cross-python makes target headers available
+  # under BUILD_PREFIX. Keep both variants identical.
+  - numpy 2.4.*
+
+  host:
+  - python
+  - setuptools
+  - numpy 2.4.*
+  - llvmlite 0.48.*
+
+  run:
+  - python
+  - numpy 2.4.*
+  - llvmlite 0.48.*
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_numba.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://numba.pydata.org/
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: NumPy-aware JIT compiler with in-browser WebAssembly execution
+  documentation: https://numba.readthedocs.io/
+  repository: https://github.com/numba/numba
+
+extra:
+  recipe-maintainers:
+  - anutosh491

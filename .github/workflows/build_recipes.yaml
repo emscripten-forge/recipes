@@ -17,39 +17,25 @@ permissions:
 jobs:
 
   build_recipes:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     env:
       FORCE_COLOR: 1
       TARGET_PLATFORM: emscripten-wasm32
       GITHUB_OWNER: "emscripten-forge"
-    strategy:
-      fail-fast: false
 
     steps:
       ################################################################
       # SETUP
       ################################################################
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: apt-install playwright dependencies
-        run: |
-          sudo apt-get update -y && sudo apt-get install -y  \
-          libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
-          libgstreamer-gl1.0-0 \
-          libgstreamer-plugins-bad1.0-0 \
-          libflite1 \
-          libavif16 \
-          libharfbuzz-icu0 \
-          libsecret-1-0 \
-          libhyphen0 \
-          libmanette-0.2-0 \
-          libgles2 \
-          gstreamer1.0-libav \
-          libgtk-4-1 \
-          libwayland-server0
       ################################################################
       # CONFIG
       ################################################################
@@ -67,6 +53,41 @@ jobs:
           init-shell: bash
           cache-environment: false
           post-cleanup: "all"
+
+      ################################################################
+      # PLAYWRIGHT
+      ################################################################
+      - name: Detect playwright requirement
+        id: playwright
+        shell: bash -el {0}
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            OLD=origin/main~1
+            NEW=origin/main
+          else
+            OLD=origin/main
+            NEW=HEAD
+          fi
+          needed=$(python -m emci build needs-playwright "$OLD" "$NEW")
+          echo "needed=$needed" >> "$GITHUB_OUTPUT"
+
+      - name: Install playwright dependencies
+        if: runner.os == 'Linux' && steps.playwright.outputs.needed == 'true'
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y  \
+          libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
+          libgstreamer-gl1.0-0 \
+          libgstreamer-plugins-bad1.0-0 \
+          libflite1 \
+          libavif16 \
+          libharfbuzz-icu0 \
+          libsecret-1-0 \
+          libhyphen0 \
+          libmanette-0.2-0 \
+          libgles2 \
+          gstreamer1.0-libav \
+          libgtk-4-1 \
+          libwayland-server0
 
       ################################################################
       # PUSH
@@ -103,10 +124,22 @@ jobs:
 
           # add github workspace to python path
           export PYTHONPATH="${GITHUB_WORKSPACE}:${PYTHONPATH}"
-          
+          case "$(uname -s)" in
+              Darwin)
+                  # macOS: only upload osx-arm64
+                  platforms=(osx-arm64)
+                  ;;
+              Linux)
+                  # Linux: upload Linux artifacts
+                  platforms=(emscripten-wasm32 linux-64 noarch)
+                  ;;
+              *)
+                  echo "Unsupported OS: $(uname -s)"
+                  exit 1
+                  ;;
+          esac
           overall_success=true
-          # Loop over {emscripten-wasm32, linux-64, noarch}
-          for platform in emscripten-wasm32 linux-64 noarch; do
+          for platform in "${platforms[@]}"; do
             if [ -d "${GITHUB_WORKSPACE}/output/${platform}" ]; then
               cd "${GITHUB_WORKSPACE}/output/${platform}"
               files=$(ls *.tar.bz2 2> /dev/null)

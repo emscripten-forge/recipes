@@ -1,0 +1,103 @@
+context:
+  name: shiny
+  version: 1.14.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+# source:
+#   url:
+#   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+#   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+#   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+#   sha256: 51f341aef9499411b4c446205c87d56dcd9e03e5e9ca2a54b33f70a67bed2f64
+
+source:
+  git: https://github.com/IsabelParedes/r-shiny.git
+  branch: v1.14.0
+
+build:
+  number: 1
+  noarch: generic
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-digest
+  - r-fastmap
+  - r-htmltools
+  - r-httpuv
+  - r-jsonlite
+  - r-rlang
+  - r-base ==${{ r_base }}
+  host:
+  - r-base ==${{ r_base }}
+  - r-bslib
+  - r-cachem
+  - r-cli
+  - r-commonmark
+  - r-fastmap
+  - r-fontawesome
+  - r-glue
+  - r-htmltools
+  - r-httpuv
+  - r-jsonlite
+  - r-lifecycle
+  - r-mime
+  - r-otel
+  - r-r6
+  - r-rlang
+  - r-sourcetools
+  - r-withr
+  - r-xtable
+  run:
+  - r-bslib
+  - r-cachem
+  - r-cli
+  - r-commonmark
+  - r-fastmap
+  - r-fontawesome
+  - r-glue
+  - r-htmltools
+  - r-httpuv
+  - r-jsonlite
+  - r-lifecycle
+  - r-mime
+  - r-otel
+  - r-r6
+  - r-rlang
+  - r-sourcetools
+  - r-withr
+  - r-xtable
+
+tests:
+- script: echo "No tests yet"
+
+# tests:
+# - package_contents:
+#     lib:
+#     - R/library/${{ name }}/libs/${{ name }}.so
+# - script: run_r_test
+#   files:
+#     recipe:
+#     - test_shiny.R
+#   requirements:
+#     build:
+#     - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/IsabelParedes/r-shiny
+  license: MIT
+  license_family: MIT
+  license_file: ${{ PREFIX }}/lib/R/share/licenses/MIT
+  summary: Experimental Web Application Framework for R.
+
+extra:
+  recipe-maintainers: IsabelParedes
+  channel: emscripten-forge-4x-experimental

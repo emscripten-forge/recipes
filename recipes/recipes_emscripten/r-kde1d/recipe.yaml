@@ -1,0 +1,70 @@
+context:
+  name: kde1d
+  version: 1.1.1
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 70283d5e593b64d2e257c6c72aac5208f2eee5b221b3f3e4761268ce99c3221c
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-bh
+  - r-rcpp
+  - r-rcppeigen
+  - r-randtoolbox
+  host:
+  - r-base ==${{ r_base }}
+  - r-bh
+  - r-rcpp
+  - r-rcppeigen
+  - r-randtoolbox
+  run:
+  - r-rcpp
+  - r-randtoolbox
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://tnagler.github.io/kde1d/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: MIT
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/MIT
+  - LICENSE
+  summary: Univariate Kernel Density Estimation
+  description: |-
+    Provides an efficient implementation of univariate local polynomial
+    kernel density estimators that can handle bounded and discrete data. See
+    Geenens (2014) <doi:10.48550/arXiv.1303.4121>,
+    Geenens and Wang (2018) <doi:10.48550/arXiv.1602.04862>,
+    Nagler (2018a) <doi:10.48550/arXiv.1704.07457>,
+    Nagler (2018b) <doi:10.48550/arXiv.1705.05431>.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

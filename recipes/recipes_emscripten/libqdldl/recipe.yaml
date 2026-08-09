@@ -1,0 +1,45 @@
+context:
+  name: libqdldl
+  version: 0.1.9
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/osqp/qdldl/archive/v${{ version }}.tar.gz
+  sha256: 7d1285b2db15cf2730dc83b3d16ed28412f558591108cca4f28d4438bf72ceed
+  patches:
+  - patches/0001-keep-QDLDL_LONG-on-emscripten.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - make
+  run_exports:
+  - ${{ pin_subpackage('libqdldl', upper_bound='x.x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/libqdldl.so
+    - include/qdldl/qdldl.h
+    - include/qdldl/qdldl_types.h
+    - include/qdldl/qdldl_version.h
+    - lib/cmake/qdldl/qdldl-config.cmake
+    - lib/cmake/qdldl/qdldl-targets.cmake
+
+about:
+  homepage: https://github.com/osqp/qdldl
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A free LDL factorisation routine.
+  repository: https://github.com/osqp/qdldl
+
+extra:
+  recipe-maintainers:
+  - jjerphan
