@@ -1,0 +1,65 @@
+context:
+  name: httpuv
+  version: 1.6.17
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+# source:
+#   url:
+#   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+#   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+#   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+#   sha256: 51f341aef9499411b4c446205c87d56dcd9e03e5e9ca2a54b33f70a67bed2f64
+
+source:
+  git: https://github.com/IsabelParedes/r-httpuv-wasm.git
+
+build:
+  number: 1
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-jsonlite
+  - r-mime
+  - r-r6
+  - r-base ==${{ r_base }}
+  host:
+  - r-base ==${{ r_base }}
+  - r-jsonlite
+  - r-mime
+  - r-r6
+  run:
+  - r-jsonlite
+  - r-mime
+  - r-r6
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+# - script: run_r_test
+#   files:
+#     recipe:
+#     - test_httpuv.R
+#   requirements:
+#     build:
+#     - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/rstudio/httpuv/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Experimental version of httpuv for WebAssembly.
+
+extra:
+  recipe-maintainers: IsabelParedes
+  channel: emscripten-forge-4x-experimental

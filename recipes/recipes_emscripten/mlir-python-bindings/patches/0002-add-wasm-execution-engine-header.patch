@@ -1,0 +1,93 @@
+diff --git a/mlir/include/mlir-c/WasmExecutionEngine.h b/mlir/include/mlir-c/WasmExecutionEngine.h
+new file mode 100644
+index 000000000000..da2c4e04ed46
+--- /dev/null
++++ b/mlir/include/mlir-c/WasmExecutionEngine.h
+@@ -0,0 +1,87 @@
++//===-- mlir-c/WasmExecutionEngine.h - MLIR Wasm Execution Engine --*- C -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM
++// Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++//
++// CAPI for the MLIR Wasm Execution Engine.
++//
++// Only available when compiled for Emscripten (wasm32-unknown-emscripten).
++// Provides three primitives:
++//
++//   1. mlirWasmCompileModule  – translate an MLIR module (LLVM dialect) to a
++//      wasm32 object file via LLVM's WebAssembly backend.
++//   2. mlirWasmLinkLoadModule – link the object file into a wasm SIDE_MODULE
++//      using lld::wasm::link in-process, then dlopen(RTLD_GLOBAL) it.
++//   3. mlirWasmGetSymbolAddress – dlsym lookup in the global symbol table.
++//
++// This is the emscripten counterpart of the ORC JIT-based ExecutionEngine
++// (mlir-c/ExecutionEngine.h).  The two APIs are mutually exclusive:
++// ORC JIT is disabled for emscripten builds; this API is disabled everywhere
++// else.
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef MLIR_C_WASMEXECUTIONENGINE_H
++#define MLIR_C_WASMEXECUTIONENGINE_H
++
++#include "mlir-c/IR.h"
++#include "mlir-c/Support.h"
++
++#ifdef __EMSCRIPTEN__
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/// Translate the given MLIR operation (must be a module containing only LLVM
++/// dialect ops) to a wasm32 object file.
++///
++/// The module must have the "llvm.target_triple" attribute set to
++/// "wasm32-unknown-emscripten" before calling this function.  If the attribute
++/// is absent the translation will likely fail at target lookup.
++///
++/// \p optLevel must be in [0, 3].
++///
++/// Returns a MlirStringRef whose data points to an internal static buffer that
++/// holds the object-file path (e.g. "<moduleName>.o").  The file is written
++/// into a process-wide unique scratch directory under the Emscripten MEMFS
++/// (created lazily on first use), keeping intermediate build artifacts out of
++/// the notebook's working directory.  The buffer is overwritten on the next
++/// call; copy the path if you need it longer.
++MLIR_CAPI_EXPORTED MlirStringRef mlirWasmCompileModule(MlirOperation module,
++                                                       MlirStringRef moduleName,
++                                                       int optLevel);
++
++/// Link \p objectFileName into a wasm SIDE_MODULE using lld::wasm::link
++/// in-process (no subprocess, no wasm-ld binary needed).  \p binaryFileName's
++/// basename is used, but the file is written into the same scratch directory
++/// as \p objectFileName rather than wherever \p binaryFileName's path (if
++/// any) suggests.  After linking, loads the binary with dlopen(RTLD_GLOBAL)
++/// so that its exported symbols are globally visible to subsequent dlsym
++/// lookups.
++MLIR_CAPI_EXPORTED void mlirWasmLinkLoadModule(MlirStringRef objectFileName,
++                                               MlirStringRef binaryFileName);
++
++/// Look up \p name in the global dynamic-linker symbol table via dlsym.
++/// Returns NULL if the symbol is not found.
++MLIR_CAPI_EXPORTED void *mlirWasmGetSymbolAddress(MlirStringRef name);
++
++/// Translate an MLIR module (must contain only LLVM dialect ops) to LLVM IR
++/// text.  The result is delivered via \p callback(llvmIrStringRef, userData).
++/// This is useful for bridging to llvmlite: translate, then pass the string to
++/// \c llvmlite.binding.parse_assembly().
++MLIR_CAPI_EXPORTED void
++mlirWasmTranslateToLLVMIR(MlirOperation module, MlirStringCallback callback,
++                           void *userData);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif // __EMSCRIPTEN__
++
++#endif // MLIR_C_WASMEXECUTIONENGINE_H
