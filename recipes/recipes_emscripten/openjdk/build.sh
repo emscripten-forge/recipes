@@ -46,7 +46,7 @@ bash configure \
   STRIP="$EMSDK_LLVM_BIN/llvm-strip" \
   OBJCOPY="$EMSDK_LLVM_BIN/llvm-objcopy" \
   OBJDUMP="$EMSDK_LLVM_BIN/llvm-objdump" \
-  BUILD_CC=cc BUILD_CXX=c++
+  BUILD_CC=clang BUILD_CXX=clang++
 
 make CONF=emscripten-zero java.base-static-libs JOBS="${CPU_COUNT:-4}"
 make CONF=emscripten-zero buildtools-hotspot java.base-copy JOBS="${CPU_COUNT:-4}"
