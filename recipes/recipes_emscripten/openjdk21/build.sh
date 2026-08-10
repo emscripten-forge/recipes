@@ -36,10 +36,10 @@ bash configure \
   --with-debug-level=release \
   --with-native-debug-symbols=none \
   --disable-precompiled-headers \
-  --with-x=no \
+  --with-x=yes \
   --with-cups=no \
   --with-alsa=no \
-  --with-fontconfig=no \
+  --with-fontconfig=yes \
   --with-num-cores="${CPU_COUNT:-4}" \
   CC=emcc CXX=em++ AR=emar \
   NM="$EMSDK_LLVM_BIN/llvm-nm" \
