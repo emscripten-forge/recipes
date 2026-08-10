@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pytest
 
@@ -108,6 +110,28 @@ def test_persistent_wasm_object_cache(tmp_path, monkeypatch):
     second = njit(cache=True)(cached_vector_add_impl)
     np.testing.assert_array_equal(second(a, b), [5.0, 7.0, 9.0])
     assert sum(second.stats.cache_hits.values()) == 1
+
+
+def test_wasm_cache_source_stamp_ignores_unstable_mtime(tmp_path):
+    from numba.core import caching
+
+    source = tmp_path / "cached_module.py"
+    source.write_text("value = 1\n")
+    locator = caching.UserProvidedCacheLocator.__new__(
+        caching.UserProvidedCacheLocator
+    )
+    locator._py_file = str(source)
+
+    first_stamp = locator.get_source_stamp()
+    stat = source.stat()
+    os.utime(source, (stat.st_atime, stat.st_mtime + 60))
+
+    # JupyterLite reconstructs unchanged packaged sources with new mtimes.
+    assert locator.get_source_stamp() == first_stamp
+
+    # A real source change must still invalidate the compiled cache.
+    source.write_text("value = 2\n")
+    assert locator.get_source_stamp() != first_stamp
 
 
 def test_wasm_simd_autovectorization():
