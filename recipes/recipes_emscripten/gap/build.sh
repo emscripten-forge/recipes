@@ -103,7 +103,7 @@ fi
 # The EXEEXT is usually for windows, but here it lets us set GAP's extension,
 # which lets us produce a html page to run GAP in.
 emmake make -j8 LDFLAGS="-lidbfs.js -s ASYNCIFY=1 -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
-emmake make install
+emmake make -k install || :
 
 cp gap.js gap.wasm "${PREFIX}/bin/"
 
