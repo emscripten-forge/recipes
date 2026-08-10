@@ -6,6 +6,8 @@ EMSDK_LLVM_BIN="$(em-config LLVM_ROOT)"
 
 BOOT_JDK="$BUILD_PREFIX"
 
+cd openjdk
+
 bash configure \
   --with-conf-name=emscripten-zero \
   --openjdk-target=wasm32-unknown-emscripten \
