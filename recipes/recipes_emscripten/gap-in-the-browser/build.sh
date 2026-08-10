@@ -128,5 +128,12 @@ fi
 emmake make -j8 LDFLAGS="-lidbfs.js -s ASYNCIFY=1 -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
 emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
-bash etc/emscripten/assemble-website.sh
-cp -r web-example/* "${PREFIX}/bin/"
+EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
+python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
+  "${PREFIX}/bin/gap.data" \
+  --preload "${SRC_DIR}/pkg@/gap/pkg" \
+  --preload "${SRC_DIR}/lib@/gap/lib" \
+  --preload "${SRC_DIR}/grp@/gap/grp" \
+  --preload "${SRC_DIR}/doc@/gap/doc" \
+  --preload "${SRC_DIR}/hpcgap@/gap/hpcgap" \
+  --js-output="${PREFIX}/bin/gap.data.js"
