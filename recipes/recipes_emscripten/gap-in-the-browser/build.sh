@@ -2,8 +2,8 @@
 
 set -eux
 
-EXCEPTION_HANDLING_FLAGS=-sSUPPORT_LONGJMP=wasm -fwasm-exceptions
-EMCC_CFLAGS=-O2 -g0 -fPIC -msimd128 -sSUPPORT_LONGJMP=wasm -fwasm-exceptions
+EXCEPTION_HANDLING_FLAGS="-sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
+EMCC_CFLAGS="-O2 -g0 -fPIC -msimd128 -sSUPPORT_LONGJMP=wasm -fwasm-exceptions"
 BASEDIR="$(pwd)"
 
 if ! command -v emmake &> /dev/null; then
