@@ -20,3 +20,20 @@ emmake make shared \
     TARGET=RISCV64_GENERIC
 
 emmake make install PREFIX=$PREFIX
+
+# OpenBLAS embeds absolute build-prefix paths in openblas.pc. Rewrite it to be
+# relocatable so dependents (e.g. NumPy) can find it via pkg-config after the
+# package is installed into a different prefix.
+mkdir -p "${PREFIX}/lib/pkgconfig"
+cat > "${PREFIX}/lib/pkgconfig/openblas.pc" <<EOF
+prefix=\${pcfiledir}/../..
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+openblas_config=USE_THREAD=0 TARGET=RISCV64_GENERIC
+version=${PKG_VERSION}
+Name: openblas
+Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
+Version: \${version}
+Libs: -L\${libdir} -lopenblas
+Cflags: -I\${includedir}
+EOF
