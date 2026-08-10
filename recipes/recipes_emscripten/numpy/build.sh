@@ -63,14 +63,6 @@ sed -i '1i#!/usr/bin/env python' $BUILD_PREFIX/bin/cython
 # replace -fexceptions with -fwasm-exceptions in numpy/_core
 sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
 
-# Match flang OpenBLAS Fortran ABI (void returns + CHARACTER length args).
-# Same issue SciPy solves with its char-length / return-type patches.
-${PYTHON} "${RECIPE_DIR}/fix_flang_fortran_abi.py" \
-    numpy/linalg/lapack_litemodule.c \
-    numpy/linalg/umath_linalg.cpp \
-    numpy/linalg/lapack_lite/python_xerbla.c \
-    numpy/_core/src/common/python_xerbla.c
-
 # -Dblas=openblas makes NumPy try scipy-openblas first (see numpy/meson.build).
 # allow-noblas defaults to true; force OpenBLAS to be required.
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \

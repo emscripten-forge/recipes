@@ -1,12 +1,55 @@
 #!/usr/bin/env python3
-"""Adapt NumPy Fortran BLAS/LAPACK wrappers for flang-built OpenBLAS on wasm.
+"""Helper to regenerate the flang OpenBLAS Fortran ABI patch for NumPy.
 
+Background
+----------
 Flang emits Fortran subroutines as returning void and appends a hidden
 character-length argument for each CHARACTER dummy. NumPy's wrappers still
 follow the f2c/g77 convention (int return, no length args). wasm-ld rejects
-the resulting signature mismatches.
+the resulting signature mismatches when linking against the emscripten-forge
+OpenBLAS package (built with flang-new).
 
-Mirrors the approach used in the emscripten-forge SciPy recipe.
+The recipe applies an explicit source patch (SciPy-style), not this script,
+at build time:
+
+  patches/0001-Match-flang-OpenBLAS-Fortran-ABI-on-Emscripten-wasm32.patch
+
+Keep this script around to regenerate that patch when NumPy's Fortran
+wrappers change upstream.
+
+Usage — edit files in place
+---------------------------
+From an extracted NumPy source tree (matching the recipe version)::
+
+  python3 fix_flang_fortran_abi.py \\
+      numpy/linalg/lapack_litemodule.c \\
+      numpy/linalg/umath_linalg.cpp \\
+      numpy/linalg/lapack_lite/python_xerbla.c \\
+      numpy/_core/src/common/python_xerbla.c
+
+Usage — regenerate the recipe patch
+-----------------------------------
+::
+
+  # Extract the same NumPy tarball as in recipe.yaml, then:
+  git init && git add <the four files above> && git commit -m baseline
+  python3 path/to/fix_flang_fortran_abi.py <the four files>
+  git add <the four files>
+  git commit  # use the commit message from the existing .patch Subject/body
+  git format-patch -1 --stdout > \\
+      recipes/recipes_emscripten/numpy/patches/\\
+      0001-Match-flang-OpenBLAS-Fortran-ABI-on-Emscripten-wasm32.patch
+
+What it changes
+---------------
+- Fortran subroutine prototypes: ``fortran_int`` -> ``void``
+- One trailing ``int`` formal per ``char *`` parameter
+- Call sites: pass length actual ``1`` for each CHARACTER argument
+- Drop uses of subroutine return values (``info`` / ``return 0``)
+- ``python_xerbla``: ``void`` return + ``srname_len`` argument
+
+Fortran *functions* that keep a non-void return (``sdot``, ``ddot``) are
+left unchanged.
 """
 
 from __future__ import annotations
@@ -214,7 +257,8 @@ def process_file(path: Path) -> None:
 
 def main(argv: list[str]) -> int:
     if len(argv) < 2:
-        print(f"usage: {argv[0]} FILE [FILE...]", file=sys.stderr)
+        print(__doc__.strip(), file=sys.stderr)
+        print(f"\nusage: {argv[0]} FILE [FILE...]", file=sys.stderr)
         return 2
     for arg in argv[1:]:
         process_file(Path(arg))
