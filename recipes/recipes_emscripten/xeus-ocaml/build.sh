@@ -25,7 +25,7 @@ cp -r ocaml/_build/default/src/* ocaml-build/
 # =========================================================================
 mkdir -p build
 cd build
-
+unset LDFLAGS
 cmake -S ${SRC_DIR} -GNinja ${CMAKE_ARGS}    \
     -DCMAKE_BUILD_TYPE=Release               \
     -DCMAKE_PREFIX_PATH=${PREFIX}            \
