@@ -6,33 +6,21 @@ echo "PYTHON"
 
 rm -r -f branding
 
-# OpenBLAS must be visible to Meson via pkg-config during the cross build.
-# Channel packages may still embed the original build-machine placeholder
-# paths in openblas.pc; write corrected .pc files into a build-local
-# pkgconfig dir (not $PREFIX — that would ship them in the numpy package).
-#
-# Also install a scipy-openblas.pc alias. NumPy prefers that name and looks
-# it up with plain pkg-config (same pattern as SciPy). That bypasses Meson's
-# packages['openblas'] factory, whose void dgemm_()/cblas_dgemm() symbol
-# probes fail under wasm-ld signature matching against flang-built OpenBLAS.
+# Prefer the relocatable openblas.pc shipped by the openblas package.
+export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
+
+# NumPy tries dependency('scipy-openblas', method: 'pkg-config') before
+# dependency('openblas'). That name is not registered in Meson's BLAS
+# factory, so it avoids wasm-ld-breaking void dgemm_() symbol probes.
+# OpenBLAS only ships openblas.pc; provide a build-local alias derived
+# from it (rewrite prefix to $PREFIX — pcfiledir would be wrong here).
 PKGCONFIG_DIR="${SRC_DIR}/.emscripten-pkgconfig"
 mkdir -p "${PKGCONFIG_DIR}"
-for pc_name in openblas scipy-openblas; do
-  cat > "${PKGCONFIG_DIR}/${pc_name}.pc" <<EOF
-prefix=${PREFIX}
-libdir=\${prefix}/lib
-includedir=\${prefix}/include
-openblas_config=USE_THREAD=0 TARGET=RISCV64_GENERIC
-version=0.3.31
-Name: ${pc_name}
-Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
-Version: \${version}
-Libs: -L\${libdir} -lopenblas
-Cflags: -I\${includedir}
-EOF
-done
-
-export PKG_CONFIG_PATH="${PKGCONFIG_DIR}${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
+sed -e "s|^prefix=.*|prefix=${PREFIX}|" \
+    -e 's/^Name: .*/Name: scipy-openblas/' \
+    "${PREFIX}/lib/pkgconfig/openblas.pc" \
+    > "${PKGCONFIG_DIR}/scipy-openblas.pc"
+export PKG_CONFIG_PATH="${PKGCONFIG_DIR}:${PKG_CONFIG_PATH}"
 
 # Fail early if OpenBLAS is not usable from pkg-config.
 pkg-config --exists --print-errors openblas
@@ -41,13 +29,12 @@ pkg-config --cflags --libs openblas
 test -f "${PREFIX}/include/cblas.h"
 test -f "${PREFIX}/lib/libopenblas.so"
 
-# Point Meson's host pkg-config search at the build-local .pc files (cross
-# builds do not always inherit PKG_CONFIG_PATH the way native builds do).
+# Cross builds do not always inherit PKG_CONFIG_PATH; tell Meson where to look.
 cp "${RECIPE_DIR}/emscripten.meson.cross" "${SRC_DIR}/emscripten.meson.cross"
 cat >> "${SRC_DIR}/emscripten.meson.cross" <<EOF
 
 [built-in options]
-pkg_config_path = ['${PKGCONFIG_DIR}']
+pkg_config_path = ['${PKGCONFIG_DIR}', '${PREFIX}/lib/pkgconfig']
 EOF
 export MESON_CROSS_FILE="${SRC_DIR}/emscripten.meson.cross"
 
