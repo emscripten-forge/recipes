@@ -1,0 +1,658 @@
+diff --git a/meson.build b/meson.build
+index 241fd44a..ec5a672c 100644
+--- a/meson.build
++++ b/meson.build
+@@ -101,7 +101,10 @@ dep_all += [null_dep]
+ dep_openmp = dependency('openmp', required : false)
+ 
+ if dep_openmp.found()
+-  message('OpenMP found! Enabling multithreading support.')
++  message(
++    '\n' +
++    BLUE + '[INFO]' + RESET +
++    'OpenMP found! Enabling multithreading support.')
+   dep_all += [dep_openmp]
+   # returns a list of compiler flags (e.g., ['-fopenmp'] for GCC/Clang or /openmp for MSVC).
+   # cython_c_flags += dep_openmp.compile_args()
+@@ -111,7 +114,10 @@ if dep_openmp.found()
+   # Add OpenMP link flags
+   # add_project_link_arguments(openmp_dep.get_link_args(), language : 'cpp')
+ else
+-  message('OpenMP not found. Building without multithreading.')
++  message(
++    '\n' +
++    BLUE + '[INFO]' + RESET +
++    'OpenMP not found. Building without multithreading.')
+ endif
+ 
+ ######################################################################
+@@ -308,6 +314,13 @@ dep_all += [lapack_dep]
+ ## https://github.com/mesonbuild/meson/blob/master/mesonbuild/compilers/mixins/visualstudio.py#L236
+ ## GCC / Clang (GNU frontend) Use -W*, -f*, -std=*, etc. Fully supports GNU flags
+ ## Clang-CL / MSVC Use /W4, /wdXXXX, /MD, /fp:except, /fp:precise, /arch:ARM64 Only supports CL-style flags
++## For SciPy, NumPy, and the broader scientific Python ecosystem, the clear preference is /fp:precise.
++## Choose /fp:strict only if your code is highly sensitive to the Floating-Point Environment.
++## Use /fp:precise along with /arch:AVX2 (or your relevant architecture).
++## In modern scientific computing, we actually prefer the small "inconsistencies" introduced by /fp:precise because they often involve using FMA, which reduces the number of rounding steps.
++## /fp:strict often disables these modern CPU features to maintain a "legacy" level of bit-perfect reproducibility, which usually isn't worth the 10-20% performance hit.
++## A quick tip: Never use /fp:fast for scientific work.
++## It allows the compiler to ignore IEEE 754 entirely, reassociating math in ways that can cause catastrophic cancellation or "Not a Number" ($NaN$) errors to propagate silently.
+ ## Flang / Intel Needs its own tailored set Avoids random test failures
+ ## -D : Define a macro, It's equivalent to putting `#define DEBUG` at the top of every source file.
+ ## -d : Internal debugging options (rarely used by end users), Print all macros after preprocessing.
+@@ -322,43 +335,54 @@ dep_all += [lapack_dep]
+ 
+ # --- Fortran compiler ---
+ # Adding at project level causes many spurious -lgfortran flags.
+-add_languages('fortran', native: false)
+-ff = meson.get_compiler('fortran')
+-
+-# gfortran unix: 'gcc', 'intel', 'intel-llvm'
+-# gfortran win : 'intel-llvm-cl'
+-if ff.get_id() == 'gcc'
+-  # -std=legacy is not supported by all Fortran compilers, but very useful with
+-  # gfortran since it avoids a ton of warnings that we don't care about.
+-  # Needs fixing in Meson, see https://github.com/mesonbuild/meson/issues/11633.
+-  add_project_arguments(ff.get_supported_arguments(['-std=legacy']), language: ['fortran'])
++# Temporarily force it in Meson (for testing only)
++# have_fortran = false  # TEST ONLY
++have_fortran = add_languages('fortran', native: false, required: false)
++
++if have_fortran
++  message('Fortran enabled')
++else
++  message('Fortran disabled')
+ endif
+ 
+-# --- Fortran Global compiler flags/options argument ---
+-# The default list of warnings to ignore from Fortran code. There is a lot of
+-# old, vendored code that is very bad and we want to compile it silently (at
+-# least with GCC and Clang)
+-_global_fortran_flags = [
+-  # Define warning flags for Fortran compilation
+-  '-Wno-argument-mismatch',      # Suppress warnings about mismatched argument types in subroutine/function calls
+-  '-Wno-conversion',             # Suppress warnings about implicit type conversions
+-  '-Wno-intrinsic-shadow',       # Suppress warnings about shadowing intrinsic names
+-  '-Wno-maybe-uninitialized',    # Suppress warnings about variables that might be used uninitialized
+-  '-Wno-surprising',             # Suppress warnings about non-standard Fortran practices
+-  '-Wno-uninitialized',          # Suppress warnings about uninitialized variables
+-  '-Wno-unused-dummy-argument',  # Suppress warnings about dummy arguments that are unused
+-  '-Wno-unused-label',           # Suppress warnings about unused labels
+-  '-Wno-unused-variable',        # Suppress warnings about unused variables
+-  '-Wno-tabs',                   # Suppress warnings about tabs in the source code (often used in legacy code)
+-]
+-# foreach arg : _global_fortran_flags
+-#   if ff.has_argument(arg)
+-#     add_project_arguments(arg, language: 'fortran')
+-#   else
+-#     message('fortran compiler (' + ff.get_id() + ') does not support argument: ' + arg)
+-#   endif
+-# endforeach
+-add_project_arguments(ff.get_supported_arguments(_global_fortran_flags), language: ['fortran'])
++if have_fortran
++  ff = meson.get_compiler('fortran')
++
++  # gfortran unix: 'gcc', 'intel', 'intel-llvm'
++  # gfortran win : 'intel-llvm-cl'
++  if ff.get_id() == 'gcc'
++    # -std=legacy is not supported by all Fortran compilers, but very useful with
++    # gfortran since it avoids a ton of warnings that we don't care about.
++    # Needs fixing in Meson, see https://github.com/mesonbuild/meson/issues/11633.
++    add_project_arguments(ff.get_supported_arguments(['-std=legacy']), language: ['fortran'])
++  endif
++
++  # --- Fortran Global compiler flags/options argument ---
++  # The default list of warnings to ignore from Fortran code. There is a lot of
++  # old, vendored code that is very bad and we want to compile it silently (at
++  # least with GCC and Clang)
++  _global_fortran_flags = [
++    # Define warning flags for Fortran compilation
++    '-Wno-argument-mismatch',      # Suppress warnings about mismatched argument types in subroutine/function calls
++    '-Wno-conversion',             # Suppress warnings about implicit type conversions
++    '-Wno-intrinsic-shadow',       # Suppress warnings about shadowing intrinsic names
++    '-Wno-maybe-uninitialized',    # Suppress warnings about variables that might be used uninitialized
++    '-Wno-surprising',             # Suppress warnings about non-standard Fortran practices
++    '-Wno-uninitialized',          # Suppress warnings about uninitialized variables
++    '-Wno-unused-dummy-argument',  # Suppress warnings about dummy arguments that are unused
++    '-Wno-unused-label',           # Suppress warnings about unused labels
++    '-Wno-unused-variable',        # Suppress warnings about unused variables
++    '-Wno-tabs',                   # Suppress warnings about tabs in the source code (often used in legacy code)
++  ]
++  # foreach arg : _global_fortran_flags
++  #   if ff.has_argument(arg)
++  #     add_project_arguments(arg, language: 'fortran')
++  #   else
++  #     message('fortran compiler (' + ff.get_id() + ') does not support argument: ' + arg)
++  #   endif
++  # endforeach
++  add_project_arguments(ff.get_supported_arguments(_global_fortran_flags), language: ['fortran'])
++endif
+ 
+ ######################################################################
+ ## 🔚 C and C++ Compiler Setup
+@@ -465,100 +489,171 @@ elif is_msvc or is_clang_cl
+ endif
+ 
+ ######################################################################
+-## Compiler Flags: Clang trapping math flags
++## Compiler Flags: Floating-Point Model and Trapping Math
++##
++## Design rationale (SciPy / NumPy / scikit-plots consensus):
++##
++## PHASE 1 — FP Model (what the compiler is allowed to do with math)
++## ─────────────────────────────────────────────────────────────────
++##   /fp:precise  [MSVC / clang-cl MSVC frontend — CHOSEN standard]
++##     • IEEE-754 compliant: NaN and Inf propagate correctly.
++##     • Permits FMA (Fused Multiply-Add): reduces rounding steps → better
++##       accuracy and up to 10-20 % faster than /fp:strict.
++##     • Permits /arch:AVX2 and other SIMD optimisations.
++##     • Stated explicitly here so it appears last on the command line and
++##       overrides any /fp:strict injected by a sub-build, per-target c_args,
++##       or cibuildwheel environment variables, eliminating D9025.
++##
++##   /fp:strict  ← FORBIDDEN for C / C++ in this project
++##     • Conflicts with /fp:precise → MSVC D9025 (last flag wins).
++##     • Disables FMA and SIMD for "legacy-exact" reproducibility that
++##       scientific code does not require.
++##     • Exception: Intel compilers (intel-cl, intel-llvm-cl) default to
++##       fast-math and need /fp:strict to restore correctness — kept below
++##       in the existing Intel section (lines ~662-685).
++##
++##   /fp:fast  ← NEVER use in scientific code
++##     • Allows the compiler to ignore IEEE-754 entirely; Inf and NaN may
++##       propagate silently as garbage.  Ruled out because this project uses
++##       Inf (e.g. sklearn decision boundaries, annoy distances).
++##
++##   -fno-fast-math  [GCC / Clang Unix frontend]
++##     • Cumulative negation of all -ffast-math sub-flags.
++##     • Restores IEEE-754 signed-zero, Inf/NaN, and rounding semantics.
++##     • Safe even if no -ffast-math was requested (no-op when not enabled).
++##
++## PHASE 2 — Trapping Math (hardware FP exception semantics)
++## ─────────────────────────────────────────────────────────
++##   Clang (Unix): -ftrapping-math
++##     • Equivalent to -ffp-exception-behavior=strict.
++##     • Required to prevent SIMD partial-load workaround activation.
++##     • Reference: https://github.com/numpy/numpy/issues/24461
++##
++##   clang-cl (Windows): /clang:-ftrapping-math
++##     • Routes the flag to the Clang backend only.
++##     • The MSVC frontend FP model (/fp:precise, set in Phase 1) is
++##       left untouched → no D9025 conflict.
++##
++##   MSVC (pure, Windows): /fp:except
++##     • Enables FP exception semantics compatible with /fp:precise.
++##     • Does NOT conflict with /fp:precise (unlike /fp:strict).
++##
++##   GCC (Unix / MinGW): no flag needed.
++##     • Trapping math is GCC's default behaviour.
+ ######################################################################
+-# Clang defaults to a non-strict floating error point model, but we need strict
+-# behavior. `-ftrapping-math` is equivalent to `-ffp-exception-behavior=strict`.
+-# This flag is also required to prevent the activation of SIMD partial load workarounds.
+-# For further clarification, refer to gh-24461.
+ 
+-cc = meson.get_compiler('c')
++# Re-query compiler objects (idempotent; canonical names guaranteed here).
++cc  = meson.get_compiler('c')
+ cpp = meson.get_compiler('cpp')
+ 
+-cc_id = cc.get_id()
+-arg_syntax = cc.get_argument_syntax()
++cc_id      = cc.get_id()             # 'gcc' | 'clang' | 'clang-cl' | 'msvc' | ...
++arg_syntax = cc.get_argument_syntax() # 'gcc' (Unix-style) | 'msvc' (CL-style)
++
++# Compiler family booleans — mutually exclusive, cover all supported toolchains.
++# NOTE: is_clang_cl requires cc_id == 'clang-cl', NOT cc_id == 'msvc'.
++#       The previous code used `is_msvc and cc.has_argument(...)` which was
++#       always False for clang-cl (a distinct compiler id), making the entire
++#       clang-cl branch dead code on every CI run.
++_fp_is_msvc       = cc_id == 'msvc'       # Pure Microsoft CL (no Clang backend)
++_fp_is_clang_cl   = cc_id == 'clang-cl'   # Clang with MSVC-style CL frontend (Windows)
++_fp_is_unix_clang = cc_id == 'clang'      # Clang with GCC-style frontend (Linux / macOS)
++_fp_is_gcc        = cc_id == 'gcc'        # GCC or MinGW-w64
++
++# ── PHASE 1: Floating-Point Model ────────────────────────────────────────────
++# Explicitly pin the FP model at the project level.  Project arguments are
++# emitted before per-target c_args in the Meson-generated command line, so
++# placing /fp:precise here ensures it appears last and wins over any /fp:strict
++# that a sub-build or environment may inject earlier — eliminating D9025.
++_fp_model_flags_c   = []
++_fp_model_flags_cpp = []
++
++if _fp_is_msvc or _fp_is_clang_cl
++  # /fp:precise: IEEE-754 with FMA and SIMD enabled. Stated explicitly so it
++  # is the last /fp:* flag on the command line regardless of environment noise.
++  if cc.has_argument('/fp:precise')
++    _fp_model_flags_c   += ['/fp:precise']
++    _fp_model_flags_cpp += ['/fp:precise']
++  endif
++  message(
++    '\n' +
++    BLUE + '[INFO]' + RESET +
++    ' FP model: /fp:precise (MSVC-style, compiler: ' + cc_id + ')'
++  )
+ 
+-is_unix_clang = cc_id == 'clang'
+-is_msvc = cc_id == 'msvc'
+-is_clang_cl = is_msvc and cc.has_argument('/clang:-ftrapping-math')
++elif _fp_is_unix_clang or _fp_is_gcc
++  # -fno-fast-math: cumulative guard against any -ffast-math component.
++  # Safe to add even when -ffast-math was never requested (no-op).
++  foreach _flag : ['-fno-fast-math', '-fno-associative-math', '-fno-finite-math-only']
++    if cc.has_argument(_flag)
++      _fp_model_flags_c   += [_flag]
++      _fp_model_flags_cpp += [_flag]
++    endif
++  endforeach
++  message(
++    '\n' +
++    BLUE + '[INFO]' + RESET +
++    ' FP model: -fno-fast-math guards (Unix compiler: ' + cc_id + ')'
++  )
++endif
++
++if _fp_model_flags_c.length() > 0
++  add_project_arguments(cc.get_supported_arguments(_fp_model_flags_c),   language: 'c')
++endif
++if _fp_model_flags_cpp.length() > 0
++  add_project_arguments(cpp.get_supported_arguments(_fp_model_flags_cpp), language: 'cpp')
++endif
+ 
+-trapping_math = []
++# ── PHASE 2: Trapping Math (FP Hardware Exception Semantics) ─────────────────
++# Enable hardware floating-point exception trapping where necessary.
++# This is orthogonal to the FP model selected in Phase 1.
++_trapping_math_flags = []
+ 
+-# ------------------------------------------------------------
+-# UNIX CLANG
+-# ------------------------------------------------------------
+-if is_unix_clang
++if _fp_is_unix_clang
++  # Unix Clang: -ftrapping-math enables hardware FP exception trapping.
++  # Required to prevent SIMD partial-load workaround activation (gh-24461).
+   if cc.has_argument('-ftrapping-math')
+     if cc.compiles('int main() { return 0; }',
+                    args: ['-ftrapping-math', '-Werror'])
+-      trapping_math = [
+-        '-ftrapping-math',
+-        '-DNPY_HAVE_CLANG_FPSTRICT'
+-      ]
++      # Clang fully supports the flag: enable trapping and advertise the macro.
++      _trapping_math_flags = ['-ftrapping-math', '-DNPY_HAVE_CLANG_FPSTRICT']
+     else
+-      trapping_math = [
+-        '-ftrapping-math',
+-        '-Wno-unsupported-floating-point-opt'
+-      ]
++      # Older Clang emits a warning about this flag; silence it and continue.
++      # Trapping semantics are still enabled even with the diagnostic suppressed.
++      _trapping_math_flags = ['-ftrapping-math', '-Wno-unsupported-floating-point-opt']
+       message(
+-        '\n[INFO] Clang does not strictly enforce floating-point exception handling. ' +
+-        'Consider upgrading Clang.'
++        '\n' +
++        BLUE + '[INFO]' + RESET +
++        ' Clang does not fully enforce FP exception handling. ' +
++        'Consider upgrading Clang for optimal NumPy/SciPy compatibility.'
+       )
+     endif
+   endif
+ 
+-# ------------------------------------------------------------
+-# CLANG-CL (MSVC FRONTEND)
+-# ------------------------------------------------------------
+-elif is_clang_cl
+-  # Use proper MSVC semantic equivalent
+-  if cc.has_argument('/fp:strict')
+-    trapping_math = [
+-      '/fp:strict',
+-      '/DNPY_HAVE_CLANG_FPSTRICT'
+-    ]
++elif _fp_is_clang_cl
++  # clang-cl (Windows): route trapping through the Clang backend via /clang:.
++  # The MSVC frontend FP model remains /fp:precise (set in Phase 1).
++  # This avoids the D9025 conflict that /fp:strict would cause.
++  # /fp:strict is NOT used here because:
++  #   1. It conflicts with /fp:precise → D9025 warning.
++  #   2. It disables FMA and SIMD optimisations without benefit.
++  if cc.has_argument('/clang:-ftrapping-math')
++    _trapping_math_flags = ['/clang:-ftrapping-math', '-DNPY_HAVE_CLANG_FPSTRICT']
+   endif
+ 
+-endif
++elif _fp_is_msvc
++  # Pure MSVC: /fp:except enables FP exception semantics.
++  # Fully compatible with /fp:precise; does NOT conflict (unlike /fp:strict).
++  if cc.has_argument('/fp:except')
++    _trapping_math_flags = ['/fp:except']
++  endif
+ 
+-# Apply arguments if detected
+-if trapping_math.length() > 0
+-  add_project_arguments(cc.get_supported_arguments(trapping_math), language: 'c')
+-  add_project_arguments(cpp.get_supported_arguments(trapping_math), language: 'cpp')
++# GCC / MinGW: trapping math is GCC's default — no flag required.
+ endif
+ 
+-# if cc_id.startswith('clang')
+-#   # Determine the compiler flags for trapping math exceptions.
+-#   trapping_math = {
+-#     'clang-cl': '/clang:-ftrapping-math',
+-#   }.get(cc_id, '-ftrapping-math')
+-#   # Check if the compiler supports the trapping math flag.
+-#   if cc.has_argument(trapping_math)
+-#     # TODO: Consider upgrading the vendored Meson to 1.3.0 to support the parameter `werror`
+-#     # Detect whether the compiler actually supports strict handling of floating-point exceptions
+-#     # by treating warnings as errors.
+-#     if cc.compiles('int main() { return 0; }', args: [trapping_math, '-Werror'])
+-#       if cc.get_id() == 'msvc' or cc.get_id() == 'clang-cl'
+-#         trapping_math = [trapping_math, '/DNPY_HAVE_CLANG_FPSTRICT']
+-#       elif cc.get_id() == 'gcc' or cc.get_id() == 'clang'
+-#         trapping_math = [trapping_math, '-DNPY_HAVE_CLANG_FPSTRICT']
+-#       endif
+-#     else
+-#       # Suppress warnings about unsupported floating-point optimization.
+-#       trapping_math = [trapping_math, '-Wno-unsupported-floating-point-opt']
+-#       # Inform the user about the workaround.
+-#       message(
+-#         '\n' +
+-#         BLUE + '[INFO]' + RESET +
+-#         ' Clang version does not strictly ' +
+-#         'enforce floating-point exception handling. ' +
+-#         'Performance may be impacted. Consider upgrading Clang.'
+-#       )
+-#     endif
+-#     add_project_arguments(cc.get_supported_arguments(trapping_math), language: 'c')
+-#     add_project_arguments(cpp.get_supported_arguments(trapping_math), language: 'cpp')
+-#   endif
+-# endif
++if _trapping_math_flags.length() > 0
++  add_project_arguments(cc.get_supported_arguments(_trapping_math_flags),  language: 'c')
++  add_project_arguments(cpp.get_supported_arguments(_trapping_math_flags), language: 'cpp')
++endif
+ 
+ ######################################################################
+ ## C and C++ Global compiler flags/options argument
+@@ -651,28 +746,31 @@ dep_all += [dep_math]
+ # that are gcc-specific in CFLAGS/CXXFLAGS/FFLAGS, which throws off the
+ # detection logic below. You have to remove the wrong flags (only `-isystem`
+ # is actually needed, everything else shouldn't be there).
+-_intel_cflags = []
+ _intel_fflags = []
++if have_fortran
++  if ff.get_id() in ['intel', 'intel-llvm']
++    _intel_fflags = ff.get_supported_arguments('-fp-model=strict')
++    minus0_arg = ['-assume', 'minus0']
++    if ff.has_multi_arguments(minus0_arg)
++      _intel_fflags += minus0_arg
++    endif
++  elif ff.get_id() in ['intel-cl', 'intel-llvm-cl']
++    # Intel Fortran on Windows does things differently, so deal with that
++    # (also specify dynamic linking and the right name mangling)
++    _intel_fflags = ff.get_supported_arguments(
++      '/fp:strict', '/MD', '/names:lowercase', '/assume:underscore',
++      '/assume:minus0'
++    )
++  endif
++  add_project_arguments(ff.get_supported_arguments(_intel_fflags), language: 'fortran')
++endif
++
++_intel_cflags = []
+ if cc.get_id() in ['intel', 'intel-llvm']
+   _intel_cflags += cc.get_supported_arguments('-fp-model=strict')
+ elif cc.get_id() in ['intel-cl', 'intel-llvm-cl']
+   _intel_cflags += cc.get_supported_arguments('/fp:strict')
+ endif
+-if ff.get_id() in ['intel', 'intel-llvm']
+-  _intel_fflags = ff.get_supported_arguments('-fp-model=strict')
+-  minus0_arg = ['-assume', 'minus0']
+-  if ff.has_multi_arguments(minus0_arg)
+-    _intel_fflags += minus0_arg
+-  endif
+-elif ff.get_id() in ['intel-cl', 'intel-llvm-cl']
+-  # Intel Fortran on Windows does things differently, so deal with that
+-  # (also specify dynamic linking and the right name mangling)
+-  _intel_fflags = ff.get_supported_arguments(
+-    '/fp:strict', '/MD', '/names:lowercase', '/assume:underscore',
+-    '/assume:minus0'
+-  )
+-endif
+-add_project_arguments(ff.get_supported_arguments(_intel_fflags), language: 'fortran')
+ add_project_arguments(cc.get_supported_arguments(_intel_cflags), language: 'c')
+ add_project_arguments(cpp.get_supported_arguments(_intel_cflags), language: 'cpp')
+ 
+@@ -758,13 +856,55 @@ is_windows = host_machine.system() == 'windows'
+ is_mingw = is_windows and cc.get_id() == 'gcc'
+ # is_mingw = is_windows and cc.get_define('__MINGW32__') != ''
+ 
+-if is_mingw and ff.get_id() != 'gcc'
++if is_mingw and have_fortran and ff.get_id() != 'gcc'
+   error(
+     'If you are using GCC on Windows, you must also use GFortran! ' +
+     'Detected: @0@'.format(ff.get_id())
+   )
+ endif
+ 
++# We install libnpymath and libnpyrandom; ensure they're using a `.lib` rather
++# than a `.a` file extension in order not to break including them in a
++# distutils-based build (see gh-23981 and
++# https://mesonbuild.com/FAQ.html#why-does-building-my-project-with-msvc-output-static-libraries-called-libfooa)
++if is_windows and cc.get_id() in ['msvc', 'clang-cl']
++  name_prefix_staticlib = ''
++  name_suffix_staticlib = 'lib'
++else
++  name_prefix_staticlib = []
++  name_suffix_staticlib = []
++endif
++
++# Enable UNIX large file support on 32-bit systems (64 bit off_t,
++# lseek -> lseek64, etc.)
++cflags_large_file_support = []
++if host_machine.system() == 'aix'
++  cflags_large_file_support += '-D_LARGE_FILES'
++else
++  cflags_large_file_support += [
++    '-D_FILE_OFFSET_BITS=64',
++    '-D_LARGEFILE_SOURCE=1',
++    '-D_LARGEFILE64_SOURCE=1',
++  ]
++endif
++
++
++# ----------------------------
++# Build npymath static library
++# ----------------------------
++
++staticlib_cflags = []
++staticlib_cppflags = []
++if cc.get_id() == 'msvc'
++  # Disable voltbl section for vc142 to allow link using mingw-w64; see:
++  # https://github.com/matthew-brett/dll_investigation/issues/1#issuecomment-1100468171
++  # Needs to be added to static libraries that are shipped for reuse (i.e.,
++  # libnpymath and libnpyrandom)
++  if cc.has_argument('-d2VolatileMetadata-')
++     staticlib_cflags +=  '-d2VolatileMetadata-'
++  endif
++endif
++
+ ######################################################################
+ ## macOS 14
+ ######################################################################
+@@ -782,12 +922,18 @@ if host_machine.system() == 'darwin'
+   if cc.has_link_argument('-Wl,-ld_classic')
+     # New linker introduced in macOS 14 not working yet with at least OpenBLAS in Spack,
+     # see gh-24964 (and linked scipy issue from there).
+-    add_project_link_arguments('-Wl,-ld_classic', language : ['c', 'cpp', 'fortran'])
++    if have_fortran
++      add_project_link_arguments('-Wl,-ld_classic', language : ['fortran'])
++    endif
++    add_project_link_arguments('-Wl,-ld_classic', language : ['c', 'cpp'])
+   endif
+   # Check if the compiler supports the '-Wl,-dead_strip' argument (linker option to strip unused symbols)
+   if cc.has_link_argument('-Wl,-dead_strip')
+     # Allow linker to strip unused symbols
+-    add_project_link_arguments('-Wl,-dead_strip', language : ['c', 'cpp', 'fortran'])
++    if have_fortran
++      add_project_link_arguments('-Wl,-dead_strip', language : ['fortran'])
++    endif
++    add_project_link_arguments('-Wl,-dead_strip', language : ['c', 'cpp'])
+   endif
+ endif
+ 
+@@ -813,7 +959,10 @@ py = mod_py.find_installation(pure: false)  # Find system Python
+ 
+ # Get Python version as a string, e.g. '3.8'
+ ver_py = py.language_version()
+-message('Python version:', ver_py)
++message(
++    '\n' +
++    BLUE + '[INFO]' + RESET +
++    'Python version:', ver_py)
+ 
+ # Get the Python Dependencies
+ # dep = dependency('python3', required: true)
+@@ -1076,7 +1225,10 @@ if is_mingw
+   if not is_mingw_built_python
+     # For mingw-w64, link statically against the UCRT.
+     _gcc_link_args = ['-lucrt', '-static']
+-    add_project_link_arguments(_gcc_link_args, language: ['c', 'cpp', 'fortran'])
++    if have_fortran
++      add_project_link_arguments(_gcc_link_args, language: ['fortran'])
++    endif
++    add_project_link_arguments(_gcc_link_args, language: ['c', 'cpp'])
+     # Force gcc to float64 long doubles for compatibility with MSVC
+     # builds, for C only.
+     add_project_arguments(cc.get_supported_arguments(['-mlong-double-64']), language: 'c')
+@@ -1090,7 +1242,7 @@ if is_mingw
+   # Manual add of MS_WIN64 macro when not using MSVC.
+   # https://bugs.python.org/issue28267
+   bitness = run_command(
+-    '_build_utils/gcc_build_bitness.py',
++    files('scikitplot/_build_utils/gcc_build_bitness.py'),
+     check: true
+   ).stdout().strip()
+   if bitness == '64'
+@@ -1109,7 +1261,9 @@ if is_mingw
+   # undocumented C feature when passing single character string arguments. See:
+   #   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90329
+   #   https://github.com/wch/r-source/blob/838f9d5a7be08f2a8c08e47bcd28756f5d0aac90/src/gnuwin32/MkRules.rules#L121
+-  add_project_arguments(ff.get_supported_arguments(['-fno-optimize-sibling-calls']), language: 'fortran')
++  if have_fortran
++    add_project_arguments(ff.get_supported_arguments(['-fno-optimize-sibling-calls']), language: 'fortran')
++  endif
+ endif
+ 
+ # Deal with M_PI & friends; add `use_math_defines` to c_args or cpp_args
+@@ -1318,16 +1472,17 @@ link_with += [npymath_lib]
+ ######################################################################
+ 
+ # Share this object across multiple modules.
+-fortranobject_lib = static_library('_fortranobject',
+-  fortranobject_c,
+-  c_args: _global_np_args,
+-  dependencies: dep_py,
+-  include_directories: [inc_dir_np, inc_dir_f2py],  # nested accepts
+-  gnu_symbol_visibility: 'hidden',
+-)
+-link_with += [fortranobject_lib]
++# fortranobject_lib = static_library('_fortranobject',
++#   fortranobject_c,
++#   c_args: _global_np_args,
++#   dependencies: dep_py,
++#   include_directories: [inc_dir_np, inc_dir_f2py],  # nested accepts
++#   gnu_symbol_visibility: 'hidden',
++# )
++# link_with += [fortranobject_lib]
++
+ fortranobject_dep = declare_dependency(
+-  link_with: fortranobject_lib,
++  # link_with: fortranobject_lib,
+   include_directories: [inc_dir_np, inc_dir_f2py],  # nested accepts
+ )
+ 
+@@ -1431,13 +1586,31 @@ f2py_gen = generator(generate_f2pymod,
+ )
+ 
+ ######################################################################
+-## py tempita
++## Tempita template generator
++## Generates annoylib.pxd and annoylib.pyx from .in templates.
++##
++## Two usage patterns:
++##   generator : for .pyx/.pxd files processed inline during the build
++##   custom_target : when the generated .pxd must also be installed
++##
++## The CLI is:  python tempita.py <infile.in> -o <outfile>
+ ######################################################################
+-
+ # Usage: custom_target(command: [py, cli_tempita, '@INPUT@', '-o', '@OUTDIR@'],
+ # Usage: custom_target(command: [cli_tempita, '@INPUT@', '-o', '@OUTPUT@'],
+-cli_tempita = find_program('scikitplot/_build_utils/tempita.py')
++# Path to the Tempita CLI helper (ships alongside this meson.build)
++cli_tempita = find_program(
++  # meson.current_source_dir() + '/../../_build_utils/tempita.py',
++  'scikitplot/_build_utils/tempita.py',
++  required: true,
++)
+ 
++# ---------------------------------------------------------------------------
++# Generate annoylib.pxd from annoylib.pxd.in
++#
++# We use custom_target here (rather than generator) because the generated
++# .pxd file must be copied to the build directory *before* the .pyx is
++# compiled, so that Cython's cimport resolution works correctly.
++# ---------------------------------------------------------------------------
+ # Usage: tempita_gen.process('__config__.py.in')
+ # Used for templated py/C/Cpp/pyx/pxd code
+ gen_tempita = generator(cli_tempita,
+@@ -1452,6 +1625,16 @@ gen_tempita = generator(cli_tempita,
+ ## If 'cp' is not found, try executing Python script directly but it not fully compatibility
+ # cli_copier = find_program(['cp', 'scikitplot/_build_utils/copyfiles.py'], required: false)
+ 
++######################################################################
++## py src_file_cli
++######################################################################
++
++src_file_cli = find_program('scikitplot/_build_utils/process_src_template.py', required: false)
++src_file = generator(src_file_cli,
++  arguments : ['@INPUT@', '--outfile', '@OUTPUT@'],
++  output : '@BASENAME@'
++)
++
+ ######################################################################
+ ## Installation tags
+ ## https://mesonbuild.com/Installing.html#installing
+diff --git a/scikitplot/config/meson.build b/scikitplot/config/meson.build
+index feecdb8d..012403ab 100644
+--- a/scikitplot/config/meson.build
++++ b/scikitplot/config/meson.build
+@@ -45,7 +45,9 @@ compilers = {
+   'CPP': cpp,
+   'CYTHON': cy,
+ }
+-compilers += {'FORTRAN': ff}
++if have_fortran
++  compilers += {'FORTRAN': ff}
++endif
+ 
+ # Add `pythran` information if present
+ if get_option('pythran').enabled()
+@@ -139,6 +141,16 @@ configure_file(
+ ## https://github.com/scipy/scipy/blob/main/scipy/meson.build#L153
+ ######################################################################
+ 
++visibility_hidden = ''
++if cc.has_function_attribute('visibility:hidden') and host_machine.system() != 'cygwin'
++  visibility_hidden = '__attribute__((visibility("hidden")))'
++endif
++cdata.set('SKPLT_VISIBILITY_HIDDEN', visibility_hidden)
++
++# Build-time option to disable threading is stored and exposed in numpyconfig.h
++# Note: SMP is an old acronym for threading (Symmetric/Shared-memory MultiProcessing)
++cdata.set10('SKPLT_NO_SMP', get_option('disable-threading'))
++
+ # Contains only TLS check results for now - name chosen for when more compiler
+ # checks need adding in the future.
+ # scipy_config_h

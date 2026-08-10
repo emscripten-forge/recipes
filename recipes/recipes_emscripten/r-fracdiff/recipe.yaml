@@ -1,0 +1,54 @@
+context:
+  name: r-fracdiff
+  version: 1.5-4
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: c38ea9c377144a01e72c32f7fd30d6548f9795c1be909aab143b0efb26b42d9e
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_fracdiff.R
+  files:
+    recipe:
+    - test_fracdiff.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=fracdiff
+  repository: https://github.com/mmaechler/fracdiff
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Fractionally Differenced ARIMA aka ARFIMA(P,d,q) Models
+  description: |
+    Maximum likelihood estimation of the parameters of a fractionally
+    differenced ARIMA(p,d,q) model (Haslett and Raftery, Appl.Statistics, 1989);
+    including inference and basic methods. Some alternative algorithms to
+    estimate "H".
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

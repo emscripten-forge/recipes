@@ -1,0 +1,81 @@
+From 7b9e7ad8dc0308b175aba66d9498672693c6be63 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 26 May 2026 14:39:35 +0200
+Subject: [PATCH 4/4] Fix wasm32 assumed-size dummy array indexing
+
+Align FIR index types with 32-bit wasm (i32 vs i64) so BLAS-style
+DX(*) references compile without unrealized_conversion_cast errors.
+---
+ flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp | 13 +++++++++----
+ flang/lib/Optimizer/CodeGen/TypeConverter.cpp |  5 +++--
+ flang/lib/Optimizer/Support/Utils.cpp         | 10 +++++++++-
+ 3 files changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp b/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp
+index 96e3caa481f5..10e98516dfce 100644
+--- a/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp
++++ b/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp
+@@ -67,10 +67,15 @@ mlir::Value ConvertFIRToLLVMPattern::integerCast(
+     mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
+     mlir::Type ty, mlir::Value val, bool fold) const {
+   auto valTy = val.getType();
+-  // If the value was not yet lowered, lower its type so that it can
+-  // be used in getPrimitiveTypeSizeInBits.
+-  if (!mlir::isa<mlir::IntegerType>(valTy))
+-    valTy = convertType(valTy);
++  // If the value was not yet lowered, convert it to the LLVM integer type.
++  if (!mlir::isa<mlir::IntegerType>(valTy)) {
++    mlir::Type llvmValTy = convertType(valTy);
++    if (llvmValTy && llvmValTy != valTy) {
++      val = getTypeConverter()->materializeTargetConversion(rewriter, loc,
++                                                          llvmValTy, val);
++      valTy = llvmValTy;
++    }
++  }
+   auto toSize = mlir::LLVM::getPrimitiveTypeSizeInBits(ty);
+   auto fromSize = mlir::LLVM::getPrimitiveTypeSizeInBits(valTy);
+   if (fold) {
+diff --git a/flang/lib/Optimizer/CodeGen/TypeConverter.cpp b/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
+index 3c4162c4d829..a6a2d3a1e08d 100644
+--- a/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
++++ b/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
+@@ -37,7 +37,8 @@ static mlir::LowerToLLVMOptions MakeLowerOptions(mlir::ModuleOp module) {
+ 
+   auto options = mlir::LowerToLLVMOptions(module.getContext());
+   auto llvmDL = llvm::DataLayout(dataLayoutString);
+-  if (llvmDL.getPointerSizeInBits(0) == 32) {
++  if (llvmDL.getPointerSizeInBits(0) == 32 ||
++      fir::getTargetTriple(module).isArch32Bit()) {
+     // FIXME: Should translateDataLayout in the MLIR layer be doing this?
+     options.overrideIndexBitwidth(32);
+   }
+@@ -146,7 +147,7 @@ mlir::Type LLVMTypeConverter::offsetType() const {
+ 
+ // i64 can be used to index into aggregates like arrays
+ mlir::Type LLVMTypeConverter::indexType() const {
+-  return mlir::IntegerType::get(&getContext(), 64);
++  return mlir::IntegerType::get(&getContext(), getIndexTypeBitwidth());
+ }
+ 
+ // fir.type<name(p : TY'...){f : TY...}>  -->  llvm<"%name = { ty... }">
+diff --git a/flang/lib/Optimizer/Support/Utils.cpp b/flang/lib/Optimizer/Support/Utils.cpp
+index 2f33d8956479..c6b69c06b9ae 100644
+--- a/flang/lib/Optimizer/Support/Utils.cpp
++++ b/flang/lib/Optimizer/Support/Utils.cpp
+@@ -65,7 +65,15 @@ mlir::LLVM::ConstantOp
+ fir::genConstantIndex(mlir::Location loc, mlir::Type ity,
+                       mlir::ConversionPatternRewriter &rewriter,
+                       std::int64_t offset) {
+-  auto cattr = rewriter.getI64IntegerAttr(offset);
++  mlir::Attribute cattr;
++  if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(ity)) {
++    if (intTy.getWidth() <= 32)
++      cattr = rewriter.getI32IntegerAttr(static_cast<int32_t>(offset));
++    else
++      cattr = rewriter.getI64IntegerAttr(offset);
++  } else {
++    cattr = rewriter.getI64IntegerAttr(offset);
++  }
+   return mlir::LLVM::ConstantOp::create(rewriter, loc, ity, cattr);
+ }
+ 

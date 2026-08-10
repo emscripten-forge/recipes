@@ -1,0 +1,54 @@
+From f508bd700a8d7cb70eee3540c68f735872986dab Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 28 May 2026 12:01:25 +0200
+Subject: [PATCH 11/12] Guard Rlog1p C++ linkage and avoid local symbol clash
+
+- Guard the Rlog1p declaration in Rmath.h with __cplusplus so C
+builds don't parse extern "C".
+- Rename arithmetic.c's static Rlog1p helper to avoid conflicting
+with the exported Rlog1p declaration.
+---
+ src/include/Rmath.h0.in | 4 ++++
+ src/main/arithmetic.c   | 4 ++--
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/include/Rmath.h0.in b/src/include/Rmath.h0.in
+index f8becf5..1f3c11e 100644
+--- a/src/include/Rmath.h0.in
++++ b/src/include/Rmath.h0.in
+@@ -69,9 +69,13 @@
+ 
+ #if !defined(HAVE_WORKING_LOG1P)
+ /* remap to avoid problems with getting the right entry point */
++# ifdef __cplusplus
+ extern "C" {
++# endif
+ double  Rlog1p(double);
++# ifdef __cplusplus
+ }
++# endif
+ #define log1p Rlog1p
+ #endif
+ 
+diff --git a/src/main/arithmetic.c b/src/main/arithmetic.c
+index 03a7b70..8146954 100644
+--- a/src/main/arithmetic.c
++++ b/src/main/arithmetic.c
+@@ -1319,7 +1319,7 @@ static double Rexpm1(double x)
+     return f_x_x(x, expm1, DBL_EPSILON);
+ }
+ 
+-static double Rlog1p(double x)
++static double Rlog1p_local(double x)
+ {
+     /* log1p(x) = log(1 + x) =  x - x^2/2  + O(x^3)
+      *                       =. x  when  |x| < D_EPS, see Rexpm1() */
+@@ -1386,7 +1386,7 @@ attribute_hidden SEXP do_math1(SEXP call, SEXP op, SEXP args, SEXP env)
+ #define MATH1_SQRT(x) math1(CAR(args), Rsqrt, call);
+ #define MATH1_EXP(x)  math1_ari(CAR(args), Rexp,  0., 1., call);
+ #define MATH1_EXPM1(x)math1_ari(CAR(args), Rexpm1,0., 0., call);
+-#define MATH1_LOG1P(x)math1_ari(CAR(args), Rlog1p,0., 0., call);
++#define MATH1_LOG1P(x)math1_ari(CAR(args), Rlog1p_local,0., 0., call);
+ #define MATH1_SIN(x)  math1_ari(CAR(args), Rsin,  0., 0., call);
+ #define MATH1_ASIN(x) math1_ari(CAR(args), Rasin, 0., 0., call);
+ #define MATH1_TAN(x)  math1_ari(CAR(args), Rtan,  0., 0., call);

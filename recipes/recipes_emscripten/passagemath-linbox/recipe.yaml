@@ -1,0 +1,85 @@
+context:
+  version: 10.8.8
+
+package:
+  name: passagemath-linbox
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-linbox/passagemath_linbox-${{ version }}.tar.gz
+  sha256: 2f86a5d415a25fcc2a6e57dcee6d5d51eaff5bd5ba9da3c6e559bcbcb4d01865
+
+build:
+  script: |
+    export LDFLAGS="$LDFLAGS -Wl,--allow-multiple-definition"
+    ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - mpc
+  - givaro
+  - fflas-ffpack
+  - linbox
+  - libflint
+  - gsl
+  - openblas
+  - numpy
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-modules
+  - passagemath-flint
+  run:
+  - python
+  - cysignals
+  - memory-allocator
+  - passagemath-categories
+  - passagemath-iml
+  - passagemath-m4ri-m4rie
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_linbox.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-modules
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Linear Algebra with Givaro, fflas-ffpack, LinBox'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides modules that depend on the LinBox suite (Givaro, fflas-ffpack, LinBox).
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_linbox.py
+  recipe-maintainers:
+  - mkoeppe

@@ -1,0 +1,220 @@
+context:
+  name: graphviz
+  version: 15.1.0
+  build_number: 0
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+  - staging:
+      name: build-cache
+    build:
+      script: build.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - bison
+        - flex
+        - pkg-config
+        - swig
+        - cross-python_emscripten-wasm32
+        - python
+      host:
+        - expat
+        - zlib
+        - libwebp
+        - python
+      ignore_run_exports:
+        from_package:
+          - python
+          - cross-python_emscripten-wasm32
+    source:
+      url: https://gitlab.com/graphviz/graphviz/-/archive/${{ version }}/${{ name }}-${{ version }}.tar.gz
+      sha256: cc673e3eb9013f40761590b2b071c0fb89ad5c5d694e25d4e1238c74df86c697
+      patches:
+        - patches/0001-preload-python-builtin-plugins.patch
+
+  - package:
+      name: graphviz
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
+      script: echo "Collecting files from cache"
+      files:
+        include:
+          - lib/libcdt.a
+          - lib/libcgraph.a
+          - lib/libgvc.a
+          - lib/libgvpr.a
+          - lib/libcommon.a
+          - lib/libdotgen.a
+          - lib/libgvplugin_core.a
+          - lib/libgvplugin_dot_layout.a
+          - lib/libgvplugin_webp.a
+          - lib/liblabel.a
+          - lib/libortho.a
+          - lib/libpack.a
+          - lib/libpathplan.a
+          - lib/libutil.a
+          - lib/libxdot.a
+          - lib/libcgraph++.a
+          - lib/libgvc++.a
+          - lib/cmake/Graphviz/GraphvizConfig.cmake
+          - lib/pkgconfig/libcdt.pc
+          - lib/pkgconfig/libcgraph.pc
+          - lib/pkgconfig/libgvc.pc
+          - lib/pkgconfig/libgvpr.pc
+          - lib/pkgconfig/libpathplan.pc
+          - lib/pkgconfig/libxdot.pc
+          - include/graphviz/**
+    requirements:
+      run:
+        - expat
+        - zlib
+        - libwebp
+    tests:
+      - package_contents:
+          lib:
+            - libcdt.a
+            - libcgraph.a
+            - libgvc.a
+            - libgvpr.a
+            - libcommon.a
+            - libdotgen.a
+            - libgvplugin_core.a
+            - libgvplugin_dot_layout.a
+            - libgvplugin_webp.a
+            - liblabel.a
+            - libortho.a
+            - libpack.a
+            - libpathplan.a
+            - libutil.a
+            - libxdot.a
+            - libcgraph++.a
+            - libgvc++.a
+          include:
+            - graphviz/cgraph.h
+            - graphviz/gvc.h
+            - graphviz/gvcext.h
+            - graphviz/gvpr.h
+            - graphviz/types.h
+            - graphviz/graphviz_version.h
+          files:
+            - lib/cmake/Graphviz/GraphvizConfig.cmake
+            - lib/pkgconfig/libcdt.pc
+            - lib/pkgconfig/libcgraph.pc
+            - lib/pkgconfig/libgvc.pc
+            - lib/pkgconfig/libgvpr.pc
+            - lib/pkgconfig/libpathplan.pc
+            - lib/pkgconfig/libxdot.pc
+      - script:
+          - build_tests.sh
+        requirements:
+          build:
+            - ${{ compiler('c') }}
+            - cmake
+            - ninja
+            - pkg-config
+            - expat
+            - zlib
+            - libwebp
+        files:
+          recipe:
+            - build_tests.sh
+            - tests/
+
+  - package:
+      name: graphviz-cli
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: ${{ build_number }}
+      string: h${{ hash }}_${{ build_number }}
+      script: echo "Collecting CLI files from cache"
+      files:
+        include:
+          - bin/dot.js
+          - bin/dot.wasm
+    requirements:
+      run:
+        - expat
+        - zlib
+        - libwebp
+    tests:
+      - package_contents:
+          files:
+            - bin/dot.js
+            - bin/dot.wasm
+      - script:
+          - bash test_cli.sh
+        requirements:
+          build:
+            - nodejs
+        files:
+          recipe:
+            - test_cli.sh
+
+  - package:
+      name: graphviz-python
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      number: ${{ build_number }}
+      script: echo "Collecting Python files from cache"
+      files:
+        include:
+          - lib/_gv_python3.*
+          - lib/graphviz/python3/**
+          - lib/python*/site-packages/_gv_python3.so
+          - lib/python*/site-packages/gv.py
+        exclude:
+          - '**/*.pyc'
+          - '**/__pycache__/**'
+      python:
+        skip_pyc_compilation:
+          - '**/*.py'
+    requirements:
+      host:
+        - python
+      run:
+        - graphviz =${{ version }}
+    tests:
+      - package_contents:
+          lib:
+            - _gv_python3.a
+          files:
+            - lib/graphviz/python3/gv.py
+            - lib/python*/site-packages/_gv_python3.so
+      - script: pytester
+        files:
+          recipe:
+            - test_graphviz_python.py
+        requirements:
+          build:
+            - pytester
+          run:
+            - pytester-run
+
+about:
+  homepage: https://graphviz.org
+  license: EPL-2.0
+  license_file: LICENSE
+  summary: Graph visualization software
+  description: |
+    Graphviz is open source graph visualization software. Graph visualization
+    is a way of representing structural information as diagrams of abstract
+    graphs and networks. It has important applications in networking,
+    bioinformatics, software engineering, database and web design, machine
+    learning, and in visual interfaces for other technical domains.
+  documentation: https://graphviz.org/documentation/
+  repository: https://gitlab.com/graphviz/graphviz
+
+extra:
+  recipe-maintainers:
+    - Alex-PLACET

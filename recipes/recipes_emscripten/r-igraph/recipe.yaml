@@ -1,0 +1,90 @@
+context:
+  name: igraph
+  version: 2.3.3
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 942522d815eb1de840d5cdc60745dab8f815398cda279dd4bd98444b0c07a699
+  patches:
+  - patches/0001-Use-external-arpack.patch
+  - patches/0002-Fix-lapack-function-signatures.patch
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('fortran') }}
+  - r-cli
+  - r-cpp11
+  - r-lifecycle
+  - r-magrittr
+  - r-matrix
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+  - arpack
+  - glpk
+  - gmp
+  - libxml2
+  - r-cli
+  - r-cpp11
+  - r-lifecycle
+  - r-magrittr
+  - r-matrix
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+  run:
+  - r-cli
+  - r-cpp11
+  - r-lifecycle
+  - r-magrittr
+  - r-matrix
+  - r-pkgconfig
+  - r-rlang
+  - r-vctrs
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_igraph.R
+  files:
+    recipe:
+    - test_igraph.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=igraph
+  documentation: https://r.igraph.org/
+  repository: https://github.com/igraph/rigraph
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  license_family: GPL3
+  summary: Network Analysis and Visualization
+  description: |
+    Routines for simple graphs and network analysis. It can handle large graphs
+    very well and provides functions for generating random and regular graphs,
+    graph visualization, centrality methods and much more.Routines for simple
+    graphs and network analysis. It can handle large graphs very well and
+    provides functions for generating random and regular graphs, graph
+    visualization, centrality methods and much more.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

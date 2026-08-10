@@ -1,0 +1,83 @@
+context:
+  name: gdcm
+  version: 3.2.10
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/malaterre/GDCM/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 94549490048ef7125e8af35569c20e8106b96c3d955178135dc75be561a14b76
+  patches:
+  - patches/0001-disable-network.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    lib:
+    - libgdcmCommon.a
+    - libgdcmDSED.a
+    - libgdcmIOD.a
+    - libgdcmMSFF.a
+    - libgdcmDICT.a
+    - libgdcmjpeg8.a
+    - libgdcmjpeg12.a
+    - libgdcmjpeg16.a
+    - libgdcmopenjp2.a
+    - libgdcmcharls.a
+    - libgdcmuuid.a
+    - libgdcmzlib.a
+    - libgdcmexpat.a
+    - libsocketxx.a
+    files:
+    - include/gdcm-*/gdcmReader.h
+    - include/gdcm-*/gdcmWriter.h
+    - include/gdcm-*/gdcmAttribute.h
+    - include/gdcm-*/gdcmDataSet.h
+    - include/gdcm-*/gdcmFile.h
+    - include/gdcm-*/gdcmImage.h
+    - include/gdcm-*/gdcmStringFilter.h
+    - include/gdcm-*/gdcmGlobal.h
+    - lib/gdcm-*/GDCMConfig.cmake
+    - lib/gdcm-*/GDCMTargets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/malaterre/GDCM
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: Copyright.txt
+  summary: Grassroots DICOM library
+  description: |
+    GDCM (Grassroots DICOM) is a C++ library for reading, writing and
+    manipulating DICOM (Digital Imaging and Communications in Medicine)
+    medical image files. It provides a complete implementation of the DICOM
+    standard including multiple transfer syntaxes, image codecs, and
+    the DICOM dictionary.
+  documentation: http://gdcm.sourceforge.net/wiki/
+  repository: https://github.com/malaterre/GDCM
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

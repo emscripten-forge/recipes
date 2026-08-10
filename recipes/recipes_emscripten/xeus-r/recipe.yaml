@@ -1,18 +1,39 @@
 context:
-  version: 0.11.0
+  version: 0.11.2
   name: xeus-r
-
+  build_variant_prefix: ${{ "static_libpython_h" if r_main_module_static_libpython == "1" else "h" }}
+  
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
   url: https://github.com/jupyter-xeus/xeus-r/archive/refs/tags/${{ version }}.tar.gz
-  sha256: c26a4605f2e18cad7b54fafdeb573e26af49d06e59d8fa264a2756a168253986
+  sha256: 48ac9c46800f46b8263e3f27c53eb1568a35297fb61a8abbb359ce548493025a
 
 build:
-  number: 0
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 1
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base >= '4.6.0' }}
+  # Explicit build strings so downstream recipes can require the static-libpython version
+  # variant, e.g. `xeus-r * *static_libpython*`.
+  string: ${{ build_variant_prefix ~ (hash ~ "_" ~ build_number) }}
+
+  # Pass the variant into build.sh (not inferred from the script by rattler-build).
+  script:
+    file: build.sh
+    env:
+      R_MAIN_MODULE_STATIC_LIBPYTHON: ${{ r_main_module_static_libpython }}
+
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - r_main_module_static_libpython
+    # Deprioritize the static-libpython variant so the default build stays
+    # preferred by the solver (via down_prioritize_variant / track_features).
+    down_prioritize_variant: ${{ 1 if r_main_module_static_libpython == "1" else 0 }}
+
 
 requirements:
   build:
@@ -27,7 +48,9 @@ requirements:
   - r-IRdisplay
   - r-R6
   - r-repr
+  - pkg-config
   host:
+  - r-base ==${{ r_base }}
   - nlohmann_json
   - nlohmann_json-abi
   - xeus >=6,<7
@@ -38,7 +61,21 @@ requirements:
   - liblzma
   - bzip2
   - libiconv >=1.18
+  - if: r_main_module_static_libpython == "1"
+    then:
+    - python
+    - libpython
+    - libffi
+    - sqlite
+    - openssl
+    - zstd
   run:
+  - if: r_main_module_static_libpython == "1"
+    then:
+    - python
+    - r-main-module-abi * *static_libpython*
+    else:
+    - r-main-module-abi *vanilla*
   - r-cli
   - r-evaluate
   - r-glue
@@ -48,6 +85,7 @@ requirements:
   - r-repr
   - r-rlang
   - zlib
+
 
 tests:
 - package_contents:

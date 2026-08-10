@@ -1,26 +1,33 @@
 #!/bin/bash
+set -e
 
-mkdir build
+mkdir -p build
 cd build
 
-export CFLAGS="${CFLAGS} -nostdinc -I${PREFIX}/include"
-export CPPFLAGS="${CPPFLAGS} -nostdinc -I${PREFIX}/include"
+export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
+export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
+export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
 
-# Configure with CMake for emscripten with minimal dependencies
+# Build a minimal configuration: no external codecs, static library only.
+# Uses the same flags as upstream build-emscripten.sh for the library itself.
 emcmake cmake .. \
   -GNinja \
-  -DCMAKE_PREFIX_PATH=$PREFIX \
-  -DCMAKE_SYSTEM_PREFIX_PATH=$PREFIX \
-  -DCMAKE_INSTALL_PREFIX=${PREFIX} \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_FIND_ROOT_PATH="$PREFIX" \
-  -DENABLE_MULTITHREADING_SUPPORT=OFF \
+  -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+  -DCMAKE_INSTALL_LIBDIR=lib \
+  -DCMAKE_PREFIX_PATH="${PREFIX}" \
+  -DCMAKE_C_FLAGS_RELEASE="$CFLAGS" \
+  -DCMAKE_CXX_FLAGS_RELEASE="$CXXFLAGS" \
   -DBUILD_SHARED_LIBS=OFF \
   -DBUILD_TESTING=OFF \
-  -DENABLE_PLUGIN_LOADING=OFF \
   -DWITH_EXAMPLES=OFF \
+  -DWITH_GDK_PIXBUF=OFF \
+  -DENABLE_PLUGIN_LOADING=OFF \
+  -DENABLE_MULTITHREADING_SUPPORT=OFF \
   -DWITH_LIBDE265=OFF \
   -DWITH_X265=OFF \
+  -DWITH_AOM_DECODER=OFF \
+  -DWITH_AOM_ENCODER=OFF \
   -DWITH_DAV1D=OFF \
   -DWITH_SvtEnc=OFF \
   -DWITH_RAV1E=OFF \
@@ -28,8 +35,16 @@ emcmake cmake .. \
   -DWITH_UVG266=OFF \
   -DWITH_VVDEC=OFF \
   -DWITH_VVENC=OFF \
-  -DWITH_OPENJPH=OFF \
-  -DWITH_GDK_PIXBUF=OFF
+  -DWITH_OpenJPEG_DECODER=OFF \
+  -DWITH_OpenJPEG_ENCODER=OFF \
+  -DWITH_OPENJPH_ENCODER=OFF \
+  -DWITH_JPEG_DECODER=OFF \
+  -DWITH_JPEG_ENCODER=OFF \
+  -DWITH_OpenH264=OFF \
+  -DWITH_X264=OFF \
+  -DWITH_FFMPEG_DECODER=OFF
 
-ninja
 ninja install
+
+# Remove .la files if any
+find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true

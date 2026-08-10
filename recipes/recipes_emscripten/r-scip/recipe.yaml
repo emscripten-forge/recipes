@@ -1,0 +1,56 @@
+context:
+  name: r-scip
+  version: 1.10.0-3
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 958d244341212e3c5d59af6016bbefc909cb2eb42a03423e506d3e5f909f2272
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-matrix
+  host:
+  - r-base ==${{ r_base }}
+  - r-matrix
+  - libflang
+  run:
+  - r-matrix
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://cran.r-project.org/web/packages/scip/index.html
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: Apache-2.0
+  summary: |
+    R interface to SCIP, a framework for constraint integer programming.
+  description: |
+    R interface to SCIP, a framework for constraint integer programming.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

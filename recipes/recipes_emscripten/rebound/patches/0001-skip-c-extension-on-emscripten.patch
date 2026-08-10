@@ -1,0 +1,29 @@
+--- a/setup.py	2026-07-02 13:26:02.036248410 +0200
++++ b/setup.py	2026-07-02 13:26:13.421075170 +0200
+@@ -42,12 +42,17 @@
+     extra_compile_args += ["-march=native", "-DAVX512"]
+ 
+ ##### C Extension
+-libreboundmodule = Extension(
+-    "librebound",
+-    sources=sorted(glob("src/*.c")),
+-    include_dirs=["src"],
+-    extra_link_args=extra_link_args,
+-    extra_compile_args=extra_compile_args,
+-)
+-
+-setup(ext_modules=[libreboundmodule])
++# On emscripten, librebound is built and installed separately as a
++# standalone shared library (see the librebound conda package).
++# Skip building the C extension here; only install the Python wrapper.
++if sys.platform == "emscripten":
++    setup()
++else:
++    libreboundmodule = Extension(
++        "librebound",
++        sources=sorted(glob("src/*.c")),
++        include_dirs=["src"],
++        extra_link_args=extra_link_args,
++        extra_compile_args=extra_compile_args,
++    )
++    setup(ext_modules=[libreboundmodule])

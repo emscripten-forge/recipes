@@ -1,0 +1,249 @@
+diff --git a/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
+new file mode 100644
+index 000000000000..5e37909986a6
+--- /dev/null
++++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
+@@ -0,0 +1,243 @@
++//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM
++// Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++//
++// Implements the MLIR Wasm Execution Engine CAPI (mlir-c/WasmExecutionEngine.h)
++// for Emscripten targets.
++//
++// Pipeline (all in-process, no subprocesses):
++//
++//   MlirOperation (LLVM dialect module)
++//       |
++//       | mlir::translateModuleToLLVMIR
++//       v
++//   llvm::Module (IR)
++//       |
++//       | TargetMachine::addPassesToEmitFile  (wasm32, PIC, -Ox)
++//       v
++//   <moduleName>.o  (wasm32 object file in MEMFS)
++//       |
++//       | lld::lldMain + Wasm driver  (in-process, crash-safe, canRunAgain)
++//       v
++//   <moduleName>.wasm  (SIDE_MODULE)
++//       |
++//       | dlopen(RTLD_GLOBAL)
++//       v
++//   symbols globally visible to ctypes / subsequent modules
++//
++//===----------------------------------------------------------------------===//
++
++#ifdef __EMSCRIPTEN__
++
++#include "mlir-c/WasmExecutionEngine.h"
++#include "mlir/CAPI/IR.h"
++#include "mlir/CAPI/Support.h"
++#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
++#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
++#include "mlir/Target/LLVMIR/ModuleTranslation.h"
++#include "lld/Common/Driver.h"
++#include "llvm/IR/LLVMContext.h"
++#include "llvm/IR/LegacyPassManager.h"
++#include "llvm/IR/Module.h"
++#include "llvm/MC/TargetRegistry.h"
++#include "llvm/Support/FileSystem.h"
++#include "llvm/Support/Path.h"
++#include "llvm/Support/TargetSelect.h"
++#include "llvm/Support/raw_ostream.h"
++#include "llvm/Target/TargetMachine.h"
++
++#include <dlfcn.h>
++#include <string>
++#include <vector>
++
++// Declare the wasm driver using the standard LLD macro from Driver.h.
++LLD_HAS_DRIVER(wasm)
++
++namespace {
++// Lazily create (once per process) a unique scratch directory for the
++// intermediate .o / .wasm files, mirroring clang-repl's WasmIncrementalExecutor
++// (clang/lib/Interpreter/Wasm.cpp).  Without this, object/binary files pile up
++// directly in the MEMFS current working directory, which is visible (and
++// confusing clutter) in the JupyterLite virtual filesystem view.
++const llvm::SmallString<256> &getWasmExecTempDir() {
++  static llvm::SmallString<256> tempDir = [] {
++    llvm::SmallString<256> dir;
++    if (auto ec = llvm::sys::fs::createUniqueDirectory("mlir-wasm-exec-", dir))
++      llvm::report_fatal_error(
++          ("mlirWasmCompileModule: failed to create temporary directory: " +
++           ec.message())
++              .c_str());
++    return dir;
++  }();
++  return tempDir;
++}
++} // namespace
++
++extern "C" {
++
++MlirStringRef mlirWasmCompileModule(MlirOperation module,
++                                    MlirStringRef moduleName, int optLevel) {
++  // Initialize the WebAssembly target once.  Skip if wasm32 is already
++  // registered (e.g. by llvmlite's initialize_all_targets).  On Emscripten
++  // each SIDE_MODULE has its own copy of static variables, so call_once /
++  // once_flag does NOT deduplicate across modules.  Calling
++  // InitializeNativeTarget() twice from two SIDE_MODULEs double-registers
++  // CodeGen passes with incompatible function-table entries, corrupting the
++  // global PassRegistry.
++  static bool initOnce = [] {
++    llvm::Triple triple("wasm32-unknown-emscripten");
++    std::string err;
++    if (!llvm::TargetRegistry::lookupTarget(triple, err)) {
++      llvm::InitializeNativeTarget();
++      llvm::InitializeNativeTargetAsmParser();
++      llvm::InitializeNativeTargetAsmPrinter();
++    }
++    return true;
++  }();
++  (void)initOnce;
++
++  mlir::Operation *op = unwrap(module);
++
++  // Register dialect translations required to lower MLIR → LLVM IR.
++  mlir::registerBuiltinDialectTranslation(*op->getContext());
++  mlir::registerLLVMDialectTranslation(*op->getContext());
++
++  std::unique_ptr<llvm::LLVMContext> ctx(new llvm::LLVMContext);
++  auto llvmModule = mlir::translateModuleToLLVMIR(op, *ctx);
++  if (!llvmModule)
++    llvm::report_fatal_error(
++        "mlirWasmCompileModule: failed to translate MLIR module to LLVM IR");
++
++  std::string tripleStr = llvmModule->getTargetTriple().str();
++  if (tripleStr.empty())
++    llvm::report_fatal_error(
++        "mlirWasmCompileModule: module has no target triple; set "
++        "llvm.target_triple to \"wasm32-unknown-emscripten\" before calling");
++
++  llvm::Triple triple(tripleStr);
++  std::string errorStr;
++  const llvm::Target *target =
++      llvm::TargetRegistry::lookupTarget(triple, errorStr);
++  if (!target)
++    llvm::report_fatal_error(
++        ("mlirWasmCompileModule: no target for triple '" + tripleStr +
++         "': " + errorStr)
++            .c_str());
++
++  llvm::TargetOptions to;
++  std::unique_ptr<llvm::TargetMachine> targetMachine(
++      target->createTargetMachine(triple, /*CPU=*/"",
++                                  /*Features=*/"", to, llvm::Reloc::PIC_));
++  assert(optLevel >= 0 && optLevel <= 3 && "optLevel must be in [0,3]");
++  targetMachine->setOptLevel(static_cast<llvm::CodeGenOptLevel>(optLevel));
++  llvmModule->setDataLayout(targetMachine->createDataLayout());
++
++  std::string nameStr(moduleName.data, moduleName.length);
++
++  llvm::SmallString<256> objFilePath(getWasmExecTempDir());
++  llvm::sys::path::append(objFilePath, nameStr + ".o");
++  std::string objFile(objFilePath.str());
++
++  std::error_code ec;
++  llvm::raw_fd_ostream objStream(llvm::StringRef(objFile), ec);
++  if (ec)
++    llvm::report_fatal_error(
++        ("mlirWasmCompileModule: cannot open object file '" + objFile +
++         "': " + ec.message())
++            .c_str());
++
++  llvm::legacy::PassManager pm;
++  if (targetMachine->addPassesToEmitFile(pm, objStream, nullptr,
++                                         llvm::CodeGenFileType::ObjectFile))
++    llvm::report_fatal_error(
++        "mlirWasmCompileModule: wasm backend cannot emit object files");
++
++  pm.run(*llvmModule);
++  objStream.close();
++
++  // Store in a static buffer so the returned StringRef stays valid until the
++  // next call (sequential JIT usage is the common pattern in JupyterLite).
++  static std::string s_lastObjPath;
++  s_lastObjPath = objFile;
++  return mlirStringRefCreate(s_lastObjPath.c_str(), s_lastObjPath.size());
++}
++
++void mlirWasmLinkLoadModule(MlirStringRef objectFileName,
++                             MlirStringRef binaryFileName) {
++  std::string objFile(objectFileName.data, objectFileName.length);
++
++  // The Python wrapper always passes a bare "<name>.wasm" filename; place it
++  // in the same scratch directory as the object file rather than the current
++  // working directory (see getWasmExecTempDir() above).
++  llvm::SmallString<256> binFilePath(getWasmExecTempDir());
++  llvm::sys::path::append(
++      binFilePath,
++      llvm::sys::path::filename(
++          llvm::StringRef(binaryFileName.data, binaryFileName.length)));
++  std::string binFile(binFilePath.str());
++
++  // Arguments match what llvmlite's EmscriptenBackend passes to wasm-ld.
++  std::vector<const char *> args = {"wasm-ld",
++                                    "-shared",
++                                    "--import-memory",
++                                    "--stack-first",
++                                    "--allow-undefined",
++                                    objFile.c_str(),
++                                    "-o",
++                                    binFile.c_str()};
++
++  // Use lld::lldMain — the public crash-safe re-entrant API — with only the
++  // Wasm driver linked in.  This is the same pattern used by clang-repl's
++  // Wasm backend and is preferred over calling lld::wasm::link directly.
++  const lld::DriverDef wasmDriver = {lld::Flavor::Wasm, &lld::wasm::link};
++  std::string errStr;
++  llvm::raw_string_ostream errOS(errStr);
++  lld::Result result = lld::lldMain(
++      llvm::ArrayRef<const char *>(args.data(), args.size()),
++      llvm::outs(), errOS, {wasmDriver});
++  if (result.retCode)
++    llvm::report_fatal_error(
++        ("mlirWasmLinkLoadModule: lld failed: " + errStr).c_str());
++
++  void *handle = dlopen(binFile.c_str(), RTLD_NOW | RTLD_GLOBAL);
++  if (!handle)
++    llvm::report_fatal_error(
++        ("mlirWasmLinkLoadModule: dlopen failed for '" + binFile +
++         "': " + std::string(dlerror()))
++            .c_str());
++}
++
++void *mlirWasmGetSymbolAddress(MlirStringRef name) {
++  std::string nameStr(name.data, name.length);
++  return dlsym(RTLD_DEFAULT, nameStr.c_str());
++}
++
++void mlirWasmTranslateToLLVMIR(MlirOperation module,
++                                MlirStringCallback callback, void *userData) {
++  // Re-use the same translation path as mlirWasmCompileModule but stop
++  // after translateModuleToLLVMIR — before code generation.
++  mlir::Operation *op = unwrap(module);
++  mlir::registerBuiltinDialectTranslation(*op->getContext());
++  mlir::registerLLVMDialectTranslation(*op->getContext());
++
++  llvm::LLVMContext ctx;
++  auto llvmModule = mlir::translateModuleToLLVMIR(op, ctx);
++  if (!llvmModule)
++    llvm::report_fatal_error(
++        "mlirWasmTranslateToLLVMIR: failed to translate MLIR module");
++
++  std::string ir;
++  llvm::raw_string_ostream os(ir);
++  llvmModule->print(os, nullptr);
++  os.flush();
++  callback(mlirStringRefCreate(ir.data(), ir.size()), userData);
++}
++
++} // extern "C"
++
++#endif // __EMSCRIPTEN__

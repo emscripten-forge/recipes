@@ -1,20 +1,21 @@
 context:
-  name: r-hexbin
-  version: 1.28.5
+  name: hexbin
+  version: 1.28.6
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 2ed087d6399f247d44e555b69d785b48362445c4c8c77330bbd57d282b49d3e6
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 848ee6a8f4c265df2adb86c76795a01386cdb3802be6bcc4fd73949851655337
 
 build:
-  number: 5
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 0
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -33,14 +34,21 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_hexbin.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://cran.r-project.org/package=hexbin
   repository: http://github.com/edzer/hexbin
   license: GPL-2.0-only
   license_family: GPL2
-  license_file: GPL-2
+  license_file: ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Hexagonal binning routines and plotting methods
 
 extra:

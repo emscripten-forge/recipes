@@ -1,0 +1,55 @@
+context:
+  name: r-rtsne
+  version: "0.17"
+  ccname: Rtsne
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  sha256: 3aae6814d6c6d406785145f07374135652f2b26a58690dfd4bfbc8365dc5590b
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }}
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - r-rcpp
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  run:
+  - r-rcpp
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+- script: run_r_test test_rtsne.R
+  files:
+    recipe:
+    - test_rtsne.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=Rtsne
+  repository: https://github.com/jkrijthe/Rtsne
+  license: LicenseRef-FOSS
+  license_file: LICENSE
+  summary: T-Distributed Stochastic Neighbor Embedding using Barnes-Hut Implementation
+
+extra:
+  recipe-maintainers:
+  - anutosh491

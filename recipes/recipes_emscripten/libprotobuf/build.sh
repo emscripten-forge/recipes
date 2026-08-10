@@ -39,5 +39,10 @@ emcmake cmake -GNinja \
 
 ninja install
 
+# Install a lightweight CMake package config for downstream consumers.
+mkdir -p "${PREFIX}/lib/cmake/protobuf"
+cp "${RECIPE_DIR}/protobufConfig.cmake" "${PREFIX}/lib/cmake/protobuf/"
+cp "${RECIPE_DIR}/protobufTargets.cmake" "${PREFIX}/lib/cmake/protobuf/"
+
 # Remove .la files if any
 find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true

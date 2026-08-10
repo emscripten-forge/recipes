@@ -1,0 +1,598 @@
+From ecb1c76a52ea99f0bf8ed1261cce580f5501db79 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 19 Jun 2026 14:10:24 +0200
+Subject: [PATCH] Disable multi-threading
+
+---
+ configure                |  11 ++++-
+ inst/include/later_api.h |  20 +++++---
+ src/Makevars.in          |  10 +++-
+ src/fd.cpp               |  27 ++++++++++
+ src/later_config.h       |  11 +++++
+ src/later_posix.cpp      | 103 +++++++++++++++++++++++++++++++++++++--
+ src/threadutils.h        |  96 ++++++++++++++++++++++++++++++++++++
+ src/timeconv.h           |  35 +++++++++++++
+ src/timer_posix.cpp      |  43 ++++++++++++++++
+ src/timer_posix.h        |  11 ++++-
+ src/tinycthread.c        |   6 +++
+ 11 files changed, 358 insertions(+), 15 deletions(-)
+ create mode 100644 src/later_config.h
+
+diff --git a/configure b/configure
+index aa9a93f..f8aa1c0 100755
+--- a/configure
++++ b/configure
+@@ -20,6 +20,12 @@ else
+   EXTRA_PKG_LIBS=-latomic
+ fi
+ 
++echo "Building single-threaded later."
++unset EXTRA_PKG_LIBS
++PKG_CPPFLAGS="-DLATER_SINGLE_THREADED"
++PKG_PTHREAD_CPPFLAGS=""
++PKG_PTHREAD_LIBS=""
++
+ case "$CC" in
+   *undefined*)
+     echo "Found UBSAN. Will skip tests that raise false positives."
+@@ -28,7 +34,10 @@ case "$CC" in
+ esac
+ 
+ # Write to Makevars
+-sed -e "s|@extra_pkg_libs@|$EXTRA_PKG_LIBS|" -e "s|@pkg_cppflags@|$PKG_CPPFLAGS|" \
++sed -e "s|@extra_pkg_libs@|$EXTRA_PKG_LIBS|" \
++    -e "s|@pkg_cppflags@|$PKG_CPPFLAGS|" \
++    -e "s|@pkg_pthread_cppflags@|$PKG_PTHREAD_CPPFLAGS|" \
++    -e "s|@pkg_pthread_libs@|$PKG_PTHREAD_LIBS|" \
+     src/Makevars.in > src/Makevars
+ 
+ # Success
+diff --git a/inst/include/later_api.h b/inst/include/later_api.h
+index abe6900..340c9eb 100644
+--- a/inst/include/later_api.h
++++ b/inst/include/later_api.h
+@@ -26,7 +26,9 @@
+ #include <windows.h>
+ #else // _WIN32
+ #include <poll.h>
++#if !defined(__EMSCRIPTEN__) && !defined(LATER_SINGLE_THREADED)
+ #include <pthread.h>
++#endif
+ #endif // _WIN32
+ 
+ #include <Rinternals.h>
+@@ -165,14 +167,9 @@ public:
+ 
+   // Start executing the task
+   void begin() {
+-#ifndef _WIN32
+-    pthread_attr_t attr;
+-    pthread_attr_init(&attr);
+-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+-    pthread_t t;
+-    pthread_create(&t, &attr, BackgroundTask::task_main, this);
+-    pthread_attr_destroy(&attr);
+-#else
++#if defined(__EMSCRIPTEN__) || defined(LATER_SINGLE_THREADED)
++    Rf_error("later::BackgroundTask is not supported in single-threaded builds");
++#elif defined(_WIN32)
+     HANDLE hThread = ::CreateThread(
+       NULL, 0,
+       BackgroundTask::task_main_win,
+@@ -181,6 +178,13 @@ public:
+       NULL
+     );
+     ::CloseHandle(hThread);
++#else
++    pthread_attr_t attr;
++    pthread_attr_init(&attr);
++    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++    pthread_t t;
++    pthread_create(&t, &attr, BackgroundTask::task_main, this);
++    pthread_attr_destroy(&attr);
+ #endif
+   }
+ 
+diff --git a/src/Makevars.in b/src/Makevars.in
+index f7be559..fa5638c 100644
+--- a/src/Makevars.in
++++ b/src/Makevars.in
+@@ -1,5 +1,11 @@
+-PKG_CPPFLAGS = -pthread -DSTRICT_R_HEADERS -DRCPP_NO_MODULES @pkg_cppflags@
+-PKG_LIBS = -pthread @extra_pkg_libs@
++PKG_CPPFLAGS = @pkg_pthread_cppflags@ -DSTRICT_R_HEADERS -DRCPP_NO_MODULES @pkg_cppflags@
++PKG_LIBS = @pkg_pthread_libs@ @extra_pkg_libs@
++
++# -pthread enables shared memory and breaks SIDE_MODULE load.
++ifneq (,$(findstring emcc,$(CC)))
++PKG_CPPFLAGS := $(filter-out -pthread,$(PKG_CPPFLAGS))
++PKG_LIBS := $(filter-out -pthread,$(PKG_LIBS))
++endif
+ 
+ #### Debugging flags ####
+ # Uncomment to enable thread assertions
+diff --git a/src/fd.cpp b/src/fd.cpp
+index ce2072f..f67ad03 100644
+--- a/src/fd.cpp
++++ b/src/fd.cpp
+@@ -1,5 +1,30 @@
++#include "later_config.h"
+ #include "fd.h"
+ #include <Rcpp.h>
++
++#if LATER_SINGLE_THREADED
++
++// [[Rcpp::export(rng = false)]]
++Rcpp::RObject execLater_fd(Rcpp::Function callback, Rcpp::IntegerVector readfds, Rcpp::IntegerVector writefds,
++                           Rcpp::IntegerVector exceptfds, Rcpp::NumericVector timeoutSecs, Rcpp::IntegerVector loop_id) {
++  (void)callback; (void)readfds; (void)writefds; (void)exceptfds;
++  (void)timeoutSecs; (void)loop_id;
++  Rcpp::stop("later_fd() is not supported in single-threaded builds");
++}
++
++// [[Rcpp::export(rng = false)]]
++Rcpp::LogicalVector fd_cancel(Rcpp::RObject xptr) {
++  (void)xptr;
++  Rcpp::stop("later_fd() is not supported in single-threaded builds");
++}
++
++extern "C" int execLaterFdNative(void (*func)(int *, void *), void *data, int num_fds, struct pollfd *fds, double timeoutSecs, int loop_id) {
++  (void)func; (void)data; (void)num_fds; (void)fds; (void)timeoutSecs; (void)loop_id;
++  return 1;
++}
++
++#else // LATER_SINGLE_THREADED
++
+ #include <unistd.h>
+ #include <cstdlib>
+ #include <atomic>
+@@ -219,3 +244,5 @@ extern "C" int execLaterFdNative(void (*func)(int *, void *), void *data, int nu
+   ensureInitialized();
+   return execLater_fd_native(func, data, num_fds, fds, timeoutSecs, loop_id);
+ }
++
++#endif // LATER_SINGLE_THREADED
+diff --git a/src/later_config.h b/src/later_config.h
+new file mode 100644
+index 0000000..06ee81b
+--- /dev/null
++++ b/src/later_config.h
+@@ -0,0 +1,11 @@
++#ifndef LATER_CONFIG_H
++#define LATER_CONFIG_H
++
++// Single-threaded build for platforms without pthread/atomics (e.g. Emscripten).
++#if defined(__EMSCRIPTEN__) || defined(LATER_SINGLE_THREADED)
++#ifndef LATER_SINGLE_THREADED
++#define LATER_SINGLE_THREADED 1
++#endif
++#endif
++
++#endif
+diff --git a/src/later_posix.cpp b/src/later_posix.cpp
+index 5e18b49..75e3270 100644
+--- a/src/later_posix.cpp
++++ b/src/later_posix.cpp
+@@ -7,6 +7,7 @@
+ 
+ #include "later.h"
+ #include "callback_registry.h"
++#include "later_config.h"
+ #include "timer_posix.h"
+ #include "threadutils.h"
+ #include "debug.h"
+@@ -19,9 +20,95 @@ using namespace Rcpp;
+ extern void* R_GlobalContext;
+ extern void* R_TopLevelContext;
+ 
+-// Whether we have initialized the input handler.
++// Whether we have initialized the autorunner.
+ static int initialized = 0;
+ 
++#if LATER_SINGLE_THREADED
++
++#include <emscripten/eventloop.h>
++
++static void dispatch_scheduled_callbacks();
++
++static void update_runtime_keepalive() {
++  static bool active = false;
++  const bool need = !idle(GLOBAL_LOOP);
++  if (need && !active) {
++    emscripten_runtime_keepalive_push();
++    active = true;
++  } else if (!need && active) {
++    emscripten_runtime_keepalive_pop();
++    active = false;
++  }
++}
++
++namespace {
++void on_timer_fire() {
++  dispatch_scheduled_callbacks();
++}
++
++Timer timer(on_timer_fire);
++} // namespace
++
++class ResetTimerOnExit {
++public:
++  ResetTimerOnExit() {}
++  ~ResetTimerOnExit() {
++    ASSERT_MAIN_THREAD()
++    Optional<Timestamp> nextEvent = getGlobalRegistry()->nextTimestamp();
++    if (nextEvent.has_value()) {
++      timer.set(*nextEvent);
++    }
++  }
++};
++
++static void dispatch_scheduled_callbacks() {
++  ASSERT_MAIN_THREAD()
++
++  if (!at_top_level()) {
++    timer.set(Timestamp(0.001));
++    return;
++  }
++
++  ResetTimerOnExit resetTimerOnExit_scope;
++
++  try {
++    execCallbacksForTopLevel();
++  }
++  catch(Rcpp::internal::InterruptedException &e) {
++    DEBUG_LOG("dispatch_scheduled_callbacks: caught Rcpp::internal::InterruptedException", LOG_INFO);
++    REprintf("later: interrupt occurred while executing callback.\n");
++  }
++  catch(Rcpp::LongjumpException& e){
++    DEBUG_LOG("dispatch_scheduled_callbacks: caught exception", LOG_INFO);
++    REprintf("later: exception occurred while executing callback.\n");
++  }
++  catch(std::exception& e){
++    DEBUG_LOG("dispatch_scheduled_callbacks: caught exception", LOG_INFO);
++    std::string msg = "later: exception occurred while executing callback: \n";
++    msg += e.what();
++    msg += "\n";
++    REprintf("%s", msg.c_str());
++  }
++  catch( ... ){
++    REprintf("later: c++ exception (unknown reason) occurred while executing callback.\n");
++  }
++
++  update_runtime_keepalive();
++}
++
++void ensureAutorunnerInitialized() {
++  if (!initialized) {
++    initialized = 1;
++  }
++}
++
++void deInitialize() {
++  ASSERT_MAIN_THREAD()
++  initialized = 0;
++}
++
++#else // LATER_SINGLE_THREADED
++
+ // The handles to the read and write ends of a pipe. We use this pipe
+ // to signal R's input handler callback mechanism that we want to be
+ // called back.
+@@ -251,6 +338,8 @@ void deInitialize() {
+   }
+ }
+ 
++#endif // LATER_SINGLE_THREADED
++
+ uint64_t doExecLater(std::shared_ptr<CallbackRegistry> callbackRegistry, Rcpp::Function callback, double delaySecs, bool resetTimer) {
+   ASSERT_MAIN_THREAD()
+   uint64_t callback_id = callbackRegistry->add(callback, delaySecs);
+@@ -259,8 +348,12 @@ uint64_t doExecLater(std::shared_ptr<CallbackRegistry> callbackRegistry, Rcpp::F
+   // this usage of the timer is relevant only when the event loop is driven by
+   // R's input handler (at the idle console), and only the global loop is by
+   // that.
+-  if (resetTimer)
++  if (resetTimer) {
+     timer.set(*(callbackRegistry->nextTimestamp()));
++#if LATER_SINGLE_THREADED
++    update_runtime_keepalive();
++#endif
++  }
+ 
+   return callback_id;
+ }
+@@ -268,8 +361,12 @@ uint64_t doExecLater(std::shared_ptr<CallbackRegistry> callbackRegistry, Rcpp::F
+ uint64_t doExecLater(std::shared_ptr<CallbackRegistry> callbackRegistry, void (*callback)(void*), void* data, double delaySecs, bool resetTimer) {
+   uint64_t callback_id = callbackRegistry->add(callback, data, delaySecs);
+ 
+-  if (resetTimer)
++  if (resetTimer) {
+     timer.set(*(callbackRegistry->nextTimestamp()));
++#if LATER_SINGLE_THREADED
++    update_runtime_keepalive();
++#endif
++  }
+ 
+   return callback_id;
+ }
+diff --git a/src/threadutils.h b/src/threadutils.h
+index 4297290..8b43751 100644
+--- a/src/threadutils.h
++++ b/src/threadutils.h
+@@ -4,6 +4,100 @@
+ #include <stdexcept>
+ #include <type_traits>
+ 
++#include "later_config.h"
++
++#if LATER_SINGLE_THREADED
++
++#include <time.h>
++#if defined(__EMSCRIPTEN__)
++#include <emscripten.h>
++#else
++#include <chrono>
++#include <thread>
++#endif
++#include "timeconv.h"
++
++#define tct_mtx_plain     0
++#define tct_mtx_timed     1
++#define tct_mtx_recursive 2
++
++class ConditionVariable;
++
++class Mutex {
++  friend class ConditionVariable;
++
++public:
++  Mutex(int type) {
++    (void)type;
++  }
++
++  Mutex(const Mutex&) = delete;
++  Mutex& operator=(const Mutex&) = delete;
++
++  virtual ~Mutex() {}
++
++  void lock() {}
++
++  bool tryLock() {
++    return true;
++  }
++
++  void unlock() {}
++};
++
++class Guard {
++  Mutex* _mutex;
++
++public:
++  Guard(Mutex* mutex) : _mutex(mutex) {
++    (void)_mutex;
++  }
++
++  Guard(const Guard&) = delete;
++  Guard& operator=(const Guard&) = delete;
++
++  ~Guard() {}
++};
++
++class ConditionVariable {
++public:
++  ConditionVariable(Mutex& mutex) {
++    (void)mutex;
++    if (!std::is_integral<time_t>::value)
++      throw std::runtime_error("Integral time_t type expected");
++    if (!std::is_signed<time_t>::value)
++      throw std::runtime_error("Signed time_t type expected");
++  }
++
++  ConditionVariable(const ConditionVariable&) = delete;
++  ConditionVariable& operator=(const ConditionVariable&) = delete;
++
++  virtual ~ConditionVariable() {}
++
++  void signal() {}
++
++  void broadcast() {}
++
++  void wait() {}
++
++  bool timedwait(double timeoutSecs) {
++#if defined(__EMSCRIPTEN__)
++    if (timeoutSecs > 0) {
++      emscripten_sleep(static_cast<unsigned int>(timeoutSecs * 1000));
++    }
++#else
++    if (timeoutSecs > 0) {
++      std::this_thread::sleep_for(
++        std::chrono::duration<double>(timeoutSecs)
++      );
++    }
++#endif
++    return false;
++  }
++};
++
++#else // LATER_SINGLE_THREADED
++
+ #include "tinycthread.h"
+ #include "timeconv.h"
+ 
+@@ -142,4 +236,6 @@ public:
+   }
+ };
+ 
++#endif // LATER_SINGLE_THREADED
++
+ #endif // _THREADUTILS_H_
+diff --git a/src/timeconv.h b/src/timeconv.h
+index 301ec68..4d27c6e 100644
+--- a/src/timeconv.h
++++ b/src/timeconv.h
+@@ -1,12 +1,47 @@
+ #ifndef _LATER_TIMECONV_H_
+ #define _LATER_TIMECONV_H_
+ 
++#include "later_config.h"
++
++#if LATER_SINGLE_THREADED
++
++#include <time.h>
++#if defined(__EMSCRIPTEN__)
++#include <emscripten.h>
++#endif
++
++#ifndef TIME_UTC
++#define TIME_UTC 1
++#endif
++
++inline int timespec_get(timespec* ts, int base) {
++  if (base != TIME_UTC) {
++    return 0;
++  }
++#if defined(__EMSCRIPTEN__)
++  double ms = emscripten_get_now();
++  ts->tv_sec = static_cast<time_t>(ms / 1000.0);
++  ts->tv_nsec = static_cast<long>((ms - ts->tv_sec * 1000.0) * 1e6);
++#else
++  struct timespec now;
++  if (clock_gettime(CLOCK_REALTIME, &now) != 0) {
++    return 0;
++  }
++  *ts = now;
++#endif
++  return TIME_UTC;
++}
++
++#else // LATER_SINGLE_THREADED
++
+ // Some platforms (Win32, previously some Mac versions) use
+ // tinycthread.h to provide timespec. Whether tinycthread
+ // defines timespec or not, we want it to be consistent for
+ // anyone who uses these functions.
+ #include "tinycthread.h"
+ 
++#endif // LATER_SINGLE_THREADED
++
+ inline timespec addSeconds(const timespec& time, double secs) {
+   timespec ts = time;
+   ts.tv_sec += (time_t)secs;
+diff --git a/src/timer_posix.cpp b/src/timer_posix.cpp
+index bf0255a..f81bf6a 100644
+--- a/src/timer_posix.cpp
++++ b/src/timer_posix.cpp
+@@ -1,6 +1,47 @@
+ #ifndef _WIN32
+ 
+ #include "timer_posix.h"
++#include "later_config.h"
++
++#if LATER_SINGLE_THREADED
++
++#include <algorithm>
++#include <emscripten/eventloop.h>
++
++void Timer::timeout_callback(void* data) {
++  Timer* self = static_cast<Timer*>(data);
++  self->timer_id = -1;
++  self->callback();
++}
++
++Timer::Timer(const std::function<void ()>& callback) :
++  callback(callback), timer_id(-1) {
++}
++
++Timer::~Timer() {
++  if (timer_id >= 0) {
++    emscripten_clear_timeout(timer_id);
++    timer_id = -1;
++  }
++}
++
++void Timer::set(const Timestamp& timestamp) {
++  if (timer_id >= 0) {
++    emscripten_clear_timeout(timer_id);
++    timer_id = -1;
++  }
++
++  double secs = std::max(0.0, timestamp.diff_secs(Timestamp()));
++  double delay_ms = secs * 1000.0;
++  if (delay_ms < 1.0) {
++    delay_ms = 1.0;
++  }
++  timer_id = emscripten_set_timeout(&Timer::timeout_callback, delay_ms, this);
++}
++
++#else // LATER_SINGLE_THREADED
++
++#include "threadutils.h"
+ 
+ int Timer::bg_main_func(void* data) {
+   reinterpret_cast<Timer*>(data)->bg_main();
+@@ -78,4 +119,6 @@ void Timer::set(const Timestamp& timestamp) {
+   this->cond.signal();
+ }
+ 
++#endif // LATER_SINGLE_THREADED
++
+ #endif // _WIN32
+diff --git a/src/timer_posix.h b/src/timer_posix.h
+index ede5b66..f3491d9 100644
+--- a/src/timer_posix.h
++++ b/src/timer_posix.h
+@@ -4,12 +4,20 @@
+ #ifndef _WIN32
+ 
+ #include <functional>
++#include "later_config.h"
+ #include "timestamp.h"
+-#include "threadutils.h"
+ #include "optional.h"
+ 
++#if !LATER_SINGLE_THREADED
++#include "threadutils.h"
++#endif
++
+ class Timer {
+   std::function<void ()> callback;
++#if LATER_SINGLE_THREADED
++  int timer_id;
++  static void timeout_callback(void* data);
++#else
+   Mutex mutex;
+   ConditionVariable cond;
+   // Stores the handle to a bgthread, which is created upon demand. (Previously
+@@ -21,6 +29,7 @@ class Timer {
+ 
+   static int bg_main_func(void*);
+   void bg_main();
++#endif
+ public:
+   Timer(const std::function<void ()>& callback);
+   virtual ~Timer();
+diff --git a/src/tinycthread.c b/src/tinycthread.c
+index df1d6fd..315d271 100644
+--- a/src/tinycthread.c
++++ b/src/tinycthread.c
+@@ -22,6 +22,10 @@ freely, subject to the following restrictions:
+     distribution.
+ */
+ 
++#include "later_config.h"
++
++#ifndef LATER_SINGLE_THREADED
++
+ #include "tinycthread.h"
+ #include "badthreads.h"
+ #include <stdlib.h>
+@@ -927,6 +931,8 @@ void tct_call_once(tct_once_flag *flag, void (*func)(void))
+ }
+ #endif /* defined(_TTHREAD_WIN32_) */
+ 
++#endif // !LATER_SINGLE_THREADED
++
+ #ifdef __cplusplus
+ }
+ #endif

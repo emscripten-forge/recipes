@@ -1,8 +1,8 @@
 diff --git a/clang/lib/Driver/Driver.cpp b/clang/lib/Driver/Driver.cpp
-index 87c827de17d9..c09cf458f0c9 100644
+index eb3f9cbea284..951552513ed2 100644
 --- a/clang/lib/Driver/Driver.cpp
 +++ b/clang/lib/Driver/Driver.cpp
-@@ -2452,7 +2452,7 @@ bool Driver::HandleImmediateArgs(Compilation &C) {
+@@ -2488,7 +2488,7 @@ bool Driver::HandleImmediateArgs(Compilation &C) {
        C.getArgs().hasArg(options::OPT_print_supported_cpus) ||
        C.getArgs().hasArg(options::OPT_print_supported_extensions) ||
        C.getArgs().hasArg(options::OPT_print_enabled_extensions)) {
@@ -11,7 +11,7 @@ index 87c827de17d9..c09cf458f0c9 100644
      SuppressMissingInputWarning = true;
    }
  
-@@ -2468,7 +2468,7 @@ bool Driver::HandleImmediateArgs(Compilation &C) {
+@@ -2504,7 +2504,7 @@ bool Driver::HandleImmediateArgs(Compilation &C) {
    const ToolChain &TC = C.getDefaultToolChain();
  
    if (C.getArgs().hasArg(options::OPT_v))
@@ -21,28 +21,28 @@ index 87c827de17d9..c09cf458f0c9 100644
    if (C.getArgs().hasArg(options::OPT_print_resource_dir)) {
      llvm::outs() << ResourceDir << '\n';
 diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
-index 84feff82c63a..62e101c0236e 100644
+index 2684a00ce5f0..f5bfcf81d7b3 100644
 --- a/clang/lib/Interpreter/Interpreter.cpp
 +++ b/clang/lib/Interpreter/Interpreter.cpp
-@@ -184,7 +184,7 @@ IncrementalCompilerBuilder::create(std::string TT,
-   std::unique_ptr<driver::Compilation> Compilation(Driver.BuildCompilation(RF));
+@@ -183,7 +183,7 @@ IncrementalCompilerBuilder::create(std::string TT,
+       return std::move(Err);
  
-   if (Compilation->getArgs().hasArg(driver::options::OPT_v))
+   if (Compilation->getArgs().hasArg(options::OPT_v))
 -    Compilation->getJobs().Print(llvm::errs(), "\n", /*Quote=*/false);
 +    Compilation->getJobs().Print(llvm::outs(), "\n", /*Quote=*/false);
  
    auto ErrOrCC1Args = GetCC1Arguments(&Diags, Compilation.get());
    if (auto Err = ErrOrCC1Args.takeError())
-@@ -368,6 +368,7 @@ Interpreter::Interpreter(std::unique_ptr<CompilerInstance> Instance,
+@@ -253,6 +253,7 @@ Interpreter::Interpreter(std::unique_ptr<CompilerInstance> Instance,
                           std::unique_ptr<clang::ASTConsumer> Consumer)
-     : JITBuilder(std::move(JITBuilder)) {
+     : IncrExecutorBuilder(std::move(IEB)) {
    CI = std::move(Instance);
 +  CI->setVerboseOutputStream(llvm::outs());
    llvm::ErrorAsOutParameter EAO(&ErrOut);
    auto LLVMCtx = std::make_unique<llvm::LLVMContext>();
    TSCtx = std::make_unique<llvm::orc::ThreadSafeContext>(std::move(LLVMCtx));
 diff --git a/clang/lib/Lex/InitHeaderSearch.cpp b/clang/lib/Lex/InitHeaderSearch.cpp
-index 641e3beebc08..01d516e2314c 100644
+index e30925f4e548..087ce5741f59 100644
 --- a/clang/lib/Lex/InitHeaderSearch.cpp
 +++ b/clang/lib/Lex/InitHeaderSearch.cpp
 @@ -165,7 +165,7 @@ bool InitHeaderSearch::AddUnmappedPath(const Twine &Path, IncludeDirGroup Group,
@@ -54,7 +54,7 @@ index 641e3beebc08..01d516e2314c 100644
                   << MappedPathStr << "\"\n";
    return false;
  }
-@@ -339,7 +339,7 @@ static unsigned RemoveDuplicates(std::vector<DirectoryLookupInfo> &SearchList,
+@@ -342,10 +342,10 @@ static unsigned RemoveDuplicates(std::vector<DirectoryLookupInfo> &SearchList,
      }
  
      if (Verbose) {
@@ -62,21 +62,12 @@ index 641e3beebc08..01d516e2314c 100644
 +      llvm::outs() << "ignoring duplicate directory \""
                     << CurEntry.getName() << "\"\n";
        if (DirToRemove != i)
-         llvm::errs() << "  as it is a non-system directory that duplicates "
-@@ -425,10 +425,10 @@ void InitHeaderSearch::Realize(const LangOptions &Lang) {
- 
-   // If verbose, print the list of directories that will be searched.
-   if (Verbose) {
--    llvm::errs() << "#include \"...\" search starts here:\n";
-+    llvm::outs() << "#include \"...\" search starts here:\n";
-     for (unsigned i = 0, e = SearchList.size(); i != e; ++i) {
-       if (i == NumQuoted)
--        llvm::errs() << "#include <...> search starts here:\n";
-+        llvm::outs() << "#include <...> search starts here:\n";
-       StringRef Name = SearchList[i].Lookup.getName();
-       const char *Suffix;
-       if (SearchList[i].Lookup.isNormalDir())
-@@ -439,9 +439,9 @@ void InitHeaderSearch::Realize(const LangOptions &Lang) {
+-        llvm::errs() << "  as it is a non-system directory that duplicates "
++        llvm::outs() << "  as it is a non-system directory that duplicates "
+                      << "a system directory\n";
+     }
+     if (DirToRemove != i)
+@@ -442,9 +442,9 @@ void InitHeaderSearch::Realize(const LangOptions &Lang) {
          assert(SearchList[i].Lookup.isHeaderMap() && "Unknown DirectoryLookup");
          Suffix = " (headermap)";
        }

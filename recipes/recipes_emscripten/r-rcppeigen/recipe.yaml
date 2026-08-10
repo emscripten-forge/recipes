@@ -1,0 +1,67 @@
+context:
+  name: r-RcppEigen
+  version: 0.3.4.0.2
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: ecad7ba2129fd48b7ebb825558d38492ed1f3a8934959e27fcd6688175e542bb
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('cxx') }}
+  - r-rcpp
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  run:
+  - r-rcpp
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}
+- script: run_r_test test_rcppeigen.R
+  files:
+    recipe:
+    - test_rcppeigen.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://dirk.eddelbuettel.com/code/rcpp.eigen.html
+  repository: https://github.com/RcppCore/RcppEigen
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Rcpp Integration for the Eigen Templated Linear Algebra Library
+  description: |
+    R and 'Eigen' integration using 'Rcpp'. 'Eigen' is a C++ template library
+    for linear algebra: matrices, vectors, numerical solvers and related
+    algorithms. It supports dense and sparse matrices on integer, floating point
+    and complex numbers, decompositions of such matrices, and solutions of
+    linear systems. Its performance on many algorithms is comparable with some
+    of the best implementations based on 'Lapack' and level-3 'BLAS'. The
+    'RcppEigen' package includes the header files from the 'Eigen' C++ template
+    library. Thus users do not need to install 'Eigen' itself in order to use
+    'RcppEigen'. Since version 3.1.1, 'Eigen' is licensed under the Mozilla
+    Public License (version 2); earlier version were licensed under the GNU LGPL
+    version 3 or later. 'RcppEigen' (the 'Rcpp' bindings/bridge to 'Eigen') is
+    licensed under the GNU GPL version 2 or later, as is the rest of 'Rcpp'.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

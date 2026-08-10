@@ -1,0 +1,112 @@
+context:
+  name: plotly
+  version: 4.12.1
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 16c7d796ec788d5755b6e2ac601f504dc085a8e46689dbb0c153c2b3e4ac99f4
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+ 
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-scales
+  - r-jsonlite >= 1.6
+  - r-magrittr
+  - r-digest
+  - r-viridislite
+  - r-base64enc
+  - r-htmltools >= 0.3.6
+  - r-htmlwidgets >= 1.5.2.9001
+  - r-tidyr >= 1.0.0
+  - r-rcolorbrewer
+  - r-dplyr
+  - r-vctrs
+  - r-tibble
+  - r-rlang >= 1.0.0
+  - r-crosstalk
+  - r-purrr
+  - r-data.table
+  - r-promises >= 1.5.0
+  - r-ggplot2 >= 3.0.0
+  host:
+  - r-base ==${{ r_base }}
+  - r-scales
+  - r-jsonlite >= 1.6
+  - r-magrittr
+  - r-digest
+  - r-viridislite
+  - r-base64enc
+  - r-htmltools >= 0.3.6
+  - r-htmlwidgets >= 1.5.2.9001
+  - r-tidyr >= 1.0.0
+  - r-rcolorbrewer
+  - r-dplyr
+  - r-vctrs
+  - r-tibble
+  - r-rlang >= 1.0.0
+  - r-crosstalk
+  - r-purrr
+  - r-data.table
+  - r-promises >= 1.5.0
+  - r-ggplot2 >= 3.0.0
+  run:
+  - r-scales
+  - r-jsonlite >= 1.6
+  - r-magrittr
+  - r-digest
+  - r-viridislite
+  - r-base64enc
+  - r-htmltools >= 0.3.6
+  - r-htmlwidgets >= 1.5.2.9001
+  - r-tidyr >= 1.0.0
+  - r-rcolorbrewer
+  - r-dplyr
+  - r-vctrs
+  - r-tibble
+  - r-rlang >= 1.0.0
+  - r-crosstalk
+  - r-purrr
+  - r-data.table
+  - r-promises >= 1.5.0
+  - r-ggplot2 >= 3.0.0
+
+tests:
+
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    run:
+    - r-promises >=1.5.0
+
+about:
+  homepage: https://plotly-r.com
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/plotly/plotly.R
+  license: MIT
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/MIT
+  - LICENSE
+  summary: Create Interactive Web Graphics via 'plotly.js'
+  description: |-
+    Create interactive web graphics from 'ggplot2' graphs and/or a custom interface to the (MIT-licensed) JavaScript library 'plotly.js' inspired by the grammar of graphics.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

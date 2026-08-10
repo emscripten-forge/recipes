@@ -1,0 +1,66 @@
+context:
+  name : GenomicRanges
+  version: 1.62.1
+  bioc: 3.22
+
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 60fc1b77dc280e7384be30d62e1125a18be111a9a1c1581f5dc5c4311a7bc5d5
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - bioconductor-biocgenerics
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-seqinfo
+  host:
+  - r-base ==${{ r_base }}
+  - bioconductor-biocgenerics
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-seqinfo
+  run:
+  - bioconductor-biocgenerics
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-seqinfo
+
+
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  repository: https://git.bioconductor.org/packages/GenomicRanges
+  license: Artistic-2.0
+  license_file: LICENSE
+  summary: Representation and manipulation of genomic intervals
+
+
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

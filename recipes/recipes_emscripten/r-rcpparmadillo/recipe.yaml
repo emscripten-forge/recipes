@@ -1,0 +1,65 @@
+context:
+  version: 15.2.7-1
+  name: r-RcppArmadillo
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: f7a20f66b1364b596b632a57adbe932910d48a3bc158a4e550d7eed00147966e
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('cxx') }}
+  - r-rcpp
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  run:
+  - r-rcpp
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - lib/R/library/${{ name[2:] }}/include/${{ name[2:] }}.h
+
+about:
+  homepage: https://cran.r-project.org/package=RcppArmadillo
+  repository: https://github.com/RcppCore/RcppArmadillo
+  documentation: https://dirk.eddelbuettel.com/code/rcpp.armadillo.html
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Rcpp Integration for the Armadillo Templated Linear Algebra Library
+  description: |
+    'Armadillo' is a templated C++ linear algebra library aiming towards a good
+    balance between speed and ease of use. It provides high-level syntax and
+    functionality deliberately similar to Matlab. It is useful for algorithm
+    development directly in C++, or quick conversion of research code into
+    production environments. It provides efficient classes for vectors, matrices
+    and cubes where dense and sparse matrices are supported. Integer, floating
+    point and complex numbers are supported. A sophisticated expression
+    evaluator (based on template meta-programming) automatically combines
+    several operations to increase speed and efficiency. Dynamic evaluation
+    automatically chooses optimal code paths based on detected matrix
+    structures. Matrix decompositions are provided through integration with
+    LAPACK, or one of its high performance drop-in replacements (such as 'MKL'
+    or 'OpenBLAS'). It can automatically use 'OpenMP' multi-threading
+    (parallelisation) to speed up computationally expensive operations.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

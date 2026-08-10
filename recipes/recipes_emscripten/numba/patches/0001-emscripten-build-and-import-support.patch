@@ -1,0 +1,58 @@
+diff --git a/numba/__init__.py b/numba/__init__.py
+index 86ae720..b2ff80c 100644
+--- a/numba/__init__.py
++++ b/numba/__init__.py
+@@ -7,6 +7,16 @@ import re
+ import sys
+ import warnings
+ 
++# Numba's native helper extensions provide functions that generated code calls
++# by name.  MCJIT learns those names through llvmlite.add_symbol().  Emscripten
++# instead resolves them when a JIT-produced SIDE_MODULE is dlopen()'d, so the
++# extensions must enter the process-wide dynamic symbol scope when first
++# imported.
++if sys.platform == "emscripten":
++    import os as _os
++    sys.setdlopenflags(sys.getdlopenflags() | _os.RTLD_GLOBAL)
++    del _os
++
+ 
+ # ---------------------- WARNING WARNING WARNING ----------------------------
+ # THIS MUST RUN FIRST, DO NOT MOVE... SEE DOCSTRING IN _ensure_critical_deps
+@@ -175,7 +185,7 @@ def _ensure_llvm():
+         # Not matching?
+         warnings.warn("llvmlite version format not recognized!")
+ 
+-    from llvmlite.binding import llvm_version_info, check_jit_execution
++    from llvmlite.binding import llvm_version_info
+ 
+     if llvm_version_info < _min_llvm_version:
+         msg = ("Numba requires at least version %d.%d.%d of LLVM.\n"
+@@ -184,7 +194,9 @@ def _ensure_llvm():
+                (_min_llvm_version + llvm_version_info))
+         raise ImportError(msg)
+ 
+-    check_jit_execution()
++    if sys.platform != "emscripten":
++        from llvmlite.binding import check_jit_execution
++        check_jit_execution()
+ 
+ 
+ def _try_enable_svml():
+diff --git a/setup.py b/setup.py
+index 41fc62b..179ca6d 100644
+--- a/setup.py
++++ b/setup.py
+@@ -137,7 +137,10 @@ def get_ext_modules():
+     # should be able to run without NumPy for pip to discover the
+     # build dependencies. Need NumPy headers and libm linkage.
+     import numpy as np
+-    np_compile_args = {'include_dirs': [np.get_include(),],}
++    # Cross builds must use the target NumPy's generated configuration
++    # headers (not the build interpreter's pointer-size configuration).
++    numpy_include = os.environ.get("NUMBA_NUMPY_INCLUDE", np.get_include())
++    np_compile_args = {'include_dirs': [numpy_include,],}
+     if sys.platform != 'win32':
+         np_compile_args['libraries'] = ['m',]
+ 
+

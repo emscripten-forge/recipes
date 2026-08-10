@@ -1,0 +1,59 @@
+context:
+  version: 1.7.6
+  name: llguidance-cpp
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/guidance-ai/llguidance/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: b75ba626bc01aefcc66d91b44651dcacf62a00fd906592d41a448c8ae4128aed
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - rust-nightly
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+
+tests:
+- package_contents:
+    lib:
+    - libllguidance.a
+    include:
+    - llguidance.h
+    files:
+    - lib/cmake/llguidance/llguidanceConfig.cmake
+    - lib/cmake/llguidance/llguidanceConfigVersion.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/guidance-ai/llguidance
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Low-level guidance library for constrained LLM token generation
+  description: |
+    llguidance is a low-level library for constrained LLM token generation.
+    It provides a C API for guiding LLM output through grammars, regex,
+    JSON schemas, and Lark grammars. Includes an Earley parser for efficient
+    token mask computation.
+  documentation: https://github.com/guidance-ai/llguidance
+  repository: https://github.com/guidance-ai/llguidance
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

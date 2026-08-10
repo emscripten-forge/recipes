@@ -24,6 +24,9 @@ cp $RECIPE_DIR/flang-new-wrapper $LLVM_DIR/bin/flang-new-wrapper
 export EM_LLVM_ROOT=$LLVM_DIR
 export FC=$LLVM_DIR/bin/flang-new-wrapper
 
+# Meson finds numpy_config via pkg_config and numpy.pc
+export PKG_CONFIG_PATH=$PREFIX/lib/python$PY_VER/site-packages/numpy/_core/lib/pkgconfig
+
 ${PYTHON} -m pip install . ${PIP_ARGS} --no-build-isolation \
     -Csetup-args="--cross-file=$RECIPE_DIR/emscripten.meson.cross" \
     -Csetup-args="-Dfortran_std=none" \

@@ -1,0 +1,56 @@
+context:
+  version: 8.0.0
+
+package:
+  name: msgpack-cpp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/msgpack/msgpack-c/archive/refs/tags/cpp-${{ version }}.tar.gz
+  sha256: f634fb7052da4478096f2a02dfb6d91174e5836b317afb006375249ccb086aa8
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/msgpack.hpp
+    - include/msgpack/object.hpp
+    - include/msgpack/version.hpp
+    - lib/cmake/msgpack-cxx/msgpack-cxx-config.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  license: BSL-1.0
+  license_family: OTHER
+  license_file: LICENSE_1_0.txt
+  summary: MessagePack implementation for C++
+  description: |
+    MessagePack is an efficient binary serialization format.
+    It lets you exchange data among multiple languages like JSON,
+    except that it's faster and smaller. Small integers are encoded
+    into a single byte and short strings require only one extra byte
+    in addition to the strings themselves.
+  homepage: https://msgpack.org/
+  repository: https://github.com/msgpack/msgpack-c
+  documentation: https://github.com/msgpack/msgpack-c/wiki
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

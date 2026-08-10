@@ -1,0 +1,46 @@
+context:
+  name: r-proxy
+  version: "0.4-29"
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/proxy_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/proxy_${{ version }}.tar.gz
+  sha256: c6eb0e36ef2eecb1b8564f0188ca8d2c91a80865c86698386a7b5d5baa92c35b
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/proxy/libs/proxy.so
+- script: run_r_test test_proxy.R
+  files:
+    recipe:
+    - test_proxy.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=proxy
+  license: GPL-2.0-only
+  license_file: GPL-2
+  summary: Distance and Similarity Measures
+
+extra:
+  recipe-maintainers:
+  - anutosh491

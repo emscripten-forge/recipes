@@ -1,0 +1,59 @@
+context:
+  name: r-lmtest
+  version: 0.9-40
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 64400d4d6cc635316531042971f1783539686e9015c76f5741c07304fa14d997
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - r-zoo
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+  - r-zoo
+  run:
+  - r-zoo
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_lmtest.R
+  files:
+    recipe:
+    - test_lmtest.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=lmtest
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Testing Linear Regression Models
+  description: |
+    A collection of tests, data sets, and examples for diagnostic checking in
+    linear regression models. Furthermore, some generic tools for inference in
+    parametric models are provided.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

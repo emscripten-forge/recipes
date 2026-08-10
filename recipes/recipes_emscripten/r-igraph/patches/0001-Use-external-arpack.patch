@@ -1,0 +1,45 @@
+From 2f0534a67b8c7c12ad7815c39f5b9cfe11664973 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 1 Jun 2026 13:04:01 +0200
+Subject: [PATCH 1/2] Use external arpack
+
+---
+ configure           | 11 +++++++++++
+ src/vendor/config.h |  2 +-
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/configure b/configure
+index 94bd86d..ba36b63 100755
+--- a/configure
++++ b/configure
+@@ -45,6 +45,17 @@ else
+   OBJECTS="${OBJECTS}"' ${GLPK_SOURCES}'
+ fi
+ 
++echo "Using installed ARPACK"
++PKG_LIBS="$PKG_LIBS -larpack"
++if grep -q '^#define INTERNAL_ARPACK' src/vendor/config.h 2>/dev/null; then
++  sed 's/^#define INTERNAL_ARPACK.*/\/\* #undef INTERNAL_ARPACK \*\//' src/vendor/config.h > src/vendor/config.h.new
++  mv -f src/vendor/config.h.new src/vendor/config.h
++fi
++if grep -q 'vendor/arpack/' src/sources-igraph.mk 2>/dev/null; then
++  sed 's|vendor/arpack/[^ ]* ||g' src/sources-igraph.mk > src/sources-igraph.mk.new
++  mv -f src/sources-igraph.mk.new src/sources-igraph.mk
++fi
++
+ echo "# Generated from Makevars.in, do not edit by hand" > src/Makevars.new
+ sed -e "s|@cflags@|$PKG_CFLAGS|" -e "s|@libs@|$PKG_LIBS|" -e "s|@objects@|${OBJECTS}|" src/Makevars.in >> src/Makevars.new
+ if [ ! -f src/Makevars ] || (which diff > /dev/null && ! diff -q src/Makevars src/Makevars.new); then
+diff --git a/src/vendor/config.h b/src/vendor/config.h
+index 0664bf7..2a7f09d 100644
+--- a/src/vendor/config.h
++++ b/src/vendor/config.h
+@@ -26,7 +26,7 @@
+ /* #undef INTERNAL_BLAS */
+ /* #undef INTERNAL_LAPACK */
+ 
+-#define INTERNAL_ARPACK 1
++/* #undef INTERNAL_ARPACK */
+ #define INTERNAL_GMP 1
+ 
+ #define IGRAPH_F77_SAVE

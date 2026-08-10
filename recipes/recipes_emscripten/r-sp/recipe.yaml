@@ -1,20 +1,22 @@
 context:
-  version: 2.2-1
-  name: r-sp
+  name: sp
+  version: 2.2-3
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: 277a4533bc784a08fdbb710757b6af0c7a492691bfb07d8f0b2aa8ad7c857652
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: a238205229d60340df0911ad13b23d5f7e504c84f8b2917130d8f97c4c8523f5
 
 build:
-  number: 2
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 0
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -23,6 +25,7 @@ requirements:
   - ${{ compiler('c') }}
   - r-lattice
   host:
+  - r-base ==${{ r_base }}
   - r-lattice
   run:
   - r-lattice
@@ -30,13 +33,22 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://edzer.github.io/sp/
   repository: https://github.com/edzer/sp/
   license: GPL-2.0-or-later
-  license_file: GPL-3
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
   summary: Classes and Methods for Spatial Data
   description: |
     Classes and methods for spatial data; the classes document where the spatial

@@ -1,0 +1,56 @@
+context:
+  name: r-nloptr
+  version: 2.2.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 76ba40750b475c8b1ad6a86c9e05f0c1746af16d965235ff9293953920aed7f4
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - pkg-config
+  host:
+  - r-base ==${{ r_base }}
+  - libnlopt
+  - libflang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_nloptr.R
+  files:
+    recipe:
+    - test_nloptr.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://astamm.github.io/nloptr/
+  repository: https://github.com/astamm/nloptr
+  license: LGPL-3.0-only
+  license_family: LGPL
+  license_file: LICENSE
+  summary: R interface to NLopt
+  description: |
+    Solve optimization problems using an R interface to NLopt. NLopt is a
+    free/open-source library for nonlinear optimization, providing a common
+    interface for a number of different free optimization routines available
+    online as well as original implementations of various other algorithms.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
