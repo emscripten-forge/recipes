@@ -7,6 +7,18 @@ def test_numpy():
     assert ones.shape == (2, 3)
 
 
+def test_openblas_build_config():
+    cfg = np.show_config(mode="dicts")
+    blas = cfg["Build Dependencies"]["blas"]
+    lapack = cfg["Build Dependencies"]["lapack"]
+    assert blas["found"] is True
+    assert lapack["found"] is True
+    # scipy-openblas.pc alias is used to bypass Meson's OpenBLAS factory.
+    assert "openblas" in blas["name"]
+    assert "openblas configuration" in blas
+    assert blas["openblas configuration"] != "unknown"
+
+
 # Large enough that OpenBLAS blocked kernels are exercised (not tiny fallbacks).
 N = 300
 
