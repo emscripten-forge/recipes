@@ -14,10 +14,12 @@ export BUILD_CORES=-j1
 
 export USE_THREAD=0
 
+# WASM128_GENERIC enables WASM SIMD128 kernels (SGEMM/DGEMM, DAXPY, SUM, DOT, ROT, TRSM).
+# Makefile.wasm adds -msimd128 automatically for this architecture.
 emmake make shared \
     $BUILD_CORES \
     HOSTCC=gcc \
-    TARGET=RISCV64_GENERIC
+    TARGET=WASM128_GENERIC
 
 emmake make install PREFIX=$PREFIX
 
@@ -29,7 +31,7 @@ cat > "${PREFIX}/lib/pkgconfig/openblas.pc" <<EOF
 prefix=\${pcfiledir}/../..
 libdir=\${prefix}/lib
 includedir=\${prefix}/include
-openblas_config=USE_THREAD=0 TARGET=RISCV64_GENERIC
+openblas_config=USE_THREAD=0 TARGET=WASM128_GENERIC
 version=${PKG_VERSION}
 Name: openblas
 Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
