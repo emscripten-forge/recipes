@@ -38,7 +38,7 @@ bash configure \
   --disable-precompiled-headers \
   --with-x=yes \
   --with-cups=no \
-  --with-alsa=no \
+  --with-alsa=yes \
   --with-fontconfig=yes \
   --with-num-cores="${CPU_COUNT:-4}" \
   CC=emcc CXX=em++ AR=emar \
@@ -48,9 +48,7 @@ bash configure \
   OBJDUMP="$EMSDK_LLVM_BIN/llvm-objdump" \
   BUILD_CC=clang BUILD_CXX=clang++
 
-make CONF=emscripten-zero static-libs-image JOBS="${CPU_COUNT:-4}"
-make CONF=emscripten-zero hotspot JOBS="${CPU_COUNT:-4}"
-make CONF=emscripten-zero buildtools copy java JOBS="${CPU_COUNT:-4}"
+make CONF=emscripten-zero all static-libs-image JOBS="${CPU_COUNT:-4}"
 
 WASM_NATIVE_DIR="$PREFIX/lib/wasm-native"
 mkdir -p "$WASM_NATIVE_DIR"
