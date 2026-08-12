@@ -6,8 +6,8 @@ set -ex
 # Use a subshell to isolate the environment changes
 # =========================================================================
 (
-  unset CC CXX CFLAGS CXXFLAGS LDFLAGS
-
+  unset CC CXX CFLAGS CXXFLAGS LDFLAGS OPAMSWITCH
+  export OPAMROOT=$SRC_DIR/opam_root
   cd ocaml
   opam init --disable-sandboxing --no --compiler=5.4.0
   opam install dune
@@ -25,7 +25,7 @@ cp -r ocaml/_build/default/src/* ocaml-build/
 # =========================================================================
 mkdir -p build
 cd build
-
+unset LDFLAGS
 cmake -S ${SRC_DIR} -GNinja ${CMAKE_ARGS}    \
     -DCMAKE_BUILD_TYPE=Release               \
     -DCMAKE_PREFIX_PATH=${PREFIX}            \
