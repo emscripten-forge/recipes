@@ -3,10 +3,12 @@ From: Ian Thomas <ianthomas23@gmail.com>
 Date: Mon, 8 Dec 2025 08:00:00 +0000
 Subject: [PATCH 5/8] Return void not int
 
+Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
+
 ---
  common_interface.h        | 240 +++++++++++++++++++-------------------
  driver/others/xerbla.c    |   8 +-
- interface/lapack/gesv.c   |  14 +--
+ interface/lapack/gesv.c   |  10 +-
  interface/lapack/getf2.c  |   8 +-
  interface/lapack/getrf.c  |   8 +-
  interface/lapack/getrs.c  |   8 +-
@@ -32,7 +34,7 @@ Subject: [PATCH 5/8] Return void not int
  interface/lapack/ztrti2.c |   8 +-
  interface/lapack/ztrtri.c |  10 +-
  interface/lapack/ztrtrs.c |  10 +-
- 28 files changed, 234 insertions(+), 234 deletions(-)
+ 28 files changed, 232 insertions(+), 232 deletions(-)
 
 diff --git a/common_interface.h b/common_interface.h
 index a510810ab..aa7494c83 100644
@@ -377,7 +379,7 @@ index 290f2833c..1d88c366d 100644
  
  #endif
 diff --git a/interface/lapack/gesv.c b/interface/lapack/gesv.c
-index 21fcc2097..a008a7238 100644
+index 61aa5c168..2263096cd 100644
 --- a/interface/lapack/gesv.c
 +++ b/interface/lapack/gesv.c
 @@ -60,7 +60,7 @@
@@ -402,8 +404,8 @@ index 21fcc2097..a008a7238 100644
  
    *Info = 0;
  
--  if (args.m == 0 || args.n == 0) return 0;
-+  if (args.m == 0 || args.n == 0) return;
+-  if (args.m == 0) return 0;
++  if (args.m == 0) return;
  
    IDEBUG_START;
  
@@ -416,18 +418,6 @@ index 21fcc2097..a008a7238 100644
    sa = (FLOAT *)((BLASLONG)buffer + GEMM_OFFSET_A);
    sb = (FLOAT *)(((BLASLONG)sa + ((GEMM_P * GEMM_Q * COMPSIZE * SIZE + GEMM_ALIGN) & ~GEMM_ALIGN)) + GEMM_OFFSET_B);
  #endif
-@@ -117,9 +117,9 @@ int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
- 
- #if defined(_WIN64) && defined(_M_ARM64)
-   #ifdef COMPLEX
--    if (args.m * args.n <= 300) 
-+    if (args.m * args.n <= 300)
-   #else
--    if (args.m * args.n <= 500) 
-+    if (args.m * args.n <= 500)
-   #endif
-       args.nthreads = 1;
-   else if (args.m * args.n <= 1000)
 @@ -171,5 +171,5 @@ int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
  
    IDEBUG_END;
@@ -1340,5 +1330,5 @@ index 2b195e615..da1ae7ded 100644
  
  }
 -- 
-2.51.0
+2.55.0
 
