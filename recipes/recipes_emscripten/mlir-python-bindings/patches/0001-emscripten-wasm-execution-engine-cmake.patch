@@ -2,7 +2,7 @@ diff --git a/mlir/CMakeLists.txt b/mlir/CMakeLists.txt
 index 9e1e9314511e..77353eff0bd3 100644
 --- a/mlir/CMakeLists.txt
 +++ b/mlir/CMakeLists.txt
-@@ -14,6 +14,28 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+@@ -14,6 +14,34 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
    set(MLIR_STANDALONE_BUILD TRUE)
  endif()
  
@@ -16,9 +16,15 @@ index 9e1e9314511e..77353eff0bd3 100644
 +  # variables so every SHARED target is linked as a wasm SIDE_MODULE.
 +  # nanobind creates MODULE targets (not SHARED), which use CMAKE_MODULE_LINKER_FLAGS
 +  # for their LINK_FLAGS — keep that separately so Python extensions also get the flag.
-+  set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS   "-s SIDE_MODULE=1")
-+  set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
-+  set(CMAKE_MODULE_LINKER_FLAGS "-s SIDE_MODULE=1" CACHE STRING "" FORCE)
++  # MLIR's side modules statically embed LLVM. -Bsymbolic keeps references to
++  # those definitions local, preventing another RTLD_GLOBAL module such as
++  # llvmlite from interposing on LLVM registries and CodeGen callbacks.
++  set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS
++      "-s SIDE_MODULE=1 -Wl,-Bsymbolic")
++  set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS
++      "-s SIDE_MODULE=1 -Wl,-Bsymbolic")
++  set(CMAKE_MODULE_LINKER_FLAGS
++      "-s SIDE_MODULE=1 -Wl,-Bsymbolic" CACHE STRING "" FORCE)
 +  set(CMAKE_STRIP FALSE)
 +  # Pre-set NB_SUFFIX as INTERNAL cache — nanobind cmake checks DEFINED CACHE{NB_SUFFIX}
 +  # before querying the native Python executable for the extension suffix.  The
@@ -31,7 +37,7 @@ index 9e1e9314511e..77353eff0bd3 100644
  # Must go below project(..)
  include(GNUInstallDirs)
  set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
-@@ -32,6 +54,23 @@ if(MLIR_STANDALONE_BUILD)
+@@ -32,6 +60,23 @@ if(MLIR_STANDALONE_BUILD)
  
    include_directories(${LLVM_INCLUDE_DIRS})
  
