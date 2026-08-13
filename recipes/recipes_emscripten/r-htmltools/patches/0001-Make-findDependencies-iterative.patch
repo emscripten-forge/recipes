@@ -1,27 +1,23 @@
-From 1a0f1a356e7fc5c9afc3fae151ac35433702c2e7 Mon Sep 17 00:00:00 2001
+From 138dad1a7717352e9267a086ce39c9209607cade Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Thu, 13 Aug 2026 18:36:04 +0200
+Date: Thu, 13 Aug 2026 19:13:17 +0200
 Subject: [PATCH] Make findDependencies iterative
 
+Implemented iteratively (explicit stack) so deep tag trees do not exhaust
+the native/engine call stack. This is important for WebAssembly hosts.
+Note that tagify = TRUE (default) still runs tagify(), which walks
+the tree recursively via rewriteTags(). On very deep trees that preprocess
+can itself exhaust the call stack. Prefer tagify = FALSE when the input is
+already resolved as renderTags() does after calling tagify() once.
 ---
- R/tags.R | 71 +++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 63 insertions(+), 8 deletions(-)
+ R/tags.R | 68 +++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 60 insertions(+), 8 deletions(-)
 
 diff --git a/R/tags.R b/R/tags.R
-index 8848b39..43e46cd 100644
+index 8848b39..f5220f0 100644
 --- a/R/tags.R
 +++ b/R/tags.R
-@@ -1094,6 +1094,9 @@ takeHeads <- function(ui) {
- #'
- #' Walks a hierarchy of tags looking for attached dependencies.
- #'
-+#' Implemented iteratively (explicit stack) so deep tag trees do not exhaust
-+#' the native/engine call stack — important for WebAssembly / browser hosts.
-+#'
- #' @param tags A tag-like object to search for dependencies.
- #' @param tagify Whether to tagify the input before searching for dependencies.
- #'
-@@ -1104,16 +1107,68 @@ findDependencies <- function(tags, tagify = TRUE) {
+@@ -1104,16 +1104,68 @@ findDependencies <- function(tags, tagify = TRUE) {
    if (isTRUE(tagify)) {
      tags <- tagify(tags)
    }
