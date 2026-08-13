@@ -1,4 +1,4 @@
-From 31672659fcf189eac9345f1b705536f9e550b142 Mon Sep 17 00:00:00 2001
+From fc4edd915b7b2f53a4add1e5c282b69932087321 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Mon, 8 Dec 2025 08:00:00 +0000
 Subject: [PATCH 5/8] Return void not int
@@ -6,7 +6,7 @@ Subject: [PATCH 5/8] Return void not int
 Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
  common_interface.h        | 240 +++++++++++++++++++-------------------
- driver/others/xerbla.c    |   8 +-
+ driver/others/xerbla.c    |  15 ++-
  interface/lapack/gesv.c   |  10 +-
  interface/lapack/getf2.c  |   8 +-
  interface/lapack/getrf.c  |   8 +-
@@ -33,10 +33,10 @@ Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
  interface/lapack/ztrti2.c |   8 +-
  interface/lapack/ztrtri.c |  10 +-
  interface/lapack/ztrtrs.c |  10 +-
- 28 files changed, 232 insertions(+), 232 deletions(-)
+ 28 files changed, 235 insertions(+), 236 deletions(-)
 
 diff --git a/common_interface.h b/common_interface.h
-index a510810ab..aa7494c83 100644
+index e4576e60a..1037e7b0e 100644
 --- a/common_interface.h
 +++ b/common_interface.h
 @@ -44,7 +44,7 @@ extern "C" {
@@ -342,40 +342,43 @@ index a510810ab..aa7494c83 100644
  
  FLOATRET  BLASFUNC(slamch)(char *, int);
 diff --git a/driver/others/xerbla.c b/driver/others/xerbla.c
-index 290f2833c..1d88c366d 100644
+index c7cc69b82..43516eea6 100644
 --- a/driver/others/xerbla.c
 +++ b/driver/others/xerbla.c
-@@ -47,7 +47,7 @@
- #endif
- 
- #ifdef INTERFACE64
--#define MSGFMT " ** On entry to %6s parameter number %2ld had an illegal value\n" 
-+#define MSGFMT " ** On entry to %6s parameter number %2ld had an illegal value\n"
- #else
- #define MSGFMT " ** On entry to %6s parameter number %2d had an illegal value\n"
- #endif
-@@ -58,19 +58,19 @@ int __xerbla(char *message, blasint *info, blasint length){
-   printf(MSGFMT,
- 	  message, *info);
- 
--  return 0;
-+  return;
+@@ -87,8 +87,8 @@ openblas_set_xerbla(openblas_xerbla_handler handler) {
+   return previous;
  }
  
- int BLASFUNC(xerbla)(char *, blasint *, blasint) __attribute__ ((weak, alias ("__xerbla")));
+-static int openblas_xerbla_dispatch(char *message, blasint *info,
+-                                    blasint length) {
++static void openblas_xerbla_dispatch(char *message, blasint *info,
++                                     blasint length) {
+   openblas_xerbla_handler handler;
+   size_t name_length = openblas_xerbla_name_length(message, length);
  
- #else
+@@ -97,18 +97,17 @@ static int openblas_xerbla_dispatch(char *message, blasint *info,
+   blas_unlock(&openblas_xerbla_lock);
  
--int BLASFUNC(xerbla)(char *message, blasint *info, blasint length){
-+void BLASFUNC(xerbla)(char *message, blasint *info, blasint length){
- 
-   printf(MSGFMT,
- 	  message, *info);
- 
+   handler(message, info, name_length);
 -  return 0;
-+  return;
  }
  
+ #ifdef __ELF__
+-int __xerbla(char *message, blasint *info, blasint length) {
+-  return openblas_xerbla_dispatch(message, info, length);
++void __xerbla(char *message, blasint *info, blasint length) {
++  openblas_xerbla_dispatch(message, info, length);
+ }
+ 
+-int BLASFUNC(xerbla)(char *, blasint *, blasint)
++void BLASFUNC(xerbla)(char *, blasint *, blasint)
+   __attribute__ ((weak, alias ("__xerbla")));
+ #else
+-int BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
+-  return openblas_xerbla_dispatch(message, info, length);
++void BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
++  openblas_xerbla_dispatch(message, info, length);
+ }
  #endif
 diff --git a/interface/lapack/gesv.c b/interface/lapack/gesv.c
 index 61aa5c168..2263096cd 100644
@@ -493,7 +496,7 @@ index 4a58774d1..e62158e61 100644
 +  return;
  }
 diff --git a/interface/lapack/getrs.c b/interface/lapack/getrs.c
-index ef3f341f4..1c1f71aeb 100644
+index b86b173ce..72cfa588a 100644
 --- a/interface/lapack/getrs.c
 +++ b/interface/lapack/getrs.c
 @@ -60,7 +60,7 @@ static blasint (*getrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -523,7 +526,7 @@ index ef3f341f4..1c1f71aeb 100644
  
    IDEBUG_START;
  
-@@ -147,6 +147,6 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+@@ -151,6 +151,6 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
  
    IDEBUG_END;
  
@@ -532,7 +535,7 @@ index ef3f341f4..1c1f71aeb 100644
  
  }
 diff --git a/interface/lapack/laed3.c b/interface/lapack/laed3.c
-index 4e5215fcf..a68b155f1 100644
+index bf3198bc0..470393ad2 100644
 --- a/interface/lapack/laed3.c
 +++ b/interface/lapack/laed3.c
 @@ -40,9 +40,9 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -562,8 +565,8 @@ index 4e5215fcf..a68b155f1 100644
 +  if (kval == 0) return;
  
  #ifdef SMP
-   int nthreads = num_cpu_avail(4);
-@@ -83,5 +83,5 @@ int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+   int nthreads = 1;
+@@ -84,5 +84,5 @@ int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
    }
  #endif
  
@@ -571,7 +574,7 @@ index 4e5215fcf..a68b155f1 100644
 +  return;
  }
 diff --git a/interface/lapack/laswp.c b/interface/lapack/laswp.c
-index 6544dbc5b..6b017469d 100644
+index 698e39a99..c0bfdf336 100644
 --- a/interface/lapack/laswp.c
 +++ b/interface/lapack/laswp.c
 @@ -52,7 +52,7 @@ static int (*laswp[])(BLASLONG, BLASLONG, BLASLONG, FLOAT, FLOAT *, BLASLONG, FL
@@ -592,7 +595,7 @@ index 6544dbc5b..6b017469d 100644
  
    IDEBUG_START;
  
-@@ -105,6 +105,6 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
+@@ -109,6 +109,6 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
  
    IDEBUG_END;
  
@@ -636,7 +639,7 @@ index 74ddb0831..1b463200a 100644
 +  return;
  }
 diff --git a/interface/lapack/lauum.c b/interface/lapack/lauum.c
-index 760cf21c1..508eaa5ae 100644
+index cc927ff6b..7732c0120 100644
 --- a/interface/lapack/lauum.c
 +++ b/interface/lapack/lauum.c
 @@ -60,7 +60,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -663,7 +666,7 @@ index 760cf21c1..508eaa5ae 100644
  
    IDEBUG_START;
  
-@@ -135,5 +135,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, int dumm
+@@ -139,5 +139,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, int dumm
  
    IDEBUG_END;
  
@@ -852,7 +855,7 @@ index e118caad8..248486ebb 100644
 +  return;
  }
 diff --git a/interface/lapack/trtrs.c b/interface/lapack/trtrs.c
-index 069bdbd2d..a594b4eca 100644
+index 249c05fbe..14f791634 100644
 --- a/interface/lapack/trtrs.c
 +++ b/interface/lapack/trtrs.c
 @@ -60,7 +60,7 @@ static blasint (*trtrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -888,7 +891,7 @@ index 069bdbd2d..a594b4eca 100644
      }
    }
  
-@@ -168,6 +168,6 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+@@ -172,6 +172,6 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
  
    IDEBUG_END;
  
@@ -965,7 +968,7 @@ index d03541fad..bea44cf78 100644
 +  return;
  }
 diff --git a/interface/lapack/zgetrs.c b/interface/lapack/zgetrs.c
-index 18914ecff..d8da8ffa2 100644
+index 15832fce7..3828b24ab 100644
 --- a/interface/lapack/zgetrs.c
 +++ b/interface/lapack/zgetrs.c
 @@ -60,7 +60,7 @@ static blasint (*getrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -995,7 +998,7 @@ index 18914ecff..d8da8ffa2 100644
  
    IDEBUG_START;
  
-@@ -148,6 +148,6 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+@@ -152,6 +152,6 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
  
    IDEBUG_END;
  
@@ -1004,7 +1007,7 @@ index 18914ecff..d8da8ffa2 100644
  
  }
 diff --git a/interface/lapack/zlaswp.c b/interface/lapack/zlaswp.c
-index 7bb4a659e..536d69e4f 100644
+index c5188cdf7..1ab566228 100644
 --- a/interface/lapack/zlaswp.c
 +++ b/interface/lapack/zlaswp.c
 @@ -52,7 +52,7 @@ static int (*laswp[])(BLASLONG, BLASLONG, BLASLONG, FLOAT, FLOAT, FLOAT *, BLASL
@@ -1025,7 +1028,7 @@ index 7bb4a659e..536d69e4f 100644
  
    IDEBUG_START;
  
-@@ -104,5 +104,5 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
+@@ -108,5 +108,5 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
  
    IDEBUG_END;
  
@@ -1068,7 +1071,7 @@ index 2385b5ff6..81b5e6360 100644
 +  return;
  }
 diff --git a/interface/lapack/zlauum.c b/interface/lapack/zlauum.c
-index 03ed0241d..5be8dbf14 100644
+index 1ef3429d3..187f7f635 100644
 --- a/interface/lapack/zlauum.c
 +++ b/interface/lapack/zlauum.c
 @@ -60,7 +60,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1095,7 +1098,7 @@ index 03ed0241d..5be8dbf14 100644
  
    IDEBUG_START;
  
-@@ -137,5 +137,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, int dumm
+@@ -141,5 +141,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, int dumm
  
    IDEBUG_END;
  
@@ -1243,7 +1246,7 @@ index b8085d387..1f3b5d1b6 100644
 +  return;
  }
 diff --git a/interface/lapack/ztrtri.c b/interface/lapack/ztrtri.c
-index a5cb8448c..223c31bba 100644
+index d3081b041..07c07c8a8 100644
 --- a/interface/lapack/ztrtri.c
 +++ b/interface/lapack/ztrtri.c
 @@ -60,7 +60,7 @@ static blasint (*trtri_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1276,7 +1279,7 @@ index a5cb8448c..223c31bba 100644
      }
    }
  
-@@ -150,5 +150,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+@@ -154,5 +154,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
  
    IDEBUG_END;
  
@@ -1284,7 +1287,7 @@ index a5cb8448c..223c31bba 100644
 +  return;
  }
 diff --git a/interface/lapack/ztrtrs.c b/interface/lapack/ztrtrs.c
-index 2b195e615..da1ae7ded 100644
+index a64eaca47..2c1224c7d 100644
 --- a/interface/lapack/ztrtrs.c
 +++ b/interface/lapack/ztrtrs.c
 @@ -60,7 +60,7 @@ static blasint (*trtrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1320,7 +1323,7 @@ index 2b195e615..da1ae7ded 100644
      }
    }
  
-@@ -168,6 +168,6 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+@@ -172,6 +172,6 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
  
    IDEBUG_END;
  

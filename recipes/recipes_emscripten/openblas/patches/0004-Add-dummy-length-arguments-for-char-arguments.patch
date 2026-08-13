@@ -1,4 +1,4 @@
-From 6f2bb3d7a67524ccdebf6f5bbfbfa2d02940d988 Mon Sep 17 00:00:00 2001
+From fde93b1e995fe8a5b0e22c2b6575b483589a1ce9 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Mon, 8 Dec 2025 07:59:50 +0000
 Subject: [PATCH 4/8] Add dummy length arguments for char arguments
@@ -73,7 +73,7 @@ Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
  65 files changed, 368 insertions(+), 368 deletions(-)
 
 diff --git a/common_interface.h b/common_interface.h
-index 380ce8d08..a510810ab 100644
+index 26107634d..e4576e60a 100644
 --- a/common_interface.h
 +++ b/common_interface.h
 @@ -258,232 +258,232 @@ void BLASFUNC(xgerc)(blasint *,    blasint *, xdouble *, xdouble *, blasint *,
@@ -861,14 +861,14 @@ index 380ce8d08..a510810ab 100644
  void    BLASFUNC(cimatcopy) (char *, char *, blasint *, blasint *, float  *, float  *, blasint *, blasint *);
  void    BLASFUNC(zimatcopy) (char *, char *, blasint *, blasint *, double  *, double  *, blasint *, blasint *);
  
--void    BLASFUNC(sgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*); 
--void    BLASFUNC(dgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*); 
--void    BLASFUNC(cgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*); 
--void    BLASFUNC(zgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*); 
-+void    BLASFUNC(sgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*);
-+void    BLASFUNC(dgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*);
-+void    BLASFUNC(cgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*);
-+void    BLASFUNC(zgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*);
+-void    BLASFUNC(sgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*,char*, char*); 
+-void    BLASFUNC(dgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*,char *, char *); 
+-void    BLASFUNC(cgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*,char *, char *); 
+-void    BLASFUNC(zgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*,char *, char *); 
++void    BLASFUNC(sgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*,char*, char*);
++void    BLASFUNC(dgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*,char *, char *);
++void    BLASFUNC(cgeadd) (blasint *, blasint *, float *, float *, blasint *, float *, float *, blasint*,char *, char *);
++void    BLASFUNC(zgeadd) (blasint *, blasint *, double *, double *, blasint *, double *, double *, blasint*,char *, char *);
  
  
  #ifdef __cplusplus
@@ -886,7 +886,7 @@ index 7a6581368..04172cb8d 100644
    char trans = *TRANS;
    blasint m = *M;
 diff --git a/interface/gemm.c b/interface/gemm.c
-index 60addbd2c..2266abeb7 100644
+index 79b076164..5253d9f36 100644
 --- a/interface/gemm.c
 +++ b/interface/gemm.c
 @@ -260,7 +260,7 @@ void NAME(char *TRANSA, char *TRANSB,
@@ -965,7 +965,7 @@ index 270604120..4a58774d1 100644
  #endif
    if (args.m*args.n <nmax) {
 diff --git a/interface/lapack/getrs.c b/interface/lapack/getrs.c
-index c2a9eb882..ef3f341f4 100644
+index 0cc6df037..b86b173ce 100644
 --- a/interface/lapack/getrs.c
 +++ b/interface/lapack/getrs.c
 @@ -61,7 +61,7 @@ static blasint (*getrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -991,7 +991,7 @@ index e581e3c15..74ddb0831 100644
    blas_arg_t args;
  
 diff --git a/interface/lapack/lauum.c b/interface/lapack/lauum.c
-index 70f6a0ec5..760cf21c1 100644
+index 81c4fc07a..cc927ff6b 100644
 --- a/interface/lapack/lauum.c
 +++ b/interface/lapack/lauum.c
 @@ -60,7 +60,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1078,7 +1078,7 @@ index 82d806b8c..e118caad8 100644
    blas_arg_t args;
  
 diff --git a/interface/lapack/trtrs.c b/interface/lapack/trtrs.c
-index 3cc449318..069bdbd2d 100644
+index 53d8fb0ec..249c05fbe 100644
 --- a/interface/lapack/trtrs.c
 +++ b/interface/lapack/trtrs.c
 @@ -61,7 +61,7 @@ static blasint (*trtrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1091,7 +1091,7 @@ index 3cc449318..069bdbd2d 100644
      char uplo_arg = *UPLO;
      char trans_arg = *TRANS;
 diff --git a/interface/lapack/zgetrs.c b/interface/lapack/zgetrs.c
-index 0add909ca..18914ecff 100644
+index e76a8a1b2..15832fce7 100644
 --- a/interface/lapack/zgetrs.c
 +++ b/interface/lapack/zgetrs.c
 @@ -61,7 +61,7 @@ static blasint (*getrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1117,7 +1117,7 @@ index ae972543c..2385b5ff6 100644
    blas_arg_t args;
  
 diff --git a/interface/lapack/zlauum.c b/interface/lapack/zlauum.c
-index 4a36cc173..03ed0241d 100644
+index 9f0cd9400..1ef3429d3 100644
 --- a/interface/lapack/zlauum.c
 +++ b/interface/lapack/zlauum.c
 @@ -60,7 +60,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1182,7 +1182,7 @@ index cb9c0d557..b8085d387 100644
    blas_arg_t args;
  
 diff --git a/interface/lapack/ztrtri.c b/interface/lapack/ztrtri.c
-index dda4a9e4b..a5cb8448c 100644
+index bfd6e3ea9..d3081b041 100644
 --- a/interface/lapack/ztrtri.c
 +++ b/interface/lapack/ztrtri.c
 @@ -60,7 +60,7 @@ static blasint (*trtri_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1195,7 +1195,7 @@ index dda4a9e4b..a5cb8448c 100644
    blas_arg_t args;
  
 diff --git a/interface/lapack/ztrtrs.c b/interface/lapack/ztrtrs.c
-index ec3343393..2b195e615 100644
+index df0bac360..a64eaca47 100644
 --- a/interface/lapack/ztrtrs.c
 +++ b/interface/lapack/ztrtrs.c
 @@ -61,7 +61,7 @@ static blasint (*trtrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
@@ -1234,7 +1234,7 @@ index e08ae3f6e..7c5a17339 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/spr.c b/interface/spr.c
-index 8aafc9f85..254b7d551 100644
+index 1f5e0bd31..8cd88edee 100644
 --- a/interface/spr.c
 +++ b/interface/spr.c
 @@ -76,7 +76,7 @@ static int (*spr_thread[])(BLASLONG, FLOAT, FLOAT *, BLASLONG, FLOAT *, FLOAT *,
@@ -1256,7 +1256,7 @@ index 8aafc9f85..254b7d551 100644
          if (x[i] != ZERO) {
            AXPYU_K(n - i, 0, 0, alpha * x[i], x + i, 1, a, 1, NULL, 0);
 diff --git a/interface/spr2.c b/interface/spr2.c
-index b5aab1767..157faf4f8 100644
+index fb1b338f2..ef8ece787 100644
 --- a/interface/spr2.c
 +++ b/interface/spr2.c
 @@ -76,7 +76,7 @@ static int (*spr2_thread[])(BLASLONG, FLOAT, FLOAT *, BLASLONG, FLOAT *, BLASLON
@@ -1304,7 +1304,7 @@ index 1f23ce4ee..b7e6558fb 100644
    char uplo_arg = *UPLO;
    blasint n	= *N;
 diff --git a/interface/syr.c b/interface/syr.c
-index ad75264b1..bea321d64 100644
+index 761df762a..773473e5b 100644
 --- a/interface/syr.c
 +++ b/interface/syr.c
 @@ -76,7 +76,7 @@ static int (*syr_thread[])(BLASLONG, FLOAT, FLOAT *, BLASLONG, FLOAT *, BLASLONG
@@ -1335,7 +1335,7 @@ index ad75264b1..bea321d64 100644
    if (incx < 0 ) x -= (n - 1) * incx;
  
 diff --git a/interface/syr2.c b/interface/syr2.c
-index 632906d28..de6493f62 100644
+index b983fa0d6..b1c3b019f 100644
 --- a/interface/syr2.c
 +++ b/interface/syr2.c
 @@ -76,7 +76,7 @@ static int (*syr2_thread[])(BLASLONG, FLOAT, FLOAT *, BLASLONG, FLOAT *, BLASLON
@@ -1383,7 +1383,7 @@ index 3647ac5cf..5e35cc957 100644
    char uplo_arg  = *UPLO;
    char trans_arg = *TRANS;
 diff --git a/interface/tbmv.c b/interface/tbmv.c
-index b5f3ab740..0e534ce14 100644
+index c518c296a..b39a73f5e 100644
 --- a/interface/tbmv.c
 +++ b/interface/tbmv.c
 @@ -83,7 +83,7 @@ static int (*tbmv_thread[])(BLASLONG, BLASLONG, FLOAT *, BLASLONG, FLOAT *, BLAS
@@ -1409,7 +1409,7 @@ index 12a1eb003..66b806797 100644
    char uplo_arg  = *UPLO;
    char trans_arg = *TRANS;
 diff --git a/interface/tpmv.c b/interface/tpmv.c
-index 262af2285..2b4511ed3 100644
+index c9ad3748a..e736dfeac 100644
 --- a/interface/tpmv.c
 +++ b/interface/tpmv.c
 @@ -82,7 +82,7 @@ static int (*tpmv_thread[])(BLASLONG, FLOAT *, FLOAT *, BLASLONG, FLOAT *, int)
@@ -1448,7 +1448,7 @@ index 029a83499..3b86a7db3 100644
    char uplo_arg  = *UPLO;
    char trans_arg = *TRANS;
 diff --git a/interface/trsm.c b/interface/trsm.c
-index ae35d0d3b..faa248cad 100644
+index 988b59f6f..981f02f5d 100644
 --- a/interface/trsm.c
 +++ b/interface/trsm.c
 @@ -117,7 +117,7 @@ static int (*trsm[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *, BLA
@@ -1460,7 +1460,7 @@ index ae35d0d3b..faa248cad 100644
  
    char side_arg  = *SIDE;
    char uplo_arg  = *UPLO;
-@@ -407,7 +407,7 @@ if (strcmp(gotoblas_corename(), "armv9sme") == 0
+@@ -414,7 +414,7 @@ if (strcmp(gotoblas_corename(), "armv9sme") == 0
  	args.nthreads = 1;
    else
  	args.nthreads = num_cpu_avail(3);
@@ -1592,7 +1592,7 @@ index eba4c4f41..de3c6d71d 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/zhpmv.c b/interface/zhpmv.c
-index ff49716b5..5d92325f7 100644
+index 013dd3e79..adff0a7ae 100644
 --- a/interface/zhpmv.c
 +++ b/interface/zhpmv.c
 @@ -76,7 +76,7 @@ static  int (*hpmv_thread[])(BLASLONG, FLOAT *, FLOAT *, FLOAT *, BLASLONG, FLOA
@@ -1657,7 +1657,7 @@ index be11463c0..d881cba6b 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/zspr.c b/interface/zspr.c
-index 574b59aa2..d21006557 100644
+index 190e62d66..881cdcd47 100644
 --- a/interface/zspr.c
 +++ b/interface/zspr.c
 @@ -74,7 +74,7 @@ static int (*spr_thread[])(BLASLONG, FLOAT *, FLOAT *, BLASLONG, FLOAT *, FLOAT
@@ -1670,7 +1670,7 @@ index 574b59aa2..d21006557 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/zspr2.c b/interface/zspr2.c
-index 44c36d553..c726d264b 100644
+index 53b7b9867..f950638a1 100644
 --- a/interface/zspr2.c
 +++ b/interface/zspr2.c
 @@ -74,7 +74,7 @@ static int (*spr2_thread[])(BLASLONG, FLOAT *, FLOAT *, BLASLONG, FLOAT *, BLASL
@@ -1683,7 +1683,7 @@ index 44c36d553..c726d264b 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/zsymv.c b/interface/zsymv.c
-index 1d6ff1f34..fb693ab90 100644
+index 0cd690f81..ebd7b7bab 100644
 --- a/interface/zsymv.c
 +++ b/interface/zsymv.c
 @@ -52,7 +52,7 @@
@@ -1696,7 +1696,7 @@ index 1d6ff1f34..fb693ab90 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/zsyr.c b/interface/zsyr.c
-index 51cca84ee..44fd7be5c 100644
+index 0d3c35dc0..1161b7d56 100644
 --- a/interface/zsyr.c
 +++ b/interface/zsyr.c
 @@ -77,7 +77,7 @@ static int (*syr_thread[])(BLASLONG, FLOAT *, FLOAT *, BLASLONG, FLOAT *, BLASLO
@@ -1709,7 +1709,7 @@ index 51cca84ee..44fd7be5c 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/zsyr2.c b/interface/zsyr2.c
-index 7c81c2093..5fe6db279 100644
+index e3bdf56e2..6c09b2e3f 100644
 --- a/interface/zsyr2.c
 +++ b/interface/zsyr2.c
 @@ -74,7 +74,7 @@ static int (*syr2_thread[])(BLASLONG, FLOAT *, FLOAT *, BLASLONG, FLOAT *, BLASL
@@ -1722,7 +1722,7 @@ index 7c81c2093..5fe6db279 100644
    char uplo_arg = *UPLO;
    blasint n		= *N;
 diff --git a/interface/ztbmv.c b/interface/ztbmv.c
-index d56620c5b..62bd0e3c2 100644
+index 98fce6606..beb498887 100644
 --- a/interface/ztbmv.c
 +++ b/interface/ztbmv.c
 @@ -95,7 +95,7 @@ static int (*tbmv_thread[])(BLASLONG, BLASLONG, FLOAT *, BLASLONG, FLOAT *, BLAS
@@ -1757,7 +1757,7 @@ index 7e144ce75..84c551e3b 100644
    blasint info;
    FLOAT *buffer;
 diff --git a/interface/ztpmv.c b/interface/ztpmv.c
-index 3791d1602..cc39eea2e 100644
+index 3d79e84e1..1594ecf4f 100644
 --- a/interface/ztpmv.c
 +++ b/interface/ztpmv.c
 @@ -94,7 +94,7 @@ static int (*tpmv_thread[])(BLASLONG, FLOAT *, FLOAT *, BLASLONG, FLOAT *, int)
@@ -1858,7 +1858,7 @@ index 83fff1798..eb1f1dbbd 100644
    char a = *A;
    char b = *B;
 diff --git a/lapack/laed3/laed3_single.c b/lapack/laed3/laed3_single.c
-index 99871f185..faaafb6ac 100644
+index dac98bb8c..ad80e0a5c 100644
 --- a/lapack/laed3/laed3_single.c
 +++ b/lapack/laed3/laed3_single.c
 @@ -55,8 +55,8 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
