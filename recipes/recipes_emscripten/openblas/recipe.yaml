@@ -10,9 +10,11 @@ source:
   url: https://github.com/OpenMathLib/OpenBLAS/archive/v${{ version }}.tar.gz
   sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
   patches:
-  # Branch containing these patches is v0.3.34-emforge at https://github.com/jjerphan/OpenBLAS
-  # Use `git format-patch v0.3.34..v0.3.34-emforge` to create patch files.
+  # Branch containing these patches is v0.3.34-emforge-perf at https://github.com/jjerphan/OpenBLAS
+  # Use `git format-patch v0.3.34..v0.3.34-emforge-perf` to create patch files.
   # Patches 0009-0012 adapt the OpenBLAS test suite for emscripten/wasm.
+  # Patches 0013-0015 are the kept WASM kernel changes (TRSM counters, relaxed
+  # SIMD madd in GEMM, 4x4 SGEMM/DGEMM). Harness/RESULTS commits are not vendored.
   - patches/0001-Remove-march-flags.patch
   - patches/0002-Skip-linktest.patch
   - patches/0003-Add-emscripten-as-supported-arch.patch
@@ -25,9 +27,12 @@ source:
   - patches/0010-Run-OpenBLAS-tests-under-node-for-emscripten.patch
   - patches/0011-Return-int-from-ctest-F77-wrappers-for-wasm-ABI.patch
   - patches/0012-Use-int-return-for-f2c-Subroutine-decls-in-ctest.patch
+  - patches/0013-Gate-WASM-TRSM-call-counters-behind-a-profile-macro.patch
+  - patches/0014-Use-relaxed-SIMD-madd-in-the-WASM-GEMM-inner-loop.patch
+  - patches/0015-Add-a-4x4-WASM-SIMD128-GEMM-microkernel.patch
 
 build:
-  number: 1
+  number: 2
 
   files:
     exclude:

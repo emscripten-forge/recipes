@@ -1,0 +1,151 @@
+From dc94bb2bbae6b867407d2a87d902be78c607d60f Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Thu, 13 Aug 2026 14:06:13 +0200
+Subject: [PATCH 13/15] Gate WASM TRSM call counters behind a profile macro
+
+Keep production STRSM/DTRSM free of always-on increments; enable with
+OPENBLAS_WASM_TRSM_PROFILE when counting invocations.
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ kernel/wasm/trsm_kernel_LN_wasm128.c | 4 ++++
+ kernel/wasm/trsm_kernel_LT_wasm128.c | 4 ++++
+ kernel/wasm/trsm_kernel_RN_wasm128.c | 4 ++++
+ kernel/wasm/trsm_kernel_RT_wasm128.c | 4 ++++
+ 4 files changed, 16 insertions(+)
+
+diff --git a/kernel/wasm/trsm_kernel_LN_wasm128.c b/kernel/wasm/trsm_kernel_LN_wasm128.c
+index e8bc6bd8c..6b54ddc9f 100644
+--- a/kernel/wasm/trsm_kernel_LN_wasm128.c
++++ b/kernel/wasm/trsm_kernel_LN_wasm128.c
+@@ -40,6 +40,7 @@
+ 
+ static FLOAT dm1 = -1.;
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+ static unsigned long long openblas_wasm128_strsm_ln_calls = 0;
+ unsigned long long openblas_wasm128_get_strsm_ln_calls(void) {
+@@ -57,6 +58,7 @@ void openblas_wasm128_reset_dtrsm_ln_calls(void) {
+   openblas_wasm128_dtrsm_ln_calls = 0;
+ }
+ #endif
++#endif
+ 
+ #ifdef CONJ
+ #define GEMM_KERNEL   GEMM_KERNEL_L
+@@ -257,10 +259,12 @@ int CNAME(BLASLONG m, BLASLONG n, BLASLONG k,  FLOAT dummy1,
+ #endif
+ 	   FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+   openblas_wasm128_strsm_ln_calls += 1;
+ #else
+   openblas_wasm128_dtrsm_ln_calls += 1;
++#endif
+ #endif
+ 
+   BLASLONG i, j;
+diff --git a/kernel/wasm/trsm_kernel_LT_wasm128.c b/kernel/wasm/trsm_kernel_LT_wasm128.c
+index 1c4f0ce87..9ac0a9a1f 100644
+--- a/kernel/wasm/trsm_kernel_LT_wasm128.c
++++ b/kernel/wasm/trsm_kernel_LT_wasm128.c
+@@ -38,6 +38,7 @@
+ 
+ #include "common.h"
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+ static unsigned long long openblas_wasm128_strsm_lt_calls = 0;
+ unsigned long long openblas_wasm128_get_strsm_lt_calls(void) {
+@@ -55,6 +56,7 @@ void openblas_wasm128_reset_dtrsm_lt_calls(void) {
+   openblas_wasm128_dtrsm_lt_calls = 0;
+ }
+ #endif
++#endif
+ 
+ static FLOAT dm1 = -1.;
+ 
+@@ -247,10 +249,12 @@ int CNAME(BLASLONG m, BLASLONG n, BLASLONG k, FLOAT dummy1,
+ #endif
+ 	   FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+   openblas_wasm128_strsm_lt_calls += 1;
+ #else
+   openblas_wasm128_dtrsm_lt_calls += 1;
++#endif
+ #endif
+ 
+   FLOAT *aa, *cc;
+diff --git a/kernel/wasm/trsm_kernel_RN_wasm128.c b/kernel/wasm/trsm_kernel_RN_wasm128.c
+index be19281ac..77332391b 100644
+--- a/kernel/wasm/trsm_kernel_RN_wasm128.c
++++ b/kernel/wasm/trsm_kernel_RN_wasm128.c
+@@ -38,6 +38,7 @@
+ 
+ #include "common.h"
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+ static unsigned long long openblas_wasm128_strsm_rn_calls = 0;
+ unsigned long long openblas_wasm128_get_strsm_rn_calls(void) {
+@@ -55,6 +56,7 @@ void openblas_wasm128_reset_dtrsm_rn_calls(void) {
+   openblas_wasm128_dtrsm_rn_calls = 0;
+ }
+ #endif
++#endif
+ 
+ static FLOAT dm1 = -1.;
+ 
+@@ -247,10 +249,12 @@ int CNAME(BLASLONG m, BLASLONG n, BLASLONG k, FLOAT dummy1,
+ #endif
+ 	   FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+   openblas_wasm128_strsm_rn_calls += 1;
+ #else
+   openblas_wasm128_dtrsm_rn_calls += 1;
++#endif
+ #endif
+ 
+   FLOAT *aa, *cc;
+diff --git a/kernel/wasm/trsm_kernel_RT_wasm128.c b/kernel/wasm/trsm_kernel_RT_wasm128.c
+index ebfa1437c..5e4ca4ca8 100644
+--- a/kernel/wasm/trsm_kernel_RT_wasm128.c
++++ b/kernel/wasm/trsm_kernel_RT_wasm128.c
+@@ -40,6 +40,7 @@
+ 
+ static FLOAT dm1 = -1.;
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+ static unsigned long long openblas_wasm128_strsm_rt_calls = 0;
+ unsigned long long openblas_wasm128_get_strsm_rt_calls(void) {
+@@ -57,6 +58,7 @@ void openblas_wasm128_reset_dtrsm_rt_calls(void) {
+   openblas_wasm128_dtrsm_rt_calls = 0;
+ }
+ #endif
++#endif
+ 
+ #ifdef CONJ
+ #define GEMM_KERNEL   GEMM_KERNEL_R
+@@ -260,10 +262,12 @@ int CNAME(BLASLONG m, BLASLONG n, BLASLONG k,  FLOAT dummy1,
+ #endif
+ 	   FLOAT *a, FLOAT *b, FLOAT *c, BLASLONG ldc, BLASLONG offset){
+ 
++#ifdef OPENBLAS_WASM_TRSM_PROFILE
+ #ifndef DOUBLE
+   openblas_wasm128_strsm_rt_calls += 1;
+ #else
+   openblas_wasm128_dtrsm_rt_calls += 1;
++#endif
+ #endif
+ 
+   BLASLONG i, j;
+-- 
+2.55.0
+
