@@ -1,6 +1,9 @@
 import pyjs
 
-def test_dummy():
-    # This doesn't run any actual tests, but it forces the testing framework to load
-    # libopenblas.so which will identify if there are any missing symbols.
+
+def test_load_shared_library():
+    # Build-time already runs OpenBLAS utest + CBLAS ctest under Node
+    # (Fortran BLAS drivers are skipped: flang segfaults on wasm for those sources).
+    # This package test only forces loading libopenblas.so to catch missing symbols
+    # in the installed shared library.
     pass
