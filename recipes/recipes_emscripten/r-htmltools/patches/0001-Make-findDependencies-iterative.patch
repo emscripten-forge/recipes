@@ -1,0 +1,100 @@
+From 1a0f1a356e7fc5c9afc3fae151ac35433702c2e7 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 13 Aug 2026 18:36:04 +0200
+Subject: [PATCH] Make findDependencies iterative
+
+---
+ R/tags.R | 71 +++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 63 insertions(+), 8 deletions(-)
+
+diff --git a/R/tags.R b/R/tags.R
+index 8848b39..43e46cd 100644
+--- a/R/tags.R
++++ b/R/tags.R
+@@ -1094,6 +1094,9 @@ takeHeads <- function(ui) {
+ #'
+ #' Walks a hierarchy of tags looking for attached dependencies.
+ #'
++#' Implemented iteratively (explicit stack) so deep tag trees do not exhaust
++#' the native/engine call stack — important for WebAssembly / browser hosts.
++#'
+ #' @param tags A tag-like object to search for dependencies.
+ #' @param tagify Whether to tagify the input before searching for dependencies.
+ #'
+@@ -1104,16 +1107,68 @@ findDependencies <- function(tags, tagify = TRUE) {
+   if (isTRUE(tagify)) {
+     tags <- tagify(tags)
+   }
+-  deps <- resolveFunctionalDependencies(htmlDependencies(tags))
+-  children <- if (is.list(tags)) {
+-    if (isTag(tags)) {
+-      tags$children
+-    } else {
+-      tags
++
++  # Explicit stack DFS with post-order emission of each node's deps, matching
++  # the old recursive `c(childDeps, deps)` order (children left-to-right, then
++  # this node).
++  # Each frame: list(node = <tag>, expanded = TRUE/FALSE)
++  stack <- list(list(node = tags, expanded = FALSE))
++  out <- vector("list", 256L)
++  nout <- 0L
++
++  append_deps <- function(deps) {
++    if (!length(deps)) {
++      return()
++    }
++    for (d in deps) {
++      nout <<- nout + 1L
++      if (nout > length(out)) {
++        length(out) <<- as.integer(length(out) * 2L)
++      }
++      out[[nout]] <<- d
++    }
++  }
++
++  while (length(stack)) {
++    frame <- stack[[length(stack)]]
++    stack <- stack[-length(stack)]
++    node <- frame$node
++
++    if (is.null(node)) {
++      next
++    }
++
++    if (isTRUE(frame$expanded)) {
++      append_deps(resolveFunctionalDependencies(htmlDependencies(node)))
++      next
+     }
++
++    # Schedule this node's deps after its children (post-order).
++    stack[[length(stack) + 1L]] <- list(node = node, expanded = TRUE)
++
++    children <- if (is.list(node)) {
++      if (isTag(node)) {
++        node$children
++      } else {
++        node
++      }
++    }
++
++    if (length(children)) {
++      # Push right-to-left so left children are processed first.
++      for (i in rev(seq_along(children))) {
++        ch <- children[[i]]
++        if (!is.null(ch)) {
++          stack[[length(stack) + 1L]] <- list(node = ch, expanded = FALSE)
++        }
++      }
++    }
++  }
++
++  if (nout == 0L) {
++    return(list())
+   }
+-  childDeps <- unlist(lapply(children, findDependencies, tagify = FALSE), recursive = FALSE, use.names = FALSE)
+-  c(childDeps, deps)
++  out[seq_len(nout)]
+ }
+ 
+ 
