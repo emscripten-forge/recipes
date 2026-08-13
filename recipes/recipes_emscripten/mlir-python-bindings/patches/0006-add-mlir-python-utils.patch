@@ -3,7 +3,7 @@ new file mode 100644
 index 000000000000..6a805dc133bf
 --- /dev/null
 +++ b/mlir/python/mlir/utils.py
-@@ -0,0 +1,368 @@
+@@ -0,0 +1,372 @@
 +"""
 +Utilities for MLIR Python bindings.
 +
@@ -315,6 +315,11 @@ index 000000000000..6a805dc133bf
 +        The graph to render, or its DOT source text directly.
 +    title : str
 +        Optional bold heading displayed above the graph.
++
++    Notes
++    -----
++    This is a display-only helper and returns ``None``. Use the input
++    ``Digraph`` or :func:`get_function_cfg` when the graph object is needed.
 +    """
 +    from IPython.display import display, HTML, SVG
 +
@@ -347,7 +352,6 @@ index 000000000000..6a805dc133bf
 +        rendered = SVG(data=graph.pipe(format='svg'))
 +
 +    display(rendered)
-+    return rendered
 +
 +
 +def show_cfg(source, title='', show_ops=True):
@@ -371,7 +375,7 @@ index 000000000000..6a805dc133bf
 +    if not dot:
 +        print('(no CFG — no function found in source)')
 +        return
-+    return show_dot(dot, title=title)
++    show_dot(dot, title=title)
 diff --git a/mlir/python/CMakeLists.txt b/mlir/python/CMakeLists.txt
 index 003a06b16daa..d1c4d2f9d123 100644
 --- a/mlir/python/CMakeLists.txt
