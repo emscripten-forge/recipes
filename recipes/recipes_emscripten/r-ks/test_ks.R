@@ -1,4 +1,5 @@
 library(ks)
+
 test_1 <- function() {
     data(unicef)
     Hbcv(unicef)
@@ -13,6 +14,7 @@ test_2 <- function() {
 
 test_3 <- function() {
     data(unicef)
+    set.seed(8192)
     Hnm(unicef)
 }
 
@@ -35,20 +37,17 @@ test_6 <- function() {
 }
 
 test_7 <- function() {
-    ## univariate 
+    ## univariate
     ep1 <- seq(0,1, length=401)
     est1 <- dbeta(ep1, shape1=2, shape2=5)
     f1 <- data.frame(ep1, estimate=est1)
     f1.kde <- as.kde(f1)
-    plot(f1.kde)
 
     ## bivariate
     ep2 <- expand.grid(x=seq(-pi,pi, length=151), y=seq(-pi,pi, length=151))
-    est2 <- cos(ep2[,1]*pi/2) + sin(ep2[,2]*pi/2)  
+    est2 <- cos(ep2[,1]*pi/2) + sin(ep2[,2]*pi/2)
     f2 <- data.frame(ep2, estimate=est2)
     f2.kde <- as.kde(f2, density=FALSE)
-    plot(f2.kde, display="filled.contour")
-    plot(f2.kde, display="persp", phi=10)
 
     ## trivariate
     mus3 <- c(0,0,0)
@@ -58,7 +57,6 @@ test_7 <- function() {
     est3 <- dmvnorm.mixt(ep3, mus=mus3, Sigmas=Sigmas3, props=props3)
     f3 <- data.frame(ep3, estimate=est3)
     f3.kde <- as.kde(f3)
-    plot(f3.kde)
 }
 
 test_8 <- function() {
@@ -103,7 +101,7 @@ test_11 <- function() {
 
 test_12 <- function() {
     data(iris)
-    Fhat <- kcde(iris[,1:2])  
+    Fhat <- kcde(iris[,1:2])
     predict(Fhat, x=as.matrix(iris[,1:2]))
 
     ## See other examples in ? plot.kcde
@@ -152,12 +150,12 @@ test_16 <- function() {
 }
 
 test_17 <- function() {
-    ## unit interval data 
-    set.seed(8192)             
+    ## unit interval data
+    set.seed(8192)
     fhat <- kde(runif(10000,0,1), unit.interval=TRUE)
     plot(fhat, ylim=c(0,1.2))
 
-    ## positive data 
+    ## positive data
     data(worldbank)
     wb <- as.matrix(na.omit(worldbank[,2:3]))
     wb[,2] <- wb[,2]/1000
@@ -224,15 +222,6 @@ test_21 <- function() {
     plot(fhat, col=1, xlim=c(0,100), ylim=c(0,100))
     plot(fhat.b, add=TRUE, col=4)
     rect(0,0,100,100, lty=2)
-
-    library(oz)
-    data(grevillea)
-    wa.coast <- ozRegion(section=1)
-    wa.polygon <- cbind(wa.coast$lines[[1]]$x, wa.coast$lines[[1]]$y)
-    fhat1 <- kdde(x=grevillea, deriv.order=1)
-    fhat1 <- kdde.truncate(fhat1, wa.polygon)
-    oz(section=1, xlim=c(113,122), ylim=c(-36,-29))
-    plot(fhat1, add=TRUE, display="filled.contour")
 }
 
 test_22 <- function() {
@@ -251,7 +240,6 @@ test_23 <- function() {
 
     kms.crabs <- kms(x=crabs[,c("FL","CW","RW")])
     plot(kms.crabs, pch=16)
-    plot(kms.crabs, display="plot3D", pch=16)
 }
 
 test_24 <- function() {
@@ -264,25 +252,20 @@ test_24 <- function() {
 }
 
 test_25 <- function() {
+    ## 2-d only: 3-d ksupp needs Suggested package geometry
     data(grevillea)
     fhat <- kde(x=grevillea)
     fhat.supp <- ksupp(fhat)
     plot(fhat, display="filled.contour", cont=seq(10,90,by=10))
     plot(fhat, cont=95, add=TRUE, col=1)
     plot(fhat.supp, lty=2)
-
-    data(iris)
-    fhat <- kde(x=iris[,1:3])
-    fhat.supp <- ksupp(fhat)
-    plot(fhat)
-    plot(fhat.supp, add=TRUE, col=3, alpha=0.1)
 }
 
 test_26 <- function() {
     ## univariate normal mixture
     x <- rnorm.mixt(1000, mus=c(-1,1), sigmas=c(0.5, 0.5), props=c(1/2, 1/2))
 
-    ## bivariate mixtures 
+    ## bivariate mixtures
     mus <- rbind(c(-1,0), c(1, 2/sqrt(3)), c(1,-2/sqrt(3)))
     Sigmas <- 1/25*rbind(invvech(c(9, 63/10, 49/4)), invvech(c(9,0,49/4)), invvech(c(9,0,49/4)))
     props <- c(3,3,1)/7
@@ -308,11 +291,8 @@ test_27 <- function() {
 test_28 <- function() {
     data(iris)
     Fhat <- kcde(x=iris[,1])
-    plot(Fhat, xlab="Sepal.Length")
     Fhat <- kcde(x=iris[,1:2])
-    plot(Fhat)
     Fhat <- kcde(x=iris[,1:3])
-    plot(Fhat, alpha=0.3)
 }
 
 test_29 <- function() {
@@ -328,12 +308,6 @@ test_29 <- function() {
     ir.gr <- iris[,5]
     kda.fhat <- kda(x=ir, x.group=ir.gr)
     plot(kda.fhat, alpha=0.2, drawlabels=FALSE)
-
-    ## trivariate example
-    ir <- iris[,1:3]
-    ir.gr <- iris[,5]
-    kda.fhat <- kda(x=ir, x.group=ir.gr)
-    plot(kda.fhat) ## colour=species, transparency=density heights
 }
 
 test_30 <- function() {
@@ -347,20 +321,14 @@ test_30 <- function() {
     fhat1 <- kdde(x=tempb[,c("tmin", "tmax")], deriv.order=1)
     ## gradient [df/dx, df/dy]
     plot(fhat1, display="quiver")
-  
 
     fhat2 <- kdde(x=tempb[,c("tmin", "tmax")], deriv.order=2)
     plot(fhat2, which.deriv.ind=2, display="persp", phi=10)
     ## d^2 f/(dx dy): blue=-ve, red=+ve
     plot(fhat2, which.deriv.ind=2, display="filled.contour", lwd=1)
-    ## summary curvature 
+    ## summary curvature
     s2 <- kcurv(fhat2)
     plot(s2, display="filled.contour", lwd=1)
-
-    ## trivariate example  
-    data(iris)
-    fhat1 <- kdde(iris[,2:4], deriv.order=1)
-    plot(fhat1)
 }
 
 test_31 <- function() {
@@ -373,11 +341,6 @@ test_31 <- function() {
     fhat <- kde(x=iris[,2:3])
     plot(fhat, display="filled.contour", cont=seq(10,90,by=10), lwd=1, alpha=0.5)
     plot(fhat, display="persp", border=1, alpha=0.5)
-
-    ## trivariate example
-    fhat <- kde(x=iris[,2:4])
-    plot(fhat)
-    if (interactive()) plot(fhat, display="rgl")
 }
 
 test_32 <- function() {
@@ -397,13 +360,10 @@ test_32 <- function() {
     plot(loct, lwd=1)
 
     ## significant curvature regions
-    air20.fs <- kfs(air20)
+    set.seed(8192)
+    air20.s <- air20[sample.int(nrow(air20), 200), ]
+    air20.fs <- kfs(air20.s, binned=TRUE, bgridsize=c(51, 51))
     plot(air20.fs, add=TRUE)
-
-    ## trivariate
-    air08 <- a1; air20 <- a2
-    loct <- kde.local.test(x1=air08, x2=air20)
-    plot(loct, xlim=c(0,800), ylim=c(0,300), zlim=c(0,300))
 }
 
 test_33 <- function() {
@@ -411,7 +371,7 @@ test_33 <- function() {
     mus <- rbind(c(-1,0), c(1, 2/sqrt(3)), c(1,-2/sqrt(3)))
     Sigmas <- 1/25*rbind(invvech(c(9, 63/10, 49/4)), invvech(c(9,0,49/4)), invvech(c(9,0,49/4)))
     props <- c(3,3,1)/7
-    gridsize <- c(11,11) ## small gridsize illustrative purposes only 
+    gridsize <- c(11,11) ## small gridsize illustrative purposes only
     nmixt.part <- mvnorm.mixt.part(mus=mus, Sigmas=Sigmas, props=props, gridsize=gridsize)
     plot(nmixt.part, asp=1, xlim=c(-3,3), ylim=c(-3,3), alpha=0.5)
 
@@ -435,24 +395,17 @@ test_35 <- function() {
     data(fgl, package="MASS")
     x1 <- fgl[fgl[,"type"]=="WinF",c("RI", "Na")]
     x2 <- fgl[fgl[,"type"]=="Head",c("RI", "Na")]
-    Rhat <- kroc(x1=x1, x2=x2) 
+    Rhat <- kroc(x1=x1, x2=x2)
     plot(Rhat, add.roc.ref=TRUE)
 }
 
 test_36 <- function() {
-    ## bivariate 
+    ## bivariate
     mus <- rbind(c(0,0), c(-1,1))
-    Sigma <- matrix(c(1, 0.7, 0.7, 1), nr=2, nc=2) 
+    Sigma <- matrix(c(1, 0.7, 0.7, 1), nr=2, nc=2)
     Sigmas <- rbind(Sigma, Sigma)
     props <- c(1/2, 1/2)
     plotmixt(mus=mus, Sigmas=Sigmas, props=props, display="filled.contour", lwd=1)
-
-    ## trivariate 
-    mus <- rbind(c(0,0,0), c(-1,0.5,1.5))
-    Sigma <- matrix(c(1, 0.7, 0.7, 0.7, 1, 0.7, 0.7, 0.7, 1), nr=3, nc=3) 
-    Sigmas <- rbind(Sigma, Sigma)
-    props <- c(1/2, 1/2)
-    plotmixt(mus=mus, Sigmas=Sigmas, props=props, dfs=c(11,8), dist="t")
 }
 
 test_37 <- function() {
@@ -465,7 +418,7 @@ test_38 <- function() {
     x <- rnorm.mixt(n=10000, mus=0, sigmas=1, props=1)
     fhat <- kde(x=x)
     p1 <- pkde(fhat=fhat, q=c(-1, 0, 0.5))
-    qkde(fhat=fhat, p=p1)    
+    qkde(fhat=fhat, p=p1)
     y <- rkde(fhat=fhat, n=100)
 
     x <- rmvnorm.mixt(n=10000, mus=c(0,0), Sigmas=invvech(c(1,0.8,1)))

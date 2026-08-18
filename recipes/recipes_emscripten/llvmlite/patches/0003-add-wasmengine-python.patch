@@ -1,9 +1,9 @@
 diff --git a/llvmlite/binding/wasmengine.py b/llvmlite/binding/wasmengine.py
 new file mode 100644
-index 00000000..5d2475e8
+index 00000000..307efef5
 --- /dev/null
 +++ b/llvmlite/binding/wasmengine.py
-@@ -0,0 +1,615 @@
+@@ -0,0 +1,679 @@
 +"""
 +WASM Execution Engine for llvmlite.
 +
@@ -18,7 +18,7 @@ index 00000000..5d2475e8
 +Compilation pipeline (Emscripten path, all in-process, no subprocess):
 +  ModuleRef  →  target_machine.emit_object()  →  .o bytes  →  tmpfile
 +                    ↓
-+               LLVMPY_WasmLinkSharedModule (calls lld::wasm::link directly)
++               LLVMPY_WasmLinkSharedModule (calls re-entrant LLD driver)
 +                    ↓
 +               .wasm side module (in Emscripten MEMFS tmpdir)
 +                    ↓
@@ -35,6 +35,7 @@ index 00000000..5d2475e8
 +
 +import ctypes
 +import os
++import re
 +import shutil
 +import sys
 +import tempfile
@@ -45,9 +46,32 @@ index 00000000..5d2475e8
 +_DEBUG = os.environ.get('LLVMLITE_WASM_DEBUG', '0') != '0'
 +
 +
++def _env_enabled(name):
++    return os.environ.get(name, '0').strip().lower() not in (
++        '', '0', 'false', 'off', 'no',
++    )
++
++
++_TRACE = _env_enabled('LLVMLITE_WASM_TRACE') or _env_enabled(
++    'NUMBA_WASM_TRACE'
++)
++
++
 +def _dbg(*args):
 +    if _DEBUG:
 +        print('[WasmEngine]', *args, file=sys.stderr, flush=True)
++
++
++def _trace(*args):
++    if _TRACE:
++        print('[llvmlite/WASM]', *args, flush=True)
++
++
++def _wasm_module_filename(module_name, round_number):
++    """Return a unique, debugger-friendly filename for a side module."""
++    safe_name = re.sub(r'[^A-Za-z0-9_.-]+', '_', str(module_name))
++    safe_name = safe_name.strip('._')[:96] or 'anonymous'
++    return f'{round_number:04d}-{safe_name}.wasm'
 +
 +
 +__all__ = [
@@ -226,7 +250,7 @@ index 00000000..5d2475e8
 +
 +def _link_wasm_emscripten(args):
 +    """
-+    Call lld::wasm::link() via LLVMPY_WasmLinkSharedModule (in-process).
++    Call LLD's re-entrant driver via LLVMPY_WasmLinkSharedModule (in-process).
 +
 +    args: list of strings with layout
 +      ["wasm-ld", ...flags..., obj1, ..., "-o", output_path]
@@ -283,13 +307,18 @@ index 00000000..5d2475e8
 +        tmpdir = tempfile.mkdtemp(prefix=f'llvmlite-wasm-{self._round}-')
 +        try:
 +            obj_path = os.path.join(tmpdir, 'mod.o')
-+            wasm_path = os.path.join(tmpdir, 'output.wasm')
++            wasm_filename = _wasm_module_filename(module_name, self._round)
++            wasm_path = os.path.join(tmpdir, wasm_filename)
 +
 +            _dbg(f'linking round={self._round} {module_name!r}')
 +
 +            with open(obj_path, 'wb') as fh:
 +                fh.write(obj_bytes)
 +
++            _trace(
++                f"{module_name!r}: linking {len(obj_bytes)}-byte WASM object "
++                "as a shared side module"
++            )
 +            link_args = [
 +                'wasm-ld', '-shared',
 +                '--import-memory', '--stack-first', '--allow-undefined',
@@ -297,9 +326,14 @@ index 00000000..5d2475e8
 +            ]
 +            _dbg(f'  linking: {" ".join(link_args)}')
 +            _link_wasm_emscripten(link_args)
++            _trace(f"{module_name!r}: lld produced the side module")
 +
 +            lib = ctypes.CDLL(wasm_path, ctypes.RTLD_GLOBAL)
 +            _dbg(f'  dlopen OK: {wasm_path}')
++            _trace(
++                f"{module_name!r}: dlopen(RTLD_GLOBAL) completed; "
++                "its symbols can satisfy later modules"
++            )
 +        except Exception:
 +            shutil.rmtree(tmpdir, ignore_errors=True)
 +            raise
@@ -313,7 +347,8 @@ index 00000000..5d2475e8
 +        """Load raw WASM bytes as a side module (used by WasmExecutionEngine)."""
 +        tmpdir = tempfile.mkdtemp(prefix=f'llvmlite-wasm-{self._round}-')
 +        try:
-+            wasm_path = os.path.join(tmpdir, 'output.wasm')
++            wasm_filename = _wasm_module_filename('module', self._round)
++            wasm_path = os.path.join(tmpdir, wasm_filename)
 +            with open(wasm_path, 'wb') as fh:
 +                fh.write(wasm_bytes)
 +            lib = ctypes.CDLL(wasm_path, ctypes.RTLD_GLOBAL)
@@ -433,6 +468,8 @@ index 00000000..5d2475e8
 +        self._backend = _detect_backend(backend, wasm_ld_path)
 +        self._pending_modules = []   # native only
 +        self._wasm_bytes = None
++        self._object_cache_notify = None
++        self._object_cache_getbuffer = None
 +
 +    # ------------------------------------------------------------------
 +    # Module management  (mirrors ExecutionEngine)
@@ -452,8 +489,28 @@ index 00000000..5d2475e8
 +                _dbg(f'--- IR for {mod_name!r} ---')
 +                _dbg(str(module))
 +                _dbg('--- end IR ---')
-+            obj_bytes = self._target_machine.emit_object(module)
++
++            obj_bytes = None
++            if self._object_cache_getbuffer is not None:
++                obj_bytes = self._object_cache_getbuffer(module)
++
++            cache_hit = obj_bytes is not None
++            if cache_hit:
++                _trace(
++                    f"{mod_name!r}: object cache hit; reusing "
++                    f"{len(obj_bytes)}-byte WASM object"
++                )
++            else:
++                obj_bytes = self._target_machine.emit_object(module)
++                _trace(
++                    f"{mod_name!r}: object cache miss; emitted "
++                    f"{len(obj_bytes)}-byte WASM object"
++                )
++
 +            self._backend.load_object(obj_bytes, mod_name)
++
++            if not cache_hit and self._object_cache_notify is not None:
++                self._object_cache_notify(module, obj_bytes)
 +        else:
 +            self._pending_modules.append(module)
 +
@@ -545,8 +602,15 @@ index 00000000..5d2475e8
 +    def run_static_destructors(self):
 +        """No-op for API compatibility."""
 +
-+    def set_object_cache(self, *args, **kwargs):
-+        """No-op stub."""
++    def set_object_cache(self, notify_func=None, getbuffer_func=None):
++        """Set callbacks used to save and restore relocatable WASM objects.
++
++        This mirrors ``ExecutionEngine.set_object_cache``.  A cached buffer is
++        the object produced by ``TargetMachine.emit_object``; it is linked into
++        a fresh side module before every ``dlopen``.
++        """
++        self._object_cache_notify = notify_func
++        self._object_cache_getbuffer = getbuffer_func
 +
 +    @property
 +    def target_data(self):

@@ -22,6 +22,20 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
+# if R_MAIN_MODULE_STATIC_LIBPYTHON == 1, then we need to link against the static libpython
+if [[ "$R_MAIN_MODULE_STATIC_LIBPYTHON" == "1" ]]; then
+    export CMAKE_ARGS="$CMAKE_ARGS -DXEUS_R_LINK_LIBPYTHON=ON"
+else
+    export CMAKE_ARGS="$CMAKE_ARGS -DXEUS_R_LINK_LIBPYTHON=OFF"
+fi  
+
+
+# Remove shared libs to force static linking of dependencies 
+rm $PREFIX/lib/libcrypto.so* || true
+rm $PREFIX/lib/libssl.so* || true
+rm $PREFIX/lib/libz.so* || true
+
+
 # Configure step with Emscripten's emcmake
 emcmake cmake ${CMAKE_ARGS} -S .. -B .                     \
     -DCMAKE_BUILD_TYPE=Release                             \

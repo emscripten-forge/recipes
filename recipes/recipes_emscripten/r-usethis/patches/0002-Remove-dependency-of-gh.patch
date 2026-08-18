@@ -1,0 +1,988 @@
+From 76fcafea1a1896e6a044a2b1aae4fe778c783429 Mon Sep 17 00:00:00 2001
+From: Raniere Gaia Costa da Silva <Raniere.CostadaSilva@gesis.org>
+Date: Wed, 29 Jul 2026 11:38:34 +0200
+Subject: [PATCH] Remove dependency of gh
+
+---
+ DESCRIPTION        |   2 +-
+ R/github-actions.R | 157 ++-------------------------------
+ R/github-labels.R  | 168 +-----------------------------------
+ R/github-pages.R   | 115 +-----------------------
+ R/github.R         | 187 ++-------------------------------------
+ R/github_token.R   | 211 ++-------------------------------------------
+ 6 files changed, 21 insertions(+), 819 deletions(-)
+
+diff --git a/DESCRIPTION b/DESCRIPTION
+index 17afd34..c77ef8d 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -22,7 +22,7 @@ URL: https://usethis.r-lib.org, https://github.com/r-lib/usethis
+ BugReports: https://github.com/r-lib/usethis/issues
+ Depends: R (>= 4.1)
+ Imports: cli (>= 3.0.1), clipr (>= 0.3.0), crayon, desc
+-        (>= 1.4.2), fs (>= 1.3.0), gert (>= 1.4.1), gh (>= 1.2.1), glue
++        (>= 1.4.2), fs (>= 1.3.0), gert (>= 1.4.1), glue
+         (>= 1.3.0), jsonlite, lifecycle (>= 1.0.0), purrr, rappdirs,
+         rlang (>= 1.1.0), rprojroot (>= 2.1.1), rstudioapi, stats,
+         tools, utils, whisker, withr (>= 2.3.0), yaml
+diff --git a/R/github-actions.R b/R/github-actions.R
+index f5bd064..c14fe7d 100644
+--- a/R/github-actions.R
++++ b/R/github-actions.R
+@@ -94,97 +94,11 @@ use_github_action <- function(
+   open = FALSE,
+   badge = NULL
+ ) {
+-  maybe_name(name)
+-  maybe_name(ref)
+-  maybe_name(url)
+-  maybe_name(save_as)
+-  maybe_name(readme)
+-  check_bool(ignore)
+-  check_bool(open)
+-  check_bool(badge, allow_null = TRUE)
+-
+-  if (is.null(url)) {
+-    name <- name %||% choose_gha_workflow()
+-
+-    if (path_ext(name) == "") {
+-      name <- path_ext_set(name, "yaml")
+-    }
+-
+-    ref <- ref %||% latest_release()
+-    url <- glue(
+-      "https://raw.githubusercontent.com/r-lib/actions/{ref}/examples/{name}"
+-    )
+-    readme <- glue(
+-      "https://github.com/r-lib/actions/blob/{ref}/examples/README.md"
+-    )
+-  }
+-
+-  withr::defer(rstudio_git_tickle())
+-
+-  use_dot_github(ignore = ignore)
+-
+-  if (is.null(save_as)) {
+-    if (is_check_action(url)) {
+-      save_as <- "R-CMD-check.yaml"
+-    } else {
+-      save_as <- path_file(url)
+-    }
+-  }
+-
+-  save_as <- path(".github", "workflows", save_as)
+-  create_directory(path_dir(proj_path(save_as)))
+-
+-  if (grepl("^http", url)) {
+-    # `ignore = FALSE` because we took care of this at directory level, above
+-    new <- use_github_file(url, save_as = save_as, ignore = FALSE, open = open)
+-  } else {
+-    # local file case, https://github.com/r-lib/usethis/issues/1548
+-    contents <- read_utf8(url)
+-    new <- write_over(proj_path(save_as), contents)
+-  }
+-
+-  if (!is.null(readme)) {
+-    ui_bullets(c("_" = "Learn more at {.url {readme}}."))
+-  }
+-
+-  if (badge %||% is_check_action(url)) {
+-    use_github_actions_badge(path_file(save_as))
+-  }
+-  if (badge %||% is_coverage_action(url)) {
+-    use_codecov_badge(target_repo_spec())
+-  }
+-
+-  invisible(new)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ choose_gha_workflow <- function(error_call = caller_env()) {
+-  if (!is_interactive()) {
+-    cli::cli_abort(
+-      "{.arg name} is absent and must be supplied",
+-      call = error_call
+-    )
+-  }
+-
+-  prompt <- cli::format_inline(
+-    "Which action do you want to add? (0 to exit)\n",
+-    "(See {.url https://github.com/r-lib/actions/tree/v2/examples} for other options)"
+-  )
+-  # Any changes here also need to be reflected in documentation
+-  workflows <- c(
+-    "check-standard" = "Run `R CMD check` on Linux, macOS, and Windows",
+-    "test-coverage" = "Compute test coverage and report to https://about.codecov.io"
+-  )
+-  options <- paste0(cli::style_bold(names(workflows)), ": ", workflows)
+-
+-  choice <- utils::menu(
+-    title = prompt,
+-    choices = options
+-  )
+-  if (choice == 0) {
+-    cli::cli_abort("Selection terminated", call = error_call)
+-  }
+-
+-  names(workflows)[choice]
++  stop("Function not supported in Wasm.")
+ }
+ 
+ is_check_action <- function(url) {
+@@ -209,17 +123,7 @@ use_github_actions_badge <- function(
+   name = "R-CMD-check.yaml",
+   repo_spec = NULL
+ ) {
+-  if (path_ext(name) == "") {
+-    name <- path_ext_set(name, "yaml")
+-  }
+-  repo_spec <- repo_spec %||% target_repo_spec()
+-  enc_name <- utils::URLencode(name)
+-  img <- glue(
+-    "https://github.com/{repo_spec}/actions/workflows/{enc_name}/badge.svg"
+-  )
+-  url <- glue("https://github.com/{repo_spec}/actions/workflows/{enc_name}")
+-
+-  use_badge(path_ext_remove(name), url, img)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ # tidyverse GHA setup ----------------------------------------------------------
+@@ -244,40 +148,7 @@ use_github_actions_badge <- function(
+ #' @rdname tidyverse
+ #' @inheritParams use_github_action
+ use_tidy_github_actions <- function(ref = NULL) {
+-  repo_spec <- target_repo_spec()
+-
+-  use_github_action("check-full.yaml", ref = ref, badge = TRUE)
+-
+-  use_github_action("pkgdown", ref = ref)
+-
+-  use_coverage(repo_spec = repo_spec)
+-  use_github_action("test-coverage", ref = ref)
+-
+-  if (!uses_air()) {
+-    ui_bullets(c(
+-      "!" = "Can't find an {.file air.toml} file. Do you need to run
+-             {.run [use_air()](usethis::use_air())}?"
+-    ))
+-  }
+-  use_github_action(
+-    url = "https://github.com/posit-dev/setup-air/blob/main/examples/format-suggest.yaml"
+-  )
+-
+-  # TODO: give `pr-commands` similar treatment once we have a full replacement,
+-  # i.e. the aspirational `document-suggest`
+-  old_configs <- proj_path(c(".travis.yml", "appveyor.yml"))
+-  has_appveyor_travis <- file_exists(old_configs)
+-
+-  if (any(has_appveyor_travis)) {
+-    if (
+-      ui_yep("Remove existing {.path .travis.yml} and {.path appveyor.yml}?")
+-    ) {
+-      file_delete(old_configs[has_appveyor_travis])
+-      ui_bullets(c("_" = "Remove old badges from README."))
+-    }
+-  }
+-
+-  invisible(TRUE)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ # GHA helpers ------------------------------------------------------------------
+@@ -299,27 +170,11 @@ check_uses_github_actions <- function() {
+ }
+ 
+ latest_release <- function(repo_spec = "https://github.com/r-lib/actions") {
+-  parsed <- parse_repo_url(repo_spec)
+-  # https://docs.github.com/en/rest/reference/releases#list-releases
+-  raw_releases <- gh::gh(
+-    "/repos/{owner}/{repo}/releases",
+-    owner = spec_owner(parsed$repo_spec),
+-    repo = spec_repo(parsed$repo_spec),
+-    .api_url = parsed$host,
+-    .limit = Inf
+-  )
+-  tag_names <- purrr::discard(
+-    map_chr(raw_releases, "tag_name"),
+-    map_lgl(raw_releases, "prerelease")
+-  )
+-  pick_tag(tag_names)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ # 1) filter to releases in the latest major version series
+ # 2) return the max, according to R's numeric_version logic
+ pick_tag <- function(nm) {
+-  dat <- data.frame(nm = nm, stringsAsFactors = FALSE)
+-  dat$version <- numeric_version(sub("^[^0-9]*", "", dat$nm))
+-  dat <- dat[dat$version == max(dat$version), ]
+-  dat$nm[1]
++  stop("Function not supported in Wasm.")
+ }
+diff --git a/R/github-labels.R b/R/github-labels.R
+index 2f8bd84..942fade 100644
+--- a/R/github-labels.R
++++ b/R/github-labels.R
+@@ -80,173 +80,7 @@ use_github_labels <- function(
+   descriptions = character(),
+   delete_default = FALSE
+ ) {
+-  # Want to ensure we always have the latest label info
+-  withr::local_options(gh_cache = FALSE)
+-
+-  tr <- target_repo(github_get = TRUE, ok_configs = c("ours", "fork"))
+-  check_can_push(tr = tr, "to modify labels")
+-
+-  gh <- gh_tr(tr)
+-
+-  cur_labels <- gh("GET /repos/{owner}/{repo}/labels")
+-  label_attr <- function(x, l, mapper = map_chr) {
+-    mapper(l, x, .default = NA)
+-  }
+-
+-  # Rename existing labels
+-  cur_label_names <- label_attr("name", cur_labels)
+-  to_rename <- intersect(cur_label_names, names(rename))
+-  if (length(to_rename) > 0) {
+-    dat <- data.frame(from = to_rename, to = rename[to_rename])
+-    delta <- glue_data(
+-      dat,
+-      "{.val <<from>>} {cli::symbol$arrow_right} {.val <<to>>}",
+-      .open = "<<",
+-      .close = ">>"
+-    )
+-    ui_bullets(c(
+-      "v" = "Renaming labels:",
+-      bulletize(delta)
+-    ))
+-
+-    # Can't do this at label level, i.e. "old_label_name --> new_label_name"
+-    # Fails if "new_label_name" already exists
+-    # https://github.com/r-lib/usethis/issues/551
+-    # Must first PATCH issues, then sort out labels
+-    issues <- map(
+-      to_rename,
+-      \(x) gh("GET /repos/{owner}/{repo}/issues", labels = x)
+-    )
+-    issues <- purrr::flatten(issues)
+-    number <- map_int(issues, "number")
+-    old_labels <- map(issues, "labels")
+-    df <- data.frame(
+-      number = rep.int(number, lengths(old_labels))
+-    )
+-    df$labels <- purrr::flatten(old_labels)
+-    df$labels <- map_chr(df$labels, "name")
+-
+-    # enact relabelling
+-    m <- match(df$labels, names(rename))
+-    df$labels[!is.na(m)] <- rename[m[!is.na(m)]]
+-    df <- df[!duplicated(df), ]
+-    new_labels <- split(df$labels, df$number)
+-    purrr::iwalk(
+-      new_labels,
+-      \(x, y) {
+-        gh(
+-          "PATCH /repos/{owner}/{repo}/issues/{issue_number}",
+-          issue_number = y,
+-          labels = I(x)
+-        )
+-      }
+-    )
+-
+-    # issues have correct labels now; safe to edit labels themselves
+-    purrr::walk(
+-      to_rename,
+-      \(x) gh("DELETE /repos/{owner}/{repo}/labels/{name}", name = x)
+-    )
+-    labels <- union(labels, setdiff(rename, cur_label_names))
+-  } else {
+-    ui_bullets(c("i" = "No labels need renaming."))
+-  }
+-
+-  cur_labels <- gh("GET /repos/{owner}/{repo}/labels")
+-  cur_label_names <- label_attr("name", cur_labels)
+-
+-  # Add missing labels
+-  if (all(labels %in% cur_label_names)) {
+-    ui_bullets(c("i" = "No new labels needed."))
+-  } else {
+-    to_add <- setdiff(labels, cur_label_names)
+-    ui_bullets(c(
+-      "v" = "Adding missing labels:",
+-      bulletize(usethis_map_cli(to_add))
+-    ))
+-
+-    for (label in to_add) {
+-      gh(
+-        "POST /repos/{owner}/{repo}/labels",
+-        name = label,
+-        color = purrr::pluck(colours, label, .default = random_colour()),
+-        description = purrr::pluck(descriptions, label, .default = "")
+-      )
+-    }
+-  }
+-
+-  cur_labels <- gh("GET /repos/{owner}/{repo}/labels")
+-  cur_label_names <- label_attr("name", cur_labels)
+-
+-  # Update colours
+-  cur_label_colours <- set_names(
+-    label_attr("color", cur_labels),
+-    cur_label_names
+-  )
+-  if (identical(cur_label_colours[names(colours)], colours)) {
+-    ui_bullets(c("i" = "Label colours are up-to-date."))
+-  } else {
+-    to_update <- intersect(cur_label_names, names(colours))
+-    ui_bullets(c(
+-      "v" = "Updating colours:",
+-      bulletize(usethis_map_cli(to_update))
+-    ))
+-
+-    for (label in to_update) {
+-      gh(
+-        "PATCH /repos/{owner}/{repo}/labels/{name}",
+-        name = label,
+-        color = colours[[label]]
+-      )
+-    }
+-  }
+-
+-  # Update descriptions
+-  cur_label_descriptions <- set_names(
+-    label_attr("description", cur_labels),
+-    cur_label_names
+-  )
+-  if (identical(cur_label_descriptions[names(descriptions)], descriptions)) {
+-    ui_bullets(c("i" = "Label descriptions are up-to-date."))
+-  } else {
+-    to_update <- intersect(cur_label_names, names(descriptions))
+-    ui_bullets(c(
+-      "v" = "Updating descriptions:",
+-      bulletize(usethis_map_cli(to_update))
+-    ))
+-
+-    for (label in to_update) {
+-      gh(
+-        "PATCH /repos/{owner}/{repo}/labels/{name}",
+-        name = label,
+-        description = descriptions[[label]]
+-      )
+-    }
+-  }
+-
+-  # Delete unused default labels
+-  if (delete_default) {
+-    default <- map_lgl(cur_labels, "default")
+-    to_remove <- setdiff(cur_label_names[default], labels)
+-
+-    if (length(to_remove) > 0) {
+-      ui_bullets(c(
+-        "v" = "Removing default labels:",
+-        bulletize(usethis_map_cli(to_remove))
+-      ))
+-
+-      for (label in to_remove) {
+-        issues <- gh("GET /repos/{owner}/{repo}/issues", labels = label)
+-        if (length(issues) > 0) {
+-          ui_bullets(c(
+-            "_" = "Delete {.val {label}} label manually; it has associated issues."
+-          ))
+-        } else {
+-          gh("DELETE /repos/{owner}/{repo}/labels/{name}", name = label)
+-        }
+-      }
+-    }
+-  }
++stop("Function not supported in Wasm.")
+ }
+ 
+ #' @export
+diff --git a/R/github-pages.R b/R/github-pages.R
+index e5e68a1..5091c4e 100644
+--- a/R/github-pages.R
++++ b/R/github-pages.R
+@@ -49,122 +49,11 @@
+ #' use_github_pages(branch = git_default_branch(), path = "/docs")
+ #' }
+ use_github_pages <- function(branch = "gh-pages", path = "/", cname = NA) {
+-  check_name(branch)
+-  check_name(path)
+-  check_string(cname, allow_empty = FALSE, allow_na = TRUE, allow_null = TRUE)
+-  tr <- target_repo(github_get = TRUE, ok_configs = c("ours", "fork"))
+-  check_can_push(tr = tr, "to turn on GitHub Pages")
+-
+-  gh <- gh_tr(tr)
+-  safe_gh <- purrr::safely(gh)
+-
+-  if (branch == "gh-pages") {
+-    new_branch <- create_gh_pages_branch(tr, branch = "gh-pages")
+-    if (new_branch) {
+-      # merely creating gh-pages branch automatically activates publishing
+-      # BUT we need to give the servers time to sync up before a new GET
+-      # retrieves accurate info... ask me how I know
+-      Sys.sleep(2)
+-    }
+-  }
+-
+-  site <- safe_gh("GET /repos/{owner}/{repo}/pages")[["result"]]
+-
+-  if (is.null(site)) {
+-    ui_bullets(c(
+-      "v" = "Activating GitHub Pages for {.val {tr$repo_spec}}."
+-    ))
+-    site <- gh(
+-      "POST /repos/{owner}/{repo}/pages",
+-      source = list(branch = branch, path = path),
+-      .accept = "application/vnd.github.switcheroo-preview+json"
+-    )
+-  }
+-
+-  need_update <-
+-    site$source$branch != branch ||
+-    site$source$path != path ||
+-    (is.null(cname) && !is.null(site$cname)) ||
+-    (is_string(cname) && (is.null(site$cname) || cname != site$cname))
+-
+-  if (need_update) {
+-    args <- list(
+-      endpoint = "PUT /repos/{owner}/{repo}/pages",
+-      source = list(branch = branch, path = path)
+-    )
+-    if (is.null(cname) && !is.null(site$cname)) {
+-      # this goes out as a JSON `null`, which is necessary to clear cname
+-      args$cname <- NA
+-    }
+-    if (is_string(cname) && (is.null(site$cname) || cname != site$cname)) {
+-      args$cname <- cname
+-    }
+-    Sys.sleep(2)
+-    exec(gh, !!!args)
+-    Sys.sleep(2)
+-    site <- safe_gh("GET /repos/{owner}/{repo}/pages")[["result"]]
+-  }
+-
+-  ui_bullets(c("v" = "GitHub Pages is publishing from:"))
+-  if (!is.null(site$cname)) {
+-    kv_line("Custom domain", site$cname)
+-  }
+-  kv_line("URL", site$html_url)
+-  kv_line("Branch", site$source$branch)
+-  kv_line("Path", site$source$path)
+-
+-  invisible(site)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ # returns FALSE if it does NOT create the branch (because it already exists)
+ # returns TRUE if it does create the branch
+ create_gh_pages_branch <- function(tr, branch = "gh-pages") {
+-  gh <- gh_tr(tr)
+-  safe_gh <- purrr::safely(gh)
+-
+-  branch_GET <- safe_gh(
+-    "GET /repos/{owner}/{repo}/branches/{branch}",
+-    branch = branch
+-  )
+-
+-  if (!inherits(branch_GET$error, "http_error_404")) {
+-    return(FALSE)
+-  }
+-
+-  ui_bullets(c(
+-    "v" = "Initializing empty, orphan branch {.val {branch}} in GitHub repo
+-           {.val {tr$repo_spec}}."
+-  ))
+-
+-  # GitHub no longer allows you to directly create an empty tree
+-  # hence this roundabout method of getting an orphan branch with no files
+-  tree <- gh(
+-    "POST /repos/{owner}/{repo}/git/trees",
+-    tree = list(list(
+-      path = "_temp_file_ok_to_delete",
+-      mode = "100644",
+-      type = "blob",
+-      content = ""
+-    ))
+-  )
+-  commit <- gh(
+-    "POST /repos/{owner}/{repo}/git/commits",
+-    message = "Init orphan branch",
+-    tree = tree$sha
+-  )
+-  ref <- gh(
+-    "POST /repos/{owner}/{repo}/git/refs",
+-    ref = glue("refs/heads/{branch}"),
+-    sha = commit$sha
+-  )
+-  # this should succeed, but if somehow it does not, it's not worth failing and
+-  # leaving pkgdown + GitHub Pages setup half-done --> why I use safe_gh()
+-  safe_gh(
+-    "DELETE /repos/{owner}/{repo}/contents/_temp_file_ok_to_delete",
+-    message = "Remove temp file",
+-    sha = purrr::pluck(tree, "tree", 1, "sha"),
+-    branch = branch
+-  )
+-
+-  TRUE
++  stop("Function not supported in Wasm.")
+ }
+diff --git a/R/github.R b/R/github.R
+index 9056a0b..318ad19 100644
+--- a/R/github.R
++++ b/R/github.R
+@@ -59,126 +59,7 @@ use_github <- function(
+   protocol = git_protocol(),
+   host = NULL
+ ) {
+-  visibility_specified <- !missing(visibility)
+-  visibility <- match.arg(visibility)
+-  check_protocol(protocol)
+-  check_uses_git()
+-  default_branch <- guess_local_default_branch()
+-  check_current_branch(
+-    is = default_branch,
+-    # glue-ing happens inside check_current_branch(), where `gb` gives the
+-    # current branch
+-    message = c(
+-      "x" = "Must be on the default branch {.val {is}}, not {.val {gb}}."
+-    )
+-  )
+-  challenge_uncommitted_changes(
+-    msg = "
+-    There are uncommitted changes and we're about to create and push to a new \\
+-    GitHub repo"
+-  )
+-  check_no_origin()
+-
+-  if (is.null(organisation)) {
+-    if (visibility_specified) {
+-      ui_abort(
+-        "
+-        The {.arg visibility} setting is only relevant for organisation-owned
+-        repos, within the context of certain GitHub Enterprise products."
+-      )
+-    }
+-    visibility <- if (private) "private" else "public"
+-  }
+-
+-  if (!is.null(organisation) && !visibility_specified) {
+-    visibility <- if (private) "private" else "public"
+-  }
+-
+-  whoami <- suppressMessages(gh::gh_whoami(.api_url = host))
+-  if (is.null(whoami)) {
+-    ui_abort(c(
+-      "x" = "Unable to discover a GitHub personal access token.",
+-      "i" = "A token is required in order to create and push to a new repo.",
+-      "_" = "Call {.run usethis::gh_token_help()} for help configuring a token."
+-    ))
+-  }
+-  empirical_host <- parse_github_remotes(glue("{whoami$html_url}/REPO"))$host
+-  if (empirical_host != "github.com") {
+-    ui_bullets(c("i" = "Targeting the GitHub host {.val {empirical_host}}."))
+-  }
+-
+-  owner <- organisation %||% whoami$login
+-  repo_name <- project_name()
+-  check_no_github_repo(owner, repo_name, host)
+-
+-  repo_desc <- if (is_package()) proj_desc()$get_field("Title") %||% "" else ""
+-  repo_desc <- gsub("\n", " ", repo_desc)
+-  repo_spec <- glue("{owner}/{repo_name}")
+-
+-  visibility_string <- if (visibility == "public") "" else glue("{visibility} ")
+-  ui_bullets(c(
+-    "v" = "Creating {visibility_string}GitHub repository {.val {repo_spec}}."
+-  ))
+-  if (is.null(organisation)) {
+-    create <- gh::gh(
+-      "POST /user/repos",
+-      name = repo_name,
+-      description = repo_desc,
+-      private = private,
+-      .api_url = host
+-    )
+-  } else {
+-    create <- gh::gh(
+-      "POST /orgs/{org}/repos",
+-      org = organisation,
+-      name = repo_name,
+-      description = repo_desc,
+-      visibility = visibility,
+-      # this is necessary to set `visibility` in GHE 2.22 (but not in 3.2)
+-      # hopefully it's harmless when not needed
+-      .accept = "application/vnd.github.nebula-preview+json",
+-      .api_url = host
+-    )
+-  }
+-
+-  origin_url <- switch(
+-    protocol,
+-    https = create$clone_url,
+-    ssh = create$ssh_url
+-  )
+-  withr::defer(view_url(create$html_url))
+-
+-  ui_bullets(c("v" = "Setting remote {.val origin} to {.val {origin_url}}."))
+-  use_git_remote("origin", origin_url)
+-
+-  if (is_package()) {
+-    # we tryCatch(), because we can't afford any failure here to result in not
+-    # doing the first push and configuring the default branch
+-    # such an incomplete setup is hard to diagnose / repair post hoc
+-    tryCatch(
+-      use_github_links(),
+-      error = function(e) NULL
+-    )
+-  }
+-
+-  git_push_first(default_branch, "origin")
+-
+-  repo <- git_repo()
+-  gbl <- gert::git_branch_list(local = TRUE, repo = repo)
+-  if (nrow(gbl) > 1) {
+-    ui_bullets(c(
+-      "v" = "Setting {.val {default_branch}} as default branch on GitHub."
+-    ))
+-    gh::gh(
+-      "PATCH /repos/{owner}/{repo}",
+-      owner = owner,
+-      repo = repo_name,
+-      default_branch = default_branch,
+-      .api_url = host
+-    )
+-  }
+-
+-  invisible()
++  stop("Function not supported in Wasm.")
+ }
+ 
+ #' Use GitHub links in URL and BugReports
+@@ -203,75 +84,17 @@ use_github <- function(
+ #' }
+ #'
+ use_github_links <- function(overwrite = FALSE) {
+-  check_is_package("use_github_links()")
+-
+-  gh_url <- github_url_from_git_remotes()
+-
+-  proj_desc_field_update("URL", gh_url, overwrite = overwrite, append = TRUE)
+-
+-  proj_desc_field_update(
+-    "BugReports",
+-    glue("{gh_url}/issues"),
+-    overwrite = overwrite
+-  )
+-
+-  git_ask_commit(
+-    "Add GitHub links to DESCRIPTION",
+-    untracked = TRUE,
+-    paths = "DESCRIPTION"
+-  )
+-
+-  invisible()
++  stop("Function not supported in Wasm.")
+ }
+ 
+ has_github_links <- function(target_repo = NULL) {
+-  url <- if (is.null(target_repo)) NULL else target_repo$url
+-  github_url <- github_url_from_git_remotes(url)
+-  if (is.null(github_url)) {
+-    return(FALSE)
+-  }
+-
+-  desc <- proj_desc()
+-
+-  has_github_url <- github_url %in% desc$get_urls()
+-
+-  bug_reports <- desc$get_field("BugReports", default = character())
+-  has_github_issues <- glue("{github_url}/issues") %in% bug_reports
+-
+-  has_github_url && has_github_issues
++stop("Function not supported in Wasm.")
+ }
+ 
+ check_no_origin <- function() {
+-  remotes <- git_remotes()
+-  if ("origin" %in% names(remotes)) {
+-    ui_abort(c(
+-      "x" = "This repo already has an {.val origin} remote, with value
+-             {.val {remotes[['origin']]}}.",
+-      "i" = "You can remove this setting with:",
+-      " " = '{.code usethis::use_git_remote("origin", url = NULL, overwrite = TRUE)}'
+-    ))
+-  }
+-  invisible()
++  stop("Function not supported in Wasm.")
+ }
+ 
+ check_no_github_repo <- function(owner, repo, host) {
+-  spec <- glue("{owner}/{repo}")
+-  repo_found <- tryCatch(
+-    {
+-      repo_info <- gh::gh("/repos/{spec}", spec = spec, .api_url = host)
+-      # when does repo_info$full_name != the spec we sent?
+-      # this happens if you reuse the original name of a repo that has since
+-      # been renamed
+-      # there's no 404, because of the automatic redirect, but you CAN create
+-      # a new repo with this name
+-      # https://github.com/r-lib/usethis/issues/1893
+-      repo_info$full_name == spec
+-    },
+-    "http_error_404" = function(err) FALSE
+-  )
+-  if (!repo_found) {
+-    return(invisible())
+-  }
+-  empirical_host <- parse_github_remotes(repo_info$html_url)$host
+-  ui_abort("Repo {.val {spec}} already exists on {.val {empirical_host}}.")
++  stop("Function not supported in Wasm.")
+ }
+diff --git a/R/github_token.R b/R/github_token.R
+index 8fb42c1..f556c03 100644
+--- a/R/github_token.R
++++ b/R/github_token.R
+@@ -61,32 +61,7 @@ create_github_token <- function(
+   description = "DESCRIBE THE TOKEN'S USE CASE",
+   host = NULL
+ ) {
+-  scopes <- glue_collapse(scopes, ",")
+-  host <- get_hosturl(host %||% default_api_url())
+-  url <- glue(
+-    "{host}/settings/tokens/new?scopes={scopes}&description={description}"
+-  )
+-  withr::defer(view_url(url))
+-
+-  hint <- code_hint_with_host("gitcreds::gitcreds_set", host)
+-  message <- c(
+-    "_" = "Call {.run {hint}} to register this token in the local Git
+-           credential store."
+-  )
+-  if (is_linux()) {
+-    message <- c(
+-      message,
+-      "!" = "On Linux, it can be tricky to store credentials persistently.",
+-      "i" = "Read more in the {.href ['Managing Git(Hub) Credentials' article](https://usethis.r-lib.org/articles/articles/git-credentials.html)}."
+-    )
+-  }
+-  message <- c(
+-    message,
+-    "i" = "It is also a great idea to store this token in any
+-           password-management software that you use."
+-  )
+-  ui_bullets(message)
+-  invisible()
++  stop("Function not supported in Wasm.")
+ }
+ 
+ #' @inheritParams use_github
+@@ -97,25 +72,11 @@ create_github_token <- function(
+ #' gh_token_help()
+ #' }
+ gh_token_help <- function(host = NULL) {
+-  host_url <- get_hosturl(host %||% default_api_url())
+-  kv_line("GitHub host", host_url)
+-
+-  pat_sitrep(host_url, scope = "project")
++  stop("Function not supported in Wasm.")
+ }
+ 
+ code_hint_with_host <- function(function_name, host = NULL, arg_name = NULL) {
+-  arg_hint <- function(host, arg_name) {
+-    if (is.null(host) || is_github_dot_com(host)) {
+-      return("")
+-    }
+-    if (is_null(arg_name)) {
+-      glue('"{host}"')
+-    } else {
+-      glue('{arg_name} = "{host}"')
+-    }
+-  }
+-
+-  glue_chr("{function_name}({arg_hint(host, arg_name)})")
++  stop("Function not supported in Wasm.")
+ }
+ 
+ # workhorse behind gh_token_help() and called, possibly twice, in git_sitrep()
+@@ -126,173 +87,13 @@ pat_sitrep <- function(
+   scope = c("user", "project"),
+   scold_for_renviron = TRUE
+ ) {
+-  scope <- rlang::arg_match(scope)
+-
+-  if (scold_for_renviron) {
+-    scold_for_renviron()
+-  }
+-
+-  maybe_pat <- purrr::safely(gh::gh_token)(api_url = host)
+-  if (is.null(maybe_pat$result)) {
+-    ui_bullets(c(
+-      "x" = "The PAT discovered for {.url {host}} has the wrong structure."
+-    ))
+-    ui_bullets(c("i" = maybe_pat$error))
+-    return(invisible(FALSE))
+-  }
+-  pat <- maybe_pat$result
+-  have_pat <- pat != ""
+-
+-  if (!have_pat) {
+-    kv_line("Personal access token for {.val {host}}", NULL)
+-    hint <- code_hint_with_host("usethis::create_github_token", host, "host")
+-    ui_bullets(c(
+-      "_" = "To create a personal access token, call {.run {hint}}."
+-    ))
+-    hint <- code_hint_with_host("gitcreds::gitcreds_set", host)
+-    url <- "https://usethis.r-lib.org/articles/articles/git-credentials.html"
+-    ui_bullets(c(
+-      "_" = "To store a token for current and future use, call {.run {hint}}.",
+-      "i" = "Read more in the {.href [Managing Git(Hub) Credentials]({url})} article."
+-    ))
+-    return(invisible(FALSE))
+-  }
+-  kv_line("Personal access token for {.val {host}}", ui_special("discovered"))
+-
+-  online <- is_online(host)
+-  if (!online) {
+-    ui_bullets(c(
+-      "x" = "Host is not reachable.",
+-      " " = "No further vetting of the personal access token is possible.",
+-      "_" = "Try again when {.val {host}} can be reached."
+-    ))
+-    return(invisible())
+-  }
+-
+-  maybe_who <- purrr::safely(gh::gh_whoami)(.token = pat, .api_url = host)
+-  if (is.null(maybe_who$result)) {
+-    message <- c("x" = "Can't get user information for this token.")
+-    if (inherits(maybe_who$error, "http_error_401")) {
+-      message <- c(
+-        message,
+-        "i" = "The token may no longer be valid or perhaps it lacks the
+-               {.val user} scope."
+-      )
+-    }
+-    message <- c(
+-      message,
+-      "i" = maybe_who$error$message
+-    )
+-    ui_bullets(message)
+-    return(invisible(FALSE))
+-  }
+-  who <- maybe_who$result
+-
+-  kv_line("GitHub user", who$login)
+-  scopes <- strsplit(who$scopes, ", ")[[1]]
+-  kv_line("Token scopes", scopes)
+-  scold_for_scopes(scopes)
+-
+-  maybe_emails <-
+-    purrr::safely(gh::gh)("/user/emails", .token = pat, .api_url = host)
+-  if (is.null(maybe_emails$result)) {
+-    ui_bullets(c(
+-      "x" = "Can't retrieve registered email addresses from GitHub.",
+-      "i" = "Consider re-creating your PAT with the {.val user} (or at least
+-             {.val user:email}) scope."
+-    ))
+-  } else {
+-    emails <- maybe_emails$result
+-    addresses <- map_chr(
+-      emails,
+-      \(x) if (x$primary) glue_data(x, "{email} (primary)") else x[["email"]]
+-    )
+-    kv_line("Email(s)", addresses)
+-    ui_silence(
+-      user <- git_user_get(where_from_scope(scope))
+-    )
+-    git_user_check(user)
+-    if (!is.null(user$email) && !any(grepl(user$email, addresses))) {
+-      ui_bullets(c(
+-        "x" = "Git user's email ({.val {user$email}}) doesn't appear to be
+-               registered with GitHub host."
+-      ))
+-    }
+-  }
+-
+-  invisible(TRUE)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ scold_for_renviron <- function() {
+-  renviron_path <- scoped_path_r("user", ".Renviron", envvar = "R_ENVIRON_USER")
+-  if (!file_exists(renviron_path)) {
+-    return(invisible())
+-  }
+-
+-  renviron_lines <- read_utf8(renviron_path)
+-  fishy_lines <- grep("^GITHUB_(PAT|TOKEN).*=.+", renviron_lines, value = TRUE)
+-  if (length(fishy_lines) == 0) {
+-    return(invisible())
+-  }
+-
+-  fishy_keys <- re_match(fishy_lines, "^(?<key>.+)=.+")$key
+-  # TODO: when I switch to cli, this is a good place for `!`
+-  # in general, lots below is suboptimal, but good enough for now
+-  ui_bullets(c(
+-    "!" = "{.path {pth(renviron_path)}} defines{cli::qty(length(fishy_keys))}
+-           the environment variable{?s}:",
+-    bulletize(fishy_keys),
+-    "!" = "This can prevent your PAT from being retrieved from the Git
+-           credential store.",
+-    "i" = "If you are troubleshooting PAT problems, the root cause may be an
+-           old, invalid PAT defined in {.path {pth(renviron_path)}}.",
+-    "i" = "For most use cases, it is better to NOT define the PAT in
+-           {.file .Renviron}.",
+-    "_" = "Call {.run usethis::edit_r_environ()} to edit that file.",
+-    "_" = "Then call {.run gitcreds::gitcreds_set()} to put the PAT into
+-           the Git credential store."
+-  ))
+-  invisible()
++  stop("Function not supported in Wasm.")
+ }
+ 
+ scold_for_scopes <- function(scopes) {
+-  if (length(scopes) == 0) {
+-    ui_bullets(c(
+-      "x" = "Token has no scopes!",
+-      "i" = "Tokens initiated with {.fun create_github_token} default to the
+-             recommended scopes."
+-    ))
+-    return(invisible())
+-  }
+-
+-  # https://docs.github.com/en/free-pro-team@latest/developers/apps/scopes-for-oauth-apps
+-  # why these checks?
+-  # previous defaults for create_github_token(): repo, gist, user:email
+-  # more recently: repo, user, gist, workflow
+-  # (gist scope is a very weak recommendation)
+-  has_repo <- "repo" %in% scopes
+-  has_workflow <- "workflow" %in% scopes
+-  has_user_email <- "user" %in% scopes || "user:email" %in% scopes
+-
+-  if (has_repo && has_workflow && has_user_email) {
+-    return(invisible())
+-  }
+-
+-  suggestions <- c(
+-    "*" = if (!has_repo) "{.val repo}: needed to fully access user's repos",
+-    "*" = if (!has_workflow) {
+-      "{.val workflow}: needed to manage GitHub Actions workflow files"
+-    },
+-    "*" = if (!has_user_email) {
+-      "{.val user:email}: needed to read user's email addresses"
+-    }
+-  )
+-  message <- c(
+-    "!" = "Token lacks recommended scopes:",
+-    suggestions,
+-    "i" = "Consider re-creating your PAT with the missing scopes.",
+-    "i" = "Tokens initiated with {.fun usethis::create_github_token} default to the
+-           recommended scopes."
+-  )
+-  ui_bullets(message)
++  stop("Function not supported in Wasm.")
+ }
+-- 
+2.55.0
+

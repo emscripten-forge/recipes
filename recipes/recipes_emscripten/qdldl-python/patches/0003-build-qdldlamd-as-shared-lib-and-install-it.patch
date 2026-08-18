@@ -1,0 +1,92 @@
+From de401ba94e1d1a7baf8886411c615981fd2363fb Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Sat, 29 Oct 2022 11:16:16 +1100
+Subject: [PATCH 3/4] build qdldlamd as shared lib and install it
+
+---
+ c/CMakeLists.txt |  8 +++++++-
+ setup.py         | 24 ++++++++++++++----------
+ 2 files changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/c/CMakeLists.txt b/c/CMakeLists.txt
+index 6a08bec..acedfc7 100644
+--- a/c/CMakeLists.txt
++++ b/c/CMakeLists.txt
+@@ -35,8 +35,14 @@ set(
+ 
+ 
+ # Add QDLDL+AMD library
+-add_library(qdldlamd STATIC ${amd_src})
++add_library(qdldlamd SHARED ${amd_src})
+ target_link_libraries(qdldlamd qdldl)
+ target_include_directories(qdldlamd PRIVATE
+ 	                   ${CMAKE_CURRENT_SOURCE_DIR}/amd/include
+ 			    )
++
++install(TARGETS qdldlamd
++    RUNTIME DESTINATION "bin"
++    LIBRARY DESTINATION "lib"
++    ARCHIVE DESTINATION "lib"
++)
+diff --git a/setup.py b/setup.py
+index 4fa6522..198287f 100644
+--- a/setup.py
++++ b/setup.py
+@@ -44,18 +44,23 @@ for cmake_env_var in cmake_env_vars:
+         cmake_args.extend([f'-D{cmake_env_var}={cmake_var}'])
+ 
+ # Add parameters to cmake_args and define_macros
+-cmake_args += ["-DQDLDL_UNITTESTS=OFF", "-GNinja"]
++cmake_args += ["-DQDLDL_UNITTESTS=OFF", "-GNinja", f'-DCMAKE_INSTALL_PREFIX={prefix}', '-DCMAKE_BUILD_TYPE=Release']
+ cmake_build_flags = []
+ lib_subdir = []
+ 
+ # Check if windows linux or mac to pass flag
+ if system() == 'Windows':
+-    cmake_build_flags += ['--config', 'Release']
+-    lib_name = 'qdldlamd.lib'
+-    lib_subdir = ['Release']
++    cmake_args += ['-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON']
++    lib_prefix = ''
++    lib_ext = '.lib'
++elif system() == "Linux":
++    lib_prefix = 'lib'
++    lib_ext = '.so'
++else:
++    lib_prefix = 'lib'
++    lib_ext = '.dylib'
+ 
+-else:  # Linux or Mac
+-    lib_name = 'libqdldlamd.a'
++lib_name = lib_prefix + "qdldl"
+ 
+ # Set optimizer flag
+ if system() != 'Windows':
+@@ -67,9 +72,6 @@ else:
+ current_dir = os.getcwd()
+ qdldl_dir = os.path.join(current_dir, 'c',)
+ qdldl_build_dir = os.path.join(qdldl_dir, 'build')
+-qdldl_lib = [qdldl_build_dir, 'out'] + lib_subdir + [lib_name]
+-qdldl_lib = os.path.join(*qdldl_lib)
+-
+ 
+ class build_ext_qdldl(build_ext):
+     def build_extensions(self):
+@@ -88,6 +90,7 @@ class build_ext_qdldl(build_ext):
+         call(['cmake'] + cmake_args + ['..'])
+         call(['cmake', '--build', '.', '--target', 'qdldlamd'] +
+              cmake_build_flags)
++        call(['cmake', '--install', '.'])
+ 
+         # Change directory back to the python interface
+         os.chdir(current_dir)
+@@ -104,7 +107,8 @@ qdldl = Extension('qdldl',
+                                 get_pybind_include(user=False)],
+                   language='c++',
+                   extra_compile_args=compile_args + ['-std=c++11'],
+-                  extra_objects=[qdldl_lib])
++                  extra_objects=[os.path.join(prefix, "lib", x + lib_ext)
++                                 for x in [lib_name, lib_name + "amd"]])
+ 
+ 
+ def readme():
