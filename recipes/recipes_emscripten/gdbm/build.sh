@@ -30,3 +30,5 @@ for wasm_file in *.wasm src/*.wasm tools/*.wasm; do
     fi
 done
 shopt -u nullglob
+
+rm "${PREFIX}/bin/a.wasm"
