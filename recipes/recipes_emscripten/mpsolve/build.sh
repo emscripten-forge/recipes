@@ -6,7 +6,7 @@ export LDFLAGS="-L${PREFIX}/lib"
 export CXXFLAGS="-std=c++11"
 export CFLAGS="-Wno-implicit-function-declaration"
 
-emconfigure ./configure \
+disable_examples=xyes emconfigure ./configure \
     --build=i686-pc-linux-gnu \
     --host=wasm32-unknown-emscripten \
     --disable-shared \
