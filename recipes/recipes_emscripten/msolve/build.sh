@@ -17,3 +17,4 @@ emmake make -j8
 emmake make install
 
 cp *.wasm "${PREFIX}/bin/"
+rm "${PREFIX}/bin/a.wasm"
