@@ -5,10 +5,19 @@ def require_global_nrt():
 
     # Pytester also exercises eager-preload modes which load Numba's CPython
     # extensions with RTLD_LOCAL before they can be requested with RTLD_GLOBAL.
-    try:
-        getattr(ctypes.CDLL(None), "NRT_adapt_ndarray_from_python")
-    except AttributeError:
-        pytest.skip("pytester eagerly preloaded Numba's NRT extension locally")
+    process = ctypes.CDLL(None)
+    required_symbols = (
+        "NRT_adapt_ndarray_from_python",
+        "NRT_MemInfo_alloc_aligned",
+    )
+    missing_symbols = [
+        symbol for symbol in required_symbols if not hasattr(process, symbol)
+    ]
+    if missing_symbols:
+        pytest.skip(
+            "pytester eagerly preloaded Numba's NRT extension locally; "
+            f"missing global symbol(s): {', '.join(missing_symbols)}"
+        )
 
 
 def test_umap_learn():
