@@ -219,3 +219,28 @@ def test_parallel_guvectorize_falls_back_to_cpu():
             result[i] = values[i] + 1.0
 
     np.testing.assert_array_equal(add_one(np.arange(4.0)), np.arange(1.0, 5.0))
+
+
+def test_njit_parallel_falls_back_to_serial_pipeline():
+    from numba import config, njit, prange
+
+    require_global_nrt()
+
+    assert config.NUMBA_DEFAULT_NUM_THREADS == 1
+    assert config.NUMBA_NUM_THREADS == 1
+
+    @njit(parallel=True)
+    def sum_squares(values):
+        total = 0.0
+        for i in prange(values.size):
+            total += values[i] * values[i]
+        return total
+
+    values = np.arange(1000.0)
+    np.testing.assert_allclose(sum_squares(values), np.sum(values * values))
+
+    # The public spelling remains accepted for downstream libraries, while the
+    # dispatcher records that Emscripten compiled the serial implementation.
+    assert sum_squares.targetoptions["parallel"] is False
+    llvm_ir = sum_squares.inspect_llvm(sum_squares.signatures[0])
+    assert "numba_parallel_for" not in llvm_ir
