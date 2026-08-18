@@ -18,3 +18,4 @@ emmake make -j8
 emmake make install
 
 cp src/mpsolve/mpsolve.wasm "${PREFIX}/bin/"
+rm -rf "${PREFIX}/lib/python"*
