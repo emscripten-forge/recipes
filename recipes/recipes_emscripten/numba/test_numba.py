@@ -1,3 +1,6 @@
+import linecache
+import os
+
 import numpy as np
 import pytest
 
@@ -108,6 +111,76 @@ def test_persistent_wasm_object_cache(tmp_path, monkeypatch):
     second = njit(cache=True)(cached_vector_add_impl)
     np.testing.assert_array_equal(second(a, b), [5.0, 7.0, 9.0])
     assert sum(second.stats.cache_hits.values()) == 1
+
+
+def test_xeus_notebook_cell_persistent_cache(tmp_path, monkeypatch):
+    import numba
+
+    monkeypatch.setattr(numba.config, "CACHE_DIR", str(tmp_path))
+    source = (
+        "from numba import njit\n"
+        "@njit(cache=True)\n"
+        "def go_fast(value):\n"
+        "    return value + 1\n"
+    )
+    first_filename = "/tmp/xpython_42/3774261467.py"
+    second_filename = "/tmp/xpython_99/3774261467.py"
+    linecache.cache[first_filename] = (
+        len(source),
+        None,
+        source.splitlines(keepends=True),
+        first_filename,
+    )
+
+    try:
+        namespace = {"__name__": "__main__"}
+        exec(compile(source, first_filename, "exec"), namespace)
+        go_fast = namespace["go_fast"]
+
+        assert go_fast(41) == 42
+        assert list(tmp_path.rglob("*.nbi"))
+        assert list(tmp_path.rglob("*.nbc"))
+
+        # A fresh Xeus kernel has a different PID directory, but the cell's
+        # content-addressed basename remains stable.  Recreating the function
+        # through that second path must load the specialization from disk.
+        linecache.cache[second_filename] = (
+            len(source),
+            None,
+            source.splitlines(keepends=True),
+            second_filename,
+        )
+        second_namespace = {"__name__": "__main__"}
+        exec(compile(source, second_filename, "exec"), second_namespace)
+        second_go_fast = second_namespace["go_fast"]
+
+        assert second_go_fast(41) == 42
+        assert sum(second_go_fast.stats.cache_hits.values()) == 1
+    finally:
+        linecache.cache.pop(first_filename, None)
+        linecache.cache.pop(second_filename, None)
+
+
+def test_wasm_cache_source_stamp_ignores_unstable_mtime(tmp_path):
+    from numba.core import caching
+
+    source = tmp_path / "cached_module.py"
+    source.write_text("value = 1\n")
+    locator = caching.UserProvidedCacheLocator.__new__(
+        caching.UserProvidedCacheLocator
+    )
+    locator._py_file = str(source)
+
+    first_stamp = locator.get_source_stamp()
+    stat = source.stat()
+    os.utime(source, (stat.st_atime, stat.st_mtime + 60))
+
+    # JupyterLite reconstructs unchanged packaged sources with new mtimes.
+    assert locator.get_source_stamp() == first_stamp
+
+    # A real source change must still invalidate the compiled cache.
+    source.write_text("value = 2\n")
+    assert locator.get_source_stamp() != first_stamp
 
 
 def test_wasm_simd_autovectorization():
