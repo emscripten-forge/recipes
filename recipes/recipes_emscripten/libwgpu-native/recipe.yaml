@@ -1,0 +1,47 @@
+context:
+  version: "29.0.1.1"
+
+package:
+  name: libwgpu-native
+  version: ${{ version }}
+
+source:
+- url: https://github.com/gfx-rs/wgpu-native/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 6008651e1d10022d4ded15b69405b4ba88577be5d623938ba98ad241b2cbf818
+- url: https://raw.githubusercontent.com/webgpu-native/webgpu-headers/main/webgpu.h
+  sha256: 2dc6334582e2a85fc81bd5b1dc1cc131b48da9f91b89075e2bd59b3f1c9f81c1
+  target_directory: ffi/webgpu-headers
+
+build:
+  number: 0
+  script: build.sh
+
+  dynamic_linking:
+    binary_relocation: false
+
+requirements:
+  build:
+  - rust-nightly
+  - emscripten_emscripten-wasm32
+  - clang
+  - libclang
+  - make
+
+tests:
+- package_contents:
+    files:
+    - lib/libwgpu_native.wasm
+    - include/wgpu-native/webgpu.h
+    - include/wgpu-native/wgpu.h
+
+about:
+  license: MIT OR Apache-2.0
+  license_file:
+  - LICENSE.MIT
+  - LICENSE.APACHE
+  summary: Native WebGPU implementation in Rust (emscripten-wasm32)
+  homepage: https://github.com/gfx-rs/wgpu-native
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
