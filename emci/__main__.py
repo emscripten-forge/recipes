@@ -75,6 +75,8 @@ def changed(
                 for file in files:
                     if file == "recipe_legacy.yaml":
                         os.remove(os.path.join(root, file))
+            if subdir == "recipes_native":
+                target_platform = None
             build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=target_platform, skip_existing="local")
 
 
