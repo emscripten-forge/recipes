@@ -1,4 +1,4 @@
-import platform
+    import platform
 import os
 import subprocess
 from pathlib import Path
@@ -25,8 +25,8 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip
     cmd.extend(["--skip-existing", skip_existing])
 
     # build for emscripten-wasm32?
-    if emscripten_wasm32:
-        cmd.extend(["--target-platform", "emscripten-wasm32"])
+    if target_platform is not None:
+        cmd.extend(["--target-platform", str(target_platform)])
         # cmd.extend(["--variant-config", str(VARIANT_CONFIG_PATH)])
 
     cmd.extend(["-m", RATTLER_CONDA_BUILD_CONFIG_PATH])
