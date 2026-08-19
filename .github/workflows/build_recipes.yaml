@@ -131,6 +131,13 @@ jobs:
         shell: bash -l {0}
         run: |
 
+          # delete noarch pkgs for when on emscripten-wasm64
+          # and just upload these when on emscripten-wasm32
+          if [ "${{ matrix.wasm-arch }}" = "emscripten-wasm64" ]; then
+            echo "Deleting noarch pkgs for emscripten-wasm64"
+            rm -rf "${GITHUB_WORKSPACE}/output/noarch"
+          fi
+
           # add github workspace to python path
           export PYTHONPATH="${GITHUB_WORKSPACE}:${PYTHONPATH}"
           case "$(uname -s)" in
