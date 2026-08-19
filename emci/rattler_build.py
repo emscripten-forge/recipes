@@ -5,7 +5,7 @@ from pathlib import Path
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 
-def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, skip_existing="local"):
+def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip_existing="local"):
 
     cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "simple"]
 
