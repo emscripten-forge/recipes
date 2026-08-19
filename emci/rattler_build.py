@@ -1,4 +1,4 @@
-    import platform
+import platform
 import os
 import subprocess
 from pathlib import Path
