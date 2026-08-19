@@ -75,10 +75,11 @@ def changed(
                 for file in files:
                     if file == "recipe_legacy.yaml":
                         os.remove(os.path.join(root, file))
+            tp = str(target_platform) 
             if subdir == "recipes_native":
-                target_platform = None
+                tp = None
             print(f"Building recipes in {tmp_recipes_root_str} for target_platform={target_platform} subdir={subdir}")
-            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=target_platform, skip_existing="local")
+            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=tp, skip_existing="local")
 
 
 bot_app = typer.Typer()
