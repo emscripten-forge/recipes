@@ -20,11 +20,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            wasm-arch: emscripten-wasm32
+
+          - os: ubuntu-latest
+            wasm-arch: emscripten-wasm64
+
+          - os: macos-latest
+            wasm-arch: None
+            
     runs-on: ${{ matrix.os }}
     env:
       FORCE_COLOR: 1
-      TARGET_PLATFORM: emscripten-wasm32
+      TARGET_PLATFORM: ${{ matrix.wasm-arch }}
       GITHUB_OWNER: "emscripten-forge"
 
     steps:
@@ -96,7 +105,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main~1 origin/main
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x~1 origin/emscripten-6x --target-platform ${{ matrix.wasm-arch }}
 
       ################################################################
       # PULL_REQUEST
@@ -105,7 +114,7 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/main HEAD
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x HEAD --target-platform ${{ matrix.wasm-arch }}
 
       ################################################################
       # UPLOAD
@@ -131,7 +140,7 @@ jobs:
                   ;;
               Linux)
                   # Linux: upload Linux artifacts
-                  platforms=(emscripten-wasm32 linux-64 noarch)
+                  platforms=(emscripten-wasm32 emscripten-wasm64 linux-64 noarch)
                   ;;
               *)
                   echo "Unsupported OS: $(uname -s)"

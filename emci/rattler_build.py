@@ -5,7 +5,7 @@ from pathlib import Path
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 
-def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, skip_existing="local"):
+def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip_existing="local"):
 
     cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "simple"]
 
@@ -25,15 +25,15 @@ def build_with_rattler(recipe=None, recipes_dir=None, emscripten_wasm32=False, s
     cmd.extend(["--skip-existing", skip_existing])
 
     # build for emscripten-wasm32?
-    if emscripten_wasm32:
-        cmd.extend(["--target-platform", "emscripten-wasm32"])
+    if target_platform is not None:
+        cmd.extend(["--target-platform", str(target_platform)])
         # cmd.extend(["--variant-config", str(VARIANT_CONFIG_PATH)])
 
     cmd.extend(["-m", RATTLER_CONDA_BUILD_CONFIG_PATH])
 
     # add conda forge and emscripten-forge channels
     cmd.extend([
-        "-c", "https://repo.prefix.dev/emscripten-forge-4x",
+        "-c", "https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x",
         "-c", "microsoft",
         "-c", "conda-forge",
         "-c", "bioconda"

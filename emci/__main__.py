@@ -1,5 +1,5 @@
 from .rattler_build import build_with_rattler
-from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
+from .constants import RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 from .playwright import changed_recipes_need_playwright
 from .schema import Recipe
@@ -32,10 +32,14 @@ def changed(
     root_dir,
     old,
     new,
+    target_platform: Optional[str] = typer.Option(None),
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(True)
 ):
+    if target_platform == "None":
+        target_platform = None
+
     work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
     recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
@@ -71,7 +75,11 @@ def changed(
                 for file in files:
                     if file == "recipe_legacy.yaml":
                         os.remove(os.path.join(root, file))
-            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32")
+            tp = str(target_platform) 
+            if subdir == "recipes_native":
+                tp = None
+            print(f"Building recipes in {tmp_recipes_root_str} for target_platform={target_platform} subdir={subdir}")
+            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=tp, skip_existing="local")
 
 
 bot_app = typer.Typer()

@@ -2,16 +2,10 @@ import os
 from collections import OrderedDict
 from pathlib import Path
 
-
-RECIPES_SUBDIR_MAPPING = OrderedDict(
-    [("recipes", ""), ("recipes_emscripten", "emscripten-wasm32")]
-)
-
-
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_ROOT = Path(THIS_DIR).parents[0].resolve()
 RECIPES_ROOT = REPO_ROOT / "recipes"
-RECIPES_EMSCRIPTEN_DIR = RECIPES_ROOT / "recipes_emscripten"
+RECIPES_EMSCRIPTEN_DIR = RECIPES_ROOT / "recipes_wasm"
 
 
 # rattler build related
@@ -25,4 +19,4 @@ if CONDA_PREFIX is None:
 CONDA_BLD_DIR = os.path.join(CONDA_PREFIX, "conda-bld")
 Path(CONDA_BLD_DIR).mkdir(exist_ok=True)
 
-DEFAULT_EMSCRIPTEN_FORGE_CHANNEL = "emscripten-forge-4x"
+DEFAULT_EMSCRIPTEN_FORGE_CHANNEL = "emscripten-forge-bot/emscripten-forge-6x"
