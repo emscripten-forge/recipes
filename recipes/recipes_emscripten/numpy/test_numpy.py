@@ -58,3 +58,21 @@ def test_lapack_eigh():
     assert evecs.shape == (N, N)
     assert_allclose(evecs.T @ evecs, np.eye(N), atol=1e-8)
     assert_allclose(evecs @ np.diag(evals) @ evecs.T, a)
+
+
+def test_c_test_extensions():
+    # Built with meson install_tag=tests: NumPy's C test helpers.
+    from numpy._core import _multiarray_tests, _umath_tests
+
+    assert hasattr(_multiarray_tests, "test_neighborhood_iterator")
+    assert hasattr(_umath_tests, "test_dispatch")
+
+
+def test_numpy_c_and_linalg_suite():
+    # numpy._core.tests is the C-extension suite (_multiarray_tests, _umath_tests).
+    # numpy.linalg.tests exercises the OpenBLAS/LAPACK symbols NumPy links.
+    assert np.test(
+        label="fast",
+        extra_argv=["--tb=short"],
+        tests=["numpy._core", "numpy.linalg"],
+    ), "NumPy _core / linalg tests failed"
