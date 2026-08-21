@@ -52,11 +52,13 @@ sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
 
 # -Dblas=openblas makes NumPy try scipy-openblas first (see numpy/meson.build).
 # allow-noblas defaults to true; force OpenBLAS to be required.
-# install_tag=tests C modules (_multiarray_tests, _umath_tests, …) are omitted
-# unless the tests tag is requested.
+# Restricting Meson install tags is required to *include* extra files:
+# tests  — C helpers (_multiarray_tests, _umath_tests, …) for np.test()
+# devel  — numpy.pc and headers; SciPy's meson dependency('numpy') uses
+#          pkg-config and otherwise fails with "Dependency numpy not found"
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="-Dblas=openblas" \
     -Csetup-args="-Dlapack=openblas" \
     -Csetup-args="-Dallow-noblas=false" \
     -Csetup-args="--cross-file=$MESON_CROSS_FILE" \
-    -Cinstall-args="--tags=runtime,python-runtime,tests"
+    -Cinstall-args="--tags=runtime,python-runtime,tests,devel"
