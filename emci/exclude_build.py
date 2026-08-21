@@ -14,7 +14,8 @@ def exclude_build(recipes_dir, target_platform):
     # read the recipe.yaml file
     with open(recipe_yaml_path, "r") as f:
         recipe_yaml = yaml.safe_load(f)
-        ci = recipe_yaml.get("ci", {})
+        extra = recipe_yaml.get("extra", {})
+        ci = extra.get("ci", {})
         exclude_platforms = ci.get("exclude_platforms", [])
         if target_platform in exclude_platforms:
             return True
