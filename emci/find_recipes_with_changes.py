@@ -11,7 +11,12 @@ def find_recipes_with_changes(old, new):
     for subdir in ["recipes_native", "recipes_wasm"]:
         if  platform.system() == "Darwin" and subdir == "recipes_wasm":
             # skip recipes_wasm on macOS
-            # we only build recipes/recipes on macOS
+            # we only build recipes/recipes_native on macOS
+            # otherwise we would build recipes_wasm on mac and linux and 
+            # would try to upload the same recipe twice. Furthermore 
+            # its easier to build recipes_wasm on linux than on macOS
+            # since emscripten-wasm32/emscripten-wasm64 is closer
+            # to linux than to macOS. 
             continue
             
         for file_with_change in files_with_changes:
