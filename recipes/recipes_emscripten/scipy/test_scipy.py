@@ -137,3 +137,15 @@ def test_special():
     import scipy.special as special
     val = special.jv(2.5, 2.0)
     assert_allclose(val, 0.223924531)
+
+
+def test_scipy_suite():
+    # SciPy's default label="fast" is the full suite minus @pytest.mark.slow,
+    # matching upstream CI (-m "not slow"). Thread/process tests are skipped
+    # in scipy/conftest.py on wasm32.
+    import scipy
+
+    assert scipy.test(
+        label="fast",
+        extra_argv=["--tb=short", "--continue-on-collection-errors"],
+    ), "SciPy tests failed"

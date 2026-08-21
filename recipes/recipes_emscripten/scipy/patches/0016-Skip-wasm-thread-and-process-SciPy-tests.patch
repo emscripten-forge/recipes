@@ -1,0 +1,104 @@
+From 45dd12a6dcc8cd6538bae18120ba10722bd7a8ac Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Fri, 21 Aug 2026 13:01:06 +0200
+Subject: [PATCH] Skip wasm thread and process SciPy tests
+
+Emscripten has no fork, threads, or host libm via ctypes. Skip those
+tests so the rest of the suite can exercise OpenBLAS-linked SciPy.
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ scipy/conftest.py | 73 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 72 insertions(+), 1 deletion(-)
+
+diff --git a/scipy/conftest.py b/scipy/conftest.py
+index 2b82871..2d60586 100644
+--- a/scipy/conftest.py
++++ b/scipy/conftest.py
+@@ -97,7 +97,9 @@ def pytest_configure(config):
+             "iterations(n): run the given test function `n` times in each thread",
+         )
+ 
+-    if os.name == 'posix' and sys.version_info < (3, 14) and sys.platform != "cygwin":
++    # Emscripten has no fork/forkserver.
++    if (os.name == 'posix' and sys.version_info < (3, 14)
++            and sys.platform not in ("cygwin", "emscripten")):
+         # On POSIX, Python 3.13 and older uses the 'fork' context by
+         # default. Calling fork() from multiple threads leads to
+         # deadlocks. This has been changed in 3.14 to 'forkserver'.
+@@ -738,3 +740,72 @@ if HAVE_SCPDT:
+     # ignore Matplotlib's `ax.text`:
+     dt_config.stopwords.add('.text(')
+ ############################################################################
++
++# Emscripten/wasm32 has no threads or subprocesses. Skip those tests so the
++# rest of the suite can exercise OpenBLAS-linked SciPy. Do not skip numerical
++# failures: those would hide real linalg/OpenBLAS bugs.
++def pytest_collection_modifyitems(config, items):
++    import platform
++    import re
++
++    if platform.machine() not in ("wasm32", "wasm64"):
++        return
++
++    skip_thread = pytest.mark.skip(reason="no thread support on wasm32")
++    skip_process = pytest.mark.skip(reason="no process support on wasm32")
++    skip_libm = pytest.mark.skip(reason="ctypes cannot load host libm.so on wasm32")
++    marks = [
++        ("test__threadsafety.py::test_parallel_threads", skip_thread),
++        ("test_ccallback.py::test_threadsafety", skip_thread),
++        ("test__util.py::test_pool", skip_process),
++        ("test__util.py::test_mapwrapper_parallel", skip_process),
++        ("test__util.py::test__workers_wrapper", skip_process),
++        ("test_import_cycles.py::test_modules_importable", skip_process),
++        ("test_import_cycles.py::test_public_modules_importable", skip_process),
++        ("test_basic.py::TestFFTThreadSafe", skip_thread),
++        ("test_basic.py::test_multiprocess", skip_process),
++        ("test_fft_function.py::test_fft_function", skip_process),
++        ("test_multithreading.py::test_mixed_threads_processes", skip_thread),
++        ("test__quad_vec.py::TestQuadVec.test_quad_vec_pool", skip_process),
++        ("test_quadpack.py.+TestCtypesQuad.test_ctypes", skip_libm),
++        ("test_rbf.py::test_rbf_concurrency", skip_thread),
++        ("test_mmio.py::.+fast_matrix_market", skip_thread),
++        ("test_filters.py::TestThreading", skip_thread),
++        ("test__differential_evolution.py::TestDifferentialEvolutionSolver.test_immediate_updating", skip_process),
++        ("test__differential_evolution.py::TestDifferentialEvolutionSolver.test_parallel", skip_process),
++        ("test__shgo.py.+test_19_parallelization", skip_process),
++        ("test_minpack.py::TestFSolve.test_concurrent", skip_process),
++        ("test_minpack.py::TestLeastSq.test_concurrent", skip_process),
++        ("test_optimize.py::test_cobyla_threadsafe", skip_thread),
++        ("test_optimize.py::TestBrute.test_workers", skip_process),
++        ("test__numdiff.py::TestApproxDerivativesDense.test_scalar_vector", skip_process),
++        ("test__numdiff.py::TestApproxDerivativesDense.test_workers_evaluations_and_nfev", skip_process),
++        ("test__numdiff.py::TestApproxDerivativesDense.test_vector_vector", skip_process),
++        ("test__numdiff.py::TestApproxDerivativeSparse.test_all", skip_process),
++        (r".*test_workers.*", skip_process),
++        ("test_optimize.py::TestWorkers.+-[0-9]+\\]", skip_process),
++        ("test_optimize.py::test_multiprocessing_too_many_open_files_23080", skip_process),
++        ("test_signaltools.py::TestMedFilt.test_medfilt2d_parallel", skip_thread),
++        ("test_arpack.py::test_parallel_threads", skip_thread),
++        ("test_linsolve.py::TestSplu.test_threads_parallel", skip_thread),
++        ("test_sparsetools.py::test_threads", skip_thread),
++        ("test_shortest_path.py::test_gh_17782_segfault", skip_thread),
++        ("test_kdtree.py::test_query_ball_point_multithreading", skip_thread),
++        ("test_kdtree.py::test_ckdtree_parallel", skip_thread),
++        ("test_kdtree.py::test_query_ball_point_multithreaded_workers", skip_thread),
++        ("test_kdtree.py::test_query_ball_point_multithreaded_explicit", skip_thread),
++        ("test_kdtree.py::test_multithreaded_tree_access", skip_thread),
++        ("test_qmc.py::TestVDC.test_van_der_corput", skip_thread),
++        ("test_qmc.py::TestHalton.test_workers", skip_thread),
++        ("test_qmc.py::TestUtils.test_discrepancy_parallel", skip_thread),
++        ("test_sampling.py::test_threading_behaviour", skip_thread),
++        ("test_stats.py::TestMGCStat.test_workers", skip_process),
++        (r".*test_concurrency.*", skip_thread),
++    ]
++    for item in items:
++        path, _line, name = item.reportinfo()
++        full_name = f"{path}::{name}"
++        for pattern, mark in marks:
++            if re.search(pattern, full_name):
++                item.add_marker(mark)
++
+-- 
+2.55.0
+
