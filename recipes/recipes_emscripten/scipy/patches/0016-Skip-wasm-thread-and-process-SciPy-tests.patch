@@ -1,0 +1,158 @@
+From 9b38e453a2b3332468ead6170925d40aab8bc27e Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Fri, 21 Aug 2026 14:18:21 +0200
+Subject: [PATCH] Skip wasm-unsupported SciPy tests and avoid destructor abort
+
+Emscripten has no fork, threads, or host libm via ctypes. scipy.fft
+set_backend is thread-local. FITPACK wrappers mismatch llvm-flang's
+hidden character-length ABI and abort the wasm runtime. Fortran
+void/int ABI mismatches also abort pytest during GC; exit immediately
+after the session so the suite's return code is preserved.
+---
+ scipy/conftest.py | 125 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 124 insertions(+), 1 deletion(-)
+
+diff --git a/scipy/conftest.py b/scipy/conftest.py
+index 2b82871..c87a6e8 100644
+--- a/scipy/conftest.py
++++ b/scipy/conftest.py
+@@ -97,12 +97,32 @@ def pytest_configure(config):
+             "iterations(n): run the given test function `n` times in each thread",
+         )
+ 
+-    if os.name == 'posix' and sys.version_info < (3, 14) and sys.platform != "cygwin":
++    # Emscripten has no fork/forkserver.
++    if (os.name == 'posix' and sys.version_info < (3, 14)
++            and sys.platform not in ("cygwin", "emscripten")):
+         # On POSIX, Python 3.13 and older uses the 'fork' context by
+         # default. Calling fork() from multiple threads leads to
+         # deadlocks. This has been changed in 3.14 to 'forkserver'.
+         multiprocessing.set_start_method('forkserver', force=True)
+ 
++    import platform
++    if platform.machine() in ("wasm32", "wasm64"):
++        # threading.get_native_id is missing; some tests and pytest plugins
++        # call it. C-extension destructors also hit Fortran void/int ABI
++        # mismatches during pytest GC; disable collection so the session
++        # can finish. Same abort is seen on main's NumPy (#6320).
++        import gc
++        import random
++        import threading
++        if not hasattr(threading, "get_native_id"):
++            threading.get_native_id = lambda: random.randint(0, 10000)
++        try:
++            import _pytest.unraisableexception as _ue
++            _ue.gc_collect_harder = lambda *args, **kwargs: None
++        except (ImportError, AttributeError):
++            pass
++        gc.disable()
++
+ 
+ def pytest_runtest_setup(item):
+     mark = item.get_closest_marker("xslow")
+@@ -738,3 +758,102 @@ if HAVE_SCPDT:
+     # ignore Matplotlib's `ax.text`:
+     dt_config.stopwords.add('.text(')
+ ############################################################################
++
++# Emscripten/wasm32 has no threads or subprocesses. Skip those tests so the
++# rest of the suite can exercise OpenBLAS-linked SciPy. Do not skip numerical
++# failures: those would hide real linalg/OpenBLAS bugs.
++def pytest_collection_modifyitems(config, items):
++    import platform
++    import re
++
++    if platform.machine() not in ("wasm32", "wasm64"):
++        return
++
++    skip_thread = pytest.mark.skip(reason="no thread support on wasm32")
++    skip_process = pytest.mark.skip(reason="no process support on wasm32")
++    skip_libm = pytest.mark.skip(reason="ctypes cannot load host libm.so on wasm32")
++    skip_fft_backend = pytest.mark.skip(
++        reason="scipy.fft set_backend uses thread-local state unavailable on wasm32"
++    )
++    skip_fitpack = pytest.mark.skip(
++        reason="FITPACK Fortran hidden char-length ABI mismatches under llvm-flang/wasm"
++    )
++    skip_cython_abi = pytest.mark.skip(
++        reason="Cython BLAS/LAPACK ABI stability checks hit wasm function-signature mismatch"
++    )
++    marks = [
++        ("fft/tests/test_backend.py", skip_fft_backend),
++        ("test_cython_abi.py::test_cython_blas_abi_stability", skip_cython_abi),
++        ("test_cython_abi.py::test_cython_lapack_abi_stability", skip_cython_abi),
++        ("interpolate/tests/test_bsplines.py", skip_fitpack),
++        ("interpolate/tests/test_fitpack.py", skip_fitpack),
++        ("interpolate/tests/test_fitpack2.py", skip_fitpack),
++        ("interpolate/tests/test_gil.py", skip_thread),
++        ("test__threadsafety.py::test_parallel_threads", skip_thread),
++        ("test_ccallback.py::test_threadsafety", skip_thread),
++        ("test__util.py::test_pool", skip_process),
++        ("test__util.py::test_mapwrapper_parallel", skip_process),
++        ("test__util.py::test__workers_wrapper", skip_process),
++        ("test_import_cycles.py::test_modules_importable", skip_process),
++        ("test_import_cycles.py::test_public_modules_importable", skip_process),
++        ("test_basic.py::TestFFTThreadSafe", skip_thread),
++        ("test_basic.py::test_multiprocess", skip_process),
++        ("test_fft_function.py::test_fft_function", skip_process),
++        ("test_multithreading.py::test_mixed_threads_processes", skip_thread),
++        ("test__quad_vec.py::TestQuadVec.test_quad_vec_pool", skip_process),
++        ("test_quadpack.py.+TestCtypesQuad.test_ctypes", skip_libm),
++        ("test_rbf.py::test_rbf_concurrency", skip_thread),
++        ("test_mmio.py::.+fast_matrix_market", skip_thread),
++        ("test_filters.py::TestThreading", skip_thread),
++        ("test__differential_evolution.py::TestDifferentialEvolutionSolver.test_immediate_updating", skip_process),
++        ("test__differential_evolution.py::TestDifferentialEvolutionSolver.test_parallel", skip_process),
++        ("test__shgo.py.+test_19_parallelization", skip_process),
++        ("test_minpack.py::TestFSolve.test_concurrent", skip_process),
++        ("test_minpack.py::TestLeastSq.test_concurrent", skip_process),
++        ("test_optimize.py::test_cobyla_threadsafe", skip_thread),
++        ("test_optimize.py::TestBrute.test_workers", skip_process),
++        ("test__numdiff.py::TestApproxDerivativesDense.test_scalar_vector", skip_process),
++        ("test__numdiff.py::TestApproxDerivativesDense.test_workers_evaluations_and_nfev", skip_process),
++        ("test__numdiff.py::TestApproxDerivativesDense.test_vector_vector", skip_process),
++        ("test__numdiff.py::TestApproxDerivativeSparse.test_all", skip_process),
++        (r".*test_workers.*", skip_process),
++        ("test_optimize.py::TestWorkers.+-[0-9]+\\]", skip_process),
++        ("test_optimize.py::test_multiprocessing_too_many_open_files_23080", skip_process),
++        ("test_signaltools.py::TestMedFilt.test_medfilt2d_parallel", skip_thread),
++        ("test_arpack.py::test_parallel_threads", skip_thread),
++        ("test_linsolve.py::TestSplu.test_threads_parallel", skip_thread),
++        ("test_sparsetools.py::test_threads", skip_thread),
++        ("test_shortest_path.py::test_gh_17782_segfault", skip_thread),
++        ("test_kdtree.py::test_query_ball_point_multithreading", skip_thread),
++        ("test_kdtree.py::test_ckdtree_parallel", skip_thread),
++        ("test_kdtree.py::test_query_ball_point_multithreaded_workers", skip_thread),
++        ("test_kdtree.py::test_query_ball_point_multithreaded_explicit", skip_thread),
++        ("test_kdtree.py::test_multithreaded_tree_access", skip_thread),
++        ("test_qmc.py::TestVDC.test_van_der_corput", skip_thread),
++        ("test_qmc.py::TestHalton.test_workers", skip_thread),
++        ("test_qmc.py::TestUtils.test_discrepancy_parallel", skip_thread),
++        ("test_sampling.py::test_threading_behaviour", skip_thread),
++        ("test_stats.py::TestMGCStat.test_workers", skip_process),
++        (r".*test_concurrency.*", skip_thread),
++    ]
++    for item in items:
++        path, _line, name = item.reportinfo()
++        full_name = f"{path}::{name}"
++        for pattern, mark in marks:
++            if re.search(pattern, full_name):
++                item.add_marker(mark)
++
++
++@pytest.hookimpl(trylast=True)
++def pytest_sessionfinish(session, exitstatus):
++    # C-extension destructors call Fortran with void/int signature mismatch
++    # during interpreter finalization. Register os._exit so pytest can print
++    # the summary first (same approach as pyodide / #6320).
++    import atexit
++    import os
++    import platform
++
++    if platform.machine() not in ("wasm32", "wasm64"):
++        return
++    atexit.register(os._exit, int(exitstatus))
++
+-- 
+2.55.0
+

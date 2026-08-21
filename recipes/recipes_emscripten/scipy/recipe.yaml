@@ -28,17 +28,16 @@ source:
   - patches/0013-Extra-char-length-args-in-integrate.patch
   - patches/0014-int-return-for-superlu_utils-and-input_error.patch
   - patches/0015-Extra-char-length-args-to-f2py-source-files.patch
+  - patches/0016-Skip-wasm-thread-and-process-SciPy-tests.patch
 
 build:
-  number: 1
+  number: 3
 
   files:
     exclude:
     - '**/*.pyi'
-    - '**/tests/**'
     - '**/__pycache__/**'
     - '**/*.pyc'
-    - '**/test_*.py'
   python:
     skip_pyc_compilation:
     - '**/*.py'
@@ -51,16 +50,18 @@ requirements:
   - cython
     # - llvm_${{ target_platform }} # Installing custom LLVM in build.sh
   - meson-python
-  - numpy
+  # Override variant.yaml's numpy 2.3 pin so this rebuild uses the
+  # OpenBLAS-linked numpy 2.5.2 built in this PR (not channel numpy).
+  - numpy >=2.5.2
   - pkg-config
   host:
-  - numpy
+  - numpy >=2.5.2
   - openblas
   - pybind11
   - python
   run:
   - python
-  - numpy
+  - numpy >=2.5.2
   - openblas
 
 tests:
@@ -73,6 +74,8 @@ tests:
     - pytester
     run:
     - pytester-run
+    - hypothesis
+    - gmpy2
 
 about:
   homepage: http://www.scipy.org/
