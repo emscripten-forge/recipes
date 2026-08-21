@@ -1,0 +1,60 @@
+context:
+  name: hypothesis
+  version: 6.155.7
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d8d6091753d0669db3c90c5e5b346cb37c72f3dd9378c8413acb1fd5da63f7ea
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . --no-deps --no-build-isolation
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools >=78.1.0
+  host:
+  - python
+  run:
+  - python
+  - sortedcontainers >=2.1.0,<3.0.0
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_hypothesis.py
+
+about:
+  summary: The property-based testing library for Python
+  license: MPL-2.0
+  license_file: LICENSE.txt
+  homepage: https://hypothesis.works
+  repository: https://github.com/HypothesisWorks/hypothesis
+  documentation: https://hypothesis.readthedocs.io
+
+extra:
+  recipe-maintainers:
+  - jjerphan
