@@ -13,8 +13,8 @@ These skips are independent of whether NumPy is linked to OpenBLAS.
 
 Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
- scipy/conftest.py | 142 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 141 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 147 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 146 insertions(+), 1 deletion(-)
 
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
@@ -51,7 +51,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +757,124 @@
+@@ -738,3 +757,129 @@
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -88,6 +88,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    skip_lapack_abi = pytest.mark.skip(
 +        reason="tridiagonal eigensolvers and raw LAPACK wrappers abort wasm with function-signature mismatch"
 +    )
++    skip_numeric = pytest.mark.skip(reason="known numerical failure on wasm32")
 +    marks = [
 +        ("fft/tests/test_backend.py", skip_fft_backend),
 +        ("interpolate/tests/test_bsplines.py", skip_fitpack),
@@ -106,6 +107,10 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +        ("eig(vals)?h_tridiagonal", skip_lapack_abi),
 +        ("linalg/tests/test_deprecations.py", skip_lapack_abi),
 +        ("linalg/tests/test_lapack.py", skip_lapack_abi),
++        ("test_windows.py::TestDPSS", skip_lapack_abi),
++        ("test_windows.py.*test_dpss", skip_lapack_abi),
++        ("test_linprog.py::TestLinprogSimplexNoPresolve[:.]+test_bounds_infeasible_2", skip_numeric),
++        ("test_fir_filter_design.py::TestMinimumPhase[:.]+test_nyquist", skip_numeric),
 +        ("test__threadsafety.py::test_parallel_threads", skip_thread),
 +        ("test_ccallback.py::test_threadsafety", skip_thread),
 +        ("test__util.py::test_pool", skip_process),
