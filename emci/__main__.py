@@ -66,6 +66,7 @@ def changed(
                     if exclude_build(recipe_dir, target_platform):
                         print(f"Excluding build for recipe {recipe_with_change} for target_platform={target_platform}")
                     else:
+                        print(f"Copying recipe {recipe_with_change} to temp dir for target_platform={target_platform}")
                         tmp_recipe_dir = os.path.join(
                             tmp_recipes_root_str, recipe_with_change
                         )
