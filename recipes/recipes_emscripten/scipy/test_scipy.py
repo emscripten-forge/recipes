@@ -141,13 +141,15 @@ def test_special():
 
 def test_scipy_suite():
     # Same shape as NumPy's pytester: run the OpenBLAS-linked modules, not
-    # the whole SciPy tree. FITPACK and other unpatched Fortran wrappers
-    # abort the wasm runtime (function signature mismatch). Thread/process
-    # tests that remain in these modules are skipped in scipy/conftest.py.
+    # the whole SciPy tree. The function-signature abort in
+    # linalg/tests/test_basic.py also happens on main's NumPy (#6320); it is
+    # not OpenBLAS-specific. Thread/process tests in these modules are
+    # skipped in scipy/conftest.py. Keep this scope until #6320's full suite
+    # can finish.
     import scipy
 
     assert scipy.test(
         label="fast",
-        extra_argv=["--tb=short", "-s"],
+        extra_argv=["--tb=line", "-v", "-s"],
         tests=["scipy.linalg", "scipy.sparse.linalg"],
     ), "SciPy linalg tests failed"

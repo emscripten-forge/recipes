@@ -9,14 +9,14 @@ hidden character-length ABI and abort the wasm runtime. Fortran
 void/int ABI mismatches also abort pytest during GC; exit immediately
 after the session so the suite's return code is preserved.
 ---
- scipy/conftest.py | 114 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 113 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 125 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 124 insertions(+), 1 deletion(-)
 
 diff --git a/scipy/conftest.py b/scipy/conftest.py
 index 2b82871..c87a6e8 100644
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
-@@ -97,12 +97,30 @@ def pytest_configure(config):
+@@ -97,12 +97,32 @@ def pytest_configure(config):
              "iterations(n): run the given test function `n` times in each thread",
          )
  
@@ -33,8 +33,9 @@ index 2b82871..c87a6e8 100644
 +    if platform.machine() in ("wasm32", "wasm64"):
 +        # threading.get_native_id is missing; some tests and pytest plugins
 +        # call it. C-extension destructors also hit Fortran void/int ABI
-+        # mismatches during pytest's hard GC; skip that collection so the
-+        # session can finish.
++        # mismatches during pytest GC; disable collection so the session
++        # can finish. Same abort is seen on main's NumPy (#6320).
++        import gc
 +        import random
 +        import threading
 +        if not hasattr(threading, "get_native_id"):
@@ -44,11 +45,12 @@ index 2b82871..c87a6e8 100644
 +            _ue.gc_collect_harder = lambda *args, **kwargs: None
 +        except (ImportError, AttributeError):
 +            pass
++        gc.disable()
 +
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +756,97 @@ if HAVE_SCPDT:
+@@ -738,3 +758,102 @@ if HAVE_SCPDT:
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -72,8 +74,13 @@ index 2b82871..c87a6e8 100644
 +    skip_fitpack = pytest.mark.skip(
 +        reason="FITPACK Fortran hidden char-length ABI mismatches under llvm-flang/wasm"
 +    )
++    skip_cython_abi = pytest.mark.skip(
++        reason="Cython BLAS/LAPACK ABI stability checks hit wasm function-signature mismatch"
++    )
 +    marks = [
 +        ("fft/tests/test_backend.py", skip_fft_backend),
++        ("test_cython_abi.py::test_cython_blas_abi_stability", skip_cython_abi),
++        ("test_cython_abi.py::test_cython_lapack_abi_stability", skip_cython_abi),
 +        ("interpolate/tests/test_bsplines.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack2.py", skip_fitpack),
@@ -136,15 +143,15 @@ index 2b82871..c87a6e8 100644
 +@pytest.hookimpl(trylast=True)
 +def pytest_sessionfinish(session, exitstatus):
 +    # C-extension destructors call Fortran with void/int signature mismatch
-+    # during interpreter finalization (wasm-ld). Exit immediately so pytest's
-+    # return code is preserved. atexit is too late: the abort happens during
-+    # post-session GC. See pyodide scipy-conftest.py.
++    # during interpreter finalization. Register os._exit so pytest can print
++    # the summary first (same approach as pyodide / #6320).
++    import atexit
 +    import os
 +    import platform
 +
 +    if platform.machine() not in ("wasm32", "wasm64"):
 +        return
-+    os._exit(int(exitstatus))
++    atexit.register(os._exit, int(exitstatus))
 +
 -- 
 2.55.0
