@@ -4,6 +4,7 @@ from .find_recipes_with_changes import find_recipes_with_changes
 from .playwright import changed_recipes_need_playwright
 from .schema import Recipe
 from .upload import extract_channel_from_pkg
+from .exclude_build import exclude_build
 
 import sys
 import os
@@ -62,11 +63,14 @@ def changed(
 
                 # diff can shown deleted recipe as changed
                 if os.path.isdir(recipe_dir):
-                    tmp_recipe_dir = os.path.join(
-                        tmp_recipes_root_str, recipe_with_change
-                    )
-                    # os.mkdir(tmp_recipe_dir)
-                    shutil.copytree(recipe_dir, tmp_recipe_dir)
+                    if exclude_build(recipe_dir, target_platform):
+                        print(f"Excluding build for recipe {recipe_with_change} for target_platform={target_platform}")
+                    else:
+                        tmp_recipe_dir = os.path.join(
+                            tmp_recipes_root_str, recipe_with_change
+                        )
+                        # os.mkdir(tmp_recipe_dir)
+                        shutil.copytree(recipe_dir, tmp_recipe_dir)
 
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
 
