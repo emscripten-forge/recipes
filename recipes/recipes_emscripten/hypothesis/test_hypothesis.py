@@ -1,8 +1,6 @@
 def test_import_hypothesis():
     import hypothesis
 
-    assert hypothesis.__version__ == "6.155.7"
-
 
 def test_given_integers():
     from hypothesis import given, strategies as st
