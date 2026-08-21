@@ -13,8 +13,8 @@ These skips are independent of whether NumPy is linked to OpenBLAS.
 
 Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
- scipy/conftest.py | 137 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 136 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 138 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 137 insertions(+), 1 deletion(-)
 
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
@@ -51,7 +51,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +757,119 @@
+@@ -738,3 +757,120 @@
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -101,7 +101,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +        ("test_cython_abi.py::test_cython_lapack_abi_stability", skip_cython_abi),
 +        ("linalg/tests/test_cython_blas.py", skip_cython_abi),
 +        ("linalg/tests/test_cython_lapack.py", skip_cython_abi),
-+        ("linalg/tests/test_batch.py::TestBatch::test_(eigh_tridiagonal|solve|lu_solve|matmul_toeplitz|cho_solve|lstsq|clarkson|zero_size)", skip_lapack_abi),
++        ("test_batch.py::TestBatch[:.]+test_(eigh_tridiagonal|solve|lu_solve|matmul_toeplitz|cho_solve|lstsq|clarkson|zero_size)", skip_lapack_abi),
 +        ("test__threadsafety.py::test_parallel_threads", skip_thread),
 +        ("test_ccallback.py::test_threadsafety", skip_thread),
 +        ("test__util.py::test_pool", skip_process),
@@ -153,7 +153,8 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +        if params is not None and params.get("mmap") is True:
 +            item.add_marker(skip_mmap)
 +        path, _line, name = item.reportinfo()
-+        full_name = f"{path}::{name}"
++        # reportinfo() uses Class.method; pytest nodeid uses Class::method.
++        full_name = f"{path}::{name} {item.nodeid}"
 +        for pattern, mark in marks:
 +            if re.search(pattern, full_name):
 +                item.add_marker(mark)
