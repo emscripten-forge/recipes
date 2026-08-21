@@ -13,8 +13,8 @@ These skips are independent of whether NumPy is linked to OpenBLAS.
 
 Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
- scipy/conftest.py | 131 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 130 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 137 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 136 insertions(+), 1 deletion(-)
 
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
@@ -51,7 +51,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +757,113 @@
+@@ -738,3 +757,119 @@
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -85,6 +85,9 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    skip_cython_abi = pytest.mark.skip(
 +        reason="Cython BLAS/LAPACK ABI stability checks hit wasm function-signature mismatch"
 +    )
++    skip_lapack_abi = pytest.mark.skip(
++        reason="batched tridiagonal eigensolvers abort wasm with function-signature mismatch"
++    )
 +    marks = [
 +        ("fft/tests/test_backend.py", skip_fft_backend),
 +        ("interpolate/tests/test_bsplines.py", skip_fitpack),
@@ -96,6 +99,9 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +        ("test_paths.py::TestPaths.test_mmio_(read|write)", skip_thread),
 +        ("test_cython_abi.py::test_cython_blas_abi_stability", skip_cython_abi),
 +        ("test_cython_abi.py::test_cython_lapack_abi_stability", skip_cython_abi),
++        ("linalg/tests/test_cython_blas.py", skip_cython_abi),
++        ("linalg/tests/test_cython_lapack.py", skip_cython_abi),
++        ("linalg/tests/test_batch.py::TestBatch::test_(eigh_tridiagonal|solve|lu_solve|matmul_toeplitz|cho_solve|lstsq|clarkson|zero_size)", skip_lapack_abi),
 +        ("test__threadsafety.py::test_parallel_threads", skip_thread),
 +        ("test_ccallback.py::test_threadsafety", skip_thread),
 +        ("test__util.py::test_pool", skip_process),
