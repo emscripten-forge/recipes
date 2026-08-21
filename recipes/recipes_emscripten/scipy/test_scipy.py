@@ -137,3 +137,18 @@ def test_special():
     import scipy.special as special
     val = special.jv(2.5, 2.0)
     assert_allclose(val, 0.223924531)
+
+
+def test_scipy_suite():
+    # Full SciPy fast suite (upstream CI: -m "not slow"). No module filter.
+    # Used as a control against OpenBLAS-linked NumPy in emscripten-forge/recipes#6310.
+    # Wasm-incompatible tests (threads, processes, mmap, FITPACK flang ABI,
+    # FFT backends, batched tridiagonal eigensolvers) are skipped in
+    # scipy/conftest.py; -v names the last test if a Fortran ABI abort
+    # still kills the runtime.
+    import scipy
+
+    assert scipy.test(
+        label="fast",
+        extra_argv=["--tb=line", "-v", "-s", "--continue-on-collection-errors"],
+    ), "SciPy tests failed"
