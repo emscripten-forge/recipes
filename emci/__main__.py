@@ -57,6 +57,8 @@ def changed(
             )
             os.makedirs(tmp_folder_root, exist_ok=True)
 
+
+            n_recipes = 0
             for recipe_with_change in recipe_with_changes:
 
                 recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
@@ -72,7 +74,10 @@ def changed(
                         )
                         # os.mkdir(tmp_recipe_dir)
                         shutil.copytree(recipe_dir, tmp_recipe_dir)
-
+                        n_recipes += 1
+            if n_recipes == 0:
+                print(f"No recipes to build for target_platform={target_platform} in subdir={subdir}")
+                continue
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
 
             # delete all potential "recipe_legacy.yaml" files
