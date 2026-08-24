@@ -25,6 +25,8 @@ tests:
     - test -f $PREFIX/include/ffi.h
     - test -f $PREFIX/lib/libffi.a
     - test -f $PREFIX/share/man/man3/ffi.3
+    - 'llvm-readobj -h $PREFIX/lib/libffi.a | grep -q "Arch: ${{ target_platform | split("-") | last }}"'
+    - 'llvm-nm $PREFIX/lib/libffi.a | grep -q "pthread_" && exit 1 || exit 0'
 
 about:
   license: MIT

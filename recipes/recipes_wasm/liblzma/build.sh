@@ -1,7 +1,10 @@
 #!/bin/bash
 
 emconfigure ./configure \
-        CFLAGS="-fPIC" \
+        CFLAGS="-fPIC -sUSE_PTHREADS=0" \
+        CXXFLAGS="-fPIC -sUSE_PTHREADS=0" \
+        LDFLAGS="-sUSE_PTHREADS=0" \
+        --disable-threads \
         --disable-xz \
         --disable-xzdec \
         --disable-lzmadec \
@@ -13,5 +16,5 @@ emconfigure ./configure \
         --disable-dependency-tracking \
         --prefix=${PREFIX}
 
-    emmake make -j 2
-    emmake make install
+emmake make -j 2
+emmake make install
