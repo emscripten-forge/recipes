@@ -9,12 +9,20 @@ hidden character-length ABI. C-extension destructors also abort wasm
 during pytest GC; disable GC and os._exit after the session so the
 suite can finish.
 
+Emscripten's fenv.h is a stub: it neither reports exception flags nor
+honours fesetround (WebAssembly/design#1384). That is why cholesky
+returns NaNs instead of LinAlgError (pyodide/pyodide#4859) and why
+add_round_up/down fail even though have_fenv() is true. numpy/numpy#32036
+emulates exception flags in software (so LinAlgError can surface once
+emscripten-forge ships that NumPy) but does not implement rounding-mode
+control, and cannot restore hardware FP traps used for RuntimeWarning.
+
 These skips are independent of whether NumPy is linked to OpenBLAS.
 
 Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
- scipy/conftest.py | 147 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 146 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 167 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 166 insertions(+), 1 deletion(-)
 
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
@@ -51,7 +59,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +757,129 @@
+@@ -738,3 +757,149 @@
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -82,7 +90,27 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    skip_lapack_abi = pytest.mark.skip(
 +        reason="tridiagonal eigensolvers and raw LAPACK wrappers abort wasm with function-signature mismatch"
 +    )
-+    skip_numeric = pytest.mark.skip(reason="known numerical failure on wasm32")
++    # Emscripten fenv.h is a stub (no exception flags, no fesetround).
++    # numpy/numpy#32036 emulates flags so LinAlgError can surface; it does
++    # not restore hardware traps or rounding-mode control (WebAssembly/design#1384).
++    skip_fp_trap = pytest.mark.skip(
++        reason="no IEEE FP traps on wasm: RuntimeWarning/SpecialFunctionError are not emitted"
++    )
++    skip_linalg_error = pytest.mark.skip(
++        reason="np.linalg.cholesky returns NaNs instead of LinAlgError (pyodide/pyodide#4859; numpy/numpy#32036)"
++    )
++    skip_fenv_round = pytest.mark.skip(
++        reason="fesetround is a no-op on wasm (Emscripten fenv.h stub; WebAssembly/design#1384)"
++    )
++    skip_rusage = pytest.mark.skip(
++        reason="resource imports on emscripten but has no getrusage"
++    )
++    skip_tfqmr = pytest.mark.skip(
++        reason="tfqmr does not converge for rand-sym-pd float32 (scipy/scipy#25632)"
++    )
++    skip_nyquist = pytest.mark.skip(
++        reason="minimum_phase nyquist float32 N=964 exceeds atol"
++    )
 +    marks = [
 +        ("interpolate/tests/test_bsplines.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack.py", skip_fitpack),
@@ -99,18 +127,18 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +        ("linalg/tests/test_lapack.py", skip_lapack_abi),
 +        ("test_windows.py::TestDPSS", skip_lapack_abi),
 +        ("test_windows.py.*dpss", skip_lapack_abi),
-+        ("test_linprog.py::TestLinprogSimplexNoPresolve[:.]+test_bounds_infeasible_2", skip_numeric),
-+        ("test_fir_filter_design.py::TestMinimumPhase.+test_nyquist.+float32-964", skip_numeric),
-+        ("test_iterative.py.+(test_convergence|test_precond_dummy).+rand-sym-pd-F-tfqmr", skip_numeric),
-+        ("test_array_api.py::test_sparse_dense_divide", skip_numeric),
-+        ("test_kdtree.py::test_ckdtree_memuse", skip_numeric),
-+        ("test_round.py::test_add_round_(up|down)", skip_numeric),
-+        ("test_sf_error.py::test_check_overflow_message", skip_numeric),
-+        ("test_fit.py::test_fit_error", skip_numeric),
-+        ("test_qmc.py::TestMultivariateNormalQMC[:.]+test_(validations|MultivariateNormalQMCDegenerate)", skip_numeric),
-+        ("test_stats.py::TestWassersteinDistance[:.]+test_inf_values", skip_numeric),
-+        ("test_stats.py::TestEnergyDistance[:.]+test_inf_values", skip_numeric),
-+        ("test_stats.py::TestBrunnerMunzel[:.]+test_brunnermunzel_normal_dist", skip_numeric),
++        ("test_linprog.py::TestLinprogSimplexNoPresolve[:.]+test_bounds_infeasible_2", skip_fp_trap),
++        ("test_fir_filter_design.py::TestMinimumPhase.+test_nyquist.+float32-964", skip_nyquist),
++        ("test_iterative.py.+(test_convergence|test_precond_dummy).+rand-sym-pd-F-tfqmr", skip_tfqmr),
++        ("test_array_api.py::test_sparse_dense_divide", skip_fp_trap),
++        ("test_kdtree.py::test_ckdtree_memuse", skip_rusage),
++        ("test_round.py::test_add_round_(up|down)", skip_fenv_round),
++        ("test_sf_error.py::test_check_overflow_message", skip_fp_trap),
++        ("test_fit.py::test_fit_error", skip_fp_trap),
++        ("test_qmc.py::TestMultivariateNormalQMC[:.]+test_(validations|MultivariateNormalQMCDegenerate)", skip_linalg_error),
++        ("test_stats.py::TestWassersteinDistance[:.]+test_inf_values", skip_fp_trap),
++        ("test_stats.py::TestEnergyDistance[:.]+test_inf_values", skip_fp_trap),
++        ("test_stats.py::TestBrunnerMunzel[:.]+test_brunnermunzel_normal_dist", skip_fp_trap),
 +        ("test__threadsafety.py::test_parallel_threads", skip_thread),
 +        ("test_ccallback.py::test_threadsafety", skip_thread),
 +        ("test__util.py::test_pool", skip_process),
