@@ -4,17 +4,17 @@ Date: Fri, 21 Aug 2026 16:30:00 +0200
 Subject: [PATCH] Skip wasm-unsupported SciPy tests and avoid destructor abort
 
 Emscripten has no fork, threads, subprocesses, mmap, or host libm via
-ctypes. scipy.fft set_backend is thread-local. FITPACK and scipy.io
-Fortran wrappers mismatch llvm-flang's hidden character-length ABI.
-C-extension destructors also abort wasm during pytest GC; disable GC
-and os._exit after the session so the suite can finish.
+ctypes. FITPACK and scipy.io Fortran wrappers mismatch llvm-flang's
+hidden character-length ABI. C-extension destructors also abort wasm
+during pytest GC; disable GC and os._exit after the session so the
+suite can finish.
 
 These skips are independent of whether NumPy is linked to OpenBLAS.
 
 Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
- scipy/conftest.py | 157 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 156 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 147 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 146 insertions(+), 1 deletion(-)
 
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
@@ -51,7 +51,7 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +757,139 @@
+@@ -738,3 +757,129 @@
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -69,18 +69,12 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    skip_thread = pytest.mark.skip(reason="no thread support on wasm32")
 +    skip_process = pytest.mark.skip(reason="no process support on wasm32")
 +    skip_libm = pytest.mark.skip(reason="ctypes cannot load host libm.so on wasm32")
-+    skip_fft_backend = pytest.mark.skip(
-+        reason="scipy.fft set_backend uses thread-local state unavailable on wasm32"
-+    )
 +    skip_fitpack = pytest.mark.skip(
 +        reason="FITPACK Fortran hidden char-length ABI mismatches under llvm-flang/wasm"
 +    )
 +    skip_mmap = pytest.mark.skip(reason="mmap is not usable on wasm32")
 +    skip_fortran_io = pytest.mark.skip(
 +        reason="scipy.io.fortran wrappers mismatch llvm-flang ABI on wasm32"
-+    )
-+    skip_mmio = pytest.mark.skip(
-+        reason="fast_matrix_market and MMIO tests need threads or fail to collect on wasm32"
 +    )
 +    skip_cython_abi = pytest.mark.skip(
 +        reason="Cython BLAS/LAPACK ABI stability checks hit wasm function-signature mismatch"
@@ -90,18 +84,15 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    )
 +    skip_numeric = pytest.mark.skip(reason="known numerical failure on wasm32")
 +    marks = [
-+        ("fft/tests/test_backend.py", skip_fft_backend),
 +        ("interpolate/tests/test_bsplines.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack2.py", skip_fitpack),
-+        ("interpolate/tests/test_gil.py", skip_thread),
 +        ("io/tests/test_fortran.py", skip_fortran_io),
-+        ("io/tests/test_mmio.py", skip_mmio),
++        ("test_mmio.py::.+fast_matrix_market", skip_thread),
++        ("test_mmio.py::TestMMIOCoordinate.test_precision", skip_thread),
 +        ("test_paths.py::TestPaths.test_mmio_(read|write)", skip_thread),
 +        ("test_cython_abi.py::test_cython_blas_abi_stability", skip_cython_abi),
 +        ("test_cython_abi.py::test_cython_lapack_abi_stability", skip_cython_abi),
-+        ("linalg/tests/test_cython_blas.py", skip_cython_abi),
-+        ("linalg/tests/test_cython_lapack.py", skip_cython_abi),
 +        ("test_batch.py::TestBatch[:.]+test_eigh_tridiagonal", skip_lapack_abi),
 +        ("test_decomp.py::TestEigTridiagonal", skip_lapack_abi),
 +        ("eig(vals)?h_tridiagonal", skip_lapack_abi),
@@ -109,9 +100,8 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +        ("test_windows.py::TestDPSS", skip_lapack_abi),
 +        ("test_windows.py.*dpss", skip_lapack_abi),
 +        ("test_linprog.py::TestLinprogSimplexNoPresolve[:.]+test_bounds_infeasible_2", skip_numeric),
-+        ("test_fir_filter_design.py::TestMinimumPhase[:.]+test_nyquist", skip_numeric),
-+        ("test_iterative.py::test_convergence.*tfqmr", skip_numeric),
-+        ("test_iterative.py::test_precond_dummy.*tfqmr", skip_numeric),
++        ("test_fir_filter_design.py::TestMinimumPhase.+test_nyquist.+float32-964", skip_numeric),
++        ("test_iterative.py.+(test_convergence|test_precond_dummy).+rand-sym-pd-F-tfqmr", skip_numeric),
 +        ("test_array_api.py::test_sparse_dense_divide", skip_numeric),
 +        ("test_kdtree.py::test_ckdtree_memuse", skip_numeric),
 +        ("test_round.py::test_add_round_(up|down)", skip_numeric),
