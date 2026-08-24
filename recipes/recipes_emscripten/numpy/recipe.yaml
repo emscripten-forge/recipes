@@ -10,17 +10,18 @@ package:
 source:
   url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{ version }}.tar.gz
   sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
+  patches:
+  - patches/0001-Match-flang-OpenBLAS-Fortran-ABI-on-Emscripten-wasm32.patch
+  - patches/0002-Skip-longdouble-print-tests-on-Emscripten-wasm32.patch
 build:
-  number: 0
+  number: 1
 
   files:
     exclude:
     - '**/*.pyi'
-    - '**/tests/**'
     - '**/*.ini'
     - '**/__pycache__/**'
     - '**/*.pyc'
-    - '**/test_*.py'
   python:
     skip_pyc_compilation:
     - '**/*.py'
@@ -35,6 +36,10 @@ requirements:
   - pkg-config
   - python
   host:
+  - openblas
+  - python
+  run:
+  - openblas
   - python
   run_exports:
   - numpy >=${{ default_abi_level }},<3
@@ -45,6 +50,7 @@ tests:
     - pytester
     run:
     - pytester-run
+    - hypothesis
   files:
     recipe:
     - test_numpy.py
@@ -58,3 +64,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - jjerphan
