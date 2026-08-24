@@ -1,0 +1,38 @@
+context:
+  version: '0.2.1'
+
+source:
+  - path: generic_testing
+    target_directory: generic_testing
+
+outputs:
+  - package:
+      name: generic-testing
+      version: ${{ version }}
+
+    build:
+      number: 0
+      noarch: python
+      script:  build.sh
+      python:
+          entry_points:
+            - generic-testing = generic_testing.__main__:main
+    requirements:
+      host:
+        - python
+      run:
+        - llvm-tools
+
+    
+    tests:
+      - package_contents:
+          files:
+          - site-packages/generic_testing/__init__.py
+          - site-packages/generic_testing/__main__.py
+ 
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: generic testing of packages
+
