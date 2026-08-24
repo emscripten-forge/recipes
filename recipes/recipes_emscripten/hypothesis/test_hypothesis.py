@@ -2,6 +2,10 @@ def test_import_hypothesis():
     import hypothesis
 
 
+def test_import_native():
+    import hypothesis._native
+
+
 def test_given_integers():
     from hypothesis import given, strategies as st
 
