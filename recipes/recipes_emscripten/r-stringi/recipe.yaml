@@ -1,15 +1,15 @@
 context:
+  name: stringi
   version: 1.8.9
-  name: r-stringi
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: 427fcebd281d7ea850becce75e0807576dd394a723a814b2d487419b93275a33
 
 build:
@@ -26,7 +26,14 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://tidyr.tidyverse.org
