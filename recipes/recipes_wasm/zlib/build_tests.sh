@@ -18,7 +18,7 @@ emcmake cmake -S tests -B build_tests \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH=$PREFIX \
     -DSTATIC_ZLIB=$STATIC_ZLIB \
-    -Dzlib_DIR=$PREFIX/lib/cmake/zlib
+    -DZLIB_DIR=$PREFIX/lib/cmake/zlib
 
 emmake ninja -C build_tests
 
