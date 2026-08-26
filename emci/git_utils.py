@@ -149,7 +149,7 @@ def make_pr(
             args.extend(["--label", label])
 
     if target_branch_name == "emscripten-6x":
-        args.append("--label", "6x")
+        args.extend(["--label", "6x"])
 
     subprocess.check_call(args, cwd=os.getcwd())
     return True
