@@ -20,8 +20,8 @@ from .git_utils import (
 ON_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") == "true"
 
 LINEAGE_ROOTS = {
-    "recipes": ("recipes_native", "recipes/recipes"),
-    "recipes_emscripten": ("recipes_wasm", "recipes/recipes_emscripten"),
+    "recipes": ("recipes/recipes_native", "recipes/recipes"),
+    "recipes_emscripten": ("recipes/recipes_wasm", "recipes/recipes_emscripten"),
 }
 
 
@@ -70,7 +70,7 @@ def _locate_recipe(subdir: str, recipe: str) -> tuple[Path, bool]:
     Find where a recipe lives on the migration branch for its lineage.
 
     Returns (target_path, existed). If missing, target_path is under the new
-    root (recipes_native / recipes_wasm) for creation.
+    root (recipes/recipes_native / recipes/recipes_wasm) for creation.
     """
     new_root, legacy_root = LINEAGE_ROOTS[subdir]
     for root in (new_root, legacy_root):
