@@ -125,14 +125,14 @@ def _checkout_migration_branch(remote: str, branch: str) -> None:
 
 
 def _build_pr_body(
-    short: str,
+    commit_sha: str,
     migration_branch: str,
     updated: list[tuple[str, str, Path]],
     added: list[tuple[str, str, Path]],
     deleted: list[tuple[str, str, Path]],
 ) -> str:
     body_lines = [
-        f"Automated sync of recipe changes from `{short}` onto `{migration_branch}`.",
+        f"Automated sync of recipe changes from {commit_sha} onto `{migration_branch}`.",
         "",
     ]
     if updated:
@@ -242,7 +242,7 @@ def sync_migration_branch(
         print("Nothing to sync onto the migration branch")
         return
 
-    pr_body = _build_pr_body(short, migration_branch, updated, added, deleted)
+    pr_body = _build_pr_body(new, migration_branch, updated, added, deleted)
 
     if dry_run:
         print("---")
