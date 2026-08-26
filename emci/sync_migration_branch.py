@@ -13,7 +13,6 @@ from pathlib import Path
 from .git_utils import (
     find_files_with_changes,
     get_current_branch_name,
-    git_branch_ctx,
     make_pr,
     set_bot_user,
 )
@@ -193,6 +192,10 @@ def sync_migration_branch(
     branch_name = f"sync-from-main-{short}-to-{migration_branch}"
     pr_title = f"Sync recipes from main ({short}) [{migration_branch}]"
 
+    # New branch from the migration branch tip; PR will target migration_branch.
+    subprocess.check_output(["git", "checkout", "-B", branch_name])
+    print(f"Created branch {branch_name} from {migration_branch}")
+
     def _plan_and_maybe_apply() -> tuple[
         list[tuple[str, str, Path]],
         list[tuple[str, str, Path]],
@@ -237,13 +240,18 @@ def sync_migration_branch(
 
         return updated, added, deleted, touched_paths
 
+    updated, added, deleted, touched_paths = _plan_and_maybe_apply()
+
+    if not touched_paths:
+        print("Nothing to sync onto the migration branch")
+        return
+
+    pr_body = _build_pr_body(short, migration_branch, updated, added, deleted)
+
     if dry_run:
-        updated, added, deleted, touched_paths = _plan_and_maybe_apply()
-        if not touched_paths:
-            print("Nothing to sync onto the migration branch")
-            return
-        pr_body = _build_pr_body(short, migration_branch, updated, added, deleted)
         print("---")
+        print(f"PR head branch: {branch_name}")
+        print(f"PR base branch: {migration_branch}")
         print(f"PR title: {pr_title}")
         print("PR body:")
         print(pr_body)
@@ -251,21 +259,12 @@ def sync_migration_branch(
         print("Done (dry run)")
         return
 
-    with git_branch_ctx(branch_name, stash_current=False):
-        updated, added, deleted, touched_paths = _plan_and_maybe_apply()
-
-        if not touched_paths:
-            print("Nothing to sync onto the migration branch")
-            return
-
-        pr_body = _build_pr_body(short, migration_branch, updated, added, deleted)
-        print(f"Opening PR: {pr_title}")
-        make_pr(
-            paths=touched_paths,
-            pr_title=pr_title,
-            pr_body=pr_body,
-            target_branch_name=migration_branch,
-            branch_name=branch_name,
-        )
-
+    print(f"Opening PR: {pr_title}")
+    make_pr(
+        paths=touched_paths,
+        pr_title=pr_title,
+        pr_body=pr_body,
+        target_branch_name=migration_branch,
+        branch_name=branch_name,
+    )
     print("Done")
