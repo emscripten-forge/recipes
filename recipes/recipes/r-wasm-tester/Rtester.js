@@ -65,6 +65,12 @@ var Module = {
     // copy test script to the root of the virtual FS so it can be executed by R.
     Module.FS.writeFile(`/${path.basename(rScriptPath)}`, rScriptBody);
 
+    // r-base's Fontconfig configuration expects environment fonts at /fonts.
+    const hostFontsDir = path.join(process.env.PREFIX, "fonts");
+    if (nodeFs.existsSync(hostFontsDir)) {
+      copyTree(hostFontsDir, "/fonts");
+    }
+
     // For RPY: mount Python stdlib and headers so PYTHONHOME="/" resolves correctly.
     if (useRpy) {
       const prefixIncludeDir = path.join(process.env.PREFIX, "include");
