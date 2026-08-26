@@ -1,0 +1,72 @@
+context:
+  version: 0.5.1
+  name: r-gdtools
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/gdtools_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/gdtools_${{ version }}.tar.gz
+  sha256: 94c15014fcfa7a83de863b7d690a98a05a8cb929dcb056af8f304632dc4441e7
+  patches:
+  - patches/0001-Honor-Emscripten-target-when-cross-compiling-on-macOS.patch
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: build.sh
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  - r-fontquiver >=0.2.0
+  - r-htmltools
+  - r-rcpp >=0.12.12
+  - r-systemfonts >=1.3.1
+  host:
+  - r-base ==${{ r_base }}
+  - cairo
+  - expat
+  - fontconfig
+  - freetype
+  - libpng
+  - pixman
+  - zlib
+  - r-fontquiver >=0.2.0
+  - r-htmltools
+  - r-rcpp >=0.12.12
+  - r-systemfonts >=1.3.1
+  run:
+  - r-fontquiver >=0.2.0
+  - r-htmltools
+  - r-rcpp >=0.12.12
+  - r-systemfonts >=1.3.1
+
+tests:
+- package_contents:
+    lib:
+    - R/library/gdtools/libs/gdtools.so
+- script: run_r_test test-gdtools.R
+  files:
+    recipe:
+    - test-gdtools.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://davidgohel.github.io/gdtools/
+  repository: https://github.com/davidgohel/gdtools
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Font metrics and font management utilities for R graphics
+
+extra:
+  recipe-maintainers:
+  - adamblake

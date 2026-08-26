@@ -1,0 +1,92 @@
+context:
+  version: 0.9.6
+  name: r-ggiraph
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/ggiraph_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/ggiraph_${{ version }}.tar.gz
+  sha256: 715f1ef27f0e3ab7775c90684ce8932aa0739ba2a2103713eb0a20eac1b7b645
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: build.sh
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('cxx') }}
+  - r-cli
+  - r-dplyr
+  - r-gdtools >=0.5.0
+  - r-ggplot2 >=4.0.0
+  - r-htmltools
+  - r-htmlwidgets >=1.5
+  - r-mass
+  - r-purrr
+  - r-rcpp >=1.1.0
+  - r-rlang
+  - r-s7 >=0.2.0
+  - r-systemfonts >=1.3.1
+  - r-vctrs
+  host:
+  - r-base ==${{ r_base }}
+  - libpng
+  - zlib
+  - r-cli
+  - r-dplyr
+  - r-gdtools >=0.5.0
+  - r-ggplot2 >=4.0.0
+  - r-htmltools
+  - r-htmlwidgets >=1.5
+  - r-mass
+  - r-purrr
+  - r-rcpp >=1.1.0
+  - r-rlang
+  - r-s7 >=0.2.0
+  - r-systemfonts >=1.3.1
+  - r-vctrs
+  run:
+  - r-cli
+  - r-dplyr
+  - r-gdtools >=0.5.0
+  - r-ggplot2 >=4.0.0
+  - r-htmltools
+  - r-htmlwidgets >=1.5
+  - r-mass
+  - r-purrr
+  - r-rcpp >=1.1.0
+  - r-rlang
+  - r-s7 >=0.2.0
+  - r-systemfonts >=1.3.1
+  - r-vctrs
+
+tests:
+- package_contents:
+    lib:
+    - R/library/ggiraph/libs/ggiraph.so
+- script: run_r_test test-ggiraph.R
+  files:
+    recipe:
+    - test-ggiraph.R
+  requirements:
+    build:
+    - r-wasm-tester
+    run:
+    - r-ggformula >=1.0.1
+    - zlib
+
+about:
+  homepage: https://davidgohel.github.io/ggiraph/
+  repository: https://github.com/davidgohel/ggiraph
+  license: GPL-3.0-only
+  summary: Make ggplot2 graphics interactive
+
+extra:
+  recipe-maintainers:
+  - adamblake
