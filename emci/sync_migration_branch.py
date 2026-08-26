@@ -101,17 +101,28 @@ def _replace_recipe_dir_from_ref(ref: str, subdir: str, recipe: str, dest: Path)
         shutil.move(str(extracted), str(dest))
 
 
-def _checkout_migration_branch(migration_branch: str) -> None:
-    current = get_current_branch_name()
-    if current == migration_branch:
-        print(f"Already on migration branch {migration_branch}")
-        return
+def _parse_migration_ref(migration_ref: str) -> tuple[str, str]:
+    """Parse ``remote/branch`` or ``branch`` (defaults remote to ``origin``)."""
+    if "/" in migration_ref:
+        remote, branch = migration_ref.split("/", 1)
+        if not remote or not branch:
+            raise ValueError(
+                "migration ref must be 'remote/branch' or 'branch' "
+                f"(e.g. upstream/emscripten-6x or emscripten-6x), got {migration_ref!r}"
+            )
+        return remote, branch
+    if not migration_ref:
+        raise ValueError("migration ref must not be empty")
+    return "origin", migration_ref
 
-    print(f"Switching from {current} to {migration_branch}")
+
+def _checkout_migration_branch(remote: str, branch: str) -> None:
+    current = get_current_branch_name()
+    print(f"Switching from {current} to {remote}/{branch}")
     subprocess.run(["git", "stash"], check=False)
-    subprocess.check_output(["git", "fetch", "origin", migration_branch])
-    subprocess.check_output(["git", "checkout", migration_branch])
-    print(f"Checked out {migration_branch}")
+    subprocess.check_output(["git", "fetch", remote, branch])
+    subprocess.check_output(["git", "checkout", "-B", branch, f"{remote}/{branch}"])
+    print(f"Checked out {branch} from {remote}/{branch}")
 
 
 def _build_pr_body(
@@ -144,17 +155,23 @@ def _build_pr_body(
 
 
 def sync_migration_branch(
-    migration_branch: str,
+    migration_ref: str,
     old: str,
     new: str,
     dry_run: bool = False,
 ) -> None:
     """
-    Sync recipes changed between old and new onto migration_branch and open one PR.
+    Sync recipes changed between old and new onto a migration branch and open one PR.
 
+    migration_ref must be ``remote/branch`` (e.g. ``upstream/emscripten-6x``)
+    or ``branch`` (defaults to ``origin/branch``).
     If dry_run is True, do not modify files or open a PR; print the PR title and body.
     """
-    print(f"Syncing recipe changes {old}...{new} onto {migration_branch}")
+    remote, migration_branch = _parse_migration_ref(migration_ref)
+    print(
+        f"Syncing recipe changes {old}...{new} onto {migration_branch} "
+        f"(from {remote}/{migration_branch})"
+    )
     if dry_run:
         print("Dry run: no files will be changed and no PR will be opened")
 
@@ -170,7 +187,7 @@ def sync_migration_branch(
     if not dry_run and ON_GITHUB_ACTIONS:
         set_bot_user()
 
-    _checkout_migration_branch(migration_branch)
+    _checkout_migration_branch(remote, migration_branch)
 
     short = _short_sha(new)
     branch_name = f"sync-from-main-{short}-to-{migration_branch}"
