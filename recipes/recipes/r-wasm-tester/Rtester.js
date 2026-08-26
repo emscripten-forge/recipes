@@ -2,6 +2,7 @@ const path = require("node:path");
 const nodeFs = require("node:fs");
 
 const useRpy = !!process.env.USE_RPY;
+const mountFonts = !!process.env.RTESTER_MOUNT_FONTS;
 
 const wasmRHome = "/R";
 const hostRHome = path.join(process.env.PREFIX, "lib", "R");
@@ -66,8 +67,12 @@ var Module = {
     Module.FS.writeFile(`/${path.basename(rScriptPath)}`, rScriptBody);
 
     // r-base's Fontconfig configuration expects environment fonts at /fonts.
-    const hostFontsDir = path.join(process.env.PREFIX, "fonts");
-    if (nodeFs.existsSync(hostFontsDir)) {
+    // Keep this opt-in so unrelated R tests do not copy the complete font tree.
+    if (mountFonts) {
+      const hostFontsDir = path.join(process.env.PREFIX, "fonts");
+      if (!nodeFs.existsSync(hostFontsDir)) {
+        throw new Error(`RTESTER_MOUNT_FONTS is set but ${hostFontsDir} does not exist`);
+      }
       copyTree(hostFontsDir, "/fonts");
     }
 
