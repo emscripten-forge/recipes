@@ -69,15 +69,15 @@ def _locate_recipe(subdir: str, recipe: str) -> tuple[Path, bool]:
     """
     Find where a recipe lives on the migration branch for its lineage.
 
-    Returns (target_path, existed). If missing, target_path is under the new
-    root (recipes/recipes_native / recipes/recipes_wasm) for creation.
+    Returns (target_path, existed). If missing, target_path is under the legacy
+    root (recipes/recipes / recipes/recipes_emscripten) for creation.
     """
     new_root, legacy_root = LINEAGE_ROOTS[subdir]
     for root in (new_root, legacy_root):
         path = Path(root) / recipe
         if path.is_dir():
             return path, True
-    return Path(new_root) / recipe, False
+    return Path(legacy_root) / recipe, False
 
 
 def _replace_recipe_dir_from_ref(ref: str, subdir: str, recipe: str, dest: Path) -> None:
