@@ -164,7 +164,8 @@ def sync_migration_branch(
 
     migration_ref must be ``remote/branch`` (e.g. ``upstream/emscripten-6x``)
     or ``branch`` (defaults to ``origin/branch``).
-    If dry_run is True, do not modify files or open a PR; print the PR title and body.
+    If dry_run is True, apply file changes on a new branch but do not commit or open a PR;
+    print the PR title and body instead.
     """
     remote, migration_branch = _parse_migration_ref(migration_ref)
     print(
@@ -172,7 +173,7 @@ def sync_migration_branch(
         f"(from {remote}/{migration_branch})"
     )
     if dry_run:
-        print("Dry run: no files will be changed and no PR will be opened")
+        print("Dry run: apply file changes on a new branch but do not commit or open a PR")
 
     changed = _changed_recipes(old, new)
     if not changed:
@@ -196,7 +197,7 @@ def sync_migration_branch(
     subprocess.check_output(["git", "checkout", "-B", branch_name])
     print(f"Created branch {branch_name} from {migration_branch}")
 
-    def _plan_and_maybe_apply() -> tuple[
+    def _apply_changes() -> tuple[
         list[tuple[str, str, Path]],
         list[tuple[str, str, Path]],
         list[tuple[str, str, Path]],
@@ -218,20 +219,15 @@ def sync_migration_branch(
                         f"not present on {migration_branch}"
                     )
                     continue
-                print(f"{'Would delete' if dry_run else 'Deleting'} {target} (removed on main)")
-                if not dry_run:
-                    shutil.rmtree(target)
+                print(f"Deleting {target} (removed on main)")
+                shutil.rmtree(target)
                 deleted.append((subdir, recipe, target))
                 touched_paths.append(target)
                 continue
 
-            if dry_run:
-                action = "Would update" if existed else "Would add"
-            else:
-                action = "Updating" if existed else "Adding"
+            action = "Updating" if existed else "Adding"
             print(f"{action} {target} from recipes/{subdir}/{recipe}@{new}")
-            if not dry_run:
-                _replace_recipe_dir_from_ref(new, subdir, recipe, target)
+            _replace_recipe_dir_from_ref(new, subdir, recipe, target)
             touched_paths.append(target)
             if existed:
                 updated.append((subdir, recipe, target))
@@ -240,7 +236,7 @@ def sync_migration_branch(
 
         return updated, added, deleted, touched_paths
 
-    updated, added, deleted, touched_paths = _plan_and_maybe_apply()
+    updated, added, deleted, touched_paths = _apply_changes()
 
     if not touched_paths:
         print("Nothing to sync onto the migration branch")
@@ -256,7 +252,7 @@ def sync_migration_branch(
         print("PR body:")
         print(pr_body)
         print("---")
-        print("Done (dry run)")
+        print("Done (dry run); changes are unstaged on this branch")
         return
 
     print(f"Opening PR: {pr_title}")

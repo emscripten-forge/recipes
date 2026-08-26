@@ -157,7 +157,9 @@ def sync(
     old: str = typer.Argument(..., help="Git ref for the old commit"),
     new: str = typer.Argument(..., help="Git ref for the new commit"),
     dry_run: bool = typer.Option(
-        False, "--dry-run", help="Print the PR title and body without opening a PR"
+        False,
+        "--dry-run",
+        help="Apply file changes on a new branch and print the PR title/body without committing or opening a PR",
     ),
 ):
     """Sync recipe changes from main onto a migration branch and open a PR."""
