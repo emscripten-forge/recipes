@@ -1,42 +1,118 @@
 context:
   version: 1.3.2
+  build_number: 0
 
-package:
-  name: zlib
-  version: ${{ version }}
+build:
+  number: ${{ build_number }}
 
 source:
   url: https://www.zlib.net/fossils/zlib-${{ version }}.tar.gz
   sha256: bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16
 
-build:
-  number: 0
 
-requirements:
-  build:
-  - ${{ compiler("c") }}
-  - cmake
-  - ninja
-
-tests:
-- package_contents:
-    files:
-    - include/zlib.h
-    - lib/libz.a
-    - lib/libz.so
-    - lib/cmake/zlib/ZLIBConfig.cmake
-- script:
-  - build_tests.sh
-  requirements:
+outputs:
+  - package:
+      name: libzlib
+      version: ${{ version }}
     build:
-    - ${{ compiler("c") }}
-    - cmake
-    - ninja
-  files:
-    recipe:
-    - build_tests.sh
-    - tests/
+      script: build.sh
 
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - cmake
+      - ninja
+      run_exports:
+          - ${{ pin_subpackage('libzlib', lower_bound='x', upper_bound='x') }}
+
+    tests:
+    - package_contents:
+        files:
+        - include/zlib.h
+        - lib/libz.so
+        - lib/cmake/zlib/ZLIBConfig.cmake
+    - script:
+      - generic-testing
+      requirements:
+        build:
+        - generic-testing
+
+    - script:
+      - build_tests.sh
+      requirements:
+        build:
+        - ${{ compiler("c") }}
+        - cmake
+        - ninja
+      files:
+        recipe:
+        - build_tests.sh
+        - tests/
+
+  - package:
+      name: libzlib-static
+      version: ${{ version }}
+    build:
+      script: build.sh
+
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - cmake
+      - ninja
+
+    tests:
+    - package_contents:
+        files:
+        - include/zlib.h
+        - lib/libz.a
+        - lib/cmake/zlib/ZLIBConfig.cmake
+    - script:
+      - generic-testing
+      requirements:
+        build:
+        - generic-testing
+
+    - script:
+      - build_tests.sh
+      requirements:
+        build:
+        - ${{ compiler("c") }}
+        - cmake
+        - ninja
+      files:
+        recipe:
+        - build_tests.sh
+        - tests/
+
+  # meta pkgs
+  - package:
+      name: zlib
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+    requirements:
+      run:
+        - ${{ pin_subpackage('libzlib', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libzlib', lower_bound='x', upper_bound='x') }}
+
+    tests:
+      - package_contents:
+          files: []
+
+  - package:
+      name: zlib-static
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+    requirements:
+      run:
+        - ${{ pin_subpackage('libzlib-static', exact=True) }}
+    
+    tests:
+      - package_contents:
+          files: []
 about:
   homepage: http://zlib.net/
   license: Zlib
