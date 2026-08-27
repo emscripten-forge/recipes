@@ -1,0 +1,46 @@
+context:
+  version: "21.0.13+1" 
+  
+package:
+  name: openjdk21
+  version: ${{ version }}
+
+source:
+    url: https://github.com/bmarti44/openjdk/archive/refs/heads/wasm-emscripten.zip
+    sha256: 4cdd0489791a80f7d0c535f86cdc53563900b1ba231de92db5449c5485baf089
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+    - autoconf
+    - pkg-config
+    - findutils
+    - coreutils
+    - file
+    - patch
+    - openjdk =21
+    - clang
+    - lld
+  host:
+    - libffi 
+    - freetype
+    - fontconfig
+    
+tests:
+  - package_contents:
+      files:
+        - jdk-wasm/lib/modules
+        - jdk-wasm/lib/jvm.cfg
+        - lib/wasm-native/libjvm.a
+        - lib/wasm-native/libjava.a
+
+about:
+  homepage: https://openjdk.org/
+  summary: open-source implementation of the Java Platform
+  license: GPL-2.0-only
+  license_file: LICENSE
