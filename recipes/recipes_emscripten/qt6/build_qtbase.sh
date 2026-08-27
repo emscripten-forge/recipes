@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-echo "=== qtbase build platforms ==="
-echo "build_platform=${build_platform:-<unset>}"
-echo "host_platform=${host_platform:-<unset>}"
-echo "target_platform=${target_platform:-<unset>}"
-echo "==============================="
-
 # Qt6 base — cross-compile qtbase for Emscripten.
 # Host tools (moc/rcc/uic/qt-cmake-*) come from native qt6-main in $BUILD_PREFIX.
 

@@ -1,12 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-echo "=== qtsvg build platforms ==="
-echo "build_platform=${build_platform:-<unset>}"
-echo "host_platform=${host_platform:-<unset>}"
-echo "target_platform=${target_platform:-<unset>}"
-echo "============================="
-
 # Qt6Svg add-on module. Links against the wasm qt6-main in $PREFIX and uses
 # native qt6-main host tools from $BUILD_PREFIX.
 

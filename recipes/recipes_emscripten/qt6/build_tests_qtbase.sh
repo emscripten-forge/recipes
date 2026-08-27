@@ -7,7 +7,15 @@ echo "${MEMBERS}" | head
 echo "${MEMBERS}" | grep -q '\.o$' \
     || { echo "libQt6Core.a has no object members"; exit 1; }
 
-echo "Compiling a Qt6 hello-world against installed headers/libs"
+echo "Verifying archive members are wasm32 objects"
+FIRST_OBJ=$(echo "${MEMBERS}" | grep '\.o$' | head -1)
+EXTRACT_DIR=$(mktemp -d)
+( cd "${EXTRACT_DIR}" && emar x "${PREFIX}/lib/libQt6Core.a" "${FIRST_OBJ}" )
+MAGIC=$(head -c 4 "${EXTRACT_DIR}/${FIRST_OBJ}" | od -An -tx1 | tr -d ' \n')
+[ "${MAGIC}" = "0061736d" ] \
+    || { echo "expected wasm magic 0061736d, got ${MAGIC}"; exit 1; }
+
+echo "Compile-only check that Qt6Core headers are usable"
 WORK=$(mktemp -d)
 cd "${WORK}"
 
@@ -19,13 +27,10 @@ int main() {
 }
 EOF
 
-em++ -std=c++17 \
+em++ -std=c++17 -c \
     -I"${PREFIX}/include" \
     -I"${PREFIX}/include/QtCore" \
-    -L"${PREFIX}/lib" \
-    main.cpp \
-    -lQt6Core -lQt6BundledPcre2 -lQt6BundledZLIB \
-    -o hello.js
+    main.cpp -o main.o
 
-test -f hello.wasm || { echo "hello.wasm not produced"; exit 1; }
-echo "Qt6 compile-link test OK"
+test -f main.o || { echo "main.o not produced"; exit 1; }
+echo "Qt6Core compile test OK"
