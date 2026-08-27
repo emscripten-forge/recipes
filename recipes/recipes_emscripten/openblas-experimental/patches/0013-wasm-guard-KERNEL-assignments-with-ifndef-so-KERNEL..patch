@@ -1,18 +1,18 @@
-From 32436905a78fd6590ddbc6e10e6bf1b27785dbba Mon Sep 17 00:00:00 2001
+From 3d64a8385317249ea7135bf574769f9670531617 Mon Sep 17 00:00:00 2001
 From: Matthias Meschede <MMesch@users.noreply.github.com>
-Date: Tue, 25 Aug 2026 10:08:25 +0200
-Subject: [PATCH 13/13] wasm: guard KERNEL assignments with ifndef so
+Date: Tue, 25 Aug 2026 10:07:00 +0200
+Subject: [PATCH 13/14] wasm: guard KERNEL assignments with ifndef so
  KERNEL.$(TARGET_CORE) overrides survive (#5993)
 
 ---
- kernel/wasm/KERNEL | 222 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 222 insertions(+)
+ kernel/wasm/KERNEL | 180 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 180 insertions(+)
 
 diff --git a/kernel/wasm/KERNEL b/kernel/wasm/KERNEL
-index b379fd424..0c0b4f5c9 100644
+index e54d04699..0c0b4f5c9 100644
 --- a/kernel/wasm/KERNEL
 +++ b/kernel/wasm/KERNEL
-@@ -1,104 +1,266 @@
+@@ -1,44 +1,108 @@
 +ifndef SAMAXKERNEL
  SAMAXKERNEL  = ../riscv64/amax.c
 +endif
@@ -119,12 +119,12 @@ index b379fd424..0c0b4f5c9 100644
  ZSUMKERNEL  = ../arm/zsum.c
 +endif
  
-+ifndef SAXPYKERNEL
+ ifndef SAXPYKERNEL
  SAXPYKERNEL  = ../riscv64/axpy.c
-+endif
-+ifndef DAXPYKERNEL
+@@ -46,48 +110,116 @@ endif
+ ifndef DAXPYKERNEL
  DAXPYKERNEL  = ../riscv64/axpy.c
-+endif
+ endif
 +ifndef CAXPYKERNEL
  CAXPYKERNEL  = ../riscv64/zaxpy.c
 +endif
@@ -236,12 +236,12 @@ index b379fd424..0c0b4f5c9 100644
  ZSWAPKERNEL  = ../riscv64/zswap.c
 +endif
  
-+ifndef SGEMVNKERNEL
+ ifndef SGEMVNKERNEL
  SGEMVNKERNEL = ../riscv64/gemv_n.c
-+endif
-+ifndef DGEMVNKERNEL
+@@ -95,8 +227,12 @@ endif
+ ifndef DGEMVNKERNEL
  DGEMVNKERNEL = ../riscv64/gemv_n.c
-+endif
+ endif
 +ifndef CGEMVNKERNEL
  CGEMVNKERNEL = ../riscv64/zgemv_n.c
 +endif
@@ -249,12 +249,12 @@ index b379fd424..0c0b4f5c9 100644
  ZGEMVNKERNEL = ../riscv64/zgemv_n.c
 +endif
  
-+ifndef SGEMVTKERNEL
+ ifndef SGEMVTKERNEL
  SGEMVTKERNEL = ../riscv64/gemv_t.c
-+endif
-+ifndef DGEMVTKERNEL
+@@ -104,8 +240,12 @@ endif
+ ifndef DGEMVTKERNEL
  DGEMVTKERNEL = ../riscv64/gemv_t.c
-+endif
+ endif
 +ifndef CGEMVTKERNEL
  CGEMVTKERNEL = ../riscv64/zgemv_t.c
 +endif
@@ -262,62 +262,9 @@ index b379fd424..0c0b4f5c9 100644
  ZGEMVTKERNEL = ../riscv64/zgemv_t.c
 +endif
  
-+# KERNEL.$(TARGET_CORE) is included first; keep its TRMM width if set.
-+# Unroll-4 GEMM packing uses trmm_*copy_4, which is wrong with a 2x2 kernel.
-+ifndef STRMMKERNEL
- STRMMKERNEL	= ../generic/trmmkernel_2x2.c
-+endif
-+ifndef DTRMMKERNEL
- DTRMMKERNEL	= ../generic/trmmkernel_2x2.c
-+endif
-+ifndef CTRMMKERNEL
- CTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
-+endif
-+ifndef ZTRMMKERNEL
- ZTRMMKERNEL	= ../generic/ztrmmkernel_2x2.c
-+endif
- 
- ifndef SGEMMKERNEL
- SGEMMKERNEL    =  ../generic/gemmkernel_2x2.c
-@@ -132,17 +294,37 @@ ifndef DGEMMOTCOPYOBJ
- DGEMMOTCOPYOBJ = dgemm_otcopy$(TSUFFIX).$(SUFFIX)
- endif
- 
-+ifndef CGEMMKERNEL
- CGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
-+endif
-+ifndef CGEMMONCOPY
- CGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
-+endif
-+ifndef CGEMMOTCOPY
- CGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
-+endif
-+ifndef CGEMMONCOPYOBJ
- CGEMMONCOPYOBJ =  cgemm_oncopy$(TSUFFIX).$(SUFFIX)
-+endif
-+ifndef CGEMMOTCOPYOBJ
- CGEMMOTCOPYOBJ =  cgemm_otcopy$(TSUFFIX).$(SUFFIX)
-+endif
- 
-+ifndef ZGEMMKERNEL
- ZGEMMKERNEL    = ../generic/zgemmkernel_2x2.c
-+endif
-+ifndef ZGEMMONCOPY
- ZGEMMONCOPY    = ../generic/zgemm_ncopy_2.c
-+endif
-+ifndef ZGEMMOTCOPY
- ZGEMMOTCOPY    = ../generic/zgemm_tcopy_2.c
-+endif
-+ifndef ZGEMMONCOPYOBJ
- ZGEMMONCOPYOBJ =  zgemm_oncopy$(TSUFFIX).$(SUFFIX)
-+endif
-+ifndef ZGEMMOTCOPYOBJ
- ZGEMMOTCOPYOBJ =  zgemm_otcopy$(TSUFFIX).$(SUFFIX)
-+endif
- 
- ifndef STRSMKERNEL_LN
- STRSMKERNEL_LN	=  ../generic/trsm_kernel_LN.c
-@@ -170,31 +352,71 @@ ifndef DTRSMKERNEL_RT
+ # KERNEL.$(TARGET_CORE) is included first; keep its TRMM width if set.
+ # Unroll-4 GEMM packing uses trmm_*copy_4, which is wrong with a 2x2 kernel.
+@@ -212,31 +352,71 @@ ifndef DTRSMKERNEL_RT
  DTRSMKERNEL_RT	= ../generic/trsm_kernel_RT.c
  endif
  
