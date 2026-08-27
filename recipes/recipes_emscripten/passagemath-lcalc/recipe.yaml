@@ -1,0 +1,71 @@
+context:
+  version: 10.8.9
+
+package:
+  name: passagemath-lcalc
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-lcalc/passagemath_lcalc-${{ version }}.tar.gz
+  sha256: bf5daefe1e1e179bffd493f129787b63d608f94e284fcabcab71425ef923a2f2
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - numpy
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - lcalc
+  - mpfr
+  - ntl
+  - pari
+  - numpy
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - passagemath-modules
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_lcalc.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: L-function calculations with lcalc'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to Michael Rubinstein's L-function calculator.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_lcalc.py
+  recipe-maintainers:
+  - mkoeppe

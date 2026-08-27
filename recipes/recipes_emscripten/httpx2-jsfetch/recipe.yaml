@@ -1,0 +1,57 @@
+context:
+  name: httpx2-jsfetch
+  version: 0.1.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/httpx2-jsfetch-emscripten-forge/httpx2_jsfetch_emscripten_forge-${{ version }}.tar.gz
+  sha256: f1152ee33b02f72a6f53e44be9c714e7956625dcecb701221185433b5ceaca74
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  noarch: python
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - pip != 25.1
+  - cross-python_${{ target_platform }}
+  - hatchling
+  host:
+  - python
+  run:
+  - python
+  - pyjs >=4.0.6
+  - httpx2 >=2.12.0,<3.0.0
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_httpx2.py
+
+about:
+  homepage: https://github.com/davidbrochart/httpx2-jsfetch-emscripten-forge
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: httpx2 transports for emscripten-forge.
+
+extra:
+  recipe-maintainers:
+  - davidbrochart

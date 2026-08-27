@@ -1,0 +1,38 @@
+diff --git a/umap/umap_.py b/umap/umap_.py
+index a4f5800..4e57770 100644
+--- a/umap/umap_.py
++++ b/umap/umap_.py
+@@ -7,6 +7,7 @@ import locale
+ from collections import deque
+ from warnings import warn
+ import time
++import sys
+ 
+ from scipy.optimize import curve_fit
+ from sklearn.base import BaseEstimator, ClassNamePrefixFeaturesOutMixin
+@@ -2463,9 +2464,12 @@ class UMAP(BaseEstimator, ClassNamePrefixFeaturesOutMixin):
+         if self.verbose:
+             print(str(self))
+ 
+-        self._original_n_threads = numba.get_num_threads()
+-        if self.n_jobs > 0 and self.n_jobs is not None:
+-            numba.set_num_threads(self.n_jobs)
++        # Numba's thread-management API initializes multiprocessing, which is
++        # unavailable in the single-threaded Emscripten runtime.
++        if sys.platform != "emscripten":
++            self._original_n_threads = numba.get_num_threads()
++            if self.n_jobs > 0 and self.n_jobs is not None:
++                numba.set_num_threads(self.n_jobs)
+ 
+         # Check if we should unique the data
+         # We've already ensured that we aren't in the precomputed case
+@@ -2930,7 +2934,8 @@ class UMAP(BaseEstimator, ClassNamePrefixFeaturesOutMixin):
+         if self.verbose:
+             print(ts() + " Finished embedding")
+ 
+-        numba.set_num_threads(self._original_n_threads)
++        if sys.platform != "emscripten":
++            numba.set_num_threads(self._original_n_threads)
+         self._input_hash = joblib.hash(self._raw_data)
+ 
+         if self.transform_mode == "embedding":

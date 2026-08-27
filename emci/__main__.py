@@ -1,6 +1,7 @@
 from .rattler_build import build_with_rattler
 from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
+from .playwright import changed_recipes_need_playwright
 from .schema import Recipe
 from .upload import extract_channel_from_pkg
 
@@ -85,12 +86,6 @@ def bump_recipes_versions(target_branch_name: str):
 
 
 @bot_app.command()
-def build_missing_recipes(target_branch_name: str):
-    from .bot.build_missing_recipes import build_missing_recipes
-    build_missing_recipes(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
-
-
-@bot_app.command()
 def update_matplotlib_fontcache(target_branch_name: str):
     from .bot.update_matplotlib_fontcache import update_matplotlib_fontcache
 
@@ -144,6 +139,33 @@ def lint(old: str, new: str):
         print("✅ All changed recipes passed validation")
 
 
+@build_app.command("needs-playwright")
+def needs_playwright(old: str, new: str):
+    """Print true/false depending on whether changed recipes need playwright."""
+    if changed_recipes_need_playwright(old, new):
+        print("true")
+    else:
+        print("false")
+
+
+@app.command()
+def sync(
+    migration_ref: str = typer.Argument(
+        ...,
+        help="Migration branch as remote/branch or branch (default remote: origin)",
+    ),
+    old: str = typer.Argument(..., help="Git ref for the old commit"),
+    new: str = typer.Argument(..., help="Git ref for the new commit"),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Apply file changes on a new branch and print the PR title/body without committing or opening a PR",
+    ),
+):
+    """Sync recipe changes from main onto a migration branch and open a PR."""
+    from .sync_migration_branch import sync_migration_branch
+
+    sync_migration_branch(migration_ref, old, new, dry_run=dry_run)
 
 
 if __name__ == "__main__":

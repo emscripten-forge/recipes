@@ -1,0 +1,206 @@
+diff --git a/numba/core/caching.py b/numba/core/caching.py
+index 98cf1bc..bc9e34d 100644
+--- a/numba/core/caching.py
++++ b/numba/core/caching.py
+@@ -36,6 +36,13 @@ def _cache_log(msg, *args):
+         print(msg)
+ 
+ 
++def _is_jupyterlite_drive_path(path):
++    return (
++        sys.platform == "emscripten"
++        and Path(path).is_relative_to("/drive")
++    )
++
++
+ class _Cache(metaclass=ABCMeta):
+ 
+     @property
+@@ -108,6 +115,13 @@ class _CacheLocator(metaclass=ABCMeta):
+     def ensure_cache_path(self):
+         path = self.get_cache_path()
+         os.makedirs(path, exist_ok=True)
++        if _is_jupyterlite_drive_path(path):
++            # JupyterLite's DriveFS is backed by the asynchronous Contents API.
++            # tempfile.TemporaryFile() creates and immediately unlinks a file,
++            # which DriveFS cannot represent as a synchronous POSIX operation.
++            # Creating the directory above is sufficient; actual cache writes
++            # will still report any permission or I/O errors.
++            return
+         # Ensure the directory is writable by trying to write a temporary file
+         tempfile.TemporaryFile(dir=path).close()
+ 
+@@ -166,8 +180,17 @@ class _SourceFileBackedLocatorMixin(object):
+     def get_source_stamp(self):
+         if getattr(sys, 'frozen', False):
+-            st = os.stat(sys.executable)
++            source_path = sys.executable
+         else:
+-            st = os.stat(self._py_file)
++            source_path = self._py_file
++        st = os.stat(source_path)
++        if sys.platform == "emscripten":
++            # JupyterLite reconstructs packaged source files for each fresh
++            # kernel, so their mtimes are not stable across browser sessions.
++            # Hash the source itself to keep an unchanged function cache valid
++            # while still invalidating it when its Python module changes.
++            with open(source_path, "rb") as f:
++                source_hash = hashlib.sha256(f.read()).hexdigest()
++            return source_hash, st.st_size
+         # We use both timestamp and size as some filesystems only have second
+         # granularity.
+         return st.st_mtime, st.st_size
+@@ -641,6 +664,15 @@ class IndexDataCacheFile(object):
+         Open *filepath* for writing in a race condition-free way (hopefully).
+         uuid4 is used to try and avoid name collisions on a shared filesystem.
+         """
++        if _is_jupyterlite_drive_path(filepath):
++            # DriveFS cannot reliably implement the temporary-file + atomic
++            # replace protocol below.  A JupyterLite kernel is the sole writer
++            # of its Numba cache, so write the destination through the Contents
++            # API directly instead.
++            with open(filepath, "wb") as f:
++                yield f
++            return
++
+         uid = uuid.uuid4().hex[:16]  # avoid long paths
+         tmpname = '%s.tmp.%s' % (filepath, uid)
+         try:
+diff --git a/numba/core/codegen.py b/numba/core/codegen.py
+index 76fcf39..1d52383 100644
+--- a/numba/core/codegen.py
++++ b/numba/core/codegen.py
+@@ -650,6 +650,12 @@ class CPUCodeLibrary(CodeLibrary):
+             str(self._codegen._create_empty_module(self.name)))
+         self._final_module.name = cgutils.normalize_ir_text(self.name)
+         self._shared_module = None
++        if sys.platform == "emscripten":
++            # Every WASM library is emitted and loaded as an independent side
++            # module.  Retain each emitted object so a cached parent can
++            # restore its complete dependency closure without re-emitting
++            # helper bitcode through LLVM.
++            self.enable_object_caching()
+ 
+     def _optimize_functions(self, ll_module):
+         """
+@@ -946,16 +952,97 @@ class CPUCodeLibrary(CodeLibrary):
+         self._ensure_finalized()
+         data = (self._get_compiled_object(),
+                 self._get_module_for_linking().as_bitcode())
++        if sys.platform == "emscripten":
++            dependencies = self._serialize_wasm_linking_libraries()
++            wasm_trace.log(
++                "cache",
++                f"saving {len(dependencies)} linking module(s) with "
++                f"{self.name!r}",
++            )
++            return (self.name, 'object', data, dependencies)
+         return (self.name, 'object', data)
+ 
++    def _serialize_wasm_linking_libraries(self):
++        """Serialize separately loaded WASM objects in dependency order."""
++        states = []
++        seen = {id(self)}
++
++        def visit(library):
++            identity = id(library)
++            if identity in seen:
++                return
++            seen.add(identity)
++            for dependency in library._linking_libraries:
++                visit(dependency)
++            data = (
++                library._get_compiled_object(),
++                library._get_module_for_linking().as_bitcode(),
++            )
++            states.append((library.name, 'object', data))
++
++        for library in self._linking_libraries:
++            visit(library)
++        return tuple(states)
++
++    @classmethod
++    def _restore_wasm_linking_libraries(cls, codegen, states):
++        """Load cached dependency objects before their calling side module."""
++        for state in states:
++            name, kind, data = state
++            if kind == 'bitcode':
++                # Accept caches produced by the first WASM cache format.
++                module_bitcode = data
++            elif kind == 'object':
++                _object_code, module_bitcode = data
++            else:
++                raise ValueError(
++                    "WASM linking library must contain bitcode or object code"
++                )
++
++            module = ll.parse_bitcode(module_bitcode)
++            function_definitions = [
++                function.name
++                for function in module.functions
++                if not function.is_declaration
++            ]
++            loaded_function = next(
++                (
++                    symbol
++                    for symbol in function_definitions
++                    if codegen._engine.is_symbol_defined(symbol)
++                ),
++                None,
++            )
++            if loaded_function is not None:
++                wasm_trace.log(
++                    "cache",
++                    f"linking module {name!r} is already loaded "
++                    f"({loaded_function!r} is present)",
++                )
++                continue
++
++            wasm_trace.log("cache", f"restoring linking module {name!r}")
++            cls._unserialize(codegen, state)
++
+     @classmethod
+     def _unserialize(cls, codegen, state):
+-        name, kind, data = state
++        if len(state) == 3:
++            name, kind, data = state
++            dependencies = ()
++        elif len(state) == 4:
++            name, kind, data, dependencies = state
++        else:
++            raise ValueError("invalid serialized code library")
++
++        if dependencies:
++            cls._restore_wasm_linking_libraries(codegen, dependencies)
++
+         self = codegen.create_library(name)
+         assert isinstance(self, cls)
+         if kind == 'bitcode':
+             # No need to re-run optimizations, just make the module ready
+             self._final_module = ll.parse_bitcode(data)
++            self._final_module.name = cgutils.normalize_ir_text(name)
+             self._finalize_final_module()
+             return self
+         elif kind == 'object':
+diff --git a/numba/core/config.py b/numba/core/config.py
+index 3a2ddfc..64a2873 100644
+--- a/numba/core/config.py
++++ b/numba/core/config.py
+@@ -277,9 +277,14 @@ class _EnvReloader(object):
+         # Enable logging of cache operation
+         DEBUG_CACHE = _readenv("NUMBA_DEBUG_CACHE", int, DEBUG)
+ 
+-        # Redirect cache directory
+-        # Contains path to the directory
+-        CACHE_DIR = _readenv("NUMBA_CACHE_DIR", str, "")
++        # Redirect cache directory.  JupyterLite mounts its persistent user
++        # filesystem at /drive; retain the native default everywhere else.
++        default_cache_dir = (
++            "/drive/.cache/numba"
++            if sys.platform == "emscripten" and os.path.isdir("/drive")
++            else ""
++        )
++        CACHE_DIR = _readenv("NUMBA_CACHE_DIR", str, default_cache_dir)
+ 
+         # Override default cache locators list including their order
+         # Comma separated list of locator class names,

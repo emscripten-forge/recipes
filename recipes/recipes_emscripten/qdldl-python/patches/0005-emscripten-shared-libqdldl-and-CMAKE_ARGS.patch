@@ -1,0 +1,63 @@
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 3 Aug 2026 00:00:00 +0000
+Subject: [PATCH 5/5] emscripten: shared libqdldl + CMAKE_ARGS
+
+Link against qdldl::qdldl, forward CMAKE_ARGS / CMAKE_PREFIX_PATH,
+and enable SIDE_MODULE shared libs via overwriteProp.cmake.
+
+--- a/c/CMakeLists.txt
++++ b/c/CMakeLists.txt
+@@ -36,7 +36,7 @@
+ 
+ # Add QDLDL+AMD library
+ add_library(qdldlamd SHARED ${amd_src})
+-target_link_libraries(qdldlamd qdldl)
++target_link_libraries(qdldlamd PUBLIC qdldl::qdldl)
+ target_include_directories(qdldlamd PRIVATE
+ 	                   ${CMAKE_CURRENT_SOURCE_DIR}/amd/include
+ 			    )
+
+--- a/setup.py
++++ b/setup.py
+@@ -37,22 +37,34 @@
+ 
+ cmake_args = []
+ 
+-# Add parameters to cmake_args and define_macros
+-cmake_args = ["-DQDLDL_UNITTESTS=OFF", "-GNinja", f'-DCMAKE_INSTALL_PREFIX={prefix}', '-DCMAKE_BUILD_TYPE=Release']
++# Add parameters to cmake_args and define_macros.
++# Forward emscripten-forge / conda-build toolchain flags via CMAKE_ARGS.
++# CMAKE_PROJECT_INCLUDE enables SIDE_MODULE shared libs under Emscripten.
++cmake_args = [
++    "-DQDLDL_UNITTESTS=OFF",
++    "-GNinja",
++    f"-DCMAKE_INSTALL_PREFIX={prefix}",
++    "-DCMAKE_BUILD_TYPE=Release",
++    f"-DCMAKE_PREFIX_PATH={prefix}",
++]
++cmake_args += [a for a in os.environ.get("CMAKE_ARGS", "").split() if a]
++recipe_dir = os.environ.get("RECIPE_DIR")
++if recipe_dir:
++    overwrite = os.path.join(recipe_dir, "overwriteProp.cmake")
++    if os.path.exists(overwrite):
++        cmake_args.append(f"-DCMAKE_PROJECT_INCLUDE={overwrite}")
+ cmake_build_flags = []
+ lib_subdir = []
+ 
+-# Check if windows linux or mac to pass flag
++# Shared libqdldl / libqdldlamd (.so SIDE_MODULE on emscripten-wasm32).
+ if system() == 'Windows':
+     cmake_args += ['-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON']
+     lib_prefix = ''
+     lib_ext = '.lib'
+-elif system() == "Linux":
+-    lib_prefix = 'lib'
+-    lib_ext = '.so'
+ else:
++    # Linux and Emscripten both produce .so
+     lib_prefix = 'lib'
+-    lib_ext = '.dylib'
++    lib_ext = '.so'
+ 
+ lib_name = lib_prefix + "qdldl"
+ 

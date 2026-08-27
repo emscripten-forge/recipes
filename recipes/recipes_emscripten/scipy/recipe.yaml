@@ -1,10 +1,10 @@
 context:
   name: scipy
   version: 1.18.0
+  build_number: 2
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+build:
+  number: ${{ build_number }}
 
 source:
 - url: https://pypi.org/packages/source/s/scipy/scipy-${{ version }}.tar.gz
@@ -29,50 +29,115 @@ source:
   - patches/0014-int-return-for-superlu_utils-and-input_error.patch
   - patches/0015-Extra-char-length-args-to-f2py-source-files.patch
 
-build:
-  number: 0
-
-  files:
-    exclude:
-    - '**/*.pyi'
-    - '**/tests/**'
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-    - '**/test_*.py'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - python
-  - cross-python_${{ target_platform }}
-  - cython
-    # - llvm_${{ target_platform }} # Installing custom LLVM in build.sh
-  - meson-python
-  - numpy
-  - pkg-config
-  host:
-  - numpy
-  - openblas
-  - pybind11
-  - python
-  run:
-  - python
-  - numpy
-  - openblas
-
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_scipy.py
-  requirements:
+outputs:
+  # One SciPy build; runtime files go to scipy, tests to scipy-tests.
+  - staging:
+      name: scipy-build
     build:
-    - pytester
-    run:
-    - pytester-run
+      script: build.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - ${{ compiler('cxx') }}
+      - python
+      - cross-python_${{ target_platform }}
+      - cython
+        # - llvm_${{ target_platform }} # Installing custom LLVM in build.sh
+      - meson-python
+      - numpy
+      - pkg-config
+      host:
+      - numpy
+      - openblas
+      - pybind11
+      - python
+
+  - package:
+      name: scipy
+      version: ${{ version }}
+    inherit: scipy-build
+    build:
+      number: ${{ build_number }}
+      script: echo "Collecting SciPy runtime files from cache"
+      files:
+        exclude:
+        - '**/*.pyi'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+        - '**/tests/**'
+        - '**/test_*.py'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+    requirements:
+      host:
+      - python
+      - numpy
+      - openblas
+      run:
+      - python
+      - numpy
+      - openblas
+    tests:
+    - package_contents:
+        site_packages:
+        - scipy/__init__.py
+        files:
+          not_exists:
+          - lib/python*/site-packages/scipy/**/tests/**
+          - lib/python*/site-packages/scipy/**/test_*.py
+    - script: pytester
+      files:
+        recipe:
+        - test_scipy.py
+      requirements:
+        build:
+        - pytester
+        run:
+        - pytester-run
+
+  # Overlay of SciPy test modules onto site-packages/scipy. Other recipes
+  # can add scipy-tests as a test requirement and call scipy.test().
+  - package:
+      name: scipy-tests
+      version: ${{ version }}
+    inherit: scipy-build
+    build:
+      number: ${{ build_number }}
+      script: echo "Collecting SciPy test files from cache"
+      files:
+        include:
+        - lib/python*/site-packages/scipy/**/tests/**
+        - lib/python*/site-packages/scipy/**/test_*.py
+        exclude:
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+        - '**/*.pyi'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+    requirements:
+      host:
+      - python
+      run:
+      - ${{ pin_subpackage('scipy', exact=True) }}
+      - pytest
+      - hypothesis
+      - gmpy2
+    tests:
+    - package_contents:
+        site_packages:
+        - scipy/linalg/tests/test_batch.py
+        - scipy/stats/tests/test_stats.py
+    - script: pytester
+      files:
+        recipe:
+        - test_scipy_tests.py
+      requirements:
+        build:
+        - pytester
+        run:
+        - pytester-run
 
 about:
   homepage: http://www.scipy.org/

@@ -1,0 +1,83 @@
+context:
+  version: 10.8.9
+
+package:
+  name: passagemath-eclib
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-eclib/passagemath_eclib-${{ version }}.tar.gz
+  sha256: 357bbec2cf14c73f17fae9333067ca3d68ed54073c455aebca5c77618a7c713c
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - numpy
+  - eclib
+  - fflas-ffpack
+  - givaro
+  - gmp
+  - libflint
+  - linbox
+  - mpfr
+  - ntl
+  - pari
+  - passagemath-categories
+  - passagemath-flint
+  - passagemath-linbox
+  - passagemath-modules
+  - passagemath-ntl
+  run:
+  - python
+  - cysignals
+  - passagemath-categories
+  - passagemath-linbox
+  - passagemath-modules
+  - passagemath-ntl
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_eclib.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Elliptic curves over the rationals with eclib/mwrank'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides the Cython interface to John Cremona's programs for enumerating
+    and computing with elliptic curves defined over the rational numbers.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_eclib.py
+  recipe-maintainers:
+  - mkoeppe

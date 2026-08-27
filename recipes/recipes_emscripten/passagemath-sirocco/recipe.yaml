@@ -1,0 +1,70 @@
+context:
+  version: 10.8.9
+
+package:
+  name: passagemath-sirocco
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-sirocco/passagemath_sirocco-${{ version }}.tar.gz
+  sha256: d19408990c8a49ae988e4863e863ff2303ad79fbc1187c2df66b3624548e82e3
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - numpy
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gmp
+  - mpfr
+  - sirocco
+  - numpy
+  - passagemath-modules
+  run:
+  - python
+  - cysignals
+  - passagemath-modules
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_sirocco.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Certified root continuation with sirocco'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides a Cython interface to the sirocco library for computing
+    topologically certified root continuation of bivariate polynomials.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_sirocco.py
+  recipe-maintainers:
+  - mkoeppe
