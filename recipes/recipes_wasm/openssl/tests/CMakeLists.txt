@@ -8,4 +8,4 @@ find_package(OpenSSL REQUIRED CONFIG)
 
 # Test executable that uses OpenSSL
 add_executable(test_openssl test_openssl.cpp)
-target_link_libraries(test_openssl PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(test_openssl PRIVATE  OpenSSL::Crypto OpenSSL::SSL)
