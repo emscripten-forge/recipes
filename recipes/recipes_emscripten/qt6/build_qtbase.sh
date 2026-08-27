@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
 set -e
 
-# Qt6 for WebAssembly. Cross-compile qtbase using the emscripten toolchain.
-#
-# Qt's cross-compile needs a host Qt install so tools like moc/rcc/uic/qmake
-# can run natively during configure and build. We get that from qt6-main
-# in $BUILD_PREFIX (from conda-forge).
+echo "=== qtbase build platforms ==="
+echo "build_platform=${build_platform:-<unset>}"
+echo "host_platform=${host_platform:-<unset>}"
+echo "target_platform=${target_platform:-<unset>}"
+echo "==============================="
+
+# Qt6 base — cross-compile qtbase for Emscripten.
+# Host tools (moc/rcc/uic/qt-cmake-*) come from native qt6-main in $BUILD_PREFIX.
 
 QT_HOST_PATH="${BUILD_PREFIX}"
 
-# Qt's configure looks for EMSDK; emscripten-forge sets EMSCRIPTEN_FORGE_EMSDK_DIR.
-# Qt's QtPublicWasmToolchainHelpers.cmake reads $EMSDK/.emscripten and extracts
-# the single-quoted value of EMSCRIPTEN_ROOT, then joins as $EMSDK/<that>/emcc.
-# The value must therefore be a *relative* path under EMSDK — an absolute path
-# gets concatenated to $EMSDK/$EMSDK/... and the emcc lookup fails.
+# Qt's QtPublicWasmToolchainHelpers.cmake reads $EMSDK/.emscripten and expects
+# EMSCRIPTEN_ROOT to be a *relative* path under $EMSDK. emscripten-forge doesn't
+# ship a .emscripten file, so synthesise one.
 export EMSDK="${EMSCRIPTEN_FORGE_EMSDK_DIR}"
 export EMSDK_NODE=$(command -v node)
 
@@ -28,10 +29,10 @@ JS_ENGINES = [NODE_JS]
 EOF
 fi
 
+cd qtbase
 mkdir build && cd build
 
-# `configure` is Qt's wrapper around cmake — it knows the wasm-emscripten
-# platform mnemonic and sets the right toolchain file for us.
+# Qt's `configure` wraps cmake and knows the wasm-emscripten platform mnemonic.
 ../configure \
     -platform wasm-emscripten \
     -qt-host-path "${QT_HOST_PATH}" \

@@ -1,0 +1,128 @@
+context:
+  version: 6.11.2
+
+source:
+- url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
+  sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
+  target_directory: qtbase
+- url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtsvg-everywhere-src-${{ version }}.tar.xz
+  sha256: d594337feca84c26fb67fe87b85e6a5c12fda404b611d905f9d138210c311876
+  target_directory: qtsvg
+- url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qt5compat-everywhere-src-${{ version }}.tar.xz
+  sha256: 68c320fe3391096a9f2d870170edf1b67dac8af1d0e51c0c9e5343807f114287
+  target_directory: qt5compat
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: qt6-main
+    version: ${{ version }}
+  build:
+    script: build_qtbase.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - perl
+    - python
+    # Host qt6-main for the cross-compile tools (moc/rcc/uic/qt-configure-module).
+    - qt6-main
+    host:
+    - zlib
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6Core.a
+      - lib/libQt6Gui.a
+      - lib/libQt6Widgets.a
+      - lib/libQt6Xml.a
+      - lib/libQt6Network.a
+      - lib/cmake/Qt6/Qt6Config.cmake
+      - include/QtCore/QString
+  - script:
+    - build_tests_qtbase.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtbase.sh
+
+- package:
+    name: qt6-svg
+    version: ${{ version }}
+  build:
+    script: build_qtsvg.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - perl
+    - python
+    - qt6-main
+    host:
+    - ${{ pin_subpackage('qt6-main', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6Svg.a
+      - lib/libQt6SvgWidgets.a
+      - lib/cmake/Qt6Svg/Qt6SvgConfig.cmake
+      - include/QtSvg/QSvgRenderer
+  - script:
+    - build_tests_qtsvg.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtsvg.sh
+
+- package:
+    name: qt6-5compat
+    version: ${{ version }}
+  build:
+    script: build_qt5compat.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - perl
+    - python
+    - qt6-main
+    host:
+    - ${{ pin_subpackage('qt6-main', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6Core5Compat.a
+      - lib/cmake/Qt6Core5Compat/Qt6Core5CompatConfig.cmake
+      - include/QtCore5Compat/QTextCodec
+  - script:
+    - build_tests_qt5compat.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qt5compat.sh
+
+about:
+  homepage: https://www.qt.io/
+  repository: https://code.qt.io/qt/qt5.git
+  license: LGPL-3.0-only
+  license_file: qtbase/LICENSES/LGPL-3.0-only.txt
+  summary: Qt6 libraries built for Emscripten (WASM)
+
+extra:
+  recipe-maintainers:
+  - mmesch
