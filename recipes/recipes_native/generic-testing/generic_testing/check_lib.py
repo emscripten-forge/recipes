@@ -49,23 +49,38 @@ def check_no_pthread_symbols(path, allow_pthread):
 
     output = run_llvm_readobj(path, "--symbols")
 
-    pthread_lines = [
-        line for line in output.splitlines()
+    # print(f"output for {path}")
+    # print(output)
+
+    lines = output.splitlines()
+    context = 10
+
+    pthread_matches = [
+        i for i, line in enumerate(lines)
         if "pthread" in line.lower()
+        and not line.strip().startswith("File:")
     ]
 
-    if pthread_lines:
+    if pthread_matches:
         print(
             f"Error: {path} contains pthread symbols "
             "but --allow-pthread is not set"
         )
 
-        print("pthread-related symbols:")
-        for line in pthread_lines:
-            print(f"  {line.strip()}")
+        print("\npthread-related symbols with context:")
+
+        for index in pthread_matches:
+            start = max(0, index - context)
+            end = min(len(lines), index + context + 1)
+
+            print("\n" + "=" * 80)
+            print(f"Match at line {index + 1}")
+
+            for i in range(start, end):
+                prefix = ">>> " if i == index else "    "
+                print(f"{prefix}{i + 1:5}: {lines[i]}")
 
         sys.exit(1)
-
 
 def check_lib(path, arch, allow_pthread):
     print(f"Checking library: {path}")

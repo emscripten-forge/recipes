@@ -16,6 +16,7 @@ rattler-build build \
     -m variant.yaml \
     --recipe $RECIPE_DIR
 
+
 echo "Building ${RECIPE_DIR} for emscripten-wasm64"
 rattler-build build \
     -c  https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x \
