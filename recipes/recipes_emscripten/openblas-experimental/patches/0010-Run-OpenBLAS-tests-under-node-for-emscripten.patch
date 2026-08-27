@@ -1,0 +1,168 @@
+From cca45c98912ecdcc3d925cf9f0395b8e9596ca36 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Thu, 13 Aug 2026 09:45:45 +0200
+Subject: [PATCH 10/14] Run OpenBLAS tests under node for emscripten
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ ctest/Makefile | 56 +++++++++++++++++++++++++-------------------------
+ utest/Makefile |  4 ++--
+ 2 files changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/ctest/Makefile b/ctest/Makefile
+index f4e947549..99013e398 100644
+--- a/ctest/Makefile
++++ b/ctest/Makefile
+@@ -84,29 +84,29 @@ all1: $(all1targets)
+ ifneq ($(CROSS), 1)
+ ifeq ($(USE_OPENMP), 1)
+ ifeq ($(BUILD_SINGLE),1)
+-	OMP_NUM_THREADS=2 ./xscblat1$(EXE)
++	OMP_NUM_THREADS=2 node ./xscblat1$(EXE)
+ endif
+ ifeq ($(BUILD_DOUBLE),1)
+-	OMP_NUM_THREADS=2 ./xdcblat1$(EXE)
++	OMP_NUM_THREADS=2 node ./xdcblat1$(EXE)
+ endif
+ ifeq ($(BUILD_COMPLEX),1)
+-	OMP_NUM_THREADS=2 ./xccblat1$(EXE)
++	OMP_NUM_THREADS=2 node ./xccblat1$(EXE)
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OMP_NUM_THREADS=2 ./xzcblat1$(EXE)
++	OMP_NUM_THREADS=2 node ./xzcblat1$(EXE)
+ endif
+ else
+ ifeq ($(BUILD_SINGLE),1)
+-	OPENBLAS_NUM_THREADS=2 ./xscblat1$(EXE)
++	OPENBLAS_NUM_THREADS=2 node ./xscblat1$(EXE)
+ endif
+ ifeq ($(BUILD_DOUBLE),1)
+-	OPENBLAS_NUM_THREADS=2 ./xdcblat1$(EXE)
++	OPENBLAS_NUM_THREADS=2 node ./xdcblat1$(EXE)
+ endif
+ ifeq ($(BUILD_COMPLEX),1)
+-	OPENBLAS_NUM_THREADS=2 ./xccblat1$(EXE)
++	OPENBLAS_NUM_THREADS=2 node ./xccblat1$(EXE)
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OPENBLAS_NUM_THREADS=2 ./xzcblat1$(EXE)
++	OPENBLAS_NUM_THREADS=2 node ./xzcblat1$(EXE)
+ endif
+ endif
+ endif
+@@ -129,29 +129,29 @@ all2: $(all2targets)
+ ifneq ($(CROSS), 1)
+ ifeq ($(USE_OPENMP), 1)
+ ifeq ($(BUILD_SINGLE),1)
+-	OMP_NUM_THREADS=2 ./xscblat2$(EXE) < sin2
++	OMP_NUM_THREADS=2 node ./xscblat2$(EXE) < sin2
+ endif
+ ifeq ($(BUILD_DOUBLE),1)
+-	OMP_NUM_THREADS=2 ./xdcblat2$(EXE) < din2
++	OMP_NUM_THREADS=2 node ./xdcblat2$(EXE) < din2
+ endif
+ ifeq ($(BUILD_COMPLEX),1)
+-	OMP_NUM_THREADS=2 ./xccblat2$(EXE) < cin2
++	OMP_NUM_THREADS=2 node ./xccblat2$(EXE) < cin2
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OMP_NUM_THREADS=2 ./xzcblat2$(EXE) < zin2
++	OMP_NUM_THREADS=2 node ./xzcblat2$(EXE) < zin2
+ endif
+ else
+ ifeq ($(BUILD_SINGLE),1)
+-	OPENBLAS_NUM_THREADS=2 ./xscblat2$(EXE) < sin2
++	OPENBLAS_NUM_THREADS=2 node ./xscblat2$(EXE) < sin2
+ endif
+ ifeq ($(BUILD_DOUBLE),1)
+-	OPENBLAS_NUM_THREADS=2 ./xdcblat2$(EXE) < din2
++	OPENBLAS_NUM_THREADS=2 node ./xdcblat2$(EXE) < din2
+ endif
+ ifeq ($(BUILD_COMPLEX),1)
+-	OPENBLAS_NUM_THREADS=2 ./xccblat2$(EXE) < cin2
++	OPENBLAS_NUM_THREADS=2 node ./xccblat2$(EXE) < cin2
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OPENBLAS_NUM_THREADS=2 ./xzcblat2$(EXE) < zin2
++	OPENBLAS_NUM_THREADS=2 node ./xzcblat2$(EXE) < zin2
+ endif
+ endif
+ endif
+@@ -181,46 +181,46 @@ all3: $(all3targets)
+ ifneq ($(CROSS), 1)
+ ifeq ($(USE_OPENMP), 1)
+ ifeq ($(BUILD_SINGLE),1)
+-	OMP_NUM_THREADS=2 ./xscblat3$(EXE) < sin3
++	OMP_NUM_THREADS=2 node ./xscblat3$(EXE) < sin3
+ endif
+ ifeq ($(BUILD_DOUBLE),1)
+-	OMP_NUM_THREADS=2 ./xdcblat3$(EXE) < din3
++	OMP_NUM_THREADS=2 node ./xdcblat3$(EXE) < din3
+ endif
+ ifeq ($(BUILD_COMPLEX),1)
+-	OMP_NUM_THREADS=2 ./xccblat3$(EXE) < cin3
++	OMP_NUM_THREADS=2 node ./xccblat3$(EXE) < cin3
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OMP_NUM_THREADS=2 ./xzcblat3$(EXE) < zin3
++	OMP_NUM_THREADS=2 node ./xzcblat3$(EXE) < zin3
+ endif
+ else
+ ifeq ($(BUILD_SINGLE),1)
+-	OPENBLAS_NUM_THREADS=2 ./xscblat3$(EXE) < sin3
++	OPENBLAS_NUM_THREADS=2 node ./xscblat3$(EXE) < sin3
+ endif
+ ifeq ($(BUILD_DOUBLE),1)
+-	OPENBLAS_NUM_THREADS=2 ./xdcblat3$(EXE) < din3
++	OPENBLAS_NUM_THREADS=2 node ./xdcblat3$(EXE) < din3
+ endif
+ ifeq ($(BUILD_COMPLEX),1)
+-	OPENBLAS_NUM_THREADS=2 ./xccblat3$(EXE) < cin3
++	OPENBLAS_NUM_THREADS=2 node ./xccblat3$(EXE) < cin3
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OPENBLAS_NUM_THREADS=2 ./xzcblat3$(EXE) < zin3
++	OPENBLAS_NUM_THREADS=2 node ./xzcblat3$(EXE) < zin3
+ endif
+ endif
+ 
+ ifeq ($(SUPPORT_GEMM3M),1)
+ ifeq ($(USE_OPENMP), 1)
+ ifeq ($(BUILD_COMPLEX),1)
+-	OMP_NUM_THREADS=2 ./xccblat3_3m$(EXE) < cin3_3m
++	OMP_NUM_THREADS=2 node ./xccblat3_3m$(EXE) < cin3_3m
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OMP_NUM_THREADS=2 ./xzcblat3_3m$(EXE) < zin3_3m
++	OMP_NUM_THREADS=2 node ./xzcblat3_3m$(EXE) < zin3_3m
+ endif
+ else
+ ifeq ($(BUILD_COMPLEX),1)
+-	OPENBLAS_NUM_THREADS=2 ./xccblat3_3m$(EXE) < cin3_3m
++	OPENBLAS_NUM_THREADS=2 node ./xccblat3_3m$(EXE) < cin3_3m
+ endif
+ ifeq ($(BUILD_COMPLEX16),1)
+-	OPENBLAS_NUM_THREADS=2 ./xzcblat3_3m$(EXE) < zin3_3m
++	OPENBLAS_NUM_THREADS=2 node ./xzcblat3_3m$(EXE) < zin3_3m
+ endif
+ endif
+ endif
+diff --git a/utest/Makefile b/utest/Makefile
+index b568e0e1e..114ddc058 100644
+--- a/utest/Makefile
++++ b/utest/Makefile
+@@ -75,8 +75,8 @@ endif
+ 
+ run_test: $(UTESTBIN) $(UTESTEXTBIN)
+ ifneq ($(CROSS), 1)
+-	./$(UTESTBIN)
+-	./$(UTESTEXTBIN)
++	node ./$(UTESTBIN)
++	node ./$(UTESTEXTBIN)
+ endif
+ 
+ clean:
+-- 
+2.54.0
+
