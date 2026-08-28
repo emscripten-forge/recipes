@@ -12,9 +12,16 @@ source:
 
 build:
   number: 0
+  # CGAL 5+ is header-only, so the built artifact is arch-independent.
+  # Upstream conda-forge tracking: https://github.com/conda-forge/cgal-cpp-feedstock/issues/55
+  noarch: generic
 
 requirements:
   build:
+  # Even though nothing gets compiled, CGAL's CMakeLists calls
+  # project(CGAL LANGUAGES CXX), which triggers compiler detection at
+  # configure time. Pin one so it doesn't fall back to /usr/bin/c++.
+  - ${{ compiler('cxx') }}
   - cmake
   - ninja
   host:
