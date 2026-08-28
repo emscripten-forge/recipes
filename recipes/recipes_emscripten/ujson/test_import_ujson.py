@@ -9,7 +9,7 @@ def test_import_ujson():
     def assert_almost_equal(a, b):
         assert round(abs(a - b), 7) == 0
 
-    test_encode_decimal
+    # test_encode_decimal
     sut = decimal.Decimal("1337.1337")
     encoded = ujson.encode(sut)
     decoded = ujson.decode(encoded)
