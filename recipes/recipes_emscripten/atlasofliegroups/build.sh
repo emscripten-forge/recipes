@@ -32,5 +32,6 @@ cp atlas-scripts/* "${PREFIX}/share/atlas/atlas-scripts/"
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   "${PREFIX}/bin/atlas.data" \
-  --preload "${PREFIX}/share/atlas@/share/atlas" \
+  --preload "${PREFIX}/share/atlas/atlas-scripts@/" \
+  --preload "${PREFIX}/share/atlas/messages@/share/atlas/messages" \
   --js-output="${PREFIX}/bin/atlas.data.js"
