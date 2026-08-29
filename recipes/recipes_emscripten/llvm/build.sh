@@ -6,6 +6,9 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
+# The Emscripten toolchain flags already include -fPIC. LLVM_ENABLE_PIC also
+# enables the native shared libLTO target, which this cross-build cannot create.
+# Disable the CMake switch while retaining -fPIC in the compiler flags below.
 # Configure step
 emcmake cmake -S ../llvm -B .         \
     -DCMAKE_BUILD_TYPE=Release                      \
@@ -21,6 +24,7 @@ emcmake cmake -S ../llvm -B .         \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
     -DLLVM_DISTRIBUTION_COMPONENTS="cmake-exports;llvm-headers;llvm-libraries;clang-cmake-exports;clang-headers;clang-resource-headers;clang-libraries;lld-cmake-exports;lld-headers;lldCommon;lldWasm" \
     -DLLVM_ENABLE_THREADS=OFF                       \
+    -DLLVM_ENABLE_PIC=OFF                           \
     -DLLVM_ENABLE_ZSTD=OFF                          \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
     -DLLVM_BUILD_TOOLS=OFF                          \
