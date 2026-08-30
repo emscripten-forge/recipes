@@ -525,7 +525,6 @@ sed -i \
   "$M2_BINARY_JS"
 
 emmake make M2-core
-emmake make build-programs
 
 mkdir -p "$PWD/usr-dist/common/share/Macaulay2"
 
