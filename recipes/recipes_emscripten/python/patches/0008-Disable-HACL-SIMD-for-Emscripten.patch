@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 1 Jan 2024 00:00:00 +0000
+Subject: [PATCH] Disable HACL SIMD for Emscripten
+
+The *mmintrin.h headers are x86-specific; disable SIMD128/SIMD256 on
+Emscripten (wasm32) so we use the portable Blake2 implementation.
+---
+ configure.ac | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 0000000..1111111 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -7993,8 +7993,8 @@
+ # The SIMD files use aligned_alloc, which is not available on older versions of
+ # Android.
+ # The *mmintrin.h headers are x86-family-specific, so can't be used on WASI.
+-if test "$ac_sys_system" != "Linux-android" -a "$ac_sys_system" != "WASI" || \
++if test "$ac_sys_system" != "Linux-android" -a "$ac_sys_system" != "WASI" -a "$ac_sys_system" != "Emscripten" || \
+    { test -n "$ANDROID_API_LEVEL" && test "$ANDROID_API_LEVEL" -ge 28; }
+ then
+   dnl This can be extended here to detect e.g. Power8, which HACL* should also support.
+@@ -8028,8 +8028,8 @@
+ # Although AVX support is not guaranteed on Android
+ # (https://developer.android.com/ndk/guides/abis#86-64), this is safe because we do a
+ # runtime CPUID check.
+-if test "$ac_sys_system" != "Linux-android" -a "$ac_sys_system" != "WASI" || \
++if test "$ac_sys_system" != "Linux-android" -a "$ac_sys_system" != "WASI" -a "$ac_sys_system" != "Emscripten" || \
+    { test -n "$ANDROID_API_LEVEL" && test "$ANDROID_API_LEVEL" -ge 28; }
+ then
+   AX_CHECK_COMPILE_FLAG([-mavx2],[

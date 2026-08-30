@@ -148,5 +148,25 @@ def needs_playwright(old: str, new: str):
         print("false")
 
 
+@app.command()
+def sync(
+    migration_ref: str = typer.Argument(
+        ...,
+        help="Migration branch as remote/branch or branch (default remote: origin)",
+    ),
+    old: str = typer.Argument(..., help="Git ref for the old commit"),
+    new: str = typer.Argument(..., help="Git ref for the new commit"),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Apply file changes on a new branch and print the PR title/body without committing or opening a PR",
+    ),
+):
+    """Sync recipe changes from main onto a migration branch and open a PR."""
+    from .sync_migration_branch import sync_migration_branch
+
+    sync_migration_branch(migration_ref, old, new, dry_run=dry_run)
+
+
 if __name__ == "__main__":
     app()
