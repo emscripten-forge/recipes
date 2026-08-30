@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euxo pipefail
+set -euxo pipefail 
 
 cd M2/BUILD/build
 
