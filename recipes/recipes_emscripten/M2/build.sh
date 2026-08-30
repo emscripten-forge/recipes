@@ -578,4 +578,4 @@ cp "$M2_BINARY_DIR/M2-binary.js" \
 cp "$M2_BINARY_DIR/M2-binary.wasm" \
   "${PREFIX}/bin/M2-binary.wasm"
 
-cp -r "web"/* "${PREFIX}/bin/"
+cp -a "${SRC_DIR}/web/." "${PREFIX}/bin/"
