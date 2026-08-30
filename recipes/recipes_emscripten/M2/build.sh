@@ -505,12 +505,26 @@ mv "$MAIN_NEW" "$MAIN_CPP"
 
 emmake make M2-binary
 
+M2_BINARY_JS="$(
+  find "$PWD/usr-dist" \
+    -type f \
+    -path '*/bin/M2-binary.js' \
+    -print \
+    -quit
+)"
+
+if [[ -z "$M2_BINARY_JS" ]]; then
+    echo "ERROR: M2-binary.js not found under $PWD/usr-dist" >&2
+    exit 1
+fi
+
+M2_BINARY_DIR="$(dirname "$M2_BINARY_JS")"
+
 sed -i \
   's/tty:true,seekable:false/tty:false,seekable:false/g' \
-  usr-dist/x86-Emscripten-Emscripten-1/bin/M2-binary.js
+  "$M2_BINARY_JS"
 
 emmake make M2-core
-
 emmake make build-programs
 
 mkdir -p "$PWD/usr-dist/common/share/Macaulay2"
@@ -554,10 +568,13 @@ emcmake cmake \
   -DM2_EMSCRIPTEN_RUNTIME_BUNDLE=ON
 
 rm -f \
-  usr-dist/x86-Emscripten-Emscripten-1/bin/M2-binary.js \
-  usr-dist/x86-Emscripten-Emscripten-1/bin/M2-binary.wasm
+  "$M2_BINARY_DIR/M2-binary.js" \
+  "$M2_BINARY_DIR/M2-binary.wasm"
 
 emmake make M2-binary
 
-cp usr-dist/x86-Emscripten-Emscripten-1/bin/M2-binary.js "${PREFIX}/bin/M2-binary.js"
-cp usr-dist/x86-Emscripten-Emscripten-1/bin/M2-binary.wasm "${PREFIX}/bin/M2-binary.wasm"
+cp "$M2_BINARY_DIR/M2-binary.js" \
+  "${PREFIX}/bin/M2-binary.js"
+
+cp "$M2_BINARY_DIR/M2-binary.wasm" \
+  "${PREFIX}/bin/M2-binary.wasm"
