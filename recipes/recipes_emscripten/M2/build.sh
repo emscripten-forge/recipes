@@ -3,6 +3,7 @@ set -euxo pipefail
 
 cd M2/BUILD/build
 
+# Patch CMake dependency checks for Emscripten, use packaged static libraries， remove readline and quadmath.
 sed -i '/CMP0167/d' \
   ../../cmake/check-libraries.cmake
 
@@ -138,6 +139,7 @@ echo \
   "list(APPEND FACTORY_LIBRARIES \"$PREFIX/lib/libomalloc.a\" \"$PREFIX/lib/libsingular_resources.a\")" \
   >> ../../cmake/FindFactory.cmake
 
+# Remove GC for scc1, use NODERAWFS so that it can access local filesystem to compile D code in nodejs environment.
 sed -i \
   '/#include "M2\/config.h"/a #include <stdlib.h>' \
   ../../Macaulay2/c/scc.h
@@ -181,6 +183,7 @@ if(EMSCRIPTEN)
 endif()
 EOF
 
+# Adapt the interpreter to single-threaded wasm and replace constructor behavior with explicit initialization.
 sed -i \
   '/if (flags & constructor_F) put(" __attribute__ ((constructor))");/d' \
   ../../Macaulay2/c/cprint.c
@@ -244,12 +247,15 @@ sed -i '/^  void\*\* TS_Get_LocalArray()/,/^  int getAllowableThreads()/c\
   int getAllowableThreads()' \
   ../../Macaulay2/system/supervisor.cpp
 
+# Remove openblas dynamic library to ensure static linking.
 rm -f "$PREFIX"/lib/libopenblas.so*
 
+# Bypass cmake checking system again.
 sed -i '/find_program(LDD ldd)/,/^endif()$/c\
 set(LDD "")' \
   ../../Macaulay2/bin/CMakeLists.txt
 
+# Build M2 with NODERAWFS first, then rebuild with browser runtime.
 cat << 'EOF' >> ../../Macaulay2/bin/CMakeLists.txt
 
 option(
@@ -288,6 +294,7 @@ if(EMSCRIPTEN)\
 endif()' \
   ../../Macaulay2/bin/CMakeLists.txt
 
+# Fake executable to bypass cmake library checking.
 FAKE_BIN="$PWD/fake-bin"
 
 mkdir -p "$FAKE_BIN"
@@ -335,6 +342,7 @@ emmake make build-libraries
 
 emmake make M2-generated-sources
 
+# Reproduce DLIST order.
 M2_D_ORDER=(
   arithmetic
   atomic
@@ -406,6 +414,11 @@ M2_D_ORDER=(
   version
 )
 
+# The following script finds each generated Macaulay2 module’s __prepare() function,
+# collects those function names, generates declarations and calls for them, then creates a modified main.cpp that:
+# - It disables the GC after GC_INIT().
+# - It initializes static thread-local data.
+# - It explicitly calls every discovered __prepare() function in module order.
 PREPARE_FUNCTIONS=()
 
 for module in "${M2_D_ORDER[@]}"; do
@@ -520,12 +533,14 @@ fi
 
 M2_BINARY_DIR="$(dirname "$M2_BINARY_JS")"
 
+# patch tty handling
 sed -i \
   's/tty:true,seekable:false/tty:false,seekable:false/g' \
   "$M2_BINARY_JS"
 
 emmake make M2-core
 
+# Bundle all packages into M2.data.
 mkdir -p "$PWD/usr-dist/common/share/Macaulay2"
 
 while IFS= read -r package_file; do
@@ -561,6 +576,7 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
   --preload "${PWD}/usr-dist/common@/m2" \
   --js-output="${PREFIX}/bin/M2.data.js"
 
+# Reconfigure the same CMake cache and rebuild M2-binary.
 emcmake cmake \
   -S ../.. \
   -B . \
