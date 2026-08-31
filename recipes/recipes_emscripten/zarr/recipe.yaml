@@ -1,6 +1,6 @@
 context:
   name: zarr
-  version: 3.1.3
+  version: 3.2.1
 
 package:
   name: ${{ name }}
@@ -8,10 +8,14 @@ package:
 
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 01342f3e26a02ed5670db608a5576fbdb8d76acb5c280bd2d0082454b1ba6f79
+  sha256: 71565b738a0e7e8ed226f0516eba8c6bb53440ad7669a8c48ebb3534a161d035
+  patches:
+  - patches/0001-Add-WASM-compatible-sync-for-Pyodide.patch
+  - patches/0002-Set-threading.max_workers-1-on-WASM-in-config.patch
+  - patches/0003-Fix-exclusive-atomic-writes-on-Emscripten.patch
 
 build:
-  number: 2
+  number: 0
   script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
 
   files:
@@ -34,11 +38,10 @@ requirements:
   - python
   run:
   - numpy
-  - asciitree
   - numcodecs
   - typing-extensions
   - donfig
-  - crc32c
+  - google-crc32c
   - packaging
 
 tests:
