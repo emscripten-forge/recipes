@@ -21,7 +21,10 @@ mkdir build && cd build
 "${PREFIX}/bin/qt-configure-module" .. \
     -- \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-    -DQT_HOST_PATH="${BUILD_PREFIX}"
+    -DQT_HOST_PATH="${BUILD_PREFIX}" \
+    -DFEATURE_jpeg=ON \
+    -DJPEG_INCLUDE_DIR="${PREFIX}/include" \
+    -DJPEG_LIBRARY="${PREFIX}/lib/libjpeg.a"
 
 ninja -j "${CPU_COUNT:-2}"
 ninja install
