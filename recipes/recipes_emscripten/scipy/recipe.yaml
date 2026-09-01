@@ -28,6 +28,7 @@ source:
   - patches/0013-Extra-char-length-args-in-integrate.patch
   - patches/0014-int-return-for-superlu_utils-and-input_error.patch
   - patches/0015-Extra-char-length-args-to-f2py-source-files.patch
+  - patches/0016-Skip-wasm-unsupported-SciPy-tests.patch
 
 outputs:
   # One SciPy build; runtime files go to scipy, tests to scipy-tests.
@@ -82,6 +83,7 @@ outputs:
     - package_contents:
         site_packages:
         - scipy/__init__.py
+        - scipy/conftest.py
         files:
           not_exists:
           - lib/python*/site-packages/scipy/**/tests/**
@@ -129,10 +131,13 @@ outputs:
         site_packages:
         - scipy/linalg/tests/test_batch.py
         - scipy/stats/tests/test_stats.py
-    - script: pytester
+    - script:
+      - playwright install
+      - python long_pytester.py
       files:
         recipe:
-        - test_scipy_tests.py
+        - test_scipy_suite.py
+        - long_pytester.py
       requirements:
         build:
         - pytester
