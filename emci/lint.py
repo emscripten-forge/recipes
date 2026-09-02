@@ -72,7 +72,7 @@ def _validate_recipe(meta_path: Path, meta: dict, display_name: str | None = Non
     name = display_name or meta_path.parent.name
     channel = meta.get("extra", {}).get("channel")
     if is_experimental_recipe(meta):
-        print(f"⏭️ {name} skipped (experimental channel: {channel})")
+        print(f"⏩ {name} skipped (experimental channel: {channel})")
         return True
 
     try:
@@ -107,6 +107,8 @@ def lint_recipes(old: str, new: str) -> None:
 
             if not lint_recipe_file(meta_path):
                 failed = True
+
+    print("--------------------------------")
 
     if failed:
         print("❌ One or more recipes failed validation")
