@@ -24,6 +24,7 @@ fi
 ls -l $BUILD_PREFIX/bin
 
 
+
 CFLAGS="-fPIC -fvisibility=hidden $MEM_FLAGS" emconfigure ./Configure gcc \
       no-shared \
       no-dso \
