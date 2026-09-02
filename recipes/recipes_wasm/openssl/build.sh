@@ -20,6 +20,8 @@ fi
 # there should be a symlink in 
 # $BUILD_PREFIX/bin/emconfigure -> $BUILD_PREFIX/opt/emsdk/upstream/emscripten/emconfigure
 
+# show everythin in bin
+ls -l $BUILD_PREFIX/bin
 
 
 CFLAGS="-fPIC -fvisibility=hidden $MEM_FLAGS" emconfigure ./Configure gcc \
