@@ -1,0 +1,134 @@
+#!/bin/bash
+
+PY_VERSION=3.14
+
+set -euxo pipefail
+
+mkdir -p $PREFIX/include
+mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/bin
+mkdir -p $PREFIX/etc/conda
+
+
+# Specific variables for cross-compilation
+if [[ "$target_platform" == "emscripten-wasm32" ]]; then
+    export WASM_FLAVOUR=wasm32
+elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
+    export WASM_FLAVOUR=wasm64
+else
+    echo "Unsupported target_platform: $target_platform"
+    exit 1
+fi
+
+
+
+if [[ "$target_platform" == "emscripten-wasm64" ]]; then
+    # replace emscripten-wasm32 in Makefile.pre.in with emscripten-wasm64
+    sed -i.bak 's/wasm32-unknown-emscripten/wasm64-unknown-emscripten/g' Makefile.pre.in
+fi  
+
+
+
+
+
+export CPYTHON_ABI_FLAGS=""
+
+
+export PYVERSION="3.14.3"
+export PLATFORM_TRIPLET=$WASM_FLAVOUR-emscripten
+export SYSCONFIG_NAME=_sysconfigdata_${CPYTHON_ABI_FLAGS}_emscripten_$PLATFORM_TRIPLET
+export SYSCONFIGDATA_DIR=$PREFIX/sysconfigdata/
+
+
+export PYMAJOR=3
+export PYMINOR=14
+export PYMICRO=3
+export PYSTABLEVERSION=$PYMAJOR.$PYMINOR.$PYMICRO
+export PY_VERSION=$PYMAJOR.$PYMINOR
+export PKG_VERSION=$PYMAJOR.$PYMINOR.$PYMICRO
+
+export HOSTPYTHONROOT=$BUILD_PREFIX
+export HOSTPYTHON=$HOSTPYTHONROOT/bin/python$PYMAJOR.$PYMINOR
+
+
+# export CPYTHONROOT=$PYODIDE_ROOT/cpython
+# export CPYTHONINSTALL=$PREFIX
+# export CPYTHONLIB=$CPYTHONINSTALL/lib/python$PYMAJOR.$PYMINOR
+# export SYSCONFIGDATA_DIR=$CPYTHONINSTALL/sysconfigdata/
+# export CPYTHONBUILD=$CPYTHONROOT/build/Python-$PYVERSION/
+
+
+
+
+
+# Move all python package files to the build folder
+export BUILD=build/${PKG_VERSION}/Python-${PKG_VERSION}
+mkdir -p ${BUILD}
+mv Makefile.pre.in README.rst aclocal.m4 config.guess config.sub pyconfig.h.in install-sh configure.ac ${BUILD}
+mv Doc Grammar Include LICENSE Lib Mac Misc Modules Objects PC PCbuild Parser Programs Python Tools configure ${BUILD}
+
+
+# copy patched emscripten_syscalls.c to the source directory
+# make sure $BUILD/Python/emscripten_syscalls.c exists
+if [ ! -f ${BUILD}/Python/emscripten_syscalls.c ]; then
+    echo "Error: ${BUILD}/Python/emscripten_syscalls.c does not exist"
+    exit 1
+fi
+cp ${RECIPE_DIR}/patches/emscripten_syscalls.c $BUILD/Python/
+
+# copy the LICENSE file back for the recipe
+cp ${BUILD}/LICENSE .
+
+# create a symlink from  $BUILD_PREFIX/bin/python3.XY to $BUILD_PREFIX/bin/python.js
+# since the python build script overwrites the env variable PYTHON to python.js
+# as it assumes this is the correct name for the python binary when building for emscripten.
+# But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python<version_major>.<version_minor>
+ln -s $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.js
+# Newer Emscripten SDK invokes "python.mjs"; ensure it resolves to host Python so emcc works.
+ln -sf $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.mjs
+
+# create an empty emsdk_env.sh in CONDA_EMSDK_DIR
+echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
+# make it executable
+chmod +x $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
+
+cp ${RECIPE_DIR}/Makefile .
+cp ${RECIPE_DIR}/Makefile.envs .
+cp -r ${RECIPE_DIR}/patches .
+cp ${RECIPE_DIR}/Setup.local .
+cp ${RECIPE_DIR}/adjust_sysconfig.py .
+
+# The actual build
+make
+
+# (TODO move in recipe) install libmpdec and libexpat
+cp ${BUILD}/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
+cp ${BUILD}/Modules/expat/libexpat.a     $PREFIX/lib
+
+# a fake wheel command
+touch $PREFIX/bin/wheel
+echo "#!/bin/bash" >> $PREFIX/bin/wheel
+echo "echo \"wheel is not supported on this platform.\"" >> $PREFIX/bin/wheel
+echo "exit 1" >> $PREFIX/bin/wheel
+chmod +x $PREFIX/bin/wheel
+
+# a fake pip command
+touch $PREFIX/bin/pip
+echo "#!/bin/bash" >> $PREFIX/bin/pip
+echo "echo \"pip is not supported on this platform.\"" >> $PREFIX/bin/pip
+echo "exit 1" >> $PREFIX/bin/pip
+chmod +x $PREFIX/bin/pip
+
+# a fake python3.XY command
+touch $PREFIX/bin/python${PY_VERSION}
+echo "#!/bin/bash" >> $PREFIX/bin/python${PY_VERSION}
+echo "echo \"python3 is not supported on this platform.\"" >> $PREFIX/bin/python${PY_VERSION}
+echo "exit 1" >> $PREFIX/bin/python${PY_VERSION}
+chmod +x $PREFIX/bin/python${PY_VERSION}
+
+# create symlink st. all possible python3.XY commands are available
+ln -s $PREFIX/bin/python${PY_VERSION} $PREFIX/bin/python
+ln -s $PREFIX/bin/python${PY_VERSION} $PREFIX/bin/python3
+
+# copy sysconfigdata
+cp $PREFIX/sysconfigdata/_sysconfigdata__emscripten_$WASM_FLAVOUR-emscripten.py  $PREFIX/etc/conda/
