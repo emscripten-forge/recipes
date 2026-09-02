@@ -1,23 +1,20 @@
 context:
   name: openssl
   version: 4.0.2
-  build_number: 0
 
-
+build:
+  number: 1
 
 source:
   url: https://www.openssl.org/source/${{ name }}-${{ version }}.tar.gz
   sha256: 736b467530f916737b7031310ccb21d8218c6229e61e8e160cd1d3458cd543a8
 
-
 outputs:
-
 
   - package:
       name: libopenssl-static
       version: ${{ version }}
     build:
-      number: 0
       script: build.sh
 
     requirements:
@@ -33,13 +30,13 @@ outputs:
           - include/openssl/crypto.h
           - include/openssl/ssl.h
           - lib/cmake/OpenSSL/OpenSSLConfig.cmake
-          
+
       - script:
         - generic-testing
         requirements:
           build:
           - generic-testing
-          
+
       - script:
         - build_tests.sh
         requirements:
@@ -52,7 +49,7 @@ outputs:
           - build_tests.sh
           - tests/
   # NOTE, the shared build is dropped since we run into undefined symbols
-        
+
 about:
   homepage: https://www.openssl.org/
   license_file: LICENSE.txt

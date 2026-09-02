@@ -2,10 +2,9 @@ context:
   version: 3.14.3
   name: python
   ver2: '3.14'
-  ver2nd: ${{ version | version_to_buildstring}}
-  build_number: 0
+  ver2nd: ${{ version | version_to_buildstring }}
+  build_number: 1
   abi_tag: cp${{ ver2nd }}
-
 
 build:
   number: ${{ build_number }}
@@ -23,16 +22,13 @@ source:
   - if: target_platform == "emscripten-wasm32"
     then:
       - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
-  
 
 outputs:
   - staging:
       name: python-build
 
     build:
-
       script: build.sh
-
 
     requirements:
       build:
@@ -62,14 +58,13 @@ outputs:
       - liblzma-static
       - zstd-static
       - libuuid-static
- 
+
   - package:
       name: libpython-static
       version: ${{ version }}
     inherit: python-build
     build:
-      string: h_${{ hash }}_${{build_number}}_${{ abi_tag }}
-      number: ${{ build_number }}
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
       script: echo "nothing to do here, we take all content from the python-build package"
 
       files:
@@ -122,7 +117,7 @@ outputs:
       run_exports:
         weak:
         - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
-      
+
     tests:
       - script:
         - test -f $PREFIX/include/python${{ver2}}/Python.h
@@ -137,15 +132,14 @@ outputs:
         - generic-testing --allow-pthread
         requirements:
           build:
-          - generic-testing 
+          - generic-testing
 
   - package:
       name: python
       version: ${{ version }}
     inherit: python-build
     build:
-      string: h_${{ hash }}_${{build_number}}_${{ abi_tag }}
-      number: ${{ build_number }}
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
       script: echo "nothing to do here, we take all content from the python-build package"
 
       files:
@@ -168,17 +162,17 @@ outputs:
       run_exports:
         weak:
         - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
-      
+
     tests:
       - script:
         - test ! -f $PREFIX/lib/libpython${{ver2}}.a
         - test ! -f $PREFIX/include/python${{ver2}}/Python.h
         - test -f $PREFIX/lib/python${{ver2}}/enum.py
         - test -f $PREFIX/lib/python${{ver2}}/ast.py
-        - generic-testing 
+        - generic-testing
         requirements:
           build:
-          - generic-testing 
+          - generic-testing
 about:
   license: Python-2.0
   license_file: LICENSE
@@ -192,6 +186,7 @@ about:
     on both a small and large scale.
   documentation: https://github.com/python/pythondotorg/blob/master/docs/source/index.rst
   homepage: https://www.python.org/
+
 extra:
   recipe-maintainers:
   - DerThorsten
