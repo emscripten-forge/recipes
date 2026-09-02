@@ -23,7 +23,6 @@ JS_ENGINES = [NODE_JS]
 EOF
 fi
 
-cd qtbase
 mkdir build && cd build
 
 # Qt's `configure` wraps cmake and knows the wasm-emscripten platform mnemonic.

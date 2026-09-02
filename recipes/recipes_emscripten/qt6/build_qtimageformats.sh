@@ -15,7 +15,6 @@ JS_ENGINES = [NODE_JS]
 EOF
 fi
 
-cd qtimageformats
 mkdir build && cd build
 
 "${PREFIX}/bin/qt-configure-module" .. \

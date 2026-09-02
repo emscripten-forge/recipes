@@ -18,7 +18,6 @@ JS_ENGINES = [NODE_JS]
 EOF
 fi
 
-cd qtsvg
 mkdir build && cd build
 
 # qt-configure-module wraps cmake with the right toolchain + target-Qt discovery.

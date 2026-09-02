@@ -17,7 +17,6 @@ JS_ENGINES = [NODE_JS]
 EOF
 fi
 
-cd qt5compat
 mkdir build && cd build
 
 "${PREFIX}/bin/qt-configure-module" .. \

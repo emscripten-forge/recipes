@@ -15,7 +15,6 @@ JS_ENGINES = [NODE_JS]
 EOF
 fi
 
-cd qtwebchannel
 mkdir build && cd build
 
 # Skip the QML side (would pull qtdeclarative). The C++ QWebChannel is what
