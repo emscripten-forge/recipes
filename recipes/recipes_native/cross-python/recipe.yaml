@@ -1,0 +1,70 @@
+context:
+  name: cross-python
+  version: 3.14.3
+  build_number: 3
+
+outputs:
+  - package:
+      name: ${{ name }}_emscripten-wasm32
+      version: ${{ version }}
+
+    build:
+      number: ${{ build_number }}
+      script: build.sh
+
+    requirements:
+      run:
+        - coreutils
+        - crossenv >=1.2
+        - emscripten-core
+        - rsync
+        - sed
+        - python =3.14
+        - setuptools
+        - pip
+      run_exports:
+        strong:
+          - emscripten-abi >=6,<7.0a0
+    tests:
+    - package_contents:
+        files:
+        - etc/conda/activate.d/activate_z-${{ name }}_emscripten-wasm32.sh
+        - etc/conda/deactivate.d/deactivate_z-${{ name }}_emscripten-wasm32.sh
+
+  - package:
+      name: ${{ name }}_emscripten-wasm64
+      version: ${{ version }}
+
+    build:
+      number: ${{ build_number }}
+      script: build.sh
+
+    requirements:
+      run:
+        - coreutils
+        - crossenv >=1.2
+        - emscripten-core
+        - rsync
+        - sed
+        - python =3.14
+        - setuptools
+        - pip
+      run_exports:
+        strong:
+          - emscripten-abi >=6,<7.0a0
+
+    tests:
+    - package_contents:
+        files:
+        - etc/conda/activate.d/activate_z-${{ name }}_emscripten-wasm64.sh
+        - etc/conda/deactivate.d/deactivate_z-${{ name }}_emscripten-wasm64.sh
+
+about:
+  summary: cross-python
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - DerThorsten
+    - IsabelParedes
