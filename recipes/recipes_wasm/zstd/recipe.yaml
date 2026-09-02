@@ -1,0 +1,70 @@
+context:
+  name: zstd-static
+  version: 1.5.7
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/facebook/zstd/archive/v${{ version }}.tar.gz
+  sha256: 37d7284556b20954e56e1ca85b80226768902e2edabd3b649e9e72c0c9012ee3
+
+build:
+  number: 2
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - ninja
+  - meson
+
+tests:
+- package_contents:
+    files:
+    - lib/libzstd.a
+    - include/zstd.h
+    - lib/cmake/zstd/zstdConfig.cmake
+- script:
+  - node $PREFIX/bin/zstd.js --version
+  requirements:
+    build:
+    - nodejs
+- script:
+    - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+      - build_tests.sh
+      - tests/
+- script:
+    - generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: http://www.zstd.net
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Zstandard - Fast real-time compression algorithm
+  description: |
+    Zstandard is a real-time compression algorithm, providing high compression
+    ratios. It offers a very wide range of compression / speed trade-off, while
+    being backed by a very fast decoder. It also offers a special mode for
+    small data, called dictionary compression, and can create dictionaries from
+    any sample set. Zstandard library is provided as open source software using
+    a BSD license.
+  documentation: https://facebook.github.io/zstd/zstd_manual.html
+  repository: https://github.com/facebook/zstd
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
