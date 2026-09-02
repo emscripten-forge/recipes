@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from pydantic import ValidationError
 
 from .find_recipes_with_changes import find_recipes_with_changes
 from .schema import Recipe
@@ -42,6 +43,31 @@ def resolve_recipe_path(path: Path) -> Path:
     return path
 
 
+def _clean_pydantic_msg(msg: str) -> str:
+    for prefix in ("Value error, ", "Assertion failed, ", "AttributeError, "):
+        if msg.startswith(prefix):
+            return msg.removeprefix(prefix)
+    return msg
+
+
+def _format_validation_error(exc: Exception) -> str:
+    if isinstance(exc, ValidationError):
+        parts = []
+        for error in exc.errors():
+            loc = ".".join(str(part) for part in error["loc"])
+            msg = _clean_pydantic_msg(error["msg"])
+            if error["type"] == "missing":
+                parts.append(f"Missing required field '{loc}'")
+            elif msg.startswith("source."):
+                parts.append(msg)
+            elif loc:
+                parts.append(f"{loc}: {msg}")
+            else:
+                parts.append(msg)
+        return "; ".join(parts)
+    return str(exc)
+
+
 def _validate_recipe(meta_path: Path, meta: dict, display_name: str | None = None) -> bool:
     name = display_name or meta_path.parent.name
     channel = meta.get("extra", {}).get("channel")
@@ -54,7 +80,7 @@ def _validate_recipe(meta_path: Path, meta: dict, display_name: str | None = Non
         print(f"✅ {name} passed validation")
         return True
     except Exception as e:
-        print(f"❌ {name} failed validation: {e}")
+        print(f"❌ {name} failed validation: {_format_validation_error(e)}")
         return False
 
 
