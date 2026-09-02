@@ -1,5 +1,5 @@
 from .rattler_build import build_with_rattler
-from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
+from .constants import RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 from .playwright import changed_recipes_need_playwright
 from .lint import lint_recipe_file, lint_recipes
