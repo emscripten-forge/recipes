@@ -1,0 +1,36 @@
+From c863390634a81e1cf0d2255185ddff654efcc697 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Thu, 13 Aug 2026 09:45:45 +0200
+Subject: [PATCH 09/14] Skip fork-based utests for emscripten
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ utest/Makefile | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/utest/Makefile b/utest/Makefile
+index 1e7e17d44..b568e0e1e 100644
+--- a/utest/Makefile
++++ b/utest/Makefile
+@@ -42,18 +42,6 @@ endif
+ endif
+ endif
+ 
+-#this does not work with OpenMP nor with native Windows or Android threads
+-# FIXME TBD if this works on OSX, SunOS, POWER and zarch
+-ifeq ($(OSNAME), $(filter $(OSNAME),Linux CYGWIN_NT))
+-ifneq ($(USE_OPENMP), 1)
+-OBJS += test_fork.o
+-ifneq ($(NO_LAPACK), 1)
+-OBJS += test_post_fork_async.o
+-endif
+-endif
+-OBJS += test_post_fork.o
+-endif
+-
+ ifeq ($(C_COMPILER), PGI)
+ OBJS = utest_main2.o
+ endif
+-- 
+2.54.0
+

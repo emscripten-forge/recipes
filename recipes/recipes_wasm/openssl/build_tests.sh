@@ -23,8 +23,7 @@ export LDFLAGS="${LDFLAGS}"
 emcmake cmake -S tests -B build_tests \
   "-DCMAKE_PREFIX_PATH=${PREFIX}" \
   "-DOpenSSL_DIR=${PREFIX}/lib/cmake/OpenSSL" \
-  -DCMAKE_BUILD_TYPE=Release \
-  
+  -DCMAKE_BUILD_TYPE=Release
 
 emmake make -C build_tests
 

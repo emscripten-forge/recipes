@@ -1,0 +1,45 @@
+From 3081b68c199ff7e7c311f7d5ad4c57ad66ff7800 Mon Sep 17 00:00:00 2001
+From: Matthias Meschede <MMesch@users.noreply.github.com>
+Date: Tue, 25 Aug 2026 16:10:51 +0200
+Subject: [PATCH 14/14] wasm: use relaxed-simd madd for v_muladd when available
+
+When emcc is invoked with -mrelaxed-simd, __wasm_relaxed_simd__ is
+defined and wasm_f{32x4,64x2}_relaxed_madd intrinsics are available.
+These lower to hardware FMA on engines that support relaxed-simd
+(Chrome >=114, Firefox >=120, Safari >=16.4, Node >=22) and to
+separate mul+add otherwise, so callers get FMA where possible with
+no ABI change.
+
+Off by default: builds not passing -mrelaxed-simd fall through to
+the existing separate mul+add definitions.
+---
+ kernel/simd/intrin_wasm.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/kernel/simd/intrin_wasm.h b/kernel/simd/intrin_wasm.h
+index f55c2f28b..3e3aea5f2 100644
+--- a/kernel/simd/intrin_wasm.h
++++ b/kernel/simd/intrin_wasm.h
+@@ -21,11 +21,19 @@ typedef v128_t v_f64;
+ #define v_mul_f32 wasm_f32x4_mul
+ #define v_mul_f64 wasm_f64x2_mul
+ 
++#ifdef __wasm_relaxed_simd__
++BLAS_FINLINE v_f32 v_muladd_f32(v_f32 a, v_f32 b, v_f32 c)
++{ return wasm_f32x4_relaxed_madd(a, b, c); }
++
++BLAS_FINLINE v_f64 v_muladd_f64(v_f64 a, v_f64 b, v_f64 c)
++{ return wasm_f64x2_relaxed_madd(a, b, c); }
++#else
+ BLAS_FINLINE v_f32 v_muladd_f32(v_f32 a, v_f32 b, v_f32 c)
+ { return v_add_f32(v_mul_f32(a, b), c); }
+ 
+ BLAS_FINLINE v_f64 v_muladd_f64(v_f64 a, v_f64 b, v_f64 c)
+ { return v_add_f64(v_mul_f64(a, b), c); }
++#endif
+ 
+ BLAS_FINLINE v_f32 v_mulsub_f32(v_f32 a, v_f32 b, v_f32 c)
+ { return v_sub_f32(v_mul_f32(a, b), c); }
+-- 
+2.54.0
+
