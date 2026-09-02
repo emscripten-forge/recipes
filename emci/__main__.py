@@ -1,10 +1,9 @@
 from .rattler_build import build_with_rattler
-from .constants import RECIPES_EMSCRIPTEN_DIR
+from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
 from .playwright import changed_recipes_need_playwright
-from .schema import Recipe
+from .lint import lint_recipe_file, lint_recipes
 from .upload import extract_channel_from_pkg
-from .exclude_build import exclude_build
 
 import sys
 import os
@@ -14,7 +13,6 @@ from pathlib import Path
 
 from typing import Optional
 import typer
-import yaml
 
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
@@ -110,53 +108,6 @@ def update_matplotlib_fontcache(target_branch_name: str):
     update_matplotlib_fontcache(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
 
 
-@build_app.command()
-def lint(old: str, new: str):
-    """
-    Validate that all changed recipes have valid metadata using Pydantic schema.
-    Checks license fields and source formatting.
-    Exits with code 1 if any recipe fails validation.
-    """
-    recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
-
-    failed = False
-    for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
-        for recipe in recipe_with_changes:
-            meta_path = Path("recipes") / subdir / recipe / "recipe.yaml"
-            if not meta_path.exists():
-                print(f"⚠️ Skipping {meta_path}, file not found")
-                continue
-
-            try:
-                with open(meta_path) as f:
-                    meta = yaml.safe_load(f)
-                # Convert list to single element only if it's a URL-based source
-                # Path-based sources (like pytester) should remain as lists
-                if isinstance(meta.get('source'), list) and len(meta['source']) > 0:
-                    first_source = meta['source'][0]
-                    # If first element has 'path', keep as list (path-based source)
-                    # Otherwise, convert to single element (URL-based source)
-                    if not isinstance(first_source, dict) or 'path' not in first_source:
-                        meta['source'] = meta['source'][0]
-            except Exception as e:
-                print(f"❌ Failed to parse {meta_path}: {e}")
-                failed = True
-                continue
-
-            try:
-                Recipe.model_validate(meta)  # ✅ v2 style
-                print(f"✅ {recipe} passed validation")
-            except Exception as e:
-                print(f"❌ {recipe} failed validation: {e}")
-                failed = True
-
-    if failed:
-        print("❌ One or more recipes failed validation")
-        sys.exit(1)
-    else:
-        print("✅ All changed recipes passed validation")
-
-
 @build_app.command("needs-playwright")
 def needs_playwright(old: str, new: str):
     """Print true/false depending on whether changed recipes need playwright."""
@@ -164,6 +115,40 @@ def needs_playwright(old: str, new: str):
         print("true")
     else:
         print("false")
+
+
+@app.command()
+def lint(
+    old: Optional[str] = typer.Argument(None, help="Git ref for the old commit"),
+    new: Optional[str] = typer.Argument(None, help="Git ref for the new commit"),
+    file: Optional[Path] = typer.Option(
+        None,
+        "--file",
+        help="Path to a recipe.yaml or a recipe directory containing recipe.yaml",
+    ),
+):
+    """
+    Validate recipe metadata using Pydantic schema.
+
+    Lint changed recipes between two git refs, or a single recipe with --file.
+    Exits with code 1 if any recipe fails validation.
+    """
+    if file is not None:
+        if old is not None or new is not None:
+            print("❌ Cannot use --file together with old/new git refs", file=sys.stderr)
+            raise typer.Exit(1)
+        if not lint_recipe_file(file):
+            raise typer.Exit(1)
+        return
+
+    if old is None or new is None:
+        print(
+            "❌ Provide both old and new git refs, or use --file to lint a single recipe",
+            file=sys.stderr,
+        )
+        raise typer.Exit(1)
+
+    lint_recipes(old, new)
 
 
 @app.command()
