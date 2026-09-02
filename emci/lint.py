@@ -108,7 +108,7 @@ def lint_recipes(old: str, new: str) -> None:
             if not lint_recipe_file(meta_path):
                 failed = True
 
-    print("--------------------------------")
+    print("-------------------------------------------------------------------")
 
     if failed:
         print("❌ One or more recipes failed validation")
