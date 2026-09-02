@@ -58,7 +58,7 @@ def _format_validation_error(exc: Exception) -> str:
             msg = _clean_pydantic_msg(error["msg"])
             if error["type"] == "missing":
                 parts.append(f"Missing required field '{loc}'")
-            elif msg.startswith("source."):
+            elif loc in ("url", "sha256") or msg.startswith(("source.", "Source ")):
                 parts.append(msg)
             elif loc:
                 parts.append(f"{loc}: {msg}")
