@@ -7,8 +7,12 @@
 ## Test linter
 
 ```bash
-# python -m emci build lint <old> <new>
-python -m emci build lint upstream/main HEAD
+# Lint changed recipes between two git refs
+python -m emci lint upstream/main HEAD
+
+# Lint a single recipe
+python -m emci lint --file recipes/recipes_emscripten/numpy/recipe.yaml
+python -m emci lint --file recipes/recipes_emscripten/numpy
 ```
 
 
