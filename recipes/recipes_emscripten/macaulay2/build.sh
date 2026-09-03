@@ -3,6 +3,33 @@ set -euxo pipefail
 
 cd M2/BUILD/build
 
+# Match Macaulay2's LAPACK declarations to the Fortran OpenBLAS ABI used by wasm.
+LAPACK_HPP=../../Macaulay2/e/basic-mutable-matrices/lapack.hpp
+
+if ! grep -q 'M2_WASM_OPENBLAS_ABI_PATCH' "$LAPACK_HPP"; then
+    grep -qE '^[[:space:]]*#include[[:space:]]*<stddef.h>[[:space:]]*$' \
+      "$LAPACK_HPP" \
+    || sed -i '/^extern "C" {/i\
+#include <stddef.h>' "$LAPACK_HPP"
+
+    sed -z -E -i \
+      -e 's/(^|\n)([[:space:]]*)int[[:space:]]+(dgesv_|dgeev_|dsyev_|dgesvd_|dgesdd_|dgels_|dgelss_|dgeqrf_|dorgqr_|zgesv_|zgeev_|zheev_|zgetrf_|zgesvd_|zgesdd_|zgels_|zgelss_|zgeqrf_|zungqr_)[[:space:]]*\(/\1\2void \3(/g' \
+      -e 's/(void[[:space:]]+(dgeev_|dsyev_|dgesvd_|zgeev_|zheev_|zgesvd_)[[:space:]]*\([^;]*)(\);)/\1, size_t = 1, size_t = 1\3/g' \
+      -e 's/(void[[:space:]]+(dgesdd_|dgels_|zgesdd_|zgels_)[[:space:]]*\([^;]*)(\);)/\1, size_t = 1\3/g' \
+      "$LAPACK_HPP"
+
+    sed -i '/^extern "C" {/i\
+/* M2_WASM_OPENBLAS_ABI_PATCH */' "$LAPACK_HPP"
+fi
+
+# Match scclib.c to the generated Expr-returning profiler_stacktrace function.
+SCCLIB_C=../../Macaulay2/d/scclib.c
+sed -i \
+  's/^extern void profiler_stacktrace(int);$/extern void *profiler_stacktrace(int);/' \
+  "$SCCLIB_C"
+grep -q '^extern void \*profiler_stacktrace(int);$' "$SCCLIB_C"
+
+
 # Patch CMake dependency checks for Emscripten, use packaged static libraries， remove readline and quadmath.
 sed -i '/CMP0167/d' \
   ../../cmake/check-libraries.cmake
