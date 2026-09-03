@@ -11,6 +11,7 @@ emconfigure ./configure \
     --disable-shared \
     --enable-static \
     --disable-threads \
+    --disable-emscripten-asyncify \
     --enable-cplusplus \
     --prefix="${PREFIX}"
 
