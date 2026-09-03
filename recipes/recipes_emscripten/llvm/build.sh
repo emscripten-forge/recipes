@@ -15,7 +15,7 @@ emcmake cmake -S ../llvm -B .         \
     -DCMAKE_PREFIX_PATH=$PREFIX                     \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                  \
     -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten    \
-    -DLLVM_TARGETS_TO_BUILD="WebAssembly"           \
+    -DLLVM_TARGETS_TO_BUILD="WebAssembly;X86;AArch64" \
     -DLLVM_INCLUDE_BENCHMARKS=OFF                   \
     -DLLVM_INCLUDE_EXAMPLES=OFF                     \
     -DLLVM_INCLUDE_TESTS=OFF                        \
