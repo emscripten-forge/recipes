@@ -1,8 +1,7 @@
 diff --git a/clang/lib/Driver/Driver.cpp b/clang/lib/Driver/Driver.cpp
-index eb3f9cbea284..951552513ed2 100644
 --- a/clang/lib/Driver/Driver.cpp
 +++ b/clang/lib/Driver/Driver.cpp
-@@ -2488,7 +2488,7 @@ bool Driver::HandleImmediateArgs(Compilation &C) {
+@@ -2617,7 +2617,7 @@
        C.getArgs().hasArg(options::OPT_print_supported_cpus) ||
        C.getArgs().hasArg(options::OPT_print_supported_extensions) ||
        C.getArgs().hasArg(options::OPT_print_enabled_extensions)) {
@@ -11,7 +10,7 @@ index eb3f9cbea284..951552513ed2 100644
      SuppressMissingInputWarning = true;
    }
  
-@@ -2504,7 +2504,7 @@ bool Driver::HandleImmediateArgs(Compilation &C) {
+@@ -2633,7 +2633,7 @@
    const ToolChain &TC = C.getDefaultToolChain();
  
    if (C.getArgs().hasArg(options::OPT_v))
@@ -21,10 +20,9 @@ index eb3f9cbea284..951552513ed2 100644
    if (C.getArgs().hasArg(options::OPT_print_resource_dir)) {
      llvm::outs() << ResourceDir << '\n';
 diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
-index 2684a00ce5f0..f5bfcf81d7b3 100644
 --- a/clang/lib/Interpreter/Interpreter.cpp
 +++ b/clang/lib/Interpreter/Interpreter.cpp
-@@ -183,7 +183,7 @@ IncrementalCompilerBuilder::create(std::string TT,
+@@ -267,7 +267,7 @@
        return std::move(Err);
  
    if (Compilation->getArgs().hasArg(options::OPT_v))
@@ -33,7 +31,7 @@ index 2684a00ce5f0..f5bfcf81d7b3 100644
  
    auto ErrOrCC1Args = GetCC1Arguments(&Diags, Compilation.get());
    if (auto Err = ErrOrCC1Args.takeError())
-@@ -253,6 +253,7 @@ Interpreter::Interpreter(std::unique_ptr<CompilerInstance> Instance,
+@@ -337,6 +337,7 @@
                           std::unique_ptr<clang::ASTConsumer> Consumer)
      : IncrExecutorBuilder(std::move(IEB)) {
    CI = std::move(Instance);
@@ -42,10 +40,9 @@ index 2684a00ce5f0..f5bfcf81d7b3 100644
    auto LLVMCtx = std::make_unique<llvm::LLVMContext>();
    TSCtx = std::make_unique<llvm::orc::ThreadSafeContext>(std::move(LLVMCtx));
 diff --git a/clang/lib/Lex/InitHeaderSearch.cpp b/clang/lib/Lex/InitHeaderSearch.cpp
-index e30925f4e548..087ce5741f59 100644
 --- a/clang/lib/Lex/InitHeaderSearch.cpp
 +++ b/clang/lib/Lex/InitHeaderSearch.cpp
-@@ -165,7 +165,7 @@ bool InitHeaderSearch::AddUnmappedPath(const Twine &Path, IncludeDirGroup Group,
+@@ -165,7 +165,7 @@
    }
  
    if (Verbose)
@@ -54,7 +51,7 @@ index e30925f4e548..087ce5741f59 100644
                   << MappedPathStr << "\"\n";
    return false;
  }
-@@ -342,10 +342,10 @@ static unsigned RemoveDuplicates(std::vector<DirectoryLookupInfo> &SearchList,
+@@ -347,10 +347,10 @@
      }
  
      if (Verbose) {
@@ -67,7 +64,7 @@ index e30925f4e548..087ce5741f59 100644
                       << "a system directory\n";
      }
      if (DirToRemove != i)
-@@ -442,9 +442,9 @@ void InitHeaderSearch::Realize(const LangOptions &Lang) {
+@@ -447,9 +447,9 @@
          assert(SearchList[i].Lookup.isHeaderMap() && "Unknown DirectoryLookup");
          Suffix = " (headermap)";
        }

@@ -33,6 +33,14 @@ def _short_sha(ref: str) -> str:
     )
 
 
+def _commit_message(ref: str) -> str:
+    return (
+        subprocess.check_output(["git", "log", "-1", "--format=%s", ref])
+        .decode("utf-8")
+        .strip()
+    )
+
+
 def _recipe_exists_at_ref(ref: str, subdir: str, recipe: str) -> bool:
     path = f"recipes/{subdir}/{recipe}"
     result = subprocess.run(
@@ -191,7 +199,7 @@ def sync_migration_branch(
 
     short = _short_sha(new)
     branch_name = f"sync-from-main-{short}-to-{migration_branch}"
-    pr_title = f"Sync recipes from main ({short}) [{migration_branch}]"
+    pr_title = "[Sync] " + _commit_message(new)
 
     # New branch from the migration branch tip; PR will target migration_branch.
     subprocess.check_output(["git", "checkout", "-B", branch_name])
