@@ -1,0 +1,47 @@
+context:
+  name: r-microbenchmark
+  version: "1.5.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/microbenchmark_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/microbenchmark_${{ version }}.tar.gz
+  sha256: 3d1e92a9206811ad128b28795d20a0d31da5f0c29ea7f1caaf1194ed3e49765f
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/microbenchmark/libs/microbenchmark.so
+- script: run_r_test test_microbenchmark.R
+  files:
+    recipe:
+    - test_microbenchmark.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://github.com/joshuaulrich/microbenchmark
+  repository: https://github.com/joshuaulrich/microbenchmark
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Accurate Timing Functions
+
+extra:
+  recipe-maintainers:
+  - anutosh491
