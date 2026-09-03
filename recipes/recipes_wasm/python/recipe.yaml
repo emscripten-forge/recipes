@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 1
+  build_number: 2
   abi_tag: cp${{ ver2nd }}
 
 build:
@@ -68,13 +68,9 @@ outputs:
       script: echo "nothing to do here, we take all content from the python-build package"
 
       files:
-        exclude:
-        - '**/*.ini'
-        - '**/ensurepip/**'
-        - '**/idlelib/**'
-        - '**/__pycache__/**'
-        - '**/*.pyc'
-
+        include:
+          - "**/*.a"
+          - '**/*.h'
       python:
         skip_pyc_compilation:
         - '**/*.py'
@@ -121,10 +117,10 @@ outputs:
     tests:
       - script:
         - test -f $PREFIX/include/python${{ver2}}/Python.h
-        - test -f $PREFIX/lib/python${{ver2}}/enum.py
-        - test -f $PREFIX/lib/python${{ver2}}/ast.py
         - test -f $PREFIX/lib/libpython${{ver2}}.a
-        - test -f $PREFIX/bin/python${{ver2}}
+        - test ! -f $PREFIX/lib/python${{ver2}}/enum.py
+        - test ! -f $PREFIX/lib/python${{ver2}}/ast.py
+        - test ! -f $PREFIX/bin/python${{ver2}}
         # it seems that the thread like symbols are always in even with -sUSE_PTHREADS=0
         # -- begin potential AI nonsense
         # Keeping -sUSE_PTHREADS=0 guarantees Emscripten binds the C Python pthread calls to single-threaded stubs.
@@ -173,6 +169,14 @@ outputs:
         requirements:
           build:
           - generic-testing
+  - package:
+      name: python-dev
+      version: ${{ version }}
+    requirements:
+      run:
+      - ${{pin_subpackage('python', exact=True)}}
+      - ${{pin_subpackage('libpython-static', exact=True)}}
+    
 about:
   license: Python-2.0
   license_file: LICENSE
