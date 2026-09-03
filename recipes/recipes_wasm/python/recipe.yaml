@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 2
+  build_number: 3
   abi_tag: cp${{ ver2nd }}
 
 build:
@@ -174,8 +174,9 @@ outputs:
       version: ${{ version }}
     requirements:
       run:
-      - ${{pin_subpackage('python', exact=True)}}
-      - ${{pin_subpackage('libpython-static', exact=True)}}
+      - ${{pin_subpackage('python', lower_bound='x.x.x', upper_bound='x.x.x')}}
+      - ${{pin_subpackage('libpython-static', lower_bound='x.x.x', upper_bound='x.x.x')}}
+
     tests:
       - script:
         - test -f $PREFIX/include/python${{ver2}}/Python.h
