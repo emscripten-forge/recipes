@@ -1,0 +1,94 @@
+context:
+  name: pygplates
+  version: 1.1.0.dev10
+  # Snapshot of the 'feature/pygplates-drop-qt-gui' branch of GPlates/GPlates.
+  # That branch replaces the Qt5+Widgets+OpenGL+qwt+glew stack of pyGPlates 1.0
+  # with just Qt6 Core + Core5Compat, which is what makes an emscripten build
+  # tractable.
+  commit: bd6fea5b8cdd6e63f5fa14eff8e33e02788af01c
+
+package:
+  name: ${{ name }}-experimental
+  version: ${{ version }}
+
+source:
+  url: https://github.com/GPlates/GPlates/archive/${{ commit }}.tar.gz
+  sha256: 4978a9fdfda43736ca21371ce85fc04ea23de0171abf23980441aeba91a25b07
+  patches:
+  # Guards find_package(Python3) behind GPLATES_SKIP_FIND_PYTHON3, since
+  # FindPython3 fails under emscripten cross-compile when sys.platform and
+  # SOABI disagree.
+  - patches/0001-Allow-skipping-find_package-Python3-for-cross-compil.patch
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - cmake >=3.22
+  - make
+  - scikit-build-core >=0.11.1
+  - numpy >=2.0
+  # Native Qt6 from conda-forge (resolver picks conda-forge version since
+  # emscripten-forge-4x has no linux-64 build). Provides moc/rcc/uic/qmake
+  # for cross-compile via QT_HOST_PATH.
+  - qt6-main
+  host:
+  - python
+  - numpy >=2.0
+  - libboost-python
+  - boost-cpp
+  - cgal-cpp
+  - gmp
+  - mpfr
+  - libgdal-core
+  - proj ==9.8.1
+  - qt6-main
+  - qt6-5compat
+  - zlib
+  run:
+  - python
+  - numpy
+  - libgdal-core
+  - proj ==9.8.1
+  - qt6-main
+  - qt6-5compat
+  - zlib
+  - gmp
+  - mpfr
+  - boost-cpp
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pygplates.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://www.gplates.org/
+  repository: https://github.com/GPlates/GPlates
+  license: GPL-2.0-only
+  license_file: COPYING
+  summary: Python library for fine-grained access to GPlates functionality (Emscripten build, GUI-less snapshot)
+
+extra:
+  maintainers:
+  - mmesch
+  channel: emscripten-forge-4x-experimental
