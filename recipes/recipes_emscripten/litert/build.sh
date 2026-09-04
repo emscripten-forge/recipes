@@ -1,9 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 
-export CFLAGS="${CFLAGS:-} ${EM_FORGE_SIDE_MODULE_CFLAGS:-}"
-export CXXFLAGS="${CXXFLAGS:-} ${EM_FORGE_SIDE_MODULE_CFLAGS:-}"
+export CFLAGS="${CFLAGS:-} ${EM_FORGE_SIDE_MODULE_CFLAGS:-} -DLITERT_DISABLE_GPU -DLITERT_DISABLE_NPU"
+
+PYINC="$(find "${PREFIX}/include" -maxdepth 1 -name 'python3*' -type d | head -1)"
+export CXXFLAGS="${CXXFLAGS:-} ${EM_FORGE_SIDE_MODULE_CFLAGS:-} -I${PYINC} -DLITERT_DISABLE_GPU -DLITERT_DISABLE_NPU"
 export LDFLAGS="${LDFLAGS:-} ${EM_FORGE_SIDE_MODULE_LDFLAGS:-}"
+
+
+WRAP="litert/python/litert_wrapper"
+
+# Rename the three PYBIND11_MODULE(...) definitions into plain init functions
+# (the umbrella module below assembles them as submodules).
+sed -i 's/PYBIND11_MODULE(_pywrap_litert_compiled_model_wrapper, m)/void init_pywrap_litert_compiled_model_wrapper(py::module_ \&m)/' \
+    "${WRAP}/compiled_model_wrapper/compiled_model_wrapper_pybind11.cc"
+sed -i 's/PYBIND11_MODULE(_pywrap_litert_environment_wrapper, m)/void init_pywrap_litert_environment_wrapper(py::module_ \&m)/' \
+    "${WRAP}/environment_wrapper/environment_wrapper_pybind11.cc"
+sed -i 's/PYBIND11_MODULE(_pywrap_litert_tensor_buffer_wrapper, m)/void init_pywrap_litert_tensor_buffer_wrapper(py::module_ \&m)/' \
+    "${WRAP}/tensor_buffer_wrapper/tensor_buffer_wrapper_pybind11.cc"
+
+# The wrapper target files (CMakeLists.txt, umbrella.cc, stub_registries.cc)
+# ship via the recipe's "python_wrapper" path source, which rattler-build
+# places at litert/python_wrapper/ in the work tree. Hook the target into the
+# main build tree here.
+cat >> litert/CMakeLists.txt <<'EOF'
+add_subdirectory(python_wrapper)
+EOF
 
 mkdir -p build
 mkdir -p build/disabled_vendor_headers
@@ -38,7 +60,8 @@ emmake ninja -C build -j"${CPU_COUNT}" \
     litert_core \
     litert_core_model \
     litert_logging \
-    litert_runtime
+    litert_runtime \
+    _ai_edge_litert
 
 mkdir -p "${PREFIX}/include"
 find litert -type f \( -name '*.h' -o -name '*.hpp' \) -exec cp --parents "{}" "${PREFIX}/include/" \;
@@ -120,4 +143,50 @@ set(LITERT_VERSION "2.1.5")
 unset(_LITERT_IMPORT_PREFIX)
 unset(_LITERT_INCLUDE_DIR)
 unset(_litert_lib)
+EOF
+
+# ============================================================================
+# Assemble site-packages/ai_edge_litert/ (wheel layout, flattened).
+# The module itself was built as target "_ai_edge_litert" inside the main
+# cmake tree (litert/python_wrapper/), see the top of this script.
+# ============================================================================
+TENSORFLOW_SOURCE_DIR="$(pwd)/third_party/tensorflow"
+SP="${PREFIX}/lib/python${PY_VER}/site-packages"
+mkdir -p "${SP}/ai_edge_litert"
+
+cp "${WRAP}"/compiled_model_wrapper/*.py   "${SP}/ai_edge_litert/"
+cp "${WRAP}"/environment_wrapper/*.py      "${SP}/ai_edge_litert/"
+cp "${WRAP}"/tensor_buffer_wrapper/*.py    "${SP}/ai_edge_litert/"
+cp "${WRAP}"/compiled_model_wrapper/*.pyi  "${SP}/ai_edge_litert/"
+cp "${WRAP}"/environment_wrapper/*.pyi     "${SP}/ai_edge_litert/"
+cp "${WRAP}"/tensor_buffer_wrapper/*.pyi   "${SP}/ai_edge_litert/"
+cp "$(find build -name '_ai_edge_litert.so' -print -quit)" "${SP}/ai_edge_litert/"
+# tiny ADD model used by the pytester test (rides inside the package: the
+# pytester mounts only carry collected test_*.py files)
+mkdir -p "${SP}/ai_edge_litert/testdata"
+cp "${TENSORFLOW_SOURCE_DIR}/tensorflow/lite/testdata/add.bin" \
+    "${SP}/ai_edge_litert/testdata/"
+
+cat > "${SP}/ai_edge_litert/__init__.py" <<'EOF'
+"""LiteRT Python bindings for emscripten-wasm32.
+
+Exposes the CompiledModel, Environment and TensorBuffer wrappers as a single
+merged side module (``_ai_edge_litert``); the three upstream pybind modules
+are submodules of it. This mirrors the upstream wheel's flat layout.
+"""
+
+__version__ = "2.1.5"
+
+from ai_edge_litert import _ai_edge_litert as _core
+
+_pywrap_litert_compiled_model_wrapper = _core._pywrap_litert_compiled_model_wrapper
+_pywrap_litert_environment_wrapper = _core._pywrap_litert_environment_wrapper
+_pywrap_litert_tensor_buffer_wrapper = _core._pywrap_litert_tensor_buffer_wrapper
+
+__all__ = [
+    "__version__",
+    "_pywrap_litert_compiled_model_wrapper",
+    "_pywrap_litert_environment_wrapper",
+    "_pywrap_litert_tensor_buffer_wrapper",
+]
 EOF
