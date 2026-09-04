@@ -1,0 +1,62 @@
+context:
+  name: ujson
+  version: 5.13.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d62e3d7625384c08082abad81a077af587fdef2761bb14c3822f4234b8d07d75
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+    - python
+    - pip
+    - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools >=77
+    - setuptools-scm >=3.4
+  run:
+    - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_ujson.py
+
+about:
+  homepage: https://github.com/ultrajson/ultrajson
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Ultra fast JSON decoder and encoder written in C with Python bindings
+  repository: https://github.com/ultrajson/ultrajson
+
+extra:
+  recipe-maintainers:
+  - davidbrochart
