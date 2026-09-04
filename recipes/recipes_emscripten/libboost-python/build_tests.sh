@@ -24,7 +24,7 @@ emar t "${BOOST_PY_LIB}" | grep -q '\.o$' \
     || { echo "Archive has no object members"; exit 1; }
 
 echo "Compiling minimal Boost.Python module against Python ${PY_VER}"
-em++ -fexceptions -fPIC -std=c++17 \
+em++ -fwasm-exceptions -fPIC -std=c++17 \
     -I"${PY_INC}" -I"${PREFIX}/include" \
     -c "$(dirname "$0")/tests/test_boost_python.cpp" \
     -o test_boost_python.o
@@ -33,7 +33,7 @@ em++ -fexceptions -fPIC -std=c++17 \
 # libboost_python and libpython statically and surfaces any unresolved
 # symbols between the two — the class of bug a header-only compile misses.
 echo "Linking against libboost_python + libpython"
-em++ -fexceptions -sSIDE_MODULE=1 \
+em++ -fwasm-exceptions -sSIDE_MODULE=1 \
     test_boost_python.o \
     "${BOOST_PY_LIB}" "${PY_LIB}" \
     -o _test_boost_python.wasm

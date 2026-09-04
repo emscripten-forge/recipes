@@ -19,8 +19,8 @@ setup(
             extra_objects=[
                 f"{prefix}/lib/libboost_python{py_nodot}-{py_nodot}.a",
             ],
-            extra_compile_args=["-fexceptions"],
-            extra_link_args=["-fexceptions"],
+            extra_compile_args=["-fwasm-exceptions"],
+            extra_link_args=["-fwasm-exceptions"],
         )
     ],
 )

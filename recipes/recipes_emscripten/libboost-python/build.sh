@@ -34,8 +34,8 @@ EOF
      link=static \
      threading=single \
      --python-buildid=${PY_VER//./} \
-     cxxflags="$SIDE_MODULE_CXXFLAGS -fexceptions -DBOOST_SP_DISABLE_THREADS=1" \
-     cflags="$SIDE_MODULE_CFLAGS -fexceptions -DBOOST_SP_DISABLE_THREADS=1" \
+     cxxflags="$SIDE_MODULE_CXXFLAGS -fwasm-exceptions -DBOOST_SP_DISABLE_THREADS=1" \
+     cflags="$SIDE_MODULE_CFLAGS -fwasm-exceptions -DBOOST_SP_DISABLE_THREADS=1" \
      linkflags="-fpic $SIDE_MODULE_LDFLAGS" \
      --layout=system \
      -j"${CPU_COUNT:-2}" \
