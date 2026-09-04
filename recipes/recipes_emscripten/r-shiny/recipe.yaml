@@ -6,22 +6,24 @@ package:
   name: r-${{ name }}
   version: ${{ version }}
 
-# source:
-#   url:
-#   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
-#   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
-#   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-#   sha256: 51f341aef9499411b4c446205c87d56dcd9e03e5e9ca2a54b33f70a67bed2f64
-
 source:
-  git: https://github.com/IsabelParedes/r-shiny.git
-  branch: v1.14.0
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 4a6945ed450effdb90b44ca0439e241f13488af59508be1c2fdab3f4de9dad11
+  patches:
+  - patches/0001-Replace-later-and-promises-with-wasm-async-primitive.patch
+  - patches/0002-Drive-service-loop-from-lucent-host-instead-of-later.patch
+  - patches/0003-Publish-plots-via-VFS-URLs.patch
+  - patches/0004-Serve-htmltools-deps-from-the-wasm-VFS-path.patch
+  - patches/0005-Harden-session-flush-and-output-errors-for-plots.patch
+  - patches/0006-Store-TimerCallbacks-deadlines-in-binary-min-heap.patch
 
 build:
-  number: 2
-  noarch: generic
+  number: 3
   # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -76,28 +78,23 @@ requirements:
   - r-xtable
 
 tests:
-- script: echo "No tests yet"
-
-# tests:
-# - package_contents:
-#     lib:
-#     - R/library/${{ name }}/libs/${{ name }}.so
-# - script: run_r_test
-#   files:
-#     recipe:
-#     - test_shiny.R
-#   requirements:
-#     build:
-#     - r-wasm-tester
+# Pure R package, no shared library
+- script: run_r_test
+  files:
+    recipe:
+    - test_shiny.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://cran.r-project.org/package=${{ name }}
-  repository: https://github.com/IsabelParedes/r-shiny
+  repository: https://github.com/rstudio/shiny
   license: MIT
   license_family: MIT
   license_file: ${{ PREFIX }}/lib/R/share/licenses/MIT
   summary: Experimental Web Application Framework for R.
 
 extra:
-  recipe-maintainers: IsabelParedes
-  channel: emscripten-forge-4x-experimental
+  recipe-maintainers:
+  - IsabelParedes
