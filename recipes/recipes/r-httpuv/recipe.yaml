@@ -11,19 +11,28 @@ source:
   sha256: 92894bd363ea1495aa6a809825d87deed58a04848ce5e247a2504b705a4c75b1
 
 build:
-  number: 4
+  number: 5
   # Dependencies not yet available for R 4.6.x on conda-forge
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   host:
-  - r-base ==${{ r_base }} h15dba0b_1
+  - if: not osx
+    then:
+    - r-base ==${{ r_base }} h15dba0b_1
+    else:
+    - r-base ==${{ r_base }}
   - r-jsonlite
   - r-mime
   - r-r6
   run:
-  - r-base ==${{ r_base }} h15dba0b_1
+  - if: not osx
+    then:
+    - r-base ==${{ r_base }} h15dba0b_1
+    else:
+    - r-base ==${{ r_base }}
+  - r-jsonlite
   - r-jsonlite
   - r-mime
   - r-r6
