@@ -1,0 +1,125 @@
+From 5ce59176af3d957ef60dc3f9463467167a1d2b1c Mon Sep 17 00:00:00 2001
+From: Matthias Meschede <MMesch@users.noreply.github.com>
+Date: Fri, 4 Sep 2026 12:38:20 +0200
+Subject: [PATCH] Allow skipping find_package(Python3) for cross-compile builds
+
+CMake's FindPython3 module runs the interpreter and cross-references
+sys.platform against sysconfig.get_platform() and SOABI. If those
+don't agree - the normal case in a cross-compile where the interpreter
+is native but sysconfig has been redirected to a target-side
+sysconfigdata - FindPython3 rejects the interpreter and reports:
+
+    Could NOT find Python3 (missing: Interpreter) (found version "X.Y.Z")
+    Interpreter: Cannot run the interpreter "<path>"
+
+The message is misleading: the interpreter runs fine, its answers just
+don't cohere by FindPython3's assumption of a single self-consistent
+Python. Emscripten-forge's cross-python is one example - its wrapper
+exports _PYTHON_SYSCONFIGDATA_NAME=_sysconfigdata__emscripten_wasm32-...
+at process start, and any Python child inherits it - but the same class
+of failure appears in any cross-compile setup that swaps sysconfig for
+the target while keeping a native interpreter.
+
+Add GPLATES_SKIP_FIND_PYTHON3. When set, skip the find_package call and
+expect the caller to supply the Python discovery result via -D:
+
+    Python3_EXECUTABLE       - native interpreter used by execute_process
+    Python3_INCLUDE_DIR      - target Python headers
+    Python3_LIBRARY          - target libpython
+    Python3_VERSION_MAJOR    - major version (usually 3)
+    Python3_VERSION_MINOR    - minor version
+    Python3_NumPy_INCLUDE_DIR - target NumPy C-API headers (optional)
+
+The Python3::Module and Python3::Python IMPORTED targets that
+FindPython3 would create are synthesized manually so downstream
+target_link_libraries() calls keep working. Python3_add_library() (a
+helper defined by FindPython3, not a CMake builtin) is replaced with a
+plain add_library(... MODULE ...) plus a PREFIX="" property and a
+Python3::Module link - the same shape Python3_add_library produces.
+
+Only affects builds that opt in; find_package continues to run
+untouched for every other build.
+---
+ src/CMakeLists.txt | 59 ++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 54 insertions(+), 5 deletions(-)
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 3db8c60..d5653e7 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -77,9 +77,49 @@ else()  # CMake < 3.18
+ 	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development)
+ endif()
+ 
+-# Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
+-# We also specify the optional component NumPy to get access to the numpy C-API header include directories.
+-find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME} OPTIONAL_COMPONENTS NumPy)
++# Cross-compile escape hatch for FindPython3. FindPython3 rejects a native
++# interpreter whose sysconfig has been redirected to a target-side data file
++# (as most cross builds do), reporting the misleading "Cannot run the
++# interpreter". Rather than fight that check, opting into
++# GPLATES_SKIP_FIND_PYTHON3 bypasses find_package and takes every value the
++# caller supplies via -D at face value. Python3::Module and Python3::Python
++# are synthesized so downstream target_link_libraries() calls stay untouched.
++if (GPLATES_SKIP_FIND_PYTHON3)
++	foreach (_var IN ITEMS EXECUTABLE INCLUDE_DIR LIBRARY VERSION_MAJOR VERSION_MINOR)
++		if (NOT Python${_PYTHON_MAJOR_VER}_${_var})
++			message(FATAL_ERROR "GPLATES_SKIP_FIND_PYTHON3 requires -DPython${_PYTHON_MAJOR_VER}_${_var}=...")
++		endif()
++	endforeach()
++	set(Python${_PYTHON_MAJOR_VER}_FOUND TRUE)
++	set(Python${_PYTHON_MAJOR_VER}_Interpreter_FOUND TRUE)
++	set(Python${_PYTHON_MAJOR_VER}_Development_FOUND TRUE)
++	set(Python${_PYTHON_MAJOR_VER}_Development.Module_FOUND TRUE)
++	set(Python${_PYTHON_MAJOR_VER}_Development.Embed_FOUND TRUE)
++	set(Python${_PYTHON_MAJOR_VER}_INCLUDE_DIRS ${Python${_PYTHON_MAJOR_VER}_INCLUDE_DIR})
++	set(Python${_PYTHON_MAJOR_VER}_LIBRARIES ${Python${_PYTHON_MAJOR_VER}_LIBRARY})
++	if (Python${_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIR AND NOT Python${_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIRS)
++		set(Python${_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIRS ${Python${_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIR})
++	endif()
++	if (Python${_PYTHON_MAJOR_VER}_NumPy_INCLUDE_DIRS)
++		set(Python${_PYTHON_MAJOR_VER}_NumPy_FOUND TRUE)
++	endif()
++	# Synthesize the IMPORTED targets that FindPython3 would have created.
++	if (NOT TARGET Python${_PYTHON_MAJOR_VER}::Module)
++		add_library(Python${_PYTHON_MAJOR_VER}::Module INTERFACE IMPORTED)
++		set_target_properties(Python${_PYTHON_MAJOR_VER}::Module PROPERTIES
++			INTERFACE_INCLUDE_DIRECTORIES "${Python${_PYTHON_MAJOR_VER}_INCLUDE_DIR}")
++	endif()
++	if (NOT TARGET Python${_PYTHON_MAJOR_VER}::Python)
++		add_library(Python${_PYTHON_MAJOR_VER}::Python UNKNOWN IMPORTED)
++		set_target_properties(Python${_PYTHON_MAJOR_VER}::Python PROPERTIES
++			IMPORTED_LOCATION "${Python${_PYTHON_MAJOR_VER}_LIBRARY}"
++			INTERFACE_INCLUDE_DIRECTORIES "${Python${_PYTHON_MAJOR_VER}_INCLUDE_DIR}")
++	endif()
++else()
++	# Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
++	# We also specify the optional component NumPy to get access to the numpy C-API header include directories.
++	find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME} OPTIONAL_COMPONENTS NumPy)
++endif()
+ 
+ # Get the Python major/minor versions.
+ set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
+@@ -505,8 +545,17 @@ else()  # pygplates ...
+ 	#
+ 	# Note this is the external Python library that is not embedded inside GPlates.
+ 	if (GPLATES_PYTHON_3)
+-		# We used the Python3 find module.
+-		Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
++		if (GPLATES_SKIP_FIND_PYTHON3)
++			# Python3_add_library is a helper defined by FindPython3, unavailable
++			# when we skipped find_package. Reproduce its output shape: a MODULE
++			# target with no lib-prefix, linked against Python3::Module.
++			add_library(pygplates MODULE ScribeExportPyGPlates.cc)
++			set_target_properties(pygplates PROPERTIES PREFIX "")
++			target_link_libraries(pygplates PRIVATE Python3::Module)
++		else()
++			# We used the Python3 find module.
++			Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
++		endif()
+ 	else()  # Python2
+ 		# We used the Python2 find module.
+ 		Python2_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
+-- 
+2.54.0
+
