@@ -1,0 +1,72 @@
+context:
+  version: 1.87.0
+
+source:
+- url: https://archives.boost.io/release/${{ version }}/source/boost_${{ version | replace('.', '_') }}.tar.bz2
+  sha256: af57be25cb4c4f4b413ed692fe378affb4352ea50fbe294a11ef548f4d527d89
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: libboost-python
+    version: ${{ version }}
+  build:
+    script: build.sh
+    files:
+      exclude:
+      - '**/test/**'
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
+    - python
+    host:
+    - boost-cpp
+    - python
+    run:
+    - boost-cpp
+    - python
+  tests:
+  - package_contents:
+      files:
+      - lib/libboost_python*.a
+
+- package:
+    name: libboost-python-example
+    version: ${{ version }}
+  build:
+    script: build_example.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - pip
+    host:
+    - ${{ pin_subpackage('libboost-python', exact=True) }}
+    - python
+    - pip
+    run:
+    - python
+  tests:
+  - script: pytester
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+    files:
+      recipe:
+      - test_mymodule.py
+
+about:
+  license: BSL-1.0
+  license_file: LICENSE_1_0.txt
+  summary: Boost.Python — C++/Python interoperability library (Emscripten build)
+  homepage: http://www.boost.org/
+
+extra:
+  recipe-maintainers:
+  - mmesch
