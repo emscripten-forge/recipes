@@ -1,0 +1,48 @@
+context:
+  name: perl
+  version: "5.44.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://www.cpan.org/src/5.0/perl-${{ version }}.tar.gz
+  sha256: 3b855066b92491cb40e86affb1ca57d1a388aa43e51b91c7806a32c2f65f96c3
+  patches:
+    - 0001-emscripten-no-fork-no-spawn-system.patch
+    - 0002-emscripten-sigsuspend-not-here.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - autoconf
+    - automake
+    - libtool
+    - make
+    - patch
+    - pkg-config
+    - autoconf-archive
+    - perl
+    - ${{ compiler("c") }}
+    - ${{ compiler('cxx') }}
+    - nodejs
+
+tests:
+- package_contents:
+    files:
+    - bin/perl.wasm
+    - bin/perl
+
+about:
+  homepage: https://www.perl.org/
+  license: GPL-1.0-or-later
+  license_file: Copying
+  summary: Perl is a highly capable, feature-rich programming language with over 38 years of development.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
