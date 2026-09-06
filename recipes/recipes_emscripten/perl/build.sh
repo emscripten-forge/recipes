@@ -277,9 +277,8 @@ emconfigure ./Configure \
     -Dmyhostname=localhost \
     -Dmydomain=.local \
     -Dperladmin=root@localhost \
-    -Dlns=/bin/ln \
-    -Duse64bitint
-
+    -Dlns=/bin/ln 
+    
 # Build target Perl
 
 emmake make -j"${CPU_COUNT:-2}" perl
