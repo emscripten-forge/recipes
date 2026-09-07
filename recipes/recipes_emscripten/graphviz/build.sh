@@ -57,7 +57,7 @@ emcmake cmake -GNinja \
     -DENABLE_LTDL=OFF \
     -DENABLE_SWIG=ON \
     -DENABLE_PYTHON=ON \
-    -DWITH_EXPAT=ON \
+    -DWITH_EXPAT=OFF \
     -DWITH_WEBP=ON \
     -DWITH_ZLIB=ON \
     -DZLIB_LIBRARY="${PREFIX}/lib/libz.a" \
@@ -123,7 +123,6 @@ em++ -shared -sSIDE_MODULE=1 \
     "${PWD}/tclpkg/gv/_gv_python3.a" \
     "${graphviz_archives[@]}" \
     -Wl,--end-group \
-    "${PREFIX}/lib/libexpat.a" \
     "${PREFIX}/lib/libz.a" \
     "${PREFIX}/lib/libwebp.a"
 install -Dm644 "${gv_python_proxy}" \
