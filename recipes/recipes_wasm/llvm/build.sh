@@ -18,7 +18,7 @@ esac
 export CMAKE_PREFIX_PATH="${PREFIX}"
 export CMAKE_SYSTEM_PREFIX_PATH="${PREFIX}"
 
-emcmake cmake -S "${SRC_DIR}/llvm" -B build -G Ninja \
+emcmake cmake -S "${SRC_DIR}/llvm" -B build \
     -DCMAKE_BUILD_TYPE=Release                      \
     -DCMAKE_PREFIX_PATH="${PREFIX}"                 \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"              \
@@ -46,5 +46,4 @@ emcmake cmake -S "${SRC_DIR}/llvm" -B build -G Ninja \
     -DCMAKE_CXX_FLAGS="${EMCC_CFLAGS} -mtail-call -Dwait4=__syscall_wait4" \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin"
 
-cmake --build build --target install-distribution \
-  --parallel "${CPU_COUNT:-2}"
+emmake make -C build -j"${CPU_COUNT:-2}" install-distribution
