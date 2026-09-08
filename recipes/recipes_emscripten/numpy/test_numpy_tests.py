@@ -9,3 +9,22 @@ def test_numpy_tests_are_installed():
     assert test_files, (
         "numpy-tests must overlay NumPy test modules under site-packages/numpy"
     )
+
+
+def test_c_test_extensions():
+    # Built with meson install_tag=tests: NumPy's C test helpers.
+    from numpy._core import _multiarray_tests, _umath_tests
+
+    assert hasattr(_multiarray_tests, "test_neighborhood_iterator")
+    assert hasattr(_umath_tests, "test_dispatch")
+
+
+def test_numpy_suite():
+    # Full NumPy suite (Python tests plus C helpers). label="fast" is
+    # np.test()'s default: all modules, skipping tests marked slow.
+    # This PR keeps the current allow-noblas numpy recipe (no OpenBLAS)
+    # so we can compare failures against #6310.
+    assert np.test(
+        label="fast",
+        extra_argv=["--tb=short"],
+    ), "NumPy tests failed"
