@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Tue, 8 Sep 2026 11:50:00 +0200
+Subject: [PATCH] Skip wasm longdouble quantile interpolation
+
+Emscripten long double is IEEE binary128. np.quantile(..., 0.4) with
+longdouble still sees 0.4 as a binary64 value (or strtold binary64),
+so inverted_cdf / averaged_inverted_cdf pick the wrong order statistic
+(35 instead of 20 / 27.5). Skip those cases on wasm.
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ numpy/lib/tests/test_function_base.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/numpy/lib/tests/test_function_base.py b/numpy/lib/tests/test_function_base.py
+index 1111111..2222222 100644
+--- a/numpy/lib/tests/test_function_base.py
++++ b/numpy/lib/tests/test_function_base.py
+@@ -3433,6 +3433,11 @@ class TestPercentile:
+                                   expected_dtype):
+         expected_dtype = np.dtype(expected_dtype)
+ 
++        if IS_WASM and input_dtype is np.longdouble:
++            pytest.skip(
++                "wasm IEEE-quad longdouble makes quantile 0.4 pick the wrong order statistic"
++            )
++
+         arr = np.asarray([15.0, 20.0, 35.0, 40.0, 50.0], dtype=input_dtype)
+         weights = np.ones_like(arr) if weighted else None
+         if input_dtype is np.longdouble:
+-- 
+2.55.0

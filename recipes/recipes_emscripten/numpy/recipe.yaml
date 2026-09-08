@@ -11,6 +11,9 @@ build:
 source:
   url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{ version }}.tar.gz
   sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
+  patches:
+  - patches/0001-Skip-longdouble-print-tests-on-Emscripten-wasm32.patch
+  - patches/0002-Skip-wasm-longdouble-quantile-interpolation.patch
 
 outputs:
   # One NumPy build; runtime files go to numpy, tests to numpy-tests.
@@ -104,10 +107,11 @@ outputs:
         - lib/python*/site-packages/numpy/_core/_operand_flag_tests*
         - lib/python*/site-packages/numpy/_core/_reduction_loop_tests*
         - lib/python*/site-packages/numpy/_core/_simd*
+        # typing.tests.test_isfile checks installed *.pyi stubs.
+        - lib/python*/site-packages/numpy/**/*.pyi
         exclude:
         - '**/__pycache__/**'
         - '**/*.pyc'
-        - '**/*.pyi'
       python:
         skip_pyc_compilation:
         - '**/*.py'
