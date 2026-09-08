@@ -28,7 +28,10 @@ target_link_options(test_libgdal PRIVATE
     -sWASM_BIGINT
     -sEXIT_RUNTIME=1
     -sERROR_ON_UNDEFINED_SYMBOLS=0
+    -sFORCE_FILESYSTEM=1
+    -lnodefs.js
     -sNODEJS_CATCH_EXIT=0
     -sNODEJS_CATCH_REJECTION=0
+    --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/pre.js
 )
 set_target_properties(test_libgdal PROPERTIES SUFFIX ".js")

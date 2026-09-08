@@ -24,7 +24,7 @@ outputs:
     - pkg-config
     host:
     - libtiff
-    - proj-static
+    - proj >=9.8
     - libiconv
     - geos
     - libpng
@@ -32,19 +32,31 @@ outputs:
   - package_contents:
       files:
       - lib/libgdal.so
+
+- package:
+    name: ${{ name }}-tests
+    version: ${{ version }}
+  build:
+    script: build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+    host:
+    - ${{ pin_subpackage(name, exact=True) }}
+    - geos
+    - proj >=9.8
+    run:
+    - ${{ pin_subpackage(name, exact=True) }}
+    - geos
+    - proj >=9.8
+  tests:
   - script:
-    - build_tests.sh
-    requirements:
-      build:
-      - ${{ compiler('c') }}
-      - cmake
-      - ninja
-      run:
-      - geos
+    - run_tests.sh
     files:
       recipe:
-      - build_tests.sh
-      - tests/
+      - run_tests.sh
 
 - package:
     name: ${{ name }}-static
