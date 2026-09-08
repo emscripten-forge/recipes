@@ -20,11 +20,10 @@ def test_c_test_extensions():
 
 
 def test_numpy_suite():
-    # Full NumPy suite (Python tests plus C helpers). label="fast" is
-    # np.test()'s default: all modules, skipping tests marked slow.
+    # Entire NumPy suite, including tests marked slow (label="full").
     # This PR keeps the current allow-noblas numpy recipe (no OpenBLAS)
     # so we can compare failures against #6310.
     assert np.test(
-        label="fast",
+        label="full",
         extra_argv=["--tb=short"],
     ), "NumPy tests failed"
