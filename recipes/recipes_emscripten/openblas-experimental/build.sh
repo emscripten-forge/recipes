@@ -35,7 +35,7 @@ emmake make shared "${MAKE_ARGS[@]}"
 # pure-C drivers (c_*blat*c.c) and the Fortran-only test/ tree is skipped.
 #
 # Test binaries must be linked as standalone wasm executables (not SIDE_MODULE)
-# against the static archive. Patches 0009-0012 adapt the Makefiles/test ABI.
+# against the static archive. Patches 0008-0011 adapt the Makefiles/test ABI.
 #
 # OpenBLAS sets CROSS=1 for emscripten, which skips executing test binaries.
 # Override CROSS=0 for the test phase so node actually runs them.
