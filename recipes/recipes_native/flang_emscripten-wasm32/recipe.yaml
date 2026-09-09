@@ -1,10 +1,6 @@
 context:
-  name: flang_emscripten-wasm32
+  name: flang
   version: 23.1.0
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
@@ -21,27 +17,78 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-    - ${{ compiler('c') }}
-    - ${{ compiler('cxx') }}
-    - cmake
-    - ninja
-  host:
-    - clangdev ==${{ version }}
-    - compiler-rt ==${{ version }}
-    - lit ==${{ version }}
-    - llvmdev ==${{ version }}
-    - mlir ==${{ version }}
-    - zlib
-    # for required run-exports
-    - llvm ==${{ version }}
-    - libclang-cpp ==${{ version }}
+outputs:
 
-tests:
-- package_contents:
-    files:
-    - bin/flang
+#==============================================================================#
+
+  - package:
+      name: flang_emscripten-wasm32
+      version: ${{ version }}
+
+    build:
+      script:
+        env:
+          FLANG_WASM64: OFF
+        file: build.sh
+
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - clangdev ==${{ version }}
+        - compiler-rt ==${{ version }}
+        - lit ==${{ version }}
+        - llvmdev ==${{ version }}
+        - mlir ==${{ version }}
+        - zlib
+        # for required run-exports
+        - llvm ==${{ version }}
+        - libclang-cpp ==${{ version }}
+
+    tests:
+      - script:
+          - flang -v
+          - test "${FFLAGS}" = "--target=wasm32-unknown-emscripten"
+
+#==============================================================================#
+
+  - package:
+      name: flang_emscripten-wasm64
+      version: ${{ version }}
+
+    build:
+      script:
+        env:
+          FLANG_WASM64: ON
+        file: build.sh
+
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - clangdev ==${{ version }}
+        - compiler-rt ==${{ version }}
+        - lit ==${{ version }}
+        - llvmdev ==${{ version }}
+        - mlir ==${{ version }}
+        - zlib
+        # for required run-exports
+        - llvm ==${{ version }}
+        - libclang-cpp ==${{ version }}
+
+    tests:
+      - script:
+          - flang -v
+          - test "${FFLAGS}" = "--target=wasm64-unknown-emscripten"
+
+#==============================================================================#
+
 
 about:
   homepage: https://flang.llvm.org
