@@ -1,0 +1,27 @@
+From 9a42931cc2fb89dcba69f204849eb2948eaaea7f Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 9 Sep 2026 14:29:13 +0200
+Subject: [PATCH 5/5] [flang-rt] Treat iso_c_binding c_long as 32-bit for
+ wasm32
+
+---
+ flang-rt/lib/runtime/iso_c_binding.f90 | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/flang-rt/lib/runtime/iso_c_binding.f90 b/flang-rt/lib/runtime/iso_c_binding.f90
+index 619b1f2e5..d2e03ce57 100644
+--- a/flang-rt/lib/runtime/iso_c_binding.f90
++++ b/flang-rt/lib/runtime/iso_c_binding.f90
+@@ -45,7 +45,8 @@ module iso_c_binding
+   integer, parameter, public :: &
+     c_int = c_int32_t, &
+     c_short = c_int16_t, &
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__wasm32__)
++    ! Windows LLP64 and wasm32 ILP32: long is 32-bit.
+     c_long = c_int32_t, &
+ #else
+     c_long = c_int64_t, &
+-- 
+2.55.0
+

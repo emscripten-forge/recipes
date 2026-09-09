@@ -1,21 +1,20 @@
-From 7b9e7ad8dc0308b175aba66d9498672693c6be63 Mon Sep 17 00:00:00 2001
+From 63237c9c39a9990e94ff00d0c68eec61e1cb0722 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Tue, 26 May 2026 14:39:35 +0200
-Subject: [PATCH 4/4] Fix wasm32 assumed-size dummy array indexing
+Date: Wed, 9 Sep 2026 11:50:57 +0200
+Subject: [PATCH 2/5] Use 32-bit indeces in FIR-to-LLVM for 32-bit targets
 
-Align FIR index types with 32-bit wasm (i32 vs i64) so BLAS-style
-DX(*) references compile without unrealized_conversion_cast errors.
+Avoid hard-coded i64 indices and unrealized casts when lowering for
+targets such as wasm32.
 ---
  flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp | 13 +++++++++----
- flang/lib/Optimizer/CodeGen/TypeConverter.cpp |  5 +++--
- flang/lib/Optimizer/Support/Utils.cpp         | 10 +++++++++-
- 3 files changed, 21 insertions(+), 7 deletions(-)
+ flang/lib/Optimizer/CodeGen/TypeConverter.cpp |  7 +++++--
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp b/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp
-index 96e3caa481f5..10e98516dfce 100644
+index 995a2efba..4c383eb21 100644
 --- a/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp
 +++ b/flang/lib/Optimizer/CodeGen/FIROpPatterns.cpp
-@@ -67,10 +67,15 @@ mlir::Value ConvertFIRToLLVMPattern::integerCast(
+@@ -66,10 +66,15 @@ mlir::Value ConvertFIRToLLVMPattern::integerCast(
      mlir::Location loc, mlir::ConversionPatternRewriter &rewriter,
      mlir::Type ty, mlir::Value val, bool fold) const {
    auto valTy = val.getType();
@@ -28,7 +27,7 @@ index 96e3caa481f5..10e98516dfce 100644
 +    mlir::Type llvmValTy = convertType(valTy);
 +    if (llvmValTy && llvmValTy != valTy) {
 +      val = getTypeConverter()->materializeTargetConversion(rewriter, loc,
-+                                                          llvmValTy, val);
++                                                            llvmValTy, val);
 +      valTy = llvmValTy;
 +    }
 +  }
@@ -36,7 +35,7 @@ index 96e3caa481f5..10e98516dfce 100644
    auto fromSize = mlir::LLVM::getPrimitiveTypeSizeInBits(valTy);
    if (fold) {
 diff --git a/flang/lib/Optimizer/CodeGen/TypeConverter.cpp b/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
-index 3c4162c4d829..a6a2d3a1e08d 100644
+index 291cd8e17..1dfab66b2 100644
 --- a/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
 +++ b/flang/lib/Optimizer/CodeGen/TypeConverter.cpp
 @@ -37,7 +37,8 @@ static mlir::LowerToLLVMOptions MakeLowerOptions(mlir::ModuleOp module) {
@@ -49,33 +48,18 @@ index 3c4162c4d829..a6a2d3a1e08d 100644
      // FIXME: Should translateDataLayout in the MLIR layer be doing this?
      options.overrideIndexBitwidth(32);
    }
-@@ -146,7 +147,7 @@ mlir::Type LLVMTypeConverter::offsetType() const {
+@@ -169,8 +170,10 @@ mlir::Type LLVMTypeConverter::offsetType() const {
+ }
  
  // i64 can be used to index into aggregates like arrays
++// Index width follows the LLVM lowering options / data layout (i32 on
++// 32-bit targets such as wasm32, i64 otherwise).
  mlir::Type LLVMTypeConverter::indexType() const {
 -  return mlir::IntegerType::get(&getContext(), 64);
 +  return mlir::IntegerType::get(&getContext(), getIndexTypeBitwidth());
  }
  
  // fir.type<name(p : TY'...){f : TY...}>  -->  llvm<"%name = { ty... }">
-diff --git a/flang/lib/Optimizer/Support/Utils.cpp b/flang/lib/Optimizer/Support/Utils.cpp
-index 2f33d8956479..c6b69c06b9ae 100644
---- a/flang/lib/Optimizer/Support/Utils.cpp
-+++ b/flang/lib/Optimizer/Support/Utils.cpp
-@@ -65,7 +65,15 @@ mlir::LLVM::ConstantOp
- fir::genConstantIndex(mlir::Location loc, mlir::Type ity,
-                       mlir::ConversionPatternRewriter &rewriter,
-                       std::int64_t offset) {
--  auto cattr = rewriter.getI64IntegerAttr(offset);
-+  mlir::Attribute cattr;
-+  if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(ity)) {
-+    if (intTy.getWidth() <= 32)
-+      cattr = rewriter.getI32IntegerAttr(static_cast<int32_t>(offset));
-+    else
-+      cattr = rewriter.getI64IntegerAttr(offset);
-+  } else {
-+    cattr = rewriter.getI64IntegerAttr(offset);
-+  }
-   return mlir::LLVM::ConstantOp::create(rewriter, loc, ity, cattr);
- }
- 
+-- 
+2.55.0
+
