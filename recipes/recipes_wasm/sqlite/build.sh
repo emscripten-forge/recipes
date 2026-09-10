@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# Prevent running ldconfig when cross-compiling.
+#!/bin/bash ddd
 
 echo "#!/usr/bin/env bash" > ldconfig
 chmod +x ldconfig
@@ -9,8 +7,6 @@ export PATH=${PWD}:$PATH
 
 echo "HOST" $HOST
 echo "BUILD" $BUILD
-
-
 
 
 emconfigure  ./configure --prefix=${PREFIX} \
@@ -28,8 +24,4 @@ emconfigure  ./configure --prefix=${PREFIX} \
 
 emmake make -j${CPU_COUNT} ${VERBOSE_AT}
 emmake make install
-
-# # We can remove this when we start using the new conda-build.
-# find $PREFIX -name '*.la' -delete
-
 
