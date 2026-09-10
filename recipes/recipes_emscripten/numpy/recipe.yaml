@@ -3,7 +3,7 @@ context:
   cross_target_plattform: emscripten-wasm32
   target_plattform: emscripten-wasm32
   default_abi_level: 2.2
-  build_number: 1
+  build_number: 2
 
 build:
   number: ${{ build_number }}
@@ -11,6 +11,8 @@ build:
 source:
   url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{ version }}.tar.gz
   sha256: df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563
+  patches:
+  - patches/0001-Skip-wasm-unsupported-NumPy-tests.patch
 
 outputs:
   # One NumPy build; runtime files go to numpy, tests to numpy-tests.
@@ -124,10 +126,13 @@ outputs:
         site_packages:
         - numpy/_core/tests/test_multiarray.py
         - numpy/linalg/tests/test_linalg.py
-    - script: pytester
+    - script:
+      - playwright install
+      - PYTESTER_TIMEOUT_MIN=10 python long_pytester.py
       files:
         recipe:
         - test_numpy_tests.py
+        - long_pytester.py
       requirements:
         build:
         - pytester

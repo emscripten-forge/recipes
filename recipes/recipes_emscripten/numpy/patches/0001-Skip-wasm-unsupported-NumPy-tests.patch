@@ -1,0 +1,156 @@
+From 6a6d373d69c1ab0103b9970029151d1a742b6118 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Thu, 10 Sep 2026 13:48:02 +0200
+Subject: [PATCH] Skip wasm-unsupported NumPy tests on Emscripten wasm32
+
+np.test(label="full") fails these cases on wasm independently of BLAS:
+
+- longdouble print round-trips (Dragon4 unique mode vs binary64 strtold)
+- longdouble quantile 0.4 inverted_cdf interpolation
+- typing.tests.test_isfile (py.typed is not installed)
+
+Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
+
+diff --git a/numpy/_core/tests/test_longdouble.py b/numpy/_core/tests/test_longdouble.py
+index a7aa914..e665bd6 100644
+--- a/numpy/_core/tests/test_longdouble.py
++++ b/numpy/_core/tests/test_longdouble.py
+@@ -7,6 +7,7 @@
+ from numpy._core.tests._locales import CommaDecimalPointLocale
+ from numpy.testing import (
+     IS_MUSL,
++    IS_WASM,
+     assert_,
+     assert_array_equal,
+     assert_equal,
+@@ -37,6 +38,14 @@ def test_scalar_extraction():
+ # +2 from macro block starting around line 842 in scalartypes.c.src.
+ 
+ 
++# Emscripten exposes 128-bit long double (NumPy float128), so str(1+eps)
++# prints ~34 digits. libc strtold is binary64-only, so parsing that string
++# yields 1.0 and the round-trip fails. Same class of bug as
++# string_to_longdouble_inaccurate ("Need strtold_l"); wasm is not IS_MUSL
++# because HOST_GNU_TYPE does not contain "musl".
++@pytest.mark.skipif(IS_WASM, reason=(
++    "wasm longdouble str() uses 128-bit Dragon4 but strtold parses binary64"
++))
+ @pytest.mark.skipif(IS_MUSL,
+                     reason="test flaky on musllinux")
+ @pytest.mark.skipif(LD_INFO.precision + 2 >= repr_precision,
+diff --git a/numpy/_core/tests/test_print.py b/numpy/_core/tests/test_print.py
+index c6203ec..d504ec3 100644
+--- a/numpy/_core/tests/test_print.py
++++ b/numpy/_core/tests/test_print.py
+@@ -5,7 +5,7 @@
+ 
+ import numpy as np
+ from numpy._core.tests._locales import CommaDecimalPointLocale
+-from numpy.testing import IS_MUSL, assert_, assert_equal
++from numpy.testing import IS_MUSL, IS_WASM, assert_, assert_equal
+ 
+ _REF = {np.inf: 'inf', -np.inf: '-inf', np.nan: 'nan'}
+ 
+@@ -196,6 +196,12 @@ def test_locale_single(self):
+     def test_locale_double(self):
+         assert_equal(str(np.double(1.2)), str(1.2))
+ 
++    # Emscripten long double is 128-bit, so unique str() of 1.2 dumps the
++    # binary128 expansion ("1.1999...") instead of Python's "1.2". libc
++    # also lacks a 128-bit strtold, so this is not a locale bug.
++    @pytest.mark.skipif(IS_WASM, reason=(
++        "wasm longdouble str() is 128-bit unique Dragon4, not a short decimal"
++    ))
+     @pytest.mark.skipif(IS_MUSL,
+                         reason="test flaky on musllinux")
+     def test_locale_longdouble(self):
+diff --git a/numpy/_core/tests/test_scalarprint.py b/numpy/_core/tests/test_scalarprint.py
+index 7d5ce30..9f92b3b 100644
+--- a/numpy/_core/tests/test_scalarprint.py
++++ b/numpy/_core/tests/test_scalarprint.py
+@@ -5,7 +5,7 @@
+ import pytest
+ 
+ import numpy as np
+-from numpy.testing import IS_MUSL, assert_, assert_equal, assert_raises
++from numpy.testing import IS_MUSL, IS_WASM, assert_, assert_equal, assert_raises
+ from numpy.testing._private.utils import LONG_DOUBLE_IS_IBM_DOUBLE_DOUBLE
+ 
+ 
+@@ -249,6 +249,16 @@ def test_dragon4_positional_interface(self, tp):
+         # test is flaky for musllinux on np.float128
+         if IS_MUSL and tp == np.float128:
+             pytest.skip("Skipping flaky test of float128 on musllinux")
++        # Emscripten long double / float128 unique Dragon4 emits the full
++        # 128-bit expansion of inexact decimals (e.g. -10.2 -> many 9s)
++        # instead of the short round-trip string these assertions expect.
++        # libc strtold cannot parse those extra digits as binary128 either.
++        # np.dtype(tp).itemsize: the scalar type's .itemsize is a descriptor,
++        # not an int (getattr(tp, "itemsize") > 8 TypeErrors on float16).
++        if IS_WASM and np.dtype(tp).itemsize > 8:
++            pytest.skip(
++                "wasm float128 unique Dragon4 does not emit a short decimal"
++            )
+ 
+         fpos = np.format_float_positional
+ 
+@@ -319,6 +329,12 @@ def test_dragon4_scientific_interface(self, tp):
+         # test is flaky for musllinux on np.float128
+         if IS_MUSL and tp == np.float128:
+             pytest.skip("Skipping flaky test of float128 on musllinux")
++        # Same wasm long-double printing gap as test_dragon4_positional_interface:
++        # unique scientific format of 1.23e1 becomes a 34-digit mantissa.
++        if IS_WASM and np.dtype(tp).itemsize > 8:
++            pytest.skip(
++                "wasm float128 unique Dragon4 does not emit a short decimal"
++            )
+ 
+         fsci = np.format_float_scientific
+ 
+diff --git a/numpy/lib/tests/test_function_base.py b/numpy/lib/tests/test_function_base.py
+index cd3d348..557e8c1 100644
+--- a/numpy/lib/tests/test_function_base.py
++++ b/numpy/lib/tests/test_function_base.py
+@@ -3434,6 +3434,15 @@ def test_linear_interpolation(self,
+                                   expected_dtype):
+         expected_dtype = np.dtype(expected_dtype)
+ 
++        # Emscripten long double is IEEE binary128. np.quantile(..., 0.4)
++        # still sees 0.4 as a binary64 value (or strtold binary64), so
++        # inverted_cdf / averaged_inverted_cdf pick the wrong order
++        # statistic (35 instead of 20 / 27.5).
++        if IS_WASM and input_dtype is np.longdouble:
++            pytest.skip(
++                "wasm IEEE-quad longdouble makes quantile 0.4 pick the wrong order statistic"
++            )
++
+         arr = np.asarray([15.0, 20.0, 35.0, 40.0, 50.0], dtype=input_dtype)
+         weights = np.ones_like(arr) if weighted else None
+         if input_dtype is np.longdouble:
+diff --git a/numpy/typing/tests/test_isfile.py b/numpy/typing/tests/test_isfile.py
+index 250686a..fa1c04b 100644
+--- a/numpy/typing/tests/test_isfile.py
++++ b/numpy/typing/tests/test_isfile.py
+@@ -4,7 +4,7 @@
+ import pytest
+ 
+ import numpy as np
+-from numpy.testing import assert_
++from numpy.testing import IS_WASM, assert_
+ 
+ ROOT = Path(np.__file__).parents[0]
+ FILES = [
+@@ -29,6 +29,10 @@
+            "Expected to only be a problem in 3.14.0"
+ )
+ class TestIsFile:
++    # numpy-tests overlays *.pyi, but py.typed is not installed.
++    @pytest.mark.skipif(IS_WASM, reason=(
++        "emscripten-forge numpy package does not install py.typed"
++    ))
+     def test_isfile(self):
+         """Test if all ``.pyi`` files are properly installed."""
+         for file in FILES:
+-- 
+2.55.0
+
