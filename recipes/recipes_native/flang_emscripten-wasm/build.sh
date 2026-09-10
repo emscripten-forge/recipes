@@ -19,7 +19,6 @@ mkdir _build
 cd _build
 
 cmake -G Ninja \
-    ${CMAKE_ARGS} \
     -DBUILD_SHARED_LIBS=ON \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
