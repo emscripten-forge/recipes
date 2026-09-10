@@ -1,0 +1,28 @@
+diff --git a/numba/core/caching.py b/numba/core/caching.py
+--- a/numba/core/caching.py
++++ b/numba/core/caching.py
+@@ -309,6 +309,11 @@ class IPythonCacheLocator(_CacheLocator):
+             self._bytes_source = source.encode('utf-8')
+ 
+     def get_cache_path(self):
++        if sys.platform == "emscripten" and config.CACHE_DIR:
++            # Xeus-Python gives notebook cells content-addressed temporary
++            # filenames.  Keep their compiled artifacts in JupyterLite's
++            # persistent cache instead of IPython's transient runtime area.
++            return config.CACHE_DIR
+         # We could also use jupyter_core.paths.jupyter_runtime_dir()
+         # In both cases this is a user-wide directory, so we need to
+         # be careful when disambiguating if we don't want too many
+@@ -334,9 +339,11 @@ class IPythonCacheLocator(_CacheLocator):
+ 
+     @classmethod
+     def from_function(cls, py_func, py_file):
++        parent_name = os.path.basename(os.path.dirname(py_file))
+         if not (
+             py_file.startswith("<ipython-")
+-            or os.path.basename(os.path.dirname(py_file)).startswith("ipykernel_")
++            or parent_name.startswith("ipykernel_")
++            or parent_name.startswith("xpython_")
+         ):
+             return
+         self = cls(py_func, py_file)

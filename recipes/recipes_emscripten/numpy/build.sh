@@ -21,6 +21,10 @@ sed -i '1i#!/usr/bin/env python' $BUILD_PREFIX/bin/cython
 sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
 
 
+# Install runtime plus tests (Meson install_tag=tests). Tests are packaged
+# as numpy-tests, not numpy; numpy.test() needs both packages.
+# devel  — numpy.pc, headers, and numpy._core.lib (imported by test_configtool).
 MESON_ARGS="-Dhave_backtrace=false" ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="-Dallow-noblas=true" \
-    -Csetup-args="--cross-file=$MESON_CROSS_FILE"
+    -Csetup-args="--cross-file=$MESON_CROSS_FILE" \
+    -Cinstall-args="--tags=runtime,python-runtime,tests,devel"

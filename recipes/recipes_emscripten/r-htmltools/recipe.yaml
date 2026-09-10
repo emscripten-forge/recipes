@@ -1,22 +1,24 @@
 context:
-  name: r-htmltools
+  name: htmltools
   version: 0.5.9
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cran.r-project.org/src/contrib/Archive/${{ name[2:] }}/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   sha256: 19308618da485818f69dcfeeadd2ddc81d43a736a74519df7b3fd98e13128afd
+  patches:
+  - patches/0001-Make-findDependencies-iterative.patch
 
 build:
-  number: 4
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  number: 5
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base == '4.6.1' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -42,13 +44,20 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://rstudio.github.io/htmltools/
   repository: https://github.com/rstudio/htmltools
   license: GPL-2.0-or-later
-  license_file: GPL-2
+  license_file: ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   license_family: GPL3
   summary: Tools for HTML
   description: Tools for creating, manipulating, and writing HTML from R.

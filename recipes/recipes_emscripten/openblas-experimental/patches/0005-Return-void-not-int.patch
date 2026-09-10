@@ -1,0 +1,175 @@
+From b457690b0eada4ef6cb5d36843e7d2b3c7a28d80 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 8 Dec 2025 08:00:00 +0000
+Subject: [PATCH 05/11] Return void not int
+
+Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ common_interface.h     | 60 +++++++++++++++++++++---------------------
+ driver/others/xerbla.c | 15 +++++------
+ 2 files changed, 37 insertions(+), 38 deletions(-)
+
+diff --git a/common_interface.h b/common_interface.h
+index 1f0ccdbb5..74cc9ec1a 100644
+--- a/common_interface.h
++++ b/common_interface.h
+@@ -44,7 +44,7 @@ extern "C" {
+ 	/* Assume C declarations for C++ */
+ #endif  /* __cplusplus */
+ 
+-int    BLASFUNC(xerbla)(char *, blasint *info, blasint);
++void    BLASFUNC(xerbla)(char *, blasint *info, blasint);
+ 
+ void    openblas_set_num_threads_(int *);
+ 
+@@ -447,10 +447,10 @@ void BLASFUNC(zhpmv) (char *, blasint *, double  *, double *,
+ void BLASFUNC(xhpmv) (char *, blasint *, xdouble  *, xdouble *,
+ 		     xdouble  *, blasint *, xdouble *, xdouble *, blasint *, int);
+ 
+-int BLASFUNC(snorm)(char *, blasint *, blasint *, float  *, blasint *, int);
+-int BLASFUNC(dnorm)(char *, blasint *, blasint *, double *, blasint *, int);
+-int BLASFUNC(cnorm)(char *, blasint *, blasint *, float  *, blasint *, int);
+-int BLASFUNC(znorm)(char *, blasint *, blasint *, double *, blasint *, int);
++void BLASFUNC(snorm)(char *, blasint *, blasint *, float  *, blasint *, int);
++void BLASFUNC(dnorm)(char *, blasint *, blasint *, double *, blasint *, int);
++void BLASFUNC(cnorm)(char *, blasint *, blasint *, float  *, blasint *, int);
++void BLASFUNC(znorm)(char *, blasint *, blasint *, double *, blasint *, int);
+ 
+ void BLASFUNC(sgbmv)(char *, blasint *, blasint *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, float  *, float  *, blasint *, int);
+@@ -522,16 +522,16 @@ void BLASFUNC(cgemmt)(char*, char *, char *, blasint *, blasint *, float *,
+ void BLASFUNC(zgemmt)(char*, char *, char *, blasint *, blasint *, double *,
+ 	   double *, blasint *, double *, blasint *, double *, double *, blasint *, int, int, int);
+ 
+-int BLASFUNC(sge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(sge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     float *, float  *, blasint *, float  *, blasint *,
+ 		     float *, float  *, blasint *, int, int, int);
+-int BLASFUNC(dge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(dge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     double *, double  *, blasint *, double  *, blasint *,
+ 		     double *, double  *, blasint *, int, int, int);
+-int BLASFUNC(cge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(cge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     float *, float  *, blasint *, float  *, blasint *,
+ 		     float *, float  *, blasint *, int, int, int);
+-int BLASFUNC(zge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(zge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     double *, double  *, blasint *, double  *, blasint *,
+ 		     double *, double  *, blasint *, int, int, int);
+ 
+@@ -635,51 +635,51 @@ void BLASFUNC(zher2k)(char *, char *, blasint *, blasint *, double *, double *,
+ void BLASFUNC(xher2k)(char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
+ 	   xdouble*, blasint *, xdouble *, xdouble *, blasint *, int, int);
+ 
+-int BLASFUNC(cher2m)(char *, char *, char *, blasint *, blasint *, float  *, float  *, blasint *,
++void BLASFUNC(cher2m)(char *, char *, char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 	   float *, blasint *, float  *, float  *, blasint *, int, int, int);
+-int BLASFUNC(zher2m)(char *, char *, char *, blasint *, blasint *, double *, double *, blasint *,
++void BLASFUNC(zher2m)(char *, char *, char *, blasint *, blasint *, double *, double *, blasint *,
+ 	   double*, blasint *, double *, double *, blasint *, int, int, int);
+-int BLASFUNC(xher2m)(char *, char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
++void BLASFUNC(xher2m)(char *, char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
+ 	   xdouble*, blasint *, xdouble *, xdouble *, blasint *, int, int, int);
+ 
+-int BLASFUNC(sgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
++void BLASFUNC(sgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, int);
+-int BLASFUNC(dgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
++void BLASFUNC(dgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
+ 		    double *, blasint *, int);
+-int BLASFUNC(cgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
++void BLASFUNC(cgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, int);
+-int BLASFUNC(zgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
++void BLASFUNC(zgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
+ 		    double *, blasint *, int);
+ 
+-int BLASFUNC(sgema)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(sgema)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, int, int);
+-int BLASFUNC(dgema)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(dgema)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, int, int);
+-int BLASFUNC(cgema)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(cgema)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, int, int);
+-int BLASFUNC(zgema)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(zgema)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, int, int);
+ 
+-int BLASFUNC(sgems)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(sgems)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, int, int);
+-int BLASFUNC(dgems)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(dgems)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, int, int);
+-int BLASFUNC(cgems)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(cgems)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, int, int);
+-int BLASFUNC(zgems)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(zgems)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, int, int);
+ 
+-int BLASFUNC(sgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
++void BLASFUNC(sgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
+ 	   float  *, blasint *, float  *, blasint *, float  *, blasint *, float  *, float  *, blasint *, int, int);
+-int BLASFUNC(dgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
++void BLASFUNC(dgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
+ 	   double *, blasint *, double *, blasint *, double *, blasint *, double *, double *, blasint *, int, int);
+-int BLASFUNC(qgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
++void BLASFUNC(qgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
+ 	   xdouble *, blasint *, xdouble *, blasint *, xdouble *, blasint *,  xdouble *, xdouble *, blasint *, int, int);
+-int BLASFUNC(cgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
++void BLASFUNC(cgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
+ 	   float  *, blasint *, float  *, blasint *, float  *, blasint *, float  *, float  *, blasint *, int, int);
+-int BLASFUNC(zgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
++void BLASFUNC(zgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
+ 	   double *, blasint *, double *, blasint *, double *, blasint *, double *, double *, blasint *, int, int);
+-int BLASFUNC(xgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
++void BLASFUNC(xgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
+ 	   xdouble *, blasint *, xdouble *, blasint *, xdouble *, blasint *, xdouble *, xdouble *, blasint *, int, int);
+ 
+ /* Lapack routines */
+diff --git a/driver/others/xerbla.c b/driver/others/xerbla.c
+index 8e2110c91..5e3b30c73 100644
+--- a/driver/others/xerbla.c
++++ b/driver/others/xerbla.c
+@@ -87,8 +87,8 @@ openblas_set_xerbla(openblas_xerbla_handler handler) {
+   return previous;
+ }
+ 
+-static int openblas_xerbla_dispatch(char *message, blasint *info,
+-                                    blasint length) {
++static void openblas_xerbla_dispatch(char *message, blasint *info,
++                                     blasint length) {
+   openblas_xerbla_handler handler;
+   size_t name_length = openblas_xerbla_name_length(message, length);
+ 
+@@ -97,18 +97,17 @@ static int openblas_xerbla_dispatch(char *message, blasint *info,
+   blas_unlock(&openblas_xerbla_lock);
+ 
+   handler(message, info, name_length);
+-  return 0;
+ }
+ 
+ #ifdef __ELF__
+-int __xerbla(char *message, blasint *info, blasint length) {
+-  return openblas_xerbla_dispatch(message, info, length);
++void __xerbla(char *message, blasint *info, blasint length) {
++  openblas_xerbla_dispatch(message, info, length);
+ }
+ 
+-int BLASFUNC(xerbla)(char *, blasint *, blasint)
++void BLASFUNC(xerbla)(char *, blasint *, blasint)
+   __attribute__ ((weak, alias ("__xerbla")));
+ #else
+-int BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
+-  return openblas_xerbla_dispatch(message, info, length);
++void BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
++  openblas_xerbla_dispatch(message, info, length);
+ }
+ #endif
+-- 
+2.55.0
+

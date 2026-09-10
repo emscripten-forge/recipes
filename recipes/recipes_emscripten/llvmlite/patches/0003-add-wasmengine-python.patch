@@ -3,7 +3,7 @@ new file mode 100644
 index 00000000..307efef5
 --- /dev/null
 +++ b/llvmlite/binding/wasmengine.py
-@@ -0,0 +1,669 @@
+@@ -0,0 +1,679 @@
 +"""
 +WASM Execution Engine for llvmlite.
 +
@@ -35,6 +35,7 @@ index 00000000..307efef5
 +
 +import ctypes
 +import os
++import re
 +import shutil
 +import sys
 +import tempfile
@@ -64,6 +65,13 @@ index 00000000..307efef5
 +def _trace(*args):
 +    if _TRACE:
 +        print('[llvmlite/WASM]', *args, flush=True)
++
++
++def _wasm_module_filename(module_name, round_number):
++    """Return a unique, debugger-friendly filename for a side module."""
++    safe_name = re.sub(r'[^A-Za-z0-9_.-]+', '_', str(module_name))
++    safe_name = safe_name.strip('._')[:96] or 'anonymous'
++    return f'{round_number:04d}-{safe_name}.wasm'
 +
 +
 +__all__ = [
@@ -299,7 +307,8 @@ index 00000000..307efef5
 +        tmpdir = tempfile.mkdtemp(prefix=f'llvmlite-wasm-{self._round}-')
 +        try:
 +            obj_path = os.path.join(tmpdir, 'mod.o')
-+            wasm_path = os.path.join(tmpdir, 'output.wasm')
++            wasm_filename = _wasm_module_filename(module_name, self._round)
++            wasm_path = os.path.join(tmpdir, wasm_filename)
 +
 +            _dbg(f'linking round={self._round} {module_name!r}')
 +
@@ -338,7 +347,8 @@ index 00000000..307efef5
 +        """Load raw WASM bytes as a side module (used by WasmExecutionEngine)."""
 +        tmpdir = tempfile.mkdtemp(prefix=f'llvmlite-wasm-{self._round}-')
 +        try:
-+            wasm_path = os.path.join(tmpdir, 'output.wasm')
++            wasm_filename = _wasm_module_filename('module', self._round)
++            wasm_path = os.path.join(tmpdir, wasm_filename)
 +            with open(wasm_path, 'wb') as fh:
 +                fh.write(wasm_bytes)
 +            lib = ctypes.CDLL(wasm_path, ctypes.RTLD_GLOBAL)

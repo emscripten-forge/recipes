@@ -1,6 +1,11 @@
 set -e
 set -x
 
+# The native lfortran build dependency provides the runtime modules generated
+# by wasm-build0.sh. Install them into the WASM host prefix for preloading.
+mkdir -p "$PREFIX/lib"
+cp -v "$BUILD_PREFIX"/share/lfortran/lib/*.mod "$PREFIX/lib/"
+
 # Create build directory
 mkdir -p build
 
