@@ -3,25 +3,32 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 0
+  build_number: 1
   abi_tag: cp${{ ver2nd }}
 
 build:
   number: ${{ build_number }}
 
 source:
+
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
   sha256: a97d5549e9ad81fe17159ed02c68774ad5d266c72f8d9a0b5a9c371fe85d902b
   patches:
   - patches/0006-Use-emcc-for-emscripten_trampoline_inner.wasm.patch
   - patches/0007-Compat-for-missing-builtin_wasm_test_function_pointer_signature.patch
   - patches/0009-wasm_assets-allow-sysconfig-data-path-for-cross.patch
+  #  - patches/0008-Disable-HACL-SIMD-for-Emscripten.patch
+  # - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
   - patches/0011-disable-uuid-generate-time-safe-on-emscripten.patch
   - patches/0012-hacl_no_simd_for_wasm.patch
   # only when target_platform is emscripten-wasm32
   - if: target_platform == "emscripten-wasm32"
     then:
       - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
+  - if: target_platform == "emscripten-wasm64"
+    then:
+      - patches/0014-trampoline_wasm64_bigint_return.patch
+  - patches/0013-remove_not_needed_emscripten_syscalls.patch
 
 outputs:
   - staging:
@@ -232,6 +239,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-  platforms:
-  - emscripten-wasm32: True
-  - emscripten-wasm64: False
+  - KGB99

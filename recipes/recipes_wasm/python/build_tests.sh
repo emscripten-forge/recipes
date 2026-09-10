@@ -49,6 +49,11 @@ FLAGS=(
     -sEXPORTED_FUNCTIONS='["_run_python"]'
     -sINVOKE_RUN=0
     -sNO_EXIT_RUNTIME=1
+    -fwasm-exceptions
+    -sSUPPORT_LONGJMP
+    -s ALLOW_MEMORY_GROWTH=1
+    -s STACK_SIZE=32mb
+    -s INITIAL_MEMORY=64MB
 )
 
 
