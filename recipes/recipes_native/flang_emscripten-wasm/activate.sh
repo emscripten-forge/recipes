@@ -7,6 +7,7 @@ export F95=flang
 export F18=flang
 export FLANG=flang
 
+export TARGET_TRIPLE="${WASM_TARGET}"
 export FFLAGS="--target=${WASM_TARGET}"
 export FPICFLAGS="-fPIC"
 export FCLIBS="-lflang_rt.runtime"
