@@ -17,12 +17,10 @@ def include_build(recipes_dir, target_platform):
         recipe_yaml = yaml.safe_load(f)
         extra = recipe_yaml.get("extra", {})
         ci = extra.get("ci", {})
-        platforms = ci.get("platforms", [])
-        if target_platform in platforms:
-            # we **include** this platform since its explicitly listed 
-            # in the recipe
-            return True 
-        else:
-            return BUILD_FOR_ARCH_DEFAULT_VALUES[target_platform]
+        platforms = ci.get("platforms", {})
+        if not isinstance(platforms, dict):
+            raise ValueError(f"Expected 'platforms' to be a dict in recipe.yaml at {recipe_yaml_path}")
+
+        return platforms.get(target_platform, BUILD_FOR_ARCH_DEFAULT_VALUES[target_platform])
 
 
