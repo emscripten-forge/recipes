@@ -1,0 +1,104 @@
+context:
+  name: flang
+  version: 23.1.0
+
+source:
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
+  sha256: d8657b2a7291e518407bf13c4b41c85ef2cded2d4354097a2f451644dfc817b0
+  patches:
+    # Originally from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
+    - patches/0001-Add-CodeGen-target-support-for-wasm32-and-wasm64.patch
+    - patches/0002-Use-32-bit-indeces-in-FIR-to-LLVM-for-32-bit-targets.patch
+    - patches/0003-Specialize-flang-to-target-wasm.patch
+    - patches/0004-Predefine-__wasm-macros-from-the-target-triple.patch
+    # This last patch is only needed for the runtime lib (recipes_wasm/libflang)
+    - patches/0005-Treat-iso_c_binding-c_long-as-32-bit-for-wasm32.patch
+
+build:
+  number: 0
+
+outputs:
+
+#==============================================================================#
+
+  - package:
+      name: flang_emscripten-wasm32
+      version: ${{ version }}
+
+    build:
+      script:
+        env:
+          FLANG_WASM64: OFF
+        file: build.sh
+
+    requirements:
+      build:
+        - clang =${{ version }}
+        - clangxx =${{ version }}
+        - cmake
+        - ninja
+      host:
+        - clangdev ==${{ version }}
+        - compiler-rt ==${{ version }}
+        - lit ==${{ version }}
+        - llvmdev ==${{ version }}
+        - mlir ==${{ version }}
+        - zlib
+        # for required run-exports
+        - llvm ==${{ version }}
+        - libclang-cpp ==${{ version }}
+        - libmlir ==${{ version }}
+
+    tests:
+      - script:
+          - flang -v
+          - test "${FFLAGS}" = "--target=wasm32-unknown-emscripten"
+
+#==============================================================================#
+
+  - package:
+      name: flang_emscripten-wasm64
+      version: ${{ version }}
+
+    build:
+      script:
+        env:
+          FLANG_WASM64: ON
+        file: build.sh
+
+    requirements:
+      build:
+        - clang =${{ version }}
+        - clangxx =${{ version }}
+        - cmake
+        - ninja
+      host:
+        - clangdev ==${{ version }}
+        - compiler-rt ==${{ version }}
+        - lit ==${{ version }}
+        - llvmdev ==${{ version }}
+        - mlir ==${{ version }}
+        - zlib
+        # for required run-exports
+        - llvm ==${{ version }}
+        - libclang-cpp ==${{ version }}
+        - libmlir ==${{ version }}
+
+    tests:
+      - script:
+          - flang -v
+          - test "${FFLAGS}" = "--target=wasm64-unknown-emscripten"
+
+#==============================================================================#
+
+
+about:
+  homepage: https://flang.llvm.org
+  license: Apache-2.0
+  license_file: LICENSE.TXT
+  summary: Flang is a Fortran compiler targeting LLVM.
+  repository: https://github.com/llvm/llvm-project
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
