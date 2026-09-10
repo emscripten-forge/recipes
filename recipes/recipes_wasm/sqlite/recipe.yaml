@@ -1,0 +1,49 @@
+context:
+  version: 3.47.2
+
+package:
+  name: libsqlite-static
+  version: ${{ version }}
+
+
+source:
+  url: https://github.com/sqlite/sqlite/archive/refs/tags/version-${{ version }}.tar.gz
+  sha256: 2d966d1b37b4035e2b86fff4ee0260b6a9c12afd1fdae54a783814de5eb62929
+
+
+build:
+  number: 2
+  # run_exports:
+  #   # sometimes adds new symbols.  Default behavior is OK.
+  #   #    https://abi-laboratory.pro/tracker/timeline/sqlite/
+  #   - "{{ pin_subpackage('sqlite') }}"
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - make
+  - libtool
+  host:
+  -  zlib 
+tests:
+  - script:
+    - test -f ${PREFIX}/lib/libsqlite3.a
+    - generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  license: Unlicense
+  license_file: LICENSE.md
+  summary: Implements a self-contained, zero-configuration, SQL database engine
+  description: |
+    SQLite is a self-contained, high-reliability, embedded, full-featured,
+    public-domain, SQL database engine.It is the most used database engine
+    in the world.
+  documentation: https://github.com/mackyle/sqlite/tree/master/doc
+  homepage: http://www.sqlite.org/
+extra:
+  recipe-maintainers:
+  - DerThorsten
+
