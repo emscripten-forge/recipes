@@ -58,7 +58,7 @@ console.log("Python files copied to Emscripten FS.");
 
 
 
-const ret_code_0 = Module.ccall(
+let ret_code_0 = Module.ccall(
   'run_python',     // C function name
   'number',         // Return type
   ['string'],       // Argument types
@@ -67,7 +67,18 @@ const ret_code_0 = Module.ccall(
 if (Number(ret_code_0) !== 0) {
   throw new Error(`Python code did not return the return code when no exception was raised. Expected 0, got ${ret_code_0}`);
 }
+
+ret_code_0 = Module.ccall(
+  'run_python',     // C function name
+  'number',         // Return type
+  ['string'],       // Argument types
+  ["import platform; print(platform.platform())"] // Arguments
+);
+if (Number(ret_code_0) !== 0) {
+  throw new Error(`Python code did not return the return code when no exception was raised. Expected 0, got ${ret_code_0}`);
+}
   
+
 
 const ret_code = Module.ccall(
   'run_python',     // C function name
