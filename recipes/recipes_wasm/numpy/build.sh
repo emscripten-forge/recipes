@@ -5,19 +5,8 @@ echo "PYTHON"
 rm -r -f branding
 
 export CFLAGS="$CFLAGS -Wno-return-type -Wno-implicit-function-declaration -msimd128 -fwasm-exceptions -s SUPPORT_LONGJMP"
-
-if [[ "$target_platform" == "emscripten-wasm32" ]]; then
-    export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross-wasm32
-elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
-    export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross-wasm64
-  # replace 
-else 
-  echo "Unsupported target_platform: $target_platform"
-  exit 1
-fi
-
-
-export LDFLAGS="$LDFLAGS  -fwasm-exceptions -s SUPPORT_LONGJMP"
+export MESON_CROSS_FILE=$RECIPE_DIR/emscripten.meson.cross 
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT 	-s WASM_BIGINT -fwasm-exceptions -s SUPPORT_LONGJMP"
 
 cp $RECIPE_DIR/config/config.h.in  numpy/_core/config.h.in
 # 
@@ -32,6 +21,10 @@ sed -i '1i#!/usr/bin/env python' $BUILD_PREFIX/bin/cython
 sed -i 's/-fexceptions/-fwasm-exceptions/g' numpy/_core/meson.build
 
 
+# Install runtime plus tests (Meson install_tag=tests). Tests are packaged
+# as numpy-tests, not numpy; numpy.test() needs both packages.
+# devel  — numpy.pc, headers, and numpy._core.lib (imported by test_configtool).
 MESON_ARGS="-Dhave_backtrace=false" ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="-Dallow-noblas=true" \
-    -Csetup-args="--cross-file=$MESON_CROSS_FILE"
+    -Csetup-args="--cross-file=$MESON_CROSS_FILE" \
+    -Cinstall-args="--tags=runtime,python-runtime,tests,devel"
