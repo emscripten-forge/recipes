@@ -9,9 +9,16 @@ export RANLIB=emranlib
 
 export CFLAGS="${CFLAGS:-} -O2"
 export CXXFLAGS="${CXXFLAGS:-} -O2 -std=c++17"
+export CPPFLAGS="-I${PREFIX}/include"
+export LDFLAGS="-L${PREFIX}/lib"
 
 emconfigure ./configure \
-    --prefix="${PREFIX}"
+    --build=i686-pc-linux-gnu \
+    --host=wasm32-unknown-emscripten \
+    --prefix="${PREFIX}" \
+    --disable-shared \
+    --enable-static \
+    --disable-dependency-tracking
 
 emmake make \
     CC="${CC}" \
