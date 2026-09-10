@@ -11,7 +11,7 @@ export CFLAGS="${CFLAGS:-} -O2"
 export CXXFLAGS="${CXXFLAGS:-} -O2 -std=c++17"
 
 emconfigure ./configure \
-    --prefix="${PREFIX}"
+    --prefix="${PREFIX}" || cat config.log
 
 emmake make \
     CC="${CC}" \
