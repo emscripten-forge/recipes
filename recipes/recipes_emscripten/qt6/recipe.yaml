@@ -240,6 +240,100 @@ outputs:
     summary: Qt6 WebSockets (RFC 6455) client for Emscripten (WASM)
     license_file: LICENSES/LGPL-3.0-only.txt
 
+# JSPI-enabled variants: same qtbase/qt5compat sources rebuilt with
+# QT_FEATURE_wasm_jspi=ON so downstream Qt6 widget apps that need to yield
+# from their event loop to the browser (all of them, effectively) get proper
+# JSPI-based suspension. Distinct package names so the solver never picks
+# them unless a downstream explicitly asks; run_constraints prevent a jspi
+# variant from ever being installed alongside its vanilla counterpart (they
+# install identical file paths).
+- package:
+    name: qt6-main-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
+    sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
+  build:
+    script:
+      env:
+        QT_EXTRA_FEATURES: -feature-wasm-jspi
+      content: build_qtbase.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - perl
+    - python
+    - qt6-main == ${{ version }}
+    host:
+    - zlib
+    run_constraints:
+    - qt6-main <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - bin/qmake6
+      - lib/libQt6Core.a
+      - lib/libQt6Gui.a
+      - lib/libQt6Widgets.a
+      - lib/libQt6Xml.a
+      - lib/libQt6Network.a
+      - lib/cmake/Qt6/Qt6Config.cmake
+      - include/QtCore/QString
+      - plugins/platforms/libqwasm.a
+  - script:
+    - build_tests_qtbase.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtbase.sh
+  about:
+    summary: Qt6 base libraries with JSPI (JavaScript Promise Integration) enabled for Emscripten (WASM). Requires Chrome 137+, Firefox 141+, Safari 18.4+.
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+- package:
+    name: qt6-5compat-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qt5compat-everywhere-src-${{ version }}.tar.xz
+    sha256: 68c320fe3391096a9f2d870170edf1b67dac8af1d0e51c0c9e5343807f114287
+  build:
+    script: build_qt5compat.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - perl
+    - python
+    - qt6-main == ${{ version }}
+    host:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run_constraints:
+    - qt6-5compat <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6Core5Compat.a
+      - lib/cmake/Qt6Core5Compat/Qt6Core5CompatConfig.cmake
+      - include/QtCore5Compat/QTextCodec
+  - script:
+    - build_tests_qt5compat.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qt5compat.sh
+  about:
+    summary: Qt5 compatibility module (QTextCodec, etc.) built against qt6-main-jspi for Emscripten (WASM).
+    license_file: LICENSES/LGPL-3.0-only.txt
+
 about:
   homepage: https://www.qt.io/
   repository: https://code.qt.io/qt/qt5.git
