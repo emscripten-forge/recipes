@@ -21,6 +21,11 @@ def include_build(recipes_dir, target_platform):
         if not isinstance(platforms, dict):
             raise ValueError(f"Expected 'platforms' to be a dict in recipe.yaml at {recipe_yaml_path}")
 
+        # check that each key is valid (ie also a key in BUILD_FOR_ARCH_DEFAULT_VALUES)
+        for key in platforms.keys():
+            if key not in BUILD_FOR_ARCH_DEFAULT_VALUES:
+                raise ValueError(f"Invalid platform: '{key}' in recipe.yaml at {recipe_yaml_path}")
+
         return platforms.get(target_platform, BUILD_FOR_ARCH_DEFAULT_VALUES[target_platform])
 
 
