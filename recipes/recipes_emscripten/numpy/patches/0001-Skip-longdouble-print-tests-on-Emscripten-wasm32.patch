@@ -1,0 +1,129 @@
+From 72d85a8b33d2f4f908f48de5e0282a43a6b3f37e Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Fri, 21 Aug 2026 10:52:15 +0200
+Subject: [PATCH] Skip longdouble print tests on Emscripten wasm32
+
+Emscripten/wasm32 exposes a 128-bit long double (NumPy float128).
+Dragon4 unique-mode printing therefore emits ~34 decimal digits.
+Emscripten's musl-derived libc has no working 128-bit strtold: parsing
+those strings only consumes IEEE-754 binary64, so round-trips fail
+(1+eps prints as 1.000...0002 but parses as 1.0) and unique formatting
+of inexact values such as 1.2 dumps the full binary128 expansion.
+
+This is the same gap as string_to_longdouble_inaccurate ("Need
+strtold_l") and the existing musl skips. wasm is not IS_MUSL because
+HOST_GNU_TYPE does not contain "musl".
+
+Skip the four tests that fail for this reason:
+- test_longdouble.test_str_roundtrip
+- test_print.TestCommaDecimalPointLocale.test_locale_longdouble
+- test_scalarprint dragon4 positional/scientific [longdouble]
+
+On the scalar type, .itemsize is a getset_descriptor, not an int.
+The dragon4 skips must use np.dtype(tp).itemsize; comparing
+getattr(tp, "itemsize") > 8 TypeErrors on float16/float32/float64.
+---
+ numpy/_core/tests/test_longdouble.py  |  9 +++++++++
+ numpy/_core/tests/test_print.py       |  8 +++++++-
+ numpy/_core/tests/test_scalarprint.py | 18 +++++++++++++++++-
+ 3 files changed, 33 insertions(+), 2 deletions(-)
+
+diff --git a/numpy/_core/tests/test_longdouble.py b/numpy/_core/tests/test_longdouble.py
+index a7aa914..e665bd6 100644
+--- a/numpy/_core/tests/test_longdouble.py
++++ b/numpy/_core/tests/test_longdouble.py
+@@ -7,6 +7,7 @@ import numpy as np
+ from numpy._core.tests._locales import CommaDecimalPointLocale
+ from numpy.testing import (
+     IS_MUSL,
++    IS_WASM,
+     assert_,
+     assert_array_equal,
+     assert_equal,
+@@ -37,6 +38,14 @@ repr_precision = len(repr(np.longdouble(0.1)))
+ # +2 from macro block starting around line 842 in scalartypes.c.src.
+ 
+ 
++# Emscripten exposes 128-bit long double (NumPy float128), so str(1+eps)
++# prints ~34 digits. libc strtold is binary64-only, so parsing that string
++# yields 1.0 and the round-trip fails. Same class of bug as
++# string_to_longdouble_inaccurate ("Need strtold_l"); wasm is not IS_MUSL
++# because HOST_GNU_TYPE does not contain "musl".
++@pytest.mark.skipif(IS_WASM, reason=(
++    "wasm longdouble str() uses 128-bit Dragon4 but strtold parses binary64"
++))
+ @pytest.mark.skipif(IS_MUSL,
+                     reason="test flaky on musllinux")
+ @pytest.mark.skipif(LD_INFO.precision + 2 >= repr_precision,
+diff --git a/numpy/_core/tests/test_print.py b/numpy/_core/tests/test_print.py
+index c6203ec..d504ec3 100644
+--- a/numpy/_core/tests/test_print.py
++++ b/numpy/_core/tests/test_print.py
+@@ -5,7 +5,7 @@ import pytest
+ 
+ import numpy as np
+ from numpy._core.tests._locales import CommaDecimalPointLocale
+-from numpy.testing import IS_MUSL, assert_, assert_equal
++from numpy.testing import IS_MUSL, IS_WASM, assert_, assert_equal
+ 
+ _REF = {np.inf: 'inf', -np.inf: '-inf', np.nan: 'nan'}
+ 
+@@ -196,6 +196,12 @@ class TestCommaDecimalPointLocale(CommaDecimalPointLocale):
+     def test_locale_double(self):
+         assert_equal(str(np.double(1.2)), str(1.2))
+ 
++    # Emscripten long double is 128-bit, so unique str() of 1.2 dumps the
++    # binary128 expansion ("1.1999...") instead of Python's "1.2". libc
++    # also lacks a 128-bit strtold, so this is not a locale bug.
++    @pytest.mark.skipif(IS_WASM, reason=(
++        "wasm longdouble str() is 128-bit unique Dragon4, not a short decimal"
++    ))
+     @pytest.mark.skipif(IS_MUSL,
+                         reason="test flaky on musllinux")
+     def test_locale_longdouble(self):
+diff --git a/numpy/_core/tests/test_scalarprint.py b/numpy/_core/tests/test_scalarprint.py
+index 7d5ce30..f594185 100644
+--- a/numpy/_core/tests/test_scalarprint.py
++++ b/numpy/_core/tests/test_scalarprint.py
+@@ -5,7 +5,7 @@
+ import pytest
+ 
+ import numpy as np
+-from numpy.testing import IS_MUSL, assert_, assert_equal, assert_raises
++from numpy.testing import IS_MUSL, IS_WASM, assert_, assert_equal, assert_raises
+ from numpy.testing._private.utils import LONG_DOUBLE_IS_IBM_DOUBLE_DOUBLE
+ 
+ 
+@@ -249,6 +249,16 @@ class TestRealScalars:
+         # test is flaky for musllinux on np.float128
+         if IS_MUSL and tp == np.float128:
+             pytest.skip("Skipping flaky test of float128 on musllinux")
++        # Emscripten long double / float128 unique Dragon4 emits the full
++        # 128-bit expansion of inexact decimals (e.g. -10.2 -> many 9s)
++        # instead of the short round-trip string these assertions expect.
++        # libc strtold cannot parse those extra digits as binary128 either.
++        # np.dtype(tp).itemsize: the scalar type's .itemsize is a descriptor,
++        # not an int (getattr(tp, "itemsize") > 8 TypeErrors on float16).
++        if IS_WASM and np.dtype(tp).itemsize > 8:
++            pytest.skip(
++                "wasm float128 unique Dragon4 does not emit a short decimal"
++            )
+ 
+         fpos = np.format_float_positional
+ 
+@@ -319,6 +329,12 @@ class TestRealScalars:
+         # test is flaky for musllinux on np.float128
+         if IS_MUSL and tp == np.float128:
+             pytest.skip("Skipping flaky test of float128 on musllinux")
++        # Same wasm long-double printing gap as test_dragon4_positional_interface:
++        # unique scientific format of 1.23e1 becomes a 34-digit mantissa.
++        if IS_WASM and np.dtype(tp).itemsize > 8:
++            pytest.skip(
++                "wasm float128 unique Dragon4 does not emit a short decimal"
++            )
+ 
+         fsci = np.format_float_scientific
+ 
+-- 
+2.55.0
+
