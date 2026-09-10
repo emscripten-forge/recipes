@@ -8,9 +8,9 @@ if [ -z "${FLANG_WASM64:-}" ]; then
 fi
 
 if [ "${FLANG_WASM64}" = "ON" ]; then
-    WASM_TARGET="wasm64-unknown-emscripten"
+    export WASM_TARGET="wasm64-unknown-emscripten"
 else
-    WASM_TARGET="wasm32-unknown-emscripten"
+    export WASM_TARGET="wasm32-unknown-emscripten"
 fi
 
 echo "WASM_TARGET is set to ${WASM_TARGET}"
