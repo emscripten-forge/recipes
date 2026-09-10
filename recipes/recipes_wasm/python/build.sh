@@ -1,20 +1,15 @@
 #!/bin/bash
-
-PY_VERSION=3.14
+# Flat build script for CPython (emscripten-wasm32 / emscripten-wasm64)
+# Consolidates former build.sh + Makefile + Makefile.envs into one script.
+# No Makefile is invoked; every step is sequential bash.
 
 set -euxo pipefail
 
-mkdir -p $PREFIX/include
-mkdir -p $PREFIX/lib
-mkdir -p $PREFIX/bin
-mkdir -p $PREFIX/etc/conda
-
-
 # Specific variables for cross-compilation
 if [[ "$target_platform" == "emscripten-wasm32" ]]; then
-    export WASM_FLAVOUR=wasm32
+    export WASM_BITNESS=32
 elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
-    export WASM_FLAVOUR=wasm64
+    export WASM_BITNESS=64
 else
     echo "Unsupported target_platform: $target_platform"
     exit 1
@@ -22,113 +17,290 @@ fi
 
 
 
-if [[ "$target_platform" == "emscripten-wasm64" ]]; then
-    # replace emscripten-wasm32 in Makefile.pre.in with emscripten-wasm64
-    sed -i.bak 's/wasm32-unknown-emscripten/wasm64-unknown-emscripten/g' Makefile.pre.in
-fi  
+
+
+
+# ---------------------------------------------------------------------------
+# Version / platform
+# ---------------------------------------------------------------------------
+export PKG_VERSION="${PKG_VERSION:-3.14.3}"
+export PY_VERSION="${PY_VERSION:-3.14}"
+export PYVERSION="${PYVERSION:-${PKG_VERSION}}"
+
+# Parse major.minor.micro (handles a/b/rc suffixes the same way Makefile.envs did)
+version_tmp="${PYVERSION#v}"
+version_tmp="${version_tmp//a/ }"
+version_tmp="${version_tmp//b/ }"
+version_tmp="${version_tmp//r/ }"
+# shellcheck disable=SC2086
+set -- ${version_tmp//./ }
+export PYMAJOR="${1}"
+export PYMINOR="${2}"
+export PYMICRO="${3:-0}"
+export PYSTABLEVERSION="${PYMAJOR}.${PYMINOR}.${PYMICRO}"
+
+export PLATFORM_TRIPLET=wasm${WASM_BITNESS}-emscripten
+export CPYTHON_ABI_FLAGS="${CPYTHON_ABI_FLAGS:-}"
+export SYSCONFIG_NAME="_sysconfigdata_${CPYTHON_ABI_FLAGS}_emscripten_${PLATFORM_TRIPLET}"
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+ROOT="$(pwd)"
+export BUILD="${ROOT}/build/${PKG_VERSION}/Python-${PKG_VERSION}"
+# Do NOT export INSTALL. Python's Makefile uses $(INSTALL) as the install
+# *program* (e.g. /usr/bin/install). Exporting INSTALL=$PREFIX makes
+# inclinstall/libinstall try to execute the prefix directory
+# ("$PREFIX: is a directory", exit 126).
+export SYSCONFIGDATA_DIR="${PREFIX}/sysconfigdata"
+LIB="libpython${PYMAJOR}.${PYMINOR}${CPYTHON_ABI_FLAGS}.a"
+
+# Host Python used for cross-build helpers / sysconfig generation
+HOSTPYTHONROOT="$(python${PYMAJOR}.${PYMINOR} -c 'import sys; print(sys.prefix)')"
+export HOSTPYTHONROOT
+export HOSTPYTHON="${HOSTPYTHONROOT}/bin/python${PYMAJOR}.${PYMINOR}"
+
+
+
+# ---------------------------------------------------------------------------
+# Compiler flags (only what is needed to build CPython itself)
+# ---------------------------------------------------------------------------
+export OPTFLAGS="${OPTFLAGS:--O2}"
+export DBGFLAGS="${DBGFLAGS:--g0}"
+export EXTRA_CFLAGS="${EXTRA_CFLAGS:-}"
+
+
+export EXTRA_CFLAGS="${EXTRA_CFLAGS} -O0 -g3 -gsource-map"
+
+
+export CFLAGS_BASE="${OPTFLAGS} ${DBGFLAGS} -fPIC -fwasm-exceptions -sSUPPORT_LONGJMP ${EXTRA_CFLAGS}"
+export PYTHON_CFLAGS="${CFLAGS_BASE} -DPY_CALL_TRAMPOLINE"
+
+# ---------------------------------------------------------------------------
+# Layout prefix dirs
+# ---------------------------------------------------------------------------
+mkdir -p "${PREFIX}/include"
+mkdir -p "${PREFIX}/lib"
+mkdir -p "${PREFIX}/bin"
+mkdir -p "${PREFIX}/etc/conda"
+mkdir -p "${SYSCONFIGDATA_DIR}"
+mkdir -p "${BUILD}"
+
+# ---------------------------------------------------------------------------
+# Relocate upstream Python source tree into ${BUILD}
+# (source is unpacked in the work directory by the recipe)
+# ---------------------------------------------------------------------------
+mv Makefile.pre.in README.rst aclocal.m4 config.guess config.sub \
+   pyconfig.h.in install-sh configure.ac \
+   Doc Grammar Include LICENSE Lib Mac Misc Modules Objects \
+   PC PCbuild Parser Programs Python Tools configure \
+   "${BUILD}/"
+
+# Keep a copy of LICENSE for the recipe / package metadata
+cp "${BUILD}/LICENSE" .
+
+
+# ---------------------------------------------------------------------------
+# Host-python symlinks expected by Emscripten tooling
+# ---------------------------------------------------------------------------
+# The Python build overwrites PYTHON=python.js; emcc/emar still need a real
+# host interpreter under the versioned name.
+ln -sf "${BUILD_PREFIX}/bin/python${PY_VERSION}" "${BUILD_PREFIX}/bin/python.js"
+ln -sf "${BUILD_PREFIX}/bin/python${PY_VERSION}" "${BUILD_PREFIX}/bin/python.mjs"
+
+# Recipe-provided files (patches are already applied by the recipe)
+cp "${RECIPE_DIR}/Setup.local" .
+cp "${RECIPE_DIR}/adjust_sysconfig.py" .
+
+# ---------------------------------------------------------------------------
+# Configure
+# ---------------------------------------------------------------------------
+cp Setup.local "${BUILD}/Modules/"
+
+(
+  cd "${BUILD}"
+
+  # Site overrides for the wasm${WASM_BITNESS}-emscripten config
+  echo 'ac_cv_lib_uuid_uuid_generate_time_safe=no' >> ./Tools/wasm/config.site-wasm${WASM_BITNESS}-emscripten
+  echo 'have_uuid=no' >> ./Tools/wasm/config.site-wasm${WASM_BITNESS}-emscripten
 
 
 
 
+  ac_cv_header_fcntl_h=yes \
+  ac_cv_func_fcntl=yes \
+  ac_cv_func_mbstowcs=yes \
+  ac_cv_broken_mbstowcs=yes \
+  ac_cv_file__dev_ptmx=no \
+  ac_cv_file__dev_ptc=no \
+  ac_cv_func_memfd_create=no \
+  LIBSQLITE3_CFLAGS="-I${PREFIX}/include" \
+  LIBSQLITE3_LIBS="-L${PREFIX}/lib -lsqlite3" \
+  ZLIB_CFLAGS="-I${PREFIX}/include" \
+  ZLIB_LIBS="-L${PREFIX}/lib -lz" \
+  BZIP2_CFLAGS="-I${PREFIX}/include" \
+  BZIP2_LIBS="-L${PREFIX}/lib -lbz2" \
+  CONFIG_SITE=./Tools/wasm/config.site-wasm${WASM_BITNESS}-emscripten \
+  READELF=true \
+  emconfigure ./configure \
+    CFLAGS="${PYTHON_CFLAGS} -I${PREFIX}/include" \
+    CPPFLAGS="-I${PREFIX}" \
+    LDFLAGS="-L${PREFIX}/lib" \
+    PLATFORM_TRIPLET="${PLATFORM_TRIPLET}" \
+    --without-pymalloc \
+    --disable-shared \
+    --disable-ipv6 \
+    --enable-big-digits=30 \
+    --host=wasm${WASM_BITNESS}-unknown-emscripten \
+    --build="$(./config.guess)" \
+    --prefix="${PREFIX}" \
+    --with-build-python="${BUILD_PREFIX}/bin/python"
 
-export CPYTHON_ABI_FLAGS=""
+)
 
+# ---------------------------------------------------------------------------
+# Patch generated Makefile (libinstall deps, extra objects, SIMD again)
+# ---------------------------------------------------------------------------
+(
+  cd "${BUILD}"
 
-export PYVERSION="3.14.3"
-export PLATFORM_TRIPLET=$WASM_FLAVOUR-emscripten
-export SYSCONFIG_NAME=_sysconfigdata_${CPYTHON_ABI_FLAGS}_emscripten_$PLATFORM_TRIPLET
-export SYSCONFIGDATA_DIR=$PREFIX/sysconfigdata/
+  # Clear out libinstall deps (we install what we need explicitly)
+  sed -i -e 's/libinstall:.*/libinstall:/' Makefile
+)
 
+# ---------------------------------------------------------------------------
+# Build static libpython
+# ---------------------------------------------------------------------------
+(
+  cd "${BUILD}"
+  sed -i \
+    -e 's/^LIBHACL_BLAKE2_SIMD128_OBJS=.*/LIBHACL_BLAKE2_SIMD128_OBJS=/' \
+    -e 's/^LIBHACL_BLAKE2_SIMD256_OBJS=.*/LIBHACL_BLAKE2_SIMD256_OBJS=/' \
+    Makefile
 
-export PYMAJOR=3
-export PYMINOR=14
-export PYMICRO=3
-export PYSTABLEVERSION=$PYMAJOR.$PYMINOR.$PYMICRO
-export PY_VERSION=$PYMAJOR.$PYMINOR
-export PKG_VERSION=$PYMAJOR.$PYMINOR.$PYMICRO
+  make regen-frozen
+  env -u INSTALL PREFIX="${PREFIX}" emmake make \
+    PYTHON_FOR_BUILD="${HOSTPYTHON}" \
+    CROSS_COMPILE=yes \
+    "${LIB}" \
+    -j"${CPU_COUNT}"
+)
 
-export HOSTPYTHONROOT=$BUILD_PREFIX
-export HOSTPYTHON=$HOSTPYTHONROOT/bin/python$PYMAJOR.$PYMINOR
+# ---------------------------------------------------------------------------
+# First sysconfigdata generation (matches former "sysconfigdata" make target)
+# ---------------------------------------------------------------------------
+(
+  cd "${BUILD}"
+  _PYTHON_SYSCONFIGDATA_NAME="${SYSCONFIG_NAME}" \
+  _PYTHON_PROJECT_BASE="${BUILD}" \
+  "${HOSTPYTHON}" -m sysconfig --generate-posix-vars
+)
+PYBUILDDIR="${BUILD}/$(cat "${BUILD}/pybuilddir.txt")"
+ROOT="${ROOT}" PYTHONPATH="${PYBUILDDIR}" python"${PYMAJOR}.${PYMINOR}" adjust_sysconfig.py
+mkdir -p "${PREFIX}/lib/python${PYMAJOR}.${PYMINOR}"
+cp "${PYBUILDDIR}/${SYSCONFIG_NAME}.py" "${PREFIX}/lib/python${PYMAJOR}.${PYMINOR}/"
+cp "${PYBUILDDIR}/${SYSCONFIG_NAME}.py" "${SYSCONFIGDATA_DIR}/"
 
+# ---------------------------------------------------------------------------
+# Install headers + lib (inclinstall / libinstall)
+# ---------------------------------------------------------------------------
+(
+  cd "${BUILD}"
 
-# export CPYTHONROOT=$PYODIDE_ROOT/cpython
-# export CPYTHONINSTALL=$PREFIX
-# export CPYTHONLIB=$CPYTHONINSTALL/lib/python$PYMAJOR.$PYMINOR
-# export SYSCONFIGDATA_DIR=$CPYTHONINSTALL/sysconfigdata/
-# export CPYTHONBUILD=$CPYTHONROOT/build/Python-$PYVERSION/
+  sed -i \
+    -e 's/^LIBHACL_BLAKE2_SIMD128_OBJS=.*/LIBHACL_BLAKE2_SIMD128_OBJS=/' \
+    -e 's/^LIBHACL_BLAKE2_SIMD256_OBJS=.*/LIBHACL_BLAKE2_SIMD256_OBJS=/' \
+    Makefile
 
+  sysconfigpath="$(pwd)/$(cat pybuilddir.txt)/${SYSCONFIG_NAME}.py"
+  touch "${LIB}"
 
+  # Python 3.14+ libinstall expects build-details.json (PEP 739). The wasm
+  # cross-build path does not produce it automatically; generate it first
+  # (same fix as upstream pyodide cpython/Makefile).
+  env -u INSTALL PREFIX="${PREFIX}" \
+    _PYTHON_SYSCONFIGDATA_NAME="${SYSCONFIG_NAME}" \
+    PYTHON_SYSCONFIGDATA_PATH="${sysconfigpath}" \
+    PYTHON_FOR_BUILD="${HOSTPYTHON}" \
+    emmake make build-details.json
 
+  # Explicitly clear INSTALL so it cannot override Python's install program.
+  # Pass PREFIX= for any recipes that consult the environment.
+  env -u INSTALL \
+  PREFIX="${PREFIX}" \
+  _PYTHON_SYSCONFIGDATA_NAME="${SYSCONFIG_NAME}" \
+  PYTHON_SYSCONFIGDATA_PATH="${sysconfigpath}" \
+  emmake make \
+    PYTHON_FOR_BUILD="${HOSTPYTHON}" \
+    CROSS_COMPILE=yes \
+    inclinstall libinstall "${LIB}" \
+    -j"${CPU_COUNT}"
 
+  cp "${LIB}" "${PREFIX}/lib/"
+)
 
-# Move all python package files to the build folder
-export BUILD=build/${PKG_VERSION}/Python-${PKG_VERSION}
-mkdir -p ${BUILD}
-mv Makefile.pre.in README.rst aclocal.m4 config.guess config.sub pyconfig.h.in install-sh configure.ac ${BUILD}
-mv Doc Grammar Include LICENSE Lib Mac Misc Modules Objects PC PCbuild Parser Programs Python Tools configure ${BUILD}
+# ---------------------------------------------------------------------------
+# Final sysconfigdata generation + install (matches former install recipe tail)
+# ---------------------------------------------------------------------------
+_PYTHON_SYSCONFIGDATA_NAME="${SYSCONFIG_NAME}" \
+_PYTHON_PROJECT_BASE="${BUILD}" \
+"${HOSTPYTHON}" -m sysconfig --generate-posix-vars
 
+# pybuilddir.txt is written relative to cwd by the host python invocation above
+PYBUILDDIR="$(cat pybuilddir.txt)"
+PYTHONPATH="${PYBUILDDIR}" python"${PYMAJOR}.${PYMINOR}" adjust_sysconfig.py
 
-# copy patched emscripten_syscalls.c to the source directory
-# make sure $BUILD/Python/emscripten_syscalls.c exists
-if [ ! -f ${BUILD}/Python/emscripten_syscalls.c ]; then
-    echo "Error: ${BUILD}/Python/emscripten_syscalls.c does not exist"
-    exit 1
-fi
-cp ${RECIPE_DIR}/patches/emscripten_syscalls.c $BUILD/Python/
+mkdir -p "${PREFIX}/lib/python${PYMAJOR}.${PYMINOR}"
+cp "${PYBUILDDIR}/${SYSCONFIG_NAME}.py" "${PREFIX}/lib/python${PYMAJOR}.${PYMINOR}/"
+mkdir -p "${SYSCONFIGDATA_DIR}"
+cp "${PYBUILDDIR}/${SYSCONFIG_NAME}.py" "${SYSCONFIGDATA_DIR}/"
 
-# copy the LICENSE file back for the recipe
-cp ${BUILD}/LICENSE .
+# Historical location used by the package
+cp "${SYSCONFIGDATA_DIR}/${SYSCONFIG_NAME}.py" "${PREFIX}/etc/conda/"
 
-# create a symlink from  $BUILD_PREFIX/bin/python3.XY to $BUILD_PREFIX/bin/python.js
-# since the python build script overwrites the env variable PYTHON to python.js
-# as it assumes this is the correct name for the python binary when building for emscripten.
-# But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python<version_major>.<version_minor>
-ln -s $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.js
-# Newer Emscripten SDK invokes "python.mjs"; ensure it resolves to host Python so emcc works.
-ln -sf $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.mjs
+rm -rf "${PYBUILDDIR}"
+rm -f pybuilddir.txt
+# Also clean the one left under BUILD if still present
+rm -rf "${BUILD}/$(cat "${BUILD}/pybuilddir.txt" 2>/dev/null || true)" 2>/dev/null || true
+rm -f "${BUILD}/pybuilddir.txt" 2>/dev/null || true
 
-# create an empty emsdk_env.sh in CONDA_EMSDK_DIR
-echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
-# make it executable
-chmod +x $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh
+# ---------------------------------------------------------------------------
+# Collect extra static libraries from extension modules
+# ---------------------------------------------------------------------------
+for module in "${BUILD}/Modules"/*; do
+  [ -d "${module}" ] || continue
+  cp "${module}"/*.a "${PREFIX}/lib/" 2>/dev/null || true
+done
 
-cp ${RECIPE_DIR}/Makefile .
-cp ${RECIPE_DIR}/Makefile.envs .
-cp -r ${RECIPE_DIR}/patches .
-cp ${RECIPE_DIR}/Setup.local .
-cp ${RECIPE_DIR}/adjust_sysconfig.py .
-
-# The actual build
-make
-
-# (TODO move in recipe) install libmpdec and libexpat
 cp ${BUILD}/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
-cp ${BUILD}/Modules/expat/libexpat.a     $PREFIX/lib
 
-# a fake wheel command
-touch $PREFIX/bin/wheel
-echo "#!/bin/bash" >> $PREFIX/bin/wheel
-echo "echo \"wheel is not supported on this platform.\"" >> $PREFIX/bin/wheel
-echo "exit 1" >> $PREFIX/bin/wheel
-chmod +x $PREFIX/bin/wheel
 
-# a fake pip command
-touch $PREFIX/bin/pip
-echo "#!/bin/bash" >> $PREFIX/bin/pip
-echo "echo \"pip is not supported on this platform.\"" >> $PREFIX/bin/pip
-echo "exit 1" >> $PREFIX/bin/pip
-chmod +x $PREFIX/bin/pip
 
-# a fake python3.XY command
-touch $PREFIX/bin/python${PY_VERSION}
-echo "#!/bin/bash" >> $PREFIX/bin/python${PY_VERSION}
-echo "echo \"python3 is not supported on this platform.\"" >> $PREFIX/bin/python${PY_VERSION}
-echo "exit 1" >> $PREFIX/bin/python${PY_VERSION}
-chmod +x $PREFIX/bin/python${PY_VERSION}
+# ---------------------------------------------------------------------------
+# Stub commands (cross build; no native interpreter on the target)
+# ---------------------------------------------------------------------------
+cat > "${PREFIX}/bin/wheel" <<'EOF'
+#!/bin/bash
+echo "wheel is not supported on this platform."
+exit 1
+EOF
+chmod +x "${PREFIX}/bin/wheel"
 
-# create symlink st. all possible python3.XY commands are available
-ln -s $PREFIX/bin/python${PY_VERSION} $PREFIX/bin/python
-ln -s $PREFIX/bin/python${PY_VERSION} $PREFIX/bin/python3
+cat > "${PREFIX}/bin/pip" <<'EOF'
+#!/bin/bash
+echo "pip is not supported on this platform."
+exit 1
+EOF
+chmod +x "${PREFIX}/bin/pip"
 
-# copy sysconfigdata
-cp $PREFIX/sysconfigdata/_sysconfigdata__emscripten_$WASM_FLAVOUR-emscripten.py  $PREFIX/etc/conda/
+cat > "${PREFIX}/bin/python${PY_VERSION}" <<'EOF'
+#!/bin/bash
+echo "python3 is not supported on this platform."
+exit 1
+EOF
+chmod +x "${PREFIX}/bin/python${PY_VERSION}"
+
+ln -sf "python${PY_VERSION}" "${PREFIX}/bin/python"
+ln -sf "python${PY_VERSION}" "${PREFIX}/bin/python3"
+
+echo "Build finished successfully."

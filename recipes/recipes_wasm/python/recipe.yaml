@@ -3,25 +3,32 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 3
+  build_number: 1
   abi_tag: cp${{ ver2nd }}
 
 build:
   number: ${{ build_number }}
 
 source:
+
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
   sha256: a97d5549e9ad81fe17159ed02c68774ad5d266c72f8d9a0b5a9c371fe85d902b
   patches:
   - patches/0006-Use-emcc-for-emscripten_trampoline_inner.wasm.patch
   - patches/0007-Compat-for-missing-builtin_wasm_test_function_pointer_signature.patch
   - patches/0009-wasm_assets-allow-sysconfig-data-path-for-cross.patch
-  - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
+  #  - patches/0008-Disable-HACL-SIMD-for-Emscripten.patch
+  # - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
   - patches/0011-disable-uuid-generate-time-safe-on-emscripten.patch
+  - patches/0012-hacl_no_simd_for_wasm.patch
   # only when target_platform is emscripten-wasm32
   - if: target_platform == "emscripten-wasm32"
     then:
       - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
+  - if: target_platform == "emscripten-wasm64"
+    then:
+      - patches/0014-trampoline_wasm64_bigint_return.patch
+  - patches/0013-remove_not_needed_emscripten_syscalls.patch
 
 outputs:
   - staging:
@@ -58,7 +65,9 @@ outputs:
       - liblzma-static
       - zstd-static
       - libuuid-static
-
+      - libsqlite-static
+      - libbzip2-static
+      - libzlib-static
   - package:
       name: libpython-static
       version: ${{ version }}
@@ -103,6 +112,9 @@ outputs:
       - liblzma-static
       - zstd-static
       - libuuid-static
+      - libsqlite-static
+      - libbzip2-static
+      - libzlib-static
       run:
       - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
       - ${{ pin_compatible("libopenssl-static", lower_bound='x.x.x', upper_bound='x.x.x') }}
@@ -110,6 +122,9 @@ outputs:
       - ${{ pin_compatible("liblzma-static",    lower_bound='x.x.x', upper_bound='x.x.x') }}
       - ${{ pin_compatible("zstd-static",       lower_bound='x.x.x', upper_bound='x.x.x') }}
       - ${{ pin_compatible("libuuid-static",    lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("libsqlite-static",  lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("libbzip2-static",   lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("libzlib-static",    lower_bound='x.x.x', upper_bound='x.x.x') }}
       run_exports:
         weak:
         - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
@@ -118,6 +133,13 @@ outputs:
       - script:
         - test -f $PREFIX/include/python${{ver2}}/Python.h
         - test -f $PREFIX/lib/libpython${{ver2}}.a
+        - test -f $PREFIX/lib/libHacl_Hash_BLAKE2.a
+        - test -f $PREFIX/lib/libHacl_Hash_MD5.a
+        - test -f $PREFIX/lib/libHacl_Hash_SHA1.a
+        - test -f $PREFIX/lib/libHacl_Hash_SHA2.a
+        - test -f $PREFIX/lib/libHacl_Hash_SHA3.a
+        - test -f $PREFIX/lib/libexpat.a
+        - test -f $PREFIX/lib/libmpdec.a
         - test ! -f $PREFIX/lib/python${{ver2}}/enum.py
         - test ! -f $PREFIX/lib/python${{ver2}}/ast.py
         - test ! -f $PREFIX/bin/python${{ver2}}
@@ -169,6 +191,8 @@ outputs:
         requirements:
           build:
           - generic-testing
+
+
   - package:
       name: python-dev
       version: ${{ version }}
@@ -183,6 +207,19 @@ outputs:
         - test -f $PREFIX/lib/libpython${{ver2}}.a
         - test -f $PREFIX/lib/python${{ver2}}/enum.py
         - test -f $PREFIX/lib/python${{ver2}}/ast.py
+      - script:
+        - build_tests.sh
+        requirements:
+          build:
+          - ${{ compiler("c") }}
+          - make
+          - python=${{ver2}}
+          - nodejs
+        files:
+          recipe:
+          - build_tests.sh
+          - test_main.cpp
+          - node_test_wrapper.js
 
     
 about:
@@ -202,4 +239,7 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-  - KGB99
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
