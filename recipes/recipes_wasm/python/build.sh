@@ -100,19 +100,6 @@ mv Makefile.pre.in README.rst aclocal.m4 config.guess config.sub \
 cp "${BUILD}/LICENSE" .
 
 
-
-
-# ---------------------------------------------------------------------------
-# copy patched emscripten_syscalls.c to the source directory
-# make sure $BUILD/Python/emscripten_syscalls.c exists
-# ---------------------------------------------------------------------------
-if [ ! -f ${BUILD}/Python/emscripten_syscalls.c ]; then
-    echo "Error: ${BUILD}/Python/emscripten_syscalls.c does not exist"
-    exit 1
-fi
-cp ${RECIPE_DIR}/patches/emscripten_syscalls.c $BUILD/Python/
-
-
 # ---------------------------------------------------------------------------
 # Host-python symlinks expected by Emscripten tooling
 # ---------------------------------------------------------------------------
