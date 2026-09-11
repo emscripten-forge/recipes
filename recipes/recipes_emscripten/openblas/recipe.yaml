@@ -27,7 +27,7 @@ source:
   - patches/0012-Use-int-return-for-f2c-Subroutine-decls-in-ctest.patch
 
 build:
-  number: 3
+  number: 4
 
   files:
     exclude:
@@ -65,6 +65,25 @@ tests:
     - pytester
     run:
     - pytester-run
+# Rebuild of OpenBLAS is dynamically linked by channel NumPy and SciPy.
+# numpy-tests / scipy-tests overlay the suites onto those packages.
+# scipy_wasm_skips is vendored from emscripten-forge/recipes#6320 until it lands.
+# Named test_scipy_wasm_skips.py so pytester mounts it into the wasm FS.
+- script:
+  - playwright install
+  - PYTESTER_TIMEOUT_MIN=120 python long_pytester.py
+  files:
+    recipe:
+    - test_numpy_scipy_suites.py
+    - long_pytester.py
+    - test_scipy_wasm_skips.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - numpy-tests
+    - scipy-tests
 
 about:
   homepage: http://www.openblas.net/
