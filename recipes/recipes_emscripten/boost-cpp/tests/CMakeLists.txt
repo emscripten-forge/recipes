@@ -11,7 +11,7 @@ add_executable(test_${MOD} test_${MOD}.cpp)
 target_link_libraries(test_${MOD} PRIVATE Boost::${MOD})
 
 target_compile_options(test_${MOD} PRIVATE
-    -fwasm-exceptions -DBOOST_WAVE_SUPPORT_THREADING=0)
+    -fwasm-exceptions -DBOOST_HAS_PTHREADS=1 -DBOOST_SP_DISABLE_THREADS=1 -DBOOST_WAVE_SUPPORT_THREADING=0)
 target_link_options(test_${MOD} PRIVATE -fwasm-exceptions)
 
 if(EMSCRIPTEN)
