@@ -260,6 +260,12 @@ command -v "${RANLIB}"
 
 "${CC}" --version
 
+perl_lib="${PREFIX}/lib/perl5"
+perl_archlib="${perl_lib}/${PKG_VERSION%.*}"
+perl_core=/core_perl
+perl_site=/site_perl
+perl_vendor=/vendor_perl
+
 # Configure Perl for Emscripten
 
 emconfigure ./Configure \
@@ -269,6 +275,13 @@ emconfigure ./Configure \
     -Dhostperl="${HOST_DIR}/miniperl" \
     -Dhostgenerate="${HOST_DIR}/generate_uudmap" \
     -Dprefix="${PREFIX}" \
+    -Dvendorprefix="${PREFIX}" \
+    -Dprivlib="${perl_lib}${perl_core}" \
+    -Dsitelib="${perl_lib}${perl_site}" \
+    -Dvendorlib="${perl_lib}${perl_vendor}" \
+    -Darchlib="${perl_archlib}${perl_core}" \
+    -Dsitearch="${perl_archlib}${perl_site}" \
+    -Dvendorarch="${perl_archlib}${perl_vendor}" \
     -Dman1dir=none \
     -Dman3dir=none \
     -Duseshrplib=false \
