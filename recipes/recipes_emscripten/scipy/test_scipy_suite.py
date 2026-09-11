@@ -38,9 +38,9 @@ def test_scipy_suite():
     # Runs on OpenBLAS-linked NumPy (emscripten-forge/recipes#6310).
     # Wasm-incompatible tests (threads, processes, mmap, FITPACK flang ABI,
     # FFT backends, batched tridiagonal eigensolvers) are skipped in
-    # scipy/conftest.py; -v names the last test if a Fortran ABI abort
-    # still kills the runtime.
+    # scipy/conftest.py. Default pytest verbosity already prints a running
+    # [ 12%] on each module line; --tb=line keeps failure output short.
     assert scipy.test(
         label="fast",
-        extra_argv=["--tb=line", "-v", "-s", "--continue-on-collection-errors"],
+        extra_argv=["--tb=line", "--continue-on-collection-errors"],
     ), "SciPy tests failed"
