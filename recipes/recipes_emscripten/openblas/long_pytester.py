@@ -4,7 +4,7 @@ import os
 from playwright.async_api import Page
 
 # pyjs_code_runner hardcodes 4 minutes, which is too short for these suites.
-_TIMEOUT_MS = int(os.environ.get("PYTESTER_TIMEOUT_MIN", "60")) * 60 * 1000
+_TIMEOUT_MS = int(os.environ.get("PYTESTER_TIMEOUT_MIN", "120")) * 60 * 1000
 _orig_set_default_timeout = Page.set_default_timeout
 
 
