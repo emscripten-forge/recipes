@@ -1,36 +1,68 @@
-From 4ea31e6e5bf2eb92198cc8a90cefaffe65d1ba46 Mon Sep 17 00:00:00 2001
-From: serge-sans-paille <sguelton@mozilla.com>
-Date: Tue, 26 May 2026 14:29:03 +0200
-Subject: [PATCH 3/4] Specialize Flang to target WASM
+From 4010a5f96516b0a63c7bb147ab0005215e891e0f Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 9 Sep 2026 13:46:21 +0200
+Subject: [PATCH 3/5] Specialize flang to target wasm
 
+Original wasm32 patch by serge-sans-paille
 ---
- .../Optimizer/Builder/Runtime/RTBuilder.h     | 39 ++++++++++---------
- .../flang/Optimizer/Support/DataLayout.h      | 18 +++++++++
+ flang/CMakeLists.txt                          | 10 +++++
+ .../Optimizer/Builder/Runtime/RTBuilder.h     | 40 ++++++++++---------
+ .../flang/Optimizer/CodeGen/DescriptorModel.h | 28 ++++++++-----
+ .../flang/Optimizer/Support/DataLayout.h      | 25 ++++++++++++
  flang/lib/Optimizer/CodeGen/CodeGen.cpp       |  7 ++--
- 3 files changed, 41 insertions(+), 23 deletions(-)
+ 5 files changed, 76 insertions(+), 34 deletions(-)
 
+diff --git a/flang/CMakeLists.txt b/flang/CMakeLists.txt
+index 0c5a690f8..1a53e507b 100644
+--- a/flang/CMakeLists.txt
++++ b/flang/CMakeLists.txt
+@@ -47,6 +47,16 @@ endif()
+ 
+ option(FLANG_ENABLE_WERROR "Fail and stop building flang if a warning is triggered." OFF)
+ 
++option(FLANG_WASM64
++  "Build Flang specialized for wasm64 (LP64) instead of wasm32 (ILP32)."
++  OFF)
++if (FLANG_WASM64)
++  add_compile_definitions(FLANG_WASM64)
++  message(STATUS "Flang WASM target sizes: wasm64 (LP64)")
++else()
++  message(STATUS "Flang WASM target sizes: wasm32 (ILP32)")
++endif()
++
+ # Check for a standalone build and configure as appropriate from
+ # there.
+ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 diff --git a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
-index 960405ee0006..af7792c3faa3 100644
+index e2131aa77..51b7615f3 100644
 --- a/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
 +++ b/flang/include/flang/Optimizer/Builder/Runtime/RTBuilder.h
-@@ -21,6 +21,7 @@
+@@ -20,6 +20,7 @@
+ #include "flang/Common/uint128.h"
  #include "flang/Optimizer/Builder/FIRBuilder.h"
- #include "flang/Optimizer/Dialect/FIRDialect.h"
  #include "flang/Optimizer/Dialect/FIRType.h"
 +#include "flang/Optimizer/Support/DataLayout.h"
  #include "flang/Runtime/io-api.h"
  #include "flang/Runtime/reduce.h"
  #include "flang/Support/Fortran.h"
-@@ -87,7 +88,7 @@ using FuncTypeBuilderFunc = mlir::FunctionType (*)(mlir::MLIRContext *);
+@@ -85,7 +86,7 @@ using FuncTypeBuilderFunc = mlir::FunctionType (*)(mlir::MLIRContext *);
        auto voidTy = fir::LLVMPointerType::get(                                 \
            context, mlir::IntegerType::get(context, 8));                        \
        auto size_tTy =                                                          \
 -          mlir::IntegerType::get(context, 8 * sizeof(std::size_t));            \
-+          mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SIZE_T);     \
++          mlir::IntegerType::get(context, 8 * FLANG_TARGET_SIZEOF_SIZE_T);            \
        auto refTy = fir::ReferenceType::get(f(context));                        \
        return mlir::FunctionType::get(                                          \
            context, {refTy, size_tTy, refTy, refTy, size_tTy, size_tTy},        \
-@@ -115,13 +116,13 @@ static constexpr TypeBuilderFunc getModel();
+@@ -99,6 +100,7 @@ using FuncTypeBuilderFunc = mlir::FunctionType (*)(mlir::MLIRContext *);
+ 
+ // TODO: all usages of sizeof in this file assume build ==  host == target.
+ // This will need to be re-visited for cross compilation.
++// C type sizes come from FLANG_TARGET_SIZEOF_* (WASM cross-compiler build).
+ 
+ /// Return a function that returns the type signature model for the type `T`
+ /// when provided an MLIRContext*. This allows one to translate C(++) function
+@@ -113,13 +115,13 @@ static constexpr TypeBuilderFunc getModel();
  template <>
  constexpr TypeBuilderFunc getModel<unsigned int>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -46,7 +78,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -138,7 +139,7 @@ constexpr TypeBuilderFunc getModel<const short int *>() {
+@@ -136,7 +138,7 @@ constexpr TypeBuilderFunc getModel<const short int *>() {
  template <>
  constexpr TypeBuilderFunc getModel<int>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -55,7 +87,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -184,13 +185,13 @@ constexpr TypeBuilderFunc getModel<const char32_t *>() {
+@@ -182,13 +184,13 @@ constexpr TypeBuilderFunc getModel<const char32_t *>() {
  template <>
  constexpr TypeBuilderFunc getModel<char>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -71,7 +103,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -207,7 +208,7 @@ constexpr TypeBuilderFunc getModel<const signed char *>() {
+@@ -205,7 +207,7 @@ constexpr TypeBuilderFunc getModel<const signed char *>() {
  template <>
  constexpr TypeBuilderFunc getModel<char16_t>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -80,7 +112,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -220,7 +221,7 @@ constexpr TypeBuilderFunc getModel<char16_t *>() {
+@@ -218,7 +220,7 @@ constexpr TypeBuilderFunc getModel<char16_t *>() {
  template <>
  constexpr TypeBuilderFunc getModel<char32_t>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -89,7 +121,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -233,7 +234,7 @@ constexpr TypeBuilderFunc getModel<char32_t *>() {
+@@ -231,7 +233,7 @@ constexpr TypeBuilderFunc getModel<char32_t *>() {
  template <>
  constexpr TypeBuilderFunc getModel<unsigned char>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -98,7 +130,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -258,7 +259,7 @@ getModel<void *(*)(void *, const void *, unsigned long)>() {
+@@ -260,7 +262,7 @@ getModel<void *(*)(void *, const void *, unsigned long)>() {
      auto voidPtrTy =
          fir::LLVMPointerType::get(context, mlir::IntegerType::get(context, 8));
      auto unsignedLongTy =
@@ -107,7 +139,7 @@ index 960405ee0006..af7792c3faa3 100644
      auto funcTy = mlir::FunctionType::get(
          context, {voidPtrTy, voidPtrTy, unsignedLongTy}, {voidPtrTy});
      return fir::LLVMPointerType::get(context, funcTy);
-@@ -288,7 +289,7 @@ constexpr TypeBuilderFunc getModel<void **>() {
+@@ -298,7 +300,7 @@ constexpr TypeBuilderFunc getModel<void **>() {
  template <>
  constexpr TypeBuilderFunc getModel<long>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -116,7 +148,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -309,7 +310,7 @@ constexpr TypeBuilderFunc getModel<const long *>() {
+@@ -319,7 +321,7 @@ constexpr TypeBuilderFunc getModel<const long *>() {
  template <>
  constexpr TypeBuilderFunc getModel<long long>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -125,7 +157,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -337,13 +338,13 @@ constexpr TypeBuilderFunc getModel<const long long *>() {
+@@ -347,13 +349,13 @@ constexpr TypeBuilderFunc getModel<const long long *>() {
  template <>
  constexpr TypeBuilderFunc getModel<unsigned long>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
@@ -141,7 +173,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -372,7 +373,7 @@ constexpr TypeBuilderFunc getModel<long double>() {
+@@ -382,7 +384,7 @@ constexpr TypeBuilderFunc getModel<long double>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
      // See TODO at the top of the file. This is configuring for the host system
      // - it might be incorrect when cross-compiling!
@@ -150,7 +182,7 @@ index 960405ee0006..af7792c3faa3 100644
      static_assert(size == 16 || size == 10 || size == 8,
                    "unsupported long double size");
      if constexpr (size == 16)
-@@ -440,7 +441,7 @@ template <>
+@@ -450,7 +452,7 @@ template <>
  constexpr TypeBuilderFunc getModel<unsigned short>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
      return mlir::IntegerType::get(
@@ -159,7 +191,7 @@ index 960405ee0006..af7792c3faa3 100644
          mlir::IntegerType::SignednessSemantics::Unsigned);
    };
  }
-@@ -458,7 +459,7 @@ template <>
+@@ -468,7 +470,7 @@ template <>
  constexpr TypeBuilderFunc getModel<unsigned short *>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
      return fir::ReferenceType::get(
@@ -168,7 +200,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -477,7 +478,7 @@ template <>
+@@ -487,7 +489,7 @@ template <>
  constexpr TypeBuilderFunc getModel<unsigned long *>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
      return fir::ReferenceType::get(
@@ -177,7 +209,7 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
-@@ -488,7 +489,7 @@ template <>
+@@ -498,7 +500,7 @@ template <>
  constexpr TypeBuilderFunc getModel<unsigned long long *>() {
    return [](mlir::MLIRContext *context) -> mlir::Type {
      return fir::ReferenceType::get(
@@ -186,11 +218,107 @@ index 960405ee0006..af7792c3faa3 100644
    };
  }
  template <>
+diff --git a/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h b/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h
+index b9a8a670d..55beeef9c 100644
+--- a/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h
++++ b/flang/include/flang/Optimizer/CodeGen/DescriptorModel.h
+@@ -23,6 +23,7 @@
+ #define OPTIMIZER_DESCRIPTOR_MODEL_H
+ 
+ #include "flang/Common/ISO_Fortran_binding_wrapper.h"
++#include "flang/Optimizer/Support/DataLayout.h"
+ #include "flang/Runtime/descriptor-consts.h"
+ #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+ #include "mlir/IR/BuiltinTypes.h"
+@@ -46,51 +47,49 @@ constexpr TypeBuilderFunc getModel<void *>() {
+ template <>
+ constexpr TypeBuilderFunc getModel<unsigned>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, sizeof(unsigned) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_UINT * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<int>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, sizeof(int) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_INT * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<unsigned long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, sizeof(unsigned long) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_ULONG * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<unsigned long long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, sizeof(unsigned long long) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_ULONGLONG * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<long long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, sizeof(long long) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_LONGLONG * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<Fortran::ISO::CFI_rank_t>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context,
+-                                  sizeof(Fortran::ISO::CFI_rank_t) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_UCHAR * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<Fortran::ISO::CFI_type_t>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context,
+-                                  sizeof(Fortran::ISO::CFI_type_t) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_SCHAR * 8);
+   };
+ }
+ template <>
+ constexpr TypeBuilderFunc getModel<long>() {
+   return [](mlir::MLIRContext *context) -> mlir::Type {
+-    return mlir::IntegerType::get(context, sizeof(long) * 8);
++    return mlir::IntegerType::get(context, FLANG_TARGET_SIZEOF_LONG * 8);
+   };
+ }
+ template <>
+@@ -130,7 +129,14 @@ static constexpr TypeBuilderFunc getExtendedDescFieldTypeModel() {
+   if constexpr (Field == 8) {
+     return getModel<void *>();
+   } else if constexpr (Field == 9) {
+-    return getModel<Fortran::runtime::typeInfo::TypeParameterValue>();
++    // TypeParameterValue is std::int64_t (always 64-bit). Do not route through
++    // getModel<long>(): on LP64 hosts int64_t aliases long, but target long is
++    // 32-bit on wasm32.
++    return [](mlir::MLIRContext *context) -> mlir::Type {
++      return mlir::IntegerType::get(
++          context,
++          8 * sizeof(Fortran::runtime::typeInfo::TypeParameterValue));
++    };
+   } else {
+     llvm_unreachable("extended ISO descriptor only has 10 fields");
+   }
 diff --git a/flang/include/flang/Optimizer/Support/DataLayout.h b/flang/include/flang/Optimizer/Support/DataLayout.h
-index 957ea99162c5..48fa44a1e0c4 100644
+index 957ea9916..691013b88 100644
 --- a/flang/include/flang/Optimizer/Support/DataLayout.h
 +++ b/flang/include/flang/Optimizer/Support/DataLayout.h
-@@ -27,6 +27,24 @@ namespace llvm {
+@@ -14,6 +14,7 @@
+ #define FORTRAN_OPTIMIZER_SUPPORT_DATALAYOUT_H
+ 
+ #include "mlir/Interfaces/DataLayoutInterfaces.h"
++#include <cstddef> // for size_t
+ #include <optional>
+ 
+ namespace mlir {
+@@ -27,6 +28,30 @@ namespace llvm {
  class DataLayout;
  } // namespace llvm
  
@@ -203,23 +331,29 @@ index 957ea99162c5..48fa44a1e0c4 100644
 +constexpr size_t FLANG_TARGET_SIZEOF_UCHAR = 1;
 +constexpr size_t FLANG_TARGET_SIZEOF_CHAR16 = 2;
 +constexpr size_t FLANG_TARGET_SIZEOF_CHAR32 = 4;
-+constexpr size_t FLANG_TARGET_SIZEOF_LONG = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_LONGLONG = 8;
-+constexpr size_t FLANG_TARGET_SIZEOF_ULONG = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_ULONGLONG = 8;
-+constexpr size_t FLANG_TARGET_SIZEOF_SIZE_T = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_FLOAT = 4;
 +constexpr size_t FLANG_TARGET_SIZEOF_DOUBLE = 8;
 +constexpr size_t FLANG_TARGET_SIZEOF_LONGDOUBLE = 16;
++#if defined(FLANG_WASM64)
++constexpr size_t FLANG_TARGET_SIZEOF_LONG = 8;
++constexpr size_t FLANG_TARGET_SIZEOF_ULONG = 8;
++constexpr size_t FLANG_TARGET_SIZEOF_SIZE_T = 8;
++#else
++constexpr size_t FLANG_TARGET_SIZEOF_LONG = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_ULONG = 4;
++constexpr size_t FLANG_TARGET_SIZEOF_SIZE_T = 4;
++#endif
 +
  namespace fir::support {
  /// Create an mlir::DataLayoutSpecInterface attribute from an llvm::DataLayout
  /// and set it on the provided mlir::ModuleOp.
 diff --git a/flang/lib/Optimizer/CodeGen/CodeGen.cpp b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
-index bbb0514058ba..e73d9351eda9 100644
+index 8679307d4..57a65342b 100644
 --- a/flang/lib/Optimizer/CodeGen/CodeGen.cpp
 +++ b/flang/lib/Optimizer/CodeGen/CodeGen.cpp
-@@ -1190,10 +1190,9 @@ struct AllocMemOpConversion : public fir::FIROpConversion<fir::AllocMemOp> {
+@@ -1432,10 +1432,9 @@ struct AllocMemOpConversion : public fir::FIROpConversion<fir::AllocMemOp> {
          rewriter, loc, mlir::LLVM::ICmpPredicate::sgt, size, zero);
      size = mlir::LLVM::SelectOp::create(rewriter, loc, cmp, size, one);
  
@@ -231,5 +365,8 @@ index bbb0514058ba..e73d9351eda9 100644
 +                                           8 * FLANG_TARGET_SIZEOF_SIZE_T);
 +    if (mallocTy.getIntOrFloatBitWidth() != ity.getIntOrFloatBitWidth())
        size = integerCast(loc, rewriter, mallocTy, size);
-     heap->setAttr("callee", getMalloc(heap, rewriter, mallocTy));
-     rewriter.replaceOpWithNewOp<mlir::LLVM::CallOp>(
+ 
+     std::optional<uint64_t> alignment = heap.getAlignment();
+-- 
+2.55.0
+
