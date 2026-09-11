@@ -1,3 +1,6 @@
+import pathlib
+import sys
+
 import numpy as np
 import scipy
 
@@ -29,10 +32,18 @@ def test_numpy_suite():
 
 def test_scipy_suite():
     # Full SciPy fast suite (upstream CI: -m "not slow").
-    # scipy-tests overlays the test modules; wasm skips live in SciPy's
-    # conftest.py once emscripten-forge/recipes#6320 lands.
-    # Default pytest verbosity: progress percentage, not per-test names.
+    # scipy-tests overlays the test modules but not scipy/conftest.py, so
+    # wasm skips from emscripten-forge/recipes#6320 are loaded here until
+    # that PR lands. Default pytest verbosity: progress, not per-test names.
+    plugin_dir = str(pathlib.Path(__file__).resolve().parent)
+    if plugin_dir not in sys.path:
+        sys.path.insert(0, plugin_dir)
     assert scipy.test(
         label="fast",
-        extra_argv=["--tb=line", "--continue-on-collection-errors"],
+        extra_argv=[
+            "--tb=line",
+            "--continue-on-collection-errors",
+            "-p",
+            "scipy_wasm_skips",
+        ],
     ), "SciPy tests failed"
