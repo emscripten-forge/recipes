@@ -1,0 +1,66 @@
+context:
+  version: 10.8.4
+
+package:
+  name: passagemath-gfan
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-gfan/passagemath_gfan-${{ version }}.tar.gz
+  sha256: 9db614612bfd17da018d01ce0e9788c83e45005c9430e873418acc3e3e5c06eb
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - gfan
+  - passagemath-categories
+  run:
+  - python
+  - passagemath-categories
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_gfan.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-polyhedra
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Groebner fans and tropical varieties with gfan'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to gfan, the package for
+    Groebner fans and tropical varieties.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_gfan.py
+  recipe-maintainers:
+  - mkoeppe
