@@ -1,4 +1,6 @@
+import importlib.util
 import pathlib
+import shutil
 import sys
 
 import numpy as np
@@ -30,14 +32,30 @@ def test_numpy_suite():
     ), "NumPy tests failed"
 
 
+def _install_scipy_wasm_skips():
+    # scipy.test() starts a nested pytest with --pyargs scipy. That session
+    # does not import plugins from this test-file directory, so put the
+    # overlay on site-packages (already on sys.path) and in sys.modules.
+    src = pathlib.Path(__file__).resolve().with_name("scipy_wasm_skips.py")
+    assert src.is_file(), src
+    dst = pathlib.Path(scipy.__file__).resolve().parent.parent / src.name
+    try:
+        shutil.copy(src, dst)
+        load_from = dst
+    except OSError:
+        load_from = src
+    spec = importlib.util.spec_from_file_location("scipy_wasm_skips", load_from)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["scipy_wasm_skips"] = module
+    spec.loader.exec_module(module)
+
+
 def test_scipy_suite():
     # Full SciPy fast suite (upstream CI: -m "not slow").
     # scipy-tests overlays the test modules but not scipy/conftest.py, so
     # wasm skips from emscripten-forge/recipes#6320 are loaded here until
     # that PR lands. Default pytest verbosity: progress, not per-test names.
-    plugin_dir = str(pathlib.Path(__file__).resolve().parent)
-    if plugin_dir not in sys.path:
-        sys.path.insert(0, plugin_dir)
+    _install_scipy_wasm_skips()
     assert scipy.test(
         label="fast",
         extra_argv=[
