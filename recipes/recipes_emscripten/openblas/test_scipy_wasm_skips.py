@@ -1,9 +1,12 @@
 """Wasm SciPy skip overlay, vendored from emscripten-forge/recipes#6320.
 
 Channel scipy-tests overlays test modules but not scipy/conftest.py, so
-those skips are missing until #6320 lands. Loaded only for scipy.test()
-via ``-p scipy_wasm_skips``. Drop this file when SciPy ships the patch.
+those skips are missing until #6320 lands. Named test_*.py so pytester
+mounts it into the wasm FS. Drop this file when SciPy ships the patch.
 """
+# Outer pytest collects test_*.py; this module is a plugin, not a test.
+__test__ = False
+
 import pytest
 
 

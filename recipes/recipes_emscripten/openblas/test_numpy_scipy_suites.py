@@ -33,12 +33,11 @@ def test_numpy_suite():
 
 
 def _install_scipy_wasm_skips():
-    # scipy.test() starts a nested pytest with --pyargs scipy. That session
-    # does not import plugins from this test-file directory, so put the
-    # overlay on site-packages (already on sys.path) and in sys.modules.
-    src = pathlib.Path(__file__).resolve().with_name("scipy_wasm_skips.py")
+    # pytester only mounts test_*.py into /home/web_user/tests. Register that
+    # file as scipy_wasm_skips so nested scipy.test() can load it with -p.
+    src = pathlib.Path(__file__).resolve().with_name("test_scipy_wasm_skips.py")
     assert src.is_file(), src
-    dst = pathlib.Path(scipy.__file__).resolve().parent.parent / src.name
+    dst = pathlib.Path(scipy.__file__).resolve().parent.parent / "scipy_wasm_skips.py"
     try:
         shutil.copy(src, dst)
         load_from = dst
