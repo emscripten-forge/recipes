@@ -13,7 +13,7 @@ def test_scipy_tests_are_installed():
 
 def test_scipy_suite():
     # Full SciPy fast suite (upstream CI: -m "not slow"). No module filter.
-    # Used as a control against OpenBLAS-linked NumPy in emscripten-forge/recipes#6310.
+    # Runs on OpenBLAS-linked NumPy (emscripten-forge/recipes#6310).
     # Wasm-incompatible tests (threads, processes, mmap, FITPACK flang ABI,
     # FFT backends, batched tridiagonal eigensolvers) are skipped in
     # scipy/conftest.py; -v names the last test if a Fortran ABI abort
