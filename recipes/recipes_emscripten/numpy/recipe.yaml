@@ -3,7 +3,7 @@ context:
   cross_target_plattform: emscripten-wasm32
   target_plattform: emscripten-wasm32
   default_abi_level: 2.2
-  build_number: 2
+  build_number: 3
 
 build:
   number: ${{ build_number }}
@@ -13,6 +13,8 @@ source:
   sha256: df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563
   patches:
   - patches/0001-Skip-wasm-unsupported-NumPy-tests.patch
+  - patches/0002-Match-flang-OpenBLAS-Fortran-ABI-on-Emscripten-wasm32.patch
+  - patches/0003-Silence-clang-warnings-on-Emscripten-wasm32.patch
 
 outputs:
   # One NumPy build; runtime files go to numpy, tests to numpy-tests.
@@ -31,6 +33,7 @@ outputs:
       - pkg-config
       - python
       host:
+      - openblas
       - python
 
   - package:
@@ -65,6 +68,10 @@ outputs:
         - '**/*.py'
     requirements:
       host:
+      - openblas
+      - python
+      run:
+      - openblas
       - python
       run_exports:
       - numpy >=${{ default_abi_level }},<3
@@ -148,3 +155,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - jjerphan
