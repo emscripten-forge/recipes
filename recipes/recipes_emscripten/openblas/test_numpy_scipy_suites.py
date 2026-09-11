@@ -18,13 +18,12 @@ def test_openblas_build_config():
 
 def test_numpy_suite():
     # Entire NumPy suite, including tests marked slow (label="full").
-    # np.test() always passes -q, which cancels one -v. verbose=2 plus
-    # extra_argv -v nets pytest -v: test names without flooding the
-    # browser console (which made Playwright's wait expire under -vvv).
+    # np.test() always passes -q; verbose=2 adds -v so they cancel and
+    # pytest's default progress output ([ 42%]) is shown, not per-test -v.
     assert np.test(
         label="full",
         verbose=2,
-        extra_argv=["--tb=short", "-v"],
+        extra_argv=["--tb=short"],
     ), "NumPy tests failed"
 
 
@@ -32,7 +31,8 @@ def test_scipy_suite():
     # Full SciPy fast suite (upstream CI: -m "not slow").
     # scipy-tests overlays the test modules; wasm skips live in SciPy's
     # conftest.py once emscripten-forge/recipes#6320 lands.
+    # Default pytest verbosity: progress percentage, not per-test names.
     assert scipy.test(
         label="fast",
-        extra_argv=["--tb=line", "-v", "-s", "--continue-on-collection-errors"],
+        extra_argv=["--tb=line", "--continue-on-collection-errors"],
     ), "SciPy tests failed"
