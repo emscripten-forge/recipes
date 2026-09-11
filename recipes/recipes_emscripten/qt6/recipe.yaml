@@ -1,15 +1,18 @@
 context:
   version: 6.11.2
+  # Major.minor derived from version so the version-bump bot updates the
+  # URL prefix (qt/6.11/) automatically when version rolls to 6.12.x etc.
+  major_minor: ${{ (version | split('.'))[0] }}.${{ (version | split('.'))[1] }}
 
 build:
-  number: 0
+  number: 1
 
 outputs:
 - package:
     name: qt6-main
     version: ${{ version }}
   source:
-    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
     sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
   build:
     script: build_qtbase.sh
@@ -18,8 +21,6 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - perl
-    - python
     - qt6-main == ${{ version }}
     host:
     - zlib
@@ -54,7 +55,7 @@ outputs:
     name: qt6-svg
     version: ${{ version }}
   source:
-    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtsvg-everywhere-src-${{ version }}.tar.xz
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtsvg-everywhere-src-${{ version }}.tar.xz
     sha256: d594337feca84c26fb67fe87b85e6a5c12fda404b611d905f9d138210c311876
   build:
     script: build_qtsvg.sh
@@ -63,8 +64,6 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - perl
-    - python
     - qt6-main == ${{ version }}
     host:
     - ${{ pin_subpackage('qt6-main', exact=True) }}
@@ -93,7 +92,7 @@ outputs:
     name: qt6-5compat
     version: ${{ version }}
   source:
-    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qt5compat-everywhere-src-${{ version }}.tar.xz
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qt5compat-everywhere-src-${{ version }}.tar.xz
     sha256: 68c320fe3391096a9f2d870170edf1b67dac8af1d0e51c0c9e5343807f114287
   build:
     script: build_qt5compat.sh
@@ -102,8 +101,6 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - perl
-    - python
     - qt6-main == ${{ version }}
     host:
     - ${{ pin_subpackage('qt6-main', exact=True) }}
@@ -131,7 +128,7 @@ outputs:
     name: qt6-imageformats
     version: ${{ version }}
   source:
-    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtimageformats-everywhere-src-${{ version }}.tar.xz
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtimageformats-everywhere-src-${{ version }}.tar.xz
     sha256: cecd8900f34b6550076309bc94f62f828008b633a4239e0a08c86788f41001f8
   build:
     script: build_qtimageformats.sh
@@ -140,8 +137,6 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - perl
-    - python
     - qt6-main == ${{ version }}
     host:
     - ${{ pin_subpackage('qt6-main', exact=True) }}
@@ -168,7 +163,7 @@ outputs:
     name: qt6-webchannel
     version: ${{ version }}
   source:
-    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtwebchannel-everywhere-src-${{ version }}.tar.xz
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtwebchannel-everywhere-src-${{ version }}.tar.xz
     sha256: feb3149758bda887f0c292656194812dd2c227595badc8fbdeb2fb2311c5575f
   build:
     script: build_qtwebchannel.sh
@@ -177,8 +172,6 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - perl
-    - python
     - qt6-main == ${{ version }}
     host:
     - ${{ pin_subpackage('qt6-main', exact=True) }}
@@ -206,7 +199,7 @@ outputs:
     name: qt6-websockets
     version: ${{ version }}
   source:
-    url: https://download.qt.io/official_releases/qt/6.11/${{ version }}/submodules/qtwebsockets-everywhere-src-${{ version }}.tar.xz
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtwebsockets-everywhere-src-${{ version }}.tar.xz
     sha256: 2bfe25c383c37f7690e3c59b02c9907d2744cf8527b1f3f1fc2c785b2ff3c9a3
   build:
     script: build_qtwebsockets.sh
@@ -215,8 +208,6 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - perl
-    - python
     - qt6-main == ${{ version }}
     host:
     - ${{ pin_subpackage('qt6-main', exact=True) }}
@@ -238,6 +229,248 @@ outputs:
       - build_tests_qtwebsockets.sh
   about:
     summary: Qt6 WebSockets (RFC 6455) client for Emscripten (WASM)
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+# JSPI-enabled variants: same qtbase/qt5compat sources rebuilt with
+# QT_FEATURE_wasm_jspi=ON so downstream Qt6 widget apps that need to yield
+# from their event loop to the browser (all of them, effectively) get proper
+# JSPI-based suspension. Distinct package names so the solver never picks
+# them unless a downstream explicitly asks; run_constraints prevent a jspi
+# variant from ever being installed alongside its vanilla counterpart (they
+# install identical file paths).
+- package:
+    name: qt6-main-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
+    sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
+  build:
+    script:
+      env:
+        QT_EXTRA_FEATURES: -feature-wasm-jspi
+      content: bash ${RECIPE_DIR}/build_qtbase.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - qt6-main == ${{ version }}
+    host:
+    - zlib
+    run_constraints:
+    - qt6-main <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - bin/qmake6
+      - lib/libQt6Core.a
+      - lib/libQt6Gui.a
+      - lib/libQt6Widgets.a
+      - lib/libQt6Xml.a
+      - lib/libQt6Network.a
+      - lib/cmake/Qt6/Qt6Config.cmake
+      - include/QtCore/QString
+      - plugins/platforms/libqwasm.a
+  - script:
+    - build_tests_qtbase.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtbase.sh
+  about:
+    summary: Qt6 base libraries with JSPI (JavaScript Promise Integration) enabled for Emscripten (WASM). Requires Chrome 137+, Firefox 141+, Safari 18.4+.
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+- package:
+    name: qt6-5compat-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qt5compat-everywhere-src-${{ version }}.tar.xz
+    sha256: 68c320fe3391096a9f2d870170edf1b67dac8af1d0e51c0c9e5343807f114287
+  build:
+    script: build_qt5compat.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - qt6-main == ${{ version }}
+    host:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run_constraints:
+    - qt6-5compat <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6Core5Compat.a
+      - lib/cmake/Qt6Core5Compat/Qt6Core5CompatConfig.cmake
+      - include/QtCore5Compat/QTextCodec
+  - script:
+    - build_tests_qt5compat.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qt5compat.sh
+  about:
+    summary: Qt5 compatibility module (QTextCodec, etc.) built against qt6-main-jspi for Emscripten (WASM).
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+- package:
+    name: qt6-svg-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtsvg-everywhere-src-${{ version }}.tar.xz
+    sha256: d594337feca84c26fb67fe87b85e6a5c12fda404b611d905f9d138210c311876
+  build:
+    script: build_qtsvg.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - qt6-main == ${{ version }}
+    host:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run_constraints:
+    - qt6-svg <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6Svg.a
+      - lib/libQt6SvgWidgets.a
+      - lib/cmake/Qt6Svg/Qt6SvgConfig.cmake
+      - include/QtSvg/QSvgRenderer
+  - script:
+    - build_tests_qtsvg.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtsvg.sh
+  about:
+    summary: Qt6 SVG rendering module built against qt6-main-jspi for Emscripten (WASM).
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+- package:
+    name: qt6-imageformats-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtimageformats-everywhere-src-${{ version }}.tar.xz
+    sha256: cecd8900f34b6550076309bc94f62f828008b633a4239e0a08c86788f41001f8
+  build:
+    script: build_qtimageformats.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - qt6-main == ${{ version }}
+    host:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run_constraints:
+    - qt6-imageformats <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - plugins/imageformats/libqtiff.a
+      - plugins/imageformats/libqwebp.a
+  - script:
+    - build_tests_qtimageformats.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtimageformats.sh
+  about:
+    summary: Qt6 extra image-format plugins built against qt6-main-jspi for Emscripten (WASM).
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+- package:
+    name: qt6-webchannel-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtwebchannel-everywhere-src-${{ version }}.tar.xz
+    sha256: feb3149758bda887f0c292656194812dd2c227595badc8fbdeb2fb2311c5575f
+  build:
+    script: build_qtwebchannel.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - qt6-main == ${{ version }}
+    host:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run_constraints:
+    - qt6-webchannel <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6WebChannel.a
+      - lib/cmake/Qt6WebChannel/Qt6WebChannelConfig.cmake
+      - include/QtWebChannel/QWebChannel
+  - script:
+    - build_tests_qtwebchannel.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtwebchannel.sh
+  about:
+    summary: Qt6 WebChannel (JavaScript <-> Qt object bridge) built against qt6-main-jspi for Emscripten (WASM).
+    license_file: LICENSES/LGPL-3.0-only.txt
+
+- package:
+    name: qt6-websockets-jspi
+    version: ${{ version }}
+  source:
+    url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtwebsockets-everywhere-src-${{ version }}.tar.xz
+    sha256: 2bfe25c383c37f7690e3c59b02c9907d2744cf8527b1f3f1fc2c785b2ff3c9a3
+  build:
+    script: build_qtwebsockets.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - qt6-main == ${{ version }}
+    host:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run:
+    - ${{ pin_subpackage('qt6-main-jspi', exact=True) }}
+    run_constraints:
+    - qt6-websockets <0.0.0
+  tests:
+  - package_contents:
+      files:
+      - lib/libQt6WebSockets.a
+      - lib/cmake/Qt6WebSockets/Qt6WebSocketsConfig.cmake
+      - include/QtWebSockets/QWebSocket
+  - script:
+    - build_tests_qtwebsockets.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+    files:
+      recipe:
+      - build_tests_qtwebsockets.sh
+  about:
+    summary: Qt6 WebSockets (RFC 6455) client built against qt6-main-jspi for Emscripten (WASM).
     license_file: LICENSES/LGPL-3.0-only.txt
 
 about:
