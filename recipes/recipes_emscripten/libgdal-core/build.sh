@@ -40,7 +40,7 @@ cd build && emcmake cmake .. \
 -DGDAL_USE_INTERNAL_LIBS=OFF \
 \
 -DPROJ_INCLUDE_DIR=$PREFIX/include \
--DPROJ_LIBRARY=$PREFIX/lib/libproj.a \
+-DPROJ_LIBRARY=$PREFIX/lib/libproj.so \
 \
 -DGDAL_USE_ICONV=ON \
 -DIconv_INCLUDE_DIR=$PREFIX/include \
@@ -52,7 +52,7 @@ cd build && emcmake cmake .. \
 \
 -DGDAL_USE_GEOS=ON \
 -DGEOS_INCLUDE_DIR=$PREFIX/include \
--DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.a \
+-DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.so \
 \
 -DGDAL_USE_ZLIB=ON \
 -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \

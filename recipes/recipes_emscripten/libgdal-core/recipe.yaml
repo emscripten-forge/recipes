@@ -9,7 +9,7 @@ source:
   - patches/0001-Add-CPL_CPUID-guards.patch
 
 build:
-  number: 0
+  number: 1
 
 outputs:
 - package:
@@ -24,14 +24,39 @@ outputs:
     - pkg-config
     host:
     - libtiff
-    - proj-static
+    - proj >=9.8
     - libiconv
-    - geos-static
+    - geos
     - libpng
   tests:
   - package_contents:
       files:
       - lib/libgdal.so
+
+- package:
+    name: ${{ name }}-tests
+    version: ${{ version }}
+  build:
+    script: build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+    host:
+    - ${{ pin_subpackage(name, exact=True) }}
+    - geos
+    - proj >=9.8
+    run:
+    - ${{ pin_subpackage(name, exact=True) }}
+    - geos
+    - proj >=9.8
+  tests:
+  - script:
+    - run_tests.sh
+    files:
+      recipe:
+      - run_tests.sh
 
 - package:
     name: ${{ name }}-static
@@ -63,3 +88,4 @@ extra:
   recipe-maintainers:
   - DerThorsten
   - IsabelParedes
+  - mmesch
