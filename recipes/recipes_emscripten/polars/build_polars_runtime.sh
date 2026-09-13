@@ -5,7 +5,6 @@ set -euxo pipefail
 cd $PKG_NAME
 
 export CARGO_PROFILE_RELEASE_STRIP=symbols
-export RUSTFLAGS="${RUSTFLAGS} -C link-arg=--no-entry"
 # Deactivate warnings as there are too many (probably created by deactivated features)
 export RUSTFLAGS="-A warnings"
 
