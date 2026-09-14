@@ -1,5 +1,6 @@
 context:
   version: '1.6.0'
+  build_number: 2
 
 source:
   - path: bin
@@ -13,38 +14,37 @@ outputs:
       version: ${{ version }}
 
     build:
-      number: 0
-
-      noarch: python
+      number: ${{ build_number }}
+      script: ./build.sh
+      noarch: generic
 
     requirements:
       host:
         - python
       run:
-        - playwright >= 1.58.0
+        - nodejs
+        - microsoft::playwright >= 1.58.0
         - pyjs_code_runner >= 3.2.0
     
     tests:
-      - package_contents:
-          files:
-          - site-packages/pytester/main_mount/main.py
+        - script:
+          - test -f $PREFIX/bin/pytester
+          - test -f $PREFIX/include/python$PY_VER/Python.h
+          - test -f $PREFIX/lib/python$PY_VER/site-packages/pytester/main_mount/main.py
 
   - package:
       name: pytester-run
       version: ${{ version }}
     build:
-      number: 0
+      number: ${{ build_number }}
       noarch: generic
     requirements:
       run:
-        - pyjs
+        - pyjs-dev
         - pytest
         - python 
 
-    tests:
-      - package_contents:
-          files:
-          - bin/pytester
+
 
 
 about:

@@ -23,8 +23,8 @@ if [ "$BUILD_WASM32" = true ]; then
     echo "Building ${RECIPE_DIR} for emscripten-wasm32"
     rattler-build build \
         -c  https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x \
-        -c microsoft \
         -c conda-forge \
+        -c microsoft \
         --target-platform emscripten-wasm32 \
         -m variant.yaml \
         --recipe $RECIPE_DIR
@@ -35,8 +35,8 @@ if [ "$BUILD_WASM64" = true ]; then
     echo "Building ${RECIPE_DIR} for emscripten-wasm64"
     rattler-build build \
         -c  https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x \
-        -c microsoft \
         -c conda-forge \
+        -c microsoft \
         --target-platform emscripten-wasm64 \
         -m variant.yaml \
         --recipe $RECIPE_DIR
