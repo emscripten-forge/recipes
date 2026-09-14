@@ -1,0 +1,60 @@
+context:
+  name: regina
+  version: 7.4.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/regina-normal/regina/releases/download/regina-${{ version }}/regina-${{ version }}.tar.gz
+  sha256: 74131014099b77083dd1d09004fd6bc972421c792d188cdf43f0fd11ca6cb2ed
+  patches:
+    - patches/0001-add-tkrzw-kvstore-backend.patch
+    - patches/0002-emscripten-engine-build-adjustments.patch
+    - patches/0003-fix-disable-python-build-bugs.patch
+    - patches/0004-emscripten-qprocess-eventloop-guards.patch
+    - patches/0005-emscripten-graphviz-neato-fallback.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - pkg-config
+    - nodejs
+    - qt6-main
+  host:
+    - zlib
+    - gmp
+    - libxml2
+    - tkrzw
+    - graphviz
+    - qt6-main
+    - qt6-svg
+
+tests:
+  - package_contents:
+      files:
+        - bin/regina-gui.html
+        - bin/regina-gui.js
+        - bin/regina-gui.wasm
+        - bin/regina-engine-config
+        - lib/libregina-engine.a
+        - include/regina/regina-core.h
+        - include/regina/triangulation/dim3.h
+
+about:
+  homepage: https://regina-normal.github.io/
+  license: GPL-2.0-only
+  license_file: LICENSE.txt
+  summary: Regina is a software package for low-dimensional topologists, with a focus on 3-manifold and 4-manifold triangulations, knots and links, normal surfaces, and angle structures.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
