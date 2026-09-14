@@ -88,7 +88,7 @@ def changed(
             if subdir == "recipes_native":
                 tp = None
             print(f"Building recipes in {tmp_recipes_root_str} for target_platform={target_platform} subdir={subdir}")
-            #build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=tp, skip_existing="local")
+            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=tp, skip_existing="local")
 
 
 bot_app = typer.Typer()
