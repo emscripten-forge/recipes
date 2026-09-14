@@ -1,5 +1,6 @@
 context:
   version: '1.6.0'
+  build_number: 3
 
 source:
   - path: bin
@@ -7,45 +8,51 @@ source:
   - path: pytester
     target_directory: pytester
 
+build:
+  number: ${{ build_number }}
+
 outputs:
   - package:
       name: pytester
       version: ${{ version }}
 
     build:
-      number: 0
-
-      noarch: python
+      script: ./build.sh
+      noarch: generic
+    
 
     requirements:
-      host:
+      build:
         - python
       run:
-        - playwright >= 1.58.0
-        - pyjs_code_runner >= 3.2.0
+        - python
+        - microsoft::playwright
+        - conda-forge::pyjs_code_runner 
     
     tests:
       - package_contents:
+          strict: false
           files:
-          - site-packages/pytester/main_mount/main.py
+            - bin/pytester
+            - lib/python*/site-packages/pytester/__init__.py
+            - lib/python*/site-packages/pytester/__main__.py
+            - lib/python*/site-packages/pytester/empack_config.yaml
+            - lib/python*/site-packages/pytester/main_mount/main.py
 
   - package:
       name: pytester-run
       version: ${{ version }}
     build:
-      number: 0
       noarch: generic
     requirements:
       run:
-        - pyjs
+        - pyjs-dev
         - pytest
         - python 
-
     tests:
       - package_contents:
-          files:
-          - bin/pytester
-
+          strict: false
+          files: []
 
 about:
   license: MIT

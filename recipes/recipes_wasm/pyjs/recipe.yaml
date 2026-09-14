@@ -1,0 +1,143 @@
+context:
+  version: 4.0.6
+  name: pyjs
+  build_number: 0
+
+source:
+  git: https://github.com/DerThorsten/pyjs/
+  rev: 3502d8a
+
+build:
+  number: ${{ build_number }}
+
+outputs:
+- staging:
+    name: pyjs-build
+
+  build:
+    script: ./build_all.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - libpython-static
+    - pybind11
+
+
+- package:  
+    name: libpyjs-static
+    version: ${{ version }}
+  inherit: pyjs-build
+
+  build:
+    script: echo "nothing to do here, we take all content from the pyjs-build package"
+    files:
+      exclude:
+      - "**/*.py"
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - libpython-static
+    - pybind11
+    run:
+    - ${{ pin_compatible("libpython-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
+
+  tests:
+    - package_contents:
+        strict: false
+        files:
+          - lib/libpyjs.a
+          - include/pyjs/export_js_module.hpp
+          - lib_js/pyjs/pyjs_runtime_browser.js 
+          - lib_js/pyjs/pyjs_runtime_browser.wasm
+          - lib/cmake/pyjs/pyjsConfig.cmake 
+
+
+
+- package:  
+    name: pyjs # the run-time package
+    version: ${{ version }}
+  inherit: pyjs-build
+
+  build:
+    script: echo "nothing to do here, we take all content from the pyjs-build package"
+    files:
+      include:
+      - "**/*.py"
+      
+
+  requirements:
+    run:
+    - python
+  
+  tests:
+    - package_contents:
+        strict: false
+        files:
+          - lib/python*/site-packages/pyjs/core.py 
+- package:  
+    name: pyjs-dev
+    version: ${{ version }}
+  
+  requirements:
+    run:
+    - ${{pin_subpackage("pyjs", exact=True) }}
+    - ${{pin_subpackage("libpyjs-static", exact=True) }}
+
+  tests:
+  - script: |
+      echo "install playwright"
+      playwright install chromium
+      echo "test in browser (main thread)"
+      pyjs_code_runner run script \
+          browser-main \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+      # worker
+      echo "test in browser (worker thread)"
+      pyjs_code_runner run script \
+          browser-worker \
+          --conda-env     $PREFIX \
+          --mount         $(pwd)/tests:/tests \
+          --script        main.py \
+          --work-dir      /tests \
+          --headless \
+          --async-main \
+          --no-cache
+
+    requirements:
+      build:
+        - nodejs
+        - microsoft::playwright >= 1.58.0
+        - pyjs_code_runner >= 3.2.0
+      run:
+        - python
+        - pytest
+        
+
+    files:
+      source:
+      - tests/**/*
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: pyjs
+
+  homepage: https://github.com/emscripten-forge/pyjs
+extra:
+  recipe-maintainers:
+  - DerThorsten
