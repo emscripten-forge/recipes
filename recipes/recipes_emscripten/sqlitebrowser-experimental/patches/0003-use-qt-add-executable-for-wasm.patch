@@ -1,0 +1,51 @@
+Two wasm-specific hooks into DB Browser's CMakeLists:
+
+1. Include Qt's QtPublicWasmToolchainHelpers.cmake before find_package(Qt6).
+   Qt6 wasm's finalize step calls _qt_test_emscripten_version() from this
+   helper. When cmake is invoked with Emscripten.cmake directly (as
+   emscripten-forge does) rather than via qt-cmake, this helper is never
+   sourced automatically.
+
+2. Call qt6_finalize_target() at the end. Qt's qt_add_executable() wraps
+   add_executable() with wasm-specific linker flags (embind, MODULARIZE,
+   EXPORT_NAME, JSPI via INTERFACE, memory sizes). DB Browser uses plain
+   add_executable at line 16 (before find_package at line 63) so we can't
+   swap it directly; qt6_finalize_target() at the end applies the same
+   setup that qt_add_executable() would have deferred.
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,6 +9,17 @@ include(GNUInstallDirs)
+
+ include(config/options.cmake)
+
++# Load Qt6 wasm helpers before find_package(Qt6) so _qt_test_emscripten_version
++# and friends are available when we finalize the target at the end.
++if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
++    find_file(QT_WASM_HELPERS
++        NAMES QtPublicWasmToolchainHelpers.cmake
++        PATHS "$ENV{PREFIX}/lib/cmake/Qt6"
++              "$ENV{PREFIX}/lib/cmake/Qt6Core"
++        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED)
++    include("${QT_WASM_HELPERS}")
++endif()
++
+ set(CMAKE_AUTOMOC ON)
+ set(CMAKE_AUTORCC ON)
+ add_executable(${PROJECT_NAME})
+@@ -305,3 +316,10 @@ endif()
+ set(CPACK_GENERATOR ${CPACK_DEFAULT_GEN} CACHE STRING "CPack pkg type(s) to generate")
+ include(CPack)
++
++# Wasm-specific target finalization: apply Qt's wasm helpers (embind linkage,
++# MODULARIZE, EXPORT_NAME, memory/stack sizes) that qt_add_executable()
++# would have applied if add_executable at line 16 could have been swapped
++# out. No-op on non-Emscripten builds.
++if(QT_MAJOR STREQUAL "Qt6" AND EMSCRIPTEN)
++    qt6_finalize_target(${PROJECT_NAME})
++    # JSPI isn't picked up transitively via Qt's INTERFACE for some reason on
++    # this build shape, and without it Qt aborts at runtime with
++    # "Terminating since we don't have asyncify". Add it explicitly.
++    target_link_options(${PROJECT_NAME} PRIVATE "SHELL:-s JSPI=1")
++    target_compile_definitions(${PROJECT_NAME} PRIVATE QT_HAVE_EMSCRIPTEN_ASYNCIFY)
++endif()
