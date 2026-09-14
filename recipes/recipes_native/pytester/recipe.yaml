@@ -1,6 +1,6 @@
 context:
   version: '1.6.0'
-  build_number: 2
+  build_number: 3
 
 source:
   - path: bin
@@ -17,17 +17,25 @@ outputs:
       number: ${{ build_number }}
       script: ./build.sh
       noarch: generic
+    
 
     requirements:
+      build:
+        - python
       run:
+        - python
         - microsoft::playwright
         - conda-forge::pyjs_code_runner 
     
-    # tests:
-    #     - script:
-    #       - test -f $PREFIX/bin/pytester
-    #       - test -f $PREFIX/include/python3.14/Python.h
-    #       - test -f $PREFIX/lib/python3.14/site-packages/pytester/main_mount/main.py
+    tests:
+      - package_contents:
+          strict: false
+          files:
+            - bin/pytester
+            - lib/python*/site-packages/pytester/__init__.py
+            - lib/python*/site-packages/pytester/__main__.py
+            - lib/python*/site-packages/pytester/empack_config.yaml
+            - lib/python*/site-packages/pytester/main_mount/main.py
 
   - package:
       name: pytester-run
@@ -40,8 +48,6 @@ outputs:
         - pyjs-dev
         - pytest
         - python 
-
-
 
 
 about:
