@@ -1,0 +1,48 @@
+context:
+  # Version tracks Qt itself; sources come from Qt's own qtbase submodule
+  # tarball at examples/widgets/widgets/calculator/. Bump this alongside qt6.
+  version: 6.11.2
+  major_minor: ${{ (version | split('.'))[0] }}.${{ (version | split('.'))[1] }}
+
+package:
+  name: qt-calculator-experimental
+  version: ${{ version }}
+
+source:
+  url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
+  sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  # native Qt6 provides host tools (moc, rcc, uic, qmake6) via QT_HOST_PATH.
+  - qt6-main
+  host:
+  # cross Qt6 (JSPI variant) provides the static wasm archives and the
+  # qwasm platform plugin linked into qt-calculator.wasm. JSPI is what
+  # lets Qt's event loop yield to the browser during exec().
+  - qt6-main-jspi
+
+tests:
+- package_contents:
+    files:
+    - share/qt-calculator-experimental/qt-calculator.wasm
+    - share/qt-calculator-experimental/qt-calculator.js
+    - share/qt-calculator-experimental/qt-calculator.html
+    - share/qt-calculator-experimental/qtloader.js
+
+about:
+  summary: Qt6 calculator example (from qtbase examples/widgets/widgets/calculator) cross-compiled to wasm.
+  license: LGPL-3.0-only
+  homepage: https://doc.qt.io/qt-6/qtwidgets-widgets-calculator-example.html
+
+extra:
+  recipe-maintainers:
+  - mmesch
+  channel: emscripten-forge-4x-experimental
