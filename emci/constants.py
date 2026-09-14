@@ -24,5 +24,5 @@ DEFAULT_EMSCRIPTEN_FORGE_CHANNEL = "emscripten-forge-bot/emscripten-forge-6x"
 
 BUILD_FOR_ARCH_DEFAULT_VALUES = {
     'emscripten-wasm32': True,
-    'emscripten-wasm64': False
+    'emscripten-wasm64': True
 }
