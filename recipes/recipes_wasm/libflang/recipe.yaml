@@ -11,24 +11,75 @@ source:
     - patches/0002-Use-32-bit-indeces-in-FIR-to-LLVM-for-32-bit-targets.patch
     - patches/0003-Specialize-flang-to-target-wasm.patch
     - patches/0004-Predefine-__wasm-macros-from-the-target-triple.patch
-    # This last patch is only needed for the runtime lib (recipes_wasm/libflang)
+    # These are only needed for the runtime lib
     - patches/0005-Treat-iso_c_binding-c_long-as-32-bit-for-wasm32.patch
+    - patches/0006-Fix-signature-mismatches.patch
 
 build:
   number: 0
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - ${{ compiler('fortran') }}
-  - ninja
-  - cmake
+outputs:
+  - staging:
+      name: libflang-build
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('fortran') }}
+        - ninja
+        - cmake
+    build:
+      script:
+        env:
+          PKG_VERSION: ${{ version }}
+        file: build.sh
 
-tests:
-- package_contents:
-    files:
-    - lib/clang/*/lib/wasm32-unknown-emscripten/libflang_rt.runtime.a
+  - package:
+      name: libflang
+      version: ${{ version }}
+    inherit: libflang-build
+    requirements:
+      run_exports:
+      - ${{ pin_subpackage('libflang', upper_bound='x.x') }}
+    build:
+      files:
+        exclude:
+        - lib/*.a
+    tests:
+    - package_contents:
+        files:
+        - lib/libflang_rt.runtime.so
+    - script: test_shared.sh
+      files:
+        recipe:
+        - hello.f90
+      requirements:
+        build:
+        - ${{ compiler('fortran') }}
+        - ${{ compiler('cxx') }}
+        - nodejs
+
+  - package:
+      name: libflang-static
+      version: ${{ version }}
+    inherit: libflang-build
+    build:
+      files:
+        exclude:
+        - lib/*.so
+    tests:
+    - package_contents:
+        files:
+        - lib/libflang_rt.runtime.a
+    - script: test_static.sh
+      files:
+        recipe:
+        - hello.f90
+      requirements:
+        build:
+        - ${{ compiler('fortran') }}
+        - ${{ compiler('cxx') }}
+        - nodejs
 
 about:
   homepage: https://flang.llvm.org
