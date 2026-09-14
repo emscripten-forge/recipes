@@ -4,7 +4,12 @@ import sys
 if __name__ == "__main__":
 
     try:
-        retcode = pytest.main(["-s"])
+        args = [
+                    "-s",
+                    "-vvv",
+                    "-p", "no:faulthandler"
+        ]
+        retcode = pytest.main(args)
     except Exception as e:
         print(f"pytest failed with exception: {e}")
         #  get backtrace
