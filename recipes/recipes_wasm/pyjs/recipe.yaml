@@ -49,6 +49,18 @@ outputs:
     run:
     - ${{ pin_compatible("libpython-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
 
+  tests:
+    - package_contents:
+        strict: false
+        files:
+          - lib/pyjs.a
+          - include/pyjs/export_js_module.hpp
+          - lib_js/pyjs/pyjs_runtime_browser.js 
+          - lib_js/pyjs/pyjs_runtime_worker.wasm
+          - lib/cmake/pyjs/pyjsConfig.cmake 
+
+
+
 - package:  
     name: pyjs # the run-time package
     version: ${{ version }}
@@ -59,12 +71,17 @@ outputs:
     files:
       include:
       - "**/*.py"
+      
 
   requirements:
     run:
     - python
   
-
+  tests:
+    - package_contents:
+        strict: false
+        files:
+          - lib/python*/site-packages/pyjs/core.py 
 - package:  
     name: pyjs-dev
     version: ${{ version }}
@@ -108,6 +125,7 @@ outputs:
       run:
         - python
         - pytest
+        
 
     files:
       source:
