@@ -14,9 +14,12 @@ emcmake cmake . \
     -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS:-}" \
     -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS:-}" \
     -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_STATIC_LIBS=ON \
     -DSUITESPARSE_USE_FORTRAN=OFF \
     -DSUITESPARSE_USE_CUDA=OFF \
     -DSUITESPARSE_USE_OPENMP=OFF \
+    -DSUITESPARSE_USE_PYTHON=OFF \
+    -DSUITESPARSE_DEMOS=OFF \
     -DGRAPHBLAS_USE_JIT=OFF \
     -DBLAS_FOUND=TRUE \
     -DLAPACK_FOUND=TRUE \
@@ -25,5 +28,7 @@ emcmake cmake . \
     -DBLA_VENDOR=OpenBLAS \
     -DSUITESPARSE_ENABLE_PROJECTS="all"
 
-emmake make -j8
+emmake make -j"${CPU_COUNT:-8}"
 emmake make install
+
+find . -name 'suitesparse_mongoose.wasm' -exec cp {} "${PREFIX}/bin/" \;
