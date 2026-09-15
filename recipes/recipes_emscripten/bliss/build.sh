@@ -15,7 +15,7 @@ emcmake cmake -S . -B build \
     -DGMP_INCLUDE_DIR="$PREFIX/include" \
     -DGMP_LIBRARIES="$PREFIX/lib/libgmp.a"
 
-cmake --build build -j"${CPU_COUNT:-1}"
-cmake --install build
+make -C build -j"${CPU_COUNT:-1}"
+make -C build install
 
 cp build/bliss.wasm "$PREFIX/bin/"
