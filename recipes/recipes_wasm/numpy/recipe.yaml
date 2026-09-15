@@ -1,58 +1,138 @@
 context:
-  version: 2.5.2
+  version: 2.5.3
   cross_target_plattform: emscripten-wasm32
   target_plattform: emscripten-wasm32
   default_abi_level: 2.2
+  build_number: 1
 
-package:
-  name: numpy
-  version: ${{ version }}
+build:
+  number: ${{ build_number }}
+
 source:
   url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{ version }}.tar.gz
-  sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
-build:
-  number: 0
+  sha256: df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563
 
-  files:
-    exclude:
-    - '**/*.pyi'
-    - '**/tests/**'
-    - '**/*.ini'
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-    - '**/test_*.py'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
-requirements:
-  build:
-  - ${{ compiler("c") }}
-  - cross-python_${{target_platform}}
-  - cython >=3.0.6
-  - meson-python >=0.18.0
-  - ninja >=1.8.2
-  - pip >=24.0
-  - pkg-config
-  - python
-  host:
-  - libpython-static
-  run_exports:
-  - numpy >=${{ default_abi_level }},<3
-tests:
-  - script:
-      - generic-testing
+outputs:
+  # One NumPy build; runtime files go to numpy, tests to numpy-tests.
+  - staging:
+      name: numpy-build
+    build:
+      script: build.sh
     requirements:
       build:
-      - generic-testing
-# - script: pytester
-#   requirements:
-#     build:
-#     - pytester
-#     run:
-#     - pytester-run
-#   files:
-#     recipe:
-#     - test_numpy.py
+      - ${{ compiler("c") }}
+      - cross-python_${{target_platform}}
+      - cython >=3.0.6
+      - meson-python >=0.18.0
+      - ninja >=1.8.2
+      - pip >=24.0
+      - pkg-config
+      - python
+      host:
+      - python
+
+  - package:
+      name: numpy
+      version: ${{ version }}
+    inherit: numpy-build
+    build:
+      script: echo "Collecting NumPy runtime files from cache"
+      files:
+        exclude:
+        - '**/*.pyi'
+        - '**/tests/**'
+        - '**/*.ini'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+        - '**/test_*.py'
+        # Test-only C extensions (meson install_tag=tests). They live under
+        # numpy/_core/ next to runtime modules, so **/tests/** does not match
+        # them; exclude them from numpy and ship them in numpy-tests.
+        # _simd is matched as .so/.wasm so the runtime stub _simd.pyi is kept.
+        - '**/_core/_multiarray_tests*'
+        - '**/_core/_umath_tests*'
+        - '**/_core/_rational_tests*'
+        - '**/_core/_struct_ufunc_tests*'
+        - '**/_core/_operand_flag_tests*'
+        - '**/_core/_reduction_loop_tests*'
+        - '**/_core/_simd.so'
+        - '**/_core/_simd.*.so'
+        - '**/_core/_simd.wasm'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+    requirements:
+      host:
+      - python
+      run_exports:
+      - numpy >=${{ default_abi_level }},<3
+    tests:
+    - package_contents:
+        site_packages:
+        - numpy/__init__.py
+        files:
+          not_exists:
+          - lib/python*/site-packages/numpy/**/tests/**
+          - lib/python*/site-packages/numpy/**/test_*.py
+    - script: pytester
+      requirements:
+        build:
+        - pytester
+        run:
+        - pytester-run
+      files:
+        recipe:
+        - test_numpy.py
+
+  # Overlay of NumPy test modules onto site-packages/numpy. Other recipes
+  # can add numpy-tests as a test requirement and call numpy.test().
+  - package:
+      name: numpy-tests
+      version: ${{ version }}
+    inherit: numpy-build
+    build:
+      script: echo "Collecting NumPy test files from cache"
+      files:
+        include:
+        - lib/python*/site-packages/numpy/**/tests/**
+        - lib/python*/site-packages/numpy/**/test_*.py
+        # Same test-only C extensions excluded from numpy above.
+        - lib/python*/site-packages/numpy/_core/_multiarray_tests*
+        - lib/python*/site-packages/numpy/_core/_umath_tests*
+        - lib/python*/site-packages/numpy/_core/_rational_tests*
+        - lib/python*/site-packages/numpy/_core/_struct_ufunc_tests*
+        - lib/python*/site-packages/numpy/_core/_operand_flag_tests*
+        - lib/python*/site-packages/numpy/_core/_reduction_loop_tests*
+        - lib/python*/site-packages/numpy/_core/_simd*
+        # typing.tests.test_isfile checks installed *.pyi stubs.
+        - lib/python*/site-packages/numpy/**/*.pyi
+        exclude:
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+    requirements:
+      host:
+      - python
+      run:
+      - ${{ pin_subpackage('numpy', exact=True) }}
+      - pytest
+      - hypothesis
+    tests:
+    - package_contents:
+        site_packages:
+        - numpy/_core/tests/test_multiarray.py
+        - numpy/linalg/tests/test_linalg.py
+    - script: pytester
+      files:
+        recipe:
+        - test_numpy_tests.py
+      requirements:
+        build:
+        - pytester
+        run:
+        - pytester-run
 
 about:
   homepage: http://numpy.org/

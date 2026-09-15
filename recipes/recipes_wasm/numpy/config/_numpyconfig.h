@@ -1,28 +1,17 @@
 #define NPY_HAVE_ENDIAN_H 1
 #define NPY_SIZEOF_SHORT 2
 #define NPY_SIZEOF_INT 4
-
-#if defined(__wasm64__)
-    #define NPY_SIZEOF_LONG 8
-    #define NPY_SIZEOF_PY_INTPTR_T 8
-    #define NPY_SIZEOF_OFF_T 8
-#elif defined(__wasm32__)
-    #define NPY_SIZEOF_LONG 4
-    #define NPY_SIZEOF_PY_INTPTR_T 4
-    #define NPY_SIZEOF_OFF_T 4
-#else
-    #error "Unsupported WebAssembly target: expected wasm32 or wasm64"
-#endif
-
+#define NPY_SIZEOF_LONG 4
 #define NPY_SIZEOF_FLOAT 4
 #define NPY_SIZEOF_COMPLEX_FLOAT 8
 #define NPY_SIZEOF_DOUBLE 8
 #define NPY_SIZEOF_COMPLEX_DOUBLE 16
 #define NPY_SIZEOF_LONGDOUBLE 8
 #define NPY_SIZEOF_COMPLEX_LONGDOUBLE 16
+#define NPY_SIZEOF_PY_INTPTR_T 4
+#define NPY_SIZEOF_OFF_T 4
 #define NPY_SIZEOF_PY_LONG_LONG 8
 #define NPY_SIZEOF_LONGLONG 8
-
 #define NPY_NO_SMP 0
 #define NPY_HAVE_DECL_ISNAN
 #define NPY_HAVE_DECL_ISINF
