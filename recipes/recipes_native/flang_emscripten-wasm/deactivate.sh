@@ -9,3 +9,5 @@ unset FLANG
 unset FFLAGS
 unset FPICFLAGS
 unset FCLIBS
+unset FINTRINSIC_MODS
+unset TARGET_TRIPLE
