@@ -1,5 +1,5 @@
 context:
-  version: 23.1.0
+  version: 23.1.1
 
 package:
   name: mlir-python-bindings
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
-  sha256: d8657b2a7291e518407bf13c4b41c85ef2cded2d4354097a2f451644dfc817b0
+  sha256: 851b3d701a4fbdd9f69536d4acda578469e810ca7056687d6556443f5fd39557
   patches:
   # CMakeLists changes: emscripten SIDE_MODULE setup, CAPI guards, wasm python extension
   - patches/0001-emscripten-wasm-execution-engine-cmake.patch
@@ -19,7 +19,7 @@ source:
   - patches/0004-add-wasm-execution-engine-nanobind.patch
   # New Python wrapper class
   - patches/0005-add-wasm-execution-engine-python.patch
-  # mlir.utils: CFG visualization via graphviz + @hpcc-js/wasm CDN on Emscripten
+  # mlir.utils: CFG visualization with in-process Graphviz on Emscripten
   - patches/0006-add-mlir-python-utils.patch
   # mlir/__init__.py: Emscripten shared-library preloader (symlinks + dlopen)
   - patches/0007-add-mlir-python-init.patch
@@ -56,15 +56,15 @@ requirements:
   # LLVMConfig.cmake, LLDConfig.cmake.  All required for the standalone MLIR
   # Python bindings build.
   - llvm 23.*
-  - numpy
 
   run:
   - python
-  # mlir.utils.show_dot returns rich SVG output through IPython.display.
-  - ipython
-  # mlir.utils builds DOT graphs with python-graphviz and renders them through
-  # Graphviz's in-process SWIG/Wasm binding (no subprocess and no CDN).
-  - python-graphviz
+  # Used by mlir.runtime.np_to_memref, mlir.ir NumPy interop and the Linalg
+  # Python helpers. The bindings do not compile against the NumPy C API.
+  - numpy
+  # mlir.utils renders DOT through Graphviz's in-process SWIG/Wasm binding.
+  # As in llvmlite, Jupyter's rich-display hook is used when available and
+  # is not a dependency of the bindings themselves.
   - graphviz-python 15.*
 
 tests:

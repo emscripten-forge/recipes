@@ -1,0 +1,389 @@
+From 444555132bf146aac34bbc0915a5d2326c26ceef Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 4 Sep 2026 12:32:20 +0200
+Subject: [PATCH 2/6] Drive service loop from lucent host instead of later
+
+---
+ DESCRIPTION   |   2 +-
+ NAMESPACE     |   3 ++
+ R/server.R    | 129 +++++++++++++++++++-------------------------------
+ R/shiny.R     |  13 +++--
+ R/timer.R     |   6 +++
+ R/wasm-host.R | 124 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 192 insertions(+), 85 deletions(-)
+ create mode 100644 R/wasm-host.R
+
+diff --git a/DESCRIPTION b/DESCRIPTION
+index f5378d3..91e4790 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -117,7 +117,7 @@ Collate: 'app-handle.R' 'globals.R' 'app-state.R' 'app_template.R'
+         'utils-lang.R' 'utils-tags.R' 'version_bs_date_picker.R'
+         'version_ion_range_slider.R' 'version_jquery.R'
+         'version_jqueryui.R' 'version_selectize.R' 'version_strftime.R'
+-        'viewer.R' 'wasm-async.R'
++        'viewer.R' 'wasm-async.R' 'wasm-host.R'
+ NeedsCompilation: no
+ Packaged: 2026-06-18 18:59:37 UTC; cpsievert
+ Author: Winston Chang [aut] (ORCID: <https://orcid.org/0000-0002-1576-2126>),
+diff --git a/NAMESPACE b/NAMESPACE
+index 2a682cf..de05ab7 100644
+--- a/NAMESPACE
++++ b/NAMESPACE
+@@ -241,6 +241,7 @@ export(repeatable)
+ export(req)
+ export(resourcePaths)
+ export(restoreInput)
++export(resumeServiceLoop)
+ export(runApp)
+ export(runExample)
+ export(runGadget)
+@@ -252,6 +253,7 @@ export(safeError)
+ export(selectInput)
+ export(selectizeInput)
+ export(serverInfo)
++export(serviceOnce)
+ export(setBookmarkExclude)
+ export(setProgress)
+ export(setSerializer)
+@@ -281,6 +283,7 @@ export(stopApp)
+ export(strong)
+ export(submitButton)
+ export(suppressDependencies)
++export(suspendServiceLoop)
+ export(tabPanel)
+ export(tabPanelBody)
+ export(tableOutput)
+diff --git a/R/server.R b/R/server.R
+index 07f43e3..67e714c 100644
+--- a/R/server.R
++++ b/R/server.R
+@@ -478,93 +478,64 @@ startHttpuvApp <- function(appObj, port, host, quiet) {
+   }
+ }
+ 
+-# Run an application that was created by \code{\link{startHttpuvApp}}. This
+-# function should normally be called in a \code{while(TRUE)} loop.
+-serviceApp <- function(
+-  # rely on lazy evaluation for maximum efficiency
+-  timeout = max(1, min(maxTimeout, timerCallbacks$timeToNextEvent(), later::next_op_secs()))
+-) {
+-  timerCallbacks$executeElapsed()
+-
+-  flushReact()
+-  flushPendingSessions()
+-
+-  # If this R session is interactive, then call service() with a short timeout
+-  # to keep the session responsive to user input
+-  maxTimeout <- ifelse(interactive(), 100, 1000)
+-
+-  service(timeout)
+-
+-  flushReact()
+-  flushPendingSessions()
+-}
++# Run one Shiny service tick: timers, reactive flush, pending sessions.
++# httpuv I/O is push-based in the wasm build; there is no later/libuv pump.
++serviceApp <- function() {
++  max_pass <- as.integer(getOption("shiny.wasm.serviceDrainMaxPass", 32L))
++  max_pass <- max(1L, min(max_pass, 256L))
++  timer_cap <- as.integer(getOption("shiny.wasm.timerDrainMax", 1000L))
++
++  for (pass in seq_len(max_pass)) {
++    progressed <- FALSE
++
++    if (isTRUE(timerCallbacks$executeElapsed())) {
++      progressed <- TRUE
++    }
++    if (isTRUE(flushReact())) {
++      progressed <- TRUE
++    }
++    flushPendingSessions()
+ 
+-# Non-blocking service loop driven by `later` callbacks.
+-#
+-# Each iteration calls `serviceApp(NA)`, which drains queued I/O and
+-# `later` callbacks without blocking R, then flushes the reactive graph
+-# and any pending session messages.
+-#
+-# The next iteration is scheduled adaptively, sleeping until the earliest
+-# of:
+-#   - the next reactive timer event (`invalidateLater`, `reactiveTimer`)
+-#   - the next `later` op (incl. httpuv-scheduled callbacks for incoming
+-#     HTTP/WS I/O, promise resolutions)
+-#   - `.shinyServiceMaxDelaySecs` — a defensive ceiling for reactive-state
+-#     changes that don't go through either of the above (e.g. a
+-#     `reactiveVal` set from a promise resolution). Going fully event-
+-#     driven would require hooking every reactive mutation path; the cap
+-#     bounds worst-case flush lag without that audit.
+-#
+-# The generation token (incremented on every runApp()/startApp() call)
+-# ensures that when a new app starts, any stale service loop from a
+-# previous non-blocking app exits cleanly instead of continuing to run.
+-# Each iteration wraps `serviceApp()` in `with_otel_promise_domain()` so the
+-# OTEL domain is active while Shiny processes its own work — handlers,
+-# later callbacks, promise fulfillments — all executed synchronously inside
+-# `serviceApp()`. Span wrapping is attached at promise-registration time, so
+-# callbacks registered inside an iteration stay instrumented when they fire
+-# later. The domain is dormant between ticks, keeping it out of unrelated
+-# user promises created while the console is interactive.
+-serviceNonBlocking <- function(handle, generation) {
+-  serviceLoop <- function() {
+-    if (!identical(.globals$serviceGeneration, generation)) {
+-      return(invisible())
++    if (isTRUE(.wasmDrainDueTimers(timer_cap))) {
++      progressed <- TRUE
+     }
+-    if (!.globals$stopped) {
+-      promises::with_otel_promise_domain(
+-        ..stacktraceoff..(
+-          captureStackTraces(
+-            tryCatch(
+-              ..stacktracefloor..(serviceApp(NA)),
+-              error = function(e) {
+-                .globals$stopped <- TRUE
+-                .globals$retval <- e
+-                .globals$reterror <- TRUE
+-              }
+-            )
+-          )
+-        )
+-      )
++
++    if (isTRUE(flushReact())) {
++      progressed <- TRUE
+     }
+-    if (!identical(.globals$serviceGeneration, generation)) {
+-      return(invisible())
++    flushPendingSessions()
++
++    # flushOutput may defer (busyCount / awaiting progressKeys) while leaving the
++    # session in appsNeedingFlush. Do not exit on !progressed until that queue is
++    # empty — otherwise the host sees hadWork=FALSE and never sends values.
++    pending_flush <- appsNeedingFlush$size() > 0L
++    if (!progressed) {
++      if (pending_flush) {
++        flushPendingSessions()
++        if (appsNeedingFlush$size() > 0L) {
++          .wasmHostRequestService()
++        }
++      }
++      break
+     }
+-    if (!.globals$stopped) {
+-      delay <- min(
+-        .shinyServiceMaxDelaySecs,
+-        timerCallbacks$timeToNextEvent() / 1000,
+-        later::next_op_secs()
+-      )
+-      later::later(serviceLoop, delay = max(0, delay))
+-    } else {
+-      handle$stop()
++    if (!.wasmTimersDue() && !pending_flush) {
++      break
+     }
+   }
+-  later::later(serviceLoop)
+ }
+ 
+-.shinyServiceMaxDelaySecs <- 0.05
++# Non-blocking start: hand control to the host rAF driver (Lucent).
++#
++# The host owns ticks via serviceOnce(). Delayed work uses timerCallbacks +
++# SCHEDULE_DELAY. The generation token is still bumped on start/stop so
++# suspend/resume stay coherent.
++serviceNonBlocking <- function(handle, generation) {
++  force(handle)
++  force(generation)
++  .wasmHostRequestService()
++  invisible()
++}
++
+ .shinyServerMinVersion <- '0.3.4'
+ 
+ # TRUE if `serviceApp` is on the call stack — i.e. we're inside an app tick.
+diff --git a/R/shiny.R b/R/shiny.R
+index 4e4a8f4..f929800 100644
+--- a/R/shiny.R
++++ b/R/shiny.R
+@@ -817,7 +817,7 @@ ShinySession <- R6Class(
+         # OK, it's essentially a no-op in that case.
+         on.exit({
+           if (private$busyCount == 0L && private$cycleStartActionQueue$size() > 0L) {
+-            later::later(function() {
++            .wasmHostDefer(function() {
+               if (private$busyCount == 0L) {
+                 private$startCycle()
+               }
+@@ -2522,14 +2522,17 @@ ShinySession <- R6Class(
+         rLog$asyncStop(domain = self)
+         private$sendMessage(busy = "idle")
+         self$requestFlush()
+-        # We defer the call to startCycle() using later(), to defend against
+-        # cycles where we continually call startCycle which causes an observer
+-        # to fire which calls startCycle which causes an observer to fire...
++        # We defer the call to startCycle() to defend against cycles where we
++        # continually call startCycle which causes an observer to fire which
++        # calls startCycle which causes an observer to fire...
+         #
+         # It's OK for these cycles to occur, but we must return control to the
+         # event loop between iterations (or at least sometimes) in order to not
+         # make the whole Shiny app go unresponsive.
+-        later::later(function() {
++        #
++        # Host mode: scheduleTask(0) + host rAF (not later's JS timers — those
++        # are unreliable in Chromium dedicated workers).
++        .wasmHostDefer(function() {
+           if (private$busyCount == 0L) {
+             private$startCycle()
+           }
+diff --git a/R/timer.R b/R/timer.R
+index 2bdecfb..c2b2e87 100644
+--- a/R/timer.R
++++ b/R/timer.R
+@@ -117,6 +117,12 @@ scheduleTask <- function(millis, callback) {
+   cancelled <- FALSE
+   id <- timerCallbacks$schedule(millis, callback)
+ 
++  # Tell the host when the next timer is due — but not while already inside a
++  # serviceApp tick (serviceOnce arms the delay once at the end).
++  if (!.isInAppTick()) {
++    .wasmHostMaybeScheduleNext()
++  }
++
+   function() {
+     invisible(timerCallbacks$unschedule(id))
+   }
+diff --git a/R/wasm-host.R b/R/wasm-host.R
+new file mode 100644
+index 0000000..29f7888
+--- /dev/null
++++ b/R/wasm-host.R
+@@ -0,0 +1,124 @@
++# Wasm / Lucent host service bridge.
++#
++# This Shiny build only runs under a browser host (Lucent). The host owns the
++# service loop via MessageChannel / rAF → serviceOnce(). After each SERVICE_TICK
++# the host arms the next delay from SERVICE_STATUS.nextDelayMs. scheduleTask()
++# outside a tick still uses scheduleHostDelay / requestHostService. There is no
++# later-based self-scheduling and no idle heartbeat.
++
++# Ask the JS host for an immediate service wake (NEED_SERVICE).
++.wasmHostRequestService <- function() {
++  tryCatch(
++    httpuv:::httpuv_eval_js(
++      "if (globalThis.Module && Module.httpuv && typeof Module.httpuv.requestHostService === 'function') { Module.httpuv.requestHostService(); }"
++    ),
++    error = function(e) invisible()
++  )
++  invisible()
++}
++
++# Ask the JS host to wake after `delayMs` (SCHEDULE_DELAY → setTimeout → MessageChannel).
++.wasmHostScheduleDelay <- function(delayMs) {
++  delayMs <- suppressWarnings(as.numeric(delayMs)[1])
++  if (length(delayMs) == 0 || !is.finite(delayMs)) {
++    return(invisible())
++  }
++  delayMs <- max(0, delayMs)
++  delay_js <- format(delayMs, scientific = FALSE, trim = TRUE)
++  tryCatch(
++    httpuv:::httpuv_eval_js(sprintf(
++      "if (globalThis.Module && Module.httpuv && typeof Module.httpuv.scheduleHostDelay === 'function') { Module.httpuv.scheduleHostDelay(%s); }",
++      delay_js
++    )),
++    error = function(e) invisible()
++  )
++  invisible()
++}
++
++# Ms until the next timerCallbacks deadline, or Inf when idle.
++# No idle heartbeat: when nothing is scheduled the host waits for push wakes
++# (NEED_SERVICE from HTTP/WS, scheduleTask, or visibilitychange).
++.wasmHostNextDelayMs <- function() {
++  delay <- timerCallbacks$timeToNextEvent()
++  if (!is.finite(delay)) {
++    return(Inf)
++  }
++  max(0, delay)
++}
++
++.wasmHostMaybeScheduleNext <- function() {
++  if (!isRunning() || isTRUE(.globals$stopped)) {
++    return(invisible())
++  }
++  delay_ms <- .wasmHostNextDelayMs()
++  if (!is.finite(delay_ms)) {
++    return(invisible())
++  }
++  if (delay_ms <= 0) {
++    .wasmHostRequestService()
++  } else {
++    .wasmHostScheduleDelay(delay_ms)
++  }
++  invisible()
++}
++
++#' Defer work to the next host service turn via [scheduleTask()] (0ms).
++#' @param callback Zero-argument function.
++#' @keywords internal
++#' @noRd
++.wasmHostDefer <- function(callback) {
++  force(callback)
++  scheduleTask(0, callback)
++  invisible()
++}
++
++#' Suspend the host-driven service loop
++#'
++#' Bumps the internal service-generation token. Used by Lucent while pushing
++#' HTTP work through `evalR`.
++#'
++#' @seealso [resumeServiceLoop()], [serviceOnce()], [startApp()]
++#' @export
++suspendServiceLoop <- function() {
++  if (!isRunning()) {
++    return(invisible())
++  }
++  .globals$serviceGeneration <- (.globals$serviceGeneration %||% 0L) + 1L
++  invisible()
++}
++
++#' Resume the host-driven service loop
++#'
++#' Signals the host for an immediate [serviceOnce()] tick.
++#'
++#' @seealso [suspendServiceLoop()], [serviceOnce()], [startApp()]
++#' @export
++resumeServiceLoop <- function() {
++  if (!isRunning()) {
++    return(invisible())
++  }
++  .wasmHostRequestService()
++  invisible()
++}
++
++#' Run one host-driven Shiny service tick
++#'
++#' Runs [serviceApp()] (which batch-drains due timers and reactive flushes).
++#' The Lucent host learns the next wake delay from `SERVICE_STATUS.nextDelayMs`
++#' (via `serviceOnceHadWork`); this function does not call `scheduleHostDelay`.
++#'
++#' @return Invisibly, `TRUE` if another immediate host tick is warranted,
++#'   otherwise `FALSE`.
++#' @seealso [suspendServiceLoop()], [resumeServiceLoop()]
++#' @export
++serviceOnce <- function() {
++  had_work <- FALSE
++  has_srv <- !is.null(getShinyOption("server", default = NULL))
++  if (has_srv) {
++    serviceApp()
++    # Continue while timers are due OR a session still needs flushOutput (e.g.
++    # progressKeys awaiting a value after renderUI — must not report idle).
++    had_work <- .wasmTimersDue() || appsNeedingFlush$size() > 0L
++  }
++  invisible(had_work)
++}
+-- 
+2.55.0
+
