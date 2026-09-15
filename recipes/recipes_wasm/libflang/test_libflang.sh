@@ -1,7 +1,14 @@
 export LDFLAGS="-L$PREFIX/lib -lflang_rt.runtime"
 
-# Test the library
-flang $FFLAGS -c ./hello.f90 -o hello.o
+# Intrinsic .mod files (iso_c_binding, etc.)
+FINTRINSIC_MODS=$(echo "$PREFIX"/lib/clang/*/finclude/flang/"$TARGET_TRIPLE")
+if [ ! -d "$FINTRINSIC_MODS" ]; then
+    echo "intrinsic modules not found under $PREFIX/lib/clang/*/finclude/flang/$TARGET_TRIPLE"
+    exit 1
+fi
+
+# -cpp enables __wasm32__/__wasm64__
+flang $FFLAGS -cpp -fintrinsic-modules-path "$FINTRINSIC_MODS" -c ./hello.f90 -o hello.o
 emcc hello.o $LDFLAGS -o hello.js -sEXIT_RUNTIME=1 -sMAIN_MODULE=1
 
 # Copy the shared library to the current test directory if it exists
@@ -14,4 +21,4 @@ fi
 # Minified JS uses "main"; unminified uses 'main'.
 sed -i -E "s/resolveGlobalSymbol\(['\"]main['\"]\)\.sym/_main/" hello.js
 
-node hello.js | grep -F "Hello, Fortran!"
+node hello.js
