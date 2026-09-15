@@ -39,6 +39,9 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip
         "-c", "bioconda"
     ])
 
+    # disable strict priority
+    cmd.append("--channel-priority disabled")
+
     # pass existing env vars to subprocess
     print(f"Running rattler-build with command: {cmd}")
 

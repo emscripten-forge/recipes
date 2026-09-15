@@ -3,6 +3,7 @@ context:
   cross_target_plattform: emscripten-wasm32
   target_plattform: emscripten-wasm32
   default_abi_level: 2.2
+  build_number: 1
 
 package:
   name: numpy
@@ -11,7 +12,7 @@ source:
   url: https://github.com/numpy/numpy/releases/download/v${{ version }}/numpy-${{ version }}.tar.gz
   sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
 build:
-  number: 0
+  number: ${{ build_number }}
 
   files:
     exclude:
@@ -35,7 +36,7 @@ requirements:
   - pkg-config
   - python
   host:
-  - libpython-static
+  - python-dev
   run_exports:
   - numpy >=${{ default_abi_level }},<3
 tests:
@@ -44,15 +45,16 @@ tests:
     requirements:
       build:
       - generic-testing
-# - script: pytester
-#   requirements:
-#     build:
-#     - pytester
-#     run:
-#     - pytester-run
-#   files:
-#     recipe:
-#     - test_numpy.py
+  - script: pytester
+    requirements:
+      build:
+      - microsoft::playwright
+      - pytester
+      run:
+      - pytester-run
+    files:
+      recipe:
+      - test_numpy.py
 
 about:
   homepage: http://numpy.org/
