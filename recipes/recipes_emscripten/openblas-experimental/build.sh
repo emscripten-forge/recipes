@@ -19,7 +19,7 @@ export TARGET=WASM128_GENERIC
 # OPENBLAS_WASM_RELAXED_SIMD comes from the recipe variant (0 = portable
 # SIMD128 default, 1 = opt-in relaxed SIMD / FMA). Not portable to engines
 # without the feature (notably shipping Safari / JavaScriptCore).
-# See OpenBLAS #6020 and docs/install.md.
+# See https://github.com/OpenMathLib/OpenBLAS/pull/6020 and docs/install.md.
 export WASM_RELAXED_SIMD="${OPENBLAS_WASM_RELAXED_SIMD:-0}"
 
 MAKE_ARGS=(
