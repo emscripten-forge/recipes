@@ -1,6 +1,12 @@
 #!/bin/bash
 set -ex
 
+pushd cwebx
+make ctanglex cweavex CC=cc CFLAGS="-O2 -std=c89 -Wno-implicit-int -Wno-implicit-function-declaration"
+popd
+
+touch cwebx/ctanglex cwebx/cweavex
+
 WASM_LDFLAGS="-s TOTAL_STACK=32mb -s INITIAL_MEMORY=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4gb -s FORCE_FILESYSTEM=1"
 
 make -j${CPU_COUNT} readline=false \
