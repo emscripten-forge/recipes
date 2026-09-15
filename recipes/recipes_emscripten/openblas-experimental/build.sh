@@ -16,12 +16,18 @@ export USE_THREAD=0
 # WASM128_GENERIC enables WASM SIMD128 kernels (SGEMM/DGEMM, DAXPY, SUM, DOT, ROT, TRSM).
 # Makefile.wasm adds -msimd128 automatically for this architecture.
 export TARGET=WASM128_GENERIC
+# OPENBLAS_WASM_RELAXED_SIMD comes from the recipe variant (0 = portable
+# SIMD128 default, 1 = opt-in relaxed SIMD / FMA). Not portable to engines
+# without the feature (notably shipping Safari / JavaScriptCore).
+# See https://github.com/OpenMathLib/OpenBLAS/blob/develop/docs/install.md#webassembly
+export WASM_RELAXED_SIMD="${OPENBLAS_WASM_RELAXED_SIMD:-0}"
 
 MAKE_ARGS=(
     $BUILD_CORES
     HOSTCC=gcc
     TARGET="${TARGET}"
     USE_THREAD=0
+    WASM_RELAXED_SIMD="${WASM_RELAXED_SIMD}"
 )
 
 emmake make shared "${MAKE_ARGS[@]}"
@@ -68,7 +74,7 @@ cat > "${PREFIX}/lib/pkgconfig/openblas.pc" <<EOF
 prefix=\${pcfiledir}/../..
 libdir=\${prefix}/lib
 includedir=\${prefix}/include
-openblas_config=USE_THREAD=0 TARGET=${TARGET}
+openblas_config=USE_THREAD=0 TARGET=${TARGET} WASM_RELAXED_SIMD=${WASM_RELAXED_SIMD}
 version=${PKG_VERSION}
 Name: openblas
 Description: OpenBLAS is an optimized BLAS library based on GotoBLAS2 1.13 BSD version
