@@ -1,0 +1,58 @@
+context:
+  name: httpuv
+  version: 1.6.17
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/IsabelParedes/r-httpuv-wasm/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 92894bd363ea1495aa6a809825d87deed58a04848ce5e247a2504b705a4c75b1
+
+build:
+  number: 5
+  # Dependencies not yet available for R 4.6.x on conda-forge
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  host:
+  - if: not osx
+    then:
+    - r-base ==${{ r_base }} h15dba0b_1
+    else:
+    - r-base ==${{ r_base }}
+  - r-jsonlite
+  - r-mime
+  - r-r6
+  run:
+  - if: not osx
+    then:
+    - r-base ==${{ r_base }} h15dba0b_1
+    else:
+    - r-base ==${{ r_base }}
+  - r-jsonlite
+  - r-jsonlite
+  - r-mime
+  - r-r6
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/libs/${{ name }}.so
+- r:
+    libraries:
+    - httpuv
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/rstudio/httpuv/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Experimental version of httpuv for WebAssembly.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

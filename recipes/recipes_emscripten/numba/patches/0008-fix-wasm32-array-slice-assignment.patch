@@ -1,0 +1,19 @@
+diff --git a/numba/np/arrayobj.py b/numba/np/arrayobj.py
+index ae81627..e4af178 100644
+--- a/numba/np/arrayobj.py
++++ b/numba/np/arrayobj.py
+@@ -1982,6 +1982,14 @@ def fancy_setslice(context, builder, sig, args, index_types, indices):
+                   types.UniTuple(types.int64, len(index_shape)))
+         raise_sig = fnty.get_call_type(context.typing_context, argtys, {})
+         func = context.get_function(fnty, raise_sig)
++        src_shapes = tuple(
++            context.cast(builder, value, types.intp, types.int64)
++            for value in src_shapes
++        )
++        index_shape = tuple(
++            context.cast(builder, value, types.intp, types.int64)
++            for value in index_shape
++        )
+         func(builder, (context.make_tuple(builder, raise_sig.args[0],
+                                           src_shapes),
+                        context.make_tuple(builder, raise_sig.args[1],

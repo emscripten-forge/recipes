@@ -1,0 +1,206 @@
+diff --git a/numba/core/base.py b/numba/core/base.py
+index 6ac2f58..e2756f3 100644
+--- a/numba/core/base.py
++++ b/numba/core/base.py
+@@ -311,7 +311,9 @@ class BaseContext(object):
+         """
+         if envname not in module.globals:
+             gv = llvmir.GlobalVariable(module, cgutils.voidptr_t, name=envname)
+-            gv.linkage = 'common'
++            gv.linkage = (
++                "weak" if sys.platform == "emscripten" else "common"
++            )
+             gv.initializer = cgutils.get_null_value(gv.type.pointee)
+ 
+         return module.globals[envname]
+diff --git a/numba/core/codegen.py b/numba/core/codegen.py
+index 39f32fe..76fcf39 100644
+--- a/numba/core/codegen.py
++++ b/numba/core/codegen.py
+@@ -4,13 +4,14 @@ import locale
+ import weakref
+ import ctypes
+ import html
++import sys
+ import textwrap
+ 
+ import llvmlite.binding as ll
+ import llvmlite.ir as llvmir
+ 
+ from abc import abstractmethod, ABCMeta
+-from numba.core import utils, config, cgutils
++from numba.core import utils, config, cgutils, wasm_trace
+ from numba.core.llvm_bindings import create_pass_builder
+ from numba.core.runtime.nrtopt import remove_redundant_nrt_refct
+ from numba.core.runtime import rtsys
+@@ -753,20 +754,32 @@ class CPUCodeLibrary(CodeLibrary):
+ 
+         self._raise_if_finalized()
+ 
++        functions = list(self._final_module.functions)
++        wasm_trace.log(
++            "llvm",
++            f"module {self.name!r}: "
++            f"{sum(not fn.is_declaration for fn in functions)} definition(s), "
++            f"{sum(fn.is_declaration for fn in functions)} imported "
++            "function(s); optimizing before emission",
++        )
++
+         if config.DUMP_FUNC_OPT:
+             dump("FUNCTION OPTIMIZED DUMP %s" % self.name,
+                  self.get_llvm_str(), 'llvm')
+ 
+         # Link libraries for shared code
+-        seen = set()
+-        for library in self._linking_libraries:
+-            if library not in seen:
+-                # Parent inherits reload_init
+-                self._reload_init.update(library._reload_init)
+-                seen.add(library)
+-                self._final_module.link_in(
+-                    library._get_module_for_linking(), preserve=True,
+-                )
++        # Emscripten loads every library as its own RTLD_GLOBAL WASM
++        # SIDE_MODULE. Merging those definitions again creates duplicates.
++        if sys.platform != "emscripten":
++            seen = set()
++            for library in self._linking_libraries:
++                if library not in seen:
++                    # Parent inherits reload_init
++                    self._reload_init.update(library._reload_init)
++                    seen.add(library)
++                    self._final_module.link_in(
++                        library._get_module_for_linking(), preserve=True,
++                    )
+ 
+         # Optimize the module after all dependences are linked in above,
+         # to allow for inlining.
+@@ -782,6 +795,8 @@ class CPUCodeLibrary(CodeLibrary):
+                 self._dynamic_globals.append(gv.name)
+ 
+     def _verify_declare_only_symbols(self):
++        if sys.platform == "emscripten":
++            return
+         # Verify that no declare-only function compiled by numba.
+         for fn in self._final_module.functions:
+             # We will only check for symbol name starting with '_ZN5numba'
+@@ -1119,12 +1134,61 @@ class JitEngine(object):
+     #
+     # The remaining methods are re-export of the ExecutionEngine APIs
+     #
+-    set_object_cache = _proxy(ll.ExecutionEngine.set_object_cache)
+-    finalize_object = _proxy(ll.ExecutionEngine.finalize_object)
+-    get_function_address = _proxy(ll.ExecutionEngine.get_function_address)
+-    get_global_value_address = _proxy(
+-        ll.ExecutionEngine.get_global_value_address
++    if hasattr(ll, "ExecutionEngine"):
++        set_object_cache = _proxy(ll.ExecutionEngine.set_object_cache)
++        finalize_object = _proxy(ll.ExecutionEngine.finalize_object)
++        get_function_address = _proxy(ll.ExecutionEngine.get_function_address)
++        get_global_value_address = _proxy(
++            ll.ExecutionEngine.get_global_value_address
++            )
++
++
++class WasmJitEngine:
++    """JitEngine-compatible adapter around llvmlite's WASM engine."""
++
++    def __init__(self, wasm_engine):
++        self._ee = wasm_engine
++        self._defined_symbols = set()
++
++    def is_symbol_defined(self, name):
++        return name in self._defined_symbols
++
++    def _load_defined_symbols(self, module):
++        for values in (module.functions, module.global_variables):
++            self._defined_symbols.update(
++                value.name for value in values if not value.is_declaration
++            )
++
++    def add_module(self, module):
++        self._load_defined_symbols(module)
++        wasm_trace.log(
++            "wasm",
++            f"handing LLVM module {module.name!r} to llvmlite",
+         )
++        return self._ee.add_module(module)
++
++    def add_global_mapping(self, gv, addr):
++        self._defined_symbols.add(gv.name)
++
++    def finalize_object(self):
++        return self._ee.finalize_object()
++
++    def get_function_address(self, name):
++        address = self._ee.get_function_address(name)
++        wasm_trace.log(
++            "wrapper",
++            f"{name!r} is callable at WASM table index {address}",
++        )
++        return address
++
++    def get_global_value_address(self, name):
++        return self._ee.get_global_value_address(name)
++
++    def set_object_cache(self, *args, **kwargs):
++        return self._ee.set_object_cache(*args, **kwargs)
++
++    def enable_jit_events(self):
++        return False
+ 
+ 
+ class Codegen(metaclass=ABCMeta):
+@@ -1184,6 +1248,35 @@ class CPUCodegen(Codegen):
+     def _init(self, llvm_module):
+         assert list(llvm_module.global_variables) == [], "Module isn't empty"
+ 
++        if sys.platform == "emscripten":
++            wasm_features = config.CPU_FEATURES
++            if wasm_features is None:
++                wasm_features = "+simd128"
++            wasm_tm = ll.Target.from_triple(
++                "wasm32-unknown-emscripten"
++            ).create_target_machine(
++                features=wasm_features,
++                opt=config.OPT,
++                reloc="pic",
++            )
++            wasm_engine = ll.create_wasm_engine(target_machine=wasm_tm)
++            self._tm = wasm_tm
++            self._engine = WasmJitEngine(wasm_engine)
++            self._target_data = wasm_tm.target_data
++            self._data_layout = str(self._target_data)
++            self._tm_features = wasm_features
++            if config.OPT.is_opt_max:
++                self._loopvect = True
++                self._opt_level = 3
++            else:
++                self._loopvect = False
++                self._opt_level = 0
++            self._engine.set_object_cache(
++                self._library_class._object_compiled_hook,
++                self._library_class._object_getbuffer_hook,
++            )
++            return
++
+         target = ll.Target.from_triple(ll.get_process_triple())
+         tm_options = dict(opt=config.OPT)
+         self._tm_features = self._customize_tm_features()
+@@ -1412,6 +1494,16 @@ class JITCPUCodegen(CPUCodegen):
+ 
+         Update the GlobalVariable named *env_name* to the address of *env*.
+         """
++        if sys.platform == "emscripten":
++            try:
++                gvaddr = self._engine.get_global_value_address(env_name)
++                envptr = (ctypes.c_void_p * 1).from_address(gvaddr)
++                envptr[0] = ctypes.c_void_p(id(env))
++            except Exception:
++                # Emscripten may omit an unreferenced environment global.
++                pass
++            return
++
+         gvaddr = self._engine.get_global_value_address(env_name)
+         envptr = (ctypes.c_void_p * 1).from_address(gvaddr)
+         envptr[0] = ctypes.c_void_p(id(env))

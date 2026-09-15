@@ -1,0 +1,55 @@
+context:
+  name: FNN
+  version: 1.1.4.1
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 73d97487fd3eac8ae90f32fd439f1689b1923b5688d83fd57fd2faeea70cb854
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Fast Nearest Neighbor Search Algorithms and Applications
+  description: |-
+    Cover-tree and kd-tree fast k-nearest neighbor search algorithms and related applications
+    including KNN classification, regression and information measures are implemented.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

@@ -1,0 +1,114 @@
+From cc9ffe2d0ae883ad7731a3ea1470c05fcce65995 Mon Sep 17 00:00:00 2001
+From: "H. Vetinari" <h.vetinari@gmx.com>
+Date: Sat, 29 Oct 2022 09:20:52 +1100
+Subject: [PATCH 2/4] build against conda-forge's libqdldl
+
+---
+ c/CMakeLists.txt                   | 9 +++------
+ c/amd/include/SuiteSparse_config.h | 2 +-
+ c/amd/include/amd_internal.h       | 2 +-
+ c/amd/include/perm.h               | 2 +-
+ cpp/qdldl.hpp                      | 2 +-
+ setup.py                           | 5 +++--
+ 6 files changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/c/CMakeLists.txt b/c/CMakeLists.txt
+index a98b7a5..6a08bec 100644
+--- a/c/CMakeLists.txt
++++ b/c/CMakeLists.txt
+@@ -10,9 +10,7 @@ endif()
+ # Needed for compilation to succeed
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ 
+-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/out)
+-
+-add_subdirectory(qdldl EXCLUDE_FROM_ALL)
++find_package(qdldl REQUIRED CONFIG)
+ 
+ set(
+     amd_src
+@@ -37,9 +35,8 @@ set(
+ 
+ 
+ # Add QDLDL+AMD library
+-add_library(qdldlamd STATIC ${amd_src} $<TARGET_OBJECTS:qdldlobject>)
++add_library(qdldlamd STATIC ${amd_src})
++target_link_libraries(qdldlamd qdldl)
+ target_include_directories(qdldlamd PRIVATE
+ 	                   ${CMAKE_CURRENT_SOURCE_DIR}/amd/include
+-	                   ${CMAKE_CURRENT_SOURCE_DIR}/qdldl/include
+-                       ${CMAKE_CURRENT_BINARY_DIR}/qdldl/include
+ 			    )
+diff --git a/c/amd/include/SuiteSparse_config.h b/c/amd/include/SuiteSparse_config.h
+index ea3cea4..19ac8df 100644
+--- a/c/amd/include/SuiteSparse_config.h
++++ b/c/amd/include/SuiteSparse_config.h
+@@ -42,7 +42,7 @@
+ extern "C" {
+ #endif
+ 
+-#include "qdldl_types.h"
++#include "qdldl/qdldl_types.h"
+ #define DLONG
+ typedef QDLDL_float c_float;
+ 
+diff --git a/c/amd/include/amd_internal.h b/c/amd/include/amd_internal.h
+index eccde9f..dc26bb0 100644
+--- a/c/amd/include/amd_internal.h
++++ b/c/amd/include/amd_internal.h
+@@ -37,7 +37,7 @@
+ #define NDEBUG
+ #endif
+ 
+-#include "qdldl_types.h"
++#include "qdldl/qdldl_types.h"
+ #ifndef DLONG
+ #define DLONG
+ #endif
+diff --git a/c/amd/include/perm.h b/c/amd/include/perm.h
+index 16c2617..d1623f2 100644
+--- a/c/amd/include/perm.h
++++ b/c/amd/include/perm.h
+@@ -2,7 +2,7 @@
+ extern "C" {
+ # endif // ifdef __cplusplus
+ 
+-#include "qdldl_types.h"
++#include "qdldl/qdldl_types.h"
+ 
+ /**
+  * C = A(p,p)= PAP' where A and C are symmetric the upper part stored;
+diff --git a/cpp/qdldl.hpp b/cpp/qdldl.hpp
+index 83b4970..1a7b5d1 100644
+--- a/cpp/qdldl.hpp
++++ b/cpp/qdldl.hpp
+@@ -1,5 +1,5 @@
+ // Source code for QDLDL, AMD and permutations
+-#include "qdldl/include/qdldl.h"
++#include "qdldl/qdldl.h"
+ #include "amd/include/amd.h"
+ #include "amd/include/perm.h"
+ #include <stdexcept>
+diff --git a/setup.py b/setup.py
+index 684663d..4fa6522 100644
+--- a/setup.py
++++ b/setup.py
+@@ -32,6 +32,8 @@ class get_pybind_include(object):
+         import pybind11
+         return pybind11.get_include(self.user)
+ 
++# conda environment prefix
++prefix = os.environ["LIBRARY_PREFIX"] if system() == 'Windows' else os.environ["PREFIX"]
+ 
+ cmake_args = []
+ # What variables from the environment do we wish to pass on to cmake as variables?
+@@ -97,8 +99,7 @@ class build_ext_qdldl(build_ext):
+ qdldl = Extension('qdldl',
+                   sources=glob(os.path.join('cpp', '*.cpp')),
+                   include_dirs=[os.path.join('c'),
+-                                os.path.join('c', 'qdldl', 'include'),
+-                                os.path.join(qdldl_build_dir, 'qdldl', 'include'),
++                                os.path.join(prefix, 'include'),
+                                 get_pybind_include(),
+                                 get_pybind_include(user=False)],
+                   language='c++',

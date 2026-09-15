@@ -1,0 +1,61 @@
+context:
+  version: 3.14.1
+  name: libaom
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/arthenica/libaom/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a7ef86c744ad3899ca3d921713f6c9ff4bd000c3f3386d27b73fb58fd8ed544b
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - perl
+
+tests:
+- package_contents:
+    files:
+    - include/aom/aom.h
+    - include/aom/aom_decoder.h
+    - include/aom/aom_encoder.h
+    - include/aom/aomcx.h
+    - include/aom/aomdx.h
+    - lib/libaom.a
+    - lib/cmake/AOM/AOMConfig.cmake
+    - lib/pkgconfig/aom.pc
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/arthenica/libaom
+  repository: https://github.com/arthenica/libaom
+  license: BSD-2-Clause AND LicenseRef-Alliance-for-Open-Media-Patent-License-1.0
+  license_file: LICENSE
+  summary: AV1 Codec Library by the Alliance for Open Media
+  description: |
+    libaom is the reference implementation of the AV1 video codec by the
+    Alliance for Open Media. It includes an AV1 encoder and decoder.
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

@@ -1,0 +1,65 @@
+context:
+  version: 10.8.11
+
+package:
+  name: passagemath-qepcad
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-qepcad/passagemath_qepcad-${{ version }}.tar.gz
+  sha256: 940a6cb548179a58352c014d81dd1ddd0712a0c2f27903befc06234bd165628e
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython<3.3
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  run:
+  - python
+  - tarski
+  - cysignals
+  - passagemath-environment
+  - passagemath-repl
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_qepcad.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-symbolics
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Quantifier elimination by partial cylindrical algebraic decomposition with QEPCAD'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to QEPCAD.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_qepcad.py
+  recipe-maintainers:
+  - mkoeppe

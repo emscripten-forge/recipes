@@ -1,6 +1,8 @@
 from .git_utils import find_files_with_changes
 from .constants import RECIPES_SUBDIR_MAPPING
 import os
+import platform
+
 
 def find_recipes_with_changes(old, new):
     files_with_changes = find_files_with_changes(old=old, new=new)
@@ -8,6 +10,11 @@ def find_recipes_with_changes(old, new):
     recipes_with_changes = {k: set() for k in RECIPES_SUBDIR_MAPPING.keys()}
     # print("recipes_with_changes", recipes_with_changes)
     for subdir in RECIPES_SUBDIR_MAPPING.keys():
+        if  platform.system() == "Darwin" and subdir == "recipes_emscripten":
+            # skip recipes_emscripten on macOS
+            # we only build recipes/recipes on macOS
+            continue
+            
         for file_with_change in files_with_changes:
             if file_with_change.startswith(f"recipes/{subdir}/"):
                 # print(file_with_change)

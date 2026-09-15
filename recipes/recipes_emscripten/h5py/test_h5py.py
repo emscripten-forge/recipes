@@ -35,3 +35,19 @@ def test_usage():
 
     f = h5py.File("mytestfile.hdf5", "r")
     assert sorted(list(f.keys())) == ["mydataset", "subgroup"]
+
+
+def test_dimscales(tmp_path):
+    """Exercises the HL dimscale reopen path across a File close/open cycle."""
+    import h5py
+
+    path = str(tmp_path / "dimscales.h5")
+    with h5py.File(path, "w") as f:
+        scale = f.create_dataset("x", data=[0.0, 1.0, 2.0, 3.0])
+        scale.make_scale("x")
+        data = f.create_dataset("temp", data=[10.0, 20.0, 30.0, 40.0])
+        data.dims[0].attach_scale(scale)
+
+    with h5py.File(path, "r") as f:
+        assert h5py.h5ds.is_scale(f["x"].id)
+        assert f["temp"].dims[0][0].name == "/x"

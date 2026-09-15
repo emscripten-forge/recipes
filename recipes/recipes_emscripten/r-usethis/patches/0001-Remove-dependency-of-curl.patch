@@ -1,0 +1,207 @@
+From 719b15cac74ddf3c60ee210b545b1d53716479da Mon Sep 17 00:00:00 2001
+From: Raniere Gaia Costa da Silva <Raniere.CostadaSilva@gesis.org>
+Date: Wed, 4 Feb 2026 15:52:22 +0100
+Subject: [PATCH] Remove dependency of curl in r-usethis
+
+---
+ DESCRIPTION |  2 +-
+ R/course.R  | 82 ++++-------------------------------------------------
+ R/release.R | 22 +-------------
+ R/upkeep.R  | 11 +------
+ R/utils.R   |  3 +-
+ 5 files changed, 9 insertions(+), 111 deletions(-)
+
+diff --git a/DESCRIPTION b/DESCRIPTION
+index 1318caf..17afd34 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -21,7 +21,7 @@ License: MIT + file LICENSE
+ URL: https://usethis.r-lib.org, https://github.com/r-lib/usethis
+ BugReports: https://github.com/r-lib/usethis/issues
+ Depends: R (>= 4.1)
+-Imports: cli (>= 3.0.1), clipr (>= 0.3.0), crayon, curl (>= 2.7), desc
++Imports: cli (>= 3.0.1), clipr (>= 0.3.0), crayon, desc
+         (>= 1.4.2), fs (>= 1.3.0), gert (>= 1.4.1), gh (>= 1.2.1), glue
+         (>= 1.3.0), jsonlite, lifecycle (>= 1.0.0), purrr, rappdirs,
+         rlang (>= 1.1.0), rprojroot (>= 2.1.1), rstudioapi, stats,
+diff --git a/R/course.R b/R/course.R
+index 26083b7..a62666f 100644
+--- a/R/course.R
++++ b/R/course.R
+@@ -282,81 +282,15 @@ tidy_download <- function(url, destdir = getwd()) {
+ download_url <- function(
+   url,
+   destfile,
+-  handle = curl::new_handle(),
++  handle = "",
+   n_tries = 3,
+   retry_connecttimeout = 40L
+ ) {
+-  handle_options <- list(noprogress = FALSE, progressfunction = progress_fun)
+-  curl::handle_setopt(handle, .list = handle_options)
+-
+-  we_should_retry <- function(i, n_tries, status) {
+-    if (i >= n_tries) {
+-      FALSE
+-    } else if (inherits(status, "error")) {
+-      # TODO: find a way to detect a (connect) timeout more specifically?
+-      # https://github.com/jeroen/curl/issues/154
+-      # https://ec.haxx.se/usingcurl/usingcurl-timeouts
+-      # "Failing to connect within the given time will cause curl to exit with a
+-      # timeout exit code (28)."
+-      # (however, note that all timeouts lead to this same exit code)
+-      # https://ec.haxx.se/usingcurl/usingcurl-returns
+-      # "28. Operation timeout. The specified time-out period was reached
+-      # according to the conditions. curl offers several timeouts, and this exit
+-      # code tells one of those timeout limits were reached."
+-      # https://github.com/curl/curl/blob/272282a05416e42d2cc4a847a31fd457bc6cc827/lib/strerror.c#L143-L144
+-      # "Timeout was reached" <-- actual message we could potentially match
+-      TRUE
+-    } else {
+-      FALSE
+-    }
+-  }
+-
+-  status <- try_download(url, destfile, handle = handle)
+-  if (inherits(status, "error") && is_interactive()) {
+-    ui_bullets(c("x" = status$message))
+-    if (
+-      ui_nah(c(
+-        "!" = "Download failed :(",
+-        "i" = "See above for everything we know about why it failed.",
+-        " " = "Shall we try a couple more times, with a longer timeout?"
+-      ))
+-    ) {
+-      n_tries <- 1
+-    }
+-  }
+-
+-  i <- 1
+-  # invariant: we have made i download attempts
+-  while (we_should_retry(i, n_tries, status)) {
+-    if (i == 1) {
+-      curl::handle_setopt(
+-        handle,
+-        .list = c(connecttimeout = retry_connecttimeout)
+-      )
+-    }
+-    i <- i + 1
+-    ui_bullets(c("i" = "Retrying download ... attempt {i}."))
+-    status <- try_download(url, destfile, handle = handle)
+-  }
+-
+-  if (inherits(status, "error")) {
+-    stop(status)
+-  }
+-
+-  invisible(handle)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ try_download <- function(url, destfile, quiet = FALSE, mode = "wb", handle) {
+-  tryCatch(
+-    curl::curl_download(
+-      url = url,
+-      destfile = destfile,
+-      quiet = quiet,
+-      mode = mode,
+-      handle = handle
+-    ),
+-    error = function(e) e
+-  )
++  stop("Function not supported in Wasm.")
+ }
+ 
+ tidy_unzip <- function(zipfile, cleanup = FALSE) {
+@@ -573,17 +507,11 @@ path_before_slash <- function(filepath) {
+ }
+ 
+ content_type <- function(h) {
+-  headers <- curl::parse_headers_list(curl::handle_data(h)$headers)
+-  headers[["content-type"]]
++  stop("Function not supported in Wasm.")
+ }
+ 
+ content_disposition <- function(h) {
+-  headers <- curl::parse_headers_list(curl::handle_data(h)$headers)
+-  cd <- headers[["content-disposition"]]
+-  if (is.null(cd)) {
+-    return()
+-  }
+-  parse_content_disposition(cd)
++  stop("Function not supported in Wasm.")
+ }
+ 
+ check_is_zip <- function(ct) {
+diff --git a/R/release.R b/R/release.R
+index 89722e9..066763a 100644
+--- a/R/release.R
++++ b/R/release.R
+@@ -416,27 +416,7 @@ get_release_news <- function(
+ }
+ 
+ cran_version <- function(package = project_name(), available = NULL) {
+-  if (!curl::has_internet()) {
+-    return(NULL)
+-  }
+-
+-  if (is.null(available)) {
+-    # Guard against CRAN mirror being unset
+-    available <- tryCatch(
+-      available.packages(repos = default_cran_mirror()),
+-      error = function(e) NULL
+-    )
+-    if (is.null(available)) {
+-      return(NULL)
+-    }
+-  }
+-
+-  idx <- available[, "Package"] == package
+-  if (any(idx)) {
+-    as.package_version(available[package, "Version"])
+-  } else {
+-    NULL
+-  }
++  return(NULL)
+ }
+ 
+ cran_results_url <- function(package = project_name()) {
+diff --git a/R/upkeep.R b/R/upkeep.R
+index b6e6451..2df7093 100644
+--- a/R/upkeep.R
++++ b/R/upkeep.R
+@@ -333,16 +333,7 @@ tidy_upkeep_checklist <- function(
+ 
+ # https://www.tidyverse.org/blog/2019/04/r-version-support/
+ tidy_minimum_r_version <- function() {
+-  con <- curl::curl("https://api.r-hub.io/rversions/r-oldrel/4")
+-  withr::defer(close(con))
+-  # I do not want a failure here to make use_tidy_upkeep_issue() fail
+-  json <- tryCatch(readLines(con, warn = FALSE), error = function(e) NULL)
+-  if (is.null(json)) {
+-    oldrel_4 <- "3.6"
+-  } else {
+-    version <- jsonlite::fromJSON(json)$version
+-    oldrel_4 <- re_match(version, "[0-9]+[.][0-9]+")$.match
+-  }
++  oldrel_4 <- "4.1"
+   numeric_version(oldrel_4)
+ }
+ 
+diff --git a/R/utils.R b/R/utils.R
+index 5adbae6..50a4d7f 100644
+--- a/R/utils.R
++++ b/R/utils.R
+@@ -77,8 +77,7 @@ path_first_existing <- function(paths) {
+ }
+ 
+ is_online <- function(host) {
+-  bare_host <- sub("^https?://(.*)$", "\\1", host)
+-  !is.null(curl::nslookup(bare_host, error = FALSE))
++  stop("Function not supported in Wasm.")
+ }
+ 
+ year <- function() format(Sys.Date(), "%Y")
+-- 
+2.52.0
+

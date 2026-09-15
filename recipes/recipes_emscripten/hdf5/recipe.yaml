@@ -1,14 +1,17 @@
 context:
-  version: 1.12.3
-  maj_min_ver: 1.12
+  version: 1.14.6
+  maj_min_ver: 1.14
 
 package:
   name: hdf5
   version: ${{ version }}
 
 source:
-  url: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-${{ maj_min_ver }}/hdf5-${{version }}/src/hdf5-${{ version }}.tar.gz
-  sha256: c15adf34647918dd48150ea1bd9dffd3b32a3aec5298991d56048cc3d39b4f6f
+  url: https://support.hdfgroup.org/releases/hdf5/v${{ maj_min_ver | replace(".", "_") }}/v${{ version | replace(".", "_") }}/downloads/hdf5-${{ version }}.tar.gz
+  sha256: e4defbac30f50d64e1556374aa49e574417c9e72c6b1de7a4ff88c4b1bea6e9b
+  patches:
+  - patches/0001-fenv-fe-invalid-guard.patch
+  - patches/0002-drop-soversion.patch
 
 build:
   number: 0
@@ -20,6 +23,14 @@ requirements:
   - ${{ compiler("c") }}
   host:
   - zlib
+
+tests:
+- package_contents:
+    files:
+    - include/hdf5.h
+    - include/hdf5_hl.h
+    - lib/libhdf5.so
+    - lib/libhdf5_hl.so
 
 about:
   homepage: https://www.hdfgroup.org/solutions/hdf5/

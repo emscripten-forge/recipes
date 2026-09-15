@@ -1,0 +1,26 @@
+From 9bdfc795308e1f09e8476f7f95a30373ca7dcddf Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 27 Jul 2026 10:28:22 +0100
+Subject: [PATCH] Unlink target in PROXYFS rename
+
+---
+ src/lib/libproxyfs.js | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/lib/libproxyfs.js b/src/lib/libproxyfs.js
+index 6a2a9d35e..e536daa3f 100644
+--- a/src/lib/libproxyfs.js
++++ b/src/lib/libproxyfs.js
+@@ -106,6 +106,9 @@ addToLibrary({
+       rename(oldNode, newDir, newName) {
+         var oldPath = PROXYFS.realPath(oldNode);
+         var newPath = PATH.join2(PROXYFS.realPath(newDir), newName);
++        try {
++          FS.unlink(newPath);
++        } catch(e) {}
+         try {
+           oldNode.mount.opts.fs.rename(oldPath, newPath);
+           oldNode.name = newName;
+-- 
+2.50.1 (Apple Git-155)
+

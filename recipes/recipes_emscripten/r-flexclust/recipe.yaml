@@ -1,0 +1,70 @@
+context:
+  name: flexclust
+  version: 1.5.0
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: f0fb5f2c338b5b4d310cdbe6b55b7e49d3ffc625002390a145dd5abd2f495fa3
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }} 
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-lattice
+  - r-modeltools
+  - r-class
+  host:
+  - r-base ==${{ r_base }}
+  - r-lattice
+  - r-modeltools
+  - r-class
+  run:
+  - r-lattice
+  - r-modeltools
+  - r-class
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-only
+  license_family: GPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Flexible Cluster Algorithms
+  description: |-
+    The main function kcca implements a general framework for
+    k-centroids cluster analysis supporting arbitrary distance measures
+    and centroid computation. Further cluster methods include hard
+    competitive learning, neural gas, and QT clustering. There are
+    numerous visualization methods for cluster results (neighborhood
+    graphs, convex cluster hulls, barcharts of centroids, ...), and
+    bootstrap methods for the analysis of cluster stability.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

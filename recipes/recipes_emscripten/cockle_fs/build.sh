@@ -1,7 +1,3 @@
-# Need tsc installed and available in PATH to use --emit-tsd
-npm install typescript
-export PATH=$SRC_DIR/node_modules/typescript/bin:$PATH
-
 touch fs.c
 emcc fs.c -o fs.js \
     -Os \

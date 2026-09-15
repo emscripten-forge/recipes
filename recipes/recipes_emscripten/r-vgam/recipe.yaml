@@ -1,0 +1,75 @@
+context:
+  name: VGAM
+  version: 1.1-14
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 87820cf3141ecb5d16e1f9b16df6fa97358abcb9df063fd4673ab33c6983248f
+
+build:
+  number: 0
+  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://www.stat.auckland.ac.nz/~yee/VGAM/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-3.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Vector Generalized Linear and Additive Models
+  description: |-
+    An implementation of about 6 major classes of
+    statistical regression models. The central algorithm is
+    Fisher scoring and iterative reweighted least squares.
+    At the heart of this package are the vector generalized linear
+    and additive model (VGLM/VGAM) classes. VGLMs can be loosely
+    thought of as multivariate GLMs. VGAMs are data-driven
+    VGLMs that use smoothing. The book "Vector Generalized
+    Linear and Additive Models: With an Implementation in R"
+    (Yee, 2015) <DOI:10.1007/978-1-4939-2818-7> gives details of
+    the statistical framework and the package. Currently only
+    fixed-effects models are implemented. Many (100+) models and
+    distributions are estimated by maximum likelihood estimation
+    (MLE) or penalized MLE. The other classes are RR-VGLMs
+    (reduced-rank VGLMs), quadratic RR-VGLMs, doubly constrained
+    RR-VGLMs, quadratic RR-VGLMs, reduced-rank VGAMs,
+    RCIMs (row-column interaction models)---these classes perform
+    constrained and unconstrained quadratic ordination (CQO/UQO)
+    models in ecology, as well as constrained additive ordination
+    (CAO). Hauck-Donner effect detection is implemented.
+    Note that these functions are subject to change;
+    see the NEWS and ChangeLog files for latest changes.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

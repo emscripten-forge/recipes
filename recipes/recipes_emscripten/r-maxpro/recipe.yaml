@@ -1,0 +1,58 @@
+context:
+  name: MaxPro
+  version: 4.1-2
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 3b44f488125ee4b7ee05cb114e427e26e51cea9274afd2fe9a3cf439d2e542a5
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-nloptr
+  host:
+  - r-base ==${{ r_base }}
+  - r-nloptr
+  run:
+  - r-nloptr
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: LGPL-2.1-only
+  license_family: LGPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/LGPL-2
+  summary: Maximum Projection Designs
+  description: |-
+    Generate maximum projection (MaxPro) designs for quantitative and/or qualitative factors. Details of the MaxPro criterion can be found in: (1) Joseph, Gul, and Ba. (2015) "Maximum Projection Designs for Computer Experiments", Biometrika, 102, 371-380, and (2) Joseph, Gul, and Ba. (2018) "Designing Computer Experiments with Multiple Types of Factors: The MaxPro Approach", Journal of Quality Technology, to appear.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

@@ -1,0 +1,31 @@
+diff --git a/src/array.hh b/src/array.hh
+index a7e2ba5..11f00a6 100644
+--- a/src/array.hh
++++ b/src/array.hh
+@@ -94,6 +94,13 @@ MOD_INIT_FUNC(tinyarray);
+ template <typename T>
+ class Array : public Array_base {
+ public:
++    // PyVarObject is only 4-byte aligned on wasm32, while double and
++    // complex<double> require 8-byte alignment.  Therefore, the first item
++    // does not necessarily start immediately after Array_base.
++    static Py_ssize_t item_offset() {
++        return sizeof(Array<T>) - sizeof(T);
++    }
++
+     T *data() {
+         if (ob_base.ob_size >= -1) {
+             // ndim == 0 or 1
+diff --git a/src/array.cc b/src/array.cc
+index 3de04e7..3694b6d 100644
+--- a/src/array.cc
++++ b/src/array.cc
+@@ -1897,7 +1897,7 @@ template <typename T>
+ PyTypeObject Array<T>::pytype = {
+     PyVarObject_HEAD_INIT(&PyType_Type, 0)
+     pyname,
+-    sizeof(Array_base),             // tp_basicsize
++    Array<T>::item_offset(),         // tp_basicsize
+     sizeof(T),                      // tp_itemsize
+     (destructor)PyObject_Del,       // tp_dealloc
+     0,                              // tp_print

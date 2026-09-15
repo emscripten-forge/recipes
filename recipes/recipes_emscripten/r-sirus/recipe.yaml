@@ -1,0 +1,71 @@
+context:
+  name: sirus
+  version: 0.3.3
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 641021f9de510c08e91f4906839a38080e1d024265c82c448db00dcf31d41272
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp >= 0.11.2
+  - r-rcppeigen
+  - r-matrix
+  - r-rocr
+  - r-ggplot2
+  - r-glmnet
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp >= 0.11.2
+  - r-rcppeigen
+  - r-matrix
+  - r-rocr
+  - r-ggplot2
+  - r-glmnet
+  run:
+  - r-rcpp >= 0.11.2
+  - r-matrix
+  - r-rocr
+  - r-ggplot2
+  - r-glmnet
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://gitlab.com/drti/sirus
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://gitlab.com/drti/sirus
+  license: GPL-3.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Stable and Interpretable RUle Set
+  description: |-
+    A regression and classification algorithm based on random forests, which takes the form of a short list of rules. SIRUS combines the simplicity of decision trees with a predictivity close to random forests. The core aggregation principle of random forests is kept, but instead of aggregating predictions, SIRUS aggregates the forest structure: the most frequent nodes of the forest are selected to form a stable rule ensemble model. The algorithm is fully described in the following articles: Benard C., Biau G., da Veiga S., Scornet E. (2021), Electron. J. Statist., 15:427-505 <DOI:10.1214/20-EJS1792> for classification, and Benard C., Biau G., da Veiga S., Scornet E. (2021), AISTATS, PMLR 130:937-945 <http://proceedings.mlr.press/v130/benard21a>, for regression. This R package is a fork from the project ranger (<https://github.com/imbs-hl/ranger>).
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

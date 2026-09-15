@@ -1,0 +1,103 @@
+context:
+  name: copula
+  version: 1.1-7
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: c988bd6681b5d2ec29682a03d0197298c16258e4e182579f2e97a019abac5b00
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - r-matrix >= 1.5_0
+  - r-lattice
+  - r-cluster
+  - r-colorspace
+  - r-gsl
+  - r-adgoftest
+  - r-stabledist >= 0.6_4
+  - r-mvtnorm
+  - r-pcapp
+  - r-pspline
+  - r-numderiv
+  host:
+  - r-base ==${{ r_base }}
+  - libflang
+  - r-matrix >= 1.5_0
+  - r-lattice
+  - r-cluster
+  - r-colorspace
+  - r-gsl
+  - r-adgoftest
+  - r-stabledist >= 0.6_4
+  - r-mvtnorm
+  - r-pcapp
+  - r-pspline
+  - r-numderiv
+  run:
+  - r-matrix >= 1.5_0
+  - r-lattice
+  - r-cluster
+  - r-colorspace
+  - r-gsl
+  - r-adgoftest
+  - r-stabledist >= 0.6_4
+  - r-mvtnorm
+  - r-pcapp
+  - r-pspline
+  - r-numderiv
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    run:
+    - r-mass
+
+about:
+  homepage: https://copula.r-forge.r-project.org/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-3.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  - LICENCE
+  summary: Multivariate Dependence with Copulas
+  description: |-
+    Classes (S4) of commonly used elliptical, Archimedean,
+    extreme-value and other copula families, as well as their rotations,
+    mixtures and asymmetrizations. Nested Archimedean copulas, related
+    tools and special functions. Methods for density, distribution, random
+    number generation, bivariate dependence measures, Rosenblatt transform,
+    Kendall distribution function, perspective and contour plots. Fitting of
+    copula models with potentially partly fixed parameters, including
+    standard errors. Serial independence tests, copula specification tests
+    (independence, exchangeability, radial symmetry, extreme-value
+    dependence, goodness-of-fit) and model selection based on
+    cross-validation. Empirical copula, smoothed versions, and
+    non-parametric estimators of the Pickands dependence function.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

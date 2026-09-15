@@ -1,8 +1,8 @@
 diff --git a/clang/include/clang/Frontend/CompilerInstance.h b/clang/include/clang/Frontend/CompilerInstance.h
-index 0ae490f0e807..7a1b5875a590 100644
+index d0b41e9f18a1..f36857f259dd 100644
 --- a/clang/include/clang/Frontend/CompilerInstance.h
 +++ b/clang/include/clang/Frontend/CompilerInstance.h
-@@ -249,6 +249,11 @@ public:
+@@ -246,6 +246,11 @@ public:
    /// Load the list of plugins requested in the \c FrontendOptions.
    void LoadRequestedPlugins();
  
@@ -14,11 +14,26 @@ index 0ae490f0e807..7a1b5875a590 100644
    /// @}
    /// @name Compiler Invocation and Options
    /// @{
+diff --git a/clang/include/clang/Interpreter/IncrementalExecutor.h b/clang/include/clang/Interpreter/IncrementalExecutor.h
+index 0e879efa0b55..64a7627c0198 100644
+--- a/clang/include/clang/Interpreter/IncrementalExecutor.h
++++ b/clang/include/clang/Interpreter/IncrementalExecutor.h
+@@ -52,6 +52,10 @@ public:
+   std::optional<llvm::CodeModel::Model> CM = std::nullopt;
+   /// An optional external IncrementalExecutor
+   std::unique_ptr<IncrementalExecutor> IE;
++  /// mllvm args from the frontend; on wasm these are re-applied after each
++  /// lldMain call because lld resets all cl options for test-isolation
++  /// purposes.
++  std::vector<std::string> LLVMArgs;
+   /// An optional external orc jit builder
+   std::unique_ptr<llvm::orc::LLJITBuilder> JITBuilder;
+   /// A default callback that can be used in the IncrementalCompilerBuilder to
 diff --git a/clang/lib/Frontend/CompilerInstance.cpp b/clang/lib/Frontend/CompilerInstance.cpp
-index 6f8cc01eeed8..3336be5b60ed 100644
+index 088538c7449d..78685c8d9f68 100644
 --- a/clang/lib/Frontend/CompilerInstance.cpp
 +++ b/clang/lib/Frontend/CompilerInstance.cpp
-@@ -1138,6 +1138,18 @@ void CompilerInstance::LoadRequestedPlugins() {
+@@ -1101,6 +1101,20 @@ void CompilerInstance::LoadRequestedPlugins() {
    }
  }
  
@@ -30,7 +45,9 @@ index 6f8cc01eeed8..3336be5b60ed 100644
 +    for (unsigned i = 0; i != NumArgs; ++i)
 +      Args[i + 1] = getFrontendOpts().LLVMArgs[i].c_str();
 +    Args[NumArgs + 1] = nullptr;
-+    llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get());
++    llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get(), /*Overview=*/"",
++                                      /*Errs=*/nullptr,
++                                      /*VFS=*/&getVirtualFileSystem());
 +  }
 +}
 +
@@ -38,13 +55,17 @@ index 6f8cc01eeed8..3336be5b60ed 100644
  /// options.
  static Language getLanguageFromOptions(const LangOptions &LangOpts) {
 diff --git a/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp b/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp
-index 443eb4f1a29b..1d69654ce666 100644
+index 05f646b43e3c..2b0bf9c69fa3 100644
 --- a/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp
 +++ b/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp
-@@ -231,15 +231,7 @@ bool ExecuteCompilerInvocation(CompilerInstance *Clang) {
-   //
-   // FIXME: Remove this, one day.
-   // This should happen AFTER plugins have been loaded!
+@@ -233,21 +233,7 @@ bool ExecuteCompilerInvocation(CompilerInstance *Clang) {
+ 
+   Clang->LoadRequestedPlugins();
+ 
+-  // Honor -mllvm.
+-  //
+-  // FIXME: Remove this, one day.
+-  // This should happen AFTER plugins have been loaded!
 -  if (!Clang->getFrontendOpts().LLVMArgs.empty()) {
 -    unsigned NumArgs = Clang->getFrontendOpts().LLVMArgs.size();
 -    auto Args = std::make_unique<const char*[]>(NumArgs + 2);
@@ -52,49 +73,178 @@ index 443eb4f1a29b..1d69654ce666 100644
 -    for (unsigned i = 0; i != NumArgs; ++i)
 -      Args[i + 1] = Clang->getFrontendOpts().LLVMArgs[i].c_str();
 -    Args[NumArgs + 1] = nullptr;
--    llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get());
+-    llvm::cl::ParseCommandLineOptions(NumArgs + 1, Args.get(), /*Overview=*/"",
+-                                      /*Errs=*/nullptr,
+-                                      /*VFS=*/&Clang->getVirtualFileSystem());
 -  }
 +  Clang->parseLLVMArgs();
  
  #if CLANG_ENABLE_STATIC_ANALYZER
    // These should happen AFTER plugins have been loaded!
+diff --git a/clang/lib/Interpreter/IncrementalExecutor.cpp b/clang/lib/Interpreter/IncrementalExecutor.cpp
+index 71a54dc7d380..7772c6d48cb7 100644
+--- a/clang/lib/Interpreter/IncrementalExecutor.cpp
++++ b/clang/lib/Interpreter/IncrementalExecutor.cpp
+@@ -404,7 +404,7 @@ IncrementalExecutorBuilder::create(llvm::orc::ThreadSafeContext &TSC,
+   llvm::Error Err = llvm::Error::success();
+   std::unique_ptr<IncrementalExecutor> Executor;
+ #ifdef __EMSCRIPTEN__
+-  Executor = std::make_unique<WasmIncrementalExecutor>(Err);
++  Executor = std::make_unique<WasmIncrementalExecutor>(Err, LLVMArgs);
+ #else
+   Executor = std::make_unique<OrcIncrementalExecutor>(TSC, *JITBuilder, Err);
+ #endif
 diff --git a/clang/lib/Interpreter/Interpreter.cpp b/clang/lib/Interpreter/Interpreter.cpp
-index ed3bae59a144..98cd255cce5d 100644
+index 2684a00ce5f0..5d02dceb472a 100644
 --- a/clang/lib/Interpreter/Interpreter.cpp
 +++ b/clang/lib/Interpreter/Interpreter.cpp
-@@ -374,6 +374,9 @@ Interpreter::Interpreter(std::unique_ptr<CompilerInstance> Instance,
+@@ -257,6 +257,9 @@ Interpreter::Interpreter(std::unique_ptr<CompilerInstance> Instance,
    auto LLVMCtx = std::make_unique<llvm::LLVMContext>();
    TSCtx = std::make_unique<llvm::orc::ThreadSafeContext>(std::move(LLVMCtx));
  
-+  // Honor -mllvm options (this was missing in clang-repl path)
++  // Honor -mllvm options
 +  CI->parseLLVMArgs();
 +
    Act = TSCtx->withContextDo([&](llvm::LLVMContext *Ctx) {
      return std::make_unique<IncrementalAction>(*CI, *Ctx, ErrOut, *this,
                                                 std::move(Consumer));
-@@ -601,6 +604,12 @@ Interpreter::Parse(llvm::StringRef Code) {
-       return std::move(Err);
+@@ -499,6 +502,10 @@ llvm::Error Interpreter::CreateExecutor() {
+   if (!IncrExecutorBuilder)
+     IncrExecutorBuilder = std::make_unique<IncrementalExecutorBuilder>();
+ 
++  // Propagate mllvm args so the wasm executor can restore them after each
++  // lldMain invocation (which resets all cl options for test isolation).
++  IncrExecutorBuilder->LLVMArgs = CI->getFrontendOpts().LLVMArgs;
++
+   auto ExecutorOrErr = IncrExecutorBuilder->create(*TSCtx, CI->getTarget());
+   if (ExecutorOrErr)
+     IncrExecutor = std::move(*ExecutorOrErr);
+diff --git a/clang/lib/Interpreter/Wasm.cpp b/clang/lib/Interpreter/Wasm.cpp
+index 007227c73dc5..6ed2d58124bd 100644
+--- a/clang/lib/Interpreter/Wasm.cpp
++++ b/clang/lib/Interpreter/Wasm.cpp
+@@ -12,6 +12,7 @@
+ 
+ #include "Wasm.h"
+ 
++#include "llvm/Support/CommandLine.h"
+ #include "llvm/Support/FileSystem.h"
+ #include "llvm/Support/Path.h"
+ #include <llvm/IR/LegacyPassManager.h>
+@@ -59,7 +60,9 @@ bool link(llvm::ArrayRef<const char *> args, llvm::raw_ostream &stdoutOS,
+ 
+ namespace clang {
+ 
+-WasmIncrementalExecutor::WasmIncrementalExecutor(llvm::Error &Err) {
++WasmIncrementalExecutor::WasmIncrementalExecutor(
++    llvm::Error &Err, std::vector<std::string> LLVMArgs)
++    : StoredLLVMArgs(std::move(LLVMArgs)) {
+   llvm::ErrorAsOutParameter EAO(&Err);
+ 
+   if (Err)
+@@ -133,6 +136,18 @@ llvm::Error WasmIncrementalExecutor::addModule(PartialTranslationUnit &PTU) {
+   lld::Result Result =
+       lld::lldMain(LinkerArgs, llvm::outs(), llvm::errs(), WasmDriverArgs);
+ 
++  // lld::wasm::linkerMain calls cl::ResetAllOptionOccurrences() which wipes
++  // all global LLVM cl options, including mllvm flags set by the frontend
++  // (e.g. -wasm-enable-eh, -wasm-enable-sjlj). Re-apply them so the next
++  // Parse() call's WebAssemblyTargetMachine creation finds the correct state.
++  if (!StoredLLVMArgs.empty()) {
++    std::vector<const char *> ArgPtrs;
++    ArgPtrs.push_back("clang-repl (restoring LLVM options)");
++    for (const std::string &Arg : StoredLLVMArgs)
++      ArgPtrs.push_back(Arg.c_str());
++    llvm::cl::ParseCommandLineOptions(ArgPtrs.size(), ArgPtrs.data());
++  }
++
+   if (Result.retCode)
+     return llvm::make_error<llvm::StringError>(
+         "Failed to link incremental module", llvm::inconvertibleErrorCode());
+diff --git a/clang/lib/Interpreter/Wasm.h b/clang/lib/Interpreter/Wasm.h
+index bf8777a41eac..6340393dc6b9 100644
+--- a/clang/lib/Interpreter/Wasm.h
++++ b/clang/lib/Interpreter/Wasm.h
+@@ -19,12 +19,14 @@
+ 
+ #include "clang/Interpreter/IncrementalExecutor.h"
+ #include "llvm/ADT/SmallString.h"
++#include <string>
++#include <vector>
+ 
+ namespace clang {
+ 
+ class WasmIncrementalExecutor : public IncrementalExecutor {
+ public:
+-  WasmIncrementalExecutor(llvm::Error &Err);
++  WasmIncrementalExecutor(llvm::Error &Err, std::vector<std::string> LLVMArgs);
+   ~WasmIncrementalExecutor() override;
+ 
+   llvm::Error addModule(PartialTranslationUnit &PTU) override;
+@@ -38,6 +40,7 @@ public:
+ 
+ private:
+   llvm::SmallString<256> TempDir;
++  std::vector<std::string> StoredLLVMArgs;
+ };
+ 
+ } // namespace clang
+diff --git a/clang/unittests/Interpreter/CMakeLists.txt b/clang/unittests/Interpreter/CMakeLists.txt
+index 66b396b53cb5..9fdd69ea4906 100644
+--- a/clang/unittests/Interpreter/CMakeLists.txt
++++ b/clang/unittests/Interpreter/CMakeLists.txt
+@@ -76,6 +76,7 @@ get_target_property(LINKED_LIBS ClangReplInterpreterTests LINK_LIBRARIES)
+ list(REMOVE_ITEM LINKED_LIBS LLVMSupport)
+ set_target_properties(ClangReplInterpreterTests PROPERTIES LINK_LIBRARIES "${LINKED_LIBS}")
+ target_link_options(ClangReplInterpreterTests
++  PUBLIC "SHELL: -fwasm-exceptions"
+   PUBLIC "SHELL: -s MAIN_MODULE=1"
+   PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
+   PUBLIC "SHELL: -s STACK_SIZE=32mb"
+diff --git a/clang/unittests/Interpreter/InterpreterTest.cpp b/clang/unittests/Interpreter/InterpreterTest.cpp
+index 9ff9092524d2..15468e916c94 100644
+--- a/clang/unittests/Interpreter/InterpreterTest.cpp
++++ b/clang/unittests/Interpreter/InterpreterTest.cpp
+@@ -443,4 +443,19 @@ TEST_F(InterpreterTest, TranslationUnit_CanonicalDecl) {
+             sema.getASTContext().getTranslationUnitDecl()->getCanonicalDecl());
+ }
+ 
++TEST_F(InterpreterTest, EmscriptenExceptionHandling) {
++#ifndef __EMSCRIPTEN__
++  GTEST_SKIP() << "This test only applies to Emscripten builds.";
++#endif
++
++  using Args = std::vector<const char *>;
++  Args ExtraArgs = {"-std=c++23", "-v", "-fwasm-exceptions", "-mllvm",
++                    "-wasm-enable-sjlj"};
++
++  std::unique_ptr<Interpreter> Interp = createInterpreter(ExtraArgs);
++
++  llvm::cantFail(
++      Interp->ParseAndExecute("try { throw 1; } catch (...) { 0; }"));
++}
++
+ } // end anonymous namespace
+diff --git a/clang/unittests/Interpreter/InterpreterTestFixture.h b/clang/unittests/Interpreter/InterpreterTestFixture.h
+index b088fa4a5f89..c4a30dd06220 100644
+--- a/clang/unittests/Interpreter/InterpreterTestFixture.h
++++ b/clang/unittests/Interpreter/InterpreterTestFixture.h
+@@ -55,7 +55,17 @@ protected:
+     llvm::InitializeNativeTargetAsmPrinter();
    }
  
-+  // Re-apply stored -mllvm options; wasm builds reset LLVM opts in wasm-ld.
-+  // llvm::Triple Triple(getCompilerInstance()->getTargetOpts().Triple);
-+  // if (Triple.isWasm()) {
-+  //   getCompilerInstance()->parseLLVMArgs();
-+  // }
-+
-   // Tell the interpreter sliently ignore unused expressions since value
-   // printing could cause it.
-   getCompilerInstance()->getDiagnostics().setSeverity(
-diff --git a/lld/wasm/Driver.cpp b/lld/wasm/Driver.cpp
-index 1c5d21c06f5a..2f39d77cca60 100644
---- a/lld/wasm/Driver.cpp
-+++ b/lld/wasm/Driver.cpp
-@@ -1307,7 +1307,7 @@ void LinkerDriver::linkerMain(ArrayRef<const char *> argsArr) {
-   v.push_back("wasm-ld (LLVM option parsing)");
-   for (auto *arg : args.filtered(OPT_mllvm))
-     v.push_back(arg->getValue());
--  cl::ResetAllOptionOccurrences();
-+  // cl::ResetAllOptionOccurrences();
-   cl::ParseCommandLineOptions(v.size(), v.data());
+-  static void TearDownTestSuite() { llvm::llvm_shutdown(); }
++  static void TearDownTestSuite() {
++    // llvm_shutdown() cleans up JIT (LLJIT/ORC) state between test suites.
++    // On Emscripten, WasmIncrementalExecutor is used instead of LLJIT, so
++    // there is no JIT state to tear down. Calling llvm_shutdown() here would
++    // destroy the ManagedStatic<CommandLineParser> global, permanently
++    // deregistering all cl::opt options (wasm-enable-eh, etc.) since their
++    // constructors already ran and will not fire again after the reset.
++#ifndef __EMSCRIPTEN__
++    llvm::llvm_shutdown();
++#endif
++  }
+ };
  
-   readConfigs(args);
+ } // namespace clang

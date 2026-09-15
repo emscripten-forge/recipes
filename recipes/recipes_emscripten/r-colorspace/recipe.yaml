@@ -1,19 +1,20 @@
 context:
-  version: 2.1-2
-  name: r-colorspace
+  version: 2.1-3
+  name: colorspace
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: ec71499d33ef5d72b7fb3359b8320639e06e413abad61a070201178a254b153e
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 47858800f9eed08cbcdbadba104b6502219c6f25f339c611161b374704cd03cc
 
 build:
-  number: 7
+  number: 0
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -26,7 +27,14 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: http://colorspace.R-Forge.R-project.org

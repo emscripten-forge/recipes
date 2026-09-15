@@ -1,0 +1,53 @@
+diff --git a/numba/_dynfunc.c b/numba/_dynfunc.c
+index d2722d5..313f6e8 100644
+--- a/numba/_dynfunc.c
++++ b/numba/_dynfunc.c
+@@ -519,7 +519,11 @@ static PyTypeObject GeneratorType = {
+ };
+ 
+ /* Dynamically create a new generator object */
++#ifdef __EMSCRIPTEN__
++__attribute__((visibility("default"))) PyObject *
++#else
+ static PyObject *
++#endif
+ Numba_make_generator(Py_ssize_t gen_state_size,
+                      void *initial_state,
+                      PyCFunctionWithKeywords nextfunc,
+diff --git a/numba/_numba_common.h b/numba/_numba_common.h
+index d458e42..7b27a27 100644
+--- a/numba/_numba_common.h
++++ b/numba/_numba_common.h
+@@ -10,7 +10,15 @@
+  * but are not exposed outside of a shared library or executable.
+  * Note this is default behaviour for global symbols under Windows.
+  */
+-#if defined(_MSC_VER)
++#if defined(__EMSCRIPTEN__)
++    /*
++     * Generated WASM SIDE_MODULEs resolve Numba runtime helpers by name.
++     * Keep those helpers visible from the extension SIDE_MODULE that owns
++     * them.  Native builds retain Numba's usual hidden-symbol policy.
++     */
++    #define VISIBILITY_HIDDEN __attribute__ ((visibility("default")))
++    #define VISIBILITY_GLOBAL __attribute__ ((visibility("default")))
++#elif defined(_MSC_VER)
+     #define VISIBILITY_HIDDEN
+     #define VISIBILITY_GLOBAL __declspec(dllexport)
+ #elif (__has_attribute(visibility) || (defined(__GNUC__) && __GNUC__ >= 4))
+diff --git a/numba/core/runtime/_nrt_pythonmod.c b/numba/core/runtime/_nrt_pythonmod.c
+index 19eb120..2dfe476 100644
+--- a/numba/core/runtime/_nrt_pythonmod.c
++++ b/numba/core/runtime/_nrt_pythonmod.c
+@@ -1,5 +1,10 @@
++#ifdef __EMSCRIPTEN__
++#define NUMBA_EXPORT_FUNC(_rettype) VISIBILITY_GLOBAL _rettype
++#define NUMBA_EXPORT_DATA(_vartype) VISIBILITY_GLOBAL _vartype
++#else
+ #define NUMBA_EXPORT_FUNC(_rettype) static _rettype
+ #define NUMBA_EXPORT_DATA(_vartype) static _vartype
++#endif
+ 
+ #include "_nrt_python.c"
+ 
+

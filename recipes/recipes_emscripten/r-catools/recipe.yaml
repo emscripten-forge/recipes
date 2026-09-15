@@ -1,21 +1,21 @@
 context:
-  name: r-catools
-  ccname: caTools
-  version: '1.18.3'
+  name: caTools
+  version: 1.18.4
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ccname }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ccname }}_${{ version }}.tar.gz
-  sha256: e71b3942a7a239779028b1104c262ec5f70183128638ac7fb649c8d62c0468d8
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: d4c511b7182d385635f9ac3f4f551e57eaa77a5d04e5156759744dfb875a88e6
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base == '4.6.1' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -32,7 +32,7 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
 - script: run_r_test test-r-catools.R
   files:
     recipe:
@@ -44,7 +44,7 @@ tests:
 about:
   homepage: https://cran.r-project.org/web/packages/caTools/index.html
   repository: https://github.com/cran/caTools
-  license:  GPL-3.0-only
+  license: GPL-3.0-only
   license_file: GPL3
   description: |
     Contains several basic utility functions including:

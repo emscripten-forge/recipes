@@ -1,0 +1,54 @@
+context:
+  name: future.callr
+  version: 1.0.0
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 7ae3e39a2d613b87efb9d4cf8d1781b27f0bf9058afce08ad75419767eb841f4
+  # path: /Users/thorstenbeier/src/future.callr
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-future >= 1.58.0
+  host:
+  - r-base ==${{ r_base }}
+  - r-future >= 1.58.0
+  run:
+  - r-future >= 1.58.0
+
+tests:
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://future.callr.futureverse.org
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://github.com/futureverse/future.callr
+  license: Apache-2.0
+  license_file:
+  - LICENSE
+  summary: A Future API for Parallel Processing using 'callr'
+  description: |-
+    Implementation of the Future API <doi:10.32614/RJ-2021-048> on top of the 'callr' package.  This allows you to process futures, as defined by the 'future' package, in parallel out of the box, on your local (Linux, macOS, Windows, ...) machine.  Contrary to backends relying on the 'parallel' package (e.g. 'future::multisession') and socket connections, the 'callr' backend provided here can run more than 125 parallel R processes.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

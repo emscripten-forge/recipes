@@ -1,0 +1,52 @@
+context:
+  name: mapproj
+  version: 1.2.12
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 1210b12d17c9884935a49e8aa5b6963fe1ef67e74d9f7081ffdeb2a6d71d6077
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - r-maps
+  host:
+  - r-base ==${{ r_base }}
+  - r-maps
+  run:
+  - r-maps
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=mapproj
+  documentation: https://cran.r-project.org/web/packages/mapproj/refman/mapproj.html
+  license: LPL-1.02
+  license_file: LICENSE.note
+  summary: Map Projections
+  description: Converts latitude/longitude into projected coordinates.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
