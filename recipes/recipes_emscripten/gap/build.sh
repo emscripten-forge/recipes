@@ -2,6 +2,8 @@
 
 set -eux
 
+unset EXCEPTION_HANDLING_FLAGS
+unset EMCC_CFLAGS
 BASEDIR="$(pwd)"
 
 if ! command -v emmake &> /dev/null; then
@@ -18,6 +20,7 @@ fi
 
 # First build a standard GAP install, for some files
 # we will need during building
+rm -f src/c_oper1.c src/c_type1.c src/ffdata.c src/ffdata.h
 (
     mkdir -p native-build
     cd native-build
@@ -33,6 +36,37 @@ fi
         ../configure
     fi
     make -j8
+)
+
+AUX_BUILD=$PWD/extern/emscripten/build
+AUX_PREFIX=$PWD/extern/emscripten/install
+
+mkdir -p "$AUX_BUILD"
+mkdir -p "$AUX_PREFIX"
+
+(
+    mkdir -p "$AUX_BUILD/gmp"
+    cd "$AUX_BUILD/gmp" &&
+    if [[ ! -f config.status ]]; then
+        ABI=standard \
+        emconfigure $BASEDIR/extern/gmp/configure \
+        --build i686-pc-linux-gnu --host none \
+        --disable-assembly --enable-cxx \
+        --prefix=$AUX_PREFIX
+    fi &&
+    emmake make -j8 &&
+    emmake make install
+)
+
+(
+    mkdir -p "$AUX_BUILD/zlib"
+    cd "$AUX_BUILD/zlib" &&
+    if [[ ! -f Makefile ]]; then
+        # --- MODIFICATION: Added --static to prevent shared library linkage errors ---
+        emconfigure $BASEDIR/extern/zlib/configure --static --prefix=$AUX_PREFIX
+    fi;
+    emmake make -j8 &&
+    emmake make install
 )
 
 # There are two problems with building GAP
@@ -55,9 +89,9 @@ fi
 # GAP for standard building (emscripten builds will use 'emcc')
 if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
     emconfigure ./configure --prefix="${PREFIX}" ABI=32 \
-    --with-gmp=${PREFIX} \
-    --with-zlib=${PREFIX} \
-    LDFLAGS="-s JSPI -O2"
+    --with-gmp=$AUX_PREFIX \
+    --with-zlib=$AUX_PREFIX \
+    LDFLAGS="-s ASYNCIFY=1 -O2"
 fi;
 
 # Target the Linux/Unix block to redefine shared lib extensions to static
@@ -74,36 +108,30 @@ sed -i 's/libgap$(SHLIB_EXT): $(LIBGAP_FULL)/libgap_avoid_circular: $(LIBGAP_FUL
 sed -i '/ln -sf $(LIBGAP_FULL) $(DESTDIR)$(libdir)\/libgap$(SHLIB_EXT)/d' Makefile.rules
 sed -i '/$(INSTALL_NAME_TOOL) -id/d' Makefile.rules
 
-if [[ "$PKG_NAME" == "gap" ]]; then
-    echo "Building full packages for $PKG_NAME..."
-    emmake make bootstrap-pkg-full
-elif [[ "$PKG_NAME" == "gap-core" ]]; then
-    echo "Building minimal packages for $PKG_NAME..."
-    emmake make bootstrap-pkg-minimal
-else
-    echo "Error: Unknown package name $PKG_NAME"
-    exit 1
-fi
+# Get full required packages
+emmake make bootstrap-pkg-full
 
 # Copy in files from native_build
 cp native-build/build/c_*.c native-build/build/ffdata.* src/
 
-# Dynamically find and append ALL required files to the JS array
-# The flag -type f is safe because the only symbolic link is 'tst/mockpkg/Makefile.gappkg',
-# which is safe to ignore
-find pkg lib grp tst doc hpcgap dev benchmark -type f | python3 etc/emscripten/generate_gap_fs_json.py
-
-if [ $? -ne 0 ]; then
-    echo "Build aborted: generate_gap_fs_json.py failed."
-    exit 1
-fi
-
 # The EXEEXT is usually for windows, but here it lets us set GAP's extension,
 # which lets us produce a html page to run GAP in.
-emmake make -j8 LDFLAGS="-lidbfs.js -s JSPI -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
+emmake make -j${CPU_COUNT} LDFLAGS="-lidbfs.js -lworkerfs.js -s ASYNCIFY=1 -sASYNCIFY_STACK_SIZE=16mb -sASSERTIONS=1 -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
 emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
-cp gap.js gap.wasm "${PREFIX}/bin/"
+cp gap.js "$PREFIX/bin/"
+cp gap.wasm "$PREFIX/bin/"
 
-# bash etc/emscripten/assemble-website.sh
-# cp -r web-example/* "${PREFIX}/bin/"
+EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
+python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
+  "${PREFIX}/bin/gap.data" \
+  --preload "${SRC_DIR}/pkg@/pkg" \
+  --preload "${SRC_DIR}/lib@/lib" \
+  --preload "${SRC_DIR}/grp@/grp" \
+  --preload "${SRC_DIR}/doc@/doc" \
+  --preload "${SRC_DIR}/hpcgap@/hpcgap" \
+  --separate-metadata \
+  --js-output="${PREFIX}/bin/gap.data.js"
+
+gzip -9 "${PREFIX}/bin/gap.data"
+cp -a "$SRC_DIR"/web/* "$PREFIX/bin/"
