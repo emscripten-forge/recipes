@@ -185,9 +185,11 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
         source = source[0]
     source['sha256'] = new_sha256
 
-    # custom yaml to avoid line wrapping long urls
+    # custom yaml to avoid line wrapping long urls and to preserve the
+    # recipe convention of 4-space-indented list dashes (ruamel default is 2).
     yaml = YAML()
     yaml.width = 120
+    yaml.indent(mapping=2, sequence=4, offset=2)
 
     # write the file
     with open(recipe_file, 'w') as file:
