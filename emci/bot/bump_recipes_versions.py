@@ -1,15 +1,85 @@
 import contextlib
 import subprocess
 import os
+from dataclasses import dataclass
+from enum import Enum
+from functools import total_ordering
 from pathlib import Path
+from typing import Optional
 from ruamel.yaml import YAML
 import jinja2
 import copy
 from .next_version import next_version
 from .url_exists import url_exists
 from .hash_url import hash_url
-from ..git_utils import bot_github_user_ctx, git_branch_ctx, make_pr_for_recipe, automerge_is_enabled,set_bot_user,get_current_branch_name
+from ..git_utils import git_branch_ctx, automerge_is_enabled, get_current_branch_name
 import json
+
+
+# `git -c` overrides for the one commit we create per bump. Avoids writing to
+# the user's global git config (which fails on read-only $HOME) and is enough
+# for the commit to be authored by the bot; other git commands don't care.
+_BOT_GIT_ARGS = [
+    '-c', 'user.name=emscripten-forge-bot',
+    '-c', 'user.email=emscripten-forge-bot@users.noreply.github.com',
+]
+
+
+# @total_ordering + custom __lt__ so we can write `mode >= Mode.edit`.
+# The default str comparison would order edit < plan alphabetically, which
+# is the wrong pipeline order; we compare by definition position instead.
+@total_ordering
+class Mode(str, Enum):
+    """Ordered pipeline stages. Each mode runs its own stage and every stage below it."""
+    check  = "check"    # HEAD candidate URLs until one exists.
+    plan   = "plan"     # + download the winning tarball and compute sha256.
+    edit   = "edit"     # + create branch, write recipe.yaml, commit locally (no push).
+    submit = "submit"   # + push branch, open PR. Default in CI.
+
+    def __lt__(self, other):
+        if not isinstance(other, Mode):
+            return NotImplemented
+        members = list(type(self))
+        return members.index(self) < members.index(other)
+
+
+# recipes the bot should never try to version-bump (odd versioning schemes,
+# pinned-by-hand, etc.). Could be replaced by an extra.skip_version_bump
+# per-recipe flag later on.
+SKIP_RECIPES = {
+    'python', 'python_abi', 'libpython',
+    'sqlite', 'robotics-toolbox-python',
+    'libffi', 'r-base-4.5.3',
+}
+
+
+def discover_recipes(recipe_dir):
+    """All recipe subdirs of recipe_dir, minus SKIP_RECIPES."""
+    return [
+        r for r in Path(recipe_dir).iterdir()
+        if r.is_dir() and r.name not in SKIP_RECIPES
+    ]
+
+
+@dataclass
+class Candidate:
+    """After check_bump: a newer version exists at a known URL, but the tarball isn't hashed yet."""
+    recipe_dir: Path
+    recipe_file: Path
+    name: str
+    current_version: str
+    new_version: str
+    new_url: str
+    pr_title: str
+    automerge: bool
+
+
+@dataclass
+class BumpAction:
+    """After plan_bump: Candidate + the sha256 that would be committed."""
+    candidate: Candidate
+    new_sha256: str
+
 
 # custom error derived from Exception
 # to say that the recipe cannot be handled
@@ -21,7 +91,9 @@ class CannotHandleRecipeException(Exception):
         super().__init__(f"Cannot handle recipe in {recipe_dir}: {msg}")
 
 
-def get_new_version(recipe_file):
+def find_new_version_url(recipe_file):
+    """Read a recipe, iterate candidate versions, HEAD each until one exists.
+    Returns (current_version, new_version, new_url) on hit, or (None, None, None). No downloads."""
     # read the file
     with open(recipe_file) as file:
         recipe = YAML().load(file)
@@ -69,25 +141,23 @@ def get_new_version(recipe_file):
 
     environment = jinja2.Environment(trim_blocks=True,variable_start_string='${{', variable_end_string='}}')
 
-    # get name from dir
-    name = recipe_file.parent.name
+    # some recipes have URL templates that don't vary with version — e.g.
+    # commit-pinned experimental recipes use ${{ commit }} in the URL, so every
+    # candidate renders to the same tarball. Skipping identical URLs stops the
+    # bot from opening a PR that only bumps the version string (see #6698).
+    current_url = environment.from_string(url_template).render(**context)
 
-    print(f"{name} current version: ", version)
     for new_version in next_version(str(version)):
-        # render the new url with the new version
         new_version_context = copy.deepcopy(context)
         new_version_context['version'] = new_version
         new_url = environment.from_string(url_template).render(**new_version_context)
+        if new_url == current_url:
+            continue
         if url_exists(new_url):
-            print(f"- found new version: {new_version}")
+            return version, new_version, new_url
 
-            # hash the new url
-            new_sha256 = hash_url(new_url, hash_type='sha256')
-            print(f"- new sha256: {new_sha256}")
-
-            return version, new_version, new_sha256
-
-    return None, None,None
+    # No newer version found — but still return the recipe's version so callers can report it.
+    return version, None, None
 
 
 def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
@@ -129,67 +199,81 @@ def make_pr_title(name, old_version, new_version, target_pr_branch_name):
     else:
         return f"Update {name} from {old_version} to {new_version} [{target_pr_branch_name}]"
 
-def bump_recipe_version(recipe_dir, target_pr_branch_name):
-
-    recipe_locations = [ ("recipe.yaml", True)]
-
-    current_version = None
-    new_version = None
-    new_sha256 = None
-
-
-    recipe_fname = 'recipe.yaml'
-    if (recipe_dir / recipe_fname).exists():
-        recipe_file = recipe_dir / recipe_fname
-        cv, nv, h = get_new_version(recipe_file)
-        if nv is not None:
-            new_version = nv
-            current_version = cv
-            new_sha256 = h
-    else:
-        return False, None, None
-
-
-    # no new version found -- nothing to do
-    if new_version is None:
-        return False, None, None
-
-    # use the last directory in the path as the branch name
-    name = recipe_dir.name
-
-    # automerge is only enabled if the recipe has a tests section
-    automerge = True
+def _detect_automerge(recipe_file):
+    """Automerge is only enabled if the recipe (or every output) has a tests section."""
     with open(recipe_file) as file:
         recipe = YAML().load(file)
-
-        # Multi-outputs recipe
-        if 'outputs' in recipe:
-            for output in recipe['outputs']:
-                if 'tests' not in output:
-                    automerge = False
-                    break
-        elif 'tests' not in recipe:
-            automerge = False
-
-    branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
+    if 'outputs' in recipe:
+        return all('tests' in output for output in recipe['outputs'])
+    return 'tests' in recipe
 
 
-    with git_branch_ctx(branch_name, stash_current=False):
+def _branch_name(candidate: Candidate, target_pr_branch_name: str) -> str:
+    return f"bump-{candidate.name}_{candidate.current_version}_to_{candidate.new_version}_for_{target_pr_branch_name}"
 
-        # update the recipe
-        for recipe_fname, is_rattler in recipe_locations:
-            if (recipe_dir / recipe_fname).exists():
-                recipe_file = recipe_dir / recipe_fname
-                update_recipe_version(recipe_file, new_version=new_version, new_sha256=new_sha256, is_rattler=is_rattler)
 
-        # commit the changes and make a PR
-        pr_title = make_pr_title(name, current_version, new_version, target_pr_branch_name)
-        print(f"Making PR for {name} with title: {pr_title} with target branch {target_pr_branch_name}")
-        make_pr_for_recipe(recipe_dir=recipe_dir, pr_title=pr_title, branch_name=branch_name,
-            target_branch_name=target_pr_branch_name,
-            automerge=automerge)
+def check_bump(recipe_dir, target_pr_branch_name):
+    """Stage 1: HEAD candidate URLs until one exists. No download, no side effects.
+    Returns (recipe_version, Optional[Candidate]). The version is returned even when
+    no newer release was found so callers can report the recipe's state either way."""
+    recipe_file = recipe_dir / 'recipe.yaml'
+    if not recipe_file.exists():
+        return None, None
 
-    return True , current_version, new_version
+    current_version, new_version, new_url = find_new_version_url(recipe_file)
+    if new_version is None:
+        return current_version, None
+
+    name = recipe_dir.name
+    cand = Candidate(
+        recipe_dir=recipe_dir,
+        recipe_file=recipe_file,
+        name=name,
+        current_version=current_version,
+        new_version=new_version,
+        new_url=new_url,
+        pr_title=make_pr_title(name, current_version, new_version, target_pr_branch_name),
+        automerge=_detect_automerge(recipe_file),
+    )
+    return current_version, cand
+
+
+def plan_bump(candidate: Candidate) -> BumpAction:
+    """Stage 2: download the winning tarball and compute sha256."""
+    new_sha256 = hash_url(candidate.new_url, hash_type='sha256')
+    return BumpAction(candidate=candidate, new_sha256=new_sha256)
+
+
+def edit_bump(action: BumpAction, target_pr_branch_name):
+    """Stage 3: create branch, write recipe.yaml, commit locally. No push, no PR.
+    The branch is left in place so a caller can inspect or extend it (e.g. submit_bump)."""
+    branch = _branch_name(action.candidate, target_pr_branch_name)
+    old_branch = get_current_branch_name()
+    subprocess.check_output(['git', 'checkout', '-b', branch])
+    try:
+        update_recipe_version(action.candidate.recipe_file,
+                              new_version=action.candidate.new_version,
+                              new_sha256=action.new_sha256, is_rattler=True)
+        subprocess.check_output(['git', 'add', str(action.candidate.recipe_dir)])
+        subprocess.check_output(['git', *_BOT_GIT_ARGS, 'commit', '-m', action.candidate.pr_title])
+    finally:
+        subprocess.check_output(['git', 'checkout', old_branch, '--force'])
+
+
+def submit_bump(action: BumpAction, target_pr_branch_name):
+    """Stage 4: push the edit-created branch and open a PR. Assumes edit_bump already ran."""
+    branch = _branch_name(action.candidate, target_pr_branch_name)
+    subprocess.check_output(['git', 'push', '-u', 'origin', branch, '--force'])
+    subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
+    subprocess.check_call([
+        'gh', 'pr', 'create',
+        '-B', target_pr_branch_name,
+        '--title', action.candidate.pr_title,
+        '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
+        '--label', 'Automerge' if action.candidate.automerge else 'Needs Tests',
+    ], cwd=os.getcwd())
+    # branch is no longer needed locally; delete it so the workspace stays tidy.
+    subprocess.check_output(['git', 'branch', '-D', branch])
 
 
 def try_to_merge_pr(pr, recipe_dir=None, ping=False):
@@ -247,107 +331,105 @@ def user_ctx(user, email, bypass=False):
         subprocess.check_output(['git', 'config', '--unset', 'user.email'])
 
 
-def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20):
-    print(f"Bumping recipes in {recipe_dir} to {pr_target_branch}")
-    # empty context manager
-    @contextlib.contextmanager
-    def empty_context_manager():
-        yield
+def _process_existing_bot_prs(recipes_root, pr_target_branch):
+    """Merge/label already-open bot PRs and return the set of recipe names they cover.
+    Runs at the start of a real run; skipped in dry-run because it mutates GitHub state."""
+    print("Checking opened PRs and merge them if green!")
+    command = [
+        "gh", "pr", "list",
+        "--author", "emscripten-forge-bot",
+        "--base", pr_target_branch,
+        "--json", "number,title",
+        "--limit", "200",  # default is only 30
+    ]
+    all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
+    prs_id = [pr['number'] for pr in all_prs]
+    prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
+    recipe_name_to_recipe_dir = {r.name: r for r in discover_recipes(recipes_root)}
 
-    if ON_GITHUB_ACTIONS:
-        # We are on GitHub Actions, we **cannot** **restore** the user account
-        # therefore we just set the bot user and use an empty context manager
-        set_bot_user()
-        user_ctx = empty_context_manager
-    else:
-        if use_bot:
-            user_ctx = bot_github_user_ctx
-        else:
-            user_ctx = empty_context_manager
-
-
-
-    # get all opened PRs
-    with user_ctx():
-
-        current_branch_name = get_current_branch_name()
-        if current_branch_name == pr_target_branch:
-            print(f"Already on target branch {pr_target_branch}")
-        else:
-            print(f"swichting from {current_branch_name} to {pr_target_branch}")
-            # switch to the target branch
-            subprocess.run(['git', 'stash'], check=False)
-            print(f"fetch {pr_target_branch}")
-            subprocess.check_output(['git', 'fetch', 'origin', pr_target_branch])
-            print(f"checkout {pr_target_branch}")
-            subprocess.check_output(['git', 'checkout', pr_target_branch])
-            print("checkout done")
-
-        assert get_current_branch_name() == pr_target_branch
-        current_branch_name = pr_target_branch
-
-        # Check for opened PRs and merge them if the CI passed
-        print("Checking opened PRs and merge them if green!")
-
-        command = [
-            "gh", "pr", "list",
-            "--author", "emscripten-forge-bot",
-            "--base", pr_target_branch,
-            "--json", "number,title",
-            "--limit", "200" # default is only 30
-        ]
-
-        # run command and get the output as json
-        all_prs = json.loads(subprocess.check_output(command).decode('utf-8'))
-
-        all_recipes = [recipe for recipe in Path(recipe_dir).iterdir() if recipe.is_dir()]
-        # map from folder names to recipe-dir
-        recipe_name_to_recipe_dir = {recipe.name: recipe for recipe in all_recipes}
-
-
-        prs_id = [pr['number'] for pr in all_prs]
-        prs_packages = [pr['title'].split()[1] for pr in all_prs]
-
-        # Merge PRs if possible
-        if pr_target_branch in ["main"]:
-            for pr,pr_pkg in zip(prs_id, prs_packages):
-                # get the recipe dir
-                recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
-
-                try:
-                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
-                except Exception as e:
-                    print(f"Error in {pr}: {e}")
-
-        # print all ids and the prs_packages
-        for pr,pr_pkg in zip(prs_id, prs_packages):
-            print(f"PR {pr} is for package {pr_pkg}")
-
-        # only recipes for which there is no opened PR
-        all_recipes = [recipe for recipe in all_recipes if recipe.name not in prs_packages]
-
-        skip_recipes = [
-            'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python',
-            'libffi', 'r-base-4.5.3'
-        ]
-        all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
-
-
-        total_bumped = 0
-        for recipe in all_recipes:
+    if pr_target_branch == "main":
+        for pr, pr_pkg in zip(prs_id, prs_packages):
             try:
-                bumped_version, old_version, new_version = bump_recipe_version(recipe, pr_target_branch)
-                if bumped_version:
-                    print(f"Bumped {recipe} from {old_version} to {new_version}")
-                total_bumped += int(bumped_version)
+                try_to_merge_pr(pr, recipe_dir=recipe_name_to_recipe_dir.get(pr_pkg), ping=True)
             except Exception as e:
-                print(f"Error in {recipe}: {e}")
+                print(f"Error in {pr}: {e}")
 
-            if pr_limit is not None and total_bumped >= pr_limit:
+    for pr, pr_pkg in zip(prs_id, prs_packages):
+        print(f"PR {pr} is for package {pr_pkg}")
+
+    return set(prs_packages)
+
+
+def _checkout_target_branch(pr_target_branch):
+    current_branch_name = get_current_branch_name()
+    if current_branch_name == pr_target_branch:
+        print(f"Already on target branch {pr_target_branch}")
+        return
+    print(f"switching from {current_branch_name} to {pr_target_branch}")
+    subprocess.run(['git', 'stash'], check=False)
+    print(f"fetch {pr_target_branch}")
+    subprocess.check_output(['git', 'fetch', 'origin', pr_target_branch])
+    print(f"checkout {pr_target_branch}")
+    subprocess.check_output(['git', 'checkout', pr_target_branch])
+    print("checkout done")
+    assert get_current_branch_name() == pr_target_branch
+
+
+def bump_recipe_versions(recipe_dir, pr_target_branch, pr_limit=20, mode: Mode = Mode.check):
+    print(f"Bumping recipes in {recipe_dir} to {pr_target_branch} [mode={mode.value}]")
+
+    # Side-effect phases only run in submit mode (they mutate GitHub state / current branch).
+    recipes_with_open_pr = set()
+    if mode == Mode.submit:
+        _checkout_target_branch(pr_target_branch)
+        recipes_with_open_pr = _process_existing_bot_prs(recipe_dir, pr_target_branch)
+
+    candidates_recipes = [
+        r for r in discover_recipes(recipe_dir)
+        if r.name not in recipes_with_open_pr
+    ]
+
+    # column widths (kept in sync so status lines align):
+    #   2sp prefix + 7-char label + 2sp gap + recipe name + optional detail
+    total = 0
+    for recipe in candidates_recipes:
+        try:
+            recipe_version, cand = check_bump(recipe, pr_target_branch)
+        except Exception as e:
+            print(f"  {'error':<7}  {recipe.name}: {e}")
+            continue
+
+        if cand is None:
+            # printed regardless of mode so the operator can see the full inventory.
+            print(f"  {'no bump':<7}  {recipe.name} (recipe @ {recipe_version}, no newer release found)")
+            continue
+
+        # from here on the recipe has a bump available.
+        print(f"  {'BUMP':<7}  {recipe.name}: recipe @ {cand.current_version} → available {cand.new_version}")
+        print(f"             {'url:':<8}{cand.new_url}")
+        if mode == Mode.check:
+            total += 1
+            if pr_limit is not None and total >= pr_limit:
                 break
+            continue
 
-        # some unstaged
-        print("Total bumped: ", total_bumped)
+        try:
+            action = plan_bump(cand)
+            print(f"             {'sha256:':<8}{action.new_sha256}")
+
+            if mode >= Mode.edit:
+                edit_bump(action, pr_target_branch)
+            if mode == Mode.submit:
+                submit_bump(action, pr_target_branch)
+                print(f"             opened PR: {cand.pr_title}")
+        except Exception as e:
+            print(f"  {'error':<7}  {recipe.name}: {e}")
+            continue
+
+        total += 1
+        if pr_limit is not None and total >= pr_limit:
+            break
+
+    print(f"Total ({mode.value}): {total}")
 
