@@ -31,4 +31,7 @@ emcmake cmake . \
 emmake make -j"${CPU_COUNT:-8}"
 emmake make install
 
+# `install(TARGETS ...)` only installs the .js wrapper that Emscripten produces
+# for an executable, so copy the matching .wasm next to it. Without this
+# bin/suitesparse_mongoose cannot run.
 find . -name 'suitesparse_mongoose.wasm' -exec cp {} "${PREFIX}/bin/" \;
