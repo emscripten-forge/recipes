@@ -1,0 +1,36 @@
+From e673e84834ce388b62e6ad0d2dc7634f6181f649 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 9 Sep 2026 14:12:03 +0200
+Subject: [PATCH 4/6] Predefine __wasm* macros from the target triple
+
+---
+ flang/lib/Frontend/CompilerInvocation.cpp | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/flang/lib/Frontend/CompilerInvocation.cpp b/flang/lib/Frontend/CompilerInvocation.cpp
+index 79ad08353..2d64a5732 100644
+--- a/flang/lib/Frontend/CompilerInvocation.cpp
++++ b/flang/lib/Frontend/CompilerInvocation.cpp
+@@ -1899,6 +1899,19 @@ void CompilerInvocation::setDefaultPredefinitions() {
+     fortranOptions.predefinitions.emplace_back("__aarch64__", "1");
+     fortranOptions.predefinitions.emplace_back("__aarch64", "1");
+     break;
++  case llvm::Triple::ArchType::wasm32:
++    // Match clang WebAssembly target defines (defineCPUMacros).
++    fortranOptions.predefinitions.emplace_back("__wasm__", "1");
++    fortranOptions.predefinitions.emplace_back("__wasm", "1");
++    fortranOptions.predefinitions.emplace_back("__wasm32__", "1");
++    fortranOptions.predefinitions.emplace_back("__wasm32", "1");
++    break;
++  case llvm::Triple::ArchType::wasm64:
++    fortranOptions.predefinitions.emplace_back("__wasm__", "1");
++    fortranOptions.predefinitions.emplace_back("__wasm", "1");
++    fortranOptions.predefinitions.emplace_back("__wasm64__", "1");
++    fortranOptions.predefinitions.emplace_back("__wasm64", "1");
++    break;
+   }
+ }
+ 
+-- 
+2.55.0
+
