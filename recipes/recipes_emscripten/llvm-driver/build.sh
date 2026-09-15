@@ -7,7 +7,7 @@ emcmake cmake -S "${SRC_DIR}/llvm" -B build \
   -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
   -DLLVM_HOST_TRIPLE=wasm32-unknown-emscripten \
   -DLLVM_TARGETS_TO_BUILD=WebAssembly \
-  -DLLVM_DISTRIBUTION_COMPONENTS="llvm-driver;llvm-readobj;llvm-nm;llvm-size;llvm-cxxfilt" \
+  -DLLVM_DISTRIBUTION_COMPONENTS="llvm-driver;llvm-readobj;llvm-nm;llvm-size;llvm-cxxfilt;llvm-ar;llvm-objdump;llvm-objcopy" \
   -DLLVM_TOOL_LLVM_DRIVER_BUILD=ON \
   -DLLVM_BUILD_UTILS=OFF \
   -DLLVM_INCLUDE_BENCHMARKS=OFF \
