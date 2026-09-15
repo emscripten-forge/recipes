@@ -28,7 +28,24 @@ source:
   - patches/0011-Use-int-return-for-f2c-Subroutine-decls-in-ctest.patch
 
 build:
-  number: 2
+  number: 3
+  # Named build strings (conda-forge openblas openmp/pthreads style) so users can
+  # select either variant, e.g. `openblas=0.3.35* *simd128*` or `*relaxed_simd*`.
+  string: ${{ "relaxed_simd" if openblas_wasm_relaxed_simd == "1" else "simd128" }}_h${{ hash }}_${{ build_number }}
+
+  # Pass the variant into build.sh (not inferred from the script by rattler-build).
+  script:
+    file: build.sh
+    env:
+      OPENBLAS_WASM_RELAXED_SIMD: ${{ openblas_wasm_relaxed_simd }}
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - openblas_wasm_relaxed_simd
+    # Prefer the portable SIMD128 default; down-prioritize relaxed SIMD (Safari
+    # / engines without the feature cannot instantiate that module).
+    down_prioritize_variant: ${{ 1 if openblas_wasm_relaxed_simd == "1" else 0 }}
 
   files:
     exclude:
