@@ -17,8 +17,8 @@ ARROW_SHARED_FEATURES=(
     "-DARROW_DATASET=ON"
     "-DARROW_PARQUET=ON"
     "-DARROW_WITH_RE2=ON"
-    "-DARROW_SIMD_LEVEL=AVX2"
-    "-DARROW_RUNTIME_SIMD_LEVEL=AVX2"
+    "-DARROW_SIMD_LEVEL=NONE"
+    "-DARROW_RUNTIME_SIMD_LEVEL=NONE"
     "-DARROW_ENABLE_THREADING=OFF"
     "-DARROW_JEMALLOC=OFF"
     "-DARROW_MIMALLOC=OFF"
@@ -157,7 +157,7 @@ build_pyarrow() {
         "-DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/cmake/overwriteProp.cmake"
     )
 
-    export PYARROW_CMAKE_OPTIONS="${pyarrow_cmake_options[*]}"
+    export CMAKE_ARGS="${CMAKE_ARGS:-} ${pyarrow_cmake_options[*]}"
     export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata__emscripten_wasm32-emscripten"
 
     export PYODIDE=1
@@ -175,7 +175,7 @@ build_pyarrow() {
     export CMAKE_BUILD_PARALLEL_LEVEL=4
 
     cd "$SRC_DIR/python"
-    "${PYTHON}" -m pip install . -vvv
+    "${PYTHON}" -m pip install . --prefix="$PREFIX" -vvv
 
     SP="$PREFIX/lib/python${PY_VER}/site-packages"
     cp "$SP/pyarrow/libarrow_python.so" "$PREFIX/lib/libarrow_python.so"
