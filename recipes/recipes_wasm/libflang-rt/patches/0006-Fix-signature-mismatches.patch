@@ -1,0 +1,165 @@
+From 1829957f420824cf710c3eb748ddf74abda174a2 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 16 Sep 2026 12:19:15 +0200
+Subject: [PATCH 6/7] Fix signature mismatches
+
+---
+ flang-rt/lib/runtime/complex-reduction.c | 104 +++++++++++++++++------
+ 1 file changed, 77 insertions(+), 27 deletions(-)
+
+diff --git a/flang-rt/lib/runtime/complex-reduction.c b/flang-rt/lib/runtime/complex-reduction.c
+index 967f26c05..4eb29abb6 100644
+--- a/flang-rt/lib/runtime/complex-reduction.c
++++ b/flang-rt/lib/runtime/complex-reduction.c
+@@ -100,16 +100,29 @@ static CFloat128ComplexType CMPLXF128(CFloat128Type r, CFloat128Type i) {
+ 
+ /* RTNAME(SumComplex4) calls RTNAME(CppSumComplex4) with the same arguments
+  * and converts the members of its C++ complex result to C _Complex.
++ *
++ * The C++ helpers are defined as void(out-param, ...). Declaring them as
++ * returning a struct makes compilers insert a hidden sret argument and
++ * produces wasm-ld "function signature mismatch" warnings.
+  */
+ 
+ #define CPP_NAME(name) Cpp##name
+ #define ADAPT_REDUCTION(name, cComplex, cpptype, cmplxMacro, ARGS, ARG_NAMES) \
+-  struct cpptype RTNAME(CPP_NAME(name))(struct cpptype *, ARGS); \
++  void RTNAME(CPP_NAME(name))(struct cpptype *, ARGS); \
+   cComplex RTNAME(name)(ARGS) { \
+     struct cpptype result; \
+     RTNAME(CPP_NAME(name))(&result, ARG_NAMES); \
+     return cmplxMacro(result.r, result.i); \
+   }
++#define ADAPT_REDUCTION_TO(name, cComplex, cpptype, cmplxMacro, ARGS, \
++    ARG_NAMES, CPP_ARGS, CPP_ARG_NAMES, UNUSED_STMT) \
++  void RTNAME(CPP_NAME(name))(struct cpptype *, CPP_ARGS); \
++  cComplex RTNAME(name)(ARGS) { \
++    struct cpptype result; \
++    UNUSED_STMT \
++    RTNAME(CPP_NAME(name))(&result, CPP_ARG_NAMES); \
++    return cmplxMacro(result.r, result.i); \
++  }
+ 
+ /* TODO: COMPLEX(2 & 3) */
+ 
+@@ -141,54 +154,91 @@ ADAPT_REDUCTION(ProductComplex16, CFloat128ComplexType, CppComplexFloat128,
+     CMPLXF128, REDUCTION_ARGS, REDUCTION_ARG_NAMES)
+ #endif
+ 
+-/* DOT_PRODUCT() */
+-ADAPT_REDUCTION(DotProductComplex4, float_Complex_t, CppComplexFloat, CMPLXF,
+-    DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES)
+-ADAPT_REDUCTION(DotProductComplex8, double_Complex_t, CppComplexDouble, CMPLX,
+-    DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES)
++/* DOT_PRODUCT() — C API keeps dim/mask; C++ helpers only take x,y,source,line */
++#define DOT_PRODUCT_CPP_ARGS \
++  const struct CppDescriptor *x, const struct CppDescriptor *y, \
++      const char *source, int line
++#define DOT_PRODUCT_CPP_ARG_NAMES x, y, source, line
++ADAPT_REDUCTION_TO(DotProductComplex4, float_Complex_t, CppComplexFloat, CMPLXF,
++    DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES, DOT_PRODUCT_CPP_ARGS,
++    DOT_PRODUCT_CPP_ARG_NAMES, (void)dim; (void)mask;)
++ADAPT_REDUCTION_TO(DotProductComplex8, double_Complex_t, CppComplexDouble, CMPLX,
++    DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES, DOT_PRODUCT_CPP_ARGS,
++    DOT_PRODUCT_CPP_ARG_NAMES, (void)dim; (void)mask;)
+ #if HAS_FLOAT80
+-ADAPT_REDUCTION(DotProductComplex10, long_double_Complex_t,
+-    CppComplexLongDouble, CMPLXL, DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES)
++ADAPT_REDUCTION_TO(DotProductComplex10, long_double_Complex_t,
++    CppComplexLongDouble, CMPLXL, DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES,
++    DOT_PRODUCT_CPP_ARGS, DOT_PRODUCT_CPP_ARG_NAMES, (void)dim; (void)mask;)
+ #endif
+ #if HAS_LDBL128 || HAS_FLOAT128
+-ADAPT_REDUCTION(DotProductComplex16, CFloat128ComplexType, CppComplexFloat128,
+-    CMPLXF128, DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES)
++ADAPT_REDUCTION_TO(DotProductComplex16, CFloat128ComplexType, CppComplexFloat128,
++    CMPLXF128, DOT_PRODUCT_ARGS, DOT_PRODUCT_ARG_NAMES, DOT_PRODUCT_CPP_ARGS,
++    DOT_PRODUCT_CPP_ARG_NAMES, (void)dim; (void)mask;)
+ #endif
+ 
+-/* REDUCE() */
++/* REDUCE() — C header has a spare `y`; C++ order is (array, operation, ...) */
++#define REDUCE_CPP_ARGS(T, OP) \
++  const struct CppDescriptor *x, OP operation, const char *source, int line, \
++      int dim, const struct CppDescriptor *mask, const T *identity, \
++      _Bool ordered
++#define REDUCE_CPP_ARG_NAMES \
++  x, operation, source, line, dim, mask, identity, ordered
++
+ #define RARGS REDUCE_ARGS(float_Complex_t, float_Complex_t_ref_op)
+-ADAPT_REDUCTION(ReduceComplex4Ref, float_Complex_t, CppComplexFloat, CMPLXF,
+-    RARGS, REDUCE_ARG_NAMES)
++#define RCPP REDUCE_CPP_ARGS(float_Complex_t, float_Complex_t_ref_op)
++ADAPT_REDUCTION_TO(ReduceComplex4Ref, float_Complex_t, CppComplexFloat, CMPLXF,
++    RARGS, REDUCE_ARG_NAMES, RCPP, REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #define RARGS REDUCE_ARGS(float_Complex_t, float_Complex_t_value_op)
+-ADAPT_REDUCTION(ReduceComplex4Value, float_Complex_t, CppComplexFloat, CMPLXF,
+-    RARGS, REDUCE_ARG_NAMES)
++#define RCPP REDUCE_CPP_ARGS(float_Complex_t, float_Complex_t_value_op)
++ADAPT_REDUCTION_TO(ReduceComplex4Value, float_Complex_t, CppComplexFloat, CMPLXF,
++    RARGS, REDUCE_ARG_NAMES, RCPP, REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #define RARGS REDUCE_ARGS(double_Complex_t, double_Complex_t_ref_op)
+-ADAPT_REDUCTION(ReduceComplex8Ref, double_Complex_t, CppComplexDouble, CMPLX,
+-    RARGS, REDUCE_ARG_NAMES)
++#define RCPP REDUCE_CPP_ARGS(double_Complex_t, double_Complex_t_ref_op)
++ADAPT_REDUCTION_TO(ReduceComplex8Ref, double_Complex_t, CppComplexDouble, CMPLX,
++    RARGS, REDUCE_ARG_NAMES, RCPP, REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #define RARGS REDUCE_ARGS(double_Complex_t, double_Complex_t_value_op)
+-ADAPT_REDUCTION(ReduceComplex8Value, double_Complex_t, CppComplexDouble, CMPLX,
+-    RARGS, REDUCE_ARG_NAMES)
++#define RCPP REDUCE_CPP_ARGS(double_Complex_t, double_Complex_t_value_op)
++ADAPT_REDUCTION_TO(ReduceComplex8Value, double_Complex_t, CppComplexDouble, CMPLX,
++    RARGS, REDUCE_ARG_NAMES, RCPP, REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #if HAS_FLOAT80
+ #define RARGS REDUCE_ARGS(long_double_Complex_t, long_double_Complex_t_ref_op)
+-ADAPT_REDUCTION(ReduceComplex10Ref, long_double_Complex_t, CppComplexLongDouble,
+-    CMPLXL, RARGS, REDUCE_ARG_NAMES)
++#define RCPP \
++  REDUCE_CPP_ARGS(long_double_Complex_t, long_double_Complex_t_ref_op)
++ADAPT_REDUCTION_TO(ReduceComplex10Ref, long_double_Complex_t,
++    CppComplexLongDouble, CMPLXL, RARGS, REDUCE_ARG_NAMES, RCPP,
++    REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #define RARGS REDUCE_ARGS(long_double_Complex_t, long_double_Complex_t_value_op)
+-ADAPT_REDUCTION(ReduceComplex10Value, long_double_Complex_t,
+-    CppComplexLongDouble, CMPLXL, RARGS, REDUCE_ARG_NAMES)
++#define RCPP \
++  REDUCE_CPP_ARGS(long_double_Complex_t, long_double_Complex_t_value_op)
++ADAPT_REDUCTION_TO(ReduceComplex10Value, long_double_Complex_t,
++    CppComplexLongDouble, CMPLXL, RARGS, REDUCE_ARG_NAMES, RCPP,
++    REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #endif
+ #if HAS_LDBL128 || HAS_FLOAT128
+ #define RARGS REDUCE_ARGS(CFloat128ComplexType, CFloat128ComplexType_ref_op)
+-ADAPT_REDUCTION(ReduceComplex16Ref, CFloat128ComplexType, CppComplexFloat128,
+-    CMPLXF128, RARGS, REDUCE_ARG_NAMES)
++#define RCPP REDUCE_CPP_ARGS(CFloat128ComplexType, CFloat128ComplexType_ref_op)
++ADAPT_REDUCTION_TO(ReduceComplex16Ref, CFloat128ComplexType, CppComplexFloat128,
++    CMPLXF128, RARGS, REDUCE_ARG_NAMES, RCPP, REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #define RARGS REDUCE_ARGS(CFloat128ComplexType, CFloat128ComplexType_value_op)
+-ADAPT_REDUCTION(ReduceComplex16Value, CFloat128ComplexType, CppComplexFloat128,
+-    CMPLXF128, RARGS, REDUCE_ARG_NAMES)
++#define RCPP \
++  REDUCE_CPP_ARGS(CFloat128ComplexType, CFloat128ComplexType_value_op)
++ADAPT_REDUCTION_TO(ReduceComplex16Value, CFloat128ComplexType,
++    CppComplexFloat128, CMPLXF128, RARGS, REDUCE_ARG_NAMES, RCPP,
++    REDUCE_CPP_ARG_NAMES, (void)y;)
++#undef RCPP
+ #undef RARGS
+ #endif
+-- 
+2.55.0
+
