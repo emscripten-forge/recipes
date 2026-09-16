@@ -1,0 +1,40 @@
+From 2e873e27d3768daae27aa80c7b3b8f794f69be16 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 16 Sep 2026 12:18:43 +0200
+Subject: [PATCH 5/6] Specialize iso_c_binding for wasm32
+
+---
+ flang-rt/lib/runtime/iso_c_binding.f90 | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/flang-rt/lib/runtime/iso_c_binding.f90 b/flang-rt/lib/runtime/iso_c_binding.f90
+index 619b1f2e5..5b88acd42 100644
+--- a/flang-rt/lib/runtime/iso_c_binding.f90
++++ b/flang-rt/lib/runtime/iso_c_binding.f90
+@@ -45,14 +45,22 @@ module iso_c_binding
+   integer, parameter, public :: &
+     c_int = c_int32_t, &
+     c_short = c_int16_t, &
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(__wasm32__)
++    ! Windows LLP64 and wasm32 ILP32: long is 32-bit.
+     c_long = c_int32_t, &
+ #else
+     c_long = c_int64_t, &
+ #endif
+     c_long_long = c_int64_t, &
+     c_signed_char = c_int8_t, &
++#if defined(__wasm32__)
++    ! wasm32 ILP32: size_t / intptr_t / ptrdiff_t are 32-bit. Do not use
++    ! kind(c_sizeof(1)): Flang's sizeof result kind is always subscript
++    ! INTEGER(8), which wrongly yields c_size_t == 8 on 32-bit targets.
++    c_size_t = c_int32_t, &
++#else
+     c_size_t = kind(c_sizeof(1)), &
++#endif
+     ! Currently both gcc and clang define intmax_t to be 64 bit.
+     c_intmax_t = c_int64_t, &
+     c_intptr_t = c_size_t, &
+-- 
+2.55.0
+
