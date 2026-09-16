@@ -1,14 +1,12 @@
 export LDFLAGS="-L$PREFIX/lib -lflang_rt.runtime"
 
-# Intrinsic .mod files (iso_c_binding, etc.)
-FINTRINSIC_MODS=$(echo "$PREFIX"/lib/clang/*/finclude/flang/"$TARGET_TRIPLE")
-if [ ! -d "$FINTRINSIC_MODS" ]; then
-    echo "intrinsic modules not found under $PREFIX/lib/clang/*/finclude/flang/$TARGET_TRIPLE"
+if [ -z "$FINTRINSIC_MODS" ]; then
+    echo "Flang did not set FINTRINSIC_MODS on activation"
     exit 1
 fi
 
 # -cpp enables __wasm32__/__wasm64__
-flang $FFLAGS -cpp -fintrinsic-modules-path "$FINTRINSIC_MODS" -c ./test_fortran.f90 -o test_fortran.o
+flang $FFLAGS -cpp $FINTRINSIC_MODS -c ./test_fortran.f90 -o test_fortran.o
 emcc test_fortran.o $LDFLAGS -o test_fortran.js -sEXIT_RUNTIME=1 -sMAIN_MODULE=1
 
 # Copy the shared library to the current test directory if it exists
