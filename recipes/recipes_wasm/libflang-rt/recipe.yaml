@@ -34,39 +34,38 @@ outputs:
           PKG_VERSION: ${{ version }}
         file: build.sh
 
+#==============================================================================#
+
   - package:
-      name: libflang-rt
+      name: libflang-rt-headers
       version: ${{ version }}
     inherit: libflang-build
-    requirements:
-      run_exports:
-      - ${{ pin_subpackage('libflang', upper_bound='x.x') }}
     build:
       files:
         exclude:
         - lib/*.a
+        - lib/*.so
     tests:
     - package_contents:
         files:
-        - lib/libflang_rt.runtime.so
-    - script: test_libflang.sh
-      files:
-        recipe:
-        - test_fortran.f90
-      requirements:
-        build:
-        - ${{ compiler('fortran') }}
-        - ${{ compiler('cxx') }}
-        - nodejs
+        - include/flang-rt/runtime/*.h
+        - lib/clang/*/finclude/flang/*/__fortran_builtins.mod
+        - lib/clang/*/finclude/flang/*/__fortran_type_info.mod
+        - lib/clang/*/finclude/flang/*/iso_c_binding.mod
+
+#==============================================================================#
 
   - package:
       name: libflang-rt-static
       version: ${{ version }}
     inherit: libflang-build
+    requirements:
+      run:
+      - ${{ pin_subpackage('libflang-rt-headers', exact=True) }}
     build:
       files:
-        exclude:
-        - lib/*.so
+        include:
+        - lib/libflang_rt.runtime.a
     tests:
     - package_contents:
         files:
@@ -80,6 +79,39 @@ outputs:
         - ${{ compiler('fortran') }}
         - ${{ compiler('cxx') }}
         - nodejs
+
+#==============================================================================#
+
+  - package:
+      name: libflang-rt
+      version: ${{ version }}
+    inherit: libflang-build
+    requirements:
+      run_constraints:
+      - ${{ pin_subpackage('libflang-rt-headers', exact=True) }}
+      run_exports:
+      - ${{ pin_subpackage('libflang-rt', upper_bound='x.x') }}
+    build:
+      files:
+        include:
+        - lib/libflang_rt.runtime.so
+    tests:
+    - package_contents:
+        files:
+        - lib/libflang_rt.runtime.so
+    - script: test_libflang.sh
+      files:
+        recipe:
+        - test_fortran.f90
+      requirements:
+        build:
+        - ${{ compiler('fortran') }}
+        - ${{ compiler('cxx') }}
+        - nodejs
+        run:
+        - libflang-rt-headers
+
+#==============================================================================#
 
 about:
   homepage: https://flang.llvm.org
