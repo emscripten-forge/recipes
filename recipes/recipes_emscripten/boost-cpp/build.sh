@@ -7,5 +7,6 @@
   cxxflags="$SIDE_MODULE_CXXFLAGS -fexceptions -DBOOST_SP_DISABLE_THREADS=1" \
   cflags="$SIDE_MODULE_CFLAGS -fexceptions -DBOOST_SP_DISABLE_THREADS=1" \
   linkflags="-fpic $SIDE_MODULE_LDFLAGS" \
+  define=BOOST_HAS_PTHREADS=1 \
   --layout=system -j"${PYODIDE_JOBS:-3}" --prefix=${PREFIX} \
   install
