@@ -1,0 +1,19 @@
+On wasm32, ptrdiff_t is `long` (not `int`), but sizeof(long) == sizeof(int)
+so PTRDIFF_MAX == INT_MAX. Scintilla's explicit template instantiations at
+the bottom of RunStyles.cpp only cover <ptrdiff_t, X> when
+PTRDIFF_MAX != INT_MAX, leaving <long, int> (used via Sci::Position in
+Decoration.cpp) uninstantiated. Add them unconditionally for wasm.
+
+Same idiom is used elsewhere in Scintilla for CellBuffer, ContractionState,
+etc., but only RunStyles surfaced as an unresolved symbol so far.
+
+--- a/libs/qscintilla_2.14.1/scintilla/src/RunStyles.cpp
++++ b/libs/qscintilla_2.14.1/scintilla/src/RunStyles.cpp
+@@ -311,3 +311,7 @@ template class Scintilla::RunStyles<int, char>;
+ template class Scintilla::RunStyles<ptrdiff_t, int>;
+ template class Scintilla::RunStyles<ptrdiff_t, char>;
+ #endif
++#if defined(__EMSCRIPTEN__)
++template class Scintilla::RunStyles<long, int>;
++template class Scintilla::RunStyles<long, char>;
++#endif

@@ -7,6 +7,22 @@ def test_import():
     print("scipy.__version__:", scipy.__version__)
 
 
+def _assert_openblas(pkg, cfg):
+    # Meson CONFIG _cleanup() drops falsey values, so "found" is absent when
+    # BLAS was not found and name is "auto". OpenBLAS builds record the name
+    # as "openblas" or "scipy-openblas" (NumPy's pkg-config alias).
+    deps = cfg["Build Dependencies"]
+    for kind in ("blas", "lapack"):
+        dep = deps.get(kind) or {}
+        name = str(dep.get("name") or "").lower()
+        assert "openblas" in name, f"{pkg} {kind} is not OpenBLAS: {dep!r}"
+        if "found" in dep:
+            assert dep["found"] is True, (pkg, kind, dep)
+        obcfg = dep.get("openblas configuration")
+        if obcfg is not None:
+            assert obcfg != "unknown", (pkg, kind, dep)
+
+
 def test_config():
     import scipy
     c = scipy.show_config(mode="dicts")
@@ -19,6 +35,13 @@ def test_config():
 
     assert c["Compilers"]["fortran"]["name"] == "llvm-flang"
     assert c["Compilers"]["fortran"]["version"] == "20.1.7"
+
+
+def test_openblas_build_config():
+    import scipy
+
+    _assert_openblas("numpy", np.show_config(mode="dicts"))
+    _assert_openblas("scipy", scipy.show_config(mode="dicts"))
 
 
 def test_cholesky():

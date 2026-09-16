@@ -1,0 +1,97 @@
+context:
+  name: openblas
+  version: 0.3.35.dev0
+  commit: 539bb47f020d3278a05805f86c1ac63326b8a3d1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/OpenMathLib/OpenBLAS/archive/${{ commit }}.tar.gz
+  sha256: b3fffa95edf413afd7b5f032a88aeb46581515b6f2607295fcdb0ba072b4b637
+  patches:
+  # Branch containing these patches is v0.3.35.dev0-emforge at https://github.com/jjerphan/OpenBLAS
+  # (rebased onto OpenMathLib/OpenBLAS develop @ ${{ commit }}).
+  # Use `git format-patch ${{ commit }}..v0.3.35.dev0-emforge` to create patch files.
+  # Patches 0008-0011 adapt the OpenBLAS test suite for emscripten/wasm.
+  - patches/0001-Remove-march-flags.patch
+  - patches/0002-Skip-linktest.patch
+  - patches/0003-Add-emscripten-as-supported-arch.patch
+  - patches/0004-Add-dummy-length-arguments-for-char-arguments.patch
+  - patches/0005-Return-void-not-int.patch
+  - patches/0006-Enable-LAPACK_FORTRAN_STDLEN_END-for-lapacke-calling.patch
+  - patches/0007-Clear-FEXTRALIB-when-linking-shared-library.patch
+  - patches/0008-Skip-fork-based-utests-for-emscripten.patch
+  - patches/0009-Run-OpenBLAS-tests-under-node-for-emscripten.patch
+  - patches/0010-Return-int-from-ctest-F77-wrappers-for-wasm-ABI.patch
+  - patches/0011-Use-int-return-for-f2c-Subroutine-decls-in-ctest.patch
+
+build:
+  number: 3
+  # Named build strings (conda-forge openblas openmp/pthreads style) so users can
+  # select either variant, e.g. `openblas=0.3.35* *simd128*` or `*relaxed_simd*`.
+  string: ${{ "relaxed_simd" if openblas_wasm_relaxed_simd == "1" else "simd128" }}_h${{ hash }}_${{ build_number }}
+
+  # Pass the variant into build.sh (not inferred from the script by rattler-build).
+  script:
+    file: build.sh
+    env:
+      OPENBLAS_WASM_RELAXED_SIMD: ${{ openblas_wasm_relaxed_simd }}
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - openblas_wasm_relaxed_simd
+    # Prefer the portable SIMD128 default; down-prioritize relaxed SIMD (Safari
+    # / engines without the feature cannot instantiate that module).
+    down_prioritize_variant: ${{ 1 if openblas_wasm_relaxed_simd == "1" else 0 }}
+
+  files:
+    exclude:
+    - '**/test_*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - cmake
+  - make
+  - nodejs
+  host:
+  - libflang >= 20.1
+
+tests:
+- package_contents:
+    include:
+    - cblas.h
+    - f77blas.h
+    - lapack.h
+    - lapacke.h
+    - openblas_config.h
+    lib:
+    - libopenblas.a
+    - libopenblas.so
+    files:
+    - lib/pkgconfig/openblas.pc
+- script: pytester
+  files:
+    recipe:
+    - test_openblas.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: http://www.openblas.net/
+  repository: https://github.com/OpenMathLib/OpenBLAS
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: An optimized BLAS library based on GotoBLAS2 1.13 BSD version (develop snapshot with WASM SIMD)
+
+extra:
+  maintainers:
+  - mmesch
+  channel: emscripten-forge-4x-experimental

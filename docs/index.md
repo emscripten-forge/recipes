@@ -25,6 +25,7 @@ The recipes repository not only stores the recipe files for multiple packages, b
   * [Installing packages](usage/installing_packages)
   * [JupyterLite](usage/jupyterlite)
   * [Package server](usage/package_server)
+  * [Experimental Qt runner](usage/qtapp)
 
 ### Project
 

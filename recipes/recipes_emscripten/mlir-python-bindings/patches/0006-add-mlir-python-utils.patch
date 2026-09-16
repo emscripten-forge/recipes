@@ -3,13 +3,13 @@ new file mode 100644
 index 000000000000..6a805dc133bf
 --- /dev/null
 +++ b/mlir/python/mlir/utils.py
-@@ -0,0 +1,372 @@
+@@ -0,0 +1,392 @@
 +"""
 +Utilities for MLIR Python bindings.
 +
-+Provides CFG visualization for MLIR functions using graphviz.  Works on both
-+native Python (renders via the ``dot`` subprocess) and Emscripten / JupyterLite
-+(renders through Graphviz's in-process SWIG/Wasm binding).
++Provides CFG visualization for MLIR functions through Graphviz's in-process
++Python binding. Rendered graphs use Jupyter's standard rich-display protocol,
++without depending directly on IPython or launching a subprocess.
 +
 +The CFG is built directly from the MLIR Python IR API — no lowering to LLVM IR
 +and no dependency on llvmlite is required.
@@ -24,12 +24,10 @@ index 000000000000..6a805dc133bf
 +        show_cfg(module, title='My CFG')
 +"""
 +
++import builtins
++from html import escape
++import json
 +import re
-+
-+try:
-+    import graphviz as _gv
-+except ImportError:
-+    _gv = None
 +
 +
 +# ── Internal helpers ──────────────────────────────────────────────────────────
@@ -61,24 +59,54 @@ index 000000000000..6a805dc133bf
 +    return '{' + r'\l'.join(lines) + r'\l}'
 +
 +
++def _dot_attrs(attributes):
++    return ', '.join(
++        f'{name}={json.dumps(str(value))}'
++        for name, value in attributes.items()
++    )
++
++
++class _DotGraph:
++    """Minimal DOT builder used to avoid a separate subprocess wrapper."""
++
++    def __init__(self, title):
++        self._lines = [
++            'digraph G {',
++            f'  graph [{_dot_attrs({"rankdir": "TB", "label": title})}];',
++            '  node [shape="record", fontname="Courier", fontsize="10"];',
++            '  edge [fontname="Courier", fontsize="10"];',
++        ]
++
++    def node(self, name, **attributes):
++        self._lines.append(
++            f'  {json.dumps(name)} [{_dot_attrs(attributes)}];'
++        )
++
++    def edge(self, source, target):
++        self._lines.append(
++            f'  {json.dumps(source)} -> {json.dumps(target)};'
++        )
++
++    @property
++    def source(self):
++        return '\n'.join((*self._lines, '}'))
++
++
++class _RenderedGraph:
++    """SVG result that participates in Jupyter's rich-display protocol."""
++
++    def __init__(self, data, title=''):
++        self.data = data
++        self.title = title
++
++    def _repr_html_(self):
++        heading = f'<b>{escape(self.title)}</b>' if self.title else ''
++        return heading + self.data
++
++
 +def _make_dot(func_name=''):
 +    title = f"CFG for '{func_name}' function" if func_name else 'CFG'
-+    return _gv.Digraph(
-+        title,
-+        graph_attr={
-+            'rankdir': 'TB',
-+            'label': title,
-+        },
-+        node_attr={
-+            'shape': 'record',
-+            'fontname': 'Courier',
-+            'fontsize': '10',
-+        },
-+        edge_attr={
-+            'fontname': 'Courier',
-+            'fontsize': '10',
-+        },
-+    )
++    return _DotGraph(title)
 +
 +
 +def _extract_func_name(func_op):
@@ -139,9 +167,6 @@ index 000000000000..6a805dc133bf
 +
 +
 +def _cfg_from_op(func_op, show_ops):
-+    if _gv is None:
-+        raise ImportError("graphviz package is not installed")
-+
 +    region = func_op.regions[0]
 +    block_list = list(region.blocks)
 +    if not block_list:
@@ -181,9 +206,6 @@ index 000000000000..6a805dc133bf
 +
 +def _cfg_from_text(text, show_ops):
 +    """Fallback: build DOT from raw MLIR textual IR using regex only."""
-+    if _gv is None:
-+        raise ImportError("graphviz package is not installed")
-+
 +    blocks: dict = {}
 +    block_hdr: dict = {}
 +    block_ops: dict = {}
@@ -259,7 +281,7 @@ index 000000000000..6a805dc133bf
 +
 +def get_function_cfg(source, show_ops=True):
 +    """
-+    Return a ``graphviz.Digraph`` for the first function in *source*.
++    Return a lightweight DOT graph for the first function in *source*.
 +
 +    Builds the CFG directly from the MLIR Python IR API — no lowering to
 +    LLVM IR required.  ``block.successors`` provides the control-flow edges;
@@ -274,7 +296,7 @@ index 000000000000..6a805dc133bf
 +
 +    Returns
 +    -------
-+    graphviz.Digraph | None
++    object | None
 +        None if no function was found.
 +    """
 +    try:
@@ -300,8 +322,8 @@ index 000000000000..6a805dc133bf
 +
 +def show_dot(dot, title=''):
 +    """
-+    Display an arbitrary ``graphviz.Digraph`` (or raw DOT source string) in
-+    the current Jupyter environment.
++    Render a DOT graph (or raw DOT source string) as SVG in the current
++    Jupyter environment.
 +
 +    This is the rendering half of :func:`show_cfg`, split out so any DOT
 +    graph — not just an MLIR function's CFG — can be displayed the same
@@ -311,24 +333,19 @@ index 000000000000..6a805dc133bf
 +
 +    Parameters
 +    ----------
-+    dot : graphviz.Digraph | str
++    dot : object | str
 +        The graph to render, or its DOT source text directly.
 +    title : str
 +        Optional bold heading displayed above the graph.
 +
-+    Notes
-+    -----
-+    This is a display-only helper and returns ``None``. Use the input
-+    ``Digraph`` or :func:`get_function_cfg` when the graph object is needed.
++    Returns
++    -------
++    object | None
++        Displays the SVG and returns ``None`` in an interactive notebook.
++        Outside a notebook, returns an object containing the SVG in ``data``.
 +    """
-+    from IPython.display import display, HTML, SVG
-+
 +    if dot is None:
-+        print('(no graph to display)')
-+        return
-+
-+    if title:
-+        display(HTML(f'<b>{title}</b>'))
++        return ''
 +
 +    src = dot.source if hasattr(dot, 'source') else str(dot)
 +
@@ -345,13 +362,16 @@ index 000000000000..6a805dc133bf
 +        finally:
 +            gv.rm(graph)
 +
-+        rendered = SVG(data=svg)
 +    else:
 +        import graphviz as _gv
 +        graph = dot if hasattr(dot, 'pipe') else _gv.Source(src)
-+        rendered = SVG(data=graph.pipe(format='svg'))
++        svg = graph.pipe(format='svg').decode()
 +
-+    display(rendered)
++    rendered = _RenderedGraph(svg, title)
++    if hasattr(builtins, 'display'):
++        builtins.display(rendered)
++        return None
++    return rendered
 +
 +
 +def show_cfg(source, title='', show_ops=True):
@@ -375,7 +395,7 @@ index 000000000000..6a805dc133bf
 +    if not dot:
 +        print('(no CFG — no function found in source)')
 +        return
-+    show_dot(dot, title=title)
++    return show_dot(dot, title=title)
 diff --git a/mlir/python/CMakeLists.txt b/mlir/python/CMakeLists.txt
 index 003a06b16daa..d1c4d2f9d123 100644
 --- a/mlir/python/CMakeLists.txt
@@ -386,5 +406,5 @@ index 003a06b16daa..d1c4d2f9d123 100644
      rewrite.py
 +    utils.py
      dialects/_ods_common.py
+     dialects/ext.py
  )
- 

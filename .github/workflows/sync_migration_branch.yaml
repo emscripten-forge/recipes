@@ -1,0 +1,56 @@
+name: Sync Migration Branch
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "recipes/**"
+
+jobs:
+
+  sync_migration_branch:
+    if: github.repository == 'emscripten-forge/recipes'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_COLOR: 1
+      TARGET_PLATFORM: emscripten-wasm32
+      GITHUB_OWNER: "emscripten-forge"
+
+    steps:
+      ################################################################
+      # SETUP
+      ################################################################
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_ACCESS_TOKEN }}
+
+      ################################################################
+      # CONFIG
+      ################################################################
+      - name: Global config
+        shell: bash -el {0}
+        run: git config --global advice.detachedHead false
+
+      ################################################################
+      # MAMBA
+      ################################################################
+      - name: Install micromamba
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: ci_env.yml
+          init-shell: bash
+          cache-environment: false
+          post-cleanup: "all"
+
+      ################################################################
+      # SYNC
+      ################################################################
+      - name: Sync migration branch
+        shell: bash -el {0}
+        # Use the previous sha as old and the current sha as new
+        run: python -m emci sync emscripten-6x "${{ github.sha }}~1" "${{ github.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}

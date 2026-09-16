@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 1 Jan 2024 00:00:00 +0000
+Subject: [PATCH] Avoid uuid_generate_time_safe reference on Emscripten
+
+Emscripten builds fail to link _uuid because the object references
+uuid_generate_time_safe but libuuid is not linked into the final binary.
+Stub the call on __EMSCRIPTEN__ so the symbol is not referenced.
+---
+ Modules/_uuidmodule.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/Modules/_uuidmodule.c b/Modules/_uuidmodule.c
+--- a/Modules/_uuidmodule.c
++++ b/Modules/_uuidmodule.c
+@@ -29,6 +29,11 @@
+                            PyObject *Py_UNUSED(ignored))
+ {
+     uuid_t uuid;
++#ifdef __EMSCRIPTEN__
++    PyErr_SetString(PyExc_NotImplementedError,
++                    "uuid_generate_time_safe is not available on Emscripten");
++    return NULL;
++#else
+ #ifdef HAVE_UUID_GENERATE_TIME_SAFE
+     int res;
+ 
+@@ -48,6 +53,7 @@
+     uuid_generate_time(uuid);
+     return Py_BuildValue("y#O", (const char *) uuid, sizeof(uuid), Py_None);
+ #endif /* HAVE_UUID_GENERATE_TIME_SAFE */
++#endif /* !__EMSCRIPTEN__ */
+ }
+ 
+ #else /* MS_WINDOWS */
