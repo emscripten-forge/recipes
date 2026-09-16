@@ -10,9 +10,15 @@ cmake ${CMAKE_ARGS} ..                          \
     -GNinja                                     \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}          \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}       \
+    -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY    \
+    -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY    \
+    -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY    \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON        \
     -DCMAKE_BUILD_TYPE=Release                  \
     -DSHARED=OFF                                \
+    -DBoost_NO_BOOST_CMAKE=ON                   \
+    -DBoost_INCLUDE_DIR="${PREFIX}/include"     \
+    -DBoost_NO_SYSTEM_PATHS=ON                  \
     -DZLIB_LIBRARY="${PREFIX}/lib/libz.a"       \
     -DZLIB_INCLUDE_DIR="${PREFIX}/include"      \
     -DSTATIC_GMP=ON                             \

@@ -11,6 +11,7 @@ cmake ${CMAKE_ARGS} ..                          \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}          \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}       \
     -DCMAKE_INSTALL_LIBDIR=lib                  \
+    -DSOPLEX_DIR="${PREFIX}/lib/cmake/soplex"   \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON        \
     -DCMAKE_BUILD_TYPE=Release                  \
     -DSHARED=OFF                                \

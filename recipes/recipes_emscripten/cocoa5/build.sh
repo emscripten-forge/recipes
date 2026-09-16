@@ -9,6 +9,9 @@ echo '#!/usr/bin/env bash' > configuration/normaliz-version.sh
 echo 'echo "30810"' >> configuration/normaliz-version.sh
 chmod +x configuration/normaliz-version.sh
 
+# Boost >= 1.74 has header-only boost_system (no libboost_system.a)
+sed -i.bak 's/SUBLIBS="filesystem  system"/SUBLIBS="filesystem"/g' configuration/boost-find-lib.sh
+
 # Fix Readline check
 # echo '#!/usr/bin/env bash' > configuration/readline-check-cxxflags.sh
 # echo 'echo "-L'"${PREFIX}"'/lib -lncurses -ltinfo"' >> configuration/readline-check-cxxflags.sh
