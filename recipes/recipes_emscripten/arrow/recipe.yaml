@@ -3,23 +3,15 @@ context:
   name: arrow
 
 build:
-  number: 6
+  number: 7
 
-cache:
-  source:
-    - url: https://github.com/apache/arrow/releases/download/apache-arrow-${{ version }}/apache-arrow-${{ version }}.tar.gz
-      sha256: 12f6844a0ba3b99645cd2bc6cc4f44f6a174ab90da37e474f08b7d073433cb60
-      patches:
-        - patches/0001-Patch-emscripten.patch
-        - patches/0002-Fix-brotli-cmake-issues.patch
-        - patches/0003-Fix-xxhash-emscripten-extern-C-linkage.patch
-        - patches/0004-Fix-FindSnappyAlt-target-type-check.patch
-        - patches/0005-Include-FindPackageHandleStandardArgs-in-FindBrotliAlt.patch
-        - patches/0006-Fix-FindThriftAlt-missing-target-on-early-return.patch
-        - patches/0007-Remove-pthread-from-R-arrow-PKG_LIBS.patch
-
-  requirements:
+outputs:
+  - staging:
+      name: build-cache
     build:
+      script: build.sh
+    requirements:
+      build:
       - ${{ compiler("cxx") }}
       - cmake
       - make
@@ -41,9 +33,21 @@ cache:
       - r-rlang
       - r-tidyselect
       - r-vctrs
-    host:
+      host:
       - python
-      - boost-cpp
+      - boost-algorithm
+      - boost-asio
+      - boost-beast
+      - boost-container_hash
+      - boost-crc
+      - boost-lexical_cast
+      - boost-locale
+      - boost-multiprecision
+      - boost-process
+      - boost-range
+      - boost-tokenizer
+      - boost-variant
+      - boost-xpressive
       - re2
       - libabseil
       - libutf8proc
@@ -67,20 +71,26 @@ cache:
       - r-rlang
       - r-tidyselect
       - r-vctrs
-    ignore_run_exports:
-      from_package:
+      ignore_run_exports:
+        from_package:
         - cross-r-base_${{ target_platform }}
         - python
-  build:
-    script: build.sh
+    source:
+      - url: https://github.com/apache/arrow/releases/download/apache-arrow-${{ version }}/apache-arrow-${{ version }}.tar.gz
+        sha256: 12f6844a0ba3b99645cd2bc6cc4f44f6a174ab90da37e474f08b7d073433cb60
+        patches:
+        - patches/0001-Patch-emscripten.patch
+        - patches/0002-Fix-brotli-cmake-issues.patch
+        - patches/0003-Fix-xxhash-emscripten-extern-C-linkage.patch
+        - patches/0004-Fix-FindSnappyAlt-target-type-check.patch
+        - patches/0005-Include-FindPackageHandleStandardArgs-in-FindBrotliAlt.patch
+        - patches/0006-Fix-FindThriftAlt-missing-target-on-early-return.patch
+        - patches/0007-Remove-pthread-from-R-arrow-PKG_LIBS.patch
 
-outputs:
-  # ============================================================================
-  # Core Arrow C++ Library Outputs
-  # ============================================================================
   - package:
       name: arrow-cpp
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
@@ -96,7 +106,19 @@ outputs:
           - include/arrow/testing/**
     requirements:
       run:
-        - boost-cpp
+        - boost-algorithm
+        - boost-asio
+        - boost-beast
+        - boost-container_hash
+        - boost-crc
+        - boost-lexical_cast
+        - boost-locale
+        - boost-multiprecision
+        - boost-process
+        - boost-range
+        - boost-tokenizer
+        - boost-variant
+        - boost-xpressive
         - re2
         - libabseil
         - libutf8proc
@@ -132,6 +154,7 @@ outputs:
   - package:
       name: arrow-cpp-compute
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
@@ -161,6 +184,7 @@ outputs:
   - package:
       name: arrow-cpp-acero
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
@@ -191,6 +215,7 @@ outputs:
   - package:
       name: arrow-cpp-dataset
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
@@ -223,6 +248,7 @@ outputs:
   - package:
       name: arrow-cpp-parquet
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
@@ -255,6 +281,7 @@ outputs:
   - package:
       name: pyarrow
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
@@ -327,6 +354,7 @@ outputs:
   - package:
       name: r-arrow
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
