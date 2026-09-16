@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euxo pipefail
 
+# Avoid environment-injected flags (from this channel's activation scripts)
+# silently overriding/conflicting with what we pass explicitly below --
+# particularly relevant now that regina-gui links with -sASYNCIFY=1.
+unset EXCEPTION_HANDLING_FLAGS
+unset EMCC_CFLAGS
+
 mkdir -p build-wasm
 cd build-wasm
 
@@ -55,25 +61,6 @@ ninja install
 cp qtui/src/regina-gui.html "${PREFIX}/bin/regina-gui.html"
 cp qtui/src/regina-gui.js "${PREFIX}/bin/regina-gui.js"
 cp qtui/src/regina-gui.wasm "${PREFIX}/bin/regina-gui.wasm"
+cp qtui/src/regina-gui.data "${PREFIX}/bin/regina-gui.data"
 cp qtui/src/qtloader.js "${PREFIX}/bin/qtloader.js"
 cp utils/*.wasm "${PREFIX}/bin/"
-
-# ---------------------------------------------------------------------------
-# Preload icons + census databases into the WASM virtual filesystem.
-#
-# Confirmed from Regina's own source (engine/file/globaldirs.cpp,
-# engine/regina-config.h.in): with REGINA_HOME unset and not running from a
-# CMake build tree, GlobalDirs falls back to the compile-time REGINA_DATADIR
-# default, which is ${CMAKE_INSTALL_FULL_DATADIR}/regina --
-# i.e. ${PREFIX}/share/regina, the very same ${PREFIX} this script runs
-# under. Icons live at home()+"/icons"; census databases at
-# home()+"/data/census". Preloading at the *same* absolute path (rather
-# than a shorter virtual one) means Regina's compiled-in fopen() calls
-# resolve exactly as they would on a real filesystem, with no extra
-# runtime wiring required.
-EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
-python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-  "${PREFIX}/bin/regina-gui.data" \
-  --preload "${PREFIX}/share/regina/icons@${PREFIX}/share/regina/icons" \
-  --preload "${PREFIX}/share/regina/data/census@${PREFIX}/share/regina/data/census" \
-  --js-output="${PREFIX}/bin/regina-gui.data.js"

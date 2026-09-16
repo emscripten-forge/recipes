@@ -26,7 +26,7 @@
    # support multiple Qt versions again (e.g., Qt6 and Qt7?).
 --- a/qtui/src/CMakeLists.txt
 +++ b/qtui/src/CMakeLists.txt
-@@ -162,9 +162,30 @@
+@@ -162,9 +162,83 @@
  
  set(REGINA_BUNDLE_DEST bin)
  
@@ -43,8 +43,7 @@
 +else (EMSCRIPTEN)
 +  ADD_EXECUTABLE(${REGINA_APP_NAME} MACOSX_BUNDLE WIN32 ${SOURCES})
 +endif (EMSCRIPTEN)
- 
--TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} ${LINK_LIBS})
++
 +if (EMSCRIPTEN)
 +  # QT_ADD_EXECUTABLE() links this target to Qt::Core itself, internally,
 +  # using the *keyword* target_link_libraries() signature (PRIVATE/PUBLIC/
@@ -57,9 +56,63 @@
 +  TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} ${LINK_LIBS})
 +endif (EMSCRIPTEN)
  
+-TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} ${LINK_LIBS})
++if (EMSCRIPTEN)
++  # Preload icons and census databases directly into this target's own
++  # regina-gui.js at link time (rather than as a separate file_packager.py
++  # post-processing step), so the fetch/mount logic ships inside
++  # regina-gui.js itself instead of a second regina-gui.data.js loader that
++  # has to be ordered carefully against qtloader.js in the host page.
++  # Destinations mirror ${PREFIX}/share/regina/{icons,data/census} exactly
++  # (see GlobalDirs in engine/file/globaldirs.cpp), since that is the
++  # compile-time default GlobalDirs falls back to when REGINA_HOME is
++  # unset. Sources are read from *before* `ninja install` runs: the icon
++  # PNGs straight from the source tree, and the census .tkh databases from
++  # where mkcensusdb generates them during the build
++  # (PROJECT_BINARY_DIR/engine/data/census) -- both already exist by the
++  # time this target links, unlike the installed copies under ${PREFIX},
++  # which only exist after a later, separate `ninja install` step.
++  #
++  # Each --preload-file is wrapped as one "SHELL:" unit deliberately:
++  # target_link_options() de-duplicates identical string entries across a
++  # target's accumulated link options, and the bare flag "--preload-file"
++  # is byte-identical between the two calls below, so without SHELL:
++  # CMake silently drops the second occurrence, leaving the census path
++  # as an orphaned positional argument with no flag in front of it --
++  # which em++ then tries (and fails) to treat as an input file to
++  # compile. Wrapping flag+value as one SHELL: string keeps each entry
++  # unique and keeps them paired correctly.
++  #
++  # -sJSPI=1 is here because Regina's "New <packet type>" dialogs (and
++  # others) call QDialog::exec(), which Qt for WebAssembly cannot support
++  # without either Asyncify or JSPI. Asyncify was tried first and crashes
++  # (SIGABRT, an internal Binaryen assertion failure) at the wasm-opt
++  # instrumentation step, because Binaryen's Asyncify pass does not support
++  # the native wasm exception-handling constructs -fwasm-exceptions
++  # produces -- and dropping -fwasm-exceptions isn't an option, since Qt's
++  # own prebuilt libraries in this channel were built with it and Regina's
++  # engine has to match that exception model to link/behave correctly
++  # against them (see the ABI note in build.sh). JSPI is a different
++  # mechanism -- host-level stack switching, not a Binaryen bytecode pass
++  # -- so it doesn't hit that crash. It requires the qt6-main-jspi variant
++  # of Qt6 (see requirements: host: in recipe.yaml) since Qt's own
++  # QEventDispatcherWasm needs JSPI-aware code paths compiled in; this
++  # explicit flag is redundant with what qt6-main-jspi's CMake config
++  # already propagates via INTERFACE_LINK_OPTIONS, but belt-and-braces,
++  # matching the qt-calculator-experimental recipe's own rationale. Note
++  # JSPI needs a fairly recent browser (roughly Chrome 137+, Firefox 141+,
++  # Safari 18.4+ at the time of writing) -- if the "no screens"/exec()
++  # crashes reappear, check the browser's JSPI support first.
++  target_link_options(${REGINA_APP_NAME} PRIVATE
++      -sJSPI=1
++      "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/icons@$ENV{PREFIX}/share/regina/icons"
++      "SHELL:--preload-file ${PROJECT_BINARY_DIR}/engine/data/census@$ENV{PREFIX}/share/regina/data/census"
++  )
++endif (EMSCRIPTEN)
+ 
  if (APPLE)
    set_target_properties(${REGINA_APP_NAME}
-@@ -186,15 +207,6 @@
+@@ -186,15 +260,6 @@
      PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
  endif ()
  
