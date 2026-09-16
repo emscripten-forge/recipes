@@ -1,0 +1,275 @@
+--- a/cmake/modules/FindKVStore.cmake	2026-09-13 16:21:46.016588951 +0000
++++ b/cmake/modules/FindKVStore.cmake	2026-09-13 22:47:52.832678614 +0000
+@@ -9,6 +9,7 @@
+ #
+ # Also sets exactly one of the following booleans to true, according to
+ # which library was configured and found:
++#    REGINA_KVSTORE_TKRZW
+ #    REGINA_KVSTORE_TOKYOCABINET
+ #    REGINA_KVSTORE_QDBM
+ #    REGINA_KVSTORE_LMDB
+@@ -17,13 +18,20 @@
+ # - the library supports reading from multiple processes (e.g., not LevelDB);
+ # - the library supports duplicate keys (e.g., not Kyoto Cabinet).
+ #
++# NOTE: Tkrzw's DBM interface (unlike Tokyo Cabinet, QDBM and LMDB) has no
++# built-in notion of duplicate keys.  The regina patches that consume
++# REGINA_KVSTORE_TKRZW (engine/census/census-impl.h and
++# engine/data/census/mkcensusdb.cpp) work around this by storing every
++# manifold name for a given isomorphism signature in a single record,
++# separated by newlines, and splitting on read.
++#
+ # Copyright (c) 2021-2025, Ben Burton <bab@debian.org>
+ #
+ # Redistribution and use is allowed according to the terms of the BSD license.
+ # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
+ 
+ 
+-SET(KVStore_OPTIONS "any tokyocabinet qdbm lmdb")
++SET(KVStore_OPTIONS "any tkrzw tokyocabinet qdbm lmdb")
+ 
+ IF (QDBM)
+   MESSAGE(FATAL_ERROR
+@@ -36,11 +44,58 @@
+     FORCE)
+ ENDIF (NOT REGINA_KVSTORE)
+ 
+-SET(KVStore_DISPLAYNAME "Tokyo Cabinet / QDBM / LMDB")
+-SET(KVStore_DISPLAYURL "http://fallabs.com/tokyocabinet/")
++SET(KVStore_DISPLAYNAME "Tkrzw / Tokyo Cabinet / QDBM / LMDB")
++SET(KVStore_DISPLAYURL "https://dbmx.net/tkrzw/")
+ 
+ SET(REGINA_KVSTORE_OPTION_FOUND FALSE)
+ 
++IF (${REGINA_KVSTORE} STREQUAL tkrzw OR REGINA_KVSTORE_TKRZW OR
++    (${REGINA_KVSTORE} STREQUAL any AND NOT KVStore_FOUND))
++  SET(REGINA_KVSTORE_OPTION_FOUND TRUE)
++  PKG_CHECK_MODULES(KVStore tkrzw)
++  IF (NOT KVStore_FOUND)
++    # Either pkg-config is missing or it could not find the library.
++    find_path(KVStore_INCLUDE_DIRS NAMES tkrzw_dbm_hash.h)
++    find_library(KVStore_LIBRARIES NAMES tkrzw libtkrzw)
++    IF (KVStore_INCLUDE_DIRS AND KVStore_LIBRARIES)
++      SET(KVStore_FOUND TRUE CACHE INTERNAL "")
++    ENDIF (KVStore_INCLUDE_DIRS AND KVStore_LIBRARIES)
++  ELSE (NOT KVStore_FOUND)
++    # PKG_CHECK_MODULES() only gives us a bare "-l" library name (e.g.
++    # "tkrzw") plus a separate KVStore_LIBRARY_DIRS list, rather than a
++    # full path. That "-ltkrzw" only resolves at link time if whatever
++    # target eventually links it also happens to have -L<dir> in scope --
++    # which is not guaranteed, since KVStore_LIBRARIES is consumed here as
++    # a PRIVATE link requirement of the (in our Emscripten build, static)
++    # regina-engine library, and therefore gets propagated as a bare "-l"
++    # flag to every executable that links regina-engine transitively.
++    # Resolve a full path instead, exactly as the find_library()-based
++    # fallback above does and as every other KVStore backend in this file
++    # does, so KVStore_LIBRARIES is always self-contained.
++    #
++    # NOTE: find_library() below deliberately writes to a *different*
++    # variable name (KVStore_TKRZW_LIBRARY), not directly to
++    # KVStore_LIBRARIES. find_library(KVStore_LIBRARIES ...) would only
++    # populate KVStore_LIBRARIES as a *cache* entry; the plain/regular
++    # variable of the same name that PKG_CHECK_MODULES() just set (to the
++    # bare "tkrzw") would still shadow it for every later read of
++    # ${KVStore_LIBRARIES}, silently discarding the fix. Doing the SET()
++    # explicitly, as a plain variable, is what actually overrides it.
++    find_library(KVStore_TKRZW_LIBRARY NAMES tkrzw libtkrzw
++      HINTS ${KVStore_LIBRARY_DIRS})
++    IF (KVStore_TKRZW_LIBRARY)
++      SET(KVStore_LIBRARIES "${KVStore_TKRZW_LIBRARY}")
++    ENDIF (KVStore_TKRZW_LIBRARY)
++  ENDIF (NOT KVStore_FOUND)
++
++  IF (${REGINA_KVSTORE} STREQUAL tkrzw OR KVStore_FOUND)
++    SET(REGINA_KVSTORE_TKRZW TRUE CACHE INTERNAL "")
++    SET(KVStore_DISPLAYNAME "Tkrzw")
++    SET(KVStore_DISPLAYURL "https://dbmx.net/tkrzw/")
++    SET(DB_EXT "tkh")
++  ENDIF (${REGINA_KVSTORE} STREQUAL tkrzw OR KVStore_FOUND)
++ENDIF()
++
+ IF (${REGINA_KVSTORE} STREQUAL tokyocabinet OR REGINA_KVSTORE_TOKYOCABINET OR
+     (${REGINA_KVSTORE} STREQUAL any AND NOT KVStore_FOUND))
+   SET(REGINA_KVSTORE_OPTION_FOUND TRUE)
+--- a/engine/regina-config.h.in	2026-09-13 16:21:46.429409264 +0000
++++ b/engine/regina-config.h.in	2026-09-13 16:22:13.443777280 +0000
+@@ -43,6 +43,10 @@
+ /* Define if langinfo.h and nl_langinfo() are available. */
+ #cmakedefine LANGINFO_FOUND
+ 
++/* Define if we implement key-value stores using Tkrzw.
++   Exactly one of these REGINA_KVSTORE_* macros should be defined. */
++#cmakedefine REGINA_KVSTORE_TKRZW
++
+ /* Define if we implement key-value stores using Tokyo Cabinet.
+    Exactly one of these REGINA_KVSTORE_* macros should be defined. */
+ #cmakedefine REGINA_KVSTORE_TOKYOCABINET
+--- a/engine/census/census-impl.h	2026-09-13 16:21:46.730128569 +0000
++++ b/engine/census/census-impl.h	2026-09-13 16:22:32.856855357 +0000
+@@ -47,7 +47,13 @@
+ 
+ #include <iostream>
+ #include <cstdlib>
+-#if defined(REGINA_KVSTORE_QDBM)
++#if defined(REGINA_KVSTORE_TKRZW)
++  #include <sstream>
++  #include <string>
++  #include "tkrzw_dbm.h"
++  #include "tkrzw_dbm_hash.h"
++  #include "tkrzw_file.h"
++#elif defined(REGINA_KVSTORE_QDBM)
+   #include <depot.h>
+   #include <cabin.h>
+   #include <villa.h>
+@@ -71,7 +77,40 @@
+     if (isoSig.empty())
+         return true;
+ 
+-#if defined(REGINA_KVSTORE_QDBM)
++#if defined(REGINA_KVSTORE_TKRZW)
++    tkrzw::HashDBM db;
++    // Open read-only, without any locking: this database is a read-only
++    // asset that may be opened concurrently (e.g., shipped inside a
++    // read-only virtual filesystem such as an Emscripten/WASM bundle).
++    tkrzw::Status status = db.Open(filename_, false,
++        tkrzw::File::OPEN_NO_LOCK);
++    if (! status.IsOK()) {
++        std::cerr << "ERROR: Could not open Tkrzw database: "
++            << filename_ << std::endl;
++        std::cerr << "       -> " << status << std::endl;
++        return false;
++    }
++
++    std::string record;
++    status = db.Get(isoSig, &record);
++    if (status.IsOK()) {
++        // Tkrzw's DBM interface has no native notion of duplicate keys,
++        // so mkcensusdb concatenates every hit for a given isoSig into a
++        // single record, one manifold name per line.  Split them back out.
++        std::istringstream in(record);
++        std::string name;
++        while (std::getline(in, name))
++            action(CensusHit(name, this));
++    } else if (status != tkrzw::Status::NOT_FOUND_ERROR) {
++        std::cerr << "ERROR: Could not search Tkrzw database: "
++            << filename_ << std::endl;
++        std::cerr << "       -> " << status << std::endl;
++        db.Close();
++        return false;
++    }
++
++    db.Close();
++#elif defined(REGINA_KVSTORE_QDBM)
+     VILLA* db;
+     if (! (db = vlopen(filename_.c_str(), VL_OREADER | VL_ONOLCK, VL_CMPLEX))) {
+         std::cerr << "ERROR: Could not open QDBM database: "
+--- a/engine/data/census/mkcensusdb.cpp	2026-09-13 16:21:46.767227758 +0000
++++ b/engine/data/census/mkcensusdb.cpp	2026-09-13 16:23:42.754613343 +0000
+@@ -37,7 +37,12 @@
+ #include <string>
+ #include "utilities/zstr.h"
+ 
+-#if defined(REGINA_KVSTORE_QDBM)
++#if defined(REGINA_KVSTORE_TKRZW)
++  #include "tkrzw_dbm.h"
++  #include "tkrzw_dbm_hash.h"
++  #include "tkrzw_file.h"
++  #define DB_CLOSE(x) { x->Close(); delete x; }
++#elif defined(REGINA_KVSTORE_QDBM)
+   #include <depot.h>
+   #include <cabin.h>
+   #include <villa.h>
+@@ -86,7 +91,18 @@
+     }
+ 
+     // Initialise the database.
+-#if defined(REGINA_KVSTORE_QDBM)
++#if defined(REGINA_KVSTORE_TKRZW)
++    tkrzw::HashDBM* db = new tkrzw::HashDBM();
++    tkrzw::Status status = db->Open(outputFile, true,
++        tkrzw::File::OPEN_TRUNCATE);
++    if (! status.IsOK()) {
++        std::cerr << "ERROR: Could not open Tkrzw database: "
++            << outputFile << std::endl;
++        std::cerr << "Detail: " << status << std::endl;
++        delete db;
++        std::exit(1);
++    }
++#elif defined(REGINA_KVSTORE_QDBM)
+     VILLA* db;
+     if (! (db = vlopen(outputFile.c_str(),
+             VL_OWRITER | VL_OCREAT | VL_OTRUNC | VL_OZCOMP | VL_ONOLCK,
+@@ -197,7 +213,25 @@
+                 usage(argv[0]);
+             }
+ 
+-    #if defined(REGINA_KVSTORE_QDBM)
++    #if defined(REGINA_KVSTORE_TKRZW)
++            {
++                // Tkrzw's DBM interface has no native notion of duplicate
++                // keys.  If this isoSig has already been seen, append the
++                // new name to the existing record separated by a newline;
++                // census-impl.h splits these back out again on lookup.
++                std::string existing;
++                std::string record = db->Get(sig, &existing).IsOK() ?
++                    (existing + "\n" + pos) : std::string(pos);
++                if (auto putStatus = db->Set(sig, record, true);
++                        ! putStatus.IsOK()) {
++                    std::cerr << "ERROR: Could not store the record for "
++                        << sig << " in the database." << std::endl;
++                    std::cerr << "Detail: " << putStatus << std::endl;
++                    DB_CLOSE(db);
++                    std::exit(1);
++                }
++            }
++    #elif defined(REGINA_KVSTORE_QDBM)
+             if (! vlput(db, sig.c_str(), sig.length(),
+                     pos, -1 /* strlen */, VL_DDUP)) {
+                 std::cerr << "ERROR: Could not store the record for "
+@@ -237,7 +271,25 @@
+     }
+ 
+     // Close and tidy up.
+-#if defined(REGINA_KVSTORE_QDBM)
++#if defined(REGINA_KVSTORE_TKRZW)
++    if (auto rebuildStatus = db->Rebuild(); ! rebuildStatus.IsOK()) {
++        std::cerr << "ERROR: Could not optimise Tkrzw database: "
++            << outputFile << std::endl;
++        std::cerr << "Detail: " << rebuildStatus << std::endl;
++        db->Close();
++        delete db;
++        std::exit(1);
++    }
++
++    if (auto closeStatus = db->Close(); ! closeStatus.IsOK()) {
++        std::cerr << "ERROR: Could not close Tkrzw database: "
++            << outputFile << std::endl;
++        std::cerr << "Detail: " << closeStatus << std::endl;
++        delete db;
++        std::exit(1);
++    }
++    delete db;
++#elif defined(REGINA_KVSTORE_QDBM)
+     if (! vloptimize(db)) {
+         std::cerr << "ERROR: Could not optimise QDBM database: "
+             << outputFile << std::endl;
+--- a/engine/data/census/CMakeLists.txt	2026-09-13 16:21:46.804833375 +0000
++++ b/engine/data/census/CMakeLists.txt	2026-09-13 16:23:50.080729684 +0000
+@@ -4,6 +4,17 @@
+ INCLUDE_DIRECTORIES(${ENGINE_INCLUDES})
+ ADD_EXECUTABLE(mkcensusdb mkcensusdb.cpp)
+ TARGET_LINK_LIBRARIES(mkcensusdb ${ZLIB_LIBRARIES} ${KVStore_LIBRARIES})
++IF (EMSCRIPTEN)
++  # mkcensusdb is only ever run at *build* time (it converts the plain-text
++  # census data shipped in this directory into the key-value databases we
++  # install), never inside the browser.  Emscripten's CMake toolchain
++  # automatically arranges for build-time custom commands that reference
++  # this target to be run under Node (via CMAKE_CROSSCOMPILING_EMULATOR),
++  # but the resulting program still needs -sNODERAWFS=1 so that its normal
++  # std::ifstream/DBM file I/O against real paths on disk actually works
++  # when executed that way, instead of hitting Emscripten's in-memory FS.
++  TARGET_LINK_OPTIONS(mkcensusdb PRIVATE "-sNODERAWFS=1")
++ENDIF (EMSCRIPTEN)
+ IF (REGINA_KVSTORE_LMDB)
+   ADD_EXECUTABLE(optimise-lmdb optimise-lmdb.cpp)
+   ADD_EXECUTABLE(compact-lmdb compact-lmdb.cpp)
