@@ -33,14 +33,11 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip
 
     # add conda forge and emscripten-forge channels
     cmd.extend([
-        "-c", "https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x",
         "-c", "microsoft",
+        "-c", "https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x",
         "-c", "conda-forge",
         "-c", "bioconda"
     ])
-
-    # # disable strict priority
-    # cmd.append("--channel-priority disabled")
 
     # pass existing env vars to subprocess
     print(f"Running rattler-build with command: {cmd}")
