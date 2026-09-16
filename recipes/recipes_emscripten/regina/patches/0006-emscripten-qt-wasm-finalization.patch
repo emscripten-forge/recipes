@@ -1,0 +1,77 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -565,6 +565,23 @@
+ ELSE(DISABLE_GUI)
+   set(CMAKE_AUTOMOC ON)
+ 
++  if (EMSCRIPTEN)
++    # Qt6's wasm target-finalization (the step that actually generates a
++    # <target>.html host page plus qtloader.js, rather than Emscripten's
++    # own generic default shell) lives in a CMake module that qt-cmake
++    # normally injects automatically via Qt's own toolchain file.
++    # emscripten-forge invokes cmake directly against Emscripten's own
++    # Emscripten.cmake toolchain file instead of qt-cmake, so that
++    # auto-inclusion never happens. Include it by hand, before Qt6 is even
++    # looked up, so QT_ADD_EXECUTABLE() in qtui/src/CMakeLists.txt picks up
++    # its wasm finalization logic.
++    find_file(QT_WASM_HELPERS
++        NAMES QtPublicWasmToolchainHelpers.cmake
++        PATHS "$ENV{PREFIX}/lib/cmake/Qt6" "$ENV{PREFIX}/lib/cmake/Qt6Core"
++        NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED)
++    include("${QT_WASM_HELPERS}")
++  endif (EMSCRIPTEN)
++
+   # At present, regina only supports Qt6 (not Qt5).  However, we still use
+   # regina's own Qt-related variables in case at some point in the future we
+   # support multiple Qt versions again (e.g., Qt6 and Qt7?).
+--- a/qtui/src/CMakeLists.txt
++++ b/qtui/src/CMakeLists.txt
+@@ -162,9 +162,30 @@
+ 
+ set(REGINA_BUNDLE_DEST bin)
+ 
+-ADD_EXECUTABLE(${REGINA_APP_NAME} MACOSX_BUNDLE WIN32 ${SOURCES})
++if (EMSCRIPTEN)
++  # QT_ADD_EXECUTABLE (rather than plain ADD_EXECUTABLE) is what actually
++  # triggers Qt6's wasm target-finalization: generating a Qt-aware
++  # <target>.html and copying qtloader.js next to it, instead of a bare
++  # regina-gui.js/.wasm with no host page at all. This only takes effect
++  # because QtPublicWasmToolchainHelpers.cmake was included by hand up in
++  # the top-level CMakeLists.txt (see the EMSCRIPTEN block there) -- on
++  # every other platform this is identical to plain ADD_EXECUTABLE.
++  QT_ADD_EXECUTABLE(${REGINA_APP_NAME} MACOSX_BUNDLE WIN32 ${SOURCES})
++else (EMSCRIPTEN)
++  ADD_EXECUTABLE(${REGINA_APP_NAME} MACOSX_BUNDLE WIN32 ${SOURCES})
++endif (EMSCRIPTEN)
+ 
+-TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} ${LINK_LIBS})
++if (EMSCRIPTEN)
++  # QT_ADD_EXECUTABLE() links this target to Qt::Core itself, internally,
++  # using the *keyword* target_link_libraries() signature (PRIVATE/PUBLIC/
++  # INTERFACE). CMake requires every target_link_libraries() call against
++  # the same target to use one signature style consistently -- mixing
++  # keyword and plain calls on one target is a hard configure-time error.
++  # So on this platform we must also use the keyword form here.
++  TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} PRIVATE ${LINK_LIBS})
++else (EMSCRIPTEN)
++  TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} ${LINK_LIBS})
++endif (EMSCRIPTEN)
+ 
+ if (APPLE)
+   set_target_properties(${REGINA_APP_NAME}
+@@ -186,15 +207,6 @@
+     PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+ endif ()
+ 
+-if (EMSCRIPTEN)
+-  # A plain ADD_EXECUTABLE() under Emscripten produces "regina-gui.js" plus
+-  # a matching "regina-gui.wasm", but no HTML host page. Asking for a
+-  # ".html" suffix makes Emscripten emit a ready-to-open
+-  # "regina-gui.html" (which still comes with its own "regina-gui.js" and
+-  # "regina-gui.wasm" side files) using Emscripten's default HTML shell.
+-  set_target_properties(${REGINA_APP_NAME} PROPERTIES SUFFIX ".html")
+-endif (EMSCRIPTEN)
+-
+ INSTALL(TARGETS ${REGINA_APP_NAME} DESTINATION "${CMAKE_INSTALL_FULL_BINDIR}" COMPONENT Runtime)
+ 
+ # TODO: Use COMPONENT Runtime/Development throughout all install targets.
