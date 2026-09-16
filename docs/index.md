@@ -35,4 +35,4 @@ The recipes repository not only stores the recipe files for multiple packages, b
 
 # Sponsorship
 
-The development of emscripten-forge is sponsored by QuantStack, supporting the continued development and maintenance of the project.
+The development of emscripten-forge is sponsored by QuantStack and Bloomberg, supporting the continued development and maintenance of the project. Packages of the emscripten-forge packages are gracefully hosted by [prefix.dev](https://prefix.dev/channels/emscripten-forge-4x).
