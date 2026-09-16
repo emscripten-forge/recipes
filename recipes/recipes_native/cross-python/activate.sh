@@ -76,7 +76,8 @@ if [[ "${PYTHONPATH}" != "" ]]; then
 fi
 export PYTHONPATH=$BUILD_PREFIX/venv/lib/python$PY_VER/site-packages
 export PYTHON=$PYTHON_HOST # This should be a script to set up the cross env
-export PIP_ARGS="--prefix=$PREFIX --no-deps -vv"
+export PIP_ARGS="--no-deps -vv"
+export PIP_PREFIX=$PREFIX # Global --prefix=$PREFIX
 
 # Set up flags
 export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
