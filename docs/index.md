@@ -32,3 +32,7 @@ The recipes repository not only stores the recipe files for multiple packages, b
   * [Related projects](project/related_projects)
   * [FAQ](project/faq)
   * [Credits](project/credits)
+
+# Sponsorship
+
+The development of emscripten-forge is sponsored by QuantStack, supporting the continued development and maintenance of the project.
