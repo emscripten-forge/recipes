@@ -1,0 +1,43 @@
+From 8c279f51e7acd52696dc3ee25a82360de8c87fe4 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 16 Sep 2026 14:48:47 +0200
+Subject: [PATCH 7/7] Disable pthread support
+
+---
+ flang-rt/include/flang-rt/runtime/lock.h | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/flang-rt/include/flang-rt/runtime/lock.h b/flang-rt/include/flang-rt/runtime/lock.h
+index 7147c3a6b..af62886e8 100644
+--- a/flang-rt/include/flang-rt/runtime/lock.h
++++ b/flang-rt/include/flang-rt/runtime/lock.h
+@@ -22,11 +22,16 @@
+ #undef USE_PTHREADS
+ #endif
+ 
++#if defined(__WASM__) || defined(__EMSCRIPTEN__)
++#undef USE_PTHREADS
++#define RT_USE_PSEUDO_LOCK 1
++#endif
++
+ #if USE_PTHREADS
+ #include <pthread.h>
+ #elif defined(_WIN32)
+ #include "flang/Common/windows-include.h"
+-#else
++#elif !RT_USE_PSEUDO_LOCK
+ #include <mutex>
+ #endif
+ 
+@@ -88,7 +93,7 @@ public:
+   }
+ 
+ private:
+-#if RT_USE_PSEUDO_FILE_UNIT
++#if RT_USE_PSEUDO_LOCK || defined(RT_USE_PSEUDO_FILE_UNIT)
+   // No state.
+ #elif USE_PTHREADS
+   pthread_mutex_t mutex_{};
+-- 
+2.55.0
+
