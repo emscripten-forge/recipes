@@ -1,0 +1,21 @@
+--- a/configure
++++ b/configure
+@@ -19,7 +19,7 @@ PKG_LIBS="-lfontconfig -lfreetype"
+ PKG_OBJCXXFLAGS=""
+
+ # Alternative config on MacOS for native APIs
+-if [ `uname` = "Darwin" ]; then
++if [ `uname` = "Darwin" ] && [ "${target_platform:-}" != "emscripten-wasm32" ]; then
+ SYS="DARWIN"
+ PKG_CONFIG_NAME="--static freetype2"
+ PKG_TEST_HEADER="<ft2build.h>"
+@@ -60,7 +60,7 @@ if [ "$INCLUDE_DIR" ] || [ "$LIB_DIR" ]; then
+ elif [ "$PKGCONFIG_CFLAGS" ] || [ "$PKGCONFIG_LIBS" ]; then
+   echo "Found pkg-config cflags and libs!"
+   PKG_CFLAGS=${PKGCONFIG_CFLAGS}
+   PKG_LIBS=${PKGCONFIG_LIBS}
+-elif [ `uname` = "Darwin" ]; then
++elif [ `uname` = "Darwin" ] && [ "${target_platform:-}" != "emscripten-wasm32" ]; then
+   test ! "$CI" && brew --version 2>/dev/null
+   if [ $? -eq 0 ]; then
+     BREWDIR=`brew --prefix`
