@@ -24,3 +24,16 @@ emcmake cmake ${CMAKE_ARGS} ..              \
 
 # Build step
 ninja install
+
+mkdir -p "${PREFIX}/lib/pkgconfig"
+cat > "${PREFIX}/lib/pkgconfig/snappy.pc" <<EOF
+prefix=${PREFIX}
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: snappy
+Description: A fast compressor/decompressor
+Version: ${PKG_VERSION}
+Libs: -L\${libdir} -lsnappy
+Cflags: -I\${includedir}
+EOF

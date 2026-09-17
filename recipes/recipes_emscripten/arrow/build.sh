@@ -30,8 +30,40 @@ ARROW_SHARED_FEATURES=(
     "-DARROW_DEPENDENCY_USE_SHARED=OFF"
 )
 
+# arrow's resolve_dependency(Boost) requires CONFIG mode (no FindBoost module
+# fallback), and our boost-* packages ship per-module configs only - so without
+# an umbrella BoostConfig.cmake, CMake picks up a *host* Boost (Arch:
+# /usr/lib/cmake/Boost-1.92.0, /opt/cuda/lib/cmake/Boost-1.92.0) and then adds
+# -isystem /usr/include, which breaks emscripten's libc++ (<cstdint>). Hand
+# CMake a minimal umbrella config for the prefix. This file belongs in the
+# boost packages long-term; here it stays inside the build tree.
+BOOST_CMAKE_DIR="${SRC_DIR}/.boost-cmake"
+mkdir -p "${BOOST_CMAKE_DIR}"
+cat > "${BOOST_CMAKE_DIR}/BoostConfig.cmake" <<EOF
+set(Boost_FOUND TRUE)
+set(Boost_VERSION 1.92.0)
+set(Boost_INCLUDE_DIRS "${PREFIX}/include")
+set(Boost_INCLUDE_DIR "${PREFIX}/include")
+foreach(_boost_target Boost::headers Boost::boost)
+  if(NOT TARGET \${_boost_target})
+    add_library(\${_boost_target} INTERFACE IMPORTED)
+    set_target_properties(\${_boost_target} PROPERTIES
+                          INTERFACE_INCLUDE_DIRECTORIES "${PREFIX}/include")
+  endif()
+endforeach()
+EOF
+cat > "${BOOST_CMAKE_DIR}/BoostConfigVersion.cmake" <<EOF
+set(PACKAGE_VERSION "1.92.0")
+set(PACKAGE_VERSION_COMPATIBLE TRUE)
+if(PACKAGE_FIND_VERSION VERSION_GREATER PACKAGE_VERSION)
+  set(PACKAGE_VERSION_COMPATIBLE FALSE)
+endif()
+EOF
+
 ARROW_DEPENDENCIES=(
     "-DBoost_ROOT=${PREFIX}"
+    "-DBoost_DIR=${BOOST_CMAKE_DIR}"
+    "-DBoost_NO_SYSTEM_PATHS=ON"
     "-DBrotli_ROOT=${PREFIX}"
     "-DBROTLI_ROOT=${PREFIX}"
     "-DBrotliAlt_ROOT=${PREFIX}"

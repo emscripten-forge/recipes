@@ -19,3 +19,19 @@ cmake ${CMAKE_ARGS} ..              \
 
 # Build step
 ninja install
+
+# pkg-config file. Without it, pkg-config consumers fall back to the host's
+# /usr/lib/pkgconfig/bzip2.pc (the conda pkg-config wrapper always searches the
+# system dirs) and leak -I/usr/include into emscripten builds.
+mkdir -p "${PREFIX}/lib/pkgconfig"
+cat > "${PREFIX}/lib/pkgconfig/bzip2.pc" <<EOF
+prefix=${PREFIX}
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: bzip2
+Description: Lossless, block-sorting data compression
+Version: ${PKG_VERSION}
+Libs: -L\${libdir} -lbz2
+Cflags: -I\${includedir}
+EOF

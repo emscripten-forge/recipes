@@ -3,7 +3,7 @@ context:
   name: thrift
 
 build:
-  number: 3
+  number: 4
 
 outputs:
   - staging:
@@ -54,12 +54,37 @@ outputs:
       files:
         include:
           - lib/libthrift.a
+    requirements:
+      run:
+        - boost-chrono
+        - boost-date_time
+        - boost-filesystem
+        - boost-program_options
+        - boost-random
+        - boost-test
+        - openssl
+        - zlib
+    tests:
+      - package_contents:
+          lib:
+            - libthrift.a
+
+  - package:
+      name: thrift-cpp-dev
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      script: echo "Collecting files from cache"
+      files:
+        include:
+          - include/thrift/**
           - lib/cmake/thrift/
           - lib/cmake/thrift-emscripten/
           - lib/pkgconfig/thrift.pc
-          - include/thrift/**
     requirements:
       run:
+        # the CMake configs and thrift.pc here point at ../../../lib/libthrift.a
+        - ${{ pin_subpackage('thrift-cpp', exact=True) }}
         - boost-algorithm
         - boost-chrono
         - boost-config
@@ -80,12 +105,8 @@ outputs:
         - boost-tokenizer
         - boost-type_traits
         - boost-uuid
-        - openssl
-        - zlib
     tests:
       - package_contents:
-          lib:
-            - libthrift.a
           include:
             - thrift/Thrift.h
             - thrift/protocol/TBinaryProtocol.h
@@ -124,7 +145,7 @@ outputs:
       host:
         - python
         - setuptools
-        - thrift-cpp =${{ version }}
+        - thrift-cpp-dev =${{ version }}
       run:
         - python
         - six
