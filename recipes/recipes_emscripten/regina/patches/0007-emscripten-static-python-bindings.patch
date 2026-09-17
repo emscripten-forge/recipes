@@ -308,12 +308,12 @@
 +    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${REGINA_SAVED_LIB_SUFFIXES})
 +
 +    # CPython's HACL* hash implementations, which md5module.o /
-+    # sha1module.o / sha2module.o inside libpython reference as
-+    # _Py_LibHacl_Hacl_Hash_*. The python package in this channel does not
-+    # install the libHacl_Hash_*.a archives these live in, so build.sh
-+    # compiles them from the matching CPython source and passes the
-+    # resulting archive here. Must follow ${Python_LIBRARIES} above, since
-+    # it is libpython's own objects that create the undefined references.
++    # sha1module.o / sha2module.o / sha3module.o / blake2module.o inside
++    # libpython reference as _Py_LibHacl_Hacl_Hash_*. Normally these are
++    # objects in libpython itself; where the python package instead ships
++    # them as separate libHacl_*.a archives, build.sh locates those and
++    # passes them here. Must follow ${Python_LIBRARIES} above, since it is
++    # libpython's own objects that create the undefined references.
 +    IF(REGINA_HACL_LIBRARY)
 +      SET(LINK_LIBS ${LINK_LIBS} "${REGINA_HACL_LIBRARY}")
 +    ENDIF(REGINA_HACL_LIBRARY)
@@ -337,7 +337,36 @@
  if (EMSCRIPTEN)
    # QT_ADD_EXECUTABLE (rather than plain ADD_EXECUTABLE) is what actually
    # triggers Qt6's wasm target-finalization: generating a Qt-aware
-@@ -238,8 +315,82 @@
+@@ -182,6 +259,28 @@
+   # the same target to use one signature style consistently -- mixing
+   # keyword and plain calls on one target is a hard configure-time error.
+   # So on this platform we must also use the keyword form here.
++  #
++  # The memory settings are appended as *link libraries* rather than link
++  # options on purpose. Qt6 contributes its own
++  #     -s INITIAL_MEMORY=50MB -s STACK_SIZE=5MB -s MAXIMUM_MEMORY=4GB
++  # through INTERFACE_LINK_OPTIONS, and CMake emits a target's own
++  # LINK_OPTIONS *before* the INTERFACE options of the libraries it links.
++  # Since emcc takes the last value of a repeated -s setting, Qt's values
++  # were silently winning over the ones build.sh passes in
++  # CMAKE_EXE_LINKER_FLAGS -- so regina-gui was being built with a 5MB
++  # stack and 50MB initial heap, not the intended 64MB and 256MB. Link
++  # libraries are emitted last of all, which is the only position from
++  # which these actually take effect.
++  #
++  # The stack matters here: with no pthreads, the long searches now run on
++  # the main thread (see wasmsyncthread.h), and Regina's exhaustive
++  # simplification and retriangulation code recurses deeply. STACK_SIZE is
++  # carved out of the initial linear memory, so INITIAL_MEMORY must stay
++  # comfortably larger than it. ALLOW_MEMORY_GROWTH (already on) means the
++  # heap can still expand towards MAXIMUM_MEMORY afterwards.
++  SET(LINK_LIBS ${LINK_LIBS}
++    "-sSTACK_SIZE=67108864"
++    "-sINITIAL_MEMORY=268435456")
+   TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} PRIVATE ${LINK_LIBS})
+ else (EMSCRIPTEN)
+   TARGET_LINK_LIBRARIES(${REGINA_APP_NAME} ${LINK_LIBS})
+@@ -238,8 +337,82 @@
        "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/icons@$ENV{PREFIX}/share/regina/icons"
        "SHELL:--preload-file ${PROJECT_BINARY_DIR}/engine/data/census@$ENV{PREFIX}/share/regina/data/census"
    )
@@ -420,6 +449,35 @@
  if (APPLE)
    set_target_properties(${REGINA_APP_NAME}
      PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+--- a/qtui/src/reginaprefset.cpp
++++ b/qtui/src/reginaprefset.cpp
+@@ -562,6 +562,20 @@
+ }
+ 
+ int ReginaPrefSet::threads() {
++#ifdef __EMSCRIPTEN__
++    // This build has no pthreads, so the engine must never be asked for more
++    // than one. Several GUI computations pass this value straight to the
++    // engine (Link::simplifyExhaustive, Link::jones, Triangulation::
++    // improveTreewidth and friends), which would otherwise try to spawn
++    // worker threads internally and fail. Returning 1 here covers all of
++    // those in one place; ReginaGuiThread (wasmsyncthread.h) separately
++    // handles the GUI's own worker threads.
++    //
++    // Note the preference itself is left alone -- the user's chosen setting
++    // is still stored and still shown in the settings dialog; it simply has
++    // no effect on this platform.
++    return 1;
++#else
+     switch (global().threadCount) {
+         case ThreadCount::Single:
+             return 1;
+@@ -574,4 +588,5 @@
+             // Use the ThreadCount::Polite setting.
+             return regina::politeThreads();
+     }
++#endif
+ }
 --- a/qtui/src/pythonmanager.cpp
 +++ b/qtui/src/pythonmanager.cpp
 @@ -34,6 +34,8 @@
@@ -699,6 +757,212 @@
      if (interpreter->complete(lastWord.toUtf8().constData(), comp) < 0) {
          // Completion failed.
          return;
+--- a/qtui/src/packets/anglescreator.cpp
++++ b/qtui/src/packets/anglescreator.cpp
+@@ -45,6 +45,7 @@
+ #include <QLabel>
+ #include <QLayout>
+ #include <QWhatsThis>
++#include "../wasmsyncthread.h"
+ 
+ AngleStructureCreator::AngleStructureCreator(ReginaMain*) {
+     // Set up the basic layout.
+@@ -87,7 +88,7 @@
+     ProgressDialogNumeric dlg(&tracker,
+         ui->tr("Enumerating vertex angle structures..."), parentWidget);
+ 
+-    std::thread t([&, this]() {
++    ReginaGuiThread t([&, this]() {
+         ans = regina::make_packet<regina::AngleStructures>(std::in_place,
+             tri, tautOnly->isChecked(), regina::AngleAlg::Default, &tracker);
+     });
+--- a/qtui/src/packets/hypercreator.cpp
++++ b/qtui/src/packets/hypercreator.cpp
+@@ -48,6 +48,7 @@
+ #include <QLayout>
+ #include <QMessageBox>
+ #include <QWhatsThis>
++#include "../wasmsyncthread.h"
+ 
+ using regina::HyperList;
+ using regina::NormalHypersurfaces;
+@@ -175,7 +176,7 @@
+             HyperList::Vertex : HyperList::Fundamental) |
+         (embedded->isChecked() ?
+             HyperList::EmbeddedOnly : HyperList::ImmersedSingular);
+-    std::thread t([&, coordSystem, which, this]() {
++    ReginaGuiThread t([&, coordSystem, which, this]() {
+         try {
+             ans = regina::make_packet<NormalHypersurfaces>(std::in_place,
+                 tri, coordSystem, which, regina::HyperAlg::Default, &tracker);
+--- a/qtui/src/packets/linkcrossings.cpp
++++ b/qtui/src/packets/linkcrossings.cpp
+@@ -58,6 +58,7 @@
+ #include <QPushButton>
+ #include <QRegularExpression>
+ #include <QToolBar>
++#include "../wasmsyncthread.h"
+ 
+ #define NEG_COLOUR QColor(0xb8, 0x86, 0x0b, 0xff)
+ #define POS_COLOUR QColor(0x00, 0x71, 0xbc, 0xff)
+@@ -763,7 +764,7 @@
+         // after the computation thread is guaranteed to have finished.
+ 
+         regina::Packet::PacketChangeGroup span(*link);
+-        std::thread t(&Link::simplifyExhaustive, link, height,
++        ReginaGuiThread t(&Link::simplifyExhaustive, link, height,
+             ReginaPrefSet::threads(), std::addressof(tracker));
+         result = dlg.run();
+         t.join();
+@@ -812,7 +813,7 @@
+         // after the computation thread is guaranteed to have finished.
+ 
+         regina::Packet::PacketChangeGroup span(*link);
+-        std::thread t(&Link::improveTreewidth, link, -1 /* maxAttempts */,
++        ReginaGuiThread t(&Link::improveTreewidth, link, -1 /* maxAttempts */,
+             height, ReginaPrefSet::threads(), std::addressof(tracker));
+         result = dlg.run();
+         t.join();
+--- a/qtui/src/packets/linkpoly.cpp
++++ b/qtui/src/packets/linkpoly.cpp
+@@ -51,6 +51,7 @@
+ #include <QRadioButton>
+ #include <QToolTip>
+ #include <QWhatsThis>
++#include "../wasmsyncthread.h"
+ 
+ #define MAX_LINK_AUTO_POLYNOMIALS 6
+ 
+@@ -547,7 +548,7 @@
+ void LinkPolynomialUI::calculateJones() {
+     ProgressTracker tracker;
+     ProgressDialogNumeric dlg(&tracker, tr("Computing Jones polynomial"), ui);
+-    std::thread([this, &tracker]() {
++    ReginaGuiThread([this, &tracker]() {
+         link->jones(Algorithm::Default, ReginaPrefSet::threads(),
+             std::addressof(tracker));
+     }).detach();
+@@ -563,7 +564,7 @@
+     ProgressTracker tracker;
+     ProgressDialogNumeric dlg(&tracker, tr("Computing HOMFLY-PT polynomial"),
+         ui);
+-    std::thread(&Link::homfly, link, Algorithm::Default,
++    ReginaGuiThread(&Link::homfly, link, Algorithm::Default,
+         std::addressof(tracker)).detach();
+     if (! dlg.run())
+         return;
+@@ -576,7 +577,7 @@
+ void LinkPolynomialUI::calculateBracket() {
+     ProgressTracker tracker;
+     ProgressDialogNumeric dlg(&tracker, tr("Computing Kauffman bracket"), ui);
+-    std::thread([this, &tracker]() {
++    ReginaGuiThread([this, &tracker]() {
+         link->jones(Algorithm::Default, ReginaPrefSet::threads(),
+             std::addressof(tracker));
+     }).detach();
+@@ -591,7 +592,7 @@
+ void LinkPolynomialUI::calculateArrow() {
+     ProgressTracker tracker;
+     ProgressDialogNumeric dlg(&tracker, tr("Computing arrow polynomial"), ui);
+-    std::thread(&Link::arrow, link, Algorithm::Default,
++    ReginaGuiThread(&Link::arrow, link, Algorithm::Default,
+         ReginaPrefSet::threads(), std::addressof(tracker)).detach();
+     if (! dlg.run())
+         return;
+--- a/qtui/src/packets/surfacescreator.cpp
++++ b/qtui/src/packets/surfacescreator.cpp
+@@ -48,6 +48,7 @@
+ #include <QLayout>
+ #include <QMessageBox>
+ #include <QWhatsThis>
++#include "../wasmsyncthread.h"
+ 
+ using regina::NormalList;
+ using regina::NormalSurfaces;
+@@ -202,7 +203,7 @@
+             NormalList::Vertex : NormalList::Fundamental) |
+         (embedded->isChecked() ?
+             NormalList::EmbeddedOnly : NormalList::ImmersedSingular);
+-    std::thread t([&, coordSystem, which, this]() {
++    ReginaGuiThread t([&, coordSystem, which, this]() {
+         try {
+             ans = regina::make_packet<NormalSurfaces>(std::in_place,
+                 tri, coordSystem, which, regina::NormalAlg::Default, &tracker);
+--- a/qtui/src/packets/tri3algebra.cpp
++++ b/qtui/src/packets/tri3algebra.cpp
+@@ -63,6 +63,7 @@
+ #include <QTreeWidgetItem>
+ #include <QTextDocument>
+ #include <QValidator>
++#include "../wasmsyncthread.h"
+ 
+ using regina::Packet;
+ using regina::Triangulation;
+@@ -478,7 +479,7 @@
+ 
+     regina::ProgressTracker tracker;
+     ProgressDialogNumeric dlg(&tracker, tr("Computing invariant"), ui);
+-    std::thread(&Triangulation<3>::turaevViro, tri, r, parity,
++    ReginaGuiThread(&Triangulation<3>::turaevViro, tri, r, parity,
+         regina::Algorithm::Default, &tracker).detach();
+     if (! dlg.run())
+         return false;
+--- a/qtui/src/packets/tri3gluings.cpp
++++ b/qtui/src/packets/tri3gluings.cpp
+@@ -68,6 +68,7 @@
+ #include <QTextDocument>
+ #include <QToolBar>
+ #include <set>
++#include "../wasmsyncthread.h"
+ 
+ using regina::Packet;
+ using regina::Triangulation;
+@@ -1007,7 +1008,7 @@
+         // after the computation thread is guaranteed to have finished.
+ 
+         regina::Packet::PacketChangeGroup span(*tri);
+-        std::thread t(&Triangulation<3>::simplifyExhaustive, tri, height,
++        ReginaGuiThread t(&Triangulation<3>::simplifyExhaustive, tri, height,
+             ReginaPrefSet::threads(), &tracker);
+         result = dlg.run();
+         t.join();
+@@ -1056,7 +1057,7 @@
+         // after the computation thread is guaranteed to have finished.
+ 
+         regina::Packet::PacketChangeGroup span(*tri);
+-        std::thread t(&Triangulation<3>::improveTreewidth, tri,
++        ReginaGuiThread t(&Triangulation<3>::improveTreewidth, tri,
+             -1 /* maxAttempts */, height, ReginaPrefSet::threads(),
+             std::addressof(tracker));
+         result = dlg.run();
+--- a/qtui/src/packets/tri4gluings.cpp
++++ b/qtui/src/packets/tri4gluings.cpp
+@@ -59,6 +59,7 @@
+ #include <QPushButton>
+ #include <QRegularExpression>
+ #include <QToolBar>
++#include "../wasmsyncthread.h"
+ 
+ using regina::Packet;
+ using regina::Triangulation;
+@@ -866,7 +867,7 @@
+         // after the computation thread is guaranteed to have finished.
+ 
+         regina::Packet::PacketChangeGroup span(*tri);
+-        std::thread t(&Triangulation<4>::simplify, tri, &tracker);
++        ReginaGuiThread t(&Triangulation<4>::simplify, tri, &tracker);
+         result = dlg.run();
+         t.join();
+     }
+@@ -919,7 +920,7 @@
+         // after the computation thread is guaranteed to have finished.
+ 
+         regina::Packet::PacketChangeGroup span(*tri);
+-        std::thread t(&Triangulation<4>::simplifyExhaustive, tri, height,
++        ReginaGuiThread t(&Triangulation<4>::simplifyExhaustive, tri, height,
+             ReginaPrefSet::threads(), &tracker);
+         result = dlg.run();
+         t.join();
 --- /dev/null
 +++ b/qtui/src/wasmopensslcompat.cpp
 @@ -0,0 +1,51 @@
@@ -805,3 +1069,118 @@
 +    return { sym: sym, name: name };
 +  },
 +});
+--- /dev/null
++++ b/qtui/src/wasmsyncthread.h
+@@ -0,0 +1,112 @@
++
++/**************************************************************************
++ *                                                                        *
++ *  Regina - A Normal Surface Theory Calculator                           *
++ *  Qt User Interface                                                     *
++ *                                                                        *
++ *  Synchronous stand-in for std::thread on wasm32-emscripten.            *
++ *                                                                        *
++ **************************************************************************/
++
++/*! \file wasmsyncthread.h
++ *  \brief Provides ReginaGuiThread, which is std::thread everywhere except
++ *  under Emscripten, where it runs the given task synchronously instead.
++ *
++ *  Regina's GUI runs every long computation on a worker thread while a
++ *  progress dialog polls a ProgressTracker on the main thread:
++ *
++ *      regina::ProgressTrackerOpen tracker;
++ *      ProgressDialogOpen dlg(&tracker, ...);
++ *      std::thread t(&Link::simplifyExhaustive, link, height,
++ *          ReginaPrefSet::threads(), std::addressof(tracker));
++ *      result = dlg.run();
++ *      t.join();
++ *
++ *  This build has no pthreads (Qt for WebAssembly is built without thread
++ *  support, and enabling it would additionally require SharedArrayBuffer
++ *  and COOP/COEP headers on whatever serves the page). Constructing a
++ *  std::thread therefore fails, and because the failure is a C++ exception
++ *  thrown inside a Qt event handler, it unwinds all the way out of main()
++ *  under JSPI -- surfacing only as an unhandled promise rejection with no
++ *  usable stack, and killing the application. Every such computation in the
++ *  GUI is affected: normal surface and hypersurface enumeration, angle
++ *  structures, the knot polynomials, Turaev-Viro invariants, exhaustive
++ *  simplification and treewidth improvement.
++ *
++ *  ReginaGuiThread runs the task to completion inside its own constructor,
++ *  and makes join() and detach() no-ops. The surrounding code needs no
++ *  other change: all four ProgressDialog::run() implementations are of the
++ *  form
++ *
++ *      show(); ... while (! tracker_->isFinished()) { ... }
++ *      return ! tracker_->isCancelled();
++ *
++ *  so when the work has already finished they skip the wait loop entirely
++ *  and report success.
++ *
++ *  The cost is real and unavoidable here: these computations now block the
++ *  browser's main thread, so the interface does not repaint while they run
++ *  and the progress dialog's Cancel button cannot be used. A long
++ *  exhaustive search will appear to hang the page until it completes.
++ *  Callers should also pass a thread count of 1 to the engine, so that it
++ *  does not try to spawn workers of its own; ReginaPrefSet::threads()
++ *  returns 1 on this platform for exactly that reason.
++ */
++
++#ifndef __WASMSYNCTHREAD_H
++#define __WASMSYNCTHREAD_H
++
++#ifdef __EMSCRIPTEN__
++
++#include <functional>
++#include <utility>
++
++namespace regina::wasm {
++
++/**
++ * Runs a task synchronously, presenting the small part of the std::thread
++ * interface that Regina's GUI uses.
++ */
++class SyncThread {
++    public:
++        SyncThread() = default;
++
++        /**
++         * Invokes the given callable immediately, with the given arguments,
++         * and returns only once it has finished.
++         *
++         * The argument list is forwarded through std::invoke, which accepts
++         * the same forms std::thread does -- in particular both a lambda and
++         * a pointer-to-member-function followed by an object.
++         *
++         * Unlike std::thread, arguments are not decay-copied; since the call
++         * happens here and now, passing them through by reference is both
++         * safe and cheaper.
++         */
++        template <typename Fn, typename... Args>
++        explicit SyncThread(Fn&& fn, Args&&... args) {
++            std::invoke(std::forward<Fn>(fn), std::forward<Args>(args)...);
++        }
++
++        SyncThread(const SyncThread&) = delete;
++        SyncThread& operator = (const SyncThread&) = delete;
++
++        /** Does nothing: the task has already finished. */
++        void join() {}
++        /** Does nothing: the task has already finished. */
++        void detach() {}
++};
++
++} // namespace regina::wasm
++
++#define ReginaGuiThread regina::wasm::SyncThread
++
++#else // ! __EMSCRIPTEN__
++
++#include <thread>
++
++#define ReginaGuiThread std::thread
++
++#endif // __EMSCRIPTEN__
++
++#endif

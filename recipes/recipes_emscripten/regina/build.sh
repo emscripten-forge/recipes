@@ -34,54 +34,73 @@ WASM_CXXFLAGS="-O2 -fwasm-exceptions"
 WASM_LDFLAGS="-O2 -fwasm-exceptions -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=67108864 -sINITIAL_MEMORY=268435456 -L${PREFIX}/lib -lembind"
 
 # ---------------------------------------------------------------------------
+# Python version discovery.
+#
 # Python bindings are enabled and statically linked into regina-gui (see
-# patches/0007). CMake's FindPython would otherwise happily resolve to the
-# *native* python in $BUILD_PREFIX, since the Interpreter component has to
-# be runnable on the build machine while Development must come from the
-# wasm32 host environment. So we pin the three pieces explicitly: the
-# interpreter from $BUILD_PREFIX (build-time scripts only), and the headers
-# and static libpython from $PREFIX (what actually gets linked in).
+# patches/0007). FindPython's components have to come from two different
+# places -- Interpreter must run on the build machine, while Development
+# must be the wasm32 build we link against -- so all three are pinned
+# explicitly below rather than left to CMake to guess.
+#
+# PY_VER is the major.minor of the wasm32 python under $PREFIX -- the one we
+# actually link against. Everything below keys off it rather than a literal,
+# so the recipe follows whatever variant.yaml pins.
+PY_VER="$(ls -d "${PREFIX}"/include/python3.* | head -1 | sed 's|.*/python||')"
+
+# The Interpreter component of CMake's FindPython has to be executable on
+# the *build* machine, so it comes from $BUILD_PREFIX (see `python` in the
+# recipe's build: requirements); the python under $PREFIX is the wasm32
+# build and cannot run here. Prefer an exact version match so FindPython's
+# consistency check between Interpreter and Development is satisfied, and
+# fall back to whatever python3 is present.
+if [ -x "${BUILD_PREFIX}/bin/python${PY_VER}" ]; then
+    PY_NATIVE="${BUILD_PREFIX}/bin/python${PY_VER}"
+elif [ -x "${BUILD_PREFIX}/bin/python3" ]; then
+    PY_NATIVE="${BUILD_PREFIX}/bin/python3"
+else
+    echo "ERROR: no native python found under ${BUILD_PREFIX}/bin." >&2
+    echo "       Add 'python' to the recipe's build: requirements." >&2
+    exit 1
+fi
+echo "=== wasm32 python: ${PY_VER}; native interpreter: ${PY_NATIVE}"
+
 # ---------------------------------------------------------------------------
-# CPython's HACL* hash library.
+# CPython's HACL* hash primitives.
 #
-# libpython3.14.a contains md5module.o, sha1module.o and sha2module.o, which
-# reference _Py_LibHacl_Hacl_Hash_{MD5,SHA1,SHA2}_*. Those live in CPython's
-# libHacl_Hash_*.a archives, built under Modules/_hacl.
+# libpython contains md5module.o, sha1module.o, sha2module.o, sha3module.o
+# and blake2module.o, which reference the HACL* implementations as
+# _Py_LibHacl_Hacl_Hash_*. A python package that supports being linked
+# statically provides them either as objects inside libpython itself or as
+# separate libHacl_*.a archives.
 #
-# Prefer whatever the python package actually ships: CPython installs
-# embedding artifacts under lib/pythonX.Y/config-X.Y-<platform>/, so search
-# $PREFIX recursively rather than just $PREFIX/lib. Only if nothing turns up
-# do we compile the same sources ourselves from the matching CPython release
-# (the second source entry in recipe.yaml), because there is no
-# emscripten-forge package that provides them separately -- they are
-# internal CPython build artifacts, not a standalone library.
+# Prefer an archive when one is installed -- CPython puts embedding
+# artifacts under lib/pythonX.Y/config-X.Y-<platform>/, so search $PREFIX
+# recursively rather than just $PREFIX/lib. Linking it is harmless even if
+# libpython already carries the objects: static-archive semantics mean the
+# linker only extracts members that resolve an undefined symbol.
 #
-# No stubbing is involved either way: Modules/_hacl/Hacl_Hash_*.h include
-# python_hacl_namespaces.h, which #defines each Hacl_* name to its
-# _Py_LibHacl_Hacl_* counterpart, so compiling these files unmodified
-# produces exactly the symbols libpython expects, with real implementations.
+# Otherwise check that libpython carries them, so that a python which has
+# neither fails here, with an explanation, instead of at link time as 43
+# undefined symbols with no indication of where they should come from.
 HACL_LIBRARY="$(find "${PREFIX}" -name 'libHacl*.a' 2>/dev/null | sort | tr '\n' ';')"
 if [ -n "${HACL_LIBRARY}" ]; then
-    echo "=== using HACL archives shipped by the python package: ${HACL_LIBRARY}"
+    echo "=== HACL*: linking the archives shipped by the python package:"
+    echo "    ${HACL_LIBRARY}"
+elif emar t "${PREFIX}/lib/libpython${PY_VER}.a" 2>/dev/null \
+        | grep -q '^Hacl_'; then
+    echo "=== HACL*: libpython${PY_VER}.a carries the objects itself"
 else
-    echo "=== python package ships no libHacl*.a; building from CPython source"
-    # The Simd128/Simd256 Blake2 variants are deliberately excluded: they
-    # need x86 SSE/AVX intrinsics, and CPython itself only builds them when
-    # the host CPU supports them. The rest have no SIMD dependencies.
-    HACL_SRC="$(find "${SRC_DIR}/cpython" -type d -name _hacl | head -1)"
-    mkdir -p hacl-build
-    for f in Hacl_Hash_MD5 Hacl_Hash_SHA1 Hacl_Hash_SHA2 Hacl_Hash_SHA3 \
-             Hacl_Hash_Blake2b Hacl_Hash_Blake2s Hacl_HMAC Hacl_Streaming_HMAC \
-             Lib_Memzero0; do
-        emcc -c -O2 \
-            -I"${HACL_SRC}" -I"${HACL_SRC}/include" -I"${HACL_SRC}/internal" \
-            "${HACL_SRC}/${f}.c" -o "hacl-build/${f}.o"
-    done
-    emar rcs hacl-build/libHacl.a hacl-build/*.o
-    HACL_LIBRARY="${PWD}/hacl-build/libHacl.a"
+    echo "ERROR: the python ${PY_VER} package provides no HACL* hash" >&2
+    echo "       primitives -- neither libHacl_*.a under \$PREFIX nor the" >&2
+    echo "       objects inside libpython${PY_VER}.a. Linking would fail" >&2
+    echo "       with undefined _Py_LibHacl_Hacl_Hash_* symbols, which" >&2
+    echo "       libpython's own md5module.o / sha1module.o /" >&2
+    echo "       sha2module.o / sha3module.o / blake2module.o reference." >&2
+    echo "       This is a packaging bug in the python package, not" >&2
+    echo "       something this recipe can work around: see the HACL*" >&2
+    echo "       section of README.md for the fix." >&2
+    exit 1
 fi
-
-PY_VER="$(ls -d "${PREFIX}"/include/python3.* | head -1 | sed 's|.*/python||')"
 
 # ---------------------------------------------------------------------------
 # Stage Regina's example data files for preloading into the wasm virtual
@@ -119,7 +138,7 @@ cmake ${CMAKE_ARGS} .. \
     -DREGINA_INSTALL_TYPE=XDG \
     -DREGINA_KVSTORE=tkrzw \
     -DDISABLE_PYTHON=OFF \
-    -DPython_EXECUTABLE="${BUILD_PREFIX}/bin/python${PY_VER}" \
+    -DPython_EXECUTABLE="${PY_NATIVE}" \
     -DPython_INCLUDE_DIR="${PREFIX}/include/python${PY_VER}" \
     -DPython_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a" \
     -DREGINA_HACL_LIBRARY="${HACL_LIBRARY}" \

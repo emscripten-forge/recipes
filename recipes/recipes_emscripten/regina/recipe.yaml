@@ -1,6 +1,18 @@
 context:
   name: regina
   version: 7.4.1
+  # The python series we link against. emscripten-forge currently publishes
+  # exactly two: 3.13.1 (build *_cp313) and 3.14.3 (build *_cp314). Pinned
+  # here and used in the requirements below rather than left to the
+  # channel-wide variant.yaml, which still selects 3.13 -- pinning it in the
+  # recipe moves this one package to 3.14 without rebuilding the rest of the
+  # channel.
+  #
+  # Requires a python build that ships CPython's HACL* hash primitives
+  # (libHacl_*.a, or the objects inside libpython). Build 0 of 3.14.3 does
+  # not; see the HACL* section of README.md. build.sh checks for them and
+  # stops with an explanation rather than failing at link time.
+  python_series: '3.14'
 
 package:
   name: ${{ name }}
@@ -17,12 +29,6 @@ source:
       - patches/0005-emscripten-graphviz-neato-fallback.patch
       - patches/0006-emscripten-qt-wasm-finalization.patch
       - patches/0007-emscripten-static-python-bindings.patch
-  # CPython source, used only to build the HACL* hash library that the
-  # python package fails to install (see the HACL block in build.sh).
-  # Nothing else from this tree is compiled or shipped.
-  - url: https://www.python.org/ftp/python/3.14.0/Python-3.14.0.tgz
-    sha256: 88d2da4eed42fa9a5f42ff58a8bc8988881bd6c547e297e46682c2687638a851
-    target_directory: cpython
 
 build:
   number: 0
@@ -37,6 +43,16 @@ requirements:
     - pkg-config
     - nodejs
     - qt6-main
+    # Native interpreter for the build machine. CMake's FindPython needs an
+    # Interpreter component that it can actually execute, and the `python`
+    # under host: is the wasm32 build, which cannot run here. Without this,
+    # configure fails with "Could NOT find Python (missing: Interpreter
+    # Development Development.Module Development.Embed)".
+    #
+    # FindPython also insists Interpreter and Development agree on their
+    # version, so this is held to the same major.minor as the host python
+    # (build.sh picks $BUILD_PREFIX/bin/python${PY_VER} by name).
+    - python ${{ python_series }}.*
   host:
     - zlib
     - gmp
@@ -45,9 +61,11 @@ requirements:
     - graphviz
     - qt6-main-jspi
     - qt6-svg-jspi
-    # Provides $PREFIX/lib/libpython3.x.a + headers + the stdlib tree that
+    # Provides $PREFIX/lib/libpython3.14.a + headers + the stdlib tree that
     # patches/0007 links and preloads into the wasm virtual filesystem.
-    - python
+    # Pinned rather than taken from the channel variant: see python_series
+    # in the context above.
+    - python ${{ python_series }}.*
     # The static libpython archive bakes in CPython's built-in extension
     # modules, whose third-party dependencies must be linked explicitly
     # (see the FOREACH(PYDEP ...) block in patches/0007): _ctypes needs
