@@ -1,0 +1,807 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -140,7 +140,29 @@
+ # and there is a flag in regina-config.h to indicate this.
+ # Such a configuration is not, however, supported by regina's cmake build
+ # system, and so we do not allow cmake users to enable it.
+-SET (PYTHON_STATIC_LINK OFF)
++#
++# ... except under Emscripten, where it is the *only* configuration that
++# works. Regina's python bindings are normally built as a MODULE library
++# (regina/engine.so) that CPython dlopen()s at import time. wasm has no
++# such thing short of Emscripten's MAIN_MODULE/SIDE_MODULE dynamic
++# linking, which this build deliberately avoids in favour of one
++# self-contained static binary. Fortunately Regina's *C++* code already
++# supports linking the module straight into the executable (this is what
++# the iOS build does): PYTHON_STATIC_LINK makes pythoninterpreter.cpp
++# register the module via PyImport_AppendInittab("regina", &PyInit_regina)
++# instead of leaving it to the filesystem import machinery, and
++# REGINA_LINK_MODULE_INTO_EXECUTABLE (set as a compile definition in
++# python/regina/CMakeLists.txt) makes modulemain.cpp emit
++# PYBIND11_MODULE(regina, ...) directly rather than a nested
++# regina.engine that an __init__.py would have to re-export. Only the
++# cmake wiring for that configuration was missing, and that is what this
++# EMSCRIPTEN branch (plus the changes in python/regina/CMakeLists.txt and
++# qtui/src/CMakeLists.txt) supplies.
++IF (EMSCRIPTEN)
++  SET (PYTHON_STATIC_LINK ON)
++ELSE (EMSCRIPTEN)
++  SET (PYTHON_STATIC_LINK OFF)
++ENDIF (EMSCRIPTEN)
+ 
+ # For pretty logging of optional features at the end of the cmake run:
+ INCLUDE(MacroLogFeature)
+--- a/python/modulemain.cpp
++++ b/python/modulemain.cpp
+@@ -222,7 +222,7 @@
+ // Nothing is loaded at runtime from the filesystem; there is no __init__.py,
+ // and all of Regina's classes live directly in the module regina.
+ #if REGINA_PYBIND11_VERSION == 3
+-PYBIND11_MODULE(regina, m
++PYBIND11_MODULE(regina, m,
+         pybind11::multiple_interpreters::per_interpreter_gil()) {
+ #elif REGINA_PYBIND11_VERSION == 2
+ PYBIND11_MODULE(regina, m) {
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -24,7 +24,18 @@
+ ADD_SUBDIRECTORY("treewidth")
+ ADD_SUBDIRECTORY("utilities")
+ 
++IF (EMSCRIPTEN)
++  # The python testsuite builds four small executables (basic,
++  # basic_alltypes, basic_sub, basic_callback) that each compile
++  # ../gui/pythoninterpreter.cpp but link only ${ENGINE_LIBRARY} and
++  # ${Python_LIBRARIES}. With PYTHON_STATIC_LINK on, that file references
++  # PyInit_regina, which lives in the reginapython archive -- so they fail
++  # to link. They are driven by generated shell scripts (testall,
++  # testbasic, ...) that cannot run against a wasm binary regardless, and
++  # nothing in them is installed, so simply skip them here.
++ELSE (EMSCRIPTEN)
+ ADD_SUBDIRECTORY("testsuite")
++ENDIF (EMSCRIPTEN)
+ ADD_SUBDIRECTORY("sage")
+ 
+ # The module itself is built in the regina/ subdirectory, so that we can
+--- a/python/regina/CMakeLists.txt
++++ b/python/regina/CMakeLists.txt
+@@ -10,6 +10,30 @@
+ ENDFOREACH (SOURCE_FILE)
+ 
+ INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/engine" "${CMAKE_BINARY_DIR}/engine" ${Python_INCLUDE_DIRS})
++
++IF (PYTHON_STATIC_LINK)
++  # Under Emscripten there is no dlopen()-able extension module: the
++  # bindings are compiled into a static archive that is linked straight
++  # into regina-gui, and registered with CPython at startup via
++  # PyImport_AppendInittab() (see PYTHON_STATIC_LINK in
++  # python/gui/pythoninterpreter.cpp). REGINA_LINK_MODULE_INTO_EXECUTABLE
++  # switches modulemain.cpp over to defining the module as "regina"
++  # directly, since there is no regina/__init__.py being loaded from the
++  # filesystem to re-export a nested regina.engine.
++  #
++  # The name differs from "engine" deliberately: an "engine" target already
++  # exists in this build (the calculation engine itself, engine/), and on
++  # Emscripten both are static archives, so reusing the name would collide.
++  ADD_LIBRARY("reginapython" STATIC ${RELSOURCES})
++  TARGET_COMPILE_DEFINITIONS("reginapython" PRIVATE
++    REGINA_LINK_MODULE_INTO_EXECUTABLE)
++  # Deliberately NOT linked against ${ENGINE_LIBRARY} here: regina-gui
++  # already links the engine, and this archive is pulled into that same
++  # executable. Nor is anything installed -- there is no importable
++  # module on disk in this configuration, so the site-packages install
++  # below (and __init__.py, which REGINA_LINK_MODULE_INTO_EXECUTABLE makes
++  # redundant) would only ship files nothing can load.
++ELSE (PYTHON_STATIC_LINK)
+ ADD_LIBRARY("engine" MODULE ${RELSOURCES} )
+ 
+ # Python modules on linux should not have the "lib" prefix
+@@ -50,3 +74,4 @@
+ 
+ INSTALL(FILES __init__.py plainCompleter.py sageSetup.py DESTINATION "${MODULEDIR}" COMPONENT Runtime)
+ INSTALL(TARGETS engine LIBRARY DESTINATION "${MODULEDIR}" COMPONENT Runtime)
++ENDIF (PYTHON_STATIC_LINK)
+--- a/python/gui/pythoninterpreter.cpp
++++ b/python/gui/pythoninterpreter.cpp
+@@ -54,6 +54,40 @@
+     PyMODINIT_FUNC PyInit_regina();
+ #endif
+ 
++#if defined(__EMSCRIPTEN__) && defined(REGINA_WASM_PYTHONHOME)
++namespace {
++    /**
++     * Points CPython at the standard library that the build preloaded into
++     * the wasm virtual filesystem.
++     *
++     * The prefix compiled into libpython is wherever the python package
++     * happened to be built, which is a path that does not exist in the
++     * browser. Without an override, getpath() cannot find the standard
++     * library and the interpreter fails to start with
++     *
++     *     Could not find platform independent libraries <prefix>
++     *     Could not find platform dependent libraries <exec_prefix>
++     *
++     * PYTHONHOME must be set before Py_Initialize(), which happens the
++     * first time a PythonInterpreter is constructed. Doing it from a
++     * static initialiser here means it is in place well before then (and
++     * avoids duplicating this in each of the two constructors below, which
++     * are selected by pybind11 version).
++     *
++     * REGINA_WASM_PYTHONHOME is defined by qtui/src/CMakeLists.txt, which
++     * also chooses the matching --preload-file destination, so the two
++     * cannot drift apart.
++     */
++    struct ReginaWasmPythonHome {
++        ReginaWasmPythonHome() {
++            setenv("PYTHONHOME", REGINA_WASM_PYTHONHOME, 1);
++        }
++    };
++
++    ReginaWasmPythonHome reginaWasmPythonHome_;
++}
++#endif
++
+ // Convert the Python version x.y into the form "x" "y":
+ #define REGINA_MAKE_STR(x) #x
+ #define REGINA_STR(x) REGINA_MAKE_STR(x)
+@@ -181,7 +215,38 @@
+             "__main__")), fixPythonPath);
+     }
+ 
++#ifdef __EMSCRIPTEN__
++    // Use the main interpreter rather than creating a subinterpreter.
++    //
++    // Py_NewInterpreterFromConfig() does not work in this build: it fails
++    // outright, which pybind11 reports as "failed to create new
++    // sub-interpreter" (it discards the PyStatus error message that would
++    // say why). Creating an interpreter allocates a fresh thread state and,
++    // for the default isolated configuration, a per-interpreter GIL; none
++    // of that has anything to stand on in a single-threaded Emscripten
++    // build with no pthreads. Requesting PyInterpreterConfig_SHARED_GIL
++    // instead does not help either.
++    //
++    // subinterpreter::main() returns a *non-owning* wrapper around the main
++    // interpreter, disarmed so that destroying it is a no-op. Every
++    // subinterpreter_scoped_activate on it then takes pybind11's
++    // "we are already on this interpreter" fast path, which reduces to a
++    // plain PyGILState_Ensure()/PyGILState_Release() pair -- no thread
++    // state creation, no interpreter switching. That is exactly the right
++    // behaviour here, and it leaves every other use of subInterpreter in
++    // this file working unchanged.
++    //
++    // The trade-off is that Python consoles are no longer isolated from
++    // one another: they share the main interpreter's __main__ namespace, so
++    // variables defined in one console are visible in another, and the most
++    // recently opened console receives the redirected stdout/stderr. Regina
++    // uses subinterpreters precisely to avoid that, so this is a genuine
++    // functional regression -- but a working console that shares state is
++    // considerably more useful here than one that cannot start at all.
++    subInterpreter = pybind11::subinterpreter::main();
++#else
+     subInterpreter = pybind11::subinterpreter::create();
++#endif
+     pybind11::subinterpreter_scoped_activate guard(subInterpreter);
+ 
+     // Record the main module.
+@@ -192,7 +257,24 @@
+     try {
+         // For pybind11 v3, we need to bind PythonOutputStream in every
+         // subinterpreter.
++#ifdef __EMSCRIPTEN__
++        // ... but here every PythonInterpreter shares the *same* (main)
++        // interpreter, since subinterpreters cannot be created in this
++        // build (see subinterpreter::main() above). addBindings() registers
++        // pybind11::class_<PythonOutputStream> unconditionally, and
++        // registering the same type twice in one interpreter throws
++        // "generic_type: type PythonOutputStream is already registered!".
++        // So bind once, not once per console. install() below is still
++        // called every time: that is what points sys.stdout/sys.stderr at
++        // this particular console's streams.
++        static bool bindingsAdded = false;
++        if (! bindingsAdded) {
++            regina::python::PythonOutputStream::addBindings();
++            bindingsAdded = true;
++        }
++#else
+         regina::python::PythonOutputStream::addBindings();
++#endif
+         pyStdOut.install("stdout");
+         pyStdErr.install("stderr");
+     } catch (std::runtime_error& e) {
+@@ -537,6 +619,16 @@
+ 
+     // Also set up a completer if we can, but if not then just fail silently.
+     if (ok) {
++#ifdef __EMSCRIPTEN__
++        // Skipped entirely here. "regina" is registered through
++        // PyImport_AppendInittab() rather than being a package directory on
++        // disk, so it has no __path__ and the submodule import can only ever
++        // fail with "No module named 'regina.plainCompleter'; 'regina' is
++        // not a package". Attempting it merely sets, and then has to clear,
++        // a Python error indicator. Tab completion is unavailable in this
++        // build; completer and completerFunc stay null, and complete()
++        // already handles that by returning -1.
++#else
+         try {
+             pybind11::object c = pybind11::module_::import(
+                 "regina.plainCompleter").attr("Completer")();
+@@ -547,8 +639,16 @@
+                 Py_INCREF(completer = c.ptr());
+                 Py_INCREF(completerFunc = f.ptr());
+             }
+-        } catch (std::runtime_error&) {
++        // Was: catch (std::runtime_error&), which does not actually catch
++        // the exception this can throw. pybind11::error_already_set derives
++        // from std::exception, not std::runtime_error (in both the v2 and
++        // v3 copies bundled with Regina), so a failed import escaped this
++        // "fail silently" handler entirely and propagated out of
++        // importRegina(). That never bites a normal build, where
++        // regina.plainCompleter exists and the import succeeds.
++        } catch (std::exception&) {
+         }
++#endif
+     } else {
+         PyErr_Print();
+         PyErr_Clear();
+--- a/qtui/src/CMakeLists.txt
++++ b/qtui/src/CMakeLists.txt
+@@ -12,7 +12,75 @@
+ 
+ IF(BUILD_PYTHON_BINDINGS)
+   ADD_SUBDIRECTORY(python)
++  IF(PYTHON_STATIC_LINK)
++    # The bindings are a static archive linked directly into this
++    # executable (see python/regina/CMakeLists.txt) rather than a
++    # dlopen()-able module loaded at import time. It must precede
++    # ${Python_LIBRARIES} so the archive's PyInit_regina and the CPython
++    # symbols it needs resolve in the right order.
++    SET(LINK_LIBS ${LINK_LIBS} reginapython)
++  ENDIF(PYTHON_STATIC_LINK)
+   SET(LINK_LIBS ${LINK_LIBS} ${Python_LIBRARIES})
++  IF(PYTHON_STATIC_LINK)
++    # The static libpython archive has CPython's built-in extension modules
++    # baked into it, and its module table (config.o) references every one of
++    # their PyInit_* entry points -- so wasm-ld pulls them all in, along
++    # with whatever third-party library each was compiled against:
++    #
++    #   _ctypes      -> libffi    (ffi_prep_cif, ffi_closure_alloc, ...)
++    #   _bz2         -> libbz2    (BZ2_bzCompress, BZ2_bzDecompress, ...)
++    #   _ssl/_hashlib-> libssl + libcrypto (BIO_*, X509_*, PEM_*, ...)
++    #   _lzma        -> liblzma   (lzma_code, lzma_end, ...)
++    #   _decimal     -> libmpdec  (mpd_qsetprec, mpd_ieee_context, ...)
++    #   _zstd        -> libzstd   (ZSTD_isError, ZDICT_trainFromBuffer, ...)
++    #                              -- new in Python 3.14, see PEP 784
++    #   _sqlite3     -> libsqlite3 (sqlite3_blob_read, sqlite3_prepare_v2, ...)
++    #
++    # In a shared-library build these resolve through libpython's own
++    # DT_NEEDED entries; linking the archive statically means we have to
++    # name them ourselves. They must all come *after* ${Python_LIBRARIES}
++    # above, since wasm-ld resolves archives in command-line order and a
++    # library listed earlier would be scanned before the extension module
++    # object created the undefined references. libssl precedes libcrypto
++    # for the same reason. zlib is already in LINK_LIBS via the engine.
++    # Restrict the search to static archives for the duration of this loop.
++    # The openssl host package installs both libssl.a/libcrypto.a and
++    # libssl.so/libcrypto.so, and find_library() prefers the .so -- which
++    # wasm-ld then rejects outright ("attempted static link of dynamic
++    # object"). This is the same trap that -DZLIB_LIBRARY in build.sh
++    # sidesteps for zlib.
++    SET(REGINA_SAVED_LIB_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
++    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
++    FOREACH(PYDEP ffi bz2 ssl crypto lzma mpdec zstd sqlite3)
++      FIND_LIBRARY(REGINA_PYDEP_${PYDEP} NAMES ${PYDEP}
++        PATHS "$ENV{PREFIX}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED)
++      SET(LINK_LIBS ${LINK_LIBS} "${REGINA_PYDEP_${PYDEP}}")
++    ENDFOREACH(PYDEP)
++    # Further libraries that CPython's optional builtin modules may have
++    # been compiled against (_sqlite3, pyexpat, _curses, readline, _uuid,
++    # _crypt, _dbm). Which of these exist depends on how the python
++    # package in this channel was configured, so each is linked only if
++    # present rather than being REQUIRED.
++    FOREACH(PYDEP expat ncursesw ncurses readline uuid panelw panel crypt gdbm)
++      FIND_LIBRARY(REGINA_PYDEP_${PYDEP} NAMES ${PYDEP}
++        PATHS "$ENV{PREFIX}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
++      IF(REGINA_PYDEP_${PYDEP})
++        SET(LINK_LIBS ${LINK_LIBS} "${REGINA_PYDEP_${PYDEP}}")
++      ENDIF(REGINA_PYDEP_${PYDEP})
++    ENDFOREACH(PYDEP)
++    SET(CMAKE_FIND_LIBRARY_SUFFIXES ${REGINA_SAVED_LIB_SUFFIXES})
++
++    # CPython's HACL* hash implementations, which md5module.o /
++    # sha1module.o / sha2module.o inside libpython reference as
++    # _Py_LibHacl_Hacl_Hash_*. The python package in this channel does not
++    # install the libHacl_Hash_*.a archives these live in, so build.sh
++    # compiles them from the matching CPython source and passes the
++    # resulting archive here. Must follow ${Python_LIBRARIES} above, since
++    # it is libpython's own objects that create the undefined references.
++    IF(REGINA_HACL_LIBRARY)
++      SET(LINK_LIBS ${LINK_LIBS} "${REGINA_HACL_LIBRARY}")
++    ENDIF(REGINA_HACL_LIBRARY)
++  ENDIF(PYTHON_STATIC_LINK)
+   ADD_LINK_OPTIONS(${Python_LINK_OPTIONS})
+   INCLUDE_DIRECTORIES("${CMAKE_SOURCE_DIR}/python"
+                       "${CMAKE_SOURCE_DIR}/python/pybind11_v${REGINA_PYBIND11_VERSION}"
+@@ -162,6 +230,15 @@
+ 
+ set(REGINA_BUNDLE_DEST bin)
+ 
++if (EMSCRIPTEN AND PYTHON_STATIC_LINK)
++  # Weak fallbacks for the OpenSSL 1.x protocol constructors that CPython's
++  # statically-linked _ssl module still references but this channel's
++  # OpenSSL 3.x no longer exports. See the file itself for the full
++  # explanation. Being weak, these defer to the real symbols wherever those
++  # do exist.
++  SET(SOURCES ${SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/wasmopensslcompat.cpp)
++endif (EMSCRIPTEN AND PYTHON_STATIC_LINK)
++
+ if (EMSCRIPTEN)
+   # QT_ADD_EXECUTABLE (rather than plain ADD_EXECUTABLE) is what actually
+   # triggers Qt6's wasm target-finalization: generating a Qt-aware
+@@ -238,8 +315,82 @@
+       "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/icons@$ENV{PREFIX}/share/regina/icons"
+       "SHELL:--preload-file ${PROJECT_BINARY_DIR}/engine/data/census@$ENV{PREFIX}/share/regina/data/census"
+   )
++  if (REGINA_EXAMPLES_DIR)
++    # Regina's example data files, read by the GUI's "Open Example" menu
++    # from GlobalDirs::examples() == home()+"/examples". Staged by build.sh
++    # (only the .rga files, not the whole source examples/ directory).
++    target_link_options(${REGINA_APP_NAME} PRIVATE
++        "SHELL:--preload-file ${REGINA_EXAMPLES_DIR}@$ENV{PREFIX}/share/regina/examples")
++  endif (REGINA_EXAMPLES_DIR)
+ endif (EMSCRIPTEN)
+ 
++if (EMSCRIPTEN AND PYTHON_STATIC_LINK)
++  # The embedded CPython needs its standard library present in the wasm
++  # virtual filesystem, otherwise Py_Initialize() fails outright ("unable
++  # to get the locale encoding" / ModuleNotFoundError: encodings). As with
++  # the icons and census data above, it is mounted at the *same* absolute
++  # path it occupies in $PREFIX, so the prefix baked into libpython at its
++  # own build time still resolves.
++  #
++  # ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR} rather than a literal
++  # 3.13 so this tracks whatever python the host environment actually
++  # provides.
++  # The embedded CPython needs its standard library present in the wasm
++  # virtual filesystem, otherwise Py_Initialize() fails outright.
++  #
++  # Unlike the icons and census data, this is NOT mounted at the same
++  # absolute path it occupies in $PREFIX. The prefix compiled into
++  # libpython refers to wherever the python package was built, so
++  # reproducing it here would be both fragile and pointlessly long; and
++  # since CPython's getpath() cannot find that directory in the browser
++  # either way, the location has to be communicated explicitly. So we mount
++  # it somewhere short and fixed, and hand the same value to
++  # pythoninterpreter.cpp as REGINA_WASM_PYTHONHOME, which sets PYTHONHOME
++  # to it before Py_Initialize() runs. Defining both from this one variable
++  # keeps them in step.
++  set(REGINA_WASM_PYTHON_PREFIX "/usr")
++  set(REGINA_WASM_PYTHON_LIBDIR
++      "${REGINA_WASM_PYTHON_PREFIX}/lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}")
++  target_compile_definitions(${REGINA_APP_NAME} PRIVATE
++      REGINA_WASM_PYTHONHOME="${REGINA_WASM_PYTHON_PREFIX}")
++  target_link_options(${REGINA_APP_NAME} PRIVATE
++      "SHELL:--preload-file $ENV{PREFIX}/lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}@${REGINA_WASM_PYTHON_LIBDIR}"
++  )
++
++  # CPython's Emscripten glue assumes the -sMAIN_MODULE configuration it is
++  # built and tested in. Linking libpython.a into a program *without* that
++  # flag (as we do) breaks at startup, because a constructor inside
++  # libpython -- Python/emscripten_syscalls.c, which wraps main() in
++  # WebAssembly.promising -- hooks resolveGlobalSymbol(), a function that
++  # only Emscripten's libdylink.js provides and which is therefore absent
++  # here. The symptom is "ReferenceError: resolveGlobalSymbol is not
++  # defined" thrown during __wasm_call_ctors, before any Regina code runs.
++  #
++  # It cannot simply be force-included: libdylink.js is not linked at all
++  # in a static build, so there is no such symbol to include. We supply our
++  # own instead (wasmpyglue.js), which gives that constructor something to
++  # hook. See the comments in that file for why this is safe.
++  #
++  # The remaining names are JS symbols that CPython's EM_JS bodies
++  # reference. EM_JS bodies are emitted verbatim, so Emscripten's
++  # dependency tracker cannot see them and silently omits them; naming them
++  # here mirrors CPython's own upstream fix (python/cpython#156798).
++  # $wasmMemory is deliberately *not* listed even though that fix mentions
++  # it: Emscripten treats it as a runtime element rather than a library
++  # symbol, and listing it aborts the JS compiler with
++  # "AssertionError: runtimeElements contains library symbol: $wasmMemory".
++  # It is always defined in the output anyway.
++  #
++  # ALLOW_TABLE_GROWTH is required for the addFunction() these use. The
++  # leading '$' marks a JS-library (rather than C) symbol; CMake escapes it
++  # correctly through the ninja/shell layers.
++  target_link_options(${REGINA_APP_NAME} PRIVATE
++      "SHELL:--js-library ${CMAKE_CURRENT_SOURCE_DIR}/wasmpyglue.js"
++      "-sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$FS,$PATH,$FS_getMode,$resolveGlobalSymbol,$wasmTable,$addFunction,$addOnPreRun,emscripten_exit_with_live_runtime"
++      -sALLOW_TABLE_GROWTH=1
++  )
++endif (EMSCRIPTEN AND PYTHON_STATIC_LINK)
++
+ if (APPLE)
+   set_target_properties(${REGINA_APP_NAME}
+     PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+--- a/qtui/src/pythonmanager.cpp
++++ b/qtui/src/pythonmanager.cpp
+@@ -34,6 +34,8 @@
+ #include "pythonmanager.h"
+ #include "reginasupport.h"
+ 
++#include <exception>
++
+ #include <QCoreApplication>
+ #include <QDesktopServices>
+ #include <QFile>
+@@ -91,11 +93,35 @@
+     QCoreApplication::instance()->processEvents();
+ 
+     // Initialise the python interpreter.
++#ifdef __EMSCRIPTEN__
++    // Starting Python is markedly more fragile in this build (CPython is
++    // linked statically into the binary rather than loaded from disk), and
++    // anything thrown here would skip the addInfo()/allowInput() calls
++    // below -- leaving the console blocked on "Initialising..." for good.
++    // Worse, under JSPI the exception unwinds all the way out of main(),
++    // where it surfaces only as an opaque unhandled promise rejection with
++    // no usable stack. Report it in the console window instead, and always
++    // hand the console back to the user.
++    try {
++        if (ans->importRegina()) {
++            ans->addOutput(parent->QObject::tr("\n"));
++            ans->setRootPacket(std::move(tree));
++            ans->setSelectedPacket(std::move(selectedPacket));
++        }
++    } catch (const std::exception& e) {
++        ans->addError(PythonConsole::tr("Error initialising Python: %1")
++            .arg(QString::fromUtf8(e.what())));
++    } catch (...) {
++        ans->addError(PythonConsole::tr(
++            "Unknown error initialising Python."));
++    }
++#else
+     if (ans->importRegina()) {
+         ans->addOutput(parent->QObject::tr("\n"));
+         ans->setRootPacket(std::move(tree));
+         ans->setSelectedPacket(std::move(selectedPacket));
+     }
++#endif
+ 
+     // All ready!
+     ans->addInfo(parent->QObject::tr("Ready."));
+@@ -114,6 +140,24 @@
+     QCoreApplication::instance()->processEvents();
+ 
+     // Initialise the python interpreter.
++#ifdef __EMSCRIPTEN__
++    // As in the overload above: never let an exception escape past
++    // allowInput(), and never let it reach the JSPI boundary unreported.
++    try {
++        if (ans->importRegina())
++            ans->addOutput(parent->QObject::tr("\n"));
++
++        // Run the given script.
++        ans->addInfo("Running script...");
++
++        ans->runScript(script);
++    } catch (const std::exception& e) {
++        ans->addError(PythonConsole::tr("Error running script: %1")
++            .arg(QString::fromUtf8(e.what())));
++    } catch (...) {
++        ans->addError(PythonConsole::tr("Unknown error running script."));
++    }
++#else
+     if (ans->importRegina())
+         ans->addOutput(parent->QObject::tr("\n"));
+ 
+@@ -121,6 +165,7 @@
+     ans->addInfo("Running script...");
+ 
+     ans->runScript(script);
++#endif
+ 
+     // All ready!
+     ans->addInfo(parent->QObject::tr("\nReady."));
+--- a/qtui/src/python/pythonconsole.cpp
++++ b/qtui/src/python/pythonconsole.cpp
+@@ -276,7 +276,31 @@
+ 
+     output = new PythonConsole::OutputStream(this);
+     error = new PythonConsole::ErrorStream(this);
++#ifdef __EMSCRIPTEN__
++    // Starting the interpreter is considerably more fragile under
++    // Emscripten (CPython is linked statically into this binary rather
++    // than loaded from the filesystem). If construction throws, the
++    // exception would otherwise escape PythonManager::launchPythonConsole()
++    // before it can call allowInput(), leaving the console permanently
++    // stuck on "Initialising..." with the reason visible only as an opaque
++    // wasm exception in the browser console. Report it in the console
++    // window instead, and leave the window usable.
++    interpreter = nullptr;
++    try {
++        interpreter = new regina::python::PythonInterpreter(*output, *error);
++    } catch (const std::exception& e) {
++        error->write("ERROR: Could not start the Python interpreter:\n");
++        error->write(e.what());
++        error->write("\n");
++        error->flush();
++    } catch (...) {
++        error->write("ERROR: Could not start the Python interpreter "
++            "(unknown exception).\n");
++        error->flush();
++    }
++#else
+     interpreter = new regina::python::PythonInterpreter(*output, *error);
++#endif
+ 
+     blockInput();
+ }
+@@ -296,10 +320,48 @@
+         manager->deregisterConsole(this);
+ }
+ 
++namespace {
++    /**
++     * Pumps the Qt event loop so that console output appears incrementally
++     * while a long-running Python command is still executing.
++     *
++     * This does nothing under Emscripten, and it must not.
++     *
++     * Regina's replacements for sys.stdout and sys.stderr are C++ functions
++     * that Python calls whenever it writes output. On wasm, CPython makes
++     * such calls through a *JavaScript* trampoline
++     * (_PyEM_TrampolineCall_inner, in Python/emscripten_trampoline.c), which
++     * it needs in order to call function pointers whose signatures wasm
++     * cannot verify directly. So while Python is producing output there is
++     * always a JS frame sitting in the middle of the call stack.
++     *
++     * Qt for WebAssembly's event dispatcher yields to the browser by
++     * suspending the wasm stack via JSPI, and JSPI cannot suspend across a
++     * JS frame. Calling processEvents() from here therefore aborts the whole
++     * application with
++     *
++     *     SuspendError: trying to suspend JS frames
++     *
++     * which leaves the canvas frozen (the window turns grey). Note this is
++     * not specific to printing: any Qt call that might suspend is unsafe
++     * while Python is on the stack.
++     *
++     * The cost of skipping it is only that the console does not repaint
++     * midway through a command; output still appears as soon as control
++     * returns to the event loop. Incremental repaint is not achievable here
++     * in any case, for the reason above.
++     */
++    inline void pumpEvents() {
++#ifndef __EMSCRIPTEN__
++        QApplication::instance()->processEvents();
++#endif
++    }
++}
++
+ void PythonConsole::addInput(const QString& s) {
+     session->moveCursor(QTextCursor::End);
+     session->insertHtml("<b>" + encode(s) + "</b><br>");
+-    QApplication::instance()->processEvents();
++    pumpEvents();
+ }
+ 
+ void PythonConsole::addOutput(const QString& s) {
+@@ -310,21 +372,21 @@
+         session->insertHtml("<br>");
+     else
+         session->insertHtml(encode(s) + "<br>");
+-    QApplication::instance()->processEvents();
++    pumpEvents();
+ }
+ 
+ void PythonConsole::addInfo(const QString& info) {
+     session->moveCursor(QTextCursor::End);
+     session->insertHtml("<font color=\"dark goldenrod\">" + encode(info) +
+         "</font><br>");
+-    QApplication::instance()->processEvents();
++    pumpEvents();
+ }
+ 
+ void PythonConsole::addError(const QString& s) {
+     session->moveCursor(QTextCursor::End);
+     session->insertHtml("<font color=\"dark red\">" + encode(s) +
+         "</font><br>");
+-    QApplication::instance()->processEvents();
++    pumpEvents();
+ }
+ 
+ void PythonConsole::blockInput(const QString& msg) {
+@@ -350,12 +412,55 @@
+ }
+ 
+ bool PythonConsole::importRegina() {
++#ifdef __EMSCRIPTEN__
++    if (! interpreter) {
++        // The interpreter failed to start; the reason has already been
++        // written to this console by the constructor above.
++        return false;
++    }
++#endif
+     if (interpreter->importRegina()) {
++#ifdef __EMSCRIPTEN__
++        // reginaSetup() is defined in python/regina/__init__.py, which this
++        // build does not ship: REGINA_LINK_MODULE_INTO_EXECUTABLE makes the
++        // compiled bindings *be* the module "regina", with no package
++        // directory and therefore no __init__.py. Calling it would just
++        // raise AttributeError and dump a traceback into a fresh console.
++        //
++        // Of what reginaSetup() does, only one part matters here: it puts
++        // Python's builtin open() back, because "from regina import *"
++        // otherwise shadows it with Regina's own open(). (Its other jobs are
++        // readline tab completion -- unavailable here, see the note on
++        // plainCompleter -- a SnapPy path fixup, and a welcome banner.) So
++        // do that one part directly.
++        executeLine("from regina import *");
++        executeLine("import builtins; open = builtins.open");
++#else
+         executeLine("from regina import *; "
+             "regina.reginaSetup(banner=True, readline=False, "
+             "namespace=globals())");
++#endif
+         return true;
+     } else {
++#ifdef __EMSCRIPTEN__
++        // Deliberately NOT ReginaSupport::warn() here. That builds a
++        // QMessageBox and calls msg.exec(), i.e. it enters a *nested* event
++        // loop -- the very construct that Qt for WebAssembly cannot run
++        // without stack switching, and which throws out of this call if it
++        // cannot suspend. Because PythonManager::launchPythonConsole() calls
++        // this function *before* addInfo("Ready.") and allowInput(), an
++        // exception here leaves the console blocked on "Initialising..."
++        // forever, with only an opaque "Exception {stack: undefined}" in the
++        // browser console to show for it.
++        //
++        // A failure to import a module does not warrant a modal dialog
++        // anyway. Report it in the console window, which is already visible
++        // and is where the underlying Python error was printed.
++        addError(tr("Unable to load module \"regina\"."));
++        addError(tr("None of Regina's functions will be available "
++            "during this Python session."));
++        return false;
++#else
+         QString installationMsg;
+         std::string regModuleDir = regina::GlobalDirs::pythonModule().c_str();
+         if (! regModuleDir.empty())
+@@ -374,6 +479,7 @@
+             .arg(installationMsg));
+         addError(tr("Unable to load module \"regina\"."));
+         return false;
++#endif
+     }
+ }
+ 
+@@ -536,6 +642,14 @@
+ 
+     // Do the actual processing (which could take some time).
+     QApplication::instance()->processEvents();
++#ifdef __EMSCRIPTEN__
++    if (! interpreter) {
++        // The interpreter failed to start (see the console constructor).
++        addError(tr("The Python interpreter is not available."));
++        allowInput();
++        return;
++    }
++#endif
+     bool done = interpreter->executeLine(cmd.toUtf8().constData());
+ 
+     // Finish the output.
+@@ -579,6 +693,10 @@
+ 
+     // Ask python for all completions.
+     QString lastWord = m.captured();
++#ifdef __EMSCRIPTEN__
++    if (! interpreter)
++        return;
++#endif
+     if (interpreter->complete(lastWord.toUtf8().constData(), comp) < 0) {
+         // Completion failed.
+         return;
+--- /dev/null
++++ b/qtui/src/wasmopensslcompat.cpp
+@@ -0,0 +1,51 @@
++/**************************************************************************
++ *                                                                        *
++ *  Regina - A Normal Surface Theory Calculator                           *
++ *  Qt User Interface                                                     *
++ *                                                                        *
++ *  Weak fallbacks for OpenSSL 1.x protocol constructors.                 *
++ *                                                                        *
++ **************************************************************************/
++
++/**
++ * \file wasmopensslcompat.cpp
++ * \brief Weak fallback definitions for the OpenSSL 1.x protocol
++ * constructors that CPython's _ssl module still references.
++ *
++ * This file exists solely for the wasm32-emscripten build, where CPython
++ * is linked in statically (see PYTHON_STATIC_LINK).
++ *
++ * CPython's static module table names the PyInit_* entry point of every
++ * builtin extension module, so the linker pulls in _ssl.o whether or not
++ * anything will ever import the ssl module. _ssl.o in turn references
++ * TLSv1_method(), TLSv1_1_method() and TLSv1_2_method(): OpenSSL 1.x APIs
++ * that OpenSSL 3.x only exports when it is *not* configured with
++ * "no-deprecated". The OpenSSL package in this channel is configured that
++ * way, so these three symbols are missing from libssl.a/libcrypto.a and
++ * the static link fails.
++ *
++ * (This mismatch does not show up when CPython itself is built, because
++ * there the python executable links OpenSSL dynamically, where undefined
++ * symbols are resolved lazily rather than at link time.)
++ *
++ * The definitions below are declared weak, so if a future OpenSSL build
++ * in this channel *does* export the real functions, the real (strong)
++ * definitions win and these are ignored. Returning null is the correct
++ * failure mode in any case: an SSL_METHOD of null makes SSL_CTX_new()
++ * fail cleanly, and these three protocol versions are long deprecated --
++ * Python's own ssl module no longer offers PROTOCOL_TLSv1* by default.
++ * Regina's python console imports "regina" and nothing else, so in
++ * practice these are never called at all.
++ */
++
++#if defined(__EMSCRIPTEN__)
++
++extern "C" {
++
++__attribute__((weak)) const void* TLSv1_method() { return nullptr; }
++__attribute__((weak)) const void* TLSv1_1_method() { return nullptr; }
++__attribute__((weak)) const void* TLSv1_2_method() { return nullptr; }
++
++} // extern "C"
++
++#endif
+--- /dev/null
++++ b/qtui/src/wasmpyglue.js
+@@ -0,0 +1,49 @@
++/**
++ * Emscripten JS library shim for Regina's wasm32 build.
++ *
++ * This file exists solely so that CPython can be linked statically into
++ * regina-gui (see PYTHON_STATIC_LINK in the top-level CMakeLists.txt).
++ *
++ * CPython's Emscripten glue assumes the -sMAIN_MODULE configuration that
++ * upstream builds and tests it in. Python/emscripten_syscalls.c contains a
++ * startup EM_JS that does, in essence:
++ *
++ *     const origResolveGlobalSymbol = resolveGlobalSymbol;
++ *     resolveGlobalSymbol = function (name, direct = false) {
++ *         const orig = origResolveGlobalSymbol(name, direct);
++ *         if (name === "main") { ...wrap in WebAssembly.promising... }
++ *         return orig;
++ *     };
++ *
++ * i.e. it hooks the dynamic linker's symbol resolver so that, when Python
++ * is the program, main() runs under WebAssembly.promising and can suspend.
++ * resolveGlobalSymbol() is provided by Emscripten's libdylink.js, which is
++ * only linked in for dynamic-linking builds. In a plain static link it does
++ * not exist, so that constructor throws
++ *
++ *     ReferenceError: resolveGlobalSymbol is not defined
++ *
++ * from __wasm_call_ctors, before any Regina code runs. (Upstream is fixing
++ * this by moving the main() wrapping out of libpython entirely -- see
++ * python/cpython#156781 -- since it only makes sense when Python is the
++ * program. Here it is not: Qt owns main().)
++ *
++ * Defining it here gives that constructor something to hook, so startup
++ * proceeds. Nothing in a static build ever calls resolveGlobalSymbol --
++ * it exists for resolving symbols across dynamically loaded side modules,
++ * of which there are none -- so CPython's wrapper is installed and then
++ * never invoked. The lookup below is nonetheless a faithful enough
++ * approximation to behave sensibly if anything ever did call it.
++ */
++
++addToLibrary({
++  $resolveGlobalSymbol: function (name, direct) {
++    var sym;
++    if (typeof Module !== 'undefined' && Module['_' + name]) {
++      sym = Module['_' + name];
++    } else if (typeof wasmExports !== 'undefined') {
++      sym = wasmExports[name] || wasmExports['_' + name];
++    }
++    return { sym: sym, name: name };
++  },
++});

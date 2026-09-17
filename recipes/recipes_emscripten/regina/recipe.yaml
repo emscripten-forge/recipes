@@ -7,15 +7,22 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/regina-normal/regina/releases/download/regina-${{ version }}/regina-${{ version }}.tar.gz
-  sha256: 74131014099b77083dd1d09004fd6bc972421c792d188cdf43f0fd11ca6cb2ed
-  patches:
-    - patches/0001-add-tkrzw-kvstore-backend.patch
-    - patches/0002-emscripten-engine-build-adjustments.patch
-    - patches/0003-fix-disable-python-build-bugs.patch
-    - patches/0004-emscripten-qprocess-eventloop-guards.patch
-    - patches/0005-emscripten-graphviz-neato-fallback.patch
-    - patches/0006-emscripten-qt-wasm-finalization.patch
+  - url: https://github.com/regina-normal/regina/releases/download/regina-${{ version }}/regina-${{ version }}.tar.gz
+    sha256: 74131014099b77083dd1d09004fd6bc972421c792d188cdf43f0fd11ca6cb2ed
+    patches:
+      - patches/0001-add-tkrzw-kvstore-backend.patch
+      - patches/0002-emscripten-engine-build-adjustments.patch
+      - patches/0003-fix-disable-python-build-bugs.patch
+      - patches/0004-emscripten-qprocess-eventloop-guards.patch
+      - patches/0005-emscripten-graphviz-neato-fallback.patch
+      - patches/0006-emscripten-qt-wasm-finalization.patch
+      - patches/0007-emscripten-static-python-bindings.patch
+  # CPython source, used only to build the HACL* hash library that the
+  # python package fails to install (see the HACL block in build.sh).
+  # Nothing else from this tree is compiled or shipped.
+  - url: https://www.python.org/ftp/python/3.14.0/Python-3.14.0.tgz
+    sha256: 88d2da4eed42fa9a5f42ff58a8bc8988881bd6c547e297e46682c2687638a851
+    target_directory: cpython
 
 build:
   number: 0
@@ -38,6 +45,22 @@ requirements:
     - graphviz
     - qt6-main-jspi
     - qt6-svg-jspi
+    # Provides $PREFIX/lib/libpython3.x.a + headers + the stdlib tree that
+    # patches/0007 links and preloads into the wasm virtual filesystem.
+    - python
+    # The static libpython archive bakes in CPython's built-in extension
+    # modules, whose third-party dependencies must be linked explicitly
+    # (see the FOREACH(PYDEP ...) block in patches/0007): _ctypes needs
+    # libffi, _bz2 needs bzip2, _ssl/_hashlib need openssl, _lzma needs
+    # liblzma, _decimal needs mpdecimal, _zstd needs zstd, _sqlite3
+    # needs sqlite.
+    - libffi
+    - bzip2
+    - openssl
+    - liblzma
+    - mpdecimal
+    - zstd
+    - sqlite
 
 tests:
   - package_contents:
@@ -46,6 +69,7 @@ tests:
         - bin/regina-gui.js
         - bin/regina-gui.wasm
         - bin/qtloader.js
+        - bin/qtlogo.svg
         - bin/regina-gui.data
         - bin/regina-engine-config
         - lib/libregina-engine.a
