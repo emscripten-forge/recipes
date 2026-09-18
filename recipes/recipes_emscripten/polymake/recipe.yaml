@@ -41,7 +41,13 @@ requirements:
     - nodejs
     - python
   host:
-    - perl
+    # The version constraint is load bearing: variant.yaml pins `perl: 5.32.1`,
+    # which is the conda-forge perl for the *build* platform, and rattler-build
+    # applies a variant to any requirement written as a bare name.  Left bare,
+    # this resolves to `perl 5.32.1.*` on emscripten-wasm32, where the only perl
+    # is 5.44.0, and the host environment fails to solve.  Any explicit version
+    # suppresses the variant, so do not "tidy" this back to a bare `perl`.
+    - perl >=5.44
     - gmp
     - mpfr
     - boost-cpp
