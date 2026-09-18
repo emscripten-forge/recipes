@@ -17,6 +17,31 @@ mkdir -p \
     "${HOST_PREFIX}" \
     "${INSTALL_DIR}"
 
+# Move the extra CPAN distributions clear of the perl source tree
+#
+# Configure builds its extension list by globbing the *contents* of cpan/, dist/
+# and ext/ -- see find_extensions in Configure, which does `cd "$rsrc/cpan"` and
+# iterates over `*`.  Anything unpacked under one of those three names is taken
+# for a core extension and compiled as part of perl, which is not what these
+# distributions are for: they are installed into site_perl at the end of this
+# script, as plain perl sources.
+#
+# They are therefore unpacked into cpan-dists/, a name Configure does not scan,
+# and moved out of the source tree altogether here, before the first Configure
+# runs.  The move is what makes this robust: the directory name alone would be
+# enough today, but the move also covers a future perl widening that glob.
+CPAN_DISTS="${BUILD_DIR}/cpan-dists"
+
+rm -rf "${CPAN_DISTS}"
+
+if [ -d "${SRC_DIR}/cpan-dists" ]; then
+    mv "${SRC_DIR}/cpan-dists" "${CPAN_DISTS}"
+fi
+
+# nothing of ours may remain anywhere Configure looks
+test ! -d "${SRC_DIR}/cpan-dists"
+test -d "${CPAN_DISTS}"
+
 # Native build toolchain
 
 HOST_CC="${CC_FOR_BUILD:-gcc}"
@@ -351,6 +376,9 @@ fi
 # Each distribution is fetched as a separate, checksummed source entry in
 # recipe.yaml, rather than through cpanm at build time: that keeps the build
 # reproducible and offline, and cpanm could not cross-compile anything anyway.
+#
+# They are read from ${CPAN_DISTS}, where they were moved out of the perl source
+# tree at the top of this script; see the comment there for why that matters.
 
 site_lib="${perl_lib}${perl_site}"
 mkdir -p "${site_lib}"
@@ -369,7 +397,7 @@ dist_root() {
 install_pure_perl_dist() {
     local name="$1"
     local root
-    root="$(dist_root "${SRC_DIR}/cpan/${name}")"
+    root="$(dist_root "${CPAN_DISTS}/${name}")"
 
     if [ -d "${root}/lib" ]; then
         cp -a "${root}/lib/." "${site_lib}/"
@@ -386,7 +414,7 @@ for dist in JSON XML-SAX XML-SAX-Base XML-NamespaceSupport SVG \
 done
 
 # XML-Writer predates the lib/ convention and ships its module at the top level
-xml_writer_root="$(dist_root "${SRC_DIR}/cpan/XML-Writer")"
+xml_writer_root="$(dist_root "${CPAN_DISTS}/XML-Writer")"
 install -Dm644 "${xml_writer_root}/Writer.pm" "${site_lib}/XML/Writer.pm"
 
 # XML::SAX::ParserFactory consults this file to find the installed parsers; it is
