@@ -2,36 +2,69 @@ context:
   name: symengine
   version: 0.14.0
 
-package:
-  name: ${{ name|lower }}
-  version: ${{ version }}
-
-source:
-  sha256: 11c5f64e9eec998152437f288b8429ec001168277d55f3f5f1df78e3cf129707
-  url: https://github.com/symengine/symengine/releases/download/v${{ version }}/symengine-${{
-    version }}.tar.gz
-  patches:
-   - patches/shared.patch
-   - patches/namespace.patch
-
 build:
-  number: 0
+  number: 1
 
-requirements:
-  build:
-  - ${{ compiler("cxx") }}
-  - cmake
-  - make
-  host:
-  - boost-cpp
-  run:
-  - boost-cpp
+outputs:
+  - staging:
+      name: build-cache
+    build:
+      script: build.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      host:
+      - boost-mpl
+      - boost-multiprecision
+      - boost-random
+      - boost-type_traits
+      - boost-variant
+    source:
+      sha256: 11c5f64e9eec998152437f288b8429ec001168277d55f3f5f1df78e3cf129707
+      url: https://github.com/symengine/symengine/releases/download/v${{ version }}/symengine-${{
+        version }}.tar.gz
+      patches:
+      - patches/shared.patch
+      - patches/namespace.patch
 
-tests:
-- package_contents:
-    files:
-    - lib/libsymengine.so
-  
+  - package:
+      name: ${{ name }}
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      files:
+        include:
+        - lib/libsymengine.so
+    tests:
+    - package_contents:
+        files:
+        - lib/libsymengine.so
+
+  - package:
+      name: ${{ name }}-dev
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      files:
+        include:
+        - include/symengine/**
+        - lib/cmake/symengine/**
+    requirements:
+      run:
+      - ${{ pin_subpackage('symengine', exact=True) }}
+      - boost-mpl
+      - boost-multiprecision
+      - boost-random
+      - boost-type_traits
+      - boost-variant
+    tests:
+    - package_contents:
+        files:
+        - include/symengine/mp_class.h
+        - lib/cmake/symengine/SymEngineConfig.cmake
+
 about:
   homepage: https://symengine.org/
   license: MIT
@@ -47,3 +80,4 @@ extra:
   recipe-maintainers:
   - richardotis
   - anutosh491
+  - Alex-PLACET
