@@ -1,0 +1,19 @@
+--- a/cmake/modules/CGAL_SetupBoost.cmake
++++ b/cmake/modules/CGAL_SetupBoost.cmake
+@@ -14,6 +14,16 @@
+ include(${CMAKE_CURRENT_LIST_DIR}/CGAL_TweakFindBoost.cmake)
+ 
+ cmake_policy(VERSION 3.12...3.31)
++
++# emscripten-forge: the boost packages in this channel ship one CMake config
++# per module and no BoostConfig.cmake, and CMake >= 3.30 makes
++# find_package(Boost) config-mode-only once CMP0167 is NEW (which the
++# cmake_policy(VERSION) above triggers).  Keep the CMake FindBoost module,
++# which locates the wasm32 boost headers in the prefix.
++if(POLICY CMP0167)
++  cmake_policy(SET CMP0167 OLD)
++endif()
++set(Boost_NO_BOOST_CMAKE TRUE)
+ find_package( Boost 1.74 REQUIRED )
+ 
+ if(Boost_FOUND AND Boost_VERSION VERSION_LESS 1.74)
