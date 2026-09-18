@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring}}
-  build_number: 0
+  build_number: 1
   abi_tag: cp${{ ver2nd }}
 
 package:
@@ -77,6 +77,12 @@ tests:
   - test -f $PREFIX/lib/python${{ver2}}/ast.py
   - test -f $PREFIX/lib/libpython${{ver2}}.a
   - test -f $PREFIX/bin/python${{ver2}}
+  # CPython's HACL* hash primitives. libpython's md5module.o, sha1module.o,
+  # sha2module.o, sha3module.o and blake2module.o reference these, so
+  # without them every static link against libpython fails with undefined
+  # _Py_LibHacl_Hacl_Hash_* symbols. See the hacl target in Makefile.
+  - test -f $PREFIX/lib/libHacl_Hash_SHA2.a
+  - test -f $PREFIX/lib/libHacl_Hash_BLAKE2.a
 
 about:
   license: Python-2.0
