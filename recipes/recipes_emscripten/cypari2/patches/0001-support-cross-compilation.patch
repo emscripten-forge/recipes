@@ -1,0 +1,184 @@
+--- a/meson.build
++++ b/meson.build
+@@ -19,23 +19,33 @@
+ run_command(cc, '-v', check:true)
+ 
+ # Dependencies  
++# In a cross build the interpreter named in the cross file is the target
++# python, which cannot be executed on the build machine -- under
++# emscripten-forge it is a stub that prints a message and exits 1. Even a
++# working one could not do this: cysignals/__init__.py imports its compiled
++# `signals` extension, which here is a wasm module. So allow the location of
++# the headers to be given in the environment, read through the shell.
+ inc_cysignals = run_command(
+-  py,
+-  [
+-    '-c',
+-    '''
+-from os.path import relpath
+-import cysignals
+-path = cysignals.__file__.replace('__init__.py', '')
+-try:
+-  print(relpath(path))
+-except Exception:
+-  print(path)
+-    '''.strip(),
+-  ],
++  'sh', '-c', 'printf %s "$CYSIGNALS_INCLUDE_DIR"',
+   check: true,
+ ).stdout().strip()
+-cysignals = declare_dependency(include_directories: inc_cysignals)
++if inc_cysignals == ''
++  inc_cysignals = run_command(
++    py,
++    [
++      '-c',
++      '''
++from os.path import dirname
++import cysignals
++print(dirname(cysignals.__file__))
++      '''.strip(),
++    ],
++    check: true,
++  ).stdout().strip()
++endif
++# -I rather than include_directories(), which rejects an absolute path
++# outside the source tree.
++cysignals = declare_dependency(compile_args: ['-I' + inc_cysignals])
+ 
+ # Find PARI
+ # GMP may be a dependency of Pari, but since Pari doesn't have a pkg-config file,
+@@ -85,14 +95,25 @@
+   return 0;
+ }
+ '''
+-pari_version = cc.run(
+-  pari_version_code,
+-  args: ['-v'],
+-  name: 'pari version',
+-  dependencies: [pari],
+-  required: true,
+-)
+-message('PARI Version: ' + pari_version.stdout())
++# A cross build cannot execute a target binary, so compile the probe
++# without running it. Upstream describes this as "mostly a smoke test" and
++# uses the result only for the message below.
++if meson.is_cross_build()
++  if not cc.compiles(pari_version_code, args: ['-v'], name: 'pari version',
++                     dependencies: [pari])
++    error('Could not compile a program against PARI')
++  endif
++  message('PARI found (version probe not run: cross build)')
++else
++  pari_version = cc.run(
++    pari_version_code,
++    args: ['-v'],
++    name: 'pari version',
++    dependencies: [pari],
++    required: true,
++  )
++  message('PARI Version: ' + pari_version.stdout())
++endif
+ 
+ pari_datadir_code = '''
+ #include <stdio.h>
+@@ -104,12 +125,25 @@
+   return 0;
+ }
+ '''
+-pari_datadir = cc.run(
+-  pari_datadir_code,
+-  name: 'pari datadir',
+-  dependencies: [pari],
+-  required: true,
+-).stdout()
++# The datadir is load-bearing: autogen reads pari.desc from it below, so
++# unlike the version probe it cannot simply be skipped. A cross build can
++# neither run the target PARI nor the target interpreter, so allow this to
++# be supplied in the environment too. Native builds are unchanged.
++pari_datadir = run_command(
++  'sh', '-c', 'printf %s "$PARI_DATADIR"',
++  check: true,
++).stdout().strip()
++if pari_datadir == ''
++  if meson.is_cross_build()
++    error('Cross compiling: set PARI_DATADIR to the directory holding pari.desc')
++  endif
++  pari_datadir = cc.run(
++    pari_datadir_code,
++    name: 'pari datadir',
++    dependencies: [pari],
++    required: true,
++  ).stdout()
++endif
+ 
+ # In MSYS, convert to Windows path
+ # (e.g /usr/share/pari -> C:\msys64\usr\share\pari)
+@@ -121,18 +155,39 @@
+ endif
+ message('PARI Datadir: ' + pari_datadir)
+ 
+-# Run code generation step
+-code_gen_result = run_command(
+-  py.full_path(), '-c',
+-  '''
++# Run code generation step.
++#
++# autogen is pure Python -- it parses pari.desc and writes .pxi/.pxd files --
++# but running it needs an interpreter that works on the build machine, and
++# py.full_path() is the one named in the cross file. Allow the files to have
++# been generated beforehand and simply copied in; CYPARI2_AUTOGEN_DIR names
++# the directory holding them. Doing it outside meson also means any failure
++# is reported by the thing that ran it, rather than as a bare exit status.
++autogen_dir = run_command(
++  'sh', '-c', 'printf %s "$CYPARI2_AUTOGEN_DIR"',
++  check: true,
++).stdout().strip()
++if autogen_dir != ''
++  code_gen_result = run_command(
++    'sh', '-c',
++    'mkdir -p "$1" && cp "$2/auto_paridecl.pxd" "$2/auto_gen.pxi" "$2/auto_instance.pxi" "$1"',
++    'sh', meson.current_build_dir() + '/cypari2', autogen_dir,
++    check: true,
++  )
++  message('Using pre-generated bindings from ' + autogen_dir)
++else
++  code_gen_result = run_command(
++    py.full_path(), '-c',
++    '''
+ import sys
+ sys.path.insert(0, ".")
+ from autogen import rebuild
+ rebuild(r"''' + pari_datadir + '''", force=True, output=r"''' + meson.current_build_dir() + '''/cypari2")
+ print("Code generation successful")
+-  ''',
+-  check: true
+-)
++    ''',
++    check: true
++  )
++endif
+ py.install_sources(
+   meson.current_build_dir() + '/cypari2/auto_paridecl.pxd',
+   meson.current_build_dir() + '/cypari2/auto_gen.pxi',
+--- a/autogen/doc.py
++++ b/autogen/doc.py
+@@ -273,7 +273,17 @@
+     if sys.platform.startswith("win"):
+         return b""
+ 
+-    doc = subprocess.check_output(["gphelp", "-raw", function])
++    # gphelp is a Perl script shipped alongside PARI, and it is not always
++    # usable. In a conda build it carries the absolute shebang and datadir
++    # baked in when PARI itself was built, both pointing at directories that
++    # no longer exist, so running it fails with ENOENT. What it supplies is
++    # only the docstrings attached to the generated bindings, so fall back
++    # to none rather than failing the build -- the same thing this function
++    # already does on Windows.
++    try:
++        doc = subprocess.check_output(["gphelp", "-raw", function])
++    except (OSError, subprocess.CalledProcessError):
++        return b""
+     if doc.endswith(b"""' not found !\n"""):
+         raise RuntimeError("no help found for '{}'".format(function))
+     return doc
