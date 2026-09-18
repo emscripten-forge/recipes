@@ -3,17 +3,16 @@ context:
   version: 6.2.1
 
 build:
-  number: 3
-
-source:
-  url: https://github.com/CGAL/cgal/releases/download/v${{ version }}/CGAL-${{ version }}-library.tar.xz
-  sha256: 8e7ce1e30e8ffcb3e69d153c3a561bb1f38bbb4becd8e6544cbaa0fb2889af62
-  patches:
-  - patches/keep-boost-find-module-mode.patch
+  number: 5
 
 outputs:
   - staging:
       name: build-cache
+    source:
+      url: https://github.com/CGAL/cgal/releases/download/v${{ version }}/CGAL-${{ version }}-library.tar.xz
+      sha256: 8e7ce1e30e8ffcb3e69d153c3a561bb1f38bbb4becd8e6544cbaa0fb2889af62
+      patches:
+      - patches/keep-boost-find-module-mode.patch
     build:
       script: build.sh
     requirements:
@@ -91,6 +90,11 @@ outputs:
       files:
         include:
         - share/**
+    tests:
+    - package_contents:
+        files:
+        - share/doc/CGAL/LICENSE
+        - share/man/man1/cgal_create_cmake_script.1
     requirements:
       run:
       - boost-algorithm
