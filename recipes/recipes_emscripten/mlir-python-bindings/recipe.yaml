@@ -1,5 +1,5 @@
 context:
-  version: 22.1.8
+  version: 23.1.1
 
 package:
   name: mlir-python-bindings
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
-  sha256: ad18b70e287954c3d62bc7e0b86e7b7af2adf87bcfce21c15fe717f101d7aace
+  sha256: 851b3d701a4fbdd9f69536d4acda578469e810ca7056687d6556443f5fd39557
   patches:
   # CMakeLists changes: emscripten SIDE_MODULE setup, CAPI guards, wasm python extension
   - patches/0001-emscripten-wasm-execution-engine-cmake.patch
@@ -19,7 +19,7 @@ source:
   - patches/0004-add-wasm-execution-engine-nanobind.patch
   # New Python wrapper class
   - patches/0005-add-wasm-execution-engine-python.patch
-  # mlir.utils: CFG visualization via graphviz + @hpcc-js/wasm CDN on Emscripten
+  # mlir.utils: CFG visualization with in-process Graphviz on Emscripten
   - patches/0006-add-mlir-python-utils.patch
   # mlir/__init__.py: Emscripten shared-library preloader (symlinks + dlopen)
   - patches/0007-add-mlir-python-init.patch
@@ -28,7 +28,7 @@ source:
   - patches/0008-np-to-memref-32-bit-support.patch
 
 build:
-  number: 1
+  number: 0
 
   files:
     exclude:
@@ -44,21 +44,28 @@ requirements:
   - ${{ compiler("cxx") }}
   - cmake
   - make    # [unix]
-  # mlir-tblgen + llvm-tblgen + mlir-linalg-ods-yaml-gen (all native, 22.1.8)
-  - llvm-tblgen
+  # mlir-tblgen + llvm-tblgen + mlir-linalg-ods-yaml-gen must match the
+  # LLVM/MLIR source version being cross-compiled.
+  - llvm-tblgen ==23.1.0
   - cross-python_${{ target_platform }}
-  - nanobind
+  - nanobind >=2.9,<3
 
   host:
   - python
-  # llvm 22.* bundles: LLVM wasm static libs, liblldWasm.a, liblldCommon.a,
+  # llvm 23.* bundles: LLVM wasm static libs, liblldWasm.a, liblldCommon.a,
   # LLVMConfig.cmake, LLDConfig.cmake.  All required for the standalone MLIR
   # Python bindings build.
-  - llvm 22.*
-  - numpy
+  - llvm 23.*
 
   run:
   - python
+  # Used by mlir.runtime.np_to_memref, mlir.ir NumPy interop and the Linalg
+  # Python helpers. The bindings do not compile against the NumPy C API.
+  - numpy
+  # mlir.utils renders DOT through Graphviz's in-process SWIG/Wasm binding.
+  # As in llvmlite, Jupyter's rich-display hook is used when available and
+  # is not a dependency of the bindings themselves.
+  - graphviz-python 15.*
 
 tests:
 - package_contents:
@@ -67,6 +74,15 @@ tests:
     - lib/python3.13/site-packages/mlir/dialects/__init__.py
     - lib/python3.13/site-packages/mlir/_mlir_libs/_mlir.cpython-313-wasm32-emscripten.so
     - lib/python3.13/site-packages/mlir/wasm_execution_engine.py
+- script: pytester
+  files:
+    recipe:
+    - test_mlir_python_bindings.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   homepage: https://mlir.llvm.org

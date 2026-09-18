@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PY_VERSION=3.13
+PY_VERSION=3.14
 
 set -euxo pipefail
 
@@ -18,11 +18,13 @@ mv Doc Grammar Include LICENSE Lib Mac Misc Modules Objects PC PCbuild Parser Pr
 # copy the LICENSE file back for the recipe
 cp ${BUILD}/LICENSE .
 
-# create a symlink from  $BUILD_PREFIX/bin/python3.11 to $BUILD_PREFIX/bin/python.js
+# create a symlink from  $BUILD_PREFIX/bin/python3.XY to $BUILD_PREFIX/bin/python.js
 # since the python build script overwrites the env variable PYTHON to python.js
 # as it assumes this is the correct name for the python binary when building for emscripten.
 # But emscripten itself (emcc/emar/...) relies on the env variable PYTHON to be set to python<version_major>.<version_minor>
 ln -s $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.js
+# Newer Emscripten SDK invokes "python.mjs"; ensure it resolves to host Python so emcc works.
+ln -sf $BUILD_PREFIX/bin/python${PY_VERSION} $BUILD_PREFIX/bin/python.mjs
 
 # create an empty emsdk_env.sh in CONDA_EMSDK_DIR
 echo "" > $EMSCRIPTEN_FORGE_EMSDK_DIR/emsdk_env.sh

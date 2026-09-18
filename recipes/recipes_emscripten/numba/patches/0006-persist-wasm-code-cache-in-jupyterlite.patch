@@ -30,7 +30,27 @@ index 98cf1bc..bc9e34d 100644
          # Ensure the directory is writable by trying to write a temporary file
          tempfile.TemporaryFile(dir=path).close()
  
-@@ -641,6 +655,15 @@ class IndexDataCacheFile(object):
+@@ -166,8 +180,17 @@ class _SourceFileBackedLocatorMixin(object):
+     def get_source_stamp(self):
+         if getattr(sys, 'frozen', False):
+-            st = os.stat(sys.executable)
++            source_path = sys.executable
+         else:
+-            st = os.stat(self._py_file)
++            source_path = self._py_file
++        st = os.stat(source_path)
++        if sys.platform == "emscripten":
++            # JupyterLite reconstructs packaged source files for each fresh
++            # kernel, so their mtimes are not stable across browser sessions.
++            # Hash the source itself to keep an unchanged function cache valid
++            # while still invalidating it when its Python module changes.
++            with open(source_path, "rb") as f:
++                source_hash = hashlib.sha256(f.read()).hexdigest()
++            return source_hash, st.st_size
+         # We use both timestamp and size as some filesystems only have second
+         # granularity.
+         return st.st_mtime, st.st_size
+@@ -641,6 +664,15 @@ class IndexDataCacheFile(object):
          Open *filepath* for writing in a race condition-free way (hopefully).
          uuid4 is used to try and avoid name collisions on a shared filesystem.
          """

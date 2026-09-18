@@ -98,6 +98,62 @@ def automerge_is_enabled(pr):
     return 'Automerge' in [label['name'] for label in labels]
 
 
+def make_pr(
+    paths,
+    pr_title,
+    target_branch_name,
+    branch_name,
+    pr_body="Beep-boop-beep! Whistle-whistle-woo!",
+    labels=None,
+):
+    """
+    Stage paths, commit, push branch_name, and open a PR against target_branch_name.
+
+    paths: one path or an iterable of paths to git-add.
+    labels: optional iterable of label names; omitted means no --label flags.
+    Returns True if a PR was created, False if there was nothing to commit.
+    """
+    if isinstance(paths, (str, os.PathLike)):
+        path_args = [str(paths)]
+    else:
+        path_args = [str(p) for p in paths]
+
+    subprocess.check_output(["git", "add", *path_args])
+    staged = (
+        subprocess.check_output(["git", "diff", "--cached", "--name-only"])
+        .decode("utf-8")
+        .strip()
+    )
+    if not staged:
+        print("No staged changes; skipping PR")
+        return False
+
+    subprocess.check_output(["git", "commit", "-m", pr_title])
+    subprocess.check_output(
+        ["git", "push", "-u", "origin", branch_name, "--force"]
+    )
+
+    subprocess.check_call(
+        ["gh", "repo", "set-default", "emscripten-forge/recipes"],
+        cwd=os.getcwd(),
+    )
+
+    args = [
+        "gh", "pr", "create",
+        "-B", target_branch_name,
+        "--title", pr_title,
+        "--body", pr_body,
+    ]
+    if labels:
+        for label in labels:
+            args.extend(["--label", label])
+
+    if target_branch_name == "emscripten-6x":
+        args.extend(["--label", "6x"])
+
+    subprocess.check_call(args, cwd=os.getcwd())
+    return True
+
 
 def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, automerge):
 

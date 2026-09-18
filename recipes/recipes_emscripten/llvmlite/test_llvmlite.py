@@ -37,6 +37,15 @@ def test_wasm_execution_engine_importable():
     assert EmscriptenBackend is not None
 
 
+def test_wasm_side_module_filename_is_debugger_friendly():
+    from llvmlite.binding.wasmengine import _wasm_module_filename
+
+    assert _wasm_module_filename(
+        "ol_np_empty_like.<locals>.impl", 12
+    ) == "0012-ol_np_empty_like._locals_.impl.wasm"
+    assert _wasm_module_filename("", 3) == "0003-anonymous.wasm"
+
+
 def test_wasm_execution_engine_object_cache_callbacks(monkeypatch):
     import llvmlite.binding.wasmengine as wasmengine
 
