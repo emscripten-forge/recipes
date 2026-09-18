@@ -44,32 +44,55 @@ test -f "${CYSIGNALS_INCLUDE_DIR}/signals.pxd"
 #    what makes the bindings match exactly the PARI being linked.
 export PARI_DATADIR="${PREFIX}/share/pari"
 
-# 3. An interpreter that can run that code generation. autogen is pure Python
-#    -- it parses pari.desc and writes .pxi/.pxd files -- but the interpreter
-#    meson knows about is $PREFIX/bin/python, which this channel's python
-#    recipe installs as a shell stub that prints a message and exits 1. Any
-#    real interpreter on the build machine will do.
-CYPARI2_BUILD_PYTHON=""
-for cand in "${BUILD_PREFIX}/venv/cross/bin/python" \
-            "${BUILD_PREFIX}/bin/python" \
-            "${BUILD_PREFIX}/bin/python3"; do
-    if [ -x "${cand}" ] && "${cand}" -c 'import pathlib' >/dev/null 2>&1; then
-        CYPARI2_BUILD_PYTHON="${cand}"
-        break
-    fi
-done
-if [ -z "${CYPARI2_BUILD_PYTHON}" ]; then
-    echo "ERROR: found no runnable python on the build machine for the" >&2
-    echo "       autogen step (tried \$BUILD_PREFIX/venv/cross/bin/python," >&2
-    echo "       \$BUILD_PREFIX/bin/python and \$BUILD_PREFIX/bin/python3)." >&2
-    exit 1
-fi
-export CYPARI2_BUILD_PYTHON
-echo "=== autogen will run under ${CYPARI2_BUILD_PYTHON}"
-
 test -f "${PARI_DATADIR}/pari.desc"
 test -f "${PREFIX}/lib/libpari.a"
 test -f "${PREFIX}/include/pari/pari.h"
+
+# 3. The generated bindings themselves.
+#
+#    autogen is pure Python -- it parses pari.desc and writes
+#    auto_paridecl.pxd, auto_gen.pxi and auto_instance.pxi -- but meson runs
+#    it with the interpreter named in the cross file, which need not work on
+#    the build machine. Rather than hand meson an interpreter and hope, run
+#    it here, where the error is visible if it fails, and let meson copy the
+#    result in. Interpreters are tried in turn against the real work, not
+#    against a probe, because only that tells us one actually functions.
+AUTOGEN_OUT="${SRC_DIR}/_autogen/cypari2"
+rm -rf "${SRC_DIR}/_autogen"
+mkdir -p "${AUTOGEN_OUT}"
+
+AUTOGEN_PYTHON=""
+for cand in "${BUILD_PREFIX}/venv/cross/bin/python" \
+            "${BUILD_PREFIX}/bin/python" \
+            "${BUILD_PREFIX}/bin/python3" \
+            "$(command -v python3 || true)"; do
+    [ -n "${cand}" ] && [ -x "${cand}" ] || continue
+    echo "=== trying autogen under ${cand}"
+    if ( cd "${SRC_DIR}" && "${cand}" -c "
+import sys
+sys.path.insert(0, '.')
+from autogen import rebuild
+rebuild(r'${PARI_DATADIR}', force=True, output=r'${AUTOGEN_OUT}')
+" > /dev/null ); then
+        AUTOGEN_PYTHON="${cand}"
+        break
+    fi
+    echo "=== that interpreter could not run autogen; trying the next" >&2
+done
+
+if [ -z "${AUTOGEN_PYTHON}" ]; then
+    echo "ERROR: no interpreter on the build machine could run autogen." >&2
+    echo "       The tracebacks above say why." >&2
+    exit 1
+fi
+
+test -f "${AUTOGEN_OUT}/auto_paridecl.pxd"
+test -f "${AUTOGEN_OUT}/auto_gen.pxi"
+test -f "${AUTOGEN_OUT}/auto_instance.pxi"
+wc -l "${AUTOGEN_OUT}"/auto_gen.pxi "${AUTOGEN_OUT}"/auto_instance.pxi
+
+export CYPARI2_AUTOGEN_DIR="${AUTOGEN_OUT}"
+echo "=== bindings generated under ${AUTOGEN_PYTHON}"
 
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=${SRC_DIR}/emscripten.meson.cross"

@@ -1,14 +1,15 @@
 --- a/meson.build
 +++ b/meson.build
-@@ -19,23 +19,32 @@
+@@ -19,23 +19,33 @@
  run_command(cc, '-v', check:true)
  
  # Dependencies  
 +# In a cross build the interpreter named in the cross file is the target
 +# python, which cannot be executed on the build machine -- under
-+# emscripten-forge it is a stub that prints a message and exits 1. So allow
-+# the location of the cysignals headers to be given in the environment, and
-+# read it through the shell rather than through that interpreter.
++# emscripten-forge it is a stub that prints a message and exits 1. Even a
++# working one could not do this: cysignals/__init__.py imports its compiled
++# `signals` extension, which here is a wasm module. So allow the location of
++# the headers to be given in the environment, read through the shell.
  inc_cysignals = run_command(
 -  py,
 -  [
@@ -47,7 +48,7 @@
  
  # Find PARI
  # GMP may be a dependency of Pari, but since Pari doesn't have a pkg-config file,
-@@ -85,14 +94,25 @@
+@@ -85,14 +95,25 @@
    return 0;
  }
  '''
@@ -81,7 +82,7 @@
  
  pari_datadir_code = '''
  #include <stdio.h>
-@@ -104,12 +124,25 @@
+@@ -104,12 +125,25 @@
    return 0;
  }
  '''
@@ -113,29 +114,50 @@
  
  # In MSYS, convert to Windows path
  # (e.g /usr/share/pari -> C:\msys64\usr\share\pari)
-@@ -121,9 +154,23 @@
+@@ -121,18 +155,39 @@
  endif
  message('PARI Datadir: ' + pari_datadir)
  
 -# Run code generation step
+-code_gen_result = run_command(
+-  py.full_path(), '-c',
+-  '''
 +# Run code generation step.
 +#
 +# autogen is pure Python -- it parses pari.desc and writes .pxi/.pxd files --
-+# but py.full_path() is the interpreter named in the cross file, which in a
-+# cross build need not be runnable here. Under emscripten-forge it is a shell
-+# stub that prints a message and exits 1. Allow a working interpreter to be
-+# named in the environment; it only has to run pure Python, so the build
-+# machine's own will do.
-+codegen_python = run_command(
-+  'sh', '-c', 'printf %s "$CYPARI2_BUILD_PYTHON"',
++# but running it needs an interpreter that works on the build machine, and
++# py.full_path() is the one named in the cross file. Allow the files to have
++# been generated beforehand and simply copied in; CYPARI2_AUTOGEN_DIR names
++# the directory holding them. Doing it outside meson also means any failure
++# is reported by the thing that ran it, rather than as a bare exit status.
++autogen_dir = run_command(
++  'sh', '-c', 'printf %s "$CYPARI2_AUTOGEN_DIR"',
 +  check: true,
 +).stdout().strip()
-+if codegen_python == ''
-+  codegen_python = py.full_path()
-+endif
- code_gen_result = run_command(
--  py.full_path(), '-c',
-+  codegen_python, '-c',
-   '''
++if autogen_dir != ''
++  code_gen_result = run_command(
++    'sh', '-c',
++    'mkdir -p "$1" && cp "$2/auto_paridecl.pxd" "$2/auto_gen.pxi" "$2/auto_instance.pxi" "$1"',
++    'sh', meson.current_build_dir() + '/cypari2', autogen_dir,
++    check: true,
++  )
++  message('Using pre-generated bindings from ' + autogen_dir)
++else
++  code_gen_result = run_command(
++    py.full_path(), '-c',
++    '''
  import sys
  sys.path.insert(0, ".")
+ from autogen import rebuild
+ rebuild(r"''' + pari_datadir + '''", force=True, output=r"''' + meson.current_build_dir() + '''/cypari2")
+ print("Code generation successful")
+-  ''',
+-  check: true
+-)
++    ''',
++    check: true
++  )
++endif
+ py.install_sources(
+   meson.current_build_dir() + '/cypari2/auto_paridecl.pxd',
+   meson.current_build_dir() + '/cypari2/auto_gen.pxi',
