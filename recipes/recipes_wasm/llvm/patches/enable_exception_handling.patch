@@ -202,32 +202,10 @@ index 66b396b53cb5..9fdd69ea4906 100644
    PUBLIC "SHELL: -s ALLOW_MEMORY_GROWTH=1"
    PUBLIC "SHELL: -s STACK_SIZE=32mb"
 diff --git a/clang/unittests/Interpreter/InterpreterTest.cpp b/clang/unittests/Interpreter/InterpreterTest.cpp
-index 450be2a25a12..15468e916c94 100644
+index 9ff9092524d2..15468e916c94 100644
 --- a/clang/unittests/Interpreter/InterpreterTest.cpp
 +++ b/clang/unittests/Interpreter/InterpreterTest.cpp
-@@ -174,6 +174,9 @@ TEST_F(InterpreterTest, TranslationUnitRedeclChainAcrossManyPTUs) {
- }
- 
- TEST_F(InterpreterTest, UndoLeavesDeclsInTranslationUnitChain) {
-+#ifdef __EMSCRIPTEN__
-+  GTEST_SKIP() << "Undo is not supported for Emscripten builds";
-+#endif
-   std::unique_ptr<Interpreter> Interp = createInterpreter();
- 
-   cantFail(Interp->Parse("struct Kept {};"));
-@@ -505,6 +508,11 @@ TEST_F(InterpreterTest, ValueSetRawBitsCopiesByteCount) {
- // Earlier the move ctor called Release() on the just-moved-into storage,
- // double-releasing on the next read.
- TEST_F(InterpreterTest, ValueMoveSemantics) {
-+  // FIXME: Emscripten cannot resolve MoveT's destructor symbol
-+  // `_ZN5MoveTD2Ev` from the incrementally loaded Wasm side module.
-+#ifdef __EMSCRIPTEN__
-+  GTEST_SKIP() << "Unresolved destructor symbol: _ZN5MoveTD2Ev";
-+#endif
-   std::vector<const char *> Args = {"-fno-sized-deallocation"};
-   std::unique_ptr<Interpreter> Interp = createInterpreter(Args);
- 
-@@ -554,4 +562,19 @@ TEST_F(InterpreterTest, TranslationUnit_CanonicalDecl) {
+@@ -443,4 +443,19 @@ TEST_F(InterpreterTest, TranslationUnit_CanonicalDecl) {
              sema.getASTContext().getTranslationUnitDecl()->getCanonicalDecl());
  }
  
