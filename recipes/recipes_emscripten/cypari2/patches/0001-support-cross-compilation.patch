@@ -1,0 +1,69 @@
+--- a/meson.build
++++ b/meson.build
+@@ -85,14 +85,25 @@
+   return 0;
+ }
+ '''
+-pari_version = cc.run(
+-  pari_version_code,
+-  args: ['-v'],
+-  name: 'pari version',
+-  dependencies: [pari],
+-  required: true,
+-)
+-message('PARI Version: ' + pari_version.stdout())
++# A cross build cannot execute a target binary, so compile the probe
++# without running it. Upstream describes this as "mostly a smoke test" and
++# uses the result only for the message below.
++if meson.is_cross_build()
++  if not cc.compiles(pari_version_code, args: ['-v'], name: 'pari version',
++                     dependencies: [pari])
++    error('Could not compile a program against PARI')
++  endif
++  message('PARI found (version probe not run: cross build)')
++else
++  pari_version = cc.run(
++    pari_version_code,
++    args: ['-v'],
++    name: 'pari version',
++    dependencies: [pari],
++    required: true,
++  )
++  message('PARI Version: ' + pari_version.stdout())
++endif
+ 
+ pari_datadir_code = '''
+ #include <stdio.h>
+@@ -104,12 +115,26 @@
+   return 0;
+ }
+ '''
+-pari_datadir = cc.run(
+-  pari_datadir_code,
+-  name: 'pari datadir',
+-  dependencies: [pari],
+-  required: true,
+-).stdout()
++# The datadir is load-bearing: autogen reads pari.desc from it below, so
++# unlike the version probe it cannot simply be skipped. A cross build cannot
++# ask the target PARI where its datadir is, so allow it to be supplied in
++# the environment; native builds are unchanged.
++pari_datadir = run_command(
++  py,
++  ['-c', 'import os, sys; sys.stdout.write(os.environ.get("PARI_DATADIR", ""))'],
++  check: true,
++).stdout().strip()
++if pari_datadir == ''
++  if meson.is_cross_build()
++    error('Cross compiling: set PARI_DATADIR to the directory holding pari.desc')
++  endif
++  pari_datadir = cc.run(
++    pari_datadir_code,
++    name: 'pari datadir',
++    dependencies: [pari],
++    required: true,
++  ).stdout()
++endif
+ 
+ # In MSYS, convert to Windows path
+ # (e.g /usr/share/pari -> C:\msys64\usr\share\pari)
