@@ -1,6 +1,53 @@
 --- a/meson.build
 +++ b/meson.build
-@@ -85,14 +85,25 @@
+@@ -19,23 +19,32 @@
+ run_command(cc, '-v', check:true)
+ 
+ # Dependencies  
++# In a cross build the interpreter named in the cross file is the target
++# python, which cannot be executed on the build machine -- under
++# emscripten-forge it is a stub that prints a message and exits 1. So allow
++# the location of the cysignals headers to be given in the environment, and
++# read it through the shell rather than through that interpreter.
+ inc_cysignals = run_command(
+-  py,
+-  [
+-    '-c',
+-    '''
+-from os.path import relpath
+-import cysignals
+-path = cysignals.__file__.replace('__init__.py', '')
+-try:
+-  print(relpath(path))
+-except Exception:
+-  print(path)
+-    '''.strip(),
+-  ],
++  'sh', '-c', 'printf %s "$CYSIGNALS_INCLUDE_DIR"',
+   check: true,
+ ).stdout().strip()
+-cysignals = declare_dependency(include_directories: inc_cysignals)
++if inc_cysignals == ''
++  inc_cysignals = run_command(
++    py,
++    [
++      '-c',
++      '''
++from os.path import dirname
++import cysignals
++print(dirname(cysignals.__file__))
++      '''.strip(),
++    ],
++    check: true,
++  ).stdout().strip()
++endif
++# -I rather than include_directories(), which rejects an absolute path
++# outside the source tree.
++cysignals = declare_dependency(compile_args: ['-I' + inc_cysignals])
+ 
+ # Find PARI
+ # GMP may be a dependency of Pari, but since Pari doesn't have a pkg-config file,
+@@ -85,14 +94,25 @@
    return 0;
  }
  '''
@@ -34,7 +81,7 @@
  
  pari_datadir_code = '''
  #include <stdio.h>
-@@ -104,12 +115,26 @@
+@@ -104,12 +124,25 @@
    return 0;
  }
  '''
@@ -45,12 +92,11 @@
 -  required: true,
 -).stdout()
 +# The datadir is load-bearing: autogen reads pari.desc from it below, so
-+# unlike the version probe it cannot simply be skipped. A cross build cannot
-+# ask the target PARI where its datadir is, so allow it to be supplied in
-+# the environment; native builds are unchanged.
++# unlike the version probe it cannot simply be skipped. A cross build can
++# neither run the target PARI nor the target interpreter, so allow this to
++# be supplied in the environment too. Native builds are unchanged.
 +pari_datadir = run_command(
-+  py,
-+  ['-c', 'import os, sys; sys.stdout.write(os.environ.get("PARI_DATADIR", ""))'],
++  'sh', '-c', 'printf %s "$PARI_DATADIR"',
 +  check: true,
 +).stdout().strip()
 +if pari_datadir == ''
