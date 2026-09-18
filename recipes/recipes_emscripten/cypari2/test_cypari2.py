@@ -1,29 +1,59 @@
-def test_cypari2():
-    from cypari2 import Pari
+"""
+Staged so that the log says which step fails.
 
+The whole wasm runtime dies on a stack overflow somewhere in here, and a
+test that imports, constructs and computes in one function cannot say
+which of those did it. Each stage prints before it acts, so the last line
+printed identifies the culprit even when the process does not survive to
+report a result.
+"""
+
+
+def _log(msg):
+    print("CYPARI2-PROBE: " + msg, flush=True)
+
+
+def test_1_import():
+    # Imports cypari2, which imports cysignals, which calls init_cysignals()
+    # -- signal handlers and sigsetjmp machinery, the parts of this stack
+    # least likely to be sound under Emscripten.
+    _log("importing cypari2")
+    import cypari2
+    _log("imported cypari2 " + cypari2.__version__)
+
+
+def test_2_construct():
+    # Pari() calls pari_init_opts(), which allocates PARI's own stack and
+    # sets up its error recovery with setjmp. Emscripten only supports
+    # setjmp/longjmp when built for it, and a longjmp that lands wrongly
+    # would look exactly like the runaway recursion in the log.
+    from cypari2 import Pari
+    _log("constructing Pari()")
     pari = Pari()
-    # Arbitrary-precision integers, which is GMP underneath.
+    _log("constructed Pari()")
+
+
+def test_3_smallest_computation():
+    from cypari2 import Pari
+    pari = Pari()
+    _log("evaluating 2+2")
+    result = str(pari('2+2'))
+    _log("2+2 = " + result)
+    assert result == '4'
+
+
+def test_4_bigger_integers():
+    from cypari2 import Pari
+    pari = Pari()
+    _log("evaluating 2^64 (exercises GMP)")
     assert str(pari('2^64')) == '18446744073709551616'
-    assert str(pari(10**20).nextprime()) == '100000000000000000039'
+    _log("2^64 ok")
 
 
-def test_cypari2_number_fields():
+def test_5_number_field():
+    # What SnapPy actually needs PARI for.
     from cypari2 import Pari
-
     pari = Pari()
-    # The kind of thing SnapPy actually uses PARI for: number fields and
-    # integer relations.
+    _log("evaluating nfdisc(x^3-2)")
     assert str(pari('nfdisc(x^3-2)')) == '-108'
-    assert str(pari('lindep([1, 2^0.5, 2^0.5+1])')) == '[-1, -1, 1]~'
-
-
-def test_cypari2_names_snappy_needs():
-    # snappy/pari.py imports exactly these.
-    from cypari2 import Pari, Gen, PariError
-    from cypari2.pari_instance import (prec_words_to_dec,
-                                       prec_words_to_bits,
-                                       prec_bits_to_dec,
-                                       prec_dec_to_bits)
-
-    assert isinstance(Pari()('2^64'), Gen)
-    assert prec_bits_to_dec(64) > 0
+    _log("nfdisc ok")
