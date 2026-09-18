@@ -1,0 +1,60 @@
+context:
+  name: knot_floer_homology
+  version: 1.2.1
+
+package:
+  name: knot-floer-homology
+  version: ${{ version }}
+
+source:
+  # 1.2.2 is the latest release but ships wheels only -- 1.2.1 is the most
+  # recent version with an sdist. spherogram asks for >=1.2.2 in its
+  # install_requires; the run dependency in the spherogram recipe is
+  # relaxed to >=1.2.1 to match what can actually be built from source.
+  url: https://pypi.io/packages/source/k/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fd65df828c155650b47050e4056febc7ba7fd6d6ed41fc0e0796a181044eb24a
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('cxx') }}
+  - pip
+  - setuptools
+  - cython
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_knot_floer_homology.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/3-manifolds/knot_floer_homology
+  license: GPL-3.0-or-later
+  license_file: PKG-INFO
+  summary: Computes knot Floer homology, via Szabo's ComputeHFKv2
+  description: |
+    A Python interface to Zoltan Szabo's program for computing the knot
+    Floer homology of a knot in the 3-sphere from a planar diagram. Used by
+    spherogram, and through it by SnapPy, for Link.knot_floer_homology().
+
+    The C++ sources use no threads, so no patching is needed for a build
+    without pthreads.
+  repository: https://github.com/3-manifolds/knot_floer_homology
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

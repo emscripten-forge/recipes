@@ -1,0 +1,58 @@
+context:
+  name: FXrays
+  version: 1.3.6
+
+package:
+  name: fxrays
+  version: ${{ version }}
+
+source:
+  # Note the capitalisation: PyPI serves this one only from the upper-case
+  # path. .../source/f/fxrays/fxrays-1.3.6.tar.gz is a 404.
+  url: https://pypi.io/packages/source/F/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7a93545a77b53ff4098d2c9768cc5422b54ac8c31797db96160ba48894db1c68
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  - setuptools
+  # setup.py imports Cython.Build unconditionally, so this is required even
+  # though the sdist ships the generated FXraysmodule.c.
+  - cython
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_fxrays.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/3-manifolds/FXrays
+  license: GPL-2.0-or-later
+  license_file: PKG-INFO
+  summary: Computes extremal rays of polyhedral cones, with filtering
+  description: |
+    A small, fast implementation of an algorithm for finding the extremal
+    rays of a polyhedral cone, with filtering. It is intended for finding
+    normal surfaces in triangulated 3-manifolds, and is a required
+    dependency of SnapPy.
+  repository: https://github.com/3-manifolds/FXrays
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

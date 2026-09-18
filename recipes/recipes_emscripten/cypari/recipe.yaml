@@ -1,0 +1,81 @@
+context:
+  name: cypari
+  version: 2.5.4
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # 2.5.5 and 2.5.6 ship wheels only; 2.5.4 is the newest release with an
+  # sdist. SnapPy asks for cypari>=2.3, so this is comfortably new enough.
+  url: https://pypi.io/packages/source/c/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b6c1c130f805737efe6cd557536f8629444253be9fd0629c0afa3f70585621be
+  patches:
+  - patches/0001-adapt-generated-bindings-to-pari-2.17.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  - setuptools
+  host:
+  - python
+  # Linked statically out of $PREFIX/lib by build.sh, instead of letting
+  # cypari's build_pari.sh download and build its own copies. Static, so
+  # neither is a run dependency.
+  - pari
+  - gmp
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cypari.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/3-manifolds/CyPari
+  license: GPL-2.0-or-later
+  license_file: PKG-INFO
+  summary: Sage's cypari2 bindings to the PARI library, as a standalone package
+  description: |
+    A standalone version of Sage's PARI interface. SnapPy imports it
+    unconditionally in snappy/pari.py whenever it is not running inside
+    Sage, and uses it for number fields, polynomial arithmetic and
+    high-precision floating point.
+
+    Two things differ from an ordinary cypari build, both handled here:
+
+    Upstream bundles PARI 2.15.2 and GMP 6.2.1 and builds them from
+    build_pari.sh, which downloads both tarballs. That is no good in a
+    build sandbox with no network, and it would duplicate two packages the
+    channel already builds for wasm. build.sh instead points cypari's
+    libcache at $PREFIX, so the extension links the channel's libpari.a and
+    libgmp.a.
+
+    That means building against PARI 2.17.4 rather than 2.15.2, which the
+    generated bindings in cypari/_pari.c do not quite compile against.
+    Exactly four of the auto-generated wrappers are affected, and the patch
+    deals with each: ellL1_bitprec and ellanalyticrank_bitprec became
+    ellL1 and ellanalyticrank taking a word precision, dirpowerssum0 gained
+    a `both` argument, and lfunabelianrelinit's arguments changed meaning
+    so it now raises instead. All four are L-function and Dirichlet-series
+    entry points that SnapPy never calls.
+  repository: https://github.com/3-manifolds/CyPari
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
