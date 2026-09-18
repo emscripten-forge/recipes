@@ -339,6 +339,70 @@ if [ -f perl.wasm ]; then
         "${PREFIX}/bin/perl.wasm"
 fi
 
+# Install pure-perl CPAN distributions
+#
+# This perl is a static interpreter: usedl='undef', dlsrc='dl_none.xs',
+# dlext='none'.  Nothing can be loaded at runtime, so an XS distribution would
+# have to be compiled into the interpreter itself.  Distributions written purely
+# in perl have no such problem -- they only need their lib/ tree copied into
+# site_perl -- which is what this section does for a set of widely used modules,
+# among them the ones polymake expects (JSON, XML::SAX, XML::Writer, SVG).
+#
+# Each distribution is fetched as a separate, checksummed source entry in
+# recipe.yaml, rather than through cpanm at build time: that keeps the build
+# reproducible and offline, and cpanm could not cross-compile anything anyway.
+
+site_lib="${perl_lib}${perl_site}"
+mkdir -p "${site_lib}"
+
+# rattler-build strips the single top-level directory of an archive, but tolerate
+# an unstripped one so that the recipe does not silently install nothing.
+dist_root() {
+    local d="$1"
+    if [ -d "${d}/lib" ] || compgen -G "${d}/*.pm" > /dev/null; then
+        echo "${d}"
+        return
+    fi
+    find "${d}" -mindepth 1 -maxdepth 1 -type d | head -n1
+}
+
+install_pure_perl_dist() {
+    local name="$1"
+    local root
+    root="$(dist_root "${SRC_DIR}/cpan/${name}")"
+
+    if [ -d "${root}/lib" ]; then
+        cp -a "${root}/lib/." "${site_lib}/"
+    else
+        echo "no lib/ directory in CPAN distribution ${name} (${root})" >&2
+        return 1
+    fi
+}
+
+for dist in JSON XML-SAX XML-SAX-Base XML-NamespaceSupport SVG \
+            Try-Tiny YAML-Tiny Path-Tiny File-Which Text-CSV URI \
+            Role-Tiny Class-Method-Modifiers Sub-Quote Moo; do
+    install_pure_perl_dist "${dist}"
+done
+
+# XML-Writer predates the lib/ convention and ships its module at the top level
+xml_writer_root="$(dist_root "${SRC_DIR}/cpan/XML-Writer")"
+install -Dm644 "${xml_writer_root}/Writer.pm" "${site_lib}/XML/Writer.pm"
+
+# XML::SAX::ParserFactory consults this file to find the installed parsers; it is
+# normally written by the distribution's installer, which does not run here.
+# XML::SAX::PurePerl is the one parser that needs no XS, so it is the only entry.
+install -d "${site_lib}/XML/SAX"
+cat > "${site_lib}/XML/SAX/ParserDetails.ini" <<'PARSERS'
+[XML::SAX::PurePerl]
+http://xml.org/sax/features/namespaces = 1
+PARSERS
+
+test -f "${site_lib}/JSON.pm"
+test -f "${site_lib}/XML/Writer.pm"
+test -f "${site_lib}/XML/SAX.pm"
+test -f "${site_lib}/SVG.pm"
+
 # Licenses
 
 LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"

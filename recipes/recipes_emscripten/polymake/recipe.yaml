@@ -1,0 +1,90 @@
+context:
+  name: polymake
+  version: "4.15"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # The "minimal" tarball omits the vendored copies of cddlib, lrslib, nauty and
+  # libnormaliz, which this recipe takes from the channel instead.  It still
+  # carries the sources polymake has no external package for (permlib, TOSimplex,
+  # Miniball), so nothing is lost.
+  url: https://polymake.org/lib/exe/fetch.php/download/polymake-${{ version }}-minimal.tar.bz2
+  sha256: 30e0a8f89013cf7a9a44ed90db2f69c49bf181050664c7e6bdb861c610b1bdb9
+  patches:
+    - 0001-configure-run-test-programs-through-a-runner.patch
+    - 0002-archive-shared-modules-instead-of-linking.patch
+    - 0003-no-dynamic-loading-of-application-modules.patch
+    - 0004-no-runtime-cxx-code-generation.patch
+    - 0005-callable-main-for-static-wasm-build.patch
+    - 0006-skip-gold-linker-probe-when-cross-compiling.patch
+    - 0007-bootstrap-static-perl-extensions.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+    - ninja
+    - pkg-config
+    # Drives configure.pl, ExtUtils::xsubpp and the ninja target generator on the
+    # build machine.  polymake's configure refuses to run under perl >= 5.44, and
+    # the emscripten perl (5.44, and a wasm binary besides) cannot run here at all.
+    - perl >=5.16,<5.42
+    # runs the configuration test programs emcc produces
+    - nodejs
+    - python
+  host:
+    - perl
+    - gmp
+    - mpfr
+    - boost-cpp
+    - libflint
+    - bliss
+    - cddlib
+    - lrslib
+    - normaliz
+    - nauty
+    - ppl
+    - singular
+
+tests:
+  - package_contents:
+      files:
+        - bin/polymake.js
+        - bin/polymake.wasm
+        - bin/polymake.data
+        - bin/polymake.data.js
+        - lib/libpolymake.a
+        - lib/libpolymake-core.a
+        - include/polymake/Main.h
+        - include/polymake/Polynomial.h
+        - share/polymake/perllib/Polymake.pm
+
+about:
+  homepage: https://polymake.org/
+  license: GPL-2.0-or-later
+  license_file: COPYING
+  summary: Software for research in polyhedral geometry
+  description: |
+    polymake is open source software for research in polyhedral geometry.  It
+    deals with polytopes, polyhedra and fans as well as simplicial complexes,
+    matroids, graphs, tropical hypersurfaces and other objects.
+
+    This build links the polymake core, all application clients and the perl
+    interpreter into a single WebAssembly executable, because the emscripten
+    perl has no dynamic loading.  See README.md in the recipe for what that
+    implies, in particular that template instantiations outside the precompiled
+    wrapper set cannot be generated at runtime.
+  repository: https://github.com/polymake/polymake
+  documentation: https://polymake.org/doku.php/documentation
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
