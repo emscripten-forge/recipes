@@ -78,10 +78,65 @@ app.add_typer(bot_app, name="bot")
 
 
 @bot_app.command()
-def bump_recipes_versions(target_branch_name: str):
-    from .bot.bump_recipes_versions import bump_recipe_versions
+def bump_recipes_versions(
+    target_branch_name: str,
+    mode: str = typer.Option(
+        "check",
+        "--mode",
+        help=(
+            "Pipeline stage. Each mode runs its stage and every earlier one:\n"
+            "  check  – HEAD candidate URLs until one exists (no download). Default: safe read-only preview.\n"
+            "  plan   – + download the winning tarball and print sha256.\n"
+            "  edit   – + create branch, write recipe.yaml, commit locally.\n"
+            "  submit – + push branch and open the PR. CI passes this explicitly."
+        ),
+    ),
+    limit: int = typer.Option(
+        20,
+        "--limit",
+        help="Stop after finding this many recipes with a bump available. Applies to every mode.",
+    ),
+    recipe: Optional[list[str]] = typer.Option(
+        None,
+        "--recipe",
+        help="Only consider these recipes (repeatable). Names match subdirectory names of recipes_emscripten/.",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Print every write / git / gh command instead of executing it. Only affects edit and submit modes; check and plan are already read-only.",
+    ),
+):
+    from .bot.bump_recipes_versions import Mode, bump_recipe_versions
 
-    bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+    try:
+        parsed_mode = Mode(mode)
+    except ValueError:
+        raise typer.BadParameter(f"invalid --mode {mode!r}; expected one of: {', '.join(m.value for m in Mode)}")
+
+    bump_recipe_versions(
+        RECIPES_EMSCRIPTEN_DIR,
+        target_branch_name,
+        pr_limit=limit,
+        mode=parsed_mode,
+        only_recipes=recipe,
+        dry_run=dry_run,
+    )
+
+
+@bot_app.command()
+def merge_open_prs(
+    target_branch_name: str,
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Print every gh mutation instead of executing it. Reads (gh pr checks, gh pr view) still run.",
+    ),
+):
+    """Merge/label the bot's already-open PRs. No new bump PRs are created."""
+    from .bot.bump_recipes_versions import merge_open_bot_prs
+
+    merge_open_bot_prs(RECIPES_EMSCRIPTEN_DIR, target_branch_name, dry_run=dry_run)
 
 
 @bot_app.command()
