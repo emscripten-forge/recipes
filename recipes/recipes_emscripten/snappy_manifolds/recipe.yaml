@@ -1,0 +1,69 @@
+context:
+  name: snappy_manifolds
+  version: '1.4'
+
+package:
+  name: snappy_manifolds
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/s/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3a5b354e6cb545bed6d13a5f0b99a399d03a352c51111662150632c0c7d316dc
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - setuptools
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_snappy_manifolds.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/3-manifolds/snappy_manifolds
+  license: GPL-2.0-or-later
+  license_file: PKG-INFO
+  summary: Censuses of 3-manifolds for SnapPy, as SQLite databases
+  description: |
+    The manifold censuses that SnapPy loads at import time. No compiled
+    code: the package is pure Python plus four SQLite databases.
+
+    Be aware of the size. Installed, the databases come to about 131 MB:
+
+      manifolds.sqlite            41.3 MB
+      more_manifolds.sqlite       45.3 MB
+      platonic_manifolds.sqlite   35.3 MB
+      ribbon_links.sqlite          8.7 MB
+
+    All four are required as things stand. snappy_manifolds.get_tables()
+    unconditionally calls get_core_tables(), get_platonic_tables() and
+    get_ribbon_tables(), with no test for a missing file, and SnapPy's
+    __init__.py registers snappy_manifolds with required=True. Shipping a
+    subset therefore means patching database.py, not just dropping files.
+
+    For a browser deployment this is the package that decides your page
+    weight, and preloading 131 MB into the Emscripten filesystem is not
+    viable. Serving the databases over HTTP range requests, so that SQLite
+    reads only the pages it touches, is the approach that fits how these
+    are actually used -- a census lookup reads a handful of rows.
+  repository: https://github.com/3-manifolds/snappy_manifolds
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

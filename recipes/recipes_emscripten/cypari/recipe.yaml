@@ -13,6 +13,7 @@ source:
   sha256: b6c1c130f805737efe6cd557536f8629444253be9fd0629c0afa3f70585621be
   patches:
   - patches/0001-adapt-generated-bindings-to-pari-2.17.patch
+  - patches/0002-no-execinfo-on-emscripten.patch
 
 build:
   number: 0
@@ -57,7 +58,7 @@ about:
     Sage, and uses it for number fields, polynomial arithmetic and
     high-precision floating point.
 
-    Two things differ from an ordinary cypari build, both handled here:
+    Three things differ from an ordinary cypari build, all handled here:
 
     Upstream bundles PARI 2.15.2 and GMP 6.2.1 and builds them from
     build_pari.sh, which downloads both tarballs. That is no good in a
@@ -74,6 +75,13 @@ about:
     a `both` argument, and lfunabelianrelinit's arguments changed meaning
     so it now raises instead. All four are L-function and Dirichlet-series
     entry points that SnapPy never calls.
+
+    Finally, cypari vendors an old copy of cysignals' implementation.c,
+    which includes execinfo.h and calls backtrace() unconditionally.
+    Emscripten's sysroot has neither, so patches/0002 guards both on
+    __EMSCRIPTEN__. cysignals proper has since gained HAVE_BACKTRACE and
+    HAVE_EXECINFO_H for this, which is what the channel's own cysignals
+    recipe patches; this copy predates those macros.
   repository: https://github.com/3-manifolds/CyPari
 
 extra:
