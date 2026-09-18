@@ -161,3 +161,24 @@
  py.install_sources(
    meson.current_build_dir() + '/cypari2/auto_paridecl.pxd',
    meson.current_build_dir() + '/cypari2/auto_gen.pxi',
+--- a/autogen/doc.py
++++ b/autogen/doc.py
+@@ -273,7 +273,17 @@
+     if sys.platform.startswith("win"):
+         return b""
+ 
+-    doc = subprocess.check_output(["gphelp", "-raw", function])
++    # gphelp is a Perl script shipped alongside PARI, and it is not always
++    # usable. In a conda build it carries the absolute shebang and datadir
++    # baked in when PARI itself was built, both pointing at directories that
++    # no longer exist, so running it fails with ENOENT. What it supplies is
++    # only the docstrings attached to the generated bindings, so fall back
++    # to none rather than failing the build -- the same thing this function
++    # already does on Windows.
++    try:
++        doc = subprocess.check_output(["gphelp", "-raw", function])
++    except (OSError, subprocess.CalledProcessError):
++        return b""
+     if doc.endswith(b"""' not found !\n"""):
+         raise RuntimeError("no help found for '{}'".format(function))
+     return doc
