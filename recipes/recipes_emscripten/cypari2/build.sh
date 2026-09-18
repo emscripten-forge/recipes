@@ -44,6 +44,29 @@ test -f "${CYSIGNALS_INCLUDE_DIR}/signals.pxd"
 #    what makes the bindings match exactly the PARI being linked.
 export PARI_DATADIR="${PREFIX}/share/pari"
 
+# 3. An interpreter that can run that code generation. autogen is pure Python
+#    -- it parses pari.desc and writes .pxi/.pxd files -- but the interpreter
+#    meson knows about is $PREFIX/bin/python, which this channel's python
+#    recipe installs as a shell stub that prints a message and exits 1. Any
+#    real interpreter on the build machine will do.
+CYPARI2_BUILD_PYTHON=""
+for cand in "${BUILD_PREFIX}/venv/cross/bin/python" \
+            "${BUILD_PREFIX}/bin/python" \
+            "${BUILD_PREFIX}/bin/python3"; do
+    if [ -x "${cand}" ] && "${cand}" -c 'import pathlib' >/dev/null 2>&1; then
+        CYPARI2_BUILD_PYTHON="${cand}"
+        break
+    fi
+done
+if [ -z "${CYPARI2_BUILD_PYTHON}" ]; then
+    echo "ERROR: found no runnable python on the build machine for the" >&2
+    echo "       autogen step (tried \$BUILD_PREFIX/venv/cross/bin/python," >&2
+    echo "       \$BUILD_PREFIX/bin/python and \$BUILD_PREFIX/bin/python3)." >&2
+    exit 1
+fi
+export CYPARI2_BUILD_PYTHON
+echo "=== autogen will run under ${CYPARI2_BUILD_PYTHON}"
+
 test -f "${PARI_DATADIR}/pari.desc"
 test -f "${PREFIX}/lib/libpari.a"
 test -f "${PREFIX}/include/pari/pari.h"

@@ -113,3 +113,29 @@
  
  # In MSYS, convert to Windows path
  # (e.g /usr/share/pari -> C:\msys64\usr\share\pari)
+@@ -121,9 +154,23 @@
+ endif
+ message('PARI Datadir: ' + pari_datadir)
+ 
+-# Run code generation step
++# Run code generation step.
++#
++# autogen is pure Python -- it parses pari.desc and writes .pxi/.pxd files --
++# but py.full_path() is the interpreter named in the cross file, which in a
++# cross build need not be runnable here. Under emscripten-forge it is a shell
++# stub that prints a message and exits 1. Allow a working interpreter to be
++# named in the environment; it only has to run pure Python, so the build
++# machine's own will do.
++codegen_python = run_command(
++  'sh', '-c', 'printf %s "$CYPARI2_BUILD_PYTHON"',
++  check: true,
++).stdout().strip()
++if codegen_python == ''
++  codegen_python = py.full_path()
++endif
+ code_gen_result = run_command(
+-  py.full_path(), '-c',
++  codegen_python, '-c',
+   '''
+ import sys
+ sys.path.insert(0, ".")
