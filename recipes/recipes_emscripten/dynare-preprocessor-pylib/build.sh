@@ -1,22 +1,47 @@
 #!/bin/bash
+set -ex
 
 export BOOST_ROOT=$PREFIX
 
-set -ex
-export PKG_CONFIG=$(which pkg-config)
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+# Generate Meson cross-file for emscripten
+cat << 'EOF' > emscripten.meson.cross
+[properties]
+needs_exe_wrapper = true
+skip_sanity_check = true
 
-flags="-w -fexperimental-library -Wno-enum-constexpr-conversion \
-    -sSIDE_MODULE=1 -sWASM_BIGINT -fwasm-exceptions -std=c++20 \
-    -I$PREFIX/include/python$PY_VER"
+[host_machine]
+system = 'emscripten'
+cpu_family = 'wasm32'
+cpu = 'wasm32'
+endian = 'little'
 
-meson setup --prefix=$PREFIX --bindir=$PREFIX/bin --libdir=$PREFIX/lib --includedir=$PREFIX/include \
-    --buildtype=release build_preproc \
-    -Dcpp_args="$flags"  \
-    -Dcpp_link_args="$flags" \
-    --cross-file=$RECIPE_DIR/wasm_32.ini -Dbuild_library=enabled
+[binaries]
+c = 'emcc'
+cpp = 'em++'
+ar = 'emar'
+ranlib = 'emranlib'
+pkgconfig = 'pkg-config'
+python = '$PYTHON'
+EOF
 
-meson compile -C build_preproc
-meson install -C build_preproc #--destdir="../
+sed -i "s|'\$PYTHON'|'${PYTHON}'|g" emscripten.meson.cross
 
-rm $PREFIX/bin/python
+export CFLAGS="$CFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
+
+meson setup build_wasm \
+    --prefix=$PREFIX \
+    --libdir=$PREFIX/lib \
+    --includedir=$PREFIX/include \
+    --bindir=$PREFIX/bin \
+    --buildtype=release \
+    -Dbuild_cli=disabled \
+    -Dbuild_library=enabled \
+    -Dbuild_doc=false \
+    -Dcpp_args="-fexceptions -sSIDE_MODULE=1 -sWASM_BIGINT" \
+    -Dcpp_link_args="-fexceptions -sSIDE_MODULE=1 -sWASM_BIGINT" \
+    --cross-file=$(pwd)/emscripten.meson.cross
+
+meson compile -C build_wasm -v
+meson install -C build_wasm
