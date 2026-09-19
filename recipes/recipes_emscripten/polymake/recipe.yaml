@@ -21,6 +21,7 @@ source:
     - 0005-callable-main-for-static-wasm-build.patch
     - 0006-skip-gold-linker-probe-when-cross-compiling.patch
     - 0007-bootstrap-static-perl-extensions.patch
+    - 0008-accept-static-libraries-for-bundled-extensions.patch
 
 build:
   number: 0
@@ -56,6 +57,11 @@ requirements:
     - cddlib
     - lrslib
     - normaliz
+    # normaliz in this channel is built with NMZ_FLINT, NMZ_NAUTY and NMZ_COCOA
+    # defined in its nmz_config.h.  polymake reads those macros and appends
+    # "-lflint -lnauty -lcocoa" to the link line, so CoCoALib has to be here even
+    # though polymake never refers to it directly.
+    - cocoalib
     - nauty
     - ppl
     - singular

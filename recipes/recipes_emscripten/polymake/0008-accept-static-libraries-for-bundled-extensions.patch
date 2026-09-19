@@ -1,0 +1,62 @@
+--- a/bundled/cdd/support/configure.pl	2026-09-18 23:54:17.376846043 +0000
++++ b/bundled/cdd/support/configure.pl	2026-09-18 23:54:24.568998106 +0000
+@@ -57,6 +57,14 @@
+       if (-f "$cdd_lib/libcddgmp.$Config::Config{so}" ) {
+          $LDFLAGS = "-L$cdd_lib";
+          $LDFLAGS .= " -Wl,-rpath,$cdd_lib" if $cdd_path ne "/usr";
++      } elsif (-f "$cdd_lib/libcddgmp.a") {
++         # Static-only installation, as produced by a WebAssembly cross build:
++         # $Config::Config{so} describes the perl that is *running* configure,
++         # which on such a build is the native one, so the shared library it
++         # names can never exist.  Accept the archive, and set no rpath: there is
++         # no shared object to find at runtime.  This mirrors what the bundled
++         # bliss extension already does for the same situation.
++         $LDFLAGS = "-L$cdd_lib";
+       }
+       if (!$CFLAGS or !$LDFLAGS) {
+          die "Invalid installation location of cddlib: header file cdd.h and/or library libcddgmp.$Config::Config{so} not found.\n",
+--- a/bundled/flint/support/configure.pl	2026-09-18 23:54:17.381836883 +0000
++++ b/bundled/flint/support/configure.pl	2026-09-18 23:54:27.536998038 +0000
+@@ -24,6 +24,10 @@
+       if (-f "$inc/flint/flint.h" && -f "$lib/libflint.$Config::Config{so}" ) {
+          $cxxflags .= " -I$inc";
+          $ldflags .= " -L$lib -Wl,-rpath,$lib";
++      } elsif (-f "$inc/flint/flint.h" && -f "$lib/libflint.a") {
++         # static-only installation (WebAssembly cross build); no rpath applies
++         $cxxflags .= " -I$inc";
++         $ldflags .= " -L$lib";
+       } else {
+          die "Invalid installation location of flint, header files and/or library not found\n";
+       }
+--- a/bundled/libnormaliz/support/configure.pl	2026-09-18 23:54:17.386808630 +0000
++++ b/bundled/libnormaliz/support/configure.pl	2026-09-18 23:54:33.336997906 +0000
+@@ -49,6 +49,10 @@
+       if (-f "$nmz_inc/libnormaliz/libnormaliz.h" && -f "$nmz_lib/libnormaliz.$Config::Config{so}" ) {
+          $CXXFLAGS = "-I$nmz_inc";
+          $LDFLAGS = "-L$nmz_lib -Wl,-rpath,$nmz_lib";
++      } elsif (-f "$nmz_inc/libnormaliz/libnormaliz.h" && -f "$nmz_lib/libnormaliz.a") {
++         # static-only installation (WebAssembly cross build); no rpath applies
++         $CXXFLAGS = "-I$nmz_inc";
++         $LDFLAGS = "-L$nmz_lib";
+       } else {
+          die "Invalid installation location of libnormaliz header file libnormaliz/libnormaliz.h and/or library libnormaliz.$Config::Config{so} not found\n";
+       }
+--- a/bundled/ppl/support/configure.pl	2026-09-18 23:54:17.391833579 +0000
++++ b/bundled/ppl/support/configure.pl	2026-09-18 23:54:38.080997797 +0000
+@@ -58,8 +58,14 @@
+       if (-f "$ppl_lib/libppl.$Config::Config{so}") {
+          $LDFLAGS = "-L$ppl_lib";
+          $LDFLAGS .= " -Wl,-rpath,$ppl_lib" unless $ppl_lib =~ m#^/usr/lib#;
+-      } elsif ("$ppl_lib/libppl.a") {
+-	 die "PPL found at $ppl_path is built without shared libraries.\n";
++      } elsif (-f "$ppl_lib/libppl.a") {
++         # Static-only installation, as produced by a WebAssembly cross build.
++         # polymake links libppl into its own modules rather than loading it at
++         # runtime, so an archive serves just as well and needs no rpath.
++         # (The condition replaced here was `elsif ("$ppl_lib/libppl.a")`, a
++         # non-empty string and therefore always true, so this branch used to
++         # reject every installation that had no shared library.)
++         $LDFLAGS = "-L$ppl_lib";
+       } else {
+          die "Invalid installation location of libppl: library libppl.$Config::Config{so} does not exist\n";
+       }
