@@ -1,0 +1,17 @@
+--- a/support/configure.pl	2026-09-18 22:22:54.577705402 +0000
++++ b/support/configure.pl	2026-09-18 22:23:00.229165991 +0000
+@@ -637,7 +637,13 @@
+    my $build_error;
+ 
+    # try to use gold linker unless another linker has been prescribed by the user
+-   unless ($^O eq "darwin" or $Config::Config{archname} =~ /^mips/ or "$CXXFLAGS $LDFLAGS" =~ /(?:^|\s)-fuse-ld[=\s]/) {
++   #
++   # Skipped when cross-compiling (POLYMAKE_TEST_RUNNER is set): the Emscripten
++   # driver always links with wasm-ld and merely forwards -fuse-ld=gold to clang,
++   # so this probe can appear to succeed and then leave a meaningless -fuse-ld=gold
++   # in LDFLAGS for the rest of the build.
++   unless ($^O eq "darwin" or $Config::Config{archname} =~ /^mips/ or "$CXXFLAGS $LDFLAGS" =~ /(?:^|\s)-fuse-ld[=\s]/
++           or length($ENV{POLYMAKE_TEST_RUNNER} // "")) {
+       $build_error = build_test_program($cxx_tell_version, LDFLAGS => "-fuse-ld=gold");
+       if ($?) {
+          # did not work out, maybe gold is missing?

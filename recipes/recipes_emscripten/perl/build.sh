@@ -17,6 +17,31 @@ mkdir -p \
     "${HOST_PREFIX}" \
     "${INSTALL_DIR}"
 
+# Move the extra CPAN distributions clear of the perl source tree
+#
+# Configure builds its extension list by globbing the *contents* of cpan/, dist/
+# and ext/ -- see find_extensions in Configure, which does `cd "$rsrc/cpan"` and
+# iterates over `*`.  Anything unpacked under one of those three names is taken
+# for a core extension and compiled as part of perl, which is not what these
+# distributions are for: they are installed into site_perl at the end of this
+# script, as plain perl sources.
+#
+# They are therefore unpacked into cpan-dists/, a name Configure does not scan,
+# and moved out of the source tree altogether here, before the first Configure
+# runs.  The move is what makes this robust: the directory name alone would be
+# enough today, but the move also covers a future perl widening that glob.
+CPAN_DISTS="${BUILD_DIR}/cpan-dists"
+
+rm -rf "${CPAN_DISTS}"
+
+if [ -d "${SRC_DIR}/cpan-dists" ]; then
+    mv "${SRC_DIR}/cpan-dists" "${CPAN_DISTS}"
+fi
+
+# nothing of ours may remain anywhere Configure looks
+test ! -d "${SRC_DIR}/cpan-dists"
+test -d "${CPAN_DISTS}"
+
 # Native build toolchain
 
 HOST_CC="${CC_FOR_BUILD:-gcc}"
@@ -338,6 +363,73 @@ if [ -f perl.wasm ]; then
         perl.wasm \
         "${PREFIX}/bin/perl.wasm"
 fi
+
+# Install pure-perl CPAN distributions
+#
+# This perl is a static interpreter: usedl='undef', dlsrc='dl_none.xs',
+# dlext='none'.  Nothing can be loaded at runtime, so an XS distribution would
+# have to be compiled into the interpreter itself.  Distributions written purely
+# in perl have no such problem -- they only need their lib/ tree copied into
+# site_perl -- which is what this section does for a set of widely used modules,
+# among them the ones polymake expects (JSON, XML::SAX, XML::Writer, SVG).
+#
+# Each distribution is fetched as a separate, checksummed source entry in
+# recipe.yaml, rather than through cpanm at build time: that keeps the build
+# reproducible and offline, and cpanm could not cross-compile anything anyway.
+#
+# They are read from ${CPAN_DISTS}, where they were moved out of the perl source
+# tree at the top of this script; see the comment there for why that matters.
+
+site_lib="${perl_lib}${perl_site}"
+mkdir -p "${site_lib}"
+
+# rattler-build strips the single top-level directory of an archive, but tolerate
+# an unstripped one so that the recipe does not silently install nothing.
+dist_root() {
+    local d="$1"
+    if [ -d "${d}/lib" ] || compgen -G "${d}/*.pm" > /dev/null; then
+        echo "${d}"
+        return
+    fi
+    find "${d}" -mindepth 1 -maxdepth 1 -type d | head -n1
+}
+
+install_pure_perl_dist() {
+    local name="$1"
+    local root
+    root="$(dist_root "${CPAN_DISTS}/${name}")"
+
+    if [ -d "${root}/lib" ]; then
+        cp -a "${root}/lib/." "${site_lib}/"
+    else
+        echo "no lib/ directory in CPAN distribution ${name} (${root})" >&2
+        return 1
+    fi
+}
+
+for dist in JSON XML-SAX XML-SAX-Base XML-NamespaceSupport SVG \
+            Try-Tiny YAML-Tiny Path-Tiny File-Which Text-CSV URI \
+            Role-Tiny Class-Method-Modifiers Sub-Quote Moo; do
+    install_pure_perl_dist "${dist}"
+done
+
+# XML-Writer predates the lib/ convention and ships its module at the top level
+xml_writer_root="$(dist_root "${CPAN_DISTS}/XML-Writer")"
+install -Dm644 "${xml_writer_root}/Writer.pm" "${site_lib}/XML/Writer.pm"
+
+# XML::SAX::ParserFactory consults this file to find the installed parsers; it is
+# normally written by the distribution's installer, which does not run here.
+# XML::SAX::PurePerl is the one parser that needs no XS, so it is the only entry.
+install -d "${site_lib}/XML/SAX"
+cat > "${site_lib}/XML/SAX/ParserDetails.ini" <<'PARSERS'
+[XML::SAX::PurePerl]
+http://xml.org/sax/features/namespaces = 1
+PARSERS
+
+test -f "${site_lib}/JSON.pm"
+test -f "${site_lib}/XML/Writer.pm"
+test -f "${site_lib}/XML/SAX.pm"
+test -f "${site_lib}/SVG.pm"
 
 # Licenses
 
