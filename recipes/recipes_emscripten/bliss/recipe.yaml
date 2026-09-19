@@ -1,0 +1,47 @@
+context:
+  name: bliss
+  version: '0.77'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipopt/bliss/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9af3d614d1a6e9649f055444d21d4e9d22fca0b69f072f10ea8f3e23d8479efd
+  patches:
+    - patches/0001-fix-gmp-linking.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  host:
+    - gmp
+
+tests:
+  - package_contents:
+      files:
+        - bin/bliss.js
+        - bin/bliss.wasm
+        - lib/libbliss.a
+        - include/bliss/graph.hh
+        - lib/cmake/Bliss/BlissConfig.cmake
+
+about:
+  license: LGPL-3.0-only AND GPL-3.0-only
+  license_file:
+    - COPYING
+    - COPYING.LESSER
+  summary: A tool for computing automorphism groups and canonical labelings of graphs
+  homepage: https://users.aalto.fi/~tjunttil/bliss/index.html
+  repository: https://github.com/scipopt/bliss
+
+extra:
+  recipe-maintainers:
+    - mkoeppe

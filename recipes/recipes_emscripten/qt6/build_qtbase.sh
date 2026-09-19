@@ -36,6 +36,8 @@ mkdir build && cd build
     -no-warnings-are-errors \
     -nomake examples -nomake tests \
     -no-feature-cups -no-feature-vulkan -no-feature-dbus \
+    -feature-wasm-exceptions \
+    ${QT_EXTRA_FEATURES:-} \
     -no-pch \
     -- \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"

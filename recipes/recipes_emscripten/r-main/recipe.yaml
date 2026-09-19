@@ -1,24 +1,36 @@
 context:
   name: main
   version: 0.1.0
+  python_build_string: ${{ "static_libpython_" if r_main_module_static_libpython == "1" else "" }}
+  r_build_string: ${{ "r" ~ (r_base | version_to_buildstring) }}
 
 package:
   name: r-${{ name }}
   version: ${{ version }}
 
-# source:
-#   url:
-#   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
-#   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
-#   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-#   sha256: 51f341aef9499411b4c446205c87d56dcd9e03e5e9ca2a54b33f70a67bed2f64
-
 source:
-  git: https://github.com/IsabelParedes/r-main.git
+  url: https://github.com/IsabelParedes/r-main/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 5f5dfdf9ebac93b9e43341392513976b541d01e732f7f436cab0055cf5c8eaf7
 
 build:
-  number: 4
-  skip: ${{ r_base == '4.6.1' }}
+  number: 5
+  # Explicit build strings so downstream recipes can require the R / static-libpython
+  # variants, e.g. `r-main * *r45*` or `r-main * *static_libpython*`.
+  string: ${{ python_build_string ~ r_build_string ~ "h" ~ hash ~ "_" ~ build_number }}
+
+  # Pass the variant into build.sh (not inferred from the script by rattler-build).
+  script:
+    file: build.sh
+    env:
+      R_MAIN_MODULE_STATIC_LIBPYTHON: ${{ r_main_module_static_libpython }}
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - r_main_module_static_libpython
+    # Deprioritize the static-libpython variant so the default build stays
+    # preferred by the solver (via down_prioritize_variant / track_features).
+    down_prioritize_variant: ${{ 1 if r_main_module_static_libpython == "1" else 0 }}
 
 requirements:
   build:
@@ -38,15 +50,23 @@ requirements:
   - pixman
   - expat
   - freetype
-  # untarjs
   - zstd
   - libarchive
-  # For the r-py output: libpython statically linked into RPY executable.
-  - python < 3.14
-  - libpython < 3.14
-  - libffi
-  - sqlite
-  - openssl < 4.0
+  # For the static-libpython variant: libpython statically linked into RPY executable.
+  - if: r_main_module_static_libpython == "1"
+    then:
+    - python < 3.14
+    - libpython < 3.14
+    - libffi
+    - sqlite
+    - openssl < 4.0
+  run:
+  - if: r_main_module_static_libpython == "1"
+    then:
+    - python
+    - r-main-module-abi * *static_libpython*
+    else:
+    - r-main-module-abi *vanilla*
 
 tests:
 - package_contents:
@@ -62,5 +82,5 @@ about:
   summary: Embedded R MAIN_MODULE Front-End for WebAssembly
 
 extra:
-  recipe-maintainers: IsabelParedes
-  channel: emscripten-forge-4x-experimental
+  recipe-maintainers:
+  - IsabelParedes

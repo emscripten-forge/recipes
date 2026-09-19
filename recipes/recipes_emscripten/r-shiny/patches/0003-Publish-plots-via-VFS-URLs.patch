@@ -1,0 +1,447 @@
+From c3be3ba11a2aa7e2c1e52a2969faba7717d0b352 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 4 Sep 2026 12:45:02 +0200
+Subject: [PATCH 3/6] Publish plots via VFS URLs
+
+---
+ DESCRIPTION     |   2 +-
+ R/globals.R     |  46 ++++++++++++++
+ R/imageutils.R  |  63 ++++++++++++++++++-
+ R/render-plot.R |  38 ++++++++++--
+ R/shiny.R       |  11 ++--
+ R/wasm-plot.R   | 158 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 307 insertions(+), 11 deletions(-)
+ create mode 100644 R/wasm-plot.R
+
+diff --git a/DESCRIPTION b/DESCRIPTION
+index 91e4790..4f4bc98 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -117,7 +117,7 @@ Collate: 'app-handle.R' 'globals.R' 'app-state.R' 'app_template.R'
+         'utils-lang.R' 'utils-tags.R' 'version_bs_date_picker.R'
+         'version_ion_range_slider.R' 'version_jquery.R'
+         'version_jqueryui.R' 'version_selectize.R' 'version_strftime.R'
+-        'viewer.R' 'wasm-async.R' 'wasm-host.R'
++        'viewer.R' 'wasm-async.R' 'wasm-host.R' 'wasm-plot.R'
+ NeedsCompilation: no
+ Packaged: 2026-06-18 18:59:37 UTC; cpsievert
+ Author: Winston Chang [aut] (ORCID: <https://orcid.org/0000-0002-1576-2126>),
+diff --git a/R/globals.R b/R/globals.R
+index fb26afa..fc7b46e 100644
+--- a/R/globals.R
++++ b/R/globals.R
+@@ -16,6 +16,35 @@
+   s3_register("knitr::knit_print", "reactive")
+   s3_register("knitr::knit_print", "shiny.appobj")
+   s3_register("knitr::knit_print", "shiny.render.function")
++
++  # Wasm / Lucent plot publishing defaults (overridable before library(shiny)).
++  # Enable URL-backed plots only under the wasm VFS R_HOME so host tests keep
++  # data: URL plot output.
++  if (is.null(getOption("shiny.wasm.plotUrl"))) {
++    options(shiny.wasm.plotUrl = identical(Sys.getenv("R_HOME"), "/lib/R"))
++  }
++  if (is.null(getOption("shiny.wasm.plotCacheDir"))) {
++    options(shiny.wasm.plotCacheDir = "/tmp/shiny-plots")
++  }
++  if (is.null(getOption("shiny.wasm.plotUrlPrefix"))) {
++    options(shiny.wasm.plotUrlPrefix = "shiny-plots")
++  }
++  if (isTRUE(getOption("shiny.wasm.plotUrl"))) {
++    cacheDir <- getOption("shiny.wasm.plotCacheDir", "/tmp/shiny-plots")
++    prefix <- getOption("shiny.wasm.plotUrlPrefix", "shiny-plots")
++    dir.create(cacheDir, recursive = TRUE, showWarnings = FALSE)
++    tryCatch(
++      addResourcePath(prefix, cacheDir),
++      error = function(e) {
++        warning("shiny wasm plot cache resource path: ", conditionMessage(e))
++      }
++    )
++    # Chromium dedicated workers have a small JS stack; hashing sys.calls() on
++    # every promise then (deepstacktrace) overflows during renderPlot.
++    if (is.null(getOption("shiny.deepstacktrace"))) {
++      options(shiny.deepstacktrace = FALSE)
++    }
++  }
+ }
+ 
+ 
+@@ -29,3 +58,20 @@ on_load <- function(expr) {
+ on_load({
+   IS_SHINY_LOCAL_PKG <- exists(".__DEVTOOLS__")
+ })
++
++#' TRUE on wasm / Lucent in-browser hosts (URL-backed plot cache).
++#' @noRd
++isWasmPlotHost <- function() {
++  isTRUE(getOption("shiny.wasm.plotUrl", FALSE))
++}
++
++on_load({
++  if (isWasmPlotHost()) {
++    setHook(packageEvent("thematic", "onLoad"), function(...) {
++      .wasmPatchThematicFontProbe()
++    })
++    if ("thematic" %in% loadedNamespaces()) {
++      .wasmPatchThematicFontProbe()
++    }
++  }
++})
+diff --git a/R/imageutils.R b/R/imageutils.R
+index 93239ea..877be37 100644
+--- a/R/imageutils.R
++++ b/R/imageutils.R
+@@ -11,6 +11,13 @@ startPNG <- function(filename, width, height, res, ...) {
+     grDevices::png
+   }
+ 
++  # Client layout often yields fractional CSS pixels (e.g. 690.8). Wasm
++  # grDevices::png recurses/blows the JS stack on non-integer sizes in Chrome;
++  # coerce before opening the device.
++  if (length(width) > 0) width <- max(1L, as.integer(round(width)))
++  if (length(height) > 0) height <- max(1L, as.integer(round(height)))
++  if (length(res) > 0) res <- max(1L, as.integer(round(res)))
++
+   args <- list2(filename = filename, width = width, height = height, res = res, ...)
+ 
+   # It's possible for width/height to be NULL/numeric(0) (e.g., when using
+@@ -27,7 +34,9 @@ startPNG <- function(filename, width, height, res, ...) {
+     args$bg <- getThematicOption("bg", "white")
+     # auto vals aren't resolved until plot time, so if we see one, resolve it
+     if (isTRUE("auto" == args$bg)) {
+-      args$bg <- getCurrentOutputInfo()[["bg"]]()
++      info <- getCurrentOutputInfo()
++      bg_fun <- if (!is.null(info)) info[["bg"]] else NULL
++      args$bg <- if (is.function(bg_fun)) bg_fun() else "white"
+     }
+   }
+ 
+@@ -97,6 +106,58 @@ plotPNG <- function(func, filename=tempfile(fileext='.png'),
+   filename
+ }
+ 
++# Read PNG bytes from disk. On some wasm backends file.info() can report 0
++# before the flushed size is visible; readBin() is authoritative.
++plotPngFileData <- function(file) {
++  tryCatch(readBin(file, "raw", n = 1e9), error = function(e) raw())
++}
++
++plotPngDataUrl <- function(file, contentType = "image/png") {
++  fileData <- plotPngFileData(file)
++  if (length(fileData) == 0) {
++    return(NULL)
++  }
++  paste0("data:", contentType, ";base64,", rawToBase64(fileData))
++}
++
++plotImgHasSrc <- function(img) {
++  is.character(img$src) && nchar(img$src) > 30L
++}
++
++# Copy a file into the wasm plot cache and return its addResourcePath URL.
++# Returns NULL when shiny.wasm.plotUrl is false or file.copy fails.
++wasmPublishFileUrl <- function(name, file) {
++  if (!isTRUE(getOption("shiny.wasm.plotUrl", FALSE))) {
++    return(NULL)
++  }
++  cacheDir <- getOption("shiny.wasm.plotCacheDir", "/tmp/shiny-plots")
++  dir.create(cacheDir, recursive = TRUE, showWarnings = FALSE)
++  ext <- tools::file_ext(file)
++  if (!nzchar(ext)) {
++    ext <- "bin"
++  }
++  dest <- file.path(cacheDir, paste0(name, ".", ext))
++  if (!isTRUE(file.copy(file, dest, overwrite = TRUE))) {
++    return(NULL)
++  }
++  prefix <- getOption("shiny.wasm.plotUrlPrefix", "shiny-plots")
++  # Millisecond cache-buster: second resolution made rapid input changes reuse
++  # the same URL, so the browser kept showing a cached (stale) PNG.
++  paste0(prefix, "/", name, ".", ext, "?v=", as.character(round(as.numeric(Sys.time()) * 1000)))
++}
++
++# Publish a rendered PNG as either a Shiny static resource URL (wasm) or a
++# data: URL (default). On WASM, prefer the VFS URL path: readBin() right after
++# dev.off() often sees an empty file, while the browser can read it later via
++# addResourcePath() + readVfsFile() without embedding base64 in websocket JSON.
++plotPublishPng <- function(name, pngFile) {
++  url <- wasmPublishFileUrl(name, pngFile)
++  if (!is.null(url)) {
++    return(url)
++  }
++  plotPngDataUrl(pngFile, "image/png")
++}
++
+ createGraphicsDevicePromiseDomain <- function(which = dev.cur()) {
+   force(which)
+ 
+diff --git a/R/render-plot.R b/R/render-plot.R
+index 6d5ce1e..9f692d5 100644
+--- a/R/render-plot.R
++++ b/R/render-plot.R
+@@ -62,6 +62,25 @@ renderPlot <- function(expr, width = 'auto', height = 'auto', res = 72, ...,
+                        env = parent.frame(), quoted = FALSE,
+                        execOnResize = FALSE, outputArgs = list()
+ ) {
++  if (isWasmPlotHost()) {
++    # installExprFunction must run in this frame (same as the non-wasm path) so
++    # the user's braced expression is captured correctly for NSE.
++    func <- installExprFunction(
++      expr, "func", env, quoted,
++      label = "renderPlot",
++      ..stacktraceon = TRUE
++    )
++    return(renderPlotWasm(
++      func = func,
++      width = width,
++      height = height,
++      res = res,
++      ...,
++      alt = alt,
++      execOnResize = execOnResize,
++      outputArgs = outputArgs
++    ))
++  }
+ 
+   func <- installExprFunction(
+     expr, "func", env, quoted,
+@@ -195,7 +214,8 @@ renderPlot <- function(expr, width = 'auto', height = 'auto', res = 72, ...,
+ 
+ resizeSavedPlot <- function(name, session, result, width, height, alt, pixelratio, res, ...) {
+   if (isTRUE(result$img$width == width && result$img$height == height &&
+-      result$pixelratio == pixelratio && result$res == res)) {
++      result$pixelratio == pixelratio && result$res == res) &&
++      plotImgHasSrc(result$img)) {
+     return(result)
+   }
+ 
+@@ -211,19 +231,27 @@ resizeSavedPlot <- function(name, session, result, width, height, alt, pixelrati
+   }, width = width*pixelratio, height = height*pixelratio, res = res*pixelratio, ...)
+   on.exit(unlink(outfile), add = TRUE)
+ 
+-  result$img <- list(
+-    src = session$fileUrl(name, outfile, contentType = "image/png"),
++  if (length(plotPngFileData(outfile)) == 0) {
++    return(result)
++  }
++
++  result$img <- dropNulls(list(
++    src = plotPublishPng(name, outfile),
+     width = width,
+     height = height,
+     alt = result$alt,
+     coordmap = coordmap,
+     error = attr(coordmap, "error", exact = TRUE)
+-  )
++  ))
+ 
+   result
+ }
+ 
+ drawPlot <- function(name, session, func, width, height, alt, pixelratio, res, ...) {
++  if (isWasmPlotHost()) {
++    return(drawPlotWasm(name, session, func, width, height, alt, pixelratio, res, ...))
++  }
++
+   #  1. Start PNG
+   #  2. Enable displaylist recording
+   #  3. Call user-defined func
+@@ -308,7 +336,7 @@ drawPlot <- function(name, session, func, width, height, alt, pixelratio, res, .
+     ),
+     function(result) {
+       result$img <- dropNulls(list(
+-        src = session$fileUrl(name, outfile, contentType = 'image/png'),
++        src = plotPublishPng(name, outfile),
+         width = width,
+         height = height,
+         alt = result$alt,
+diff --git a/R/shiny.R b/R/shiny.R
+index f929800..1cbebd2 100644
+--- a/R/shiny.R
++++ b/R/shiny.R
+@@ -2396,11 +2396,14 @@ ShinySession <- R6Class(
+     fileUrl = function(name, file, contentType='application/octet-stream') {
+       "Return a URL for a file to be sent to the client. The file will be base64
+       encoded and embedded in the URL."
+-      bytes <- file.info(file)$size
+-      if (is.na(bytes))
+-        return(NULL)
++      url <- wasmPublishFileUrl(name, file)
++      if (!is.null(url)) {
++        return(url)
++      }
+ 
+-      fileData <- readBin(file, 'raw', n=bytes)
++      fileData <- tryCatch(readBin(file, 'raw', n=1e9), error = function(e) raw())
++      if (length(fileData) == 0)
++        return(NULL)
+ 
+       b64 <- rawToBase64(fileData)
+       return(paste('data:', contentType, ';base64,', b64, sep=''))
+diff --git a/R/wasm-plot.R b/R/wasm-plot.R
+new file mode 100644
+index 0000000..4b81fe1
+--- /dev/null
++++ b/R/wasm-plot.R
+@@ -0,0 +1,158 @@
++#' Wasm / Lucent plot rendering (Chromium shallow JS stack).
++#'
++#' Deferred drawPlot + simplified renderPlot; thematic font probing skipped when
++#' showtext/ragg are unavailable.
++
++#' @noRd
++.wasmPatchThematicFontProbe <- function() {
++  if (!isWasmPlotHost()) {
++    return(invisible(FALSE))
++  }
++  if (!"thematic" %in% loadedNamespaces()) {
++    return(invisible(FALSE))
++  }
++  if (isTRUE(getOption("shiny.wasm.thematicFontPatched"))) {
++    return(invisible(TRUE))
++  }
++  tenv <- asNamespace("thematic")
++  has_font_pkgs <- requireNamespace("showtext", quietly = TRUE) ||
++    requireNamespace("ragg", quietly = TRUE)
++  if (!has_font_pkgs && exists("resolve_font_family", envir = tenv, inherits = FALSE)) {
++    unlockBinding("resolve_font_family", tenv)
++    set_fam <- get("set_font_family", envir = tenv, inherits = FALSE)
++    assign("resolve_font_family", function(type = c("base", "grid")) {
++      set_fam("")
++    }, envir = tenv)
++    lockBinding("resolve_font_family", tenv)
++  }
++  options(shiny.wasm.thematicFontPatched = TRUE)
++  invisible(TRUE)
++}
++
++#' Deferred PNG draw for wasm: runs after flushReact via scheduleTask(0).
++#' Restores currentOutputName so thematic getCurrentOutputInfo() works.
++#' @noRd
++drawPlotWasm <- function(name, session, func, width, height, alt, pixelratio, res, ...) {
++  force(name)
++  force(session)
++  force(func)
++  force(width)
++  force(height)
++  force(alt)
++  force(pixelratio)
++  force(res)
++
++  p <- .WasmPromise()
++  ctx <- getCurrentContext()
++  scheduleTask(0, function() {
++    tryCatch({
++      priv <- session$.__enclos_env__$private
++      img <- with_promise_domain(
++        createVarPromiseDomain(priv, "currentOutputName", name),
++        ctx$run(function() {
++          outfile <- tempfile(fileext = ".png")
++          on.exit(unlink(outfile), add = TRUE)
++          device <- startPNG(
++            outfile,
++            width * pixelratio,
++            height * pixelratio,
++            res = res * pixelratio
++          )
++          value <- withVisible(func())
++          if (isTRUE(value$visible)) {
++            utils::capture.output(print(value$value))
++          }
++          coordmap <- tryCatch(
++            getCoordmap(value$value, width * pixelratio, height * pixelratio, res * pixelratio),
++            error = function(e) NULL
++          )
++          alt_txt <- if (anyNA(alt)) getAltText(value$value) else alt
++          grDevices::dev.off(device)
++          dropNulls(list(
++            src = plotPublishPng(name, outfile),
++            width = width,
++            height = height,
++            alt = alt_txt,
++            coordmap = coordmap,
++            error = attr(coordmap, "error", exact = TRUE)
++          ))
++        })
++      )
++      .promise_settle_fulfilled(p, img)
++    }, error = function(e) {
++      .promise_settle_rejected(p, e)
++    })
++  })
++  p
++}
++
++#' Wasm renderPlot: sync dims, no resizeSavedPlot / recordPlot path.
++#' @noRd
++renderPlotWasm <- function(
++  func = NULL,
++  width = "auto",
++  height = "auto",
++  res = 72,
++  ...,
++  alt = NA,
++  env = parent.frame(),
++  quoted = FALSE,
++  execOnResize = FALSE,
++  outputArgs = list(),
++  expr = NULL
++) {
++  if (is.null(func)) {
++    if (is.null(expr)) {
++      stop("`func` or `expr` must be supplied to renderPlotWasm", call. = FALSE)
++    }
++    # When renderPlot passes expr=expr, substitute(expr) inside this frame
++    # captures the symbol `expr`, not the plot body — capture from caller.
++    if (!quoted) {
++      expr <- eval(substitute(substitute(expr)), parent.frame())
++      quoted <- TRUE
++    }
++    func <- installExprFunction(
++      expr, "func", env, quoted = TRUE,
++      label = "renderPlot",
++      ..stacktraceon = TRUE
++    )
++  }
++  force(func)
++  args <- list(...)
++  alt_val <- alt
++
++  renderFunc <- function(shinysession, name, ...) {
++    w <- if (identical(width, "auto")) {
++      shinysession$clientData[[paste0("output_", name, "_width")]]
++    } else {
++      width
++    }
++    h <- if (identical(height, "auto")) {
++      shinysession$clientData[[paste0("output_", name, "_height")]]
++    } else {
++      height
++    }
++    pr <- shinysession$clientData$pixelratio
++    if (is.null(pr)) {
++      pr <- 1
++    }
++    do.call(drawPlotWasm, c(
++      list(name, shinysession, func, w, h, alt_val, pr, res),
++      args
++    ))
++  }
++
++  outputFunc <- plotOutput
++  if (!identical(height, "auto")) {
++    formals(outputFunc)["height"] <- list(NULL)
++  }
++
++  marked <- markRenderFunction(
++    outputFunc,
++    renderFunc,
++    outputArgs,
++    cacheHint = list(userExpr = installedFuncExpr(func), res = res)
++  )
++  class(marked) <- c("shiny.renderPlot", class(marked))
++  marked
++}
+-- 
+2.55.0
+

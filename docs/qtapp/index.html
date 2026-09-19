@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>qt-wasm-runner</title>
+  <style>
+    /* Palette aligned with mkdocs.yml `primary: deep orange`, dark scheme.
+       Approximates Material Design 3 dark-surface tokens with deep-orange
+       primary. Roboto matches Material's default; system fallbacks preserve
+       the aesthetic when Roboto isn't loaded. */
+    :root {
+      color-scheme: dark;
+      --bg:              #1a1a1a;
+      --surface:         rgba(255, 255, 255, 0.06);
+      --surface-hover:   rgba(255, 255, 255, 0.12);
+      --border:          rgba(255, 255, 255, 0.14);
+      --text:            rgba(255, 255, 255, 0.87);
+      --text-dim:        rgba(255, 255, 255, 0.6);
+      --primary:         #ff7043;   /* deep orange 400 */
+      --primary-dim:     rgba(255, 112, 67, 0.5);
+      --error:           #ff8a80;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    #topbar {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 8px 10px;
+      background: rgba(26, 26, 26, 0.9);
+      border-bottom: 1px solid var(--border);
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 10000;
+      font-size: 13px;
+      backdrop-filter: blur(6px);
+    }
+    #topbar input {
+      flex: 1;
+      min-width: 0;
+      padding: 5px 8px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+    }
+    #topbar input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    #topbar button, #topbar .fake-btn, #topbar select {
+      padding: 5px 14px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font: inherit;
+    }
+    /* <select> options popup uses OS-native styling: a translucent
+       background makes them invisible on the default light system
+       chrome. Solid dark background + color-scheme hint keeps both the
+       collapsed control and the dropdown list readable across browsers. */
+    #topbar select {
+      padding: 5px 8px;
+      background: #2a2a2a;
+      color-scheme: dark;
+    }
+    #topbar select option {
+      background: #2a2a2a;
+      color: var(--text);
+    }
+    #topbar button:hover, #topbar .fake-btn:hover { background: var(--surface-hover); }
+    #topbar button:disabled { opacity: 0.4; cursor: default; }
+    #topbar a { color: var(--primary); text-decoration: none; font-size: 11px; }
+    #topbar a:hover { text-decoration: underline; }
+    #dropzone {
+      position: fixed;
+      top: 40px; left: 0; right: 0; bottom: 24px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--text);
+      background: rgba(26, 26, 26, 0.85);
+      border: 3px dashed var(--primary);
+      z-index: 10001;
+      pointer-events: none;
+    }
+    #dropzone code {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 16px;
+    }
+    body.dragging #dropzone { display: flex; }
+
+    /* Chrome-hidden mode: collapse topbar + status so the app gets the
+       full viewport. Toggle button stays visible so users can un-hide. */
+    body.chrome-hidden #topbar,
+    body.chrome-hidden #status { display: none; }
+    body.chrome-hidden #screen { top: 0; bottom: 0; }
+    #chrome-toggle, #share-floating, #exit-floating {
+      position: fixed;
+      bottom: 4px;
+      z-index: 10002;
+      width: 26px; height: 26px;
+      padding: 0;
+      background: rgba(26, 26, 26, 0.55);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 24px;
+      opacity: 0.4;
+      transition: opacity 120ms, border-color 120ms;
+    }
+    #chrome-toggle { right: 4px; }
+    #share-floating { right: 34px; }
+    #exit-floating { right: 64px; }
+    #chrome-toggle:hover, #share-floating:hover, #exit-floating:hover {
+      opacity: 1;
+      border-color: var(--primary);
+    }
+    body.chrome-hidden #chrome-toggle,
+    body.chrome-hidden #share-floating,
+    body.chrome-hidden #exit-floating { opacity: 0.3; }
+    #hosted-by {
+      position: fixed;
+      bottom: 6px; right: 98px;
+      z-index: 10002;
+      font-size: 11px;
+      color: var(--text-dim);
+      opacity: 0.6;
+      transition: opacity 120ms;
+      user-select: none;
+    }
+    #hosted-by:hover { opacity: 1; }
+    #hosted-by a { color: inherit; text-decoration: none; }
+    #hosted-by a:hover { color: var(--primary); }
+    #help {
+      position: fixed;
+      top: 40px; left: 0; right: 0; bottom: 24px;
+      display: none;
+      overflow: auto;
+      padding: 40px 20px;
+      background: var(--bg);
+      z-index: 9999;
+    }
+    body.show-help #help { display: block; }
+    #help .inner {
+      max-width: 720px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    #help h1 { font-size: 24px; margin: 0 0 6px; color: var(--text); font-weight: 500; }
+    #help h2 { font-size: 16px; margin: 28px 0 8px; color: var(--primary); font-weight: 500; }
+    #help p, #help li { font-size: 14px; color: var(--text); }
+    #help code {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+      color: var(--primary);
+      font-family: "Roboto Mono", ui-monospace, monospace;
+    }
+    #help a { color: var(--primary); }
+    #help .subtle { opacity: 0.7; font-size: 12px; margin-top: 24px; color: var(--text-dim); }
+    #screen {
+      position: fixed;
+      top: 40px; left: 0; right: 0; bottom: 24px;
+      display: block;
+    }
+    #status {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 4px 10px;
+      background: rgba(26, 26, 26, 0.85);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      font-family: "Roboto Mono", ui-monospace, monospace;
+      opacity: 0.8;
+      z-index: 10000;
+      color: var(--text-dim);
+    }
+    #status.error { color: var(--error); opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="topbar">
+    <select id="preset" title="Preset packages from the experimental channel">
+      <option value="">Presets…</option>
+      <option value="https://repo.prefix.dev/emscripten-forge-4x-experimental/emscripten-wasm32/qt-calculator-experimental-6.11.2-hc780342_0.tar.bz2">qt-calculator</option>
+      <option value="https://repo.prefix.dev/emscripten-forge-4x-experimental/emscripten-wasm32/sqlitebrowser-experimental-3.13.99-h8b281d3_0.tar.bz2">sqlitebrowser</option>
+    </select>
+    <input id="url" placeholder="package .tar.bz2 URL (e.g. https://repo.prefix.dev/emscripten-forge-4x-experimental/emscripten-wasm32/qt-calculator-...tar.bz2)" spellcheck="false">
+    <button id="load">Run URL</button>
+    <label for="file" class="fake-btn">Choose file…</label>
+    <input id="file" type="file" accept=".tar.bz2,application/x-bzip2,application/x-tar" hidden>
+    <button id="share" title="Copy shareable URL to clipboard">Share</button>
+    <button id="reload" onclick="location.reload()">Reload</button>
+    <button id="exit" title="Unload current app and return to the runner start page">Exit</button>
+    <button id="fullscreen-btn" title="Toggle top/status bars (F)">Fullscreen</button>
+    <button id="help-btn" title="Show help">?</button>
+    <a href="https://github.com/emscripten-forge/recipes/tree/main/docs/qtapp" target="_blank" rel="noopener">source</a>
+  </div>
+  <div id="screen"></div>
+  <div id="hosted-by">hosted by <a href="../" target="_blank" rel="noopener">emscripten-forge</a></div>
+  <button id="exit-floating" title="Unload current app" aria-label="Exit">×</button>
+  <button id="share-floating" title="Copy shareable URL" aria-label="Share">↗</button>
+  <button id="chrome-toggle" title="Toggle top/status bars (F)" aria-label="Toggle chrome">⛶</button>
+  <div id="dropzone">Drop a <code>.tar.bz2</code> anywhere</div>
+  <div id="help">
+    <div class="inner">
+      <h1>qt-wasm-runner</h1>
+      <p>Runs Qt6-wasm apps packaged for
+        <a href="https://emscripten-forge.org/" target="_blank" rel="noopener">emscripten-forge</a>
+        directly in the browser. Nothing is installed; the package is fetched
+        (or read from your disk), unpacked in memory, and handed to Qt's
+        WebAssembly loader.</p>
+
+      <h2>How to load a package</h2>
+      <ul>
+        <li><strong>Paste a URL</strong> to a <code>.tar.bz2</code> package (e.g. from
+          <a href="https://prefix.dev/channels/emscripten-forge-4x-experimental" target="_blank" rel="noopener">prefix.dev/emscripten-forge-4x-experimental</a>)
+          into the top bar and press <em>Run URL</em>.</li>
+        <li><strong>Choose a local file</strong> with the file button.</li>
+        <li><strong>Drag &amp; drop</strong> a <code>.tar.bz2</code> anywhere on the page.</li>
+        <li><strong>Deep-link</strong>: append <code>?pkg=&lt;url-encoded package URL&gt;</code>
+          to auto-load a package on page open.</li>
+      </ul>
+
+      <h2>What it does under the hood</h2>
+      <ol>
+        <li>Decodes <code>.tar.bz2</code> in-browser via
+          <a href="https://www.npmjs.com/package/@emscripten-forge/untarjs" target="_blank" rel="noopener"><code>@emscripten-forge/untarjs</code></a>.</li>
+        <li>Locates the app under <code>share/&lt;name&gt;/</code>
+          (looks for the single <code>*.wasm</code>), then wraps every sibling
+          file (<code>&lt;name&gt;.js</code>, <code>qtloader.js</code>, the wasm blob)
+          as <code>blob:</code> URLs.</li>
+        <li>Loads Qt's <code>qtloader.js</code> and the app's Emscripten glue,
+          then calls <code>qtLoad()</code> with a <code>locateFile</code> hook
+          that resolves further requests to those blob URLs — no more network.</li>
+        <li>Fires a couple of synthetic <code>resize</code> events after boot to
+          work around a Qt6-wasm quirk where the first paint only commits after
+          a resize.</li>
+      </ol>
+
+      <h2>Package requirements</h2>
+      <p>The runner is intentionally strict about layout. A package is
+        runnable if and only if it satisfies:</p>
+      <ul>
+        <li><strong>Format</strong>: <code>.tar.bz2</code> (standard conda
+          package). <code>.conda</code> not yet supported.</li>
+        <li><strong>Layout</strong>: exactly one wasm at
+          <code>share/&lt;appname&gt;/&lt;appname&gt;.wasm</code>, with these
+          three siblings in the same directory:
+          <ul>
+            <li><code>&lt;appname&gt;.js</code> — Emscripten glue built with
+              <code>-sMODULARIZE=1 -sEXPORT_NAME=&lt;appname_underscored&gt;_entry</code>
+              (Qt's <code>qt_add_executable</code> does this by default).</li>
+            <li><code>qtloader.js</code> — Qt's browser boot helper. Shipped
+              automatically by Qt for any wasm-target executable.</li>
+            <li><code>&lt;appname&gt;.wasm</code> — the compiled binary.</li>
+          </ul>
+        </li>
+        <li><strong>Entry export</strong>: the JS glue must expose
+          <code>window.&lt;appname_with_dashes_as_underscores&gt;_entry</code>
+          (e.g. <code>qt-calculator</code> → <code>qt_calculator_entry</code>).
+          This is the default <code>MODULARIZE</code> pattern for
+          <code>qt_add_executable</code>.</li>
+        <li><strong>Linked with JSPI</strong>: <code>-sJSPI=1</code> at final
+          link (Qt propagates this via cmake INTERFACE when qt6 is built with
+          <code>-feature-wasm-jspi</code>, which the
+          <code>emscripten-forge-4x-experimental</code> qt6 is).</li>
+      </ul>
+      <p>The runner discovers <code>&lt;appname&gt;</code> by scanning for the
+        single <code>share/*/*.wasm</code> file in the archive, so you don't
+        pass it separately.</p>
+
+      <h2>Browser requirements</h2>
+      <p>Qt6-wasm on emscripten-forge is built with JavaScript Promise
+        Integration (JSPI) for its event loop. That needs
+        <strong>Chrome 137+</strong>, <strong>Firefox 141+</strong>, or
+        <strong>Safari 18.4+</strong>. Older browsers won't run the demos.</p>
+
+      <h2>Known limitations</h2>
+      <ul>
+        <li><strong>Continuous animation at 60 fps</strong>: timer-driven Qt
+          animations under JSPI can starve the browser main thread. Static and
+          event-driven UIs (calculators, editors, viewers) work fine; games and
+          animated demos need a different tick source
+          (<code>requestAnimationFrame</code> via emscripten C API).</li>
+        <li><strong>Dynamic side-module deps</strong> (e.g. openblas as a
+          runtime <code>.so</code>): not yet supported. The runner only knows
+          about the app's own artifacts today.</li>
+        <li><strong>Only <code>.tar.bz2</code></strong>. <code>.conda</code>
+          format (zstd inside zip) would need additional decoders.</li>
+      </ul>
+
+      <p class="subtle">Qt itself is LGPLv3; source and recipes are on
+        <a href="https://github.com/emscripten-forge/recipes" target="_blank" rel="noopener">emscripten-forge/recipes</a>.
+        Source of this runner:
+        <a href="https://github.com/emscripten-forge/recipes/tree/main/docs/qtapp" target="_blank" rel="noopener">emscripten-forge/recipes / docs/qtapp</a>.</p>
+    </div>
+  </div>
+  <div id="status">Loading help — press <kbd>?</kbd> to dismiss and load a package.</div>
+
+  <script type="module" src="./runner.js"></script>
+</body>
+</html>
