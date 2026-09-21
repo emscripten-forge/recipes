@@ -1,0 +1,41 @@
+On wasm, QFileDialog::getSaveFileName can't produce a persistent
+writable filesystem handle. Serialize the current buffer to a MEMFS
+scratch file, read the bytes back, and hand them to
+QFileDialog::saveFileContent() which triggers a browser download.
+
+--- a/example/mainwindow.cpp
++++ b/example/mainwindow.cpp
+@@ -119,10 +119,33 @@ bool MainWindow::save()
+ 
+ bool MainWindow::saveAs()
+ {
++#ifdef __EMSCRIPTEN__
++    // Serialise via a MEMFS scratch file, then hand the bytes to
++    // saveFileContent() which triggers a browser download.
++    const QString scratch = QStringLiteral("/tmp/wasm-save/qhexedit.bin");
++    QDir().mkpath(QStringLiteral("/tmp/wasm-save"));
++    QFile::remove(scratch);
++
++    if (!saveFile(scratch))
++        return false;
++
++    QFile in(scratch);
++    if (!in.open(QIODevice::ReadOnly))
++        return false;
++    const QByteArray bytes = in.readAll();
++    in.close();
++
++    const QString suggested = QFileInfo(curFile).fileName();
++    QFileDialog::saveFileContent(
++        bytes,
++        suggested.isEmpty() ? QStringLiteral("qhexedit.bin") : suggested);
++    return true;
++#else
+     QString fileName = QFileDialog::getSaveFileName(this, tr("Save As"),
+                                                     curFile);
+     if (fileName.isEmpty())
+         return false;
+ 
+     return saveFile(fileName);
++#endif
+ }
