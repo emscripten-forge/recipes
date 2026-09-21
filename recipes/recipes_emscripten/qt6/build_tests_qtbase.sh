@@ -3,12 +3,12 @@ set -euo pipefail
 
 echo "Checking Qt6Core static archive is well-formed"
 MEMBERS=$(emar t "${PREFIX}/lib/libQt6Core.a")
-echo "${MEMBERS}" | head
-echo "${MEMBERS}" | grep -q '\.o$' \
+head <<< "${MEMBERS}"
+grep -q '\.o$' <<< "${MEMBERS}" \
     || { echo "libQt6Core.a has no object members"; exit 1; }
 
 echo "Verifying archive members are wasm32 objects"
-FIRST_OBJ=$(echo "${MEMBERS}" | grep '\.o$' | head -1)
+FIRST_OBJ=$(grep -m1 '\.o$' <<< "${MEMBERS}")
 EXTRACT_DIR=$(mktemp -d)
 ( cd "${EXTRACT_DIR}" && emar x "${PREFIX}/lib/libQt6Core.a" "${FIRST_OBJ}" )
 MAGIC=$(head -c 4 "${EXTRACT_DIR}/${FIRST_OBJ}" | od -An -tx1 | tr -d ' \n')
