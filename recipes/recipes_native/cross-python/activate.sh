@@ -80,8 +80,9 @@ export PIP_ARGS="--no-deps -vv"
 export PIP_PREFIX=$PREFIX # Global --prefix=$PREFIX
 
 # Set up flags
-export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
-export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
+# we dont need -SIDE_MODULE any more
+# export LDFLAGS="$EM_FORGE_SIDE_MODULE_LDFLAGS"
+# export CFLAGS="$EM_FORGE_SIDE_MODULE_CFLAGS"
 
 # help cmake find the cross env python
 export CMAKE_ARGS="${CMAKE_ARGS} \

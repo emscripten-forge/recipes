@@ -6,34 +6,38 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 9f85288bbfea0b9087bab57c1d8d827ed0bf0323e63b94af507990c7040cad01
+  # url: https://github.com/jupyter-xeus/xeus-python/archive/refs/tags/${{ version }}.tar.gz
+  # sha256: 9f85288bbfea0b9087bab57c1d8d827ed0bf0323e63b94af507990c7040cad01
+  # path: /Users/thorstenbeier/src/xeus-python
 
+  # once https://github.com/jupyter-xeus/xeus-python/pull/711 landed
+  # we can switch back to the official repository and use a tag
+  git: https://github.com/DerThorsten/xeus-python
+  # branch 6x
+  rev: b9895fb
 build:
-  number: 3
+  number: 4
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
+  - cross-python_${{target_platform}}
   - cmake
   - ninja
   host:
-  - python
-  - libpython
-  - openssl <4
+  - python-dev
   - nlohmann_json
   - nlohmann_json-abi
   - xeus
-  - xeus-lite >=5.0.0
+  - xeus-lite-static >=5.0.0
   - pybind11
   - pybind11_json
   - xtl
-  - pyjs >=4.0.6
-  - zstd
+  - pyjs-dev
   run:
   - python
   - xeus-python-shell-lite >=0.8,<0.9
-  - pyjs-rt >=4.0.6
+  - pyjs >=4.0.6
 
 tests:
 - package_contents:
