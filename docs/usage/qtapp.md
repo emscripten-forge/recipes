@@ -20,10 +20,10 @@ Currently on the
 [emscripten-forge-4x-experimental](https://prefix.dev/channels/emscripten-forge-4x-experimental)
 channel:
 
-- **[qt-calculator](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqt-calculator-experimental-6.11.2-hc780342_0.tar.bz2)** —
+- **[qt-calculator](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqt-calculator-experimental-6.11.2-hc780342_1.tar.bz2)** —
   Qt's own upstream calculator example
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/qt-calculator-experimental)).
-- **[sqlitebrowser](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fsqlitebrowser-experimental-3.13.99-h8b281d3_0.tar.bz2)** —
+- **[sqlitebrowser](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fsqlitebrowser-experimental-3.13.99-h8b281d3_2.tar.bz2)** —
   DB Browser for SQLite: create tables, run queries, download `.sqlite` files
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/sqlitebrowser-experimental)).
 
