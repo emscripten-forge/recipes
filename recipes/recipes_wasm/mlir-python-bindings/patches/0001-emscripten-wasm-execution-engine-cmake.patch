@@ -1,0 +1,144 @@
+diff --git a/mlir/CMakeLists.txt b/mlir/CMakeLists.txt
+index ec4b8f729349..77a3c4d68015 100644
+--- a/mlir/CMakeLists.txt
++++ b/mlir/CMakeLists.txt
+@@ -40,6 +40,11 @@ if(MLIR_STANDALONE_BUILD)
+ 
+   include_directories(${LLVM_INCLUDE_DIRS})
+ 
++  if(EMSCRIPTEN)
++    find_package(LLD REQUIRED CONFIG)
++    include_directories(${LLD_INCLUDE_DIRS})
++  endif()
++
+   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+     "${CMAKE_CURRENT_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}")
+   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+diff --git a/mlir/cmake/modules/AddMLIRPython.cmake b/mlir/cmake/modules/AddMLIRPython.cmake
+index 4de3a6733770..0e44b08c375f 100644
+--- a/mlir/cmake/modules/AddMLIRPython.cmake
++++ b/mlir/cmake/modules/AddMLIRPython.cmake
+@@ -768,6 +768,14 @@ function(mlir_python_setup_extension_rpath target)
+     ""
+     ${ARGN})
+ 
++  # Emscripten side modules use the same colocated-library layout as ELF
++  # platforms. Record it explicitly because CMake does not classify
++  # Emscripten as UNIX.
++  if(EMSCRIPTEN)
++    target_link_options(${target} PRIVATE "LINKER:-rpath,\$ORIGIN")
++    return()
++  endif()
++
+   # RPATH handling.
+   # For the build tree, include the LLVM lib directory and the current
+   # directory for RPATH searching. For install, just the current directory
+diff --git a/mlir/lib/CAPI/CMakeLists.txt b/mlir/lib/CAPI/CMakeLists.txt
+index 6c438508425b..a753b35b4fc2 100644
+--- a/mlir/lib/CAPI/CMakeLists.txt
++++ b/mlir/lib/CAPI/CMakeLists.txt
+@@ -16,7 +16,7 @@ add_subdirectory(RegisterEverything)
+ add_subdirectory(Transforms)
+ add_subdirectory(Target)
+ 
+-if(MLIR_ENABLE_EXECUTION_ENGINE)
++if(MLIR_ENABLE_EXECUTION_ENGINE OR EMSCRIPTEN)
+   add_subdirectory(ExecutionEngine)
+ endif()
+ 
+diff --git a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
+index bf7dff897ab6..153614a3758c 100644
+--- a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
++++ b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
+@@ -1,16 +1,43 @@
+-set(LLVM_LINK_COMPONENTS
+-  nativecodegen
+-  native
+-  orcjit
+-  support
+-)
++if(EMSCRIPTEN)
++  # On Emscripten, ORC JIT is unavailable.  Build the Wasm Execution Engine
++  # using lld::lldMain (same approach as clang-repl's Wasm backend).
++  # lldWasm provides the wasm driver; lldCommon provides lldMain itself.
++  # find_package(LLD) and include_directories(LLD_INCLUDE_DIRS) are done at
++  # the top-level mlir/CMakeLists.txt so the imported targets are globally visible.
++  # PARTIAL_SOURCES_INTENDED: ExecutionEngine.cpp stays uncompiled on Emscripten.
++  set(LLVM_LINK_COMPONENTS support)
+ 
+-# Main API shared library.
+-add_mlir_upstream_c_api_library(MLIRCAPIExecutionEngine
+-  ExecutionEngine.cpp
++  add_mlir_upstream_c_api_library(MLIRCAPIWasmExecutionEngine
++    WasmExecutionEngine.cpp
+ 
+-  LINK_LIBS PUBLIC
+-  MLIRBuiltinToLLVMIRTranslation
+-  MLIRExecutionEngine
+-  MLIRLLVMToLLVMIRTranslation
+-)
++    PARTIAL_SOURCES_INTENDED
++
++    LINK_LIBS PUBLIC
++    MLIRBuiltinToLLVMIRTranslation
++    MLIRLLVMToLLVMIRTranslation
++    MLIRTargetLLVMIRExport
++    MLIRCAPIIR
++    lldWasm
++    lldCommon
++  )
++else()
++  set(LLVM_LINK_COMPONENTS
++    nativecodegen
++    native
++    orcjit
++    support
++  )
++
++  # Main API shared library.
++  # PARTIAL_SOURCES_INTENDED: WasmExecutionEngine.cpp stays uncompiled on native.
++  add_mlir_upstream_c_api_library(MLIRCAPIExecutionEngine
++    ExecutionEngine.cpp
++
++    PARTIAL_SOURCES_INTENDED
++
++    LINK_LIBS PUBLIC
++    MLIRBuiltinToLLVMIRTranslation
++    MLIRExecutionEngine
++    MLIRLLVMToLLVMIRTranslation
++  )
++endif()
+diff --git a/mlir/python/CMakeLists.txt b/mlir/python/CMakeLists.txt
+index 802f8c126512..230f28fe7436 100644
+--- a/mlir/python/CMakeLists.txt
++++ b/mlir/python/CMakeLists.txt
+@@ -46,6 +46,7 @@ declare_mlir_python_sources(MLIRPythonSources.ExecutionEngine
+   ADD_TO_PARENT MLIRPythonSources
+   SOURCES
+     execution_engine.py
++    wasm_execution_engine.py
+     _mlir_libs/_mlirExecutionEngine.pyi
+   SOURCES_GLOB
+     runtime/*.py
+@@ -733,6 +734,21 @@ if(MLIR_ENABLE_EXECUTION_ENGINE)
+     EMBED_CAPI_LINK_LIBS
+       MLIRCAPIExecutionEngine
+   )
++elseif(EMSCRIPTEN)
++  # On Emscripten, ORC JIT is unavailable; expose the Wasm Execution Engine
++  # instead.  The Python-side module name matches the eudsl convention so that
++  # wasm_execution_engine.py can import _mlirWasmExecutionEngine unchanged.
++  declare_mlir_python_extension(MLIRPythonExtension.WasmExecutionEngine
++    MODULE_NAME _mlirWasmExecutionEngine
++    ADD_TO_PARENT MLIRPythonSources.ExecutionEngine
++    ROOT_DIR "${PYTHON_SOURCE_DIR}"
++    SOURCES
++      WasmExecutionEngineModule.cpp
++    PRIVATE_LINK_LIBS
++      LLVMSupport
++    EMBED_CAPI_LINK_LIBS
++      MLIRCAPIWasmExecutionEngine
++  )
+ endif()
+ 
+ declare_mlir_python_extension(MLIRPythonExtension.GPUDialectPasses
