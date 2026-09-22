@@ -3,7 +3,7 @@ new file mode 100644
 index 000000000000..550c9d987d37
 --- /dev/null
 +++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
-@@ -0,0 +1,245 @@
+@@ -0,0 +1,251 @@
 +//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -186,8 +186,14 @@ index 000000000000..550c9d987d37
 +          llvm::StringRef(binaryFileName.data, binaryFileName.length)));
 +  std::string binFile(binFilePath.str());
 +
++  // wasm-ld defaults to wasm32, so select the emulation matching the target
++  // used by mlirWasmCompileModule above.
++  std::string emulation = "-m";
++  emulation += llvm::Triple(llvm::sys::getProcessTriple()).getArchName();
++
 +  // Arguments match what llvmlite's EmscriptenBackend passes to wasm-ld.
 +  std::vector<const char *> args = {"wasm-ld",
++                                    emulation.c_str(),
 +                                    "-shared",
 +                                    "--import-memory",
 +                                    "--stack-first",
