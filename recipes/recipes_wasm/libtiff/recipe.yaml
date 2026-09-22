@@ -1,9 +1,6 @@
 context:
-  version: 4.7.2
-
-package:
   name: libtiff
-  version: ${{ version }}
+  version: 4.7.2
 
 source:
   url: https://download.osgeo.org/libtiff/tiff-${{ version }}.tar.gz
@@ -12,21 +9,34 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - cmake
-  - ninja
+outputs:
 
-tests:
-- package_contents:
-    lib:
-    - libtiff.a
-    - libtiffxx.a
-    include:
-    - tiff.h
-    - tiffio.h
+- package:
+    name: libtiff-static
+    version: ${{ version }}
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  build:
+    script:
+      env:
+        BUILD_SHARED_LIBS: "OFF"
+      file: build.sh
+  tests:
+  - package_contents:
+      lib:
+      - libtiff.a
+      - libtiffxx.a
+      include:
+      - tiff.h
+      - tiffio.h
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   license: HPND
@@ -36,6 +46,12 @@ about:
     This software provides support for the Tag Image File Format (TIFF), a
     widely used format for storing image data.
   homepage: http://www.libtiff.org/
+
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
