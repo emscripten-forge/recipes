@@ -1,18 +1,20 @@
 # Credits
 
-## Pyodide
-This project is heavily inspired by the [pyodide](https://pyodide.org/en/stable/) project.
-Many recipes, build scripts, and patches are heavily inspired by the pyodide project.
-Many thanks to the pyodide team for their work.
+## Supporters
 
-## Conda Forge
-
-Many thanks to the [conda-forge](https://conda-forge.org/) team for their work.
-Many recipes, build scripts, and patches are heavily inspired by the conda-forge project.
-
+- **[QuantStack](https://quantstack.net/)**: sponsors continued development and maintenance.
+- **[Bloomberg](https://www.bloomberg.com/)**: sponsors continued development and maintenance.
+- **[prefix.dev](https://prefix.dev/)**: hosts the emscripten-forge package channel.
 
 ## Contributors
 
-This project has been started by [Thorsten Beier](https://github.com/derthorsten/) and [Wolf Vollprecht](https://github.com/wolfv).
-Many other have contributed to the project.
-Many thanks to [all the contributors](https://github.com/emscripten-forge/recipes/graphs/contributors) of the emscripten-forge project.
+The project was started by [Thorsten Beier](https://github.com/derthorsten/) and [Wolf Vollprecht](https://github.com/wolfv), and has since been shaped by [many contributors](https://github.com/emscripten-forge/recipes/graphs/contributors).
+
+See [Get Involved](get_involved.md) for ways to participate as an individual or organization.
+
+## Inspiration
+
+Emscripten-forge builds on ideas and code from:
+
+- **[Pyodide](https://pyodide.org/en/stable/)**: the browser-based Python distribution whose pioneering work made emscripten-forge possible. Many recipes, build scripts, and patches are inspired by pyodide.
+- **[conda-forge](https://conda-forge.org/)**: the community packaging project that shaped much of emscripten-forge's build tooling and recipe format.
