@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
 new file mode 100644
-index 000000000000..5e37909986a6
+index 000000000000..550c9d987d37
 --- /dev/null
 +++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
-@@ -0,0 +1,243 @@
+@@ -0,0 +1,251 @@
 +//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -24,9 +24,9 @@ index 000000000000..5e37909986a6
 +//       v
 +//   llvm::Module (IR)
 +//       |
-+//       | TargetMachine::addPassesToEmitFile  (wasm32, PIC, -Ox)
++//       | TargetMachine::addPassesToEmitFile  (WebAssembly, PIC, -Ox)
 +//       v
-+//   <moduleName>.o  (wasm32 object file in MEMFS)
++//   <moduleName>.o  (WebAssembly object file in MEMFS)
 +//       |
 +//       | lld::lldMain + Wasm driver  (in-process, crash-safe, canRunAgain)
 +//       v
@@ -56,6 +56,7 @@ index 000000000000..5e37909986a6
 +#include "llvm/Support/TargetSelect.h"
 +#include "llvm/Support/raw_ostream.h"
 +#include "llvm/Target/TargetMachine.h"
++#include "llvm/TargetParser/Host.h"
 +
 +#include <dlfcn.h>
 +#include <string>
@@ -88,25 +89,6 @@ index 000000000000..5e37909986a6
 +
 +MlirStringRef mlirWasmCompileModule(MlirOperation module,
 +                                    MlirStringRef moduleName, int optLevel) {
-+  // Initialize the WebAssembly target once.  Skip if wasm32 is already
-+  // registered (e.g. by llvmlite's initialize_all_targets).  On Emscripten
-+  // each SIDE_MODULE has its own copy of static variables, so call_once /
-+  // once_flag does NOT deduplicate across modules.  Calling
-+  // InitializeNativeTarget() twice from two SIDE_MODULEs double-registers
-+  // CodeGen passes with incompatible function-table entries, corrupting the
-+  // global PassRegistry.
-+  static bool initOnce = [] {
-+    llvm::Triple triple("wasm32-unknown-emscripten");
-+    std::string err;
-+    if (!llvm::TargetRegistry::lookupTarget(triple, err)) {
-+      llvm::InitializeNativeTarget();
-+      llvm::InitializeNativeTargetAsmParser();
-+      llvm::InitializeNativeTargetAsmPrinter();
-+    }
-+    return true;
-+  }();
-+  (void)initOnce;
-+
 +  mlir::Operation *op = unwrap(module);
 +
 +  // Register dialect translations required to lower MLIR → LLVM IR.
@@ -121,14 +103,31 @@ index 000000000000..5e37909986a6
 +
 +  std::string tripleStr = llvmModule->getTargetTriple().str();
 +  if (tripleStr.empty())
-+    llvm::report_fatal_error(
-+        "mlirWasmCompileModule: module has no target triple; set "
-+        "llvm.target_triple to \"wasm32-unknown-emscripten\" before calling");
++    tripleStr = llvm::sys::getDefaultTargetTriple();
 +
 +  llvm::Triple triple(tripleStr);
++  llvm::Triple processTriple(llvm::sys::getDefaultTargetTriple());
++  if (!triple.isWasm() || triple.getArch() != processTriple.getArch())
++    llvm::report_fatal_error(
++        ("mlirWasmCompileModule: target triple '" + tripleStr +
++         "' is incompatible with this process ('" + processTriple.str() +
++         "')")
++            .c_str());
++  llvmModule->setTargetTriple(triple);
++
++  // Side modules may share LLVM's process-global target registry. Probe the
++  // actual requested target before initializing it so that another module's
++  // earlier initialization is respected without assuming a pointer width.
 +  std::string errorStr;
 +  const llvm::Target *target =
 +      llvm::TargetRegistry::lookupTarget(triple, errorStr);
++  if (!target) {
++    llvm::InitializeNativeTarget();
++    llvm::InitializeNativeTargetAsmParser();
++    llvm::InitializeNativeTargetAsmPrinter();
++    errorStr.clear();
++    target = llvm::TargetRegistry::lookupTarget(triple, errorStr);
++  }
 +  if (!target)
 +    llvm::report_fatal_error(
 +        ("mlirWasmCompileModule: no target for triple '" + tripleStr +
@@ -187,8 +186,14 @@ index 000000000000..5e37909986a6
 +          llvm::StringRef(binaryFileName.data, binaryFileName.length)));
 +  std::string binFile(binFilePath.str());
 +
++  // wasm-ld defaults to wasm32, so select the emulation matching the target
++  // used by mlirWasmCompileModule above.
++  std::string emulation = "-m";
++  emulation += llvm::Triple(llvm::sys::getProcessTriple()).getArchName();
++
 +  // Arguments match what llvmlite's EmscriptenBackend passes to wasm-ld.
 +  std::vector<const char *> args = {"wasm-ld",
++                                    emulation.c_str(),
 +                                    "-shared",
 +                                    "--import-memory",
 +                                    "--stack-first",
@@ -209,6 +214,9 @@ index 000000000000..5e37909986a6
 +  if (result.retCode)
 +    llvm::report_fatal_error(
 +        ("mlirWasmLinkLoadModule: lld failed: " + errStr).c_str());
++  if (!result.canRunAgain)
++    llvm::report_fatal_error(
++        "mlirWasmLinkLoadModule: lld cannot be invoked again safely");
 +
 +  void *handle = dlopen(binFile.c_str(), RTLD_NOW | RTLD_GLOBAL);
 +  if (!handle)
