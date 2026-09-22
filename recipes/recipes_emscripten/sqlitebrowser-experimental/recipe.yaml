@@ -1,0 +1,61 @@
+context:
+  # v3.13.1 (Oct 2024) is Qt5-only. Qt6 support landed on master afterwards
+  # via the QT_MAJOR cmake variable, so we pin to a specific master commit
+  # (2026-09-08) that has it. Project's own VERSION field is 3.13.99 on master.
+  version: 3.13.99
+  commit: 4a7359d5c349ca0bc446f94922ec9561fcf50b96
+
+package:
+  name: sqlitebrowser-experimental
+  version: ${{ version }}
+
+source:
+  url: https://github.com/sqlitebrowser/sqlitebrowser/archive/${{ commit }}.tar.gz
+  sha256: 9bcb91fccf0abafc9d1ba1f130699d4c4709f1f451c718701d47afb3d26df320
+  patches:
+  - patches/0001-include-qsslerror-for-wasm.patch
+  - patches/0002-stub-remote-network-on-wasm.patch
+  - patches/0003-use-qt-add-executable-for-wasm.patch
+  - patches/0004-scintilla-instantiate-runstyles-long-for-wasm.patch
+  - patches/0005-wasm-file-open-via-browser-content-api.patch
+  - patches/0006-wasm-file-save-via-browser-download.patch
+  - patches/0007-wasm-reroute-file-new-to-in-memory.patch
+  - patches/0008-wasm-row-loader-synchronous.patch
+  - patches/0009-wasm-run-sql-synchronous.patch
+
+build:
+  number: 3
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  # native Qt6 provides host tools (moc, rcc, uic, lrelease) via QT_HOST_PATH.
+  - qt6-main
+  host:
+  # cross Qt6 (JSPI variants) — Qt's app.exec() event loop yields to the
+  # browser via JSPI on this build. Qt6::Core5Compat is DB Browser's
+  # extra Qt dep.
+  - qt6-main[build=jspi*]
+  - qt6-5compat[build=jspi*]
+  # SQLite library — DB Browser links libsqlite3.a directly (not via Qt6::Sql).
+  - sqlite
+
+tests:
+- package_contents:
+    files:
+    - share/sqlitebrowser-experimental/sqlitebrowser.wasm
+    - share/sqlitebrowser-experimental/sqlitebrowser.js
+    - share/sqlitebrowser-experimental/qtloader.js
+
+about:
+  summary: DB Browser for SQLite — GUI for SQLite databases, cross-compiled to wasm.
+  license: MPL-2.0 OR GPL-3.0-or-later
+  homepage: https://sqlitebrowser.org/
+
+extra:
+  recipe-maintainers:
+  - mmesch
+  channel: emscripten-forge-4x-experimental
