@@ -1,5 +1,5 @@
 context:
-  name: libiconv
+  name: libiconv-static
   version: '1.19'
 
 package:
@@ -12,25 +12,30 @@ source:
 
 build:
   number: 0
-
   files:
     exclude:
-    - share/man/man1/**
+    - share/man/man*/**
+
 requirements:
   build:
   - ${{ compiler("c") }}
 
 tests:
 - package_contents:
-    lib:
-    - libiconv.a
-    include:
-    - iconv.h
+    files:
+    - bin/iconv*
+    - lib/libcharset.a
+    - lib/libiconv.a
+    - include/iconv.h
 - script:
   - node ${PREFIX}/bin/iconv --version
   requirements:
     build:
     - nodejs
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://www.gnu.org/software/libiconv/
@@ -43,3 +48,7 @@ about:
 extra:
   recipe-maintainers:
   - IsabelParedes
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
