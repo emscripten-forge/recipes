@@ -26,9 +26,9 @@ EOF
 
 sed -i "s|'\$PYTHON'|'${PYTHON}'|g" emscripten.meson.cross
 
-export CFLAGS="$CFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fexceptions"
+export CFLAGS="$CFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
+export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
 
 meson setup build_wasm \
     --prefix=$PREFIX \
@@ -39,8 +39,8 @@ meson setup build_wasm \
     -Dbuild_cli=disabled \
     -Dbuild_library=enabled \
     -Dbuild_doc=false \
-    -Dcpp_args="-fexceptions -sSIDE_MODULE=1 -sWASM_BIGINT" \
-    -Dcpp_link_args="-fexceptions -sSIDE_MODULE=1 -sWASM_BIGINT" \
+    -Dcpp_args="-fwasm-exceptions -sSIDE_MODULE=1 -sWASM_BIGINT" \
+    -Dcpp_link_args="-fwasm-exceptions -sSIDE_MODULE=1 -sWASM_BIGINT" \
     --cross-file=$(pwd)/emscripten.meson.cross
 
 meson compile -C build_wasm -v
