@@ -1,0 +1,47 @@
+context:
+  version: 0.9.0
+
+package:
+  name: qhexedit2-experimental
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Simsys/qhexedit2/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 1e5803988207e9ab2c776698f68408bc6cbf5d25ef3d79a955b4122d3ff27422
+  patches:
+  - patches/0001-emscripten-forge-theme.patch
+  - patches/0002-wasm-file-open-via-browser-content-api.patch
+  - patches/0003-wasm-file-save-via-browser-download.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  # native Qt6 for host tools (moc, rcc, uic, qmake6) via QT_HOST_PATH.
+  - qt6-main
+  host:
+  # cross Qt6 (JSPI variant) lets Qt's app.exec() event loop yield to
+  # the browser via JavaScript Promise Integration.
+  - qt6-main[build=jspi*]
+
+tests:
+- package_contents:
+    files:
+    - share/qhexedit2-experimental/qhexedit.wasm
+    - share/qhexedit2-experimental/qhexedit.js
+    - share/qhexedit2-experimental/qtloader.js
+
+about:
+  summary: QHexEdit2 — a Qt6 hex editor widget + example app, cross-compiled to wasm.
+  license: LGPL-2.1-only
+  homepage: https://github.com/Simsys/qhexedit2
+
+extra:
+  recipe-maintainers:
+  - mmesch
+  channel: emscripten-forge-4x-experimental
