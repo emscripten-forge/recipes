@@ -1,0 +1,71 @@
+DB Browsers Execute-SQL runs the query on a QThread subclass (RunSql)
+and blocks on std::condition_variable between statements, waiting for
+the main thread to call startNextStatement() from a signal handler.
+Qt-wasm without pthreads never runs QThread::run(), so hitting Execute
+or Ctrl+Enter does nothing.
+
+On wasm, override QThread::start() to run the statement loop
+synchronously on the calling thread and emit finished() at the end.
+Skip the inter-statement cv.wait() since there is no other thread
+that could call startNextStatement(); signals still fire via
+QueuedConnection so slots update the UI on the next event-loop tick.
+
+--- a/src/RunSql.h
++++ b/src/RunSql.h
+@@ -49,6 +49,10 @@ public:
+ 
+     void startNextStatement();
+ 
++#ifdef __EMSCRIPTEN__
++    void start();
++#endif
++
+     void stop();
+ 
+ signals:
+--- a/src/RunSql.cpp
++++ b/src/RunSql.cpp
+@@ -56,6 +56,21 @@ void RunSql::run()
+         emit structureUpdated();
+ }
+ 
++#ifdef __EMSCRIPTEN__
++void RunSql::start()
++{
++    // Wasm without pthreads: run the statement loop synchronously on the
++    // calling thread. Signals still fire via QueuedConnection so slots
++    // update the UI on the next event-loop tick, matching the threaded
++    // contract.
++    run();
++    // QThread::finished is a QPrivateSignal so subclasses can't emit it
++    // directly; fire it through the meta-object system (queued so slots
++    // run once the caller returns to the event loop).
++    QMetaObject::invokeMethod(this, "finished", Qt::QueuedConnection);
++}
++#endif
++
+ void RunSql::startNextStatement()
+ {
+     std::unique_lock<std::mutex> lk(m);
+@@ -226,8 +237,10 @@ bool RunSql::executeNextStatement()
+             emit statementReturnsRows(executed_query, execute_current_position, end_of_current_statement_position, time_in_ms.count());
+ 
+             // Make sure the next statement isn't executed until we're told to do so
++#ifndef __EMSCRIPTEN__
+             if(interrupt_after_statements)
+                 cv.wait(lk, [this](){ return may_continue_with_execution; });
++#endif
+             lk.unlock();
+             break;
+         }
+@@ -258,8 +271,10 @@ bool RunSql::executeNextStatement()
+                                    execute_current_position, end_of_current_statement_position);
+ 
+             // Make sure the next statement isn't executed until we're told to do so
++#ifndef __EMSCRIPTEN__
+             if(interrupt_after_statements)
+                 cv.wait(lk, [this](){ return may_continue_with_execution; });
++#endif
+             lk.unlock();
+             break;
+         }
