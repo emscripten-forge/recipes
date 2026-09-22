@@ -46,3 +46,17 @@ mkdir build && cd build
 # and prepends toolchain -D flags, which cmake rejects on --build invocations.
 ninja -j "${CPU_COUNT:-2}"
 ninja install
+
+# Post-install: Qt's cross-install generates wrapper scripts under
+# $PREFIX/bin (qmake6, qtpaths6, qt-cmake, ...) that hardcode the
+# build-time absolute path of the *native* qmake6/cmake in $BUILD_PREFIX.
+# When the package is installed on a different machine those paths don't
+# exist, so `qmake6` fails with "No such file or directory". Rewrite the
+# baked-in build-time prefix to a $QT_HOST_PATH reference — downstream
+# users already set QT_HOST_PATH for the cmake cross-compile flow, so
+# they get qmake for free with no additional setup.
+for w in qmake qmake6 qtpaths qtpaths6 qt-cmake qt-cmake-create; do
+    f="${PREFIX}/bin/${w}"
+    [ -f "${f}" ] || continue
+    sed -i "s|${BUILD_PREFIX}|\${QT_HOST_PATH:?QT_HOST_PATH must be set for Qt cross-compile}|g" "${f}"
+done
