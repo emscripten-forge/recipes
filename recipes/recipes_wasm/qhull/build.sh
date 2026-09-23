@@ -1,10 +1,14 @@
 
-export CFLAGS="${CFLAGS} -sRELOCATABLE=1 -fwasm-exceptions"
-export LDFLAGS="${LDFLAGS} -sRELOCATABLE=1 -fwasm-exceptions"
-export CXXFLAGS="${CXXFLAGS} -sRELOCATABLE=1 -fwasm-exceptions"
+export CFLAGS="${CFLAGS}    -fwasm-exceptions"
+export LDFLAGS="${LDFLAGS}  -fwasm-exceptions"
+export CXXFLAGS="${CXXFLAGS}    -fwasm-exceptions"
 
 mkdir -p qhull-build && cd qhull-build
-cmake -GNinja $SRC_DIR $CMAKE_ARGS
+cmake -GNinja $SRC_DIR $CMAKE_ARGS \
+     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+     -DBUILD_SHARED_LIBS=OFF \
+     -DBUILD_STATIC_LIBS=ON
+
 ninja install
 
 cp qhull.wasm $PREFIX/bin/qhull.wasm
