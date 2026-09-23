@@ -3,7 +3,7 @@ context:
   version: 14.5.0
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -22,7 +22,9 @@ requirements:
   - ninja
   - pkg-config
   host:
-  - freetype
+  - freetype-static
+  run:
+  - ${{pin_compatible('freetype-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
 
 tests:
 - package_contents:
@@ -31,6 +33,11 @@ tests:
     - harfbuzz/hb-version.h
     lib:
     - libharfbuzz.a
+- script:
+  - generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://harfbuzz.github.io/

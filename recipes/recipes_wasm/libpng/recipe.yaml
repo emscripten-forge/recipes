@@ -3,7 +3,7 @@ context:
   version: 1.6.58
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -18,7 +18,9 @@ requirements:
   - ${{ compiler("c") }}
   - libtool
   host:
-  - zlib
+  - libzlib-static
+  run:
+  - ${{pin_compatible("libzlib-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
 
 tests:
 - package_contents:
@@ -29,6 +31,10 @@ tests:
     - include/png.h
 - script:
   - libpng-config --version
+  - generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: zlib-acknowledgement
