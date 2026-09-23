@@ -5,7 +5,7 @@ context:
   major_minor: ${{ (version | split('.'))[0] }}.${{ (version | split('.'))[1] }}
 
 build:
-  number: 3
+  number: 4
 
 # Each output is built in two variants (jspi / nojspi) via the top-level
 # wasm_jspi variant key in variant.yaml. Downstream Qt widget apps that
@@ -18,6 +18,18 @@ build:
 #
 # Build string is `jspi_h<hash>_<num>` or `nojspi_h<hash>_<num>`. Bare
 # `qt6-main` resolves to nojspi by default (jspi is down-prioritized).
+#
+# Licensing: Qt sources are per-file tri-licensed
+# `LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only` (plus commercial),
+# EXCEPT the WebAssembly QPA plugin under
+# `src/plugins/platforms/wasm/` (libqwasm.a, qtloader.js,
+# wasm_shell.html), which upstream tags GPL-3.0-only. That plugin
+# ships inside qt6-main today, so qt6-main is labeled
+# `(LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND GPL-3.0-only`.
+# The other outputs contain no GPL-only code and are tri-licensed.
+# A future split (a separate qt6-wasm-platform output) would let
+# qt6-main drop the AND-GPL-3 clause, which matters for headless
+# consumers like pygplates that are GPL-2.0-only.
 
 outputs:
 - package:
@@ -72,7 +84,11 @@ outputs:
       - build_tests_qtbase.sh
   about:
     summary: Qt6 base libraries (Core, Gui, Widgets, Network, Xml) for Emscripten (WASM)
-    license_file: LICENSES/LGPL-3.0-only.txt
+    license: (LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND GPL-3.0-only
+    license_file:
+    - LICENSES/LGPL-3.0-only.txt
+    - LICENSES/GPL-2.0-only.txt
+    - LICENSES/GPL-3.0-only.txt
 
 - package:
     name: qt6-svg
@@ -114,7 +130,11 @@ outputs:
       - build_tests_qtsvg.sh
   about:
     summary: Qt6 SVG rendering module for Emscripten (WASM)
-    license_file: LICENSES/LGPL-3.0-only.txt
+    license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+    license_file:
+    - LICENSES/LGPL-3.0-only.txt
+    - LICENSES/GPL-2.0-only.txt
+    - LICENSES/GPL-3.0-only.txt
 
 - package:
     name: qt6-5compat
@@ -155,7 +175,11 @@ outputs:
       - build_tests_qt5compat.sh
   about:
     summary: Qt5 compatibility module (QTextCodec, etc.) for Emscripten (WASM)
-    license_file: LICENSES/LGPL-3.0-only.txt
+    license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+    license_file:
+    - LICENSES/LGPL-3.0-only.txt
+    - LICENSES/GPL-2.0-only.txt
+    - LICENSES/GPL-3.0-only.txt
 
 - package:
     name: qt6-imageformats
@@ -195,7 +219,11 @@ outputs:
       - build_tests_qtimageformats.sh
   about:
     summary: Qt6 extra image-format plugins (TIFF, WebP, JPEG, ...) for Emscripten (WASM)
-    license_file: LICENSES/LGPL-3.0-only.txt
+    license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+    license_file:
+    - LICENSES/LGPL-3.0-only.txt
+    - LICENSES/GPL-2.0-only.txt
+    - LICENSES/GPL-3.0-only.txt
 
 - package:
     name: qt6-webchannel
@@ -236,7 +264,11 @@ outputs:
       - build_tests_qtwebchannel.sh
   about:
     summary: Qt6 WebChannel (JavaScript <-> Qt object bridge) for Emscripten (WASM)
-    license_file: LICENSES/LGPL-3.0-only.txt
+    license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+    license_file:
+    - LICENSES/LGPL-3.0-only.txt
+    - LICENSES/GPL-2.0-only.txt
+    - LICENSES/GPL-3.0-only.txt
 
 - package:
     name: qt6-websockets
@@ -277,13 +309,20 @@ outputs:
       - build_tests_qtwebsockets.sh
   about:
     summary: Qt6 WebSockets (RFC 6455) client for Emscripten (WASM)
-    license_file: LICENSES/LGPL-3.0-only.txt
+    license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
+    license_file:
+    - LICENSES/LGPL-3.0-only.txt
+    - LICENSES/GPL-2.0-only.txt
+    - LICENSES/GPL-3.0-only.txt
 
 about:
   homepage: https://www.qt.io/
   repository: https://code.qt.io/qt/qt5.git
-  license: LGPL-3.0-only
-  license_file: LICENSES/LGPL-3.0-only.txt
+  license: (LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND GPL-3.0-only
+  license_file:
+  - LICENSES/LGPL-3.0-only.txt
+  - LICENSES/GPL-2.0-only.txt
+  - LICENSES/GPL-3.0-only.txt
   summary: Qt6 libraries built for Emscripten (WASM)
 
 extra:
