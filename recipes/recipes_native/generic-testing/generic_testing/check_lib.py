@@ -85,9 +85,12 @@ def check_no_pthread_symbols(path, allow_pthread):
 def check_lib(path, arch, allow_pthread):
     print(f"Checking library: {path}")
 
-    # check that its not a symlink, because we want to check the actual file
-    if path.is_symlink():
-        print(f"Error: {path} is a symlink, which is not allowed for libraries")
+    is_shared = str(path).endswith(".so")
+
+    # in case of a ** a shared lib** we need to
+    # check that its not a symlink, 
+    if is_shared and path.is_symlink():
+        print(f"Error: shared lib {path} is a symlink, which is not allowed for shared libraries")
         sys.exit(1)
 
     if not path.exists():

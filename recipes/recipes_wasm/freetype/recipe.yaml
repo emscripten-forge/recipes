@@ -13,46 +13,55 @@ build:
 
 outputs:
 - package:
-    name: freetype
+    name: freetype-static
     version: ${{ version }}
 
   build:
-    script: build_static.sh
+    script: build_pkg.sh
   requirements:
     build:
     - ${{ compiler('c') }}
     - cmake
     - make
     host:
-    - libpng
-    - zlib
+    - libpng-static
+    run:
+    - ${{pin_compatible("libpng-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
 
   tests:
   - script:
     - test -f $PREFIX/include/freetype2/freetype/freetype.h
     - test -f $PREFIX/include/freetype2/ft2build.h
     - test -f $PREFIX/lib/libfreetype.a
-
+    - generic-testing
+    requirements:
+      build:
+      - generic-testing
 - package:
-    name: freetype-shared
+    name: freetype
     version: ${{ version }}
 
   build:
-    script: build_shared.sh
+    script: build_pkg.sh
   requirements:
     build:
     - ${{ compiler('c') }}
     - cmake
     - ninja
     host:
-    - libpng
-    - zlib
+    - libpng-static
+    run_exports:
+    - ${{ pin_subpackage('freetype', upper_bound='x.x') }}
 
   tests:
   - script:
     - test -f $PREFIX/include/freetype2/freetype/freetype.h
     - test -f $PREFIX/include/freetype2/ft2build.h
     - test -f $PREFIX/lib/libfreetype.so
+    - generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   homepage: https://www.freetype.org/
