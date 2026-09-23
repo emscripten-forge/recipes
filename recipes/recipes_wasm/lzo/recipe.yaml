@@ -1,0 +1,133 @@
+context:
+  name: lzo
+  version: '2.10'
+
+source:
+  url: http://www.oberhumer.com/opensource/${{ name }}/download/${{ name }}-${{ version }}.tar.gz
+  sha256: c0f892943208266f9b6543b3ae308fab6284c5c90e627931446fb49b4221a072
+  patches:
+  - patches/0001-Update-cmake-min-version.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: lzo-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+    - pkg-config
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Headers and docs
+- package:
+    name: liblzo-dev
+    version: ${{ version }}
+  inherit: lzo-build
+  build:
+    files:
+      exclude:
+      - lib/*.a
+      - lib/*.so
+  tests:
+  - package_contents:
+      files:
+      - include/lzo/lzo1a.h
+      - include/lzo/lzo1b.h
+      - include/lzo/lzo1c.h
+      - include/lzo/lzo1f.h
+      - include/lzo/lzo1.h
+      - include/lzo/lzo1x.h
+      - include/lzo/lzo1y.h
+      - include/lzo/lzo1z.h
+      - include/lzo/lzo2a.h
+      - include/lzo/lzo_asm.h
+      - include/lzo/lzoconf.h
+      - include/lzo/lzodefs.h
+      - include/lzo/lzoutil.h
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: liblzo-static
+    version: ${{ version }}
+  inherit: lzo-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    run:
+    - ${{ pin_subpackage('liblzo-dev', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/liblzo2.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: liblzo
+    version: ${{ version }}
+  inherit: lzo-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('liblzo-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('liblzo', upper_bound='x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/liblzo2.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# This matches the conda-forge package which includes shared and static libs
+- package:
+    name: lzo
+    version: ${{ version }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('liblzo-static', exact=True) }}
+    - ${{ pin_subpackage('liblzo', exact=True) }}
+  tests:
+  - package_contents:
+      files: []
+
+#==============================================================================#
+
+about:
+  homepage: http://www.oberhumer.com/opensource/lzo/
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  license_file: COPYING
+  summary: LZO is a portable lossless data compression library written in ANSI C.
+  description: |
+    LZO offers pretty fast compression and extremely fast decompression.
+    MiniLZO is a very lightweight subset of the LZO library.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
