@@ -32,12 +32,16 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
 
     # conda prefix path
     export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_PREFIX_PATH=$PREFIX"
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH=$PREFIX"
 
     # install prefix
     export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=$PREFIX"
 
     # find root path mode package
-    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON"
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY"
+
+    # do not uses versioned shared libs
+    export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON" 
 
     # fpic
     export CMAKE_ARGS="$CMAKE_ARGS -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=true"
