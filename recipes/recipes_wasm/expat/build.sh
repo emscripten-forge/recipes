@@ -13,10 +13,12 @@ export CFLAGS="-fPIC"
 emconfigure ./configure --prefix=$PREFIX \
             --host="${host}" \
             --enable-static \
-            --disable-shared
+            --enable-shared \
+            --without-examples \
+            --without-tests
 
 make -j${CPU_COUNT}
 
 make install
 
-cp xmlwf/xmlwf.wasm $PREFIX/bin/
+cp ./xmlwf/xmlwf.wasm $PREFIX/bin/
