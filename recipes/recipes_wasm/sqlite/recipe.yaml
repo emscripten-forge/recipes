@@ -12,19 +12,16 @@ source:
 
 
 build:
-  number: 2
-  # run_exports:
-  #   # sometimes adds new symbols.  Default behavior is OK.
-  #   #    https://abi-laboratory.pro/tracker/timeline/sqlite/
-  #   - "{{ pin_subpackage('sqlite') }}"
-
+  number: 3
 requirements:
   build:
   - ${{ compiler('c') }}
   - make
   - libtool
   host:
-  -  zlib 
+  -  zlib-static
+  run:
+  - ${{pin_compatible('zlib-static', lower_bound='x.x.x', upper_bound='x.x.x')}}
 tests:
   - script:
     - test -f ${PREFIX}/lib/libsqlite3.a
