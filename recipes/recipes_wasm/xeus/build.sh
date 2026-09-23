@@ -9,7 +9,7 @@ emcmake cmake .. \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_FIND_ROOT_PATH=$PREFIX \
     -DXEUS_BUILD_SHARED_LIBS=ON \
-    -DXEUS_BUILD_STATIC_LIBS=OFF
+    -DXEUS_BUILD_STATIC_LIBS=ON
 
 # Build & Install step
 emmake make -j8 install
