@@ -3,10 +3,6 @@ context:
   version: 2.6.4
   ver: ${{ version|replace('.', '_') }}
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   url: https://github.com/libexpat/libexpat/releases/download/R_${{ ver }}/expat-${{ version }}.tar.bz2
   sha256: 8dc480b796163d4436e6f1352e71800a774f73dbae213f1860b60607d2a83ada
@@ -14,28 +10,38 @@ source:
 build:
   number: 1
 
-requirements:
-  build:
-  - ninja
-  - make
-  - automake<1.17
-  - libtool
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
+outputs:
 
-tests:
-- package_contents:
-    bin:
-    - xmlwf.wasm
-    lib:
-    - libexpat.a
-    include:
-    - expat.h
-- script:
-    - node $PREFIX/bin/xmlwf -h
+- package:
+    name: expat-static
+    version: ${{ version }}
   requirements:
     build:
+    - ninja
+    - make
+    - automake<1.17
+    - libtool
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  build:
+    script: build.sh
+  tests:
+  - package_contents:
+      bin:
+      - xmlwf.wasm
+      lib:
+      - libexpat.a
+      include:
+      - expat.h
+  - script:
+    - node $PREFIX/bin/xmlwf -h
+    requirements:
+      build:
       - nodejs
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   license: MIT
@@ -49,3 +55,7 @@ extra:
   recipe-maintainers:
   - wolfv
   - IsabelParedes
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
