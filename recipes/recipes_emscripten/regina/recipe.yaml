@@ -1,0 +1,106 @@
+context:
+  name: regina
+  version: 7.4.1
+  # The python series we link against. emscripten-forge currently publishes
+  # exactly two: 3.13.1 (build *_cp313) and 3.14.3 (build *_cp314). Pinned
+  # here and used in the requirements below rather than left to the
+  # channel-wide variant.yaml, which still selects 3.13 -- pinning it in the
+  # recipe moves this one package to 3.14 without rebuilding the rest of the
+  # channel.
+  #
+  # Requires a python build that ships CPython's HACL* hash primitives
+  # (libHacl_*.a, or the objects inside libpython). Build 0 of 3.14.3 does
+  # not; see the HACL* section of README.md. build.sh checks for them and
+  # stops with an explanation rather than failing at link time.
+  python_series: '3.14'
+
+package:
+  name: regina
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/regina-normal/regina/releases/download/regina-${{ version }}/regina-${{ version }}.tar.gz
+    sha256: 74131014099b77083dd1d09004fd6bc972421c792d188cdf43f0fd11ca6cb2ed
+    patches:
+      - patches/0001-add-tkrzw-kvstore-backend.patch
+      - patches/0002-emscripten-engine-build-adjustments.patch
+      - patches/0003-fix-disable-python-build-bugs.patch
+      - patches/0004-emscripten-qprocess-eventloop-guards.patch
+      - patches/0005-emscripten-graphviz-neato-fallback.patch
+      - patches/0006-emscripten-qt-wasm-finalization.patch
+      - patches/0007-emscripten-static-python-bindings.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - pkg-config
+    - nodejs
+    - qt6-main
+    # Native interpreter for the build machine. CMake's FindPython needs an
+    # Interpreter component that it can actually execute, and the `python`
+    # under host: is the wasm32 build, which cannot run here. Without this,
+    # configure fails with "Could NOT find Python (missing: Interpreter
+    # Development Development.Module Development.Embed)".
+    #
+    # FindPython also insists Interpreter and Development agree on their
+    # version, so this is held to the same major.minor as the host python
+    # (build.sh picks $BUILD_PREFIX/bin/python${PY_VER} by name).
+    - python ${{ python_series }}.*
+  host:
+    - zlib
+    - gmp
+    - libxml2
+    - tkrzw
+    - graphviz
+    - qt6-main[build=jspi*]
+    - qt6-svg[build=jspi*]
+    # Provides $PREFIX/lib/libpython3.14.a + headers + the stdlib tree that
+    # patches/0007 links and preloads into the wasm virtual filesystem.
+    # Pinned rather than taken from the channel variant: see python_series
+    # in the context above.
+    - python-dev ${{ python_series }}.*
+    # The static libpython archive bakes in CPython's built-in extension
+    # modules, whose third-party dependencies must be linked explicitly
+    # (see the FOREACH(PYDEP ...) block in patches/0007): _ctypes needs
+    # libffi, _bz2 needs bzip2, _ssl/_hashlib need openssl, _lzma needs
+    # liblzma, _decimal needs mpdecimal, _zstd needs zstd, _sqlite3
+    # needs sqlite.
+    - libffi
+    - bzip2
+    - openssl >=3.5.3,<4.0.0a0
+    - liblzma
+    - mpdecimal
+    - zstd
+    - sqlite
+
+tests:
+  - package_contents:
+      files:
+        - bin/regina-gui.html
+        - bin/regina-gui.js
+        - bin/regina-gui.wasm
+        - bin/qtloader.js
+        - bin/qtlogo.svg
+        - bin/regina-gui.data
+        - bin/regina-engine-config
+        - lib/libregina-engine.a
+        - include/regina/regina-core.h
+        - include/regina/triangulation/dim3.h
+
+about:
+  homepage: https://regina-normal.github.io/
+  license: GPL-2.0-only
+  license_file: LICENSE.txt
+  summary: Regina is a software package for low-dimensional topologists, with a focus on 3-manifold and 4-manifold triangulations, knots and links, normal surfaces, and angle structures.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
+  channel: emscripten-forge-4x-experimental
