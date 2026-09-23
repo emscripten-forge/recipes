@@ -3,19 +3,13 @@ set -euo pipefail
 
 cd "${SRC_DIR}"
 
-# The emscripten-forge compiler activation injects EMCC_CFLAGS with
-# "-fwasm-exceptions -sSUPPORT_LONGJMP=wasm" (plus -msimd128 -fPIC) into every
-# emcc call. The GC fix in step 4 relies on Binaryen's --flatten, which does
-# not support wasm exception-handling instructions, so use Emscripten's
-# JS-based setjmp/longjmp instead. ruby18 is a standalone program, not a side
-# module, so this does not affect compatibility with other packages.
+# --flatten (below) does not support wasm exception handling: use JS setjmp/longjmp.
 export EMCC_CFLAGS="-O2 -g0"
 
 HOST_SRC="${BUILD_DIR:-${SRC_DIR}/..}/ruby18-host-src"
 HOST_PREFIX="${BUILD_DIR:-${SRC_DIR}/..}/ruby18-host"
 JOBS="${CPU_COUNT:-2}"
 
-# Old K&R C. Keep modern compilers from turning these into hard errors.
 QUIET="-Wno-deprecated-non-prototype -Wno-parentheses -Wno-dangling-else \
  -Wno-unused-value -Wno-pointer-sign -Wno-compare-distinct-pointer-types \
  -Wno-shift-negative-value -Wno-comment -Wno-string-plus-int -Wno-unused-result \
@@ -31,13 +25,7 @@ config_sub_dir() {
 }
 CONFIG_SUB_DIR="$(config_sub_dir)"
 
-###############################################################################
-# 1. Native host Ruby 1.8.7
-#
-# When cross compiling, Ruby 1.8's Makefile runs mkconfig.rb and ext/extmk.rb
-# with "ruby -rfake", which must be the same Ruby version.
-###############################################################################
-
+# Native host ruby 1.8.7, needed to cross compile
 rm -rf "${HOST_SRC}" "${HOST_PREFIX}"
 cp -a "${SRC_DIR}" "${HOST_SRC}"
 (
@@ -56,10 +44,7 @@ cp -a "${SRC_DIR}" "${HOST_SRC}"
 )
 "${HOST_PREFIX}/bin/ruby" -v
 
-###############################################################################
-# 2. Cross build for wasm32-unknown-emscripten
-###############################################################################
-
+# Cross build
 cp "${CONFIG_SUB_DIR}/config.sub" "${CONFIG_SUB_DIR}/config.guess" .
 chmod +x config.sub config.guess
 
@@ -69,7 +54,6 @@ ac_cv_func_getpgrp_void=yes
 rb_cv_stack_grow_dir=-1
 EOF
 
-# -fgnu89-inline: lex.c (gperf) relies on GNU89 inline semantics.
 emconfigure ./configure \
     --cache-file=config.cache \
     --host=wasm32-unknown-emscripten \
@@ -97,22 +81,27 @@ EOF
 emmake make -j"${JOBS}"
 
 CFLAGS_T="$(sed -n 's/^CFLAGS *= *//p' Makefile | sed 's/\${cflags}//')"
-# wasm-main.c: main() that lowers Ruby's stack limit so runaway recursion
-# raises SystemStackError before the JS engine's call stack is exhausted.
 emcc ${CFLAGS_T} -I. -DRUBY_WASM_STACK_DEFAULT=655360 -c "${RECIPE_DIR}/wasm-main.c" -o wasm-main.o
 emcc ${CFLAGS_T} -I. -c "${RECIPE_DIR}/extinit.c" -o extinit.o
 
-###############################################################################
-# 3. Link
-#
-# EMULATE_FUNCTION_POINTER_CASTS: Ruby 1.8 registers C methods and callbacks
-# through unprototyped function pointers whose arity does not always match the
-# definition (e.g. rb_obj_dummy registered with arity 1); wasm traps on such
-# indirect calls otherwise.
-#
-# --profiling-funcs keeps the name section so the GC step below can find
-# __stack_pointer. It is stripped again afterwards.
-###############################################################################
+# Full stdlib is installed; a subset is embedded for standalone web use.
+STDLIB_MIN="${SRC_DIR}/stdlib-min"
+rm -rf "${STDLIB_MIN}" "${SRC_DIR}/stdlib-full"
+mkdir -p "${STDLIB_MIN}" "${SRC_DIR}/stdlib-full/wasm32-emscripten"
+cp -r lib/* "${SRC_DIR}/stdlib-full/"
+cp -r .ext/common/* "${SRC_DIR}/stdlib-full/"
+cp rbconfig.rb "${SRC_DIR}/stdlib-full/wasm32-emscripten/"
+(
+    cd "${SRC_DIR}/stdlib-full"
+    cp -r --parents \
+        English.rb cgi.rb date.rb date delegate.rb digest.rb fileutils.rb ftools.rb \
+        net/http.rb net/protocol.rb open-uri.rb optparse.rb optparse ostruct.rb \
+        parsedate.rb rational.rb tempfile.rb thread.rb time.rb timeout.rb tmpdir.rb \
+        uri.rb uri set.rb pp.rb prettyprint.rb shellwords.rb find.rb erb.rb \
+        base64.rb benchmark.rb md5.rb singleton.rb forwardable.rb observer.rb \
+        abbrev.rb getoptlong.rb pathname.rb wasm32-emscripten/rbconfig.rb \
+        "${STDLIB_MIN}/"
+)
 
 emcc wasm-main.o extinit.o \
     ext/iconv/iconv.a ext/stringio/stringio.a ext/socket/socket.a \
@@ -128,19 +117,12 @@ emcc wasm-main.o extinit.o \
     -sFORCE_FILESYSTEM=1 \
     -sEXIT_RUNTIME=1 \
     -sMODULARIZE=1 \
-    -sEXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY,callMain
+    -sEXPORT_NAME=createRuby \
+    -sEXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY,callMain \
+    -lworkerfs.js \
+    --embed-file "${STDLIB_MIN}@/usr/local/lib/ruby/1.8"
 
-###############################################################################
-# 4. Make the conservative GC sound on wasm
-#
-# Ruby 1.8's GC finds live objects by scanning the C stack. On wasm most C
-# locals live in wasm locals or on the wasm value stack, which a scan of
-# linear memory cannot see, so objects still in use get collected.
-#   --flatten         every intermediate value becomes a local
-#   --spill-pointers  every i32 local live across a call is stored to a slot
-#                     on the shadow stack, which gc.c already scans
-###############################################################################
-
+# Spill live locals to the shadow stack so Ruby's conservative GC can see them.
 WASM_OPT="$(em-config BINARYEN_ROOT 2>/dev/null || true)/bin/wasm-opt"
 if [ ! -x "${WASM_OPT}" ]; then
     WASM_OPT="$(dirname "$(command -v emcc)")/../bin/wasm-opt"
@@ -153,16 +135,9 @@ fi
     --strip-debug --strip-producers \
     -o ruby.wasm
 
-###############################################################################
-# 5. Install
-###############################################################################
-
 mkdir -p "${PREFIX}/bin"
 install -m755 ruby.js "${PREFIX}/bin/ruby.js"
 install -m644 ruby.wasm "${PREFIX}/bin/ruby.wasm"
 
-RUBYLIBDIR="${PREFIX}/lib/ruby/1.8"
-mkdir -p "${RUBYLIBDIR}/wasm32-emscripten"
-cp -r lib/* "${RUBYLIBDIR}/"
-cp -r .ext/common/* "${RUBYLIBDIR}/"
-cp rbconfig.rb "${RUBYLIBDIR}/wasm32-emscripten/"
+mkdir -p "${PREFIX}/lib/ruby/1.8"
+cp -r "${SRC_DIR}/stdlib-full/." "${PREFIX}/lib/ruby/1.8/"
