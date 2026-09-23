@@ -170,3 +170,9 @@ else
     echo "WARNING: qtlogo.svg not found; regina-gui.html will 404 on it"
 fi
 cp utils/*.wasm "${PREFIX}/bin/"
+
+INSTALL_DIR="${PREFIX}/share/regina-gui"
+mkdir -p "${INSTALL_DIR}"
+cp "${PREFIX}"/bin/regina-gui.{html,js,wasm,data} \
+   "${PREFIX}/bin/qtloader.js" \
+   "${INSTALL_DIR}/"
