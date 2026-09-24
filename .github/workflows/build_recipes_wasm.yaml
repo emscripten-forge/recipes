@@ -1,0 +1,34 @@
+name: Build Wasm Recipes
+
+on:
+  push:
+    branches:
+      - "emscripten-6x"
+    paths:
+      - "recipes/recipes_wasm/**"
+      - ".github/workflows/build_recipes_wasm.yaml"
+      - ".github/workflows/reusable_build_recipes.yaml"
+  pull_request:
+    paths:
+      - "recipes/recipes_wasm/**"
+      - ".github/workflows/build_recipes_wasm.yaml"
+      - ".github/workflows/reusable_build_recipes.yaml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build_recipes:
+    strategy:
+      fail-fast: false
+      matrix:
+        wasm-arch:
+          - emscripten-wasm32
+          - emscripten-wasm64
+    uses: ./.github/workflows/reusable_build_recipes.yaml
+    with:
+      os: ubuntu-latest
+      wasm-arch: ${{ matrix.wasm-arch }}
+      subdir: recipes_wasm
+    secrets: inherit
