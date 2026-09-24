@@ -1,0 +1,155 @@
+context:
+  name: pcre2
+  version: '10.48'
+
+source:
+  url: https://github.com/PCRE2Project/pcre2/archive/refs/tags/${{ name }}-${{ version }}.tar.gz
+  sha256: 38c2a44986d70050f5fc8219901de87fc32784ab271d3c7d4400683a0b76794b
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: pcre2-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - libtool
+    - automake
+    - autoconf
+    host:
+    - libbzip2-static
+    - libzlib-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Headers, docs, and config files
+- package:
+    name: libpcre2-dev
+    version: ${{ version }}
+  inherit: pcre2-build
+  build:
+    files:
+      exclude:
+      - lib/*.a
+      - lib/*.so
+  tests:
+  - package_contents:
+      files:
+      - include/pcre2.h
+      - include/pcre2posix.h
+
+#==============================================================================#
+
+- package:
+    name: libpcre2-static
+    version: ${{ version }}
+  inherit: pcre2-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    host:
+    - libbzip2-static
+    - libzlib-static
+    run:
+    - ${{ pin_subpackage('libpcre2-dev', exact=True) }}
+    - ${{ pin_compatible('libbzip2-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('libzlib-static',  lower_bound='x.x.x', upper_bound='x.x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libpcre2-8.a
+      - lib/libpcre2-16.a
+      - lib/libpcre2-32.a
+      - lib/libpcre2-posix.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libpcre2
+    version: ${{ version }}
+  inherit: pcre2-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('libpcre2-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libpcre2', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libpcre2-8.so
+      - lib/libpcre2-16.so
+      - lib/libpcre2-32.so
+      - lib/libpcre2-posix.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: pcre2-static
+    version: ${{ version }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('libpcre2-static', exact=True) }}
+  tests:
+  - package_contents:
+      files: []
+
+#==============================================================================#
+
+# This matches the contents of the conda-forge equivalent
+- package:
+    name: pcre2
+    version: ${{ version }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('libpcre2-dev', exact=True) }}
+    - ${{ pin_subpackage('libpcre2', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libpcre2', upper_bound='x.x') }}
+  tests:
+  - script:
+    - node ${PREFIX}/bin/pcre2grep --version
+    - node ${PREFIX}/bin/pcre2test --version
+    requirements:
+      build:
+      - nodejs
+
+#==============================================================================#
+
+about:
+  homepage: http://www.pcre.org/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENCE.md
+  summary: |
+    Regular expression pattern matching using Perl 5 syntax and semantics.
+  description: |
+    The PCRE library is a set of functions that implement regular expression
+    pattern matching using the same syntax and semantics as Perl 5. PCRE has its
+    own native API, as well as a set of wrapper functions that correspond to the
+    POSIX regular expression API. The PCRE library is free, even for building
+    proprietary software.
+  documentation: http://www.pcre.org/current/doc/html/
+  repository: https://github.com/PCRE2Project/pcre2
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

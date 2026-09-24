@@ -1,0 +1,144 @@
+context:
+  name: expat
+  version: 2.6.4
+  ver: ${{ version|replace('.', '_') }}
+
+source:
+  url: https://github.com/libexpat/libexpat/releases/download/R_${{ ver }}/expat-${{ version }}.tar.bz2
+  sha256: 8dc480b796163d4436e6f1352e71800a774f73dbae213f1860b60607d2a83ada
+  patches:
+  - patches/0001-Enable-shared-libs.patch
+  - patches/0002-Enable-wasm-exceptions.patch
+  - patches/0003-Link-xmlwf-with-static-libs.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: expat-build
+  requirements:
+    build:
+    - make
+    - libtool
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Headers and config files
+- package:
+    name: libexpat-dev
+    version: ${{ version }}
+  inherit: expat-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/cmake/
+      - lib/pkgconfig/
+      - share/
+  tests:
+  - package_contents:
+      files:
+      - include/expat.h
+      - include/expat_config.h
+      - include/expat_external.h
+      - lib/cmake/expat-${{ version }}/expat.cmake
+      - lib/pkgconfig/expat.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libexpat-static
+    version: ${{ version }}
+  inherit: expat-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    run:
+    - ${{ pin_subpackage('libexpat-dev', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libexpat.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libexpat
+    version: ${{ version }}
+  inherit: expat-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('libexpat-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libexpat', upper_bound='x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libexpat.so
+  - script: generic-testing --allow-pthread # No pthread actually used
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# This matches the conda-forge package which includes everything
+- package:
+    name: expat
+    version: ${{ version }}
+  inherit: expat-build
+  build:
+    files:
+      include:
+      - bin/xmlwf
+      - bin/xmlwf.wasm
+  requirements:
+    run:
+    - ${{ pin_subpackage('libexpat-static', exact=True) }}
+    - ${{ pin_subpackage('libexpat', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libexpat', upper_bound='x')}}
+  tests:
+  - package_contents:
+      files:
+      - bin/xmlwf
+      - bin/xmlwf.wasm
+  - script:
+    - node $PREFIX/bin/xmlwf -h
+    requirements:
+      build:
+      - nodejs
+
+#==============================================================================#
+
+about:
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: Expat XML parser library in C
+  homepage: http://expat.sourceforge.net/
+  repository: https://github.com/libexpat/libexpat
+
+extra:
+  recipe-maintainers:
+  - wolfv
+  - IsabelParedes
