@@ -2,10 +2,6 @@ context:
   name: pcre2
   version: '10.48'
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   url: https://github.com/PCRE2Project/pcre2/archive/refs/tags/${{ name }}-${{ version }}.tar.gz
   sha256: 38c2a44986d70050f5fc8219901de87fc32784ab271d3c7d4400683a0b76794b
@@ -13,32 +9,42 @@ source:
 build:
   number: 0
 
-  files:
-    exclude:
-    - share/man/man1/**
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - cmake
-  - ninja
-  host:
-  - bzip2
-  - zlib
+outputs:
 
-tests:
-- package_contents:
-    lib:
-    - libpcre2-8.a
-    - libpcre2-16.a
-    - libpcre2-32.a
-    include:
-    - pcre2.h
-- script:
-  - node ${PREFIX}/bin/pcre2grep --version
-  - node ${PREFIX}/bin/pcre2test --version
+- package:
+    name: pcre2-static
+    version: ${{ version }}
   requirements:
     build:
-    - nodejs
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+    host:
+    - bzip2
+    - zlib
+  build:
+    script: build.sh
+    files:
+      exclude:
+      - share/man/man1/**
+  tests:
+  - package_contents:
+      lib:
+      - libpcre2-8.a
+      - libpcre2-16.a
+      - libpcre2-32.a
+      include:
+      - pcre2.h
+  - script:
+    - node ${PREFIX}/bin/pcre2grep --version
+    - node ${PREFIX}/bin/pcre2test --version
+    requirements:
+      build:
+      - nodejs
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   homepage: http://www.pcre.org/

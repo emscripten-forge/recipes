@@ -1,12 +1,18 @@
 #!/bin/bash
 
+if [[ "${target_platform}" == "emscripten-wasm64" ]]; then
+  host="wasm64-unknown-emscripten"
+else
+  host="wasm32-unknown-emscripten"
+fi
+
 export CFLAGS="$CFLAGS -fPIC -fwasm-exceptions -I$PREFIX/include"
 export LDFLAGS="$LDFLAGS -fwasm-exceptions -L$PREFIX/lib"
 
 ./autogen.sh
 emconfigure ./configure \
     --prefix=$PREFIX \
-    --host="wasm32-unknown-emscripten" \
+    --host="${host}" \
     --disable-shared \
     --enable-pcre2-16 \
     --enable-pcre2-32
