@@ -1,0 +1,34 @@
+name: Build Native Recipes
+
+on:
+  push:
+    branches:
+      - "emscripten-6x"
+    paths:
+      - "recipes/recipes_native/**"
+      - ".github/workflows/build_recipes_native.yaml"
+      - ".github/workflows/reusable_build_recipes.yaml"
+  pull_request:
+    paths:
+      - "recipes/recipes_native/**"
+      - ".github/workflows/build_recipes_native.yaml"
+      - ".github/workflows/reusable_build_recipes.yaml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build_native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    uses: ./.github/workflows/reusable_build_recipes.yaml
+    with:
+      os: ${{ matrix.os }}
+      wasm-arch: None
+      subdir: recipes_native
+    secrets: inherit

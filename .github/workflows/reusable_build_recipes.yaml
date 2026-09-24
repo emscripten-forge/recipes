@@ -1,41 +1,31 @@
-name: Build Recipes
+name: Reusable Build Recipes
 
 on:
-  push:
-    branches:
-      - "emscripten-6x"
-    paths:
-      - "recipes/recipes_native/**"
-      - "recipes/recipes_wasm/**"
-  pull_request:
-    paths:
-      - "recipes/recipes_native/**"
-      - "recipes/recipes_wasm/**"
+  workflow_call:
+    inputs:
+      os:
+        description: Runner OS (e.g. ubuntu-latest, macos-latest)
+        required: true
+        type: string
+      wasm-arch:
+        description: Target platform passed to emci (e.g. emscripten-wasm32, emscripten-wasm64, None)
+        required: true
+        type: string
+      subdir:
+        description: Recipe subdir to build (recipes_native or recipes_wasm)
+        required: true
+        type: string
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-
-  build_recipes:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            wasm-arch: emscripten-wasm32
-
-          - os: ubuntu-latest
-            wasm-arch: emscripten-wasm64
-
-          - os: macos-latest
-            wasm-arch: None
-
-    runs-on: ${{ matrix.os }}
+  build:
+    runs-on: ${{ inputs.os }}
     env:
       FORCE_COLOR: 1
-      TARGET_PLATFORM: ${{ matrix.wasm-arch }}
+      TARGET_PLATFORM: ${{ inputs.wasm-arch }}
       GITHUB_OWNER: "emscripten-forge"
 
     steps:
@@ -79,7 +69,7 @@ jobs:
             OLD=origin/emscripten-6x
             NEW=HEAD
           fi
-          needed=$(python -m emci build needs-playwright "$OLD" "$NEW")
+          needed=$(python -m emci build needs-playwright "$OLD" "$NEW" --subdir "${{ inputs.subdir }}")
           echo "needed=$needed" >> "$GITHUB_OUTPUT"
 
       - name: Install playwright dependencies
@@ -107,7 +97,9 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x~1 origin/emscripten-6x --target-platform ${{ matrix.wasm-arch }}
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x~1 origin/emscripten-6x \
+            --target-platform ${{ inputs.wasm-arch }} \
+            --subdir ${{ inputs.subdir }}
 
       ################################################################
       # PULL_REQUEST
@@ -116,7 +108,9 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x HEAD --target-platform ${{ matrix.wasm-arch }}
+          python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x HEAD \
+            --target-platform ${{ inputs.wasm-arch }} \
+            --subdir ${{ inputs.subdir }}
 
       ################################################################
       # UPLOAD
@@ -124,7 +118,7 @@ jobs:
       - name: Create artifact
         uses: actions/upload-artifact@v7
         with:
-          name: output
+          name: output-${{ inputs.os }}-${{ inputs.wasm-arch }}-${{ inputs.subdir }}
           path: output
         continue-on-error: true
 
@@ -136,7 +130,7 @@ jobs:
           # delete noarch pkgs for when on emscripten-wasm64
           # and just upload these when on emscripten-wasm32
 
-          if [ "${{ matrix.wasm-arch }}" = "emscripten-wasm64" ]; then
+          if [ "${{ inputs.wasm-arch }}" = "emscripten-wasm64" ]; then
 
             echo "Deleting noarch pkgs for emscripten-wasm64"
             rm -rf "${GITHUB_WORKSPACE}/output/noarch"
