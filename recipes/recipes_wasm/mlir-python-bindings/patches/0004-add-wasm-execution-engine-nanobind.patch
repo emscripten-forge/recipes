@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp b/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp
 new file mode 100644
-index 000000000000..30357104d946
+index 000000000000..85b591c436ce
 --- /dev/null
 +++ b/mlir/lib/Bindings/Python/WasmExecutionEngineModule.cpp
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,86 @@
 +//===- WasmExecutionEngineModule.cpp - Python bindings for Wasm EE --------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -15,7 +15,7 @@ index 000000000000..30357104d946
 +//
 +// nanobind extension module "_mlirWasmExecutionEngine" (Emscripten only).
 +//
-+// Exposes the target ABI and four execution primitives to Python:
++// Exposes three functions to Python:
 +//   compile_module(module, module_name, opt_level=2) -> str
 +//   link_load_module(object_filename, binary_filename)
 +//   get_symbol_address(name) -> int
@@ -27,9 +27,7 @@ index 000000000000..30357104d946
 +#include "mlir-c/WasmExecutionEngine.h"
 +#include "mlir/Bindings/Python/Nanobind.h"
 +#include "mlir/Bindings/Python/NanobindAdaptors.h"
-+#include "mlir/ExecutionEngine/CRunnerUtils.h"
 +
-+#include <climits>
 +#include <string>
 +
 +namespace nb = nanobind;
@@ -37,11 +35,6 @@ index 000000000000..30357104d946
 +
 +NB_MODULE(_mlirWasmExecutionEngine, m) {
 +  m.doc() = "MLIR Wasm Execution Engine (Emscripten / JupyterLite only)";
-+
-+  m.def(
-+      "target_index_bitwidth",
-+      []() { return sizeof(MemRefIndexType) * CHAR_BIT; },
-+      "Return the target-native MemRef index width.");
 +
 +  m.def(
 +      "compile_module",
@@ -54,8 +47,8 @@ index 000000000000..30357104d946
 +      },
 +      "module"_a, "module_name"_a, "opt_level"_a = 2,
 +      "Compile the MLIR operation (must be a module containing only LLVM "
-+      "dialect ops) to a WebAssembly object file for the current process. "
-+      "Returns the object file path.");
++      "dialect ops with llvm.target_triple set to wasm32-unknown-emscripten) "
++      "to a wasm32 object file.  Returns the object file path.");
 +
 +  m.def(
 +      "link_load_module",
