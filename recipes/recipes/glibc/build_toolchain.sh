@@ -68,6 +68,14 @@ test ! -e "${SYSROOT}/usr/include/stdio.h"
 
 # ---------------------------------------------------------------------------
 # 1. binutils
+#
+# binutils probes for zstd, debuginfod, msgpack and jansson with pkg-config,
+# which searches the *build* environment, while headers are only visible in
+# the *host* environment (through -isystem $PREFIX/include). conda-forge's
+# compilers pull zstd into the build env, so the probe succeeds and then
+# bfd/compress.c fails on a missing <zstd.h>. None of these are wanted in a
+# bootstrap toolchain, so ask for none of them rather than depending on what
+# the build environment happens to contain.
 # ---------------------------------------------------------------------------
 mkdir -p build-binutils && pushd build-binutils
 CC="${HOST_CC}" CXX="${HOST_CXX}" CFLAGS="${HOST_CFLAGS}" CXXFLAGS="${HOST_CXXFLAGS}" LDFLAGS="${HOST_LDFLAGS}" \
@@ -78,7 +86,8 @@ CC="${HOST_CC}" CXX="${HOST_CXX}" CFLAGS="${HOST_CFLAGS}" CXXFLAGS="${HOST_CXXFL
     --disable-nls --disable-werror --disable-gdb --disable-gdbserver \
     --disable-sim --disable-gprofng --disable-gold --disable-libctf \
     --enable-deterministic-archives --enable-plugins \
-    --with-system-zlib
+    --with-system-zlib \
+    --without-zstd --without-debuginfod --without-msgpack --disable-jansson
 make -j"${JOBS}"
 make install
 popd
@@ -91,7 +100,7 @@ GCC_COMMON_ARGS=(
     --build="${BUILD_TRIPLET}" --host="${BUILD_TRIPLET}" --target="${TARGET}"
     --with-sysroot="${SYSROOT}"
     --with-gmp="${PREFIX}" --with-mpfr="${PREFIX}" --with-mpc="${PREFIX}"
-    --without-isl --with-system-zlib
+    --without-isl --with-system-zlib --without-zstd
     --disable-multilib --disable-nls --disable-bootstrap
     --disable-libsanitizer --disable-libvtv --disable-libssp
     --disable-libquadmath --disable-libgomp --disable-libitm
