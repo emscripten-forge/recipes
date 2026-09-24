@@ -1,0 +1,152 @@
+From 248dfb32232d0e0cdd4fa206c04e3193e711296d Mon Sep 17 00:00:00 2001
+From: emscripten-forge <recipes@emscripten-forge>
+Date: Tue, 22 Sep 2026 23:39:16 +0000
+Subject: [PATCH] Task switching on emscripten's Asyncify fibers
+
+The branch left jl_set_fiber/jl_swap_fiber/jl_start_fiber to a JavaScript
+implementation (src/jsvm-emscripten/task.js) that called helpers from the
+'bysyncify' prototype of emscripten, which no longer exist. Emscripten has
+had a supported fiber API on top of Asyncify since then
+(emscripten/fiber.h), so implement the three hooks with it.
+
+Each task's stack buffer is split in half: the lower half is the C stack,
+the upper half the Asyncify save area for the task's unwound wasm frames.
+Switching away from a context that is never resumed (a finished task) needs
+somewhere to unwind to, which is what the scratch fiber is for; it is reset
+before every use so it cannot fill up.
+
+Requires linking with -sASYNCIFY.
+---
+ src/julia_threads.h | 12 ++++----
+ src/task.c          | 72 +++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 69 insertions(+), 15 deletions(-)
+
+diff --git a/src/julia_threads.h b/src/julia_threads.h
+index 619b9ad..3e8608f 100644
+--- a/src/julia_threads.h
++++ b/src/julia_threads.h
+@@ -50,13 +50,13 @@ typedef struct {
+ } jl_ucontext_t;
+ #endif
+ #if defined(JL_HAVE_BYSYNCIFY)
++// Task switching is built on emscripten's Asyncify fibers (link with
++// -sASYNCIFY). Each task stack buffer holds the task's C stack and the
++// Asyncify save area for its unwound wasm frames. The storage below holds an
++// emscripten_fiber_t (see task.c); it is opaque here so that this public
++// header does not pull in emscripten's headers.
+ typedef struct {
+-    // This is the extent of the bysyncify stack, but because the top of the
+-    // bysyncify stack (stacktop) is also the bottom of the C stack, we can
+-    // reuse stacktop for both. N.B.: This matches the layout of the
+-    // __bysyncify_data struct.
+-    void *stackbottom;
+-    void *stacktop;
++    void *fiber[16];
+ } jl_ucontext_t;
+ #endif
+ #if defined(JL_HAVE_UCONTEXT) || defined(JL_HAVE_UNW_CONTEXT)
+diff --git a/src/task.c b/src/task.c
+index 3568dc5..62dc43e 100644
+--- a/src/task.c
++++ b/src/task.c
+@@ -58,7 +58,8 @@ volatile int jl_in_stackwalk = 0;
+ #define ROOT_TASK_STACK_ADJUSTMENT 3000000
+ 
+ #ifdef JL_HAVE_BYSYNCIFY
+-// Switching logic is implemented in JavaScript
++// start_task stays exported so embedders can inspect it; the switching
++// itself is implemented below on top of emscripten fibers.
+ #define STATIC_OR_JS JL_DLLEXPORT
+ #else
+ #define STATIC_OR_JS static
+@@ -70,9 +71,9 @@ jl_sym_t *runnable_sym;
+ 
+ extern size_t jl_page_size;
+ static char *jl_alloc_fiber(jl_ucontext_t *t, size_t *ssize, jl_task_t *owner) JL_NOTSAFEPOINT;
+-STATIC_OR_JS void jl_set_fiber(jl_ucontext_t *t);
+-STATIC_OR_JS void jl_start_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t);
+-STATIC_OR_JS void jl_swap_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t);
++static void jl_set_fiber(jl_ucontext_t *t);
++static void jl_start_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t);
++static void jl_swap_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t);
+ 
+ #ifdef JL_HAVE_UNW_CONTEXT
+ static JL_THREAD_LOCAL unw_cursor_t jl_basecursor;
+@@ -982,19 +983,72 @@ static void jl_init_basefiber(size_t ssize)
+ #endif
+ 
+ #if defined(JL_HAVE_BYSYNCIFY)
++#include <emscripten/fiber.h>
++#define JL_FIBER(ctx) ((emscripten_fiber_t*)(ctx)->fiber)
++_Static_assert(sizeof(emscripten_fiber_t) <= sizeof(((jl_ucontext_t*)0)->fiber),
++               "jl_ucontext_t too small for emscripten_fiber_t");
++// Size of the Asyncify save area of the root task (the main C stack) and of
++// the scratch area used when switching away from a context that is never
++// resumed (a finished task).
++#define JL_ASYNCIFY_ROOT_STACK (1024 * 1024)
++#define JL_ASYNCIFY_SCRATCH_STACK (1024 * 1024)
++static char *jl_asyncify_scratch_stack = NULL;
++static emscripten_fiber_t jl_scratch_fiber;
++
++static void jl_fiber_entry(void *arg)
++{
++    (void)arg;
++    start_task();
++}
++
+ static void jl_init_basefiber(size_t ssize)
+ {
++    (void)ssize;
++    jl_ptls_t ptls = jl_get_ptls_states();
++    void *root_asyncify_stack = malloc(JL_ASYNCIFY_ROOT_STACK);
++    if (!jl_asyncify_scratch_stack)
++        jl_asyncify_scratch_stack = (char*)malloc(JL_ASYNCIFY_SCRATCH_STACK);
++    if (!root_asyncify_stack || !jl_asyncify_scratch_stack)
++        jl_errorf("fatal error: could not allocate the Asyncify stacks");
++    emscripten_fiber_init_from_current_context(JL_FIBER(&ptls->root_task->ctx),
++                                               root_asyncify_stack, JL_ASYNCIFY_ROOT_STACK);
+ }
++
+ static char *jl_alloc_fiber(jl_ucontext_t *t, size_t *ssize, jl_task_t *owner) JL_NOTSAFEPOINT
+ {
+-    void *stk = jl_malloc_stack(ssize, owner);
++    char *stk = (char*)jl_malloc_stack(ssize, owner);
+     if (stk == NULL)
+         return NULL;
+-    t->stackbottom = stk;
+-    t->stacktop = ((char*)stk) + *ssize;
+-    return (char*)stk;
++    // lower half: C stack (grows down towards stk), upper half: Asyncify data
++    size_t cstack = (*ssize / 2) & ~(size_t)15;
++    emscripten_fiber_init(JL_FIBER(t), jl_fiber_entry, NULL, stk, cstack,
++                          stk + cstack, *ssize - cstack);
++    return stk;
++}
++
++// A context we switch away from without ever resuming it still has to be
++// unwound somewhere; reset the scratch fiber every time so it cannot fill up.
++static emscripten_fiber_t *jl_scratch_fiber_ctx(void)
++{
++    emscripten_fiber_init_from_current_context(&jl_scratch_fiber,
++                                               jl_asyncify_scratch_stack, JL_ASYNCIFY_SCRATCH_STACK);
++    return &jl_scratch_fiber;
++}
++
++static void jl_start_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t)
++{
++    emscripten_fiber_swap(lastt ? JL_FIBER(lastt) : jl_scratch_fiber_ctx(), JL_FIBER(t));
++}
++
++static void jl_swap_fiber(jl_ucontext_t *lastt, jl_ucontext_t *t)
++{
++    emscripten_fiber_swap(JL_FIBER(lastt), JL_FIBER(t));
++}
++
++static void jl_set_fiber(jl_ucontext_t *t)
++{
++    emscripten_fiber_swap(jl_scratch_fiber_ctx(), JL_FIBER(t));
+ }
+-// jl_*_fiber implemented in js
+ #endif
+ 
+ // Initialize a root task using the given stack.

@@ -1,0 +1,36 @@
+From 70144474c5a566c0551e12d7e5b8322feeeeb1d3 Mon Sep 17 00:00:00 2001
+From: emscripten-forge <recipes@emscripten-forge>
+Date: Thu, 24 Sep 2026 00:33:44 +0000
+Subject: [PATCH] Do not build the NVVM reflect wrappers without an NVPTX
+ target
+
+src/llvm-api.cpp calls createNVVMReflectPass(), which only exists when
+LLVM was configured with the NVPTX target. The bootstrap builds LLVM with
+LLVM_TARGETS=host, so the link fails on an undefined symbol; nothing in
+this build can emit PTX in any case.
+---
+ src/llvm-api.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/llvm-api.cpp b/src/llvm-api.cpp
+index 7d7dcf1..793c8c7 100644
+--- a/src/llvm-api.cpp
++++ b/src/llvm-api.cpp
+@@ -221,6 +221,9 @@ extern "C" JL_DLLEXPORT LLVMContextRef LLVMExtraGetValueContext(LLVMValueRef V)
+ }
+ 
+ 
++// The NVPTX target is not built for the wasm bootstrap (LLVM_TARGETS=host),
++// and nothing in this build can emit PTX anyway.
++#ifdef JL_HAVE_NVPTX
+ #if JL_LLVM_VERSION < 80000
+ extern ModulePass *createNVVMReflectPass();
+ extern "C" JL_DLLEXPORT void LLVMExtraAddNVVMReflectPass(LLVMPassManagerRef PM)
+@@ -234,6 +237,7 @@ extern "C" JL_DLLEXPORT void LLVMExtraAddNVVMReflectFunctionPass(LLVMPassManager
+     unwrap(PM)->add(createNVVMReflectPass(SmVersion));
+ }
+ #endif
++#endif
+ 
+ extern "C" JL_DLLEXPORT void
+ LLVMExtraAddTargetLibraryInfoByTiple(const char *T, LLVMPassManagerRef PM)

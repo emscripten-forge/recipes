@@ -1,0 +1,512 @@
+From 2c9c5e0784de4ce62baebc1c6e40d23c683ac9a9 Mon Sep 17 00:00:00 2001
+From: emscripten-forge <recipes@emscripten-forge>
+Date: Thu, 24 Sep 2026 00:33:45 +0000
+Subject: [PATCH] Complete the interpreter's foreigncall table enough to run
+ Base
+
+With JULIACODEGEN=none every ccall goes through the generated table in
+src/interpreter-foreigncall.c, and anything it does not cover aborts the
+program. Four things were missing:
+
+  * ccall targets written as strings. Parts of Base build the name by
+    interpolation (base/mpfr.jl: ccall((string(:mpfr_, f), :libmpfr), ...)),
+    and get_sym_or_global_if_const() handled only symbols -- worse, it fell
+    off the end of a non-void function for everything else, so the result
+    was undefined rather than NULL. Interning a String target makes those
+    calls work; the missing return makes the failure reportable.
+
+  * the variadic printf family. The generator emitted calls with the fixed
+    arguments only, so mpfr_snprintf(buf, 0, "%Re", x) reached MPFR without
+    the value to print and tripped an assertion inside get_str.c. The
+    variadic arguments are now forwarded.
+
+  * entries that the generator never saw, because they are not declared in
+    julia.h (jl_load_, which is what include() calls) or were added to Base
+    later: jl_macroexpand, jl_macroexpand1, jl_get_field_offset,
+    jl_typemax_uint, jl_crc32c, jl_lookup_code_address,
+    jl_backtrace_from_here, jl_getpid, jl_prepend_cwd,
+    jl_type_intersection_with_env, memrchr, jl_get_excstack, and the libm
+    functions log2/log10/exp2/expm1/remainder/modf (plus their float
+    variants), which Base reaches through its openlibm ccalls.
+
+  * a usable diagnostic: the fallthrough printed the target with no context
+    and then raised an exception with an empty message.
+
+Also drop the jl_(e) debug dump at the top of jl_throw(), which printed
+every exception -- including caught ones -- to stderr.
+---
+ src/interpreter-foreigncall.c | 350 ++++++++++++++++++++++++++++++----
+ src/interpreter.c             |  31 ++-
+ src/task.c                    |   1 -
+ 3 files changed, 337 insertions(+), 45 deletions(-)
+
+diff --git a/src/interpreter-foreigncall.c b/src/interpreter-foreigncall.c
+index b994489..1a756d7 100644
+--- a/src/interpreter-foreigncall.c
++++ b/src/interpreter-foreigncall.c
+@@ -4,6 +4,34 @@
+ #include "julia_gcext.h"
+ #include "gc.h"
+ 
++/* Entry points Base ccalls that were missing from the generated table:
++   the libm functions used by Base.Math and the exception stack accessor. */
++extern double log2(double);
++extern float log2f(float);
++extern double log10(double);
++extern float log10f(float);
++extern double exp2(double);
++extern float exp2f(float);
++extern double expm1(double);
++extern float expm1f(float);
++extern double remainder(double, double);
++extern float remainderf(float, float);
++extern double modf(double, double *);
++extern float modff(float, float *);
++extern jl_value_t * jl_get_excstack(jl_task_t *, int, int);
++extern jl_value_t * jl_load_(jl_module_t *, jl_value_t *);
++extern jl_value_t * jl_macroexpand(jl_value_t *, jl_module_t *);
++extern jl_value_t * jl_macroexpand1(jl_value_t *, jl_module_t *);
++extern size_t jl_get_field_offset(jl_datatype_t *, int);
++extern jl_value_t * jl_typemax_uint(jl_value_t *);
++extern uint32_t jl_crc32c(uint32_t, const char *, size_t);
++extern jl_value_t * jl_lookup_code_address(void *, int);
++extern jl_value_t * jl_backtrace_from_here(int);
++extern int jl_getpid(void);
++extern jl_value_t * jl_prepend_cwd(jl_value_t *);
++extern jl_svec_t * jl_type_intersection_with_env(jl_value_t *, jl_value_t *);
++extern void * memrchr(const void *, int, size_t);
++
+ extern void srand(unsigned int);
+ extern char * getenv(const char *);
+ extern int setenv(const char *, const char *, int);
+@@ -8137,28 +8165,60 @@ rt = instantiate_foreigncall_rt(rt, s);
+ 		);
+ 	return jl_box_uint32(result);
+ } else if (strcmp(target, "__gmp_asprintf") == 0) {
+-	int result = __gmp_asprintf(
+-			(char **) jl_unbox_voidpointer(eval_value(args[5], s)),
+-			(const char *) jl_unbox_voidpointer(eval_value(args[6], s))
+-		);
++	char ** a0 = (char **) jl_unbox_voidpointer(eval_value(args[5], s));
++	const char * a1 = (const char *) jl_unbox_voidpointer(eval_value(args[6], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 7 ? nargs - 7 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[7 + i], s));
++	int result = __gmp_asprintf(a0, a1, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "__gmp_printf") == 0) {
+-	int result = __gmp_printf(
+-			(const char *) jl_unbox_voidpointer(eval_value(args[5], s))
+-		);
++	const char * a0 = (const char *) jl_unbox_voidpointer(eval_value(args[5], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 6 ? nargs - 6 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[6 + i], s));
++	int result = __gmp_printf(a0, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "__gmp_snprintf") == 0) {
+-	int result = __gmp_snprintf(
+-			(char *) jl_unbox_voidpointer(eval_value(args[5], s)),
+-			(size_t) jl_unbox_uint32(eval_value(args[6], s)),
+-			(const char *) jl_unbox_voidpointer(eval_value(args[7], s))
+-		);
++	char * a0 = (char *) jl_unbox_voidpointer(eval_value(args[5], s));
++	size_t a1 = (size_t) jl_unbox_uint32(eval_value(args[6], s));
++	const char * a2 = (const char *) jl_unbox_voidpointer(eval_value(args[7], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 8 ? nargs - 8 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[8 + i], s));
++	int result = __gmp_snprintf(a0, a1, a2, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "__gmp_sprintf") == 0) {
+-	int result = __gmp_sprintf(
+-			(char *) jl_unbox_voidpointer(eval_value(args[5], s)),
+-			(const char *) jl_unbox_voidpointer(eval_value(args[6], s))
+-		);
++	char * a0 = (char *) jl_unbox_voidpointer(eval_value(args[5], s));
++	const char * a1 = (const char *) jl_unbox_voidpointer(eval_value(args[6], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 7 ? nargs - 7 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[7 + i], s));
++	int result = __gmp_sprintf(a0, a1, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "__gmp_scanf") == 0) {
+ 	int result = __gmp_scanf(
+@@ -11050,28 +11110,60 @@ rt = instantiate_foreigncall_rt(rt, s);
+ 		);
+ 	return jl_nothing;
+ } else if (strcmp(target, "mpfr_printf") == 0) {
+-	int result = mpfr_printf(
+-			(const char *) jl_unbox_voidpointer(eval_value(args[5], s))
+-		);
++	const char * a0 = (const char *) jl_unbox_voidpointer(eval_value(args[5], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 6 ? nargs - 6 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[6 + i], s));
++	int result = mpfr_printf(a0, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "mpfr_asprintf") == 0) {
+-	int result = mpfr_asprintf(
+-			(char **) jl_unbox_voidpointer(eval_value(args[5], s)),
+-			(const char *) jl_unbox_voidpointer(eval_value(args[6], s))
+-		);
++	char ** a0 = (char **) jl_unbox_voidpointer(eval_value(args[5], s));
++	const char * a1 = (const char *) jl_unbox_voidpointer(eval_value(args[6], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 7 ? nargs - 7 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[7 + i], s));
++	int result = mpfr_asprintf(a0, a1, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "mpfr_sprintf") == 0) {
+-	int result = mpfr_sprintf(
+-			(char *) jl_unbox_voidpointer(eval_value(args[5], s)),
+-			(const char *) jl_unbox_voidpointer(eval_value(args[6], s))
+-		);
++	char * a0 = (char *) jl_unbox_voidpointer(eval_value(args[5], s));
++	const char * a1 = (const char *) jl_unbox_voidpointer(eval_value(args[6], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 7 ? nargs - 7 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[7 + i], s));
++	int result = mpfr_sprintf(a0, a1, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "mpfr_snprintf") == 0) {
+-	int result = mpfr_snprintf(
+-			(char *) jl_unbox_voidpointer(eval_value(args[5], s)),
+-			(size_t) jl_unbox_uint32(eval_value(args[6], s)),
+-			(const char *) jl_unbox_voidpointer(eval_value(args[7], s))
+-		);
++	char * a0 = (char *) jl_unbox_voidpointer(eval_value(args[5], s));
++	size_t a1 = (size_t) jl_unbox_uint32(eval_value(args[6], s));
++	const char * a2 = (const char *) jl_unbox_voidpointer(eval_value(args[7], s));
++	/* The printf family is variadic; Base passes the value to print as an
++	 * extra argument (base/mpfr.jl: `ccall(..., (Ptr{UInt8}, Ptr{UInt8},
++	 * Ref{BigFloat}...), buf, fmt, x)`), so forward those too. Passing more
++	 * variadic arguments than the format consumes is harmless. */
++	void *va[4] = { NULL, NULL, NULL, NULL };
++	size_t nva = nargs > 8 ? nargs - 8 : 0;
++	if (nva > 4) nva = 4;
++	for (size_t i = 0; i < nva; i++)
++		va[i] = jl_unbox_voidpointer(eval_value(args[8 + i], s));
++	int result = mpfr_snprintf(a0, a1, a2, va[0], va[1], va[2], va[3]);
+ 	return jl_box_int32(result);
+ } else if (strcmp(target, "mpfr_pow") == 0) {
+ 	int result = mpfr_pow(
+@@ -12872,6 +12964,145 @@ rt = instantiate_foreigncall_rt(rt, s);
+ 			(int) jl_unbox_int32(eval_value(args[7], s))
+ 		);
+ 	return jl_box_int32(result);
++} else if (strcmp(target, "log2") == 0) {
++	double result = log2(
++			(double) jl_unbox_float64(eval_value(args[5], s))
++		);
++	return jl_box_float64(result);
++} else if (strcmp(target, "log2f") == 0) {
++	float result = log2f(
++			(float) jl_unbox_float32(eval_value(args[5], s))
++		);
++	return jl_box_float32(result);
++} else if (strcmp(target, "log10") == 0) {
++	double result = log10(
++			(double) jl_unbox_float64(eval_value(args[5], s))
++		);
++	return jl_box_float64(result);
++} else if (strcmp(target, "log10f") == 0) {
++	float result = log10f(
++			(float) jl_unbox_float32(eval_value(args[5], s))
++		);
++	return jl_box_float32(result);
++} else if (strcmp(target, "exp2") == 0) {
++	double result = exp2(
++			(double) jl_unbox_float64(eval_value(args[5], s))
++		);
++	return jl_box_float64(result);
++} else if (strcmp(target, "exp2f") == 0) {
++	float result = exp2f(
++			(float) jl_unbox_float32(eval_value(args[5], s))
++		);
++	return jl_box_float32(result);
++} else if (strcmp(target, "expm1") == 0) {
++	double result = expm1(
++			(double) jl_unbox_float64(eval_value(args[5], s))
++		);
++	return jl_box_float64(result);
++} else if (strcmp(target, "expm1f") == 0) {
++	float result = expm1f(
++			(float) jl_unbox_float32(eval_value(args[5], s))
++		);
++	return jl_box_float32(result);
++} else if (strcmp(target, "remainder") == 0) {
++	double result = remainder(
++			(double) jl_unbox_float64(eval_value(args[5], s)),
++			(double) jl_unbox_float64(eval_value(args[6], s))
++		);
++	return jl_box_float64(result);
++} else if (strcmp(target, "remainderf") == 0) {
++	float result = remainderf(
++			(float) jl_unbox_float32(eval_value(args[5], s)),
++			(float) jl_unbox_float32(eval_value(args[6], s))
++		);
++	return jl_box_float32(result);
++} else if (strcmp(target, "modf") == 0) {
++	double result = modf(
++			(double) jl_unbox_float64(eval_value(args[5], s)),
++			(double *) jl_unbox_voidpointer(eval_value(args[6], s))
++		);
++	return jl_box_float64(result);
++} else if (strcmp(target, "modff") == 0) {
++	float result = modff(
++			(float) jl_unbox_float32(eval_value(args[5], s)),
++			(float *) jl_unbox_voidpointer(eval_value(args[6], s))
++		);
++	return jl_box_float32(result);
++} else if (strcmp(target, "jl_get_excstack") == 0) {
++	jl_value_t * result = jl_get_excstack(
++			(jl_task_t *) eval_value(args[5], s),
++			(int) jl_unbox_int32(eval_value(args[6], s)),
++			(int) jl_unbox_int32(eval_value(args[7], s))
++		);
++	return result;
++} else if (strcmp(target, "jl_load_") == 0) {
++	jl_value_t * result = jl_load_(
++			(jl_module_t *) eval_value(args[5], s),
++			(jl_value_t *) eval_value(args[6], s)
++		);
++	return result;
++} else if (strcmp(target, "jl_macroexpand") == 0) {
++	jl_value_t * result = jl_macroexpand(
++			(jl_value_t *) eval_value(args[5], s),
++			(jl_module_t *) eval_value(args[6], s)
++		);
++	return result;
++} else if (strcmp(target, "jl_macroexpand1") == 0) {
++	jl_value_t * result = jl_macroexpand1(
++			(jl_value_t *) eval_value(args[5], s),
++			(jl_module_t *) eval_value(args[6], s)
++		);
++	return result;
++} else if (strcmp(target, "jl_get_field_offset") == 0) {
++	size_t result = jl_get_field_offset(
++			(jl_datatype_t *) eval_value(args[5], s),
++			(int) jl_unbox_int32(eval_value(args[6], s))
++		);
++	return jl_box_uint32(result);
++} else if (strcmp(target, "jl_typemax_uint") == 0) {
++	jl_value_t * result = jl_typemax_uint(
++			(jl_value_t *) eval_value(args[5], s)
++		);
++	return result;
++} else if (strcmp(target, "jl_crc32c") == 0) {
++	uint32_t result = jl_crc32c(
++			(uint32_t) jl_unbox_uint32(eval_value(args[5], s)),
++			(const char *) jl_unbox_voidpointer(eval_value(args[6], s)),
++			(size_t) jl_unbox_uint32(eval_value(args[7], s))
++		);
++	return jl_box_uint32(result);
++} else if (strcmp(target, "jl_lookup_code_address") == 0) {
++	jl_value_t * result = jl_lookup_code_address(
++			(void *) jl_unbox_voidpointer(eval_value(args[5], s)),
++			(int) jl_unbox_int32(eval_value(args[6], s))
++		);
++	return result;
++} else if (strcmp(target, "jl_backtrace_from_here") == 0) {
++	jl_value_t * result = jl_backtrace_from_here(
++			(int) jl_unbox_int32(eval_value(args[5], s))
++		);
++	return result;
++} else if (strcmp(target, "jl_getpid") == 0) {
++	int result = jl_getpid();
++	return jl_box_int32(result);
++} else if (strcmp(target, "jl_prepend_cwd") == 0) {
++	jl_value_t * result = jl_prepend_cwd(
++			(jl_value_t *) eval_value(args[5], s)
++		);
++	return result;
++} else if (strcmp(target, "jl_type_intersection_with_env") == 0) {
++	jl_svec_t * result = jl_type_intersection_with_env(
++			(jl_value_t *) eval_value(args[5], s),
++			(jl_value_t *) eval_value(args[6], s)
++		);
++	return (jl_value_t *) result;
++} else if (strcmp(target, "memrchr") == 0) {
++	void * result = memrchr(
++			(const void *) jl_unbox_voidpointer(eval_value(args[5], s)),
++			(int) jl_unbox_int32(eval_value(args[6], s)),
++			(size_t) jl_unbox_uint32(eval_value(args[7], s))
++		);
++	return jl_box_voidpointer(result);
+ } else if (strcmp(target, "emscripten_sleep") == 0) {
+ 	emscripten_sleep(
+ 			(unsigned int) jl_unbox_uint32(eval_value(args[5], s))
+@@ -16155,6 +16386,56 @@ else if (strcmp(target, "emscripten_get_callstack") == 0) {
+ return (void*)&emscripten_get_callstack; } 
+ else if (strcmp(target, "emscripten_print_double") == 0) {
+ return (void*)&emscripten_print_double; } 
++else if (strcmp(target, "log2") == 0) {
++return (void*)&log2; } 
++else if (strcmp(target, "log2f") == 0) {
++return (void*)&log2f; } 
++else if (strcmp(target, "log10") == 0) {
++return (void*)&log10; } 
++else if (strcmp(target, "log10f") == 0) {
++return (void*)&log10f; } 
++else if (strcmp(target, "exp2") == 0) {
++return (void*)&exp2; } 
++else if (strcmp(target, "exp2f") == 0) {
++return (void*)&exp2f; } 
++else if (strcmp(target, "expm1") == 0) {
++return (void*)&expm1; } 
++else if (strcmp(target, "expm1f") == 0) {
++return (void*)&expm1f; } 
++else if (strcmp(target, "remainder") == 0) {
++return (void*)&remainder; } 
++else if (strcmp(target, "remainderf") == 0) {
++return (void*)&remainderf; } 
++else if (strcmp(target, "modf") == 0) {
++return (void*)&modf; } 
++else if (strcmp(target, "modff") == 0) {
++return (void*)&modff; } 
++else if (strcmp(target, "jl_get_excstack") == 0) {
++return (void*)&jl_get_excstack; } 
++else if (strcmp(target, "jl_load_") == 0) {
++return (void*)&jl_load_; } 
++else if (strcmp(target, "jl_macroexpand") == 0) {
++return (void*)&jl_macroexpand; } 
++else if (strcmp(target, "jl_macroexpand1") == 0) {
++return (void*)&jl_macroexpand1; } 
++else if (strcmp(target, "jl_get_field_offset") == 0) {
++return (void*)&jl_get_field_offset; } 
++else if (strcmp(target, "jl_typemax_uint") == 0) {
++return (void*)&jl_typemax_uint; } 
++else if (strcmp(target, "jl_crc32c") == 0) {
++return (void*)&jl_crc32c; } 
++else if (strcmp(target, "jl_lookup_code_address") == 0) {
++return (void*)&jl_lookup_code_address; } 
++else if (strcmp(target, "jl_backtrace_from_here") == 0) {
++return (void*)&jl_backtrace_from_here; } 
++else if (strcmp(target, "jl_getpid") == 0) {
++return (void*)&jl_getpid; } 
++else if (strcmp(target, "jl_prepend_cwd") == 0) {
++return (void*)&jl_prepend_cwd; } 
++else if (strcmp(target, "jl_type_intersection_with_env") == 0) {
++return (void*)&jl_type_intersection_with_env; } 
++else if (strcmp(target, "memrchr") == 0) {
++return (void*)&memrchr; } 
+ else if (strcmp(target, "emscripten_sleep") == 0) {
+ return (void*)&emscripten_sleep; } 
+ 
+@@ -16175,8 +16456,9 @@ return (void*)&emscripten_sleep; }
+             return &JL_STDERR;
+         }
+ 
+- printf("%s", target);
+- jl_error("Encountered cglobal not mapped in runtime_intrinsics. For now, you may add it to the list. (Or write a proper solution)\n");
++ jl_errorf("Encountered a foreign call target that the interpreter's "
++           "foreigncall table does not map: \"%s\". Add it to "
++           "src/interpreter-foreigncall.c.", target);
+ 
+ return NULL;
+ }
+diff --git a/src/interpreter.c b/src/interpreter.c
+index 3ab6c99..dbb7575 100644
+--- a/src/interpreter.c
++++ b/src/interpreter.c
+@@ -369,24 +369,35 @@ SECT_INTERP static void eval_stmt_value(jl_value_t *stmt, interpreter_state *s)
+     s->locals[jl_source_nslots(s->src) + s->ip] = res;
+ }
+ 
++// ccall targets are usually written as symbols, but several parts of Base
++// build them with string interpolation instead (base/mpfr.jl: `ccall(
++// ($(string(:mpfr_, f)), :libmpfr), ...)`), so a target can also be a String.
++// Interning it gives the interpreter's foreigncall table the same name to
++// look up. Anything else (and the missing fallthrough return, which used to
++// leave the result undefined) yields NULL, which the caller reports.
++static jl_sym_t *sym_from_value(jl_value_t *val)
++{
++    if (val == NULL)
++        return NULL;
++    if (jl_is_symbol(val))
++        return (jl_sym_t *)val;
++    if (jl_is_string(val))
++        return jl_symbol(jl_string_data(val));
++    return NULL;
++}
++
+ jl_sym_t *get_sym_or_global_if_const(jl_value_t *arg)
+ {
+     if (jl_is_globalref(arg)) {
+         jl_module_t *mod = jl_globalref_mod(arg);
+         jl_sym_t *sym = jl_globalref_name(arg);
+-        if (jl_is_const(mod, sym)) {
+-            jl_value_t *val = jl_get_global(mod, sym);
+-            if (jl_is_symbol(val)) {
+-                return (jl_sym_t *)val;
+-            }
+-            return NULL;
+-        }
++        if (jl_is_const(mod, sym))
++            return sym_from_value(jl_get_global(mod, sym));
+         return NULL;
+     } else if (jl_is_quotenode(arg)) {
+-        if (!jl_is_symbol(jl_quotenode_value(arg)))
+-            return NULL;
+-        return (jl_sym_t*)jl_quotenode_value(arg);
++        return sym_from_value(jl_quotenode_value(arg));
+     }
++    return sym_from_value(arg);
+ }
+ 
+ void jl_foreigncall_get_syms(jl_value_t *target, jl_sym_t **fname, jl_sym_t **libname)
+diff --git a/src/task.c b/src/task.c
+index 62dc43e..c4c6906 100644
+--- a/src/task.c
++++ b/src/task.c
+@@ -456,7 +456,6 @@ void JL_NORETURN throw_internal(jl_value_t *exception JL_MAYBE_UNROOTED)
+ // record backtrace and raise an error
+ JL_DLLEXPORT void jl_throw(jl_value_t *e JL_MAYBE_UNROOTED)
+ {
+-    jl_(e);
+     jl_ptls_t ptls = jl_get_ptls_states();
+     assert(e != NULL);
+     if (ptls->safe_restore)

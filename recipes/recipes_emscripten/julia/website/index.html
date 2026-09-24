@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<!--
+  A small browser REPL for the wasm build of Julia.
+
+  Everything it needs is in this file and in julia.js / julia.wasm next to it:
+  no frameworks, no network access, no build step. Serve the directory over
+  HTTP (a wasm module cannot be fetched from a file:// page) and open it:
+
+      python3 -m http.server -d $CONDA_PREFIX/share/julia-wasm/website
+
+  The module is started with noInitialRun, so that main() does not consume the
+  (empty) browser stdin; jl_initialize() from ui/wasm-support.c does the same
+  setup a command-line julia would do. Input is evaluated by a small Julia
+  helper defined at startup, so that results print the way Base would print
+  them rather than through the runtime's C-level fallback.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Julia (wasm)</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='10' cy='22' r='5' fill='%23cb3c33'/%3E%3Ccircle cx='22' cy='22' r='5' fill='%23389826'/%3E%3Ccircle cx='16' cy='10' r='5' fill='%234063d8'/%3E%3C/svg%3E">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfbfa; --fg: #1d1d1f; --dim: #6b6b70;
+    --rule: #e2e2df; --accent: #5a4fcf; --err: #b3261e;
+    --font: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171a; --fg: #e8e8ea; --dim: #8e8e96;
+      --rule: #2c2c31; --accent: #a79cff; --err: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font); font-size: 14px; line-height: 1.55;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 10px 16px; border-bottom: 1px solid var(--rule); flex: none;
+  }
+  header h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .02em; }
+  header .status { color: var(--dim); font-size: 12px; }
+  main { flex: 1; overflow-y: auto; padding: 16px; }
+  #out { margin: 0; white-space: pre-wrap; word-break: break-word; }
+  .in { color: var(--accent); }
+  .err { color: var(--err); }
+  .note { color: var(--dim); }
+  footer { border-top: 1px solid var(--rule); padding: 10px 16px; flex: none; }
+  form { display: flex; align-items: baseline; gap: 8px; }
+  .prompt { color: var(--accent); font-weight: 600; flex: none; }
+  textarea {
+    flex: 1; resize: none; border: 0; outline: 0; padding: 0;
+    background: transparent; color: inherit;
+    font: inherit; line-height: 1.55; overflow: hidden;
+  }
+  textarea[disabled] { color: var(--dim); }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Julia &mdash; WebAssembly</h1>
+  <span class="status" id="status">loading&hellip;</span>
+</header>
+<main id="scroll"><pre id="out"></pre></main>
+<footer>
+  <form id="form">
+    <span class="prompt">julia&gt;</span>
+    <textarea id="input" rows="1" spellcheck="false" autocomplete="off"
+              autocapitalize="off" disabled></textarea>
+  </form>
+  <div class="hint">Enter evaluates &middot; Shift+Enter adds a line &middot; everything runs in the
+    interpreter, so give it a moment</div>
+</footer>
+
+<script>
+(function () {
+  var out = document.getElementById("out");
+  var scroll = document.getElementById("scroll");
+  var input = document.getElementById("input");
+  var status = document.getElementById("status");
+
+  function write(text, cls) {
+    var node = document.createElement("span");
+    if (cls) node.className = cls;
+    node.textContent = text;
+    out.appendChild(node);
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  // Julia's runtime writes through Module.print / Module.printErr.
+  var Module = {
+    noInitialRun: true,
+    print: function (text) { write(text + "\n"); },
+    printErr: function (text) { write(text + "\n", "err"); },
+    onAbort: function (what) {
+      status.textContent = "aborted";
+      write("\nThe runtime aborted (" + what + "). Reload to start again.\n", "err");
+      input.disabled = true;
+    }
+  };
+  window.Module = Module;
+
+  // A Julia-side evaluator: include_string evaluates at top level (so `using`
+  // and `module` work), and the result is shown the way the REPL would show
+  // it. Errors are caught here rather than unwinding into JavaScript.
+  var HELPER = [
+    "function __webrepl(s::String)",
+    "    try",
+    "        v = include_string(Main, s, \"REPL\")",
+    "        if v !== nothing",
+    "            show(stdout, MIME\"text/plain\"(), v)",
+    "            println()",
+    "        end",
+    "    catch e",
+    "        e isa LoadError && (e = e.error)",
+    "        print(stderr, \"ERROR: \")",
+    "        showerror(stderr, e)",
+    "        println(stderr)",
+    "    end",
+    "    nothing",
+    "end"
+  ].join("\n");
+
+  // Julia string literals take the same escapes as JSON, plus $ for
+  // interpolation, which has to be escaped as well.
+  function juliaString(s) {
+    return JSON.stringify(s).replace(/\$/g, "\\$");
+  }
+
+  var evalString = null;
+
+  function run(code) {
+    try {
+      evalString("__webrepl(" + juliaString(code) + ")");
+    } catch (e) {
+      write("julia.js: " + e + "\n", "err");
+    }
+  }
+
+  function submit() {
+    var code = input.value;
+    if (!code.trim()) return;
+    write("julia> ", "in");
+    write(code + "\n", "in");
+    input.value = "";
+    input.rows = 1;
+    input.disabled = true;
+    status.textContent = "running";
+    // let the browser paint the echoed input before the interpreter blocks
+    setTimeout(function () {
+      run(code);
+      input.disabled = false;
+      status.textContent = "ready";
+      input.focus();
+    }, 0);
+  }
+
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  });
+  input.addEventListener("input", function () {
+    input.rows = Math.min(10, input.value.split("\n").length);
+  });
+  document.getElementById("form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    submit();
+  });
+
+  Module.onRuntimeInitialized = function () {
+    status.textContent = "starting julia";
+    setTimeout(function () {
+      try {
+        Module.ccall("jl_initialize", null, [], []);
+        evalString = Module.cwrap("jl_eval_string", "number", ["string"]);
+        evalString(HELPER);
+      } catch (e) {
+        status.textContent = "failed";
+        write("could not start julia: " + e + "\n", "err");
+        return;
+      }
+      try {
+        evalString("print(\"Julia \", VERSION, \" (\", Sys.ARCH, \") in your browser\\n\")");
+      } catch (e) { /* the banner is not worth failing over */ }
+      write("Interpreter only: no JIT, no threads, no processes, no network.\n\n", "note");
+      status.textContent = "ready";
+      input.disabled = false;
+      input.focus();
+    }, 0);
+  };
+})();
+</script>
+<script src="julia.js"></script>
+</body>
+</html>

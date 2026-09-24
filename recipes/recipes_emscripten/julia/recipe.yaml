@@ -1,0 +1,171 @@
+context:
+  name: julia
+  # JuliaLang/julia branch vc/wasm (the branch Keno/julia-wasm builds),
+  # which is 1.3.0-DEV.
+  version: 1.3.0.dev
+  # the release the sources start from, and the branch tip patch 0000 moves
+  # them to (JuliaLang/julia vc/wasm, which was never released or tagged)
+  julia_release: 1.3.0
+  julia_rev: aa94fefa6bea8e40149df021f895b7c23047c00b
+  # julia downloads Pkg separately; the branch pins a different commit than
+  # the one shipped inside the 1.3.0 release tarball
+  pkg_rev: 394e7c5d55d3722f5b2ab660ca0a694ea0041974
+  llvm_version: 6.0.1
+  # versions julia builds itself for the i686 bootstrap (deps/Versions.make)
+  gmp_version: 6.1.2
+  mpfr_version: 4.0.2
+  pcre_version: '10.48'
+  dsfmt_version: 2.2.3
+  utf8proc_rev: 5c632c57426f2e4246e3b64dd2fd088d3920f9e5
+  openlibm_rev: ce69bf1f32d3e2e9791da36c9e33ba38670d5576
+  libwhich_rev: 81e9723c0273d78493dc8c8ed570f68d9ce7e89e
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+# Julia itself: the official 1.3.0 release tarball, moved to the vc/wasm
+# branch tip by patch 0000 (that branch carries the WebAssembly port and was
+# never released, so it has no tarball of its own).
+- url: https://github.com/JuliaLang/julia/releases/download/v${{ julia_release
+    }}/julia-${{ julia_release }}.tar.gz
+  sha256: 5e1bfa62b99921ec8f437a31e834802d8d357ab679611ed336bd6e214ea0ce75
+  target_directory: julia
+  patches:
+  - patches/0000-Move-the-1.3.0-release-tree-to-the-vc-wasm-branch-tip.patch
+  - patches/0001-Build-with-current-emscripten-4.0.x-and-glibc.patch
+  - patches/0002-Task-switching-on-emscripten-s-Asyncify-fibers.patch
+  - patches/0003-Drop-foreigncall-table-entries-that-no-longer-exist.patch
+  - patches/0004-Keep-the-i686-and-wasm32-struct-layouts-in-sync.patch
+  - patches/0005-wasm-entry-point-real-arguments-GMP-hooks-reference-.patch
+  - patches/0006-Do-not-build-the-NVVM-reflect-wrappers-without-an-NV.patch
+  - patches/0007-Complete-the-interpreter-s-foreigncall-table-enough-.patch
+  - patches/0008-Fix-Base-for-a-single-threaded-libuv-less-MPFR-4.2-b.patch
+# Sources for the 32-bit (i686) bootstrap build ONLY, dropped into julia's
+# own source cache for its makefiles to build. They exist because the
+# bootstrap runs on the build machine as i686 code, and no channel ships i686
+# builds of these. Everything the wasm32 side links against comes from the
+# emscripten-forge packages under `requirements/host` instead -- gmp, mpfr,
+# pcre2, libutf8proc and dsfmt are all used from $PREFIX (USE_SYSTEM_* = 1),
+# and libm is emscripten's.
+- url: https://releases.llvm.org/${{ llvm_version }}/llvm-${{ llvm_version }}.src.tar.xz
+  sha256: b6d6c324f9c71494c0ccaf3dac1f16236d970002b42bb24a6c9e1634f7d0f4e2
+  file_name: llvm-${{ llvm_version }}.src.tar.xz
+  target_directory: julia/deps/srccache
+- url: https://ftp.gnu.org/gnu/gmp/gmp-${{ gmp_version }}.tar.bz2
+  sha256: 5275bb04f4863a13516b2f39392ac5e272f5e1bb8057b18aec1c9b79d73d8fb2
+  file_name: gmp-${{ gmp_version }}.tar.bz2
+  target_directory: julia/deps/srccache
+- url: https://ftp.gnu.org/gnu/mpfr/mpfr-${{ mpfr_version }}.tar.bz2
+  sha256: c05e3f02d09e0e9019384cdd58e0f19c64e6db1fd6f5ecf77b4b1c61ca253acc
+  file_name: mpfr-${{ mpfr_version }}.tar.bz2
+  target_directory: julia/deps/srccache
+- url: https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${{ pcre_version
+    }}/pcre2-${{ pcre_version }}.tar.bz2
+  sha256: b6c68fdf6f3ac31388b50aa89ff0fc49c00c987c16e7b5146491d12003f2c8ed
+  file_name: pcre2-${{ pcre_version }}.tar.bz2
+  target_directory: julia/deps/srccache
+- url: https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/SFMT/dSFMT-src-${{ dsfmt_version
+    }}.tar.gz
+  sha256: 82344874522f363bf93c960044b0a6b87b651c9565b6312cf8719bb8e4c26a0e
+  file_name: dsfmt-${{ dsfmt_version }}.tar.gz
+  target_directory: julia/deps/srccache
+# julia pins these three by commit rather than by release. cache.julialang.org
+# is the source mirror julia's own build system downloads from
+# (deps/tools/jldownload), and these are the exact bytes julia records in
+# deps/checksums for each commit.
+- url: https://cache.julialang.org/https://api.github.com/repos/JuliaLang/utf8proc/tarball/${{
+    utf8proc_rev }}
+  sha256: b92ecaabbd840f0f2361df87e7ae255736f0f133a914efa71f33d2874796eccc
+  file_name: utf8proc-${{ utf8proc_rev }}.tar.gz
+  target_directory: julia/deps/srccache
+- url: https://cache.julialang.org/https://api.github.com/repos/JuliaMath/openlibm/tarball/${{
+    openlibm_rev }}
+  sha256: a86ff98f3ecc437d0a6094e4985d8e41317f808c2153bbe410c22dac9c93353e
+  file_name: openlibm-${{ openlibm_rev }}.tar.gz
+  target_directory: julia/deps/srccache
+- url: https://cache.julialang.org/https://api.github.com/repos/vtjnash/libwhich/tarball/${{
+    libwhich_rev }}
+  sha256: 6bfc451be7f90b8b386b04a735427f8a1cd056ee6166fb03acebd63bc378ffdc
+  file_name: libwhich-${{ libwhich_rev }}.tar.gz
+  target_directory: julia/deps/srccache
+# stdlib/Makefile fetches Pkg at the commit stdlib/Pkg.version pins; without
+# this the build would need network access.
+- url: https://cache.julialang.org/https://api.github.com/repos/JuliaLang/Pkg.jl/tarball/${{
+    pkg_rev }}
+  sha256: d6f1cd8e58272f7212d4b7aa7cbd9ce3dd49a93eda67e407e5149f591c3abdb1
+  file_name: Pkg-${{ pkg_rev }}.tar.gz
+  target_directory: julia/stdlib/srccache
+
+build:
+  number: 0
+  # the bootstrap compiler is i686-linux-gnu, so the build machine has to be
+  # x86_64 linux (32-bit binaries run there through the kernel's IA-32 support)
+  skip:
+  - not (linux and x86_64)
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  # 32-bit bootstrap toolchain (recipes/recipes/glibc)
+  - gcc-i686-linux-gnu
+  - cmake >=3.20,<4
+  - make
+  - m4
+  - perl
+  - patch
+  - python >=3.9
+  - nodejs
+  host:
+  - gmp
+  - mpfr
+  - pcre2
+  - libutf8proc
+  - dsfmt
+
+tests:
+- package_contents:
+    files:
+    - bin/julia.js
+    - bin/julia.wasm
+    - share/julia/website/index.html
+- script:
+  - node $PREFIX/bin/julia.js -e 'println(2 + 2)'
+  - node $PREFIX/bin/julia.js test_julia.jl
+  requirements:
+    build:
+    - nodejs
+  files:
+    recipe:
+    - test_julia.jl
+
+about:
+  homepage: https://julialang.org/
+  repository: https://github.com/JuliaLang/julia/tree/vc/wasm
+  license: MIT
+  license_file:
+  - julia/LICENSE.md
+  summary: The Julia language, compiled to WebAssembly (interpreter only)
+  description: |
+    Julia built for wasm32-emscripten following Keno/julia-wasm: the system
+    image is generated by a 32-bit native bootstrap build and retargeted to
+    wasm32, and the runtime runs everything through julia's interpreter
+    (there is no code generator, so no JIT). Tasks are implemented with
+    emscripten's Asyncify fibers.
+
+    `bin/julia.js` runs under node and in the browser;
+    `share/julia/website` holds a small browser REPL for it.
+
+    This is the state of an experimental 2019 port: many things -- threads,
+    processes, sockets, file watching, libgit2, LinearAlgebra -- are not
+    available, and performance is that of the interpreter.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
+  # A git-pinned 2019 research branch: there is no release to track, so the
+  # recipe cannot carry ${{ version }} in a source url the way the version bot
+  # (and the repo's linter) expect.
+  channel: emscripten-forge-4x-experimental

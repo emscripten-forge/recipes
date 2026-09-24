@@ -1,0 +1,89 @@
+From 84b02e6f748f610043ef8641e3fa6880aace0b25 Mon Sep 17 00:00:00 2001
+From: emscripten-forge <recipes@emscripten-forge>
+Date: Tue, 22 Sep 2026 23:39:30 +0000
+Subject: [PATCH] wasm entry point: real arguments, GMP hooks, reference types
+
+- main() ignored argv and passed a fixed argument list with a wrong argc;
+  pass the process arguments through instead, so that
+  'node julia.js -e ...' and 'node julia.js script.jl' work, and keep
+  jl_initialize() (used by the web REPL) in sync
+- emscripten-forge's GMP does not carry julia's gmp_alloc_overflow_func
+  patch; Base.GMP registers a handler through __gmp_set_alloc_overflow_function
+  at startup, so provide the two entry points here
+- WebAssembly renamed the 'anyref' table element type to 'externref'
+---
+ src/jsvm-emscripten/boxed.js |  2 +-
+ ui/wasm-support.c            | 34 ++++++++++++++++++++++++++++------
+ 2 files changed, 29 insertions(+), 7 deletions(-)
+
+diff --git a/src/jsvm-emscripten/boxed.js b/src/jsvm-emscripten/boxed.js
+index d83f854..13366ad 100644
+--- a/src/jsvm-emscripten/boxed.js
++++ b/src/jsvm-emscripten/boxed.js
+@@ -1,5 +1,5 @@
+ var julia_boxed_heap = {
+-    table: new WebAssembly.Table({initial: 4096, element: "anyref"}),
++    table: new WebAssembly.Table({initial: 4096, element: "externref"}),
+     allocated: new WeakMap(),
+     freelist: -1,
+     max_allocated: 0,
+diff --git a/ui/wasm-support.c b/ui/wasm-support.c
+index 7429ff0..41df13e 100644
+--- a/ui/wasm-support.c
++++ b/ui/wasm-support.c
+@@ -144,11 +144,11 @@ static NOINLINE int true_main(int argc, char *argv[])
+ }
+ 
+ void JL_DLLEXPORT jl_initialize() {
+-    char* argv2[]={"./julia", "-C", "\"native\"", "--compile=no", "--startup-file=no", "-J", "sys.ji", 0};
+-    int argc = 5;
+-    char *argv = argv2;
++    static char *argv2[] = {"./julia", "--compile=no", "--startup-file=no", 0};
++    int argc = 3;
++    char **argv = argv2;
+     libsupport_init();
+-    jl_parse_opts(&argc, (char***)&argv);
++    jl_parse_opts(&argc, &argv);
+     julia_init(jl_options.image_file_specified ? JL_IMAGE_CWD : JL_IMAGE_JULIA_HOME);
+ }
+ 
+@@ -175,8 +175,18 @@ void JL_DLLEXPORT jl_eval_and_print(const char *line)
+ }
+ 
+ int main(int argc, char *argv[]) {
+-    char* argv2[]={"./julia", "-C", "\"native\"", "--compile=no", "--startup-file=no", 0};
+-    argc = 7;
++    // The system image is linked into the module and there is no code
++    // generator: always run the interpreter, then pass the user's arguments
++    // through (e.g. `node julia.js -e 'println(1+1)'`).
++    char **argv2 = (char**)malloc(sizeof(char*) * (argc + 3));
++    int nargs = 0;
++    argv2[nargs++] = (argc > 0 && argv[0]) ? argv[0] : (char*)"julia";
++    argv2[nargs++] = (char*)"--compile=no";
++    argv2[nargs++] = (char*)"--startup-file=no";
++    for (int i = 1; i < argc; i++)
++        argv2[nargs++] = argv[i];
++    argv2[nargs] = NULL;
++    argc = nargs;
+     argv = argv2;
+     libsupport_init();
+     int lisp_prompt = (argc >= 2 && strcmp((char*)argv[1],"--lisp") == 0);
+@@ -196,6 +206,18 @@ int main(int argc, char *argv[]) {
+     return ret;
+ }
+ 
++// emscripten-forge's GMP does not carry Julia's gmp_alloc_overflow_func
++// patch; Base.GMP registers a handler through these entry points.
++static void (*jl_gmp_alloc_overflow_func)(void) = NULL;
++JL_DLLEXPORT void __gmp_set_alloc_overflow_function(void (*f)(void))
++{
++    jl_gmp_alloc_overflow_func = f;
++}
++JL_DLLEXPORT void __gmp_get_alloc_overflow_function(void (**f)(void))
++{
++    *f = jl_gmp_alloc_overflow_func;
++}
++
+ #ifdef __cplusplus
+ }
+ #endif

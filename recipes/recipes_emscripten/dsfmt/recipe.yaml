@@ -1,0 +1,63 @@
+context:
+  name: dsfmt
+  version: 2.2.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/SFMT/dSFMT-src-${{ version }}.tar.gz
+  sha256: 82344874522f363bf93c960044b0a6b87b651c9565b6312cf8719bb8e4c26a0e
+  patches:
+  # `git diff v2.2.3 v2.2.5 -- dSFMT.c dSFMT.h` from
+  # https://github.com/MersenneTwister-Lab/dSFMT (same authors). Needed so that
+  # the library exports every dsfmt_* entry point Julia's Random stdlib calls.
+  - patches/0001-Backport-ptrdiff_t-sizes-and-DSFMT_SHLIB-from-2.2.5.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - nodejs
+
+tests:
+- package_contents:
+    include:
+    - dSFMT.h
+    - dSFMT-common.h
+    - dSFMT-params.h
+    - dSFMT-params19937.h
+    lib:
+    - libdSFMT.a
+    - libdSFMT.so
+- script:
+  # Link a small program against the static library and check it against the
+  # reference output shipped with dSFMT (MEXP=19937, seed 0 / init_by_array).
+  - emcc -O2 -DDSFMT_MEXP=19937 -I$PREFIX/include test_dsfmt.c $PREFIX/lib/libdSFMT.a -o test_dsfmt.js
+  - node test_dsfmt.js
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - nodejs
+  files:
+    recipe:
+    - test_dsfmt.c
+
+about:
+  homepage: https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/SFMT/
+  repository: https://github.com/MersenneTwister-Lab/dSFMT
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Double precision SIMD-oriented Fast Mersenne Twister
+  description: |
+    dSFMT directly generates double precision floating point pseudorandom
+    numbers in IEEE 754 format. It is the generator behind Julia's
+    MersenneTwister. This build exports the full dsfmt_* API (the header's
+    inline helpers included) from libdSFMT.a and a libdSFMT.so side module.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

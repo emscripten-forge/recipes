@@ -1,0 +1,170 @@
+context:
+  version: "2.44"
+  gcc_version: "12.5.0"
+  binutils_version: "2.45"
+  target: i686-linux-gnu
+
+recipe:
+  name: glibc-i686-toolchain
+  version: ${{ version }}
+
+# glibc for 32-bit x86 (i686-linux-gnu), built from the sourceware release.
+#
+# emscripten-forge only targets wasm32. Julia's wasm port (Keno/julia-wasm)
+# generates its system image with a *native 32-bit* Julia, because the image
+# bakes in pointer size and struct layout (Int === Int32, 4-byte pointers),
+# which must match wasm32. That bootstrap Julia needs a 32-bit C library and
+# C++ runtime on the x86_64 build machine (julia-wasm's README asks for
+# gcc-multilib). Neither conda-forge nor emscripten-forge ship one, so this
+# recipe builds glibc (plus the i686 gcc needed to compile it and to compile
+# the bootstrap Julia) and packages them for the build environment.
+# The wasm side itself uses emscripten's own libc (musl) as usual.
+
+source:
+- url: https://ftp.gnu.org/gnu/glibc/glibc-${{ version }}.tar.xz
+  sha256: 37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667
+  target_directory: glibc
+- url: https://ftp.gnu.org/gnu/gcc/gcc-${{ gcc_version }}/gcc-${{ gcc_version }}.tar.xz
+  sha256: 71cd373d0f04615e66c5b5b14d49c1a4c1a08efa7b30625cd240b11bab4062b3
+  target_directory: gcc
+- url: https://ftp.gnu.org/gnu/binutils/binutils-${{ binutils_version }}.tar.xz
+  sha256: c50c0e7f9cb188980e2cc97e4537626b1672441815587f1eab69d2a1bfbef5d2
+  target_directory: binutils
+
+build:
+  number: 0
+  skip:
+  - not (linux and x86_64)
+
+outputs:
+- staging:
+    name: i686-linux-gnu-toolchain-build
+  build:
+    script: build_toolchain.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - kernel-headers_linux-64 5.14.0.*
+    - make
+    - gawk
+    - bison
+    - flex
+    - m4
+    - texinfo
+    - python >=3.9
+    - sed
+    - perl
+    host:
+    - gmp
+    - mpfr
+    - mpc
+    - zlib
+
+- package:
+    name: glibc-${{ target }}
+    version: ${{ version }}
+  inherit: i686-linux-gnu-toolchain-build
+  build:
+    files:
+    - ${{ target }}/sysroot/**
+    dynamic_linking:
+      # i686 ELF files: leave them exactly as built.
+      binary_relocation: false
+  tests:
+  - package_contents:
+      files:
+      - ${{ target }}/sysroot/lib/ld-linux.so.2
+      - ${{ target }}/sysroot/lib/libc.so.6
+      - ${{ target }}/sysroot/lib/libm.so.6
+      - ${{ target }}/sysroot/usr/lib/libc.so
+      - ${{ target }}/sysroot/usr/lib/crt1.o
+      - ${{ target }}/sysroot/usr/include/stdio.h
+      - ${{ target }}/sysroot/usr/include/gnu/stubs-32.h
+      - ${{ target }}/sysroot/usr/include/asm/unistd_32.h
+  - script:
+    # The loader can run programs directly (32-bit code on an x86_64 kernel).
+    - $PREFIX/${{ target }}/sysroot/lib/ld-linux.so.2 --version
+  about:
+    homepage: https://sourceware.org/glibc/
+    repository: https://sourceware.org/git/glibc.git
+    license: LGPL-2.1-or-later AND GPL-2.0-or-later
+    license_file:
+    - glibc/COPYING.LIB
+    - glibc/COPYING
+    - glibc/LICENSES
+    summary: GNU C Library for i686-linux-gnu, installed as a sysroot
+    description: |
+      glibc ${{ version }} built for 32-bit x86 and installed under
+      $PREFIX/${{ target }}/sysroot, together with the Linux UAPI headers.
+      It is a build-machine package: it lets gcc-${{ target }} link and run
+      32-bit programs on x86_64 Linux, which Julia's wasm32 bootstrap needs.
+
+- package:
+    name: gcc-${{ target }}
+    version: ${{ gcc_version }}
+  inherit: i686-linux-gnu-toolchain-build
+  requirements:
+    run:
+    - ${{ pin_subpackage('glibc-' ~ target, exact=True) }}
+  build:
+    files:
+    - bin/${{ target }}-*
+    - ${{ target }}/bin/**
+    - ${{ target }}/include/**
+    - ${{ target }}/lib/**
+    - lib/gcc/${{ target }}/**
+    - libexec/gcc/${{ target }}/**
+    - lib/bfd-plugins/**
+    dynamic_linking:
+      # Only the x86_64 host executables need their rpaths relocated;
+      # the target libraries (libstdc++, libgcc_s, crt files) are i686.
+      binary_relocation:
+      - bin/**
+      - libexec/**
+  tests:
+  - package_contents:
+      files:
+      - bin/${{ target }}-gcc
+      - bin/${{ target }}-g++
+      - bin/${{ target }}-ld
+      - bin/${{ target }}-as
+      - ${{ target }}/lib/libstdc++.so.6
+      - ${{ target }}/lib/libgcc_s.so.1
+  - script:
+    - ${{ target }}-gcc --version
+    - ${{ target }}-g++ -O2 -std=c++17 test_i686.cpp -o test_i686
+    - ./test_i686
+    - ${{ target }}-gcc -O2 test_i686.c -o test_c
+    - ./test_c
+    files:
+      recipe:
+      - test_i686.cpp
+      - test_i686.c
+  about:
+    homepage: https://gcc.gnu.org/
+    license: GPL-3.0-or-later WITH GCC-exception-3.1
+    license_file:
+    - gcc/COPYING3
+    - gcc/COPYING.RUNTIME
+    summary: GCC ${{ gcc_version }} (C/C++) and binutils ${{ binutils_version }} targeting i686-linux-gnu
+    description: |
+      Cross compiler for 32-bit x86 Linux that uses the glibc-${{ target }}
+      sysroot. Programs it links use the sysroot's dynamic loader and
+      libraries (baked in via --with-specs), so they run on an x86_64 Linux
+      build machine without multilib system packages.
+
+about:
+  homepage: https://sourceware.org/glibc/
+  license: LGPL-2.1-or-later AND GPL-2.0-or-later AND GPL-3.0-or-later WITH GCC-exception-3.1
+  license_file:
+  - glibc/COPYING.LIB
+  - glibc/COPYING
+  - glibc/LICENSES
+  - gcc/COPYING3
+  - gcc/COPYING.RUNTIME
+  summary: glibc and an i686 cross toolchain for 32-bit bootstrap builds
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
