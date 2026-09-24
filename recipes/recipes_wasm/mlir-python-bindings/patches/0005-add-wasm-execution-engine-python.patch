@@ -1,9 +1,9 @@
 diff --git a/mlir/python/mlir/wasm_execution_engine.py b/mlir/python/mlir/wasm_execution_engine.py
 new file mode 100644
-index 000000000000..0a3a7bec7ba0
+index 000000000000..00060e06074d
 --- /dev/null
 +++ b/mlir/python/mlir/wasm_execution_engine.py
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,180 @@
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 +# See https://llvm.org/LICENSE.txt for license information.
 +# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -12,14 +12,14 @@ index 000000000000..0a3a7bec7ba0
 +
 +Provides :class:`WasmExecutionEngine`, the counterpart of
 +:class:`mlir.execution_engine.ExecutionEngine` for environments where ORC JIT
-+is unavailable (wasm32-unknown-emscripten).
++is unavailable on Emscripten.
 +
 +Execution pipeline (all in-process):
 +
 +    MLIR module (LLVM dialect)
 +         │  mlirWasmCompileModule
 +         ▼
-+    <name>.o  (wasm32 object, written to MEMFS)
++    <name>.o  (WebAssembly object, written to MEMFS)
 +         │  mlirWasmLinkLoadModule → lld::wasm::link in-process
 +         ▼
 +    <name>.wasm  (SIDE_MODULE)
@@ -44,9 +44,18 @@ index 000000000000..0a3a7bec7ba0
 +    )
 +
 +from ._mlir_libs import _mlirWasmExecutionEngine  # noqa: E402
-+from .ir import Module, StringAttr  # noqa: E402
++from .ir import Module  # noqa: E402
 +
-+__all__ = ["WasmExecutionEngine", "translate_to_llvmir"]
++__all__ = [
++    "WasmExecutionEngine",
++    "target_index_bitwidth",
++    "translate_to_llvmir",
++]
++
++
++def target_index_bitwidth() -> int:
++    """Return the target-native MemRef index width."""
++    return _mlirWasmExecutionEngine.target_index_bitwidth()
 +
 +
 +def translate_to_llvmir(module_op) -> str:
@@ -74,7 +83,7 @@ index 000000000000..0a3a7bec7ba0
 +class WasmExecutionEngine:
 +    """Execute an MLIR module (lowered to the LLVM dialect) inside Emscripten.
 +
-+    The module is compiled to a wasm32 object file, linked in-process via
++    The module is compiled to a WebAssembly object file, linked in-process via
 +    ``lld::wasm::link``, and loaded with ``dlopen(RTLD_GLOBAL)``.  Once
 +    loaded, functions can be looked up by name and called via ctypes.
 +
@@ -82,16 +91,17 @@ index 000000000000..0a3a7bec7ba0
 +    ----------
 +    module_op:
 +        An :class:`mlir.ir.Operation` or :class:`mlir.ir.Module` that
-+        contains only LLVM dialect ops.  The ``llvm.target_triple`` attribute
-+        is set automatically if absent.
++        contains only LLVM dialect ops. If no ``llvm.target_triple`` attribute
++        is present, the execution engine uses the current process target.
 +    opt_level:
-+        Optimisation level passed to the LLVM wasm32 code generator.
++        Optimisation level passed to the LLVM WebAssembly code generator.
 +        Must be in ``[0, 3]``.
 +    module_name:
 +        Base name used for the generated ``.o`` / ``.wasm`` files.
 +        Auto-generated (8 random lowercase letters) when *None*.
 +    target_triple:
-+        LLVM target triple.  Defaults to ``wasm32-unknown-emscripten``.
++        Optional LLVM target triple. It must match the architecture of the
++        running Emscripten process.
 +    """
 +
 +    def __init__(
@@ -99,12 +109,17 @@ index 000000000000..0a3a7bec7ba0
 +        module_op,
 +        opt_level: int = 2,
 +        module_name: str | None = None,
-+        target_triple: str = "wasm32-unknown-emscripten",
++        target_triple: str | None = None,
 +    ):
 +        if isinstance(module_op, Module):
 +            module_op = module_op.operation
 +
-+        if "llvm.target_triple" not in module_op.attributes:
++        if (
++            target_triple is not None
++            and "llvm.target_triple" not in module_op.attributes
++        ):
++            from .ir import StringAttr
++
 +            module_op.attributes["llvm.target_triple"] = StringAttr.get(
 +                target_triple
 +            )
@@ -124,7 +139,7 @@ index 000000000000..0a3a7bec7ba0
 +    # ------------------------------------------------------------------
 +
 +    @staticmethod
-+    def lookup(name: str, return_type=None):
++    def lookup(name: str, return_type=None, argtypes=()):
 +        """Return a ctypes callable for *name* (looked up as
 +        ``_mlir_ciface_<name>`` in the global symbol table).
 +
@@ -134,6 +149,8 @@ index 000000000000..0a3a7bec7ba0
 +            Function name *without* the ``_mlir_ciface_`` prefix.
 +        return_type:
 +            ctypes return type, or ``None`` for void functions.
++        argtypes:
++            Iterable of ctypes argument types.
 +
 +        Raises
 +        ------
@@ -155,15 +172,15 @@ index 000000000000..0a3a7bec7ba0
 +                f"mlir.wasm_execution_engine: unknown function {name!r} "
 +                "(symbol '_mlir_ciface_" + name + "' not found)"
 +            )
-+        return ctypes.CFUNCTYPE(return_type, ctypes.c_void_p)(addr)
++        return ctypes.CFUNCTYPE(return_type, *argtypes)(addr)
 +
 +    def invoke(self, name: str, *ctypes_args):
 +        """Invoke *name* with a list of ctypes pointer arguments.
 +
 +        All arguments must be convertible to ``ctypes.c_void_p``.
 +        """
-+        func = self.lookup(name)
-+        packed = (ctypes.c_void_p * len(ctypes_args))()
-+        for i, a in enumerate(ctypes_args):
-+            packed[i] = ctypes.cast(a, ctypes.c_void_p)
-+        func(packed)
++        func = self.lookup(
++            name, argtypes=(ctypes.c_void_p,) * len(ctypes_args)
++        )
++        args = [ctypes.cast(arg, ctypes.c_void_p) for arg in ctypes_args]
++        return func(*args)
