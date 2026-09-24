@@ -44,8 +44,12 @@ namespace {
 #ifndef POLYMAKE_WASM_INSTALL_ARCH
 #define POLYMAKE_WASM_INSTALL_ARCH "/polymake/lib"
 #endif
+// build.sh derives this from the target perl's own archlib and privlib, because
+// which of the two holds a given core module is a decision of the perl package, not
+// something to guess: lib.pm and Config.pm sit in the architecture-dependent tree
+// while most of the pure-perl library sits in the other one.
 #ifndef POLYMAKE_WASM_PERL5LIB
-#define POLYMAKE_WASM_PERL5LIB "/polymake/perl5/core_perl:/polymake/perl5/site_perl"
+#define POLYMAKE_WASM_PERL5LIB "/polymake/perl5/core_perl"
 #endif
 
 std::unique_ptr<polymake::Main> interp;

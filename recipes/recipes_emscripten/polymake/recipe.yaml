@@ -22,6 +22,14 @@ source:
     - 0006-skip-gold-linker-probe-when-cross-compiling.patch
     - 0007-bootstrap-static-perl-extensions.patch
     - 0008-accept-static-libraries-for-bundled-extensions.patch
+    - 0009-optional-no-reconfigure-for-package-builds.patch
+    - 0010-defer-rational-function-compound-assignment.patch
+    - 0011-singular-without-dladdr-for-static-wasm.patch
+    - 0012-two-argument-ext_gcd-overload.patch
+    - 0013-const-copy-assignment-for-sparse-matrix-line.patch
+    - 0014-symbol-lister-configurable-for-cross-builds.patch
+    - 0015-defer-client-registration-until-perl-is-up.patch
+    - 0016-upgrade-scalar-before-marking-bareword.patch
 
 build:
   number: 0
@@ -48,6 +56,9 @@ requirements:
     # this resolves to `perl 5.32.1.*` on emscripten-wasm32, where the only perl
     # is 5.44.0, and the host environment fails to solve.  Any explicit version
     # suppresses the variant, so do not "tidy" this back to a bare `perl`.
+    # polymake needs the CPAN modules its INSTALL file lists -- JSON above all, which
+    # it loads while starting up -- so this wants the perl package that ships them,
+    # not the one that carries only core JSON::PP.
     - perl >=5.44
     - gmp
     - mpfr
@@ -62,9 +73,17 @@ requirements:
     # "-lflint -lnauty -lcocoa" to the link line, so CoCoALib has to be here even
     # though polymake never refers to it directly.
     - cocoalib
+    # polymake's own nauty extension is disabled (it conflicts with bliss), but
+    # normaliz links against libnauty, so the package is still needed
     - nauty
     - ppl
+    # singular, and the libraries libSingular.a needs that neither
+    # libsingular-config nor pkg-config --static reports
     - singular
+    - ntl
+    - mathicgb
+    - mathic
+    - memtailor
 
 tests:
   - package_contents:

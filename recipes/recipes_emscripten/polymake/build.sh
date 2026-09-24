@@ -34,10 +34,17 @@ export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 
 # Makes the patched ConfigureStandalone.pm link the configuration test programs
 # as node-runnable launchers and execute them through node, so that the probes
-# for gmp, mpfr, flint, bliss, ppl, cddlib, lrslib, normaliz, nauty and
-# libsingular actually run instead of failing as "cannot execute binary file".
+# for gmp, mpfr, flint, bliss, ppl, cddlib, lrslib and normaliz actually run
+# instead of failing as "cannot execute binary file".
 export POLYMAKE_TEST_RUNNER="node"
 export POLYMAKE_TEST_SUFFIX=".js"
+# Link flags for the test programs only (never recorded for the real build).
+# Emscripten does not flush stdio at exit by default, so a probe that prints
+# without a trailing newline -- the ppl version check -- yields no output, only a
+# warning on stderr, which then reaches polymake's version comparison and breaks
+# its eval ("Number found where operator expected ... near 'to 1'", the 'to 1'
+# coming from "set EXIT_RUNTIME to 1" in that warning).
+export POLYMAKE_TEST_LDFLAGS="-sEXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1"
 
 BUILD_PERL="${BUILD_PREFIX}/bin/perl"
 test -x "${BUILD_PERL}"
@@ -103,6 +110,29 @@ POLYMAKE_CXXFLAGS="$(strip_arch "${CXXFLAGS:-}") ${EM_ARCH_FLAGS} -I${PREFIX}/in
 POLYMAKE_CFLAGS="$(strip_arch "${CFLAGS:-}") ${EM_ARCH_FLAGS} -I${PREFIX}/include"
 POLYMAKE_LDFLAGS="-L${PREFIX}/lib ${EM_ARCH_FLAGS}"
 
+# Transitive dependencies of static archives.  A shared libflint.so records a
+# DT_NEEDED entry for libmpfr, and libppl.so one for libgmpxx, so natively the
+# loader pulls them in and nobody names them.  Static archives carry no such
+# records: every transitive dependency has to appear on the link line.  polymake's
+# probes name only the direct library (-lflint, -lppl), and fail with
+# "libflint.a(arf_merged.o): undefined symbol: mpfr_sqr" and
+# "libppl.a: undefined symbol: operator<<(std::ostream&, __mpz_struct const*)".
+# configure appends LIBS to every test program, and wasm-ld resolves archives
+# regardless of their position on the line, so naming them once here suffices.
+#
+# libsingular needs the same treatment, and more of it: libsingular-config --libs
+# names only -lSingular -lpolys -lsingular_resources -lfactory -lomalloc, and
+# `pkg-config --static` adds just NTL, but libSingular.a also pulls in cddlib and
+# mathicgb/mathic/memtailor.  Linking polymake's singular probe against the
+# channel's packages is how this list was established.
+#
+# polymake_wasm_stubs.o supplies the POSIX named-semaphore functions that
+# libSingular.a references and emscripten does not implement, and sets Singular's
+# resource environment.  It is an object file rather than a library so that it is
+# always pulled in; configure appends LIBS to every test program, which is what
+# gets it into the singular probe as well as the final link.
+POLYMAKE_EXTRA_LIBS="${SRC_DIR}/polymake_wasm_stubs.o -lntl -lcddgmp -lmathicgb -lmathic -lmemtailor -lgmpxx -lmpfr -lgmp"
+
 # Emscripten settings for the final executable.  polymake keeps large rule and
 # type databases in memory and recurses deeply through its C++/perl glue, so it
 # needs considerably more than the emscripten defaults.
@@ -125,13 +155,32 @@ EM_LINK_FLAGS=(
 )
 
 # --------------------------------------------------------------------------
+# emscripten stubs
+# --------------------------------------------------------------------------
+
+# Built before configure, because the singular probe links against it.
+# POLYMAKE_WASM_SINGULAR_DIR must match where the filesystem image below mounts
+# the singular package's share/singular directory.
+emcc -c "${RECIPE_DIR}/polymake_wasm_stubs.c" -o "${SRC_DIR}/polymake_wasm_stubs.o" \
+    -DPOLYMAKE_WASM_SINGULAR_DIR='"/polymake/singular"'
+test -f "${SRC_DIR}/polymake_wasm_stubs.o"
+
+# --------------------------------------------------------------------------
 # configure
 # --------------------------------------------------------------------------
 
 # Bundled extensions: everything whose library is packaged in this channel is
-# enabled and pointed at ${PREFIX}.  java/javaview/jreality need a JDK, polydb
-# needs mongoc, and scip/soplex/sympol are left off to keep the first port's
-# link surface small -- all of them can be switched on the same way.
+# enabled and pointed at ${PREFIX}, with these exceptions:
+#
+#  - nauty: polymake declares it CONFLICT with bliss (bundled/nauty/polymake.ext);
+#    both are alternative backends for graph_compare and only one may be enabled.
+#    bliss is kept.  The nauty *package* is still a host dependency, because
+#    normaliz links against it.
+#  - singular: enabled, but it needs more than a --with flag; see the LIBS
+#    comment above, polymake_wasm_stubs.c, and patch 0011.  The singular package
+#    itself is not modified.
+#  - java/javaview need a JDK, polydb needs mongoc (not in the channel), and
+#    scip/soplex/sympol are left off to keep the first port's link surface small.
 ./configure \
     PERL="${BUILD_PERL}" \
     CC="emcc" \
@@ -140,6 +189,7 @@ EM_LINK_FLAGS=(
     CFLAGS="${POLYMAKE_CFLAGS}" \
     CXXFLAGS="${POLYMAKE_CXXFLAGS}" \
     LDFLAGS="${POLYMAKE_LDFLAGS}" \
+    LIBS="${POLYMAKE_EXTRA_LIBS}" \
     --prefix="${PREFIX}" \
     --without-prereq \
     --without-native \
@@ -153,7 +203,7 @@ EM_LINK_FLAGS=(
     --with-flint="${PREFIX}" \
     --with-lrs="${PREFIX}" \
     --with-libnormaliz="${PREFIX}" \
-    --with-nauty="${PREFIX}" \
+    --without-nauty \
     --with-ppl="${PREFIX}" \
     --with-singular="${PREFIX}" \
     --without-java \
@@ -201,6 +251,30 @@ test -n "${INSTALL_ARCH}"
 # build and install
 # --------------------------------------------------------------------------
 
+# Keep ninja from re-running configure on this first build (see patch 0009): the
+# rerun would fail on --without-polydb and, worse, regenerate both config.ninja
+# files from the native perl, undoing the retargeting done above.
+export POLYMAKE_NO_RECONFIGURE=1
+
+# ${PREFIX}/include comes before polymake's own include directories on every compile
+# command, because it is part of CXXFLAGS and the build system appends its own paths
+# after it.  `ninja install` copies polymake's headers into ${PREFIX}/include/polymake,
+# so any compile after an install would silently read the installed copies instead of
+# the sources -- which, in a rebuild, are the ones that just changed.  A clean build
+# never has them, but removing them costs nothing and makes rebuilding this recipe in
+# place behave the way anyone would expect.
+rm -rf "${PREFIX}/include/polymake"
+
+# support/generate_applib_fake.pl lists the public symbols of every application
+# module to build the stub library that ships beside the callable library.  It runs
+# on the build machine, but the modules are wasm archives, so the system nm cannot
+# read them; patch 0014 lets NM name the symbol lister to use instead.  em-config
+# reports where the toolchain's llvm binaries live.
+NM="$(em-config LLVM_ROOT)/llvm-nm"
+test -x "${NM}" || NM="$(command -v llvm-nm)"
+test -x "${NM}"
+export NM
+
 ninja -C build/Opt -j"${CPU_COUNT:-2}" all
 # the perl-independent core archive is not part of `all`; it is what a consumer
 # of the callable library links against together with libpolymake.a
@@ -239,6 +313,18 @@ for a in "${INSTALL_ARCH}"/lib/*; do
 done
 test "${#APP_ARCHIVES[@]}" -gt 0
 
+# Move them aside.  They are build inputs -- already linked into polymake.wasm by
+# the time anything runs -- and the patched module loader never looks for them
+# again, so they must not end up in the filesystem image, which is built first
+# now that the link needs its loader script.
+LINK_STAGE="${SRC_DIR}/link-stage"
+rm -rf "${LINK_STAGE}"
+mkdir -p "${LINK_STAGE}"
+for i in "${!APP_ARCHIVES[@]}"; do
+    mv "${APP_ARCHIVES[$i]}" "${LINK_STAGE}/"
+    APP_ARCHIVES[$i]="${LINK_STAGE}/$(basename "${APP_ARCHIVES[$i]}")"
+done
+
 # The callable library archive carries the core, the perl glue and xs_init.
 CALLABLE_ARCHIVE=""
 for c in "${PREFIX}"/lib/libpolymake.*; do
@@ -249,8 +335,56 @@ for c in "${PREFIX}"/lib/libpolymake.*; do
 done
 test -n "${CALLABLE_ARCHIVE}"
 
+# --------------------------------------------------------------------------
+# filesystem image
+# --------------------------------------------------------------------------
+
+# The wasm runtime sees none of the host filesystem, so everything polymake and
+# perl read at runtime is packed into polymake.data.  The mount points match the
+# defaults compiled into polymake_wasm_main.cc.  It is built before the final link,
+# because file_packager writes the loader that mounts it as a separate script and the
+# link has to embed that script with --pre-js; nothing loads it otherwise.
+#
+# The *.a exclusion drops perl's own static extension archives under archlib/auto and
+# CORE/libperl.a, roughly 14MB.  They are linked into polymake.wasm and a running perl
+# never reads them, since this interpreter has no dynamic loading to begin with.
+#
+# The `shared` symlink the installer drops next to the architecture-dependent
+# tree points back at the top tree; following it here would pack the whole rule
+# set a second time.  polymake_wasm_main.cc passes both directories explicitly,
+# so the symlink is not needed inside the image.
+rm -f "${INSTALL_ARCH}/shared"
+
+# The application archives were moved to ${LINK_STAGE} above; whatever is left here
+# is the fake/stub application libraries, which exist only so that the callable
+# library can be linked without the real applications.  The perlx tree holds only the
+# callable library under its shared-object name, which the link takes from
+# ${PREFIX}/lib instead.
+rm -f "${INSTALL_ARCH}"/lib/*
+rm -rf "${INSTALL_ARCH}/perlx"
+
+python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
+    "${PREFIX}/bin/polymake.data" \
+    --preload "${INSTALL_TOP}@/polymake/share" \
+    --preload "${INSTALL_ARCH}@/polymake/lib" \
+    --preload "${PREFIX}/lib/perl5@/polymake/perl5" \
+    --preload "${PREFIX}/share/singular@/polymake/singular" \
+    --exclude '*/pod/*' '*.pod' '*/demo/*' '*.a' \
+    --js-output="${PREFIX}/bin/polymake.data.js"
+
+test -f "${PREFIX}/bin/polymake.data"
+
+# The perl library tree is mounted at /polymake/perl5, so the search path the driver
+# installs is the target perl's own archlib and privlib with their ${PREFIX}/lib/perl5
+# prefix rewritten.  Both are needed and neither is guessable: this perl keeps lib.pm,
+# Config.pm and the extension stubs in the versioned architecture-dependent directory
+# and the rest of the core library in the unversioned one.
+WASM_PERL5LIB="/polymake/perl5/${TARGET_PERL_ARCHLIB#${PREFIX}/lib/perl5/}"
+WASM_PERL5LIB="${WASM_PERL5LIB}:/polymake/perl5/${TARGET_PERL_PRIVLIB#${PREFIX}/lib/perl5/}"
+
 em++ -c "${RECIPE_DIR}/polymake_wasm_main.cc" -o polymake_wasm_main.o \
     -std=c++14 -DPOLYMAKE_DEBUG=0 \
+    -DPOLYMAKE_WASM_PERL5LIB="\"${WASM_PERL5LIB}\"" \
     ${POLYMAKE_CXXFLAGS} \
     -I"${PREFIX}/include"
 
@@ -275,38 +409,13 @@ em++ -o "${PREFIX}/bin/polymake.js" \
     ${BUNDLED_LDFLAGS} \
     ${BUNDLED_LIBS} \
     ${TOP_LIBS} \
+    --pre-js "${PREFIX}/bin/polymake.data.js" \
     "${EM_LINK_FLAGS[@]}"
 
 test -f "${PREFIX}/bin/polymake.wasm"
 
-# --------------------------------------------------------------------------
-# filesystem image
-# --------------------------------------------------------------------------
+rm -rf "${LINK_STAGE}"
 
-# The wasm runtime sees none of the host filesystem, so everything polymake and
-# perl read at runtime is packed into polymake.data.  The mount points match the
-# defaults compiled into polymake_wasm_main.cc.
-#
-# The `shared` symlink the installer drops next to the architecture-dependent
-# tree points back at the top tree; following it here would pack the whole rule
-# set a second time.  polymake_wasm_main.cc passes both directories explicitly,
-# so the symlink is not needed inside the image.
-rm -f "${INSTALL_ARCH}/shared"
-
-# The archives are build inputs, already linked into polymake.wasm above, and the
-# patched loader never looks for them again.
-rm -f "${INSTALL_ARCH}"/lib/*
-rm -rf "${INSTALL_ARCH}/perlx"
-
-python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-    "${PREFIX}/bin/polymake.data" \
-    --preload "${INSTALL_TOP}@/polymake/share" \
-    --preload "${INSTALL_ARCH}@/polymake/lib" \
-    --preload "${PREFIX}/lib/perl5@/polymake/perl5" \
-    --exclude '*/pod/*' '*.pod' '*/demo/*' \
-    --js-output="${PREFIX}/bin/polymake.data.js"
-
-test -f "${PREFIX}/bin/polymake.data"
 
 # --------------------------------------------------------------------------
 # tidy up the installed tree
