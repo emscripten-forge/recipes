@@ -14,7 +14,7 @@ source:
   - patches/0003-wasm-file-save-via-browser-download.patch
 
 build:
-  number: 0
+  number: 1
   script: build.sh
 
 requirements:
@@ -28,6 +28,9 @@ requirements:
   # cross Qt6 (JSPI variant) lets Qt's app.exec() event loop yield to
   # the browser via JavaScript Promise Integration.
   - qt6-main[build=jspi*]
+  # WebAssembly QPA plugin (libqwasm.a) + qtloader.js. GPL-3.0-only.
+  # Split from qt6-main so headless consumers can stay tri-licensed.
+  - qt6-wasm-platform[build=jspi*]
 
 tests:
 - package_contents:
@@ -37,8 +40,10 @@ tests:
     - share/qhexedit2-experimental/qtloader.js
 
 about:
-  summary: QHexEdit2 — a Qt6 hex editor widget + example app, cross-compiled to wasm.
-  license: LGPL-2.1-only
+  summary: QHexEdit2, a Qt6 hex editor widget + example app, cross-compiled to wasm.
+  # QHexEdit2 upstream is LGPL-2.1. Statically linking Qt's wasm QPA
+  # plugin (GPL-3.0-only) makes the shipped .wasm binary GPL-3.0.
+  license: LGPL-2.1-only AND GPL-3.0-only
   homepage: https://github.com/Simsys/qhexedit2
 
 extra:

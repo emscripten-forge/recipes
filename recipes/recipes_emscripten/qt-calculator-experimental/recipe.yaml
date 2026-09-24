@@ -13,7 +13,7 @@ source:
   sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
 
 build:
-  number: 1
+  number: 2
   script: build.sh
 
 requirements:
@@ -24,10 +24,12 @@ requirements:
   # native Qt6 provides host tools (moc, rcc, uic, qmake6) via QT_HOST_PATH.
   - qt6-main
   host:
-  # cross Qt6 (JSPI variant) provides the static wasm archives and the
-  # qwasm platform plugin linked into qt-calculator.wasm. JSPI is what
+  # cross Qt6 (JSPI variant) provides the static wasm archives. JSPI
   # lets Qt's event loop yield to the browser during exec().
   - qt6-main[build=jspi*]
+  # WebAssembly QPA plugin (libqwasm.a) linked into qt-calculator.wasm,
+  # plus qtloader.js. GPL-3.0-only.
+  - qt6-wasm-platform[build=jspi*]
 
 tests:
 - package_contents:
@@ -39,7 +41,11 @@ tests:
 
 about:
   summary: Qt6 calculator example (from qtbase examples/widgets/widgets/calculator) cross-compiled to wasm.
-  license: LGPL-3.0-only
+  # Qt example sources under examples/widgets/ are
+  # `LicenseRef-Qt-Commercial OR BSD-3-Clause`. Statically linking
+  # Qt's wasm QPA plugin (GPL-3.0-only) makes the shipped .wasm
+  # binary GPL-3.0.
+  license: BSD-3-Clause AND GPL-3.0-only
   homepage: https://doc.qt.io/qt-6/qtwidgets-widgets-calculator-example.html
 
 extra:
