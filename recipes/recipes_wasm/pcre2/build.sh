@@ -20,7 +20,7 @@ emconfigure ./configure \
     --host="${host}" \
     --enable-shared \
     --enable-pcre2-16 \
-    --enable-pcre2-32
+    --enable-pcre2-32 || cat config.log
 
 # Needs to be removed again from the generated file
 sed -i 's/-sSIDE_MODULE=2 //g' libtool
