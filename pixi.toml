@@ -1,14 +1,14 @@
 [workspace]
 name = "emscripten-forge"
 version = "0.1.0"
-description = "The emscripten-forge for emscripten-wasm32- builds."
+description = "The emscripten-forge for emscripten-wasm32 and emscripten-wasm64 builds."
 authors = ["DerThorsten <derthorstenbeier@gmail.com>"]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "osx-64", "linux-64"]
 
 # default environment
 [dependencies]
-rattler-build = ">=0.74.0, <0.76.0"
+rattler-build = ">=0.76.0"
 curl = "*"
 
 ############################################
@@ -18,84 +18,51 @@ curl = "*"
 [feature.feature_rattler_build.dependencies]
 git = "*"
 patch = "*"
-rattler-build = ">=0.74.0, <0.76.0"
-python = "3.11.*"
+rattler-build = ">=0.76.0"
+python = "3.14.*"
 typer = "*"
 curl = "*"
 
+# Base rattler-build invocation shared by all build tasks below (hidden as it starts with "_").
+[feature.feature_rattler_build.tasks._base]
+args = [
+    "recipe",
+    { arg = "target_platform", default = "" },
+    { arg = "skip_existing", default = "all" },
+]
+cmd = """
+rattler-build build \
+    --package-format tar-bz2 \
+    -c https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x \
+    -c conda-forge \
+    {% if target_platform %}--target-platform {{ target_platform }}{% endif %} \
+    --skip-existing {{ skip_existing }} \
+    -m variant.yaml \
+    --recipe {{ recipe }}
+"""
+
 [feature.feature_rattler_build.tasks.build-emscripten-compiler-pkg]
-cmd = [
-    "rattler-build","build",
-    # format
-    "--package-format", "tar-bz2",
-    # channels
-    "-c", "https://repo.prefix.dev/emscripten-forge-4x",
-    "-c", "conda-forge",
-    "--skip-existing", "all",
-    "-m", "variant.yaml",
-    "--recipe",
-    "recipes/recipes/emscripten_emscripten-wasm32"
+depends-on = [
+    { task = "_base", args = ["recipes/recipes_native/emscripten_emscripten-wasm32"] },
+    { task = "_base", args = ["recipes/recipes_native/emscripten_emscripten-wasm64"] },
 ]
 
 [feature.feature_rattler_build.tasks.build-cross-python-pkg]
-cmd = [
-    "rattler-build","build",
-    # format
-    "--package-format", "tar-bz2",
-    # channels
-    "-c", "https://repo.prefix.dev/emscripten-forge-4x",
-    "-c", "conda-forge",
-    "--skip-existing", "all",
-    "-m", "variant.yaml",
-    "--recipe",
-    "recipes/recipes/cross-python_emscripten-wasm32"
-]
+depends-on = [{ task = "_base", args = ["recipes/recipes_native/cross-python"] }]
 
 [feature.feature_rattler_build.tasks.build-pytester-pkg]
-cmd = [
-    "rattler-build","build",
-    # format
-    "--package-format", "tar-bz2",
-    # channels
-    "-c", "https://repo.prefix.dev/emscripten-forge-4x",
-    "-c", "conda-forge",
-    "--skip-existing", "all",
-    "-m", "variant.yaml",
-    "--recipe",
-    "recipes/recipes/pytester"
-]
-
+depends-on = [{ task = "_base", args = ["recipes/recipes_native/pytester"] }]
 
 [feature.feature_rattler_build.tasks.setup]
 depends-on = ["build-emscripten-compiler-pkg", "build-cross-python-pkg", "build-pytester-pkg"]
 
-
 [feature.feature_rattler_build.tasks.build-emscripten-wasm32-pkg]
-cmd = [
-    "rattler-build","build",
-    # format
-    "--package-format", "tar-bz2",
-    # channels
-    "-c", "https://repo.prefix.dev/emscripten-forge-4x",
-    "-c", "conda-forge",
-    "--target-platform", "emscripten-wasm32",
-    "--skip-existing", "none",
-    "-m", "variant.yaml",
-    "--recipe"
-]
+args = ["recipe"]
+depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm32", "none"] }]
 
-[feature.feature_rattler_build.tasks.build-pkg]
-cmd = [
-    "rattler-build","build",
-    # format
-    "--package-format", "tar-bz2",
-    # channels
-    "-c", "https://repo.prefix.dev/emscripten-forge-4x",
-    "-c", "conda-forge",
-    "--skip-existing", "all",
-    "-m", "variant.yaml",
-    "--recipe"
-]
+[feature.feature_rattler_build.tasks.build-emscripten-wasm64-pkg]
+args = ["recipe"]
+depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm64", "none"] }]
 
 
 ############################################
@@ -103,7 +70,7 @@ cmd = [
 ############################################
 [feature.feature_documentation]
 [feature.feature_documentation.dependencies]
-python = "3.11.*"
+python = "3.14.*"
 mkdocs = ">=1.6.0"
 mkdocs-material = ">=9.5.2"
 pip = "*"
