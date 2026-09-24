@@ -21,20 +21,18 @@ build:
 #
 # Licensing: Qt sources are per-file tri-licensed
 # `LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only` (plus commercial),
-# EXCEPT the WebAssembly QPA plugin under
+# except the WebAssembly QPA plugin under
 # `src/plugins/platforms/wasm/` (libqwasm.a, qtloader.js,
-# wasm_shell.html), which upstream tags GPL-3.0-only. That plugin
-# ships inside qt6-main today, so qt6-main is labeled
-# `(LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND GPL-3.0-only`.
-# The other outputs contain no GPL-only code and are tri-licensed.
-# A future split (a separate qt6-wasm-platform output) would let
-# qt6-main drop the AND-GPL-3 clause, which matters for headless
-# consumers like pygplates that are GPL-2.0-only.
+# wasm_shell.html), which upstream tags GPL-3.0-only. Those files
+# are split into a separate qt6-wasm-platform output so qt6-main
+# stays tri-licensed. Qt widget apps depend on both qt6-main and
+# qt6-wasm-platform, and the resulting combined binary is under
+# GPL-3.0. Headless consumers like pygplates depend only on
+# qt6-main and stay under the tri-license (via one of the options).
 
 outputs:
-- package:
-    name: qt6-main
-    version: ${{ version }}
+- staging:
+    name: build-cache
   source:
     url: https://download.qt.io/official_releases/qt/${{ major_minor }}/${{ version }}/submodules/qtbase-everywhere-src-${{ version }}.tar.xz
     sha256: 5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22
@@ -42,15 +40,10 @@ outputs:
     - patches/0001-wasm-clear-focus-window-on-tab-blur.patch
     - patches/0002-wasm-activate-on-show-for-toplevel-window.patch
   build:
-    string: ${{ "jspi" if wasm_jspi == "1" else "nojspi" }}_h${{ hash }}_${{ build_number }}
     script:
       env:
         QT_EXTRA_FEATURES: ${{ "-feature-wasm-jspi" if wasm_jspi == "1" else "" }}
       content: bash ${{ RECIPE_DIR }}/build_qtbase.sh
-    variant:
-      use_keys:
-      - wasm_jspi
-      down_prioritize_variant: ${{ 1 if wasm_jspi == "1" else 0 }}
   requirements:
     build:
     - ${{ compiler('cxx') }}
@@ -59,6 +52,75 @@ outputs:
     - qt6-main == ${{ version }}
     host:
     - zlib
+
+- package:
+    name: qt6-wasm-platform
+    version: ${{ version }}
+  inherit: build-cache
+  build:
+    files:
+      include:
+      # QPA plugin binary and metadata.
+      - plugins/platforms/libqwasm.*
+      # Runtime shell loaded by the browser.
+      - plugins/platforms/qtloader.js
+      - plugins/platforms/wasm_shell.html
+      - plugins/platforms/qtlogo.svg
+      # QWasm cmake plugin config + build intermediates that Qt install ships.
+      - plugins/platforms/objects-*/QWasmIntegrationPlugin_*/**
+      - lib/cmake/Qt6Gui/Qt6QWasm*
+      - lib/objects-*/QWasmIntegrationPlugin_*/**
+      # libexec/ runtime JS helpers imported by qtloader.js. SPDX:
+      # `LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0`.
+      - libexec/qwasm*.js
+      # qmake plugin-registration file for the QWasm plugin (analog
+      # of the cmake configs above).
+      - mkspecs/modules/qt_plugin_qwasm.pri
+  requirements:
+    # Deliberately no host: entry for qt6-main. rattler-build's file
+    # selector treats every file listed in a host-env PrefixRecord as
+    # a "previous file" and drops it from the new-file set BEFORE
+    # include patterns are evaluated. Putting qt6-main in host: would
+    # mask its files (from an older channel-resolved version, since
+    # this output builds before the sibling qt6-main) and cause
+    # libexec/qwasm*.js, mkspecs/modules/qt_plugin_qwasm.pri etc to
+    # silently disappear despite include patterns matching them.
+    run:
+    - ${{ pin_subpackage('qt6-main', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - plugins/platforms/libqwasm.a
+      - plugins/platforms/qtloader.js
+      - plugins/platforms/wasm_shell.html
+      - lib/cmake/Qt6Gui/Qt6QWasmIntegrationPluginConfig.cmake
+      - libexec/qwasmjsruntime.js
+      - libexec/qwasmtestmain.js
+      - mkspecs/modules/qt_plugin_qwasm.pri
+  about:
+    summary: Qt6 WebAssembly QPA plugin and browser runtime shell (libqwasm.a, qtloader.js, wasm_shell.html); GPL-3.0-only per upstream Qt
+    license: GPL-3.0-only
+    license_file:
+    - LICENSES/GPL-3.0-only.txt
+
+- package:
+    name: qt6-main
+    version: ${{ version }}
+  inherit: build-cache
+  build:
+    files:
+      exclude:
+      # Belongs to qt6-wasm-platform (GPL-3.0-only). Keep this list
+      # in sync with qt6-wasm-platform's include list above.
+      - plugins/platforms/libqwasm.*
+      - plugins/platforms/qtloader.js
+      - plugins/platforms/wasm_shell.html
+      - plugins/platforms/qtlogo.svg
+      - plugins/platforms/objects-*/QWasmIntegrationPlugin_*/**
+      - lib/cmake/Qt6Gui/Qt6QWasm*
+      - lib/objects-*/QWasmIntegrationPlugin_*/**
+      - libexec/qwasm*.js
+      - mkspecs/modules/qt_plugin_qwasm.pri
   tests:
   - package_contents:
       files:
@@ -70,7 +132,6 @@ outputs:
       - lib/libQt6Network.a
       - lib/cmake/Qt6/Qt6Config.cmake
       - include/QtCore/QString
-      - plugins/platforms/libqwasm.a
       - plugins/imageformats/libqjpeg.a
       - plugins/imageformats/libqgif.a
       - plugins/imageformats/libqico.a
@@ -83,8 +144,8 @@ outputs:
       recipe:
       - build_tests_qtbase.sh
   about:
-    summary: Qt6 base libraries (Core, Gui, Widgets, Network, Xml) for Emscripten (WASM)
-    license: (LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only) AND GPL-3.0-only
+    summary: Qt6 base libraries (Core, Gui, Widgets, Network, Xml) for Emscripten (WASM), without the WebAssembly QPA plugin (shipped separately as qt6-wasm-platform)
+    license: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
     license_file:
     - LICENSES/LGPL-3.0-only.txt
     - LICENSES/GPL-2.0-only.txt
