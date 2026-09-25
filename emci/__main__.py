@@ -1,6 +1,7 @@
 from .rattler_build import build_with_rattler
 from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
 from .find_recipes_with_changes import find_recipes_with_changes
+from .recipe_order import sort_recipes_by_dependency
 from .playwright import changed_recipes_need_playwright
 from .lint import lint_recipe_file, lint_recipes
 from .upload import extract_channel_from_pkg
@@ -42,9 +43,12 @@ def changed(
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         if len(recipe_with_changes) == 0:
             continue
+        recipe_with_changes = sort_recipes_by_dependency(
+            os.path.join(recipes_dir, subdir), recipe_with_changes
+        )
+        print("==> Build order:", ", ".join(recipe_with_changes))
         # create a  temp dir and copy all changed recipes
-        # to that dir (because Then we can let boa do the
-        # topological sorting)
+        # to that dir (and drop the legacy recipe files)
         with tempfile.TemporaryDirectory() as tmp_folder_root:
             tmp_recipes_root_str = os.path.join(
                 tmp_folder_root, "recipes", "recipes_per_platform"
@@ -70,7 +74,19 @@ def changed(
                 for file in files:
                     if file == "recipe_legacy.yaml":
                         os.remove(os.path.join(root, file))
-            build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir] == "emscripten-wasm32")
+            # one rattler-build invocation per recipe, in dependency order:
+            # each run sees the packages the previous ones published, which
+            # --recipe-dir mode cannot do for staging-output requirements
+            for recipe_with_change in recipe_with_changes:
+                tmp_recipe_dir = os.path.join(
+                    tmp_recipes_root_str, recipe_with_change
+                )
+                if os.path.isdir(tmp_recipe_dir):
+                    build_with_rattler(
+                        recipe=tmp_recipe_dir,
+                        emscripten_wasm32=RECIPES_SUBDIR_MAPPING[subdir]
+                        == "emscripten-wasm32",
+                    )
 
 
 bot_app = typer.Typer()

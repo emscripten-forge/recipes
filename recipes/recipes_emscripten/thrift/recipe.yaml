@@ -3,54 +3,111 @@ context:
   name: thrift
 
 build:
-  number: 2
+  number: 4
 
-cache:
-  source:
-    - url: https://github.com/apache/thrift/archive/refs/tags/v${{ version }}.tar.gz
-      sha256: c4649c5879dd56c88f1e7a1c03e0fbfcc3b2a2872fb81616bffba5aa8a225a37
-
-  requirements:
+outputs:
+  - staging:
+      name: build-cache
     build:
+      script: build.sh
+    requirements:
+      build:
       - ${{ compiler("cxx") }}
       - cmake
       - make
       - python
       - pip
       - setuptools
-    host:
-      - boost-cpp
+      host:
+      - boost-algorithm
+      - boost-chrono
+      - boost-config
+      - boost-date_time
+      - boost-filesystem
+      - boost-foreach
+      - boost-format
+      - boost-locale
+      - boost-mpl
+      - boost-numeric_conversion
+      - boost-predef
+      - boost-program_options
+      - boost-random
+      - boost-scope_exit
+      - boost-smart_ptr
+      - boost-test
+      - boost-thread
+      - boost-tokenizer
+      - boost-type_traits
+      - boost-uuid
       - openssl
       - zlib
+    source:
+      - url: https://github.com/apache/thrift/archive/refs/tags/v${{ version }}.tar.gz
+        sha256: c4649c5879dd56c88f1e7a1c03e0fbfcc3b2a2872fb81616bffba5aa8a225a37
 
-  build:
-    script: build.sh
-
-outputs:
-  # ============================================================================
-  # C++ Library
-  # ============================================================================
   - package:
       name: thrift-cpp
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: echo "Collecting files from cache"
       files:
         include:
           - lib/libthrift.a
-          - lib/cmake/thrift/
-          - lib/cmake/thrift-emscripten/
-          - lib/pkgconfig/thrift.pc
-          - include/thrift/**
     requirements:
       run:
-        - boost-cpp
+        - boost-chrono
+        - boost-date_time
+        - boost-filesystem
+        - boost-locale
+        - boost-program_options
+        - boost-random
+        - boost-test
         - openssl
         - zlib
     tests:
       - package_contents:
           lib:
             - libthrift.a
+
+  - package:
+      name: thrift-cpp-dev
+      version: ${{ version }}
+    inherit: build-cache
+    build:
+      script: echo "Collecting files from cache"
+      files:
+        include:
+          - include/thrift/**
+          - lib/cmake/thrift/
+          - lib/cmake/thrift-emscripten/
+          - lib/pkgconfig/thrift.pc
+    requirements:
+      run:
+        # the CMake configs and thrift.pc here point at ../../../lib/libthrift.a
+        - ${{ pin_subpackage('thrift-cpp', exact=True) }}
+        - boost-algorithm
+        - boost-chrono
+        - boost-config
+        - boost-date_time
+        - boost-filesystem
+        - boost-foreach
+        - boost-format
+        - boost-locale
+        - boost-mpl
+        - boost-numeric_conversion
+        - boost-predef
+        - boost-program_options
+        - boost-random
+        - boost-scope_exit
+        - boost-smart_ptr
+        - boost-test
+        - boost-thread
+        - boost-tokenizer
+        - boost-type_traits
+        - boost-uuid
+    tests:
+      - package_contents:
           include:
             - thrift/Thrift.h
             - thrift/protocol/TBinaryProtocol.h
@@ -71,6 +128,7 @@ outputs:
   - package:
       name: thrift
       version: ${{ version }}
+    inherit: build-cache
     build:
       script: build_python.sh
       files:
@@ -88,7 +146,7 @@ outputs:
       host:
         - python
         - setuptools
-        - thrift-cpp =${{ version }}
+        - thrift-cpp-dev =${{ version }}
       run:
         - python
         - six
@@ -119,4 +177,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - Copilot
+    - Alex-Placet
