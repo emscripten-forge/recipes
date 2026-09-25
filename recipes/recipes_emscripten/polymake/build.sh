@@ -473,7 +473,13 @@ test -f "${PREFIX}/lib/libpolymake.a"
 test -f "${PREFIX}/lib/libpolymake-core.a" || cp build/Opt/lib/libpolymake-core.a "${PREFIX}/lib/"
 test -f "${PREFIX}/lib/libpolymake-core.a"
 
-# a small launcher so that `polymake` works from the command line in a node env
+# A small launcher so that `polymake` works from the command line in a node env.
+# polymake's installer has already put its own launcher at this path -- a perl script
+# expecting a native interpreter, which does not exist in this build -- and it copies
+# with mode 0555 (support/install.pl).  Remove it before writing: overwriting a
+# read-only file succeeds for root, which is why a local build never notices, and
+# fails with EACCES for every other user, which is what a CI build runs as.
+rm -f "${PREFIX}/bin/polymake"
 cat > "${PREFIX}/bin/polymake" <<'EOF'
 #!/usr/bin/env bash
 here="$(cd "$(dirname "$0")" && pwd)"
