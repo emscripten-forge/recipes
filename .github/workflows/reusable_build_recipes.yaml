@@ -12,9 +12,10 @@ on:
         required: true
         type: string
       subdir:
-        description: Recipe subdir to build (recipes_native or recipes_wasm)
-        required: true
+        description: Recipe subdir to build (recipes_native or recipes_wasm). Empty means both.
+        required: false
         type: string
+        default: ""
 
 permissions:
   contents: read
@@ -69,7 +70,11 @@ jobs:
             OLD=origin/emscripten-6x
             NEW=HEAD
           fi
-          needed=$(python -m emci build needs-playwright "$OLD" "$NEW" --subdir "${{ inputs.subdir }}")
+          SUBDIR_ARGS=()
+          if [ -n "${{ inputs.subdir }}" ]; then
+            SUBDIR_ARGS=(--subdir "${{ inputs.subdir }}")
+          fi
+          needed=$(python -m emci build needs-playwright "$OLD" "$NEW" "${SUBDIR_ARGS[@]}")
           echo "needed=$needed" >> "$GITHUB_OUTPUT"
 
       - name: Install playwright dependencies
@@ -97,9 +102,13 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
+          SUBDIR_ARGS=()
+          if [ -n "${{ inputs.subdir }}" ]; then
+            SUBDIR_ARGS=(--subdir "${{ inputs.subdir }}")
+          fi
           python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x~1 origin/emscripten-6x \
             --target-platform ${{ inputs.wasm-arch }} \
-            --subdir ${{ inputs.subdir }}
+            "${SUBDIR_ARGS[@]}"
 
       ################################################################
       # PULL_REQUEST
@@ -108,9 +117,13 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
+          SUBDIR_ARGS=()
+          if [ -n "${{ inputs.subdir }}" ]; then
+            SUBDIR_ARGS=(--subdir "${{ inputs.subdir }}")
+          fi
           python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x HEAD \
             --target-platform ${{ inputs.wasm-arch }} \
-            --subdir ${{ inputs.subdir }}
+            "${SUBDIR_ARGS[@]}"
 
       ################################################################
       # UPLOAD
@@ -118,7 +131,7 @@ jobs:
       - name: Create artifact
         uses: actions/upload-artifact@v7
         with:
-          name: output-${{ inputs.os }}-${{ inputs.wasm-arch }}-${{ inputs.subdir }}
+          name: output-${{ inputs.os }}-${{ inputs.wasm-arch }}
           path: output
         continue-on-error: true
 
