@@ -8,4 +8,4 @@ cat $SRC_DIR/emscripten.meson.cross
 
 export PYBIND11_INCLUDE_DIR=$PREFIX/include
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
-    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross"
+    -Csetup-args="--cross-file=$MESON_CROSS_FILE"
