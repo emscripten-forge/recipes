@@ -29,16 +29,19 @@ args = [
     "recipe",
     { arg = "target_platform", default = "" },
     { arg = "skip_existing", default = "all" },
+    { arg = "extra_args", default = "" },
 ]
 cmd = """
 rattler-build build \
     --package-format tar-bz2 \
     -c https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x \
     -c conda-forge \
+    -c bioconda \
     {% if target_platform %}--target-platform {{ target_platform }}{% endif %} \
     --skip-existing {{ skip_existing }} \
     -m variant.yaml \
-    --recipe {{ recipe }}
+    --recipe {{ recipe }} \
+    {{ extra_args }}
 """
 
 [feature.feature_rattler_build.tasks.build-emscripten-compiler-pkg]
@@ -57,12 +60,12 @@ depends-on = [{ task = "_base", args = ["recipes/recipes_native/pytester"] }]
 depends-on = ["build-emscripten-compiler-pkg", "build-cross-python-pkg", "build-pytester-pkg"]
 
 [feature.feature_rattler_build.tasks.build-emscripten-wasm32-pkg]
-args = ["recipe"]
-depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm32", "none"] }]
+args = ["recipe", { arg = "extra_args", default = "" }]
+depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm32", "none", "{{ extra_args }}"] }]
 
 [feature.feature_rattler_build.tasks.build-emscripten-wasm64-pkg]
-args = ["recipe"]
-depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm64", "none"] }]
+args = ["recipe", { arg = "extra_args", default = "" }]
+depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm64", "none", "{{ extra_args }}"] }]
 
 
 ############################################
