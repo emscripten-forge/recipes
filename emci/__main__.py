@@ -1,6 +1,6 @@
 from .rattler_build import build_with_rattler
 from .constants import RECIPES_EMSCRIPTEN_DIR
-from .find_recipes_with_changes import RECIPE_SUBDIRS, find_recipes_with_changes
+from .find_recipes_with_changes import find_recipes_with_changes
 from .playwright import changed_recipes_need_playwright
 from .lint import lint_recipe_file, lint_recipes
 from .upload import extract_channel_from_pkg
@@ -33,10 +33,6 @@ def changed(
     old,
     new,
     target_platform: Optional[str] = typer.Option(None),
-    subdir: Optional[str] = typer.Option(
-        None,
-        help=f"Only consider recipes under this subdir ({', '.join(RECIPE_SUBDIRS)})",
-    ),
     dryrun: Optional[bool] = typer.Option(False),
     skip_tests: Optional[bool] = typer.Option(False),
     skip_existing: Optional[bool] = typer.Option(True)
@@ -46,11 +42,9 @@ def changed(
 
     work_dir = os.getcwd()
     recipes_dir = os.path.join(root_dir, "recipes")
-    recipes_with_changes_per_subdir = find_recipes_with_changes(
-        old=old, new=new, subdir=subdir
-    )
+    recipes_with_changes_per_subdir = find_recipes_with_changes(old=old, new=new)
 
-    for recipe_subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
+    for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         if len(recipe_with_changes) == 0:
             continue
         # create a  temp dir and copy all changed recipes
@@ -66,7 +60,7 @@ def changed(
             n_recipes = 0
             for recipe_with_change in recipe_with_changes:
 
-                recipe_dir = os.path.join(recipes_dir, recipe_subdir, recipe_with_change)
+                recipe_dir = os.path.join(recipes_dir, subdir, recipe_with_change)
 
                 # diff can shown deleted recipe as changed
                 if os.path.isdir(recipe_dir):
@@ -81,7 +75,7 @@ def changed(
                         shutil.copytree(recipe_dir, tmp_recipe_dir)
                         n_recipes += 1
             if n_recipes == 0:
-                print(f"No recipes to build for target_platform={target_platform} in subdir={recipe_subdir}")
+                print(f"No recipes to build for target_platform={target_platform} in subdir={subdir}")
                 continue
             print([x[0] for x in os.walk(tmp_recipes_root_str)])
 
@@ -90,10 +84,10 @@ def changed(
                 for file in files:
                     if file == "recipe_legacy.yaml":
                         os.remove(os.path.join(root, file))
-            tp = str(target_platform)
-            if recipe_subdir == "recipes_native":
+            tp = str(target_platform) 
+            if subdir == "recipes_native":
                 tp = None
-            print(f"Building recipes in {tmp_recipes_root_str} for target_platform={target_platform} subdir={recipe_subdir}")
+            print(f"Building recipes in {tmp_recipes_root_str} for target_platform={target_platform} subdir={subdir}")
             build_with_rattler(recipe=None, recipes_dir=tmp_recipes_root_str, target_platform=tp, skip_existing="local")
 
 
@@ -116,16 +110,9 @@ def update_matplotlib_fontcache(target_branch_name: str):
 
 
 @build_app.command("needs-playwright")
-def needs_playwright(
-    old: str,
-    new: str,
-    subdir: Optional[str] = typer.Option(
-        None,
-        help=f"Only consider recipes under this subdir ({', '.join(RECIPE_SUBDIRS)})",
-    ),
-):
+def needs_playwright(old: str, new: str):
     """Print true/false depending on whether changed recipes need playwright."""
-    if changed_recipes_need_playwright(old, new, subdir=subdir):
+    if changed_recipes_need_playwright(old, new):
         print("true")
     else:
         print("false")

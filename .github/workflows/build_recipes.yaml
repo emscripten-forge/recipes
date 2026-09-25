@@ -11,10 +11,6 @@ on:
         description: Target platform passed to emci (e.g. emscripten-wasm32, emscripten-wasm64, None)
         required: true
         type: string
-      subdir:
-        description: Recipe subdir to build (recipes_native or recipes_wasm)
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -69,7 +65,7 @@ jobs:
             OLD=origin/emscripten-6x
             NEW=HEAD
           fi
-          needed=$(python -m emci build needs-playwright "$OLD" "$NEW" --subdir "${{ inputs.subdir }}")
+          needed=$(python -m emci build needs-playwright "$OLD" "$NEW")
           echo "needed=$needed" >> "$GITHUB_OUTPUT"
 
       - name: Install playwright dependencies
@@ -98,8 +94,7 @@ jobs:
         if: github.event_name == 'push'
         run: |
           python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x~1 origin/emscripten-6x \
-            --target-platform ${{ inputs.wasm-arch }} \
-            --subdir ${{ inputs.subdir }}
+            --target-platform ${{ inputs.wasm-arch }}
 
       ################################################################
       # PULL_REQUEST
@@ -109,8 +104,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x HEAD \
-            --target-platform ${{ inputs.wasm-arch }} \
-            --subdir ${{ inputs.subdir }}
+            --target-platform ${{ inputs.wasm-arch }}
 
       ################################################################
       # UPLOAD
@@ -118,7 +112,7 @@ jobs:
       - name: Create artifact
         uses: actions/upload-artifact@v7
         with:
-          name: output-${{ inputs.os }}-${{ inputs.wasm-arch }}-${{ inputs.subdir }}
+          name: output-${{ inputs.os }}-${{ inputs.wasm-arch }}
           path: output
         continue-on-error: true
 
