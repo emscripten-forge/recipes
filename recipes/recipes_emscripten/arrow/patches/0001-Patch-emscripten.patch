@@ -5,16 +5,14 @@ Subject: [PATCH 1/1] Patch emscripten
 
 ---
  python/CMakeLists.txt | 36 +++++++++++++++++++++++-------------
- python/setup.py       |  3 +--
- 2 files changed, 24 insertions(+), 15 deletions(-)
+ 1 file changed, 25 insertions(+), 11 deletions(-)
 
 diff --git a/python/CMakeLists.txt b/python/CMakeLists.txt
-index d550796a7a..a6be9cc19f 100644
 --- a/python/CMakeLists.txt
 +++ b/python/CMakeLists.txt
-@@ -161,21 +161,30 @@ endif()
+@@ -161,21 +161,30 @@
  include(SetupCxxFlags)
-
+ 
  if($ENV{PYODIDE})
 +  message(STATUS "Building PyArrow for Pyodide / EmscriptenForge")
    # These variables are needed for building PyArrow on Emscripten.
@@ -53,19 +51,3 @@ index d550796a7a..a6be9cc19f 100644
    endif()
    set(ENV{_PYTHON_SYSCONFIGDATA_NAME} $ENV{SYSCONFIG_NAME})
    # we set the c and cxx compiler manually to bypass pywasmcross
-diff --git a/python/setup.py b/python/setup.py
-index a27bd3baef..895dfa1d70 100755
---- a/python/setup.py
-+++ b/python/setup.py
-@@ -268,8 +269,6 @@ class build_ext(_build_ext):
-
-             cmake_options = [
-                 f'-DCMAKE_INSTALL_PREFIX={install_prefix}',
--                f'-DPYTHON_EXECUTABLE={sys.executable}',
--                f'-DPython3_EXECUTABLE={sys.executable}',
-                 f'-DPYARROW_CXXFLAGS={self.cmake_cxxflags}',
-             ]
-
---
-2.52.0
-

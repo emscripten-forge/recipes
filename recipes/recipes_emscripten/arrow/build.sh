@@ -17,8 +17,8 @@ ARROW_SHARED_FEATURES=(
     "-DARROW_DATASET=ON"
     "-DARROW_PARQUET=ON"
     "-DARROW_WITH_RE2=ON"
-    "-DARROW_SIMD_LEVEL=AVX2"
-    "-DARROW_RUNTIME_SIMD_LEVEL=AVX2"
+    "-DARROW_SIMD_LEVEL=NONE"
+    "-DARROW_RUNTIME_SIMD_LEVEL=NONE"
     "-DARROW_ENABLE_THREADING=OFF"
     "-DARROW_JEMALLOC=OFF"
     "-DARROW_MIMALLOC=OFF"
@@ -30,8 +30,33 @@ ARROW_SHARED_FEATURES=(
     "-DARROW_DEPENDENCY_USE_SHARED=OFF"
 )
 
+# arrow's resolve_dependency(Boost) requires CONFIG mode (no FindBoost module
+# fallback), and our boost-* packages ship per-module configs only - so without
+# an umbrella BoostConfig.cmake, CMake picks up a *host* Boost (Arch:
+# /usr/lib/cmake/Boost-1.92.0, /opt/cuda/lib/cmake/Boost-1.92.0) and then adds
+# -isystem /usr/include, which breaks emscripten's libc++ (<cstdint>). The
+# umbrella config is cmake/BoostConfig.cmake.in; the version is substituted from
+# the installed boost headers, so it tracks the boost packages.
+boost_version_macro=$(sed -n 's/^#define BOOST_VERSION \([0-9][0-9]*\)$/\1/p' \
+    "${PREFIX}/include/boost/version.hpp" | head -1)
+if [ -z "${boost_version_macro}" ]; then
+    echo "arrow: no BOOST_VERSION in ${PREFIX}/include/boost/version.hpp" >&2
+    exit 1
+fi
+BOOST_VERSION="$((boost_version_macro / 100000)).$(((boost_version_macro / 100) % 1000)).$((boost_version_macro % 100))"
+
+BOOST_CMAKE_DIR="${SRC_DIR}/.boost-cmake"
+mkdir -p "${BOOST_CMAKE_DIR}"
+for template in BoostConfig BoostConfigVersion; do
+    sed -e "s|@PREFIX@|${PREFIX}|g" -e "s|@BOOST_VERSION@|${BOOST_VERSION}|g" \
+        "${RECIPE_DIR}/cmake/${template}.cmake.in" > "${BOOST_CMAKE_DIR}/${template}.cmake"
+done
+echo "arrow: generated ${BOOST_CMAKE_DIR}/BoostConfig.cmake for Boost ${BOOST_VERSION}"
+
 ARROW_DEPENDENCIES=(
     "-DBoost_ROOT=${PREFIX}"
+    "-DBoost_DIR=${BOOST_CMAKE_DIR}"
+    "-DBoost_NO_SYSTEM_PATHS=ON"
     "-DBrotli_ROOT=${PREFIX}"
     "-DBROTLI_ROOT=${PREFIX}"
     "-DBrotliAlt_ROOT=${PREFIX}"
@@ -157,7 +182,7 @@ build_pyarrow() {
         "-DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/cmake/overwriteProp.cmake"
     )
 
-    export PYARROW_CMAKE_OPTIONS="${pyarrow_cmake_options[*]}"
+    export CMAKE_ARGS="${CMAKE_ARGS:-} ${pyarrow_cmake_options[*]}"
     export _PYTHON_SYSCONFIGDATA_NAME="_sysconfigdata__emscripten_wasm32-emscripten"
 
     export PYODIDE=1
@@ -175,7 +200,7 @@ build_pyarrow() {
     export CMAKE_BUILD_PARALLEL_LEVEL=4
 
     cd "$SRC_DIR/python"
-    "${PYTHON}" -m pip install . -vvv
+    "${PYTHON}" -m pip install . --prefix="$PREFIX" -vvv
 
     SP="$PREFIX/lib/python${PY_VER}/site-packages"
     cp "$SP/pyarrow/libarrow_python.so" "$PREFIX/lib/libarrow_python.so"
