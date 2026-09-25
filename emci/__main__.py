@@ -43,11 +43,6 @@ def changed(
     for subdir, recipe_with_changes in recipes_with_changes_per_subdir.items():
         if len(recipe_with_changes) == 0:
             continue
-        # Build producers before consumers. rattler-build's own sorting for
-        # --recipe-dir misses dependencies declared on staging outputs and in
-        # run:, which is exactly where a `-dev` split consumer declares them
-        # (`arrow` -> `thrift-cpp-dev`), so it would start with the consumer
-        # and fail with "No candidates were found for <pkg>".
         recipe_with_changes = sort_recipes_by_dependency(
             os.path.join(recipes_dir, subdir), recipe_with_changes
         )
