@@ -4,7 +4,7 @@ context:
 
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -19,9 +19,24 @@ requirements:
   - cmake
   - make
   host:
-  - libtiff
-  - libpng
-  - zlib
+  - libtiff-static
+  - libpng-static
+  - zlib-static
+  run:
+  - ${{pin_compatible("libtiff-static", lower_bound="x.x.x", upper_bound="x.x.x")}}
+  - ${{pin_compatible("libpng-static", lower_bound="x.x.x", upper_bound="x.x.x")}}
+  - ${{pin_compatible("zlib-static", lower_bound="x.x.x", upper_bound="x.x.x")}}
+
+tests:
+- package_contents:
+    files:
+    - include/openjpeg-2.5/openjpeg.h
+    - lib/libopenjp2.a
+- script:
+    - generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 
 
