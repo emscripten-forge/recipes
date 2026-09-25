@@ -1,0 +1,64 @@
+name: Build Ubuntu Recipes
+
+on:
+  push:
+    branches:
+      - "emscripten-6x"
+    paths:
+      - "recipes/recipes_native/**"
+      - "recipes/recipes_wasm/**"
+      - ".github/workflows/build_recipes_ubuntu.yaml"
+      - ".github/workflows/build_recipes.yaml"
+  pull_request:
+    paths:
+      - "recipes/recipes_native/**"
+      - "recipes/recipes_wasm/**"
+      - ".github/workflows/build_recipes_ubuntu.yaml"
+      - ".github/workflows/build_recipes.yaml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  detect_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Detect changed recipe trees
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            native:
+              - 'recipes/recipes_native/**'
+            wasm:
+              - 'recipes/recipes_wasm/**'
+
+      - name: Set wasm-arch matrix
+        id: set-matrix
+        run: |
+          if [ "${{ steps.filter.outputs.wasm }}" = "true" ]; then
+            echo 'matrix=["emscripten-wasm32","emscripten-wasm64"]' >> "$GITHUB_OUTPUT"
+          elif [ "${{ steps.filter.outputs.native }}" = "true" ]; then
+            echo 'matrix=["emscripten-wasm32"]' >> "$GITHUB_OUTPUT"
+          else
+            # Workflow-only change: full matrix
+            echo 'matrix=["emscripten-wasm32","emscripten-wasm64"]' >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: detect_matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        wasm-arch: ${{ fromJson(needs.detect_matrix.outputs.matrix) }}
+    uses: ./.github/workflows/build_recipes.yaml
+    with:
+      os: ubuntu-latest
+      wasm-arch: ${{ matrix.wasm-arch }}
+    secrets: inherit
