@@ -19,7 +19,8 @@ polytope from inequalities, exact rational volume 1/2, cyclic(4,8),
 topaz::SimplicialComplex, matroid::Matroid -- all correct.
 ```
 
-The binary is 57MB of wasm plus a 49MB filesystem image.
+The binary is 57MB of wasm plus a 49MB filesystem image, and it runs as plain
+`node polymake.js` with nothing else on the side.
 
 ## Why this is not a straightforward port
 
@@ -489,6 +490,36 @@ This was worth chasing rather than working around: the obvious workaround — qu
 the barewords in polymake's perl sources — needed 154 edits across 68 files, would
 have missed `default =>` and friends further inside the same brackets, and would
 have left every rules file and every user script exposed to the same trap.
+
+### JSON, at build time and at run time
+
+polymake wants the CPAN `JSON` distribution in two different places, and they are
+easy to confuse.
+
+At **run time** it is the target perl that needs it: `Polymake.pm` loads `JSON`
+while starting up. The perl package in this channel provides it, under `site_perl`
+rather than next to the core library — which is why the driver's `PERL5LIB` is
+derived from all four of the perl package's own library directories (`sitearch`,
+`sitelib`, `archlib`, `privlib`) read out of its `Config`, instead of being
+assembled from a guess.
+
+At **build** time it is the *native* perl that needs it, for
+`support/generate_cpperl_modules.pl`, which decodes the `.cpperl` definition files
+while ninja generates its target list. A perl that happens to have JSON installed
+hides this completely; the conda-forge perl used in CI does not have it, and the
+build stops on its very first ninja step:
+
+```
+ninja: error: rebuilding 'build.ninja': subcommand failed
+Can't locate JSON.pm in @INC ...
+BEGIN failed--compilation aborted at support/generate_cpperl_modules.pl line 23.
+```
+
+The script makes exactly one call, `JSON->new->relaxed->utf8->decode(...)`, and
+core `JSON::PP` answers it identically. Patch 0017 falls back to `JSON::PP` when
+`JSON` is absent, which keeps the recipe from depending on a CPAN module being
+present in the build environment. With the fallback in force the generator produces
+a byte-identical `targets.ninja`.
 
 ## One packaging gotcha worth knowing
 

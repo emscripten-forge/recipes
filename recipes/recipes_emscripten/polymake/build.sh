@@ -375,12 +375,24 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
 test -f "${PREFIX}/bin/polymake.data"
 
 # The perl library tree is mounted at /polymake/perl5, so the search path the driver
-# installs is the target perl's own archlib and privlib with their ${PREFIX}/lib/perl5
-# prefix rewritten.  Both are needed and neither is guessable: this perl keeps lib.pm,
-# Config.pm and the extension stubs in the versioned architecture-dependent directory
-# and the rest of the core library in the unversioned one.
-WASM_PERL5LIB="/polymake/perl5/${TARGET_PERL_ARCHLIB#${PREFIX}/lib/perl5/}"
-WASM_PERL5LIB="${WASM_PERL5LIB}:/polymake/perl5/${TARGET_PERL_PRIVLIB#${PREFIX}/lib/perl5/}"
+# installs is the target perl's own library directories with their ${PREFIX}/lib/perl5
+# prefix rewritten, in perl's usual order.  All of them are needed and none is
+# guessable, which is why they are read from the perl package's own Config rather than
+# assembled here: this perl keeps lib.pm, Config.pm and the extension stubs in the
+# versioned architecture-dependent directory, the rest of the core library in the
+# unversioned one, and the CPAN modules polymake requires -- JSON above all, which it
+# loads while starting up -- under site_perl.
+WASM_PERL5LIB=""
+for perl_libdir in "$(target_perl_cfg sitearch)" "$(target_perl_cfg sitelib)" \
+                   "${TARGET_PERL_ARCHLIB}" "${TARGET_PERL_PRIVLIB}"; do
+    # only directories inside the tree that goes into the image are reachable there
+    case "${perl_libdir}" in
+        "${PREFIX}/lib/perl5/"*) ;;
+        *) continue ;;
+    esac
+    WASM_PERL5LIB="${WASM_PERL5LIB}${WASM_PERL5LIB:+:}/polymake/perl5/${perl_libdir#${PREFIX}/lib/perl5/}"
+done
+test -n "${WASM_PERL5LIB}"
 
 em++ -c "${RECIPE_DIR}/polymake_wasm_main.cc" -o polymake_wasm_main.o \
     -std=c++14 -DPOLYMAKE_DEBUG=0 \
