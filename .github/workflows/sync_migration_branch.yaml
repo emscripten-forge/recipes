@@ -32,10 +32,11 @@ jobs:
         id: skip
         shell: bash
         run: |
-          author=$(git log -1 --format='%an' "${{ github.sha }}")
-          if [[ "$author" == "emscripten-forge-bot" ]]; then
+          # The email is more reliable than name
+          email=$(git log -1 --format='%ae' "${{ github.sha }}")
+          if [[ "$email" == *emscripten-forge-bot* ]]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Skipping sync: commit authored by bot ($author)"
+            echo "Skipping sync: commit authored by bot ($email)"
           else
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
