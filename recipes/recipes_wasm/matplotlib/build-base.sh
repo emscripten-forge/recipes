@@ -1,7 +1,10 @@
 # Set up the cross file
-sed "s|@(PYTHON)|${PYTHON}|g" $RECIPE_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.cross
+sed "s|@(PYTHON)|${PYTHON}|g" $MESON_CROSS_FILE > $SRC_DIR/emscripten.meson.cross
 cat $SRC_DIR/emscripten.meson.cross
 
+
+# mpl expects lib/libqhull_r.a and not lib/libqhullstatic_r.a
+cp $PREFIX/lib/libqhullstatic_r.a $PREFIX/lib/libqhull_r.a
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
     -Csetup-args="-Dsystem-freetype=true" \
@@ -21,3 +24,6 @@ cp $RECIPE_DIR/src/Humor-Sans-1.0.ttf $MATPLOTLIB_LOCATION/mpl-data/fonts/ttf/Hu
 rm -rf $MATPLOTLIB_LOCATION/backends/qt_editor
 rm -rf $MATPLOTLIB_LOCATION/backends/web_backend
 rm -rf $MATPLOTLIB_LOCATION/sphinxext
+
+# remove the copied qhull static library to save space
+rm -f $PREFIX/lib/libqhull_r.a
