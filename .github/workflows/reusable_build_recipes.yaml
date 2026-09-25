@@ -11,11 +11,6 @@ on:
         description: Target platform passed to emci (e.g. emscripten-wasm32, emscripten-wasm64, None)
         required: true
         type: string
-      subdir:
-        description: Recipe subdir to build (recipes_native or recipes_wasm). Empty means both.
-        required: false
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -70,11 +65,7 @@ jobs:
             OLD=origin/emscripten-6x
             NEW=HEAD
           fi
-          SUBDIR_ARGS=()
-          if [ -n "${{ inputs.subdir }}" ]; then
-            SUBDIR_ARGS=(--subdir "${{ inputs.subdir }}")
-          fi
-          needed=$(python -m emci build needs-playwright "$OLD" "$NEW" "${SUBDIR_ARGS[@]}")
+          needed=$(python -m emci build needs-playwright "$OLD" "$NEW")
           echo "needed=$needed" >> "$GITHUB_OUTPUT"
 
       - name: Install playwright dependencies
@@ -102,13 +93,8 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'push'
         run: |
-          SUBDIR_ARGS=()
-          if [ -n "${{ inputs.subdir }}" ]; then
-            SUBDIR_ARGS=(--subdir "${{ inputs.subdir }}")
-          fi
           python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x~1 origin/emscripten-6x \
-            --target-platform ${{ inputs.wasm-arch }} \
-            "${SUBDIR_ARGS[@]}"
+            --target-platform ${{ inputs.wasm-arch }}
 
       ################################################################
       # PULL_REQUEST
@@ -117,13 +103,8 @@ jobs:
         shell: bash -el {0}
         if: github.event_name == 'pull_request'
         run: |
-          SUBDIR_ARGS=()
-          if [ -n "${{ inputs.subdir }}" ]; then
-            SUBDIR_ARGS=(--subdir "${{ inputs.subdir }}")
-          fi
           python -m emci build changed $GITHUB_WORKSPACE/ origin/emscripten-6x HEAD \
-            --target-platform ${{ inputs.wasm-arch }} \
-            "${SUBDIR_ARGS[@]}"
+            --target-platform ${{ inputs.wasm-arch }}
 
       ################################################################
       # UPLOAD
