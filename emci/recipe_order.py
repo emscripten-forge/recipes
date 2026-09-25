@@ -1,15 +1,4 @@
 """Order changed recipes so producers are built before their consumers.
-
-`rattler-build build --recipe-dir` sorts the recipes of a directory by
-dependency, but its graph ignores requirements declared on `staging:` outputs
-and ignores `run:` requirements (verified with the version pinned in
-`ci_env.yml`, 0.67.0): a recipe whose dependency lives in its staging output is
-built *before* the producer and dies with
-`Cannot solve the request because of: No candidates were found for <pkg>`.
-Consumers of a `-dev` split (`arrow` -> `thrift-cpp-dev`, `python-symengine` ->
-`symengine-dev`, `pygplates-experimental` -> `cgal-cpp-dev`) are exactly that
-shape, so emci builds one recipe per rattler-build invocation, in the order
-computed here (each invocation sees the artifacts of the previous ones).
 """
 
 from __future__ import annotations
