@@ -27,10 +27,24 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.BOT_ACCESS_TOKEN }}
 
+      # These are version bumps which are already enabled for migration branch
+      - name: Skip bot commits
+        id: skip
+        shell: bash
+        run: |
+          author=$(git log -1 --format='%an' "${{ github.sha }}")
+          if [[ "$author" == "emscripten-forge-bot" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Skipping sync: commit authored by bot ($author)"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       ################################################################
       # CONFIG
       ################################################################
       - name: Global config
+        if: steps.skip.outputs.skip != 'true'
         shell: bash -el {0}
         run: git config --global advice.detachedHead false
 
@@ -38,6 +52,7 @@ jobs:
       # MAMBA
       ################################################################
       - name: Install micromamba
+        if: steps.skip.outputs.skip != 'true'
         uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: ci_env.yml
@@ -49,6 +64,7 @@ jobs:
       # SYNC
       ################################################################
       - name: Sync migration branch
+        if: steps.skip.outputs.skip != 'true'
         shell: bash -el {0}
         # Use the previous sha as old and the current sha as new
         run: python -m emci sync emscripten-6x "${{ github.sha }}~1" "${{ github.sha }}"
