@@ -1,17 +1,21 @@
 context:
   name: matplotlib
   version: 3.11.2
+
 source:
 - url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
   sha256: 14b555ae7477ff593d842fba9714b5cbc6ea1db9461d2ea9d6da3ec0dc420f1a
   patches:
   - patches/0001-Font-cache-path.patch
+
 build:
-  number: 0
+  number: 2
   files:
     exclude:
     - '**/test_*.py'
+
 outputs:
+
 - package:
     name: matplotlib-base
     version: ${{ version }}
@@ -43,14 +47,14 @@ outputs:
     - setuptools_scm_git_archive
     - sed
     host:
-    - freetype-static
-    - harfbuzz-static
-    - libraqm-static
+    - freetype
+    - harfbuzz
+    - libraqm
     - numpy
-    - python-dev
+    - python
     - pybind11
-    - qhull-static
-    - sheenbidi-static
+    - qhull
+    - sheenbidi
     run:
     - contourpy
     - cycler
@@ -65,12 +69,12 @@ outputs:
   tests:
   - package_contents:
       files:
-      - lib/python*/site-packages/matplotlib/_c_internal_utils.cpython-*-wasm*-emscripten.so
-      - lib/python*/site-packages/matplotlib/ft2font.cpython-*-wasm*-emscripten.so
-      - lib/python*/site-packages/matplotlib/_image.cpython-*-wasm*-emscripten.so
-      - lib/python*/site-packages/matplotlib/_path.cpython-*-wasm*-emscripten.so
-      - lib/python*/site-packages/matplotlib/_qhull.cpython-*-wasm*-emscripten.so
-      - lib/python*/site-packages/matplotlib/_tri.cpython-*-wasm*-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_c_internal_utils.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/ft2font.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_image.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_path.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_qhull.cpython-313-wasm32-emscripten.so
+      - lib/python3.13/site-packages/matplotlib/_tri.cpython-313-wasm32-emscripten.so
   - script: pytester
     files:
       recipe:
@@ -80,6 +84,7 @@ outputs:
       - pytester
       run:
       - pytester-run
+
 - package:
     name: matplotlib
     version: ${{ version }}
@@ -87,9 +92,9 @@ outputs:
     noarch: python
   requirements:
     host:
-    - python-dev
+    - python =${{ python_min }}
     run:
-    - python
+    - python >=${{ python_min }}
     - ${{ pin_subpackage('matplotlib-base', exact=True) }}
   tests:
   - script: pytester
@@ -101,6 +106,7 @@ outputs:
       - pytester
       run:
       - pytester-run
+
 about:
   homepage: http://matplotlib.org/
   license: PSF-2.0
