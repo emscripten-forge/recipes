@@ -1,5 +1,9 @@
 from .rattler_build import build_with_rattler
-from .constants import RECIPES_SUBDIR_MAPPING, RECIPES_EMSCRIPTEN_DIR
+from .constants import (
+    RECIPES_SUBDIR_MAPPING,
+    RECIPES_EMSCRIPTEN_DIR,
+    RECIPES_WASM_DIR,
+)
 from .find_recipes_with_changes import find_recipes_with_changes
 from .playwright import changed_recipes_need_playwright
 from .lint import lint_recipe_file, lint_recipes
@@ -81,7 +85,14 @@ app.add_typer(bot_app, name="bot")
 def bump_recipes_versions(target_branch_name: str):
     from .bot.bump_recipes_versions import bump_recipe_versions
 
-    bump_recipe_versions(RECIPES_EMSCRIPTEN_DIR, target_branch_name)
+    # Branch switch happens inside bump_recipe_versions
+    if target_branch_name == "emscripten-6x":
+        recipe_dirs = [RECIPES_EMSCRIPTEN_DIR, RECIPES_WASM_DIR]
+    else:
+        recipe_dirs = [RECIPES_EMSCRIPTEN_DIR]
+
+    for recipe_dir in recipe_dirs:
+        bump_recipe_versions(recipe_dir, target_branch_name)
 
 
 @bot_app.command()
