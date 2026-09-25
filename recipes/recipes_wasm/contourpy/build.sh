@@ -7,8 +7,6 @@ mv $SRC_DIR/emscripten.meson.new $SRC_DIR/emscripten.meson.cross
 cat $SRC_DIR/emscripten.meson.cross
 
 
-# ensure we dont use Werror
-export CFLAGS="${CFLAGS} -Wno-error"
 
 export PYBIND11_INCLUDE_DIR=$PREFIX/include
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
