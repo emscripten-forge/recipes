@@ -1,25 +1,78 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
-BUILD_PERL="${BUILD_PREFIX}/bin/perl"
-EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
+# polymake for emscripten-wasm32.
+#
+# polymake is a perl application with a large C++ core.  Natively it runs as
+# `perl bin/polymake`, pulling in one shared module per application through
+# DynaLoader.  The emscripten-forge perl is a static interpreter built with
+# usedl='undef' / dlsrc='dl_none.xs' / dlext='none', so nothing can ever be
+# dlopen'ed at runtime and that model does not survive the port.
+#
+# Instead this recipe builds the *callable* variant: pm::perl::Main constructs
+# the perl interpreter from C++ and bootstraps all core XS modules statically
+# through the generated polymakeBootstrapXS.h.  The patches turn every "shared
+# module" into an ar archive, and this script performs one final link of the
+# core, the callable glue, every application archive and libperl.a into a single
+# wasm executable.  The rule files, perl libraries and application sources are
+# packed into a filesystem image alongside it.
+#
+# The build is a cross build in the strict sense: the *native* perl from the
+# build environment drives configure.pl, ExtUtils::xsubpp and the ninja target
+# generator, while the emscripten perl in the host environment is only ever
+# linked against, never executed.  polymake's own configure normally learns
+# everything about perl from the interpreter running it, so the perl-specific
+# part of the generated ninja configuration is rewritten for the target below.
 
-# the target emscripten perl
+# --------------------------------------------------------------------------
+# toolchain
+# --------------------------------------------------------------------------
+
+strip_arch() { echo "${1:-}" | sed -E 's/-march=[^ ]+//g; s/-mtune=[^ ]+//g'; }
+
+export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
+
+# Makes the patched ConfigureStandalone.pm link the configuration test programs
+# as node-runnable launchers and execute them through node, so that the probes
+# for gmp, mpfr, flint, bliss, ppl, cddlib, lrslib and normaliz actually run
+# instead of failing as "cannot execute binary file".
+export POLYMAKE_TEST_RUNNER="node"
+export POLYMAKE_TEST_SUFFIX=".js"
+# Link flags for the test programs only (never recorded for the real build).
+# Emscripten does not flush stdio at exit by default, so a probe that prints
+# without a trailing newline -- the ppl version check -- yields no output, only a
+# warning on stderr, which then reaches polymake's version comparison and breaks
+# its eval ("Number found where operator expected ... near 'to 1'", the 'to 1'
+# coming from "set EXIT_RUNTIME to 1" in that warning).
+export POLYMAKE_TEST_LDFLAGS="-sEXIT_RUNTIME=1 -sALLOW_MEMORY_GROWTH=1"
+
+BUILD_PERL="${BUILD_PREFIX}/bin/perl"
+test -x "${BUILD_PERL}"
+
+EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
+test -f "${EMSCRIPTEN_DIR}/tools/file_packager.py"
+
+# --------------------------------------------------------------------------
+# the target (emscripten) perl
+# --------------------------------------------------------------------------
 
 TARGET_PERL_ARCHLIB="$(ls -d "${PREFIX}"/lib/perl5/*/core_perl | head -n1)"
 TARGET_PERL_CORE="${TARGET_PERL_ARCHLIB}/CORE"
 TARGET_PERL_PRIVLIB="${PREFIX}/lib/perl5/core_perl"
 TARGET_PERL_CONFIG="${TARGET_PERL_ARCHLIB}/Config_heavy.pl"
 
+test -f "${TARGET_PERL_CORE}/libperl.a"
+test -f "${TARGET_PERL_CORE}/perl.h"
+test -f "${TARGET_PERL_CONFIG}"
+
 # read a value out of the target perl's Config_heavy.pl
 target_perl_cfg() { sed -n "s/^$1='\(.*\)'\$/\1/p" "${TARGET_PERL_CONFIG}" | head -n1; }
 
-TARGET_PERL_VERSION="$(target_perl_cfg version)"      
+TARGET_PERL_VERSION="$(target_perl_cfg version)"      # e.g. 5.44.0
 TARGET_PERL_CCFLAGS="$(target_perl_cfg ccflags)"
 # polymake encodes the perl version as the dotless integer, matching
 # write_perl_specific_configuration_file() in support/configure.pl
-TARGET_PERL_VERSION_ID="${TARGET_PERL_VERSION//./}"   
+TARGET_PERL_VERSION_ID="${TARGET_PERL_VERSION//./}"   # e.g. 5440
 
 # Statically linked perl extensions.
 #
@@ -34,13 +87,19 @@ TARGET_PERL_VERSION_ID="${TARGET_PERL_VERSION//./}"
 # is listed but installs no archive -- and the filesystem is the side that
 # decides what can be linked.  auto/List/Util/Util.a yields "List/Util", which is
 # the notation $Config{static_ext} and hence createBootstrap.pl expects.
+POLYMAKE_PERL_STATIC_EXT="$(cd "${TARGET_PERL_ARCHLIB}/auto" && find . -name '*.a' | sed -E 's|^\./||; s|/[^/]+\.a$||' | sort -u | tr '\n' ' ')"
+export POLYMAKE_PERL_STATIC_EXT
+test -n "${POLYMAKE_PERL_STATIC_EXT}"
 
 PERL_EXT_ARCHIVES=()
 while IFS= read -r a; do
     PERL_EXT_ARCHIVES+=("$a")
 done < <(find "${TARGET_PERL_ARCHLIB}/auto" -name '*.a' | sort)
+test "${#PERL_EXT_ARCHIVES[@]}" -gt 0
 
+# --------------------------------------------------------------------------
 # compiler and linker flags
+# --------------------------------------------------------------------------
 
 # -fwasm-exceptions: polymake propagates errors out of the C++ core into the
 # perl interpreter with real C++ exceptions, and the callable API throws.  This
@@ -80,7 +139,6 @@ POLYMAKE_EXTRA_LIBS="${SRC_DIR}/polymake_wasm_stubs.o -lntl -lcddgmp -lmathicgb 
 EM_LINK_FLAGS=(
   -O2
   ${EM_ARCH_FLAGS}
-  -sASYNCIFY
   -sALLOW_MEMORY_GROWTH=1
   -sINITIAL_MEMORY=512MB
   -sMAXIMUM_MEMORY=4GB
@@ -92,14 +150,33 @@ EM_LINK_FLAGS=(
   -Wl,--allow-multiple-definition
 )
 
+# --------------------------------------------------------------------------
+# emscripten stubs
+# --------------------------------------------------------------------------
+
 # Built before configure, because the singular probe links against it.
 # POLYMAKE_WASM_SINGULAR_DIR must match where the filesystem image below mounts
 # the singular package's share/singular directory.
 emcc -c "${RECIPE_DIR}/polymake_wasm_stubs.c" -o "${SRC_DIR}/polymake_wasm_stubs.o" \
     -DPOLYMAKE_WASM_SINGULAR_DIR='"/polymake/singular"'
+test -f "${SRC_DIR}/polymake_wasm_stubs.o"
 
+# --------------------------------------------------------------------------
 # configure
+# --------------------------------------------------------------------------
 
+# Bundled extensions: everything whose library is packaged in this channel is
+# enabled and pointed at ${PREFIX}, with these exceptions:
+#
+#  - nauty: polymake declares it CONFLICT with bliss (bundled/nauty/polymake.ext);
+#    both are alternative backends for graph_compare and only one may be enabled.
+#    bliss is kept.  The nauty *package* is still a host dependency, because
+#    normaliz links against it.
+#  - singular: enabled, but it needs more than a --with flag; see the LIBS
+#    comment above, polymake_wasm_stubs.c, and patch 0011.  The singular package
+#    itself is not modified.
+#  - java/javaview need a JDK, polydb needs mongoc (not in the channel), and
+#    scip/soplex/sympol are left off to keep the first port's link surface small.
 ./configure \
     PERL="${BUILD_PERL}" \
     CC="emcc" \
@@ -132,7 +209,9 @@ emcc -c "${RECIPE_DIR}/polymake_wasm_stubs.c" -o "${SRC_DIR}/polymake_wasm_stubs
     --without-soplex \
     --without-sympol
 
+# --------------------------------------------------------------------------
 # retarget the generated configuration
+# --------------------------------------------------------------------------
 
 # configure.pl derives the archiver from the perl that ran it; ${AR} is what the
 # patched sharedmod rule uses, and only emar understands wasm objects.
@@ -152,6 +231,8 @@ ExtUtils_xsubpp="$("${BUILD_PERL}" -e 'for (@INC) { my $p = "$_/ExtUtils/xsubpp"
 if [ ! -f "${ExtUtils_xsubpp}" ]; then
     ExtUtils_xsubpp="$(find "${BUILD_PREFIX}/lib" -type f -name xsubpp 2>/dev/null | head -n1)"
 fi
+# fail here rather than a few hundred ninja steps later
+test -f "${ExtUtils_xsubpp}"
 
 # The perl-specific configuration is the one file that describes the interpreter
 # polymake compiles against.  configure.pl filled it in from the *native* perl,
@@ -161,6 +242,8 @@ fi
 # the target perl, because it is data describing the interpreter the generated glue
 # is compiled against.
 PERLX_CONFIG="$(ls build/perlx/*/*/config.ninja | head -n1)"
+test -f "${PERLX_CONFIG}"
+test -f "${TARGET_PERL_PRIVLIB}/ExtUtils/typemap"
 
 cat > "${PERLX_CONFIG}" <<EOF
 PERL=${BUILD_PERL}
@@ -175,8 +258,12 @@ ninja_var() { sed -n "s|^ *$1 *= *||p" build/config.ninja | head -n1; }
 
 INSTALL_TOP="$(ninja_var InstallTop)"
 INSTALL_ARCH="$(ninja_var InstallArch)"
+test -n "${INSTALL_TOP}"
+test -n "${INSTALL_ARCH}"
 
+# --------------------------------------------------------------------------
 # build and install
+# --------------------------------------------------------------------------
 
 # Keep ninja from re-running configure on this first build (see patch 0009): the
 # rerun would fail on --without-polydb and, worse, regenerate both config.ninja
@@ -198,6 +285,8 @@ rm -rf "${PREFIX}/include/polymake"
 # read them; patch 0014 lets NM name the symbol lister to use instead.  em-config
 # reports where the toolchain's llvm binaries live.
 NM="$(em-config LLVM_ROOT)/llvm-nm"
+test -x "${NM}" || NM="$(command -v llvm-nm)"
+test -x "${NM}"
 export NM
 
 ninja -C build/Opt -j"${CPU_COUNT:-2}" all
@@ -206,7 +295,12 @@ ninja -C build/Opt -j"${CPU_COUNT:-2}" all
 ninja -C build/Opt -j"${CPU_COUNT:-2}" all.corelib
 ninja -C build/Opt install
 
+test -d "${INSTALL_TOP}/perllib"
+test -d "${INSTALL_ARCH}/lib"
+
+# --------------------------------------------------------------------------
 # final link
+# --------------------------------------------------------------------------
 
 # Harvest the library flags configure worked out, including the per-extension
 # ones it recorded for the bundled extensions, rather than hardcoding them here.
@@ -231,6 +325,7 @@ for a in "${INSTALL_ARCH}"/lib/*; do
     [ -s "$a" ] || continue
     APP_ARCHIVES+=("$a")
 done
+test "${#APP_ARCHIVES[@]}" -gt 0
 
 # Move them aside.  They are build inputs -- already linked into polymake.wasm by
 # the time anything runs -- and the patched module loader never looks for them
@@ -252,6 +347,11 @@ for c in "${PREFIX}"/lib/libpolymake.*; do
     CALLABLE_ARCHIVE="$c"
     break
 done
+test -n "${CALLABLE_ARCHIVE}"
+
+# --------------------------------------------------------------------------
+# filesystem image
+# --------------------------------------------------------------------------
 
 # The wasm runtime sees none of the host filesystem, so everything polymake and
 # perl read at runtime is packed into polymake.data.  The mount points match the
@@ -286,6 +386,7 @@ python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
     --exclude '*/pod/*' '*.pod' '*/demo/*' '*.a' \
     --js-output="${PREFIX}/bin/polymake.data.js"
 
+test -f "${PREFIX}/bin/polymake.data"
 
 # The perl library tree is mounted at /polymake/perl5, so the search path the driver
 # installs is the target perl's own library directories with their ${PREFIX}/lib/perl5
@@ -307,11 +408,13 @@ for perl_libdir in "$(target_perl_cfg sitearch)" "$(target_perl_cfg sitelib)" \
     [ -f "${perl_libdir}/JSON.pm" ] && perl_json_reachable=1
     WASM_PERL5LIB="${WASM_PERL5LIB}${WASM_PERL5LIB:+:}/polymake/perl5/${perl_libdir#${PREFIX}/lib/perl5/}"
 done
+test -n "${WASM_PERL5LIB}"
 
 # polymake loads JSON while starting up.  A search path that misses it yields a
 # binary which builds cleanly and then dies on its first run, so check it here
 # instead -- the perl package keeps JSON under site_perl, which is reached only
 # because the loop above reads the directories out of that package's own Config.
+test -n "${perl_json_reachable}"
 
 em++ -c "${RECIPE_DIR}/polymake_wasm_main.cc" -o polymake_wasm_main.o \
     -std=c++14 -DPOLYMAKE_DEBUG=0 \
@@ -342,11 +445,14 @@ em++ -o "${PREFIX}/bin/polymake.js" \
     ${TOP_LIBS} \
     "${EM_LINK_FLAGS[@]}"
 
+test -f "${PREFIX}/bin/polymake.wasm"
 
 rm -rf "${LINK_STAGE}"
 
 
+# --------------------------------------------------------------------------
 # tidy up the installed tree
+# --------------------------------------------------------------------------
 
 # The build system names the callable library after the platform's shared library
 # convention -- libpolymake.so.<version> plus a libpolymake.so symlink -- but the
@@ -357,6 +463,24 @@ if [ "${CALLABLE_ARCHIVE}" != "${PREFIX}/lib/libpolymake.a" ]; then
     mv "${CALLABLE_ARCHIVE}" "${PREFIX}/lib/libpolymake.a"
 fi
 find "${PREFIX}/lib" -maxdepth 1 \( -name 'libpolymake.so*' -o -name 'libpolymake-apps*' \) -delete
+
+test -f "${PREFIX}/lib/libpolymake.a"
+test -f "${PREFIX}/lib/libpolymake-core.a" || cp build/Opt/lib/libpolymake-core.a "${PREFIX}/lib/"
+test -f "${PREFIX}/lib/libpolymake-core.a"
+
+# A small launcher so that `polymake` works from the command line in a node env.
+# polymake's installer has already put its own launcher at this path -- a perl script
+# expecting a native interpreter, which does not exist in this build -- and it copies
+# with mode 0555 (support/install.pl).  Remove it before writing: overwriting a
+# read-only file succeeds for root, which is why a local build never notices, and
+# fails with EACCES for every other user, which is what a CI build runs as.
+rm -f "${PREFIX}/bin/polymake"
+cat > "${PREFIX}/bin/polymake" <<'EOF'
+#!/usr/bin/env bash
+here="$(cd "$(dirname "$0")" && pwd)"
+exec node "${here}/polymake.js" "$@"
+EOF
+chmod 755 "${PREFIX}/bin/polymake"
 
 LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"
 mkdir -p "${LICENSE_DIR}"
