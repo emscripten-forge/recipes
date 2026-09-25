@@ -1,124 +1,124 @@
 context:
   name: libflang-rt
-  version: 23.1.1
+  version: 23.1.2
 
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
-  sha256: 851b3d701a4fbdd9f69536d4acda578469e810ca7056687d6556443f5fd39557
+  sha256: 75788d759e6987a910975b902f554dc77c08b076b945b2cebde54116d8e831ca
   patches:
     # Originally from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
-    - patches/0001-Add-CodeGen-target-support-for-wasm32-and-wasm64.patch
-    - patches/0002-Use-32-bit-indeces-in-FIR-to-LLVM-for-32-bit-targets.patch
-    - patches/0003-Specialize-flang-to-target-wasm32-and-wasm64.patch
-    - patches/0004-Predefine-__wasm-macros-from-the-target-triple.patch
+  - patches/0001-Add-CodeGen-target-support-for-wasm32-and-wasm64.patch
+  - patches/0002-Use-32-bit-indeces-in-FIR-to-LLVM-for-32-bit-targets.patch
+  - patches/0003-Specialize-flang-to-target-wasm32-and-wasm64.patch
+  - patches/0004-Predefine-__wasm-macros-from-the-target-triple.patch
     # These are only needed for the runtime lib
-    - patches/0005-Specialize-iso_c_binding-for-wasm32.patch
-    - patches/0006-Fix-signature-mismatches.patch
-    - patches/0007-Disable-pthread-support.patch
+  - patches/0005-Specialize-iso_c_binding-for-wasm32.patch
+  - patches/0006-Fix-signature-mismatches.patch
+  - patches/0007-Disable-pthread-support.patch
 
 build:
   number: 0
 
 outputs:
-  - staging:
-      name: libflang-build
+- staging:
+    name: libflang-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - ninja
+    - cmake
+  build:
+    script:
+      env:
+        PKG_VERSION: ${{ version }}
+      file: build.sh
+
+#==============================================================================#
+
+- package:
+    name: libflang-rt-headers
+    version: ${{ version }}
+  inherit: libflang-build
+  build:
+    files:
+      exclude:
+      - lib/*.a
+      - lib/*.so
+  tests:
+  - package_contents:
+      files:
+      - include/flang-rt/runtime/*.h
+      - lib/clang/*/finclude/flang/*/__fortran_builtins.mod
+      - lib/clang/*/finclude/flang/*/__fortran_type_info.mod
+      - lib/clang/*/finclude/flang/*/iso_c_binding.mod
+
+#==============================================================================#
+
+- package:
+    name: libflang-rt-static
+    version: ${{ version }}
+  inherit: libflang-build
+  requirements:
+    run:
+    - ${{ pin_subpackage('libflang-rt-headers', exact=True) }}
+  build:
+    files:
+      include:
+      - lib/libflang_rt.runtime.a
+  tests:
+  - package_contents:
+      files:
+      - lib/libflang_rt.runtime.a
+  - script: test_libflang.sh
+    files:
+      recipe:
+      - test_fortran.f90
     requirements:
       build:
-        - ${{ compiler('c') }}
-        - ${{ compiler('cxx') }}
-        - ${{ compiler('fortran') }}
-        - ninja
-        - cmake
-    build:
-      script:
-        env:
-          PKG_VERSION: ${{ version }}
-        file: build.sh
-
-#==============================================================================#
-
-  - package:
-      name: libflang-rt-headers
-      version: ${{ version }}
-    inherit: libflang-build
-    build:
-      files:
-        exclude:
-        - lib/*.a
-        - lib/*.so
-    tests:
-    - package_contents:
-        files:
-        - include/flang-rt/runtime/*.h
-        - lib/clang/*/finclude/flang/*/__fortran_builtins.mod
-        - lib/clang/*/finclude/flang/*/__fortran_type_info.mod
-        - lib/clang/*/finclude/flang/*/iso_c_binding.mod
-
-#==============================================================================#
-
-  - package:
-      name: libflang-rt-static
-      version: ${{ version }}
-    inherit: libflang-build
+      - ${{ compiler('fortran') }}
+      - ${{ compiler('cxx') }}
+      - nodejs
+  - script: generic-testing
     requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libflang-rt
+    version: ${{ version }}
+  inherit: libflang-build
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('libflang-rt-headers', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libflang-rt', upper_bound='x.x') }}
+  build:
+    files:
+      include:
+      - lib/libflang_rt.runtime.so
+  tests:
+  - package_contents:
+      files:
+      - lib/libflang_rt.runtime.so
+  - script: test_libflang.sh
+    files:
+      recipe:
+      - test_fortran.f90
+    requirements:
+      build:
+      - ${{ compiler('fortran') }}
+      - ${{ compiler('cxx') }}
+      - nodejs
       run:
-      - ${{ pin_subpackage('libflang-rt-headers', exact=True) }}
-    build:
-      files:
-        include:
-        - lib/libflang_rt.runtime.a
-    tests:
-    - package_contents:
-        files:
-        - lib/libflang_rt.runtime.a
-    - script: test_libflang.sh
-      files:
-        recipe:
-        - test_fortran.f90
-      requirements:
-        build:
-        - ${{ compiler('fortran') }}
-        - ${{ compiler('cxx') }}
-        - nodejs
-    - script: generic-testing
-      requirements:
-        build:
-        - generic-testing
-
-#==============================================================================#
-
-  - package:
-      name: libflang-rt
-      version: ${{ version }}
-    inherit: libflang-build
+      - libflang-rt-headers
+  - script: generic-testing
     requirements:
-      run_constraints:
-      - ${{ pin_subpackage('libflang-rt-headers', exact=True) }}
-      run_exports:
-      - ${{ pin_subpackage('libflang-rt', upper_bound='x.x') }}
-    build:
-      files:
-        include:
-        - lib/libflang_rt.runtime.so
-    tests:
-    - package_contents:
-        files:
-        - lib/libflang_rt.runtime.so
-    - script: test_libflang.sh
-      files:
-        recipe:
-        - test_fortran.f90
-      requirements:
-        build:
-        - ${{ compiler('fortran') }}
-        - ${{ compiler('cxx') }}
-        - nodejs
-        run:
-        - libflang-rt-headers
-    - script: generic-testing
-      requirements:
-        build:
-        - generic-testing
+      build:
+      - generic-testing
 
 #==============================================================================#
 
