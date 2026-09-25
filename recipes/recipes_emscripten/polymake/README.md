@@ -555,16 +555,30 @@ likelihood:
    directory before building for exactly this reason; if you drive ninja by hand,
    remove it yourself. Note also that ninja records those installed paths in its
    dependency log, so it will not even schedule a rebuild.
-2. **Exception model mismatch.** Everything here is built with
+2. **Paths out of a relocatable perl's `Config`.** A conda perl records the prefix
+   it was *configured* with in `Config` and repairs `@INC` at run time instead, so
+   `$Config{privlib}` and friends can name a directory that does not exist:
+
+   ```
+   Can't open perl script ".../../lib/perl5/core_perl/ExtUtils/xsubpp"
+   ```
+
+   `build.sh` therefore locates `xsubpp` by walking the build perl's `@INC`, and
+   reads the *target* perl's library directories out of the package's own
+   `Config_heavy.pl` — which is a file in the host environment and so carries the
+   real paths. Anything that goes into a generated config file is checked with
+   `test -f` before it is written, so a wrong path fails immediately rather than a
+   few hundred ninja steps later.
+3. **Exception model mismatch.** Everything here is built with
    `-fwasm-exceptions`, matching the `ppl` package. If a prebuilt C++ dependency
    in the channel was built with the older Emscripten EH, the final link will
    complain — the flag is set in one place at the top of `build.sh`.
-3. **Duplicate symbols at the final link.** `--allow-multiple-definition` is
+4. **Duplicate symbols at the final link.** `--allow-multiple-definition` is
    already passed. If something still collides, check that no fake/stub
    application library slipped into `APP_ARCHIVES`.
-4. **XS compilation errors.** `ExtUtils::xsubpp` is the native perl's (5.32-ish)
+5. **XS compilation errors.** `ExtUtils::xsubpp` is the native perl's (5.32-ish)
    while the headers are 5.44's. Switching `ExtUtils_xsubpp` in the rewritten
    `perlx/config.ninja` to the target perl's copy is the first thing to try.
-5. **Binary size.** polymake is large and `--whole-archive` defeats dead-code
+6. **Binary size.** polymake is large and `--whole-archive` defeats dead-code
    elimination by construction. If the result is unusably big, the lever is
    trimming the application set rather than the link flags.

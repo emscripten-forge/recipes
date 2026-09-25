@@ -221,23 +221,41 @@ test -f "${SRC_DIR}/polymake_wasm_stubs.o"
 # patched sharedmod rule uses, and only emar understands wasm objects.
 sed -i "s|^AR *=.*|AR = emar|" build/config.ninja
 
+# ExtUtils::xsubpp turns the .xxs sources into C++.  It runs here, on the build
+# machine, so it has to be the build perl's own copy -- but $Config{privlib} is the
+# wrong way to find it.  A relocatable perl, which is what conda ships, keeps the
+# prefix it was *configured* with in Config and fixes @INC up at run time instead, so
+# the recorded path need not exist:
+#
+#   Can't open perl script ".../../lib/perl5/core_perl/ExtUtils/xsubpp"
+#
+# @INC is the list that is right, and xsubpp is installed next to the ExtUtils
+# modules, so look for it there.
+ExtUtils_xsubpp="$("${BUILD_PERL}" -e 'for (@INC) { my $p = "$_/ExtUtils/xsubpp"; if (-f $p) { print $p; last } }')"
+if [ ! -f "${ExtUtils_xsubpp}" ]; then
+    ExtUtils_xsubpp="$(find "${BUILD_PREFIX}/lib" -type f -name xsubpp 2>/dev/null | head -n1)"
+fi
+# fail here rather than a few hundred ninja steps later
+test -f "${ExtUtils_xsubpp}"
+
 # The perl-specific configuration is the one file that describes the interpreter
 # polymake compiles against.  configure.pl filled it in from the *native* perl,
 # because that is the perl it was running under; point every entry at the
-# emscripten perl instead.  PERL and the xsubpp/typemap paths stay native: those
-# are build-time tools, executed on the build machine, not linked into the target.
+# emscripten perl instead.  PERL and xsubpp stay native -- they are build-time
+# tools, executed here, not linked into the target -- while the typemap comes from
+# the target perl, because it is data describing the interpreter the generated glue
+# is compiled against.
 PERLX_CONFIG="$(ls build/perlx/*/*/config.ninja | head -n1)"
 test -f "${PERLX_CONFIG}"
+test -f "${TARGET_PERL_PRIVLIB}/ExtUtils/typemap"
 
 cat > "${PERLX_CONFIG}" <<EOF
 PERL=${BUILD_PERL}
 CXXglueFLAGS=-I${TARGET_PERL_CORE} ${TARGET_PERL_CCFLAGS} -DPerlVersion=${TARGET_PERL_VERSION_ID} -Wno-nonnull -Wno-xor-used-as-pow
 LIBperlFLAGS=-L${TARGET_PERL_CORE} -lperl
-ExtUtils_xsubpp=$("${BUILD_PERL}" -MConfig -e 'print "$Config{privlib}/ExtUtils/xsubpp"')
+ExtUtils_xsubpp=${ExtUtils_xsubpp}
 ExtUtils_typemap=${TARGET_PERL_PRIVLIB}/ExtUtils/typemap
 EOF
-
-test -f "${TARGET_PERL_PRIVLIB}/ExtUtils/typemap"
 
 # Read back what configure decided rather than reconstructing it here.
 ninja_var() { sed -n "s|^ *$1 *= *||p" build/config.ninja | head -n1; }
@@ -383,6 +401,7 @@ test -f "${PREFIX}/bin/polymake.data"
 # unversioned one, and the CPAN modules polymake requires -- JSON above all, which it
 # loads while starting up -- under site_perl.
 WASM_PERL5LIB=""
+perl_json_reachable=""
 for perl_libdir in "$(target_perl_cfg sitearch)" "$(target_perl_cfg sitelib)" \
                    "${TARGET_PERL_ARCHLIB}" "${TARGET_PERL_PRIVLIB}"; do
     # only directories inside the tree that goes into the image are reachable there
@@ -390,9 +409,16 @@ for perl_libdir in "$(target_perl_cfg sitearch)" "$(target_perl_cfg sitelib)" \
         "${PREFIX}/lib/perl5/"*) ;;
         *) continue ;;
     esac
+    [ -f "${perl_libdir}/JSON.pm" ] && perl_json_reachable=1
     WASM_PERL5LIB="${WASM_PERL5LIB}${WASM_PERL5LIB:+:}/polymake/perl5/${perl_libdir#${PREFIX}/lib/perl5/}"
 done
 test -n "${WASM_PERL5LIB}"
+
+# polymake loads JSON while starting up.  A search path that misses it yields a
+# binary which builds cleanly and then dies on its first run, so check it here
+# instead -- the perl package keeps JSON under site_perl, which is reached only
+# because the loop above reads the directories out of that package's own Config.
+test -n "${perl_json_reachable}"
 
 em++ -c "${RECIPE_DIR}/polymake_wasm_main.cc" -o polymake_wasm_main.o \
     -std=c++14 -DPOLYMAKE_DEBUG=0 \
