@@ -10,7 +10,6 @@ from typing import Iterable
 
 import yaml
 
-# package specs look like: "python 3.13.* *_cp313", "thrift-cpp-dev =0.22.0"
 _NAME_RE = re.compile(r"^\s*([A-Za-z0-9_.\-]+)")
 _PIN_SUBPACKAGE_RE = re.compile(r"pin_subpackage\(\s*['\"]([^'\"]+)['\"]")
 
@@ -91,7 +90,7 @@ def sort_recipes_by_dependency(recipes_root: str, recipes: Iterable[str]) -> lis
 
 
 def main(argv: list[str]) -> int:
-    """Print the build order for a recipes directory (self-check)."""
+    """Print the build order for a recipes directory."""
     if len(argv) < 2:
         print(f"usage: {sys.argv[0]} <recipes_dir> [names...]", file=sys.stderr)
         return 2
