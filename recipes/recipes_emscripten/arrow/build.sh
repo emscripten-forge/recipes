@@ -30,13 +30,6 @@ ARROW_SHARED_FEATURES=(
     "-DARROW_DEPENDENCY_USE_SHARED=OFF"
 )
 
-# arrow's resolve_dependency(Boost) requires CONFIG mode (no FindBoost module
-# fallback), and our boost-* packages ship per-module configs only - so without
-# an umbrella BoostConfig.cmake, CMake picks up a *host* Boost (Arch:
-# /usr/lib/cmake/Boost-1.92.0, /opt/cuda/lib/cmake/Boost-1.92.0) and then adds
-# -isystem /usr/include, which breaks emscripten's libc++ (<cstdint>). The
-# umbrella config is cmake/BoostConfig.cmake.in; the version is substituted from
-# the installed boost headers, so it tracks the boost packages.
 boost_version_macro=$(sed -n 's/^#define BOOST_VERSION \([0-9][0-9]*\)$/\1/p' \
     "${PREFIX}/include/boost/version.hpp" | head -1)
 if [ -z "${boost_version_macro}" ]; then
