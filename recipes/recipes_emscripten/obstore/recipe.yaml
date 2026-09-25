@@ -1,0 +1,60 @@
+context:
+  name: obstore
+  version: 0.11.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/developmentseed/obstore/archive/refs/tags/py-v${{ version }}.tar.gz
+  sha256: fa1d90414a59f42001c4642d8af1a5869e7b1e91937dec4599c548088e8beea7
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+    - python
+    - pip
+    - cross-python_${{ target_platform }}
+    - maturin >=1.7.0,<2.0.0
+    - ${{ compiler("c") }}
+    - rust-nightly
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - typing_extensions >=4.0.0
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_obstore.py
+
+about:
+  homepage: https://developmentseed.org/obstore
+  summary: Simple, fast integration with Amazon S3, Google Cloud Storage, Azure Storage, and S3-compliant APIs like Cloudflare R2.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  repository: https://github.com/developmentseed/obstore
+
+extra:
+  recipe-maintainers:
+  - davidbrochart
