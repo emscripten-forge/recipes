@@ -2,6 +2,7 @@ import subprocess
 import os
 import json
 from contextlib import contextmanager
+from pathlib import Path
 
 def find_files_with_changes(old, new):
     # `origin/main...HEAD` shows the unique files changed in HEAD
@@ -168,12 +169,15 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
 
     args = ['gh', 'pr', 'create',
             '-B', target_branch_name,
-            '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!',
-            '--label', 'Automerge' if automerge else 'Needs Tests'
+            '--title', pr_title, '--body', 'Beep-boop-beep! Whistle-whistle-woo!'
     ]
 
     if target_branch_name == "emscripten-6x":
         args.extend(["--label", "6x"])
+        if Path(recipe_dir).parent.name == "recipes_wasm":
+            args.extend(["--label", "migrated"])
+    else:
+        args.extend(['--label', 'Automerge' if automerge else 'Needs Tests'])
 
     # call gh to create a PR
     subprocess.check_call(args, cwd=os.getcwd())
