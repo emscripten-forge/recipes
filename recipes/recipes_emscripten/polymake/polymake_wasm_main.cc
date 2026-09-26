@@ -197,8 +197,7 @@ int repl(const std::string& application)
    // The native interactive frontend prefixes it with "Welcome to " and adds
    // this short shell hint; keep those presentation details in the WASM driver.
    std::cout << "Welcome to " << polymake_greeting() << '\n'
-             << "Press F1 or enter 'help;' for basic instructions.\n"
-             << std::endl;
+             << "Press F1 or enter 'help;' for basic instructions.\n";
 
    for (;;) {
       if (buffer.empty()) {
