@@ -164,6 +164,24 @@ int run_string(const std::string& code)
    return ok ? 0 : 1;
 }
 
+/* Ask the running interpreter which application is current, the same way a
+ * user could by typing `print $application->name;` -- $application is
+ * polymake's own documented alias for the Core::Application object that is
+ * "current" at any moment, updated whenever application('NAME') runs. Falls
+ * back to the last known name if the query itself fails, so a hiccup here
+ * never breaks the prompt or reverts it to the startup default. */
+std::string current_application_name(const std::string& fallback)
+{
+   if (polymake_execute("print $application->name;")) {
+      std::string name = last_stdout;
+      while (!name.empty() && (name.back() == '\n' || name.back() == '\r'))
+         name.pop_back();
+      if (!name.empty())
+         return name;
+   }
+   return fallback;
+}
+
 /* shell_execute returns {false, "", "", ""} for input which is syntactically
  * correct but not yet complete (an open block, an unfinished statement).  Keep
  * buffering in that case so that multi-line input works the same way it does in
@@ -171,6 +189,7 @@ int run_string(const std::string& code)
 int repl(const std::string& application)
 {
    std::string buffer, line;
+   std::string prompt_app = application;
 
    // Main::greeting() supplies polymake's own version/copyright/license text.
    // The native interactive frontend prefixes it with "Welcome to " and adds
@@ -180,10 +199,15 @@ int repl(const std::string& application)
              << std::endl;
 
    for (;;) {
-      if (buffer.empty())
-         std::cout << application << " > " << std::flush;
-      else
-         std::cout << std::string(application.size() + 3, ' ') << std::flush;
+      if (buffer.empty()) {
+         // Refreshed once per top-level prompt: picks up `application 'X';`
+         // (or any other way the session's current application may have
+         // changed) without having to parse the user's input for it.
+         prompt_app = current_application_name(prompt_app);
+         std::cout << prompt_app << " > " << std::flush;
+      } else {
+         std::cout << std::string(prompt_app.size() + 3, ' ') << std::flush;
+      }
 
       if (!std::getline(std::cin, line)) {
          std::cout << std::endl;
