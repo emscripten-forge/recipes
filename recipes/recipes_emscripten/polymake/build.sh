@@ -137,6 +137,9 @@ for a in "${INSTALL_ARCH}"/lib/*; do
         libpolymake-apps*) continue ;;
     esac
     [ -s "$a" ] || continue
+    if [ "$(basename "$a")" = "libpolymake-core.a" ]; then
+        CORE_ARCHIVE="$a"
+    fi
     APP_ARCHIVES+=("$a")
 done
 
@@ -209,6 +212,7 @@ em++ -o "${PREFIX}/bin/polymake.js" \
 if [ "${CALLABLE_ARCHIVE}" != "${PREFIX}/lib/libpolymake.a" ]; then
     mv "${CALLABLE_ARCHIVE}" "${PREFIX}/lib/libpolymake.a"
 fi
+install -Dm644 "${LINK_STAGE}/$(basename "${CORE_ARCHIVE}")" "${PREFIX}/lib/libpolymake-core.a"
 find "${PREFIX}/lib" -maxdepth 1 \( -name 'libpolymake.so*' -o -name 'libpolymake-apps*' \) -delete
 
 LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"
