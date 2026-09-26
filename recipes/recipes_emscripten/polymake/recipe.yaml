@@ -51,15 +51,6 @@ requirements:
     - nodejs
     - python
   host:
-    # The version constraint is load bearing: variant.yaml pins `perl: 5.32.1`,
-    # which is the conda-forge perl for the *build* platform, and rattler-build
-    # applies a variant to any requirement written as a bare name.  Left bare,
-    # this resolves to `perl 5.32.1.*` on emscripten-wasm32, where the only perl
-    # is 5.44.0, and the host environment fails to solve.  Any explicit version
-    # suppresses the variant, so do not "tidy" this back to a bare `perl`.
-    # polymake needs the CPAN modules its INSTALL file lists -- JSON above all, which
-    # it loads while starting up -- so this wants the perl package that ships them,
-    # not the one that carries only core JSON::PP.
     - perl >=5.44
     - gmp
     - mpfr
@@ -69,17 +60,9 @@ requirements:
     - cddlib
     - lrslib
     - normaliz
-    # normaliz in this channel is built with NMZ_FLINT, NMZ_NAUTY and NMZ_COCOA
-    # defined in its nmz_config.h.  polymake reads those macros and appends
-    # "-lflint -lnauty -lcocoa" to the link line, so CoCoALib has to be here even
-    # though polymake never refers to it directly.
     - cocoalib
-    # polymake's own nauty extension is disabled (it conflicts with bliss), but
-    # normaliz links against libnauty, so the package is still needed
     - nauty
     - ppl
-    # singular, and the libraries libSingular.a needs that neither
-    # libsingular-config nor pkg-config --static reports
     - singular
     - ntl
     - mathicgb
@@ -104,18 +87,6 @@ about:
   license: GPL-2.0-or-later
   license_file: COPYING
   summary: Software for research in polyhedral geometry
-  description: |
-    polymake is open source software for research in polyhedral geometry.  It
-    deals with polytopes, polyhedra and fans as well as simplicial complexes,
-    matroids, graphs, tropical hypersurfaces and other objects.
-
-    This build links the polymake core, all application clients and the perl
-    interpreter into a single WebAssembly executable, because the emscripten
-    perl has no dynamic loading.  See README.md in the recipe for what that
-    implies, in particular that template instantiations outside the precompiled
-    wrapper set cannot be generated at runtime.
-  repository: https://github.com/polymake/polymake
-  documentation: https://polymake.org/doku.php/documentation
 
 extra:
   recipe-maintainers:

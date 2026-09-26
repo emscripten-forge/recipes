@@ -168,11 +168,28 @@ int run_string(const std::string& code)
  * correct but not yet complete (an open block, an unfinished statement).  Keep
  * buffering in that case so that multi-line input works the same way it does in
  * the native interactive shell. */
-int repl()
+int repl(const std::string& application)
 {
    std::string buffer, line;
-   std::cout << polymake_greeting() << std::endl;
-   while (std::getline(std::cin, line)) {
+
+   // Main::greeting() supplies polymake's own version/copyright/license text.
+   // The native interactive frontend prefixes it with "Welcome to " and adds
+   // this short shell hint; keep those presentation details in the WASM driver.
+   std::cout << "Welcome to " << polymake_greeting() << '\n'
+             << "Press F1 or enter 'help;' for basic instructions.\n"
+             << std::endl;
+
+   for (;;) {
+      if (buffer.empty())
+         std::cout << application << " > " << std::flush;
+      else
+         std::cout << std::string(application.size() + 3, ' ') << std::flush;
+
+      if (!std::getline(std::cin, line)) {
+         std::cout << std::endl;
+         break;
+      }
+
       buffer += line;
       buffer += '\n';
       const int ok = polymake_execute(buffer.c_str());
@@ -237,5 +254,5 @@ int main(int argc, char** argv)
       return run_string(stmt.str());
    }
 
-   return repl();
+   return repl(application);
 }
