@@ -214,3 +214,5 @@ find "${PREFIX}/lib" -maxdepth 1 \( -name 'libpolymake.so*' -o -name 'libpolymak
 LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"
 mkdir -p "${LICENSE_DIR}"
 install -Dm644 "${SRC_DIR}/COPYING" "${LICENSE_DIR}/COPYING"
+
+cp -a "$SRC_DIR"/web/* "$PREFIX/bin/"
