@@ -17,7 +17,7 @@ QUIET="-Wno-deprecated-non-prototype -Wno-parentheses -Wno-dangling-else \
  -Wno-int-conversion -Wno-incompatible-pointer-types -Wno-implicit-int -Wno-return-type"
 
 config_sub_dir() {
-    for d in "${BUILD_PREFIX}"/share/automake-* /usr/share/automake-* /usr/share/misc; do
+    for d in "${BUILD_PREFIX}"/share/automake-*; do
         if [ -f "$d/config.sub" ]; then echo "$d"; return; fi
     done
     echo "no modern config.sub found" >&2
