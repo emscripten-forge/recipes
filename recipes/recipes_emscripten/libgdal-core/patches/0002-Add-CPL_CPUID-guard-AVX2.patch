@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] Add CPL_CPUID guard for AVX2 runtime detection
+
+The HAVE_AVX2_AT_COMPILE_TIME code path in
+port/cpl_cpu_features.cpp calls __builtin_cpu_supports("avx2"),
+which is not supported on non-x86 targets (including
+wasm32-unknown-emscripten) and fails to compile with:
+
+    error: builtin is not supported on this target
+        bCPLHasAVX2 = CPLHaveRuntimeAVX() && __builtin_cpu_supports("avx2");
+
+Mirrors the SSE/SSSE3/AVX handling in
+0001-Add-CPL_CPUID-guards.patch: gate the CPUID-dependent block on
+defined(CPL_CPUID) and provide a fallback that leaves bCPLHasAVX2
+as false on non-x86 builds.
+---
+ port/cpl_cpu_features.cpp | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/port/cpl_cpu_features.cpp b/port/cpl_cpu_features.cpp
+--- a/port/cpl_cpu_features.cpp
++++ b/port/cpl_cpu_features.cpp
+@@ -216,7 +216,7 @@ bool CPLHaveRuntimeAVX()
+
+ #if defined(HAVE_AVX2_AT_COMPILE_TIME) && !defined(HAVE_INLINE_AVX2)
+
+-#if defined(__GNUC__)
++#if defined(__GNUC__) && defined(CPL_CPUID)
+
+ bool bCPLHasAVX2 = false;
+ // Use 102 because  CPLHaveRuntimeAVXInitialize() uses 101, so we are run
+@@ -228,6 +228,10 @@ static void CPLHaveRuntimeAVX2Initialize()
+     bCPLHasAVX2 = CPLHaveRuntimeAVX() && __builtin_cpu_supports("avx2");
+ }
+
++#elif defined(__GNUC__) && !defined(CPL_CPUID)
++
++bool bCPLHasAVX2 = false;
++
+ #else
+
+ /************************************************************************/
+</content>
