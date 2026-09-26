@@ -1,0 +1,74 @@
+--- a/bundled/singular/support/configure.pl	2026-09-23 12:47:44.630085902 +0000
++++ b/bundled/singular/support/configure.pl	2026-09-23 12:47:57.908678006 +0000
+@@ -90,6 +90,33 @@
+ }
+ 
+ sub build_singular_test {
++   # Cross-compiling (POLYMAKE_TEST_RUNNER set, e.g. a WebAssembly build): locate
++   # libsingular by its path and boot it is exactly what cannot work here.  There
++   # is no shared object for dladdr() to report in a statically linked test
++   # program, so the original probe throws before it gets anywhere, and siInit()
++   # would then abort because the resource tree recorded in the singular package
++   # does not exist inside the target runtime.  Neither is what this probe is for:
++   # it establishes that libsingular links and was built with NTL.  Taking the
++   # address of siInit keeps that a genuine test of the whole link.
++   if (length($ENV{POLYMAKE_TEST_RUNNER} // "")) {
++      return Polymake::Configure::build_test_program(<<"---", CXXFLAGS => $CXXFLAGS, LDFLAGS => $LDFLAGS, LIBS => $LIBS);
++#include "Singular/libsingular.h"
++#include <string>
++#include <iostream>
++int main() {
++   if ((void*)&siInit == nullptr) return 1;
++#ifdef HAVE_NTL
++   std::cout << "Version: " << VERSION << std::endl;
++   return 0;
++#else
++   std::cout << "Your singular installation was not build with NTL support." << std::endl;
++   std::cout << "Please reconfigure and rebuild singular with --with-ntl=PATH." << std::endl;
++   return 1;
++#endif
++}
++---
++   }
++
+    return Polymake::Configure::build_test_program(<<"---", CXXFLAGS => $CXXFLAGS, LDFLAGS => $LDFLAGS, LIBS => $LIBS);
+ #include <dlfcn.h>
+ #include "Singular/libsingular.h"
+--- a/bundled/singular/apps/ideal/src/singularInit.cc	2026-09-23 12:47:44.634511597 +0000
++++ b/bundled/singular/apps/ideal/src/singularInit.cc	2026-09-23 12:48:09.129471502 +0000
+@@ -16,6 +16,7 @@
+ */
+ 
+ #include <dlfcn.h>
++#include <cstdlib>
+ 
+ #include "polymake/ideal/singularInit.h"
+ #include "polymake/ideal/internal/singularUtils.h"
+@@ -70,6 +71,19 @@
+ #if POLYMAKE_DEBUG
+    cerr << "*** trying to determine path of libsingular ***" << endl;
+ #endif
++#ifdef __EMSCRIPTEN__
++   // Statically linked WebAssembly build: libsingular is part of this binary, so
++   // there is no shared object for dladdr() to report.  siInit() only wants a
++   // path to derive its resource locations from, and those are supplied through
++   // the SINGULAR_* environment variables set before this runs (see
++   // polymake_wasm_stubs.c in the emscripten-forge recipe), so pass the
++   // executable it was told about.
++   const char* singular_path = getenv("SINGULAR_EXECUTABLE");
++   if (singular_path == nullptr || *singular_path == '\0')
++      throw std::runtime_error("*** SINGULAR_EXECUTABLE is not set; cannot initialize libsingular ***");
++   char* cpath = omStrDup(singular_path);
++   siInit(cpath);
++#else
+    Dl_info dli;
+    if (!dladdr((void*)&siInit,&dli)) {
+       throw std::runtime_error("*** could not find symbol from libsingular ***");
+@@ -80,6 +94,7 @@
+    
+    char* cpath = omStrDup(dli.dli_fname);
+    siInit(cpath);
++#endif
+    WerrorS_callback = &singular_error_handler;
+    PrintS_callback = &singular_output_handler;
+    

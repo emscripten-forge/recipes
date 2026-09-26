@@ -1,0 +1,53 @@
+--- a/perllib/Polymake/Core/CPlusPlus.pm	2026-09-18 22:17:19.470072774 +0000
++++ b/perllib/Polymake/Core/CPlusPlus.pm	2026-09-18 22:18:09.189172647 +0000
+@@ -649,24 +649,13 @@
+    my $build_dir = $host_extension ? $host_extension->build_dir : $InstallArch;
+    $self->so_name = "$build_dir/lib/$app_name.$DynaLoader::dl_dlext";
+ 
+-   my $mod_size;
+-   if (-e $self->so_name) {
+-      ($self->so_timestamp, $mod_size) = (stat _)[9,7];
+-
+-   } elsif (is_mutable_location($build_dir)) {
+-      compile($build_dir);
+-      ($self->so_timestamp, $mod_size) = (stat $self->so_name)[9,7];
+-
+-   } else {
+-      die "Corrupt or incomplete installation: shared module ", $self->so_name, " missing\n";
+-   }
+-
+-   # empty shared module is created when the application does not contain any client code
+-   if ($mod_size) {
+-      load_shared_module($self->so_name);
+-   }
+-
+-   $self
++   # WebAssembly/Emscripten build: every application module is linked into the
++   # polymake executable, so there is nothing left to load here.  Their static
++   # constructors have already registered all clients with the C++/perl glue by
++   # the time this code runs.  so_name is retained because the caller uses it as
++   # a pseudo file name for the embedded rules of this application.
++   $self->so_timestamp = 0;
++   return $self;
+ }
+ 
+ #######################################################################################
+@@ -1782,13 +1771,11 @@
+ #######################################################################################
+ sub load_shared_module {
+    my ($so_name)=@_;
+-   unless (DynaLoader::dl_load_file($so_name, 0x01)) {
+-      my $error=DynaLoader::dl_error();
+-      $error =~ s/\x00$//;  # sometimes there is a stray NUL character at the end
+-      $error =~ s/${so_name}:\s+//;
+-      $error =~ s/undefined symbol: \K(\S+)/demangle($1)/e;
+-      die "Can't load shared module $so_name: $error\n";
+-   }
++   # WebAssembly/Emscripten build: the target perl is built without dynamic
++   # loading (usedl='undef'), so DynaLoader::dl_load_file is the dl_none.xs stub
++   # and can never succeed.  All application modules are statically linked into
++   # the executable instead, which makes this a no-op rather than an error.
++   1
+ }
+ #######################################################################################
+ sub gen_proxy_op {

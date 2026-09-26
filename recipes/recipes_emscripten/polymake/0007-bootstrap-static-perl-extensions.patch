@@ -1,0 +1,30 @@
+--- a/lib/core/src/perl/createBootstrap.pl	2026-09-18 22:32:48.793575162 +0000
++++ b/lib/core/src/perl/createBootstrap.pl	2026-09-18 22:32:58.009152318 +0000
+@@ -23,6 +23,27 @@
+    newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, "Main.cc");
+ .
+ 
++# Statically linked perl extensions.
++#
++# A perl built without dynamic loading (usedl='undef', as for WebAssembly) ships
++# every core extension -- POSIX, Storable, List::Util, IO, Encode and the rest --
++# as a static archive that nothing can load at runtime.  Their boot functions
++# must therefore be registered from xs_init, which is exactly what perl's own
++# perlmain.c does for such a build, and what ExtUtils::Embed::xsinit() generates
++# when embedding.  Without this, the interpreter starts but the first `use POSIX`
++# dies with "Can't locate loadable object".
++#
++# POLYMAKE_PERL_STATIC_EXT carries the module names in perl's $Config{static_ext}
++# notation: slash separated, whitespace delimited.  When it is unset nothing
++# changes, so a normal build with a dynamically loadable perl is unaffected.
++foreach my $ext (split /\s+/, $ENV{POLYMAKE_PERL_STATIC_EXT} // "") {
++   next if $ext eq "";
++   (my $sym = $ext) =~ s{/}{__}g;
++   (my $pkg = $ext) =~ s{/}{::}g;
++   $proto .= "XS(boot_$sym);\n";
++   $bind  .= qq{   newXS("$pkg\::bootstrap", boot_$sym, "perlmain");\n};
++}
++
+ foreach my $file (@ARGV) {
+    open my $C, $file or die "can't read $file: $!\n";
+    my ($filename)= $file =~ m{(?:^|/)([^/]+)$};
