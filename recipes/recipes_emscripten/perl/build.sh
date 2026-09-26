@@ -38,10 +38,6 @@ if [ -d "${SRC_DIR}/cpan-dists" ]; then
     mv "${SRC_DIR}/cpan-dists" "${CPAN_DISTS}"
 fi
 
-# nothing of ours may remain anywhere Configure looks
-test ! -d "${SRC_DIR}/cpan-dists"
-test -d "${CPAN_DISTS}"
-
 # Native build toolchain
 
 HOST_CC="${CC_FOR_BUILD:-gcc}"
@@ -73,9 +69,6 @@ CXX="${HOST_CXX}" \
 AR="${HOST_AR}" \
 RANLIB="${HOST_RANLIB}" \
 make -j"${CPU_COUNT:-2}" miniperl generate_uudmap
-
-test -x miniperl
-test -x generate_uudmap
 
 # Preserve the native tools.
 # They must survive the distclean before the Emscripten build.
@@ -270,14 +263,6 @@ export EMSCRIPTEN="${EMSCRIPTEN_ROOT}"
 
 EMSCRIPTEN_SYSROOT="${EMSCRIPTEN_ROOT}/system"
 
-test -d "${EMSCRIPTEN_ROOT}"
-test -d "${EMSCRIPTEN_SYSROOT}"
-
-echo "==> Emscripten root: ${EMSCRIPTEN_ROOT}"
-echo "==> Emscripten sysroot: ${EMSCRIPTEN_SYSROOT}"
-
-echo "==> Emscripten toolchain"
-
 command -v "${CC}"
 command -v "${CXX}"
 command -v "${AR}"
@@ -321,7 +306,6 @@ emconfigure ./Configure \
 
 emmake make -j"${CPU_COUNT:-2}" perl
 
-test -f perl
 chmod 755 perl
 
 # Install using the native host miniperl
@@ -425,11 +409,6 @@ cat > "${site_lib}/XML/SAX/ParserDetails.ini" <<'PARSERS'
 [XML::SAX::PurePerl]
 http://xml.org/sax/features/namespaces = 1
 PARSERS
-
-test -f "${site_lib}/JSON.pm"
-test -f "${site_lib}/XML/Writer.pm"
-test -f "${site_lib}/XML/SAX.pm"
-test -f "${site_lib}/SVG.pm"
 
 # Licenses
 
