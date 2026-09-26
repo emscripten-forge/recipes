@@ -1,0 +1,91 @@
+context:
+  name: ruby18
+  version: "1.8.7.374"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://cache.ruby-lang.org/pub/ruby/1.8/ruby-${{ version[:5] ~ "-p" ~ version[6:] }}.tar.gz
+    sha256: 876eeeaaeeab10cbf4767833547d66d86d6717ef48fd3d89e27db8926a65276c
+    patches:
+      # No child processes in wasm: system() reports "command not found"
+      # (false, exit status 127) instead of raising Errno::ENOSYS.
+      - 0001-system-without-processes.patch
+      # Check the stack depth on every call so deep recursion raises
+      # SystemStackError before the engine's own call stack runs out.
+      - 0002-check-stack-depth-every-call.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    # Cross-compiling Ruby 1.8 runs mkconfig.rb and ext/extmk.rb with a
+    # native Ruby of the same version, which build.sh builds first.
+    - gcc
+    - make
+    - patch
+    # Modern config.sub / config.guess that know wasm32-unknown-emscripten.
+    - automake
+
+tests:
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/ruby.js -e 'puts 1+1')
+      if [[ "$OUTPUT" != "2" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/ruby.js -v)
+      if [[ "$OUTPUT" != *"1.8.7"* ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+  # Collect on every allocation: fails if the GC cannot see values held in
+  # wasm locals (see the spill-pointers step in build.sh).
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/ruby.js -e 'GC.stress = true; h = {}; 300.times { |i| h["k#{i}"] = ["v#{i}", {:a => "x" + i.to_s}] }; puts h.keys.sort.map { |k| h[k][1][:a] }.join.size')
+      if [[ "$OUTPUT" != "1090" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+  - script: |
+      OUTPUT=$(run_modularized $PREFIX/bin/ruby.js -e 'def r(n) r(n + 1) end; begin; r(0); rescue SystemStackError; puts "raised"; end')
+      if [[ "$OUTPUT" != "raised" ]]; then
+        echo "Unexpected output: $OUTPUT"
+        exit 1
+      fi
+    requirements:
+      build:
+        - run_modularized >= 0.1.2
+  - package_contents:
+      files:
+        - bin/ruby.js
+        - bin/ruby.wasm
+        - lib/ruby/1.8/optparse.rb
+        - lib/ruby/1.8/wasm32-emscripten/rbconfig.rb
+
+about:
+  homepage: https://www.ruby-lang.org/
+  license: Ruby OR GPL-2.0-only
+  license_file:
+    - COPYING
+    - GPL
+  summary: MRI Ruby 1.8.7-p374 (legacy) for running old Ruby tools in the browser
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
