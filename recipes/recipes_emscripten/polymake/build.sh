@@ -89,8 +89,8 @@ emcc -c "${RECIPE_DIR}/polymake_wasm_stubs.c" -o "${SRC_DIR}/polymake_wasm_stubs
     --without-java \
     --without-javaview \
     --without-polydb \
-    --without-scip \
-    --without-soplex \
+    --with-scip="${PREFIX}" \
+    --with-soplex="${PREFIX}" \
     --without-sympol
 
 # configure used the native Perl toolchain; retarget generated build settings to WASM.
