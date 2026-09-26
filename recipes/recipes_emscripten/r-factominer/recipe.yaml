@@ -1,0 +1,88 @@
+context:
+  name: r-factominer
+  version: "2.14"
+  ccname: FactoMineR
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  sha256: fd6f934e9dd1e80a4b094cdeba12a1bb305357a742e9241b1a87dfe4e455c168
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-car
+  - r-cluster
+  - r-dt
+  - r-ellipse
+  - r-emmeans
+  - r-flashclust
+  - r-ggplot2
+  - r-ggrepel
+  - r-lattice
+  - r-leaps
+  - r-mass
+  - r-multcompview
+  - r-scatterplot3d
+  host:
+  - r-base ==${{ r_base }}
+  - r-car
+  - r-cluster
+  - r-dt
+  - r-ellipse
+  - r-emmeans
+  - r-flashclust
+  - r-ggplot2
+  - r-ggrepel
+  - r-lattice
+  - r-leaps
+  - r-mass
+  - r-multcompview
+  - r-scatterplot3d
+  run:
+  - r-car
+  - r-cluster
+  - r-dt
+  - r-ellipse
+  - r-emmeans
+  - r-flashclust
+  - r-ggplot2
+  - r-ggrepel
+  - r-lattice
+  - r-leaps
+  - r-mass
+  - r-multcompview
+  - r-scatterplot3d
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+- script: run_r_test test_factominer.R
+  files:
+    recipe:
+    - test_factominer.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: http://factominer.free.fr/
+  repository: https://github.com/husson/FactoMineR
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  summary: Multivariate Exploratory Data Analysis and Data Mining
+
+extra:
+  recipe-maintainers:
+  - anutosh491
