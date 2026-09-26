@@ -25,6 +25,7 @@
 #include <cstring>
 #include <iostream>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -190,6 +191,7 @@ int repl(const std::string& application)
 {
    std::string buffer, line;
    std::string prompt_app = application;
+   std::set<std::string> credits_shown;
 
    // Main::greeting() supplies polymake's own version/copyright/license text.
    // The native interactive frontend prefixes it with "Welcome to " and adds
@@ -204,6 +206,23 @@ int repl(const std::string& application)
          // (or any other way the session's current application may have
          // changed) without having to parse the user's input for it.
          prompt_app = current_application_name(prompt_app);
+
+         // Mirrors Polymake::Core::Shell::get_line (perllib/Polymake/Core/
+         // Shell.pm)
+         if (credits_shown.insert(prompt_app).second) {
+            run_string("show_credits(1);");
+            // Shell.pm additionally warns here if the application has rules
+            // that failed to auto-configure. show_unconfigured prints
+            // nothing at all when there are none, so a non-empty result is
+            // an accurate stand-in for that internal flag.
+            if (polymake_execute("show_unconfigured;") && !last_stdout.empty()) {
+               std::cout <<
+                  "\nWarning: some rulefiles could not be configured automatically\n"
+                  "due to lacking third-party software and/or other issues.\n"
+                  "To see the complete list: show_unconfigured;\n";
+            }
+         }
+
          std::cout << prompt_app << " > " << std::flush;
       } else {
          std::cout << std::string(prompt_app.size() + 3, ' ') << std::flush;
