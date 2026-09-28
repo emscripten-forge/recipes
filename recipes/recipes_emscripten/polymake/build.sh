@@ -42,7 +42,9 @@ POLYMAKE_CFLAGS="$(strip_arch "${CFLAGS:-}") ${EM_ARCH_FLAGS} -I${PREFIX}/includ
 POLYMAKE_LDFLAGS="-L${PREFIX}/lib ${EM_ARCH_FLAGS}"
 
 # Static dependencies must be named explicitly; the stub also supplies Singular APIs unavailable in WASM.
-POLYMAKE_EXTRA_LIBS="${SRC_DIR}/polymake_wasm_stubs.o -lntl -lcddgmp -lmathicgb -lmathic -lmemtailor -lgmpxx -lmpfr -lgmp"
+# libscip.a carries SCIP's SoPlex interface, so it needs soplex and zlib even though
+# the scip probe only asks for "-lscip -lz"; both go after -lscip in the link order.
+POLYMAKE_EXTRA_LIBS="${SRC_DIR}/polymake_wasm_stubs.o -lntl -lcddgmp -lmathicgb -lmathic -lmemtailor -lsoplex-pic -lz -lgmpxx -lmpfr -lgmp"
 
 EM_LINK_FLAGS=(
   -O2
@@ -89,9 +91,9 @@ emcc -c "${RECIPE_DIR}/polymake_wasm_stubs.c" -o "${SRC_DIR}/polymake_wasm_stubs
     --without-java \
     --without-javaview \
     --without-polydb \
-    --without-scip \
-    --without-soplex \
-    --without-sympol
+    --with-scip="${PREFIX}" \
+    --with-soplex="${PREFIX}" \
+    --with-sympol=bundled
 
 # configure used the native Perl toolchain; retarget generated build settings to WASM.
 sed -i "s|^AR *=.*|AR = emar|" build/config.ninja
@@ -147,6 +149,22 @@ for i in "${!APP_ARCHIVES[@]}"; do
     APP_ARCHIVES[$i]="${LINK_STAGE}/$(basename "${APP_ARCHIVES[$i]}")"
 done
 
+# The patched sharedmod rule archives what upstream linked, so an input that is itself
+# a static library becomes an archive member rather than being unpacked: bundled sympol
+# builds libsympol.a, which lands inside polytope.so and makes wasm-ld reject the whole
+# archive ("file was not recognized as a valid object file").  Lift those out and link
+# them separately.
+LLVM_AR="$(em-config LLVM_ROOT)/llvm-ar"
+NESTED_ARCHIVES=()
+for a in "${APP_ARCHIVES[@]}"; do
+    while IFS= read -r m; do
+        [ -n "$m" ] || continue
+        ( cd "${LINK_STAGE}" && "${LLVM_AR}" x "$a" "$m" )
+        "${LLVM_AR}" d "$a" "$m"
+        NESTED_ARCHIVES+=("${LINK_STAGE}/${m}")
+    done < <("${LLVM_AR}" t "$a" | grep '\.a$' || true)
+done
+
 CALLABLE_ARCHIVE=""
 for c in "${PREFIX}"/lib/libpolymake.*; do
     [ -f "$c" ] && [ ! -L "$c" ] || continue
@@ -198,6 +216,7 @@ em++ -o "${PREFIX}/bin/polymake.js" \
     "${APP_ARCHIVES[@]}" \
     "${CALLABLE_ARCHIVE}" \
     -Wl,--no-whole-archive \
+    ${NESTED_ARCHIVES[@]+"${NESTED_ARCHIVES[@]}"} \
     "${PERL_EXT_ARCHIVES[@]}" \
     "${TARGET_PERL_CORE}/libperl.a" \
     -L"${PREFIX}/lib" \
@@ -209,9 +228,12 @@ em++ -o "${PREFIX}/bin/polymake.js" \
 if [ "${CALLABLE_ARCHIVE}" != "${PREFIX}/lib/libpolymake.a" ]; then
     mv "${CALLABLE_ARCHIVE}" "${PREFIX}/lib/libpolymake.a"
 fi
-CORE_ARCHIVE="build/Opt/lib/libpolymake-core.a"
-install -Dm644 "${CORE_ARCHIVE}" "${PREFIX}/lib/libpolymake-core.a"
 find "${PREFIX}/lib" -maxdepth 1 \( -name 'libpolymake.so*' -o -name 'libpolymake-apps*' \) -delete
+
+# `ninja install` installs the core system but not the perl-independent core archive,
+# which is what a consumer of the callable library links together with libpolymake.a
+# (and which this recipe's package_contents test expects).
+cp build/Opt/lib/libpolymake-core.a "${PREFIX}/lib/"
 
 LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"
 mkdir -p "${LICENSE_DIR}"
