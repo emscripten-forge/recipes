@@ -2,36 +2,70 @@ context:
   name: fontconfig
   version: 2.15.0
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   url: http://www.freedesktop.org/software/${{ name }}/release/${{ name }}-${{ version }}.tar.gz
   sha256: f5f359d6332861bd497570848fcb42520964a9e83d5e3abe397b6b6db9bcaaf4
   patches:
-    - patches/0001-disable-threads.patch
+  - patches/0001-disable-threads.patch
 
 build:
-  number: 2
+  number: 0
 
-requirements:
+outputs:
+- staging:
+    name: fontconfig-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - pkg-config
+    - gperf
+    - meson
+    - ninja
+    host:
+    - freetype-static
+    - libexpat-static
   build:
-  - ${{ compiler('c') }}
-  - pkg-config
-  - gperf
-  - meson
-  host:
-  - freetype
-  - expat
+    script: build.sh
 
-tests:
-- package_contents:
-    lib:
-    - libfontconfig.a
-    include:
-    - fontconfig/fontconfig.h
-    - fontconfig/fcfreetype.h
+#==============================================================================#
+
+- package:
+    name: libfontconfig-static
+    version: ${{ version }}
+  inherit: fontconfig-build
+  requirements:
+    host:
+    - freetype-static
+    - libexpat-static
+    run:
+    - ${{ pin_compatible('freetype-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('libexpat-static', lower_bound='x', upper_bound='x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/fontconfig/fcfreetype.h
+      - include/fontconfig/fcprivate.h
+      - include/fontconfig/fontconfig.h
+      - lib/libfontconfig.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# Meta package for the static library
+- package:
+    name: fontconfig-static
+    version: ${{ version }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('libfontconfig-static', exact=True) }}
+  tests:
+  - package_contents:
+      files: []
+
+#==============================================================================#
 
 about:
   homepage: http://www.freedesktop.org/wiki/Software/fontconfig/
