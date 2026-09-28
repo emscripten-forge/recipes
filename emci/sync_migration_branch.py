@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from ruamel.yaml import YAML
+
 from .git_utils import (
     find_files_with_changes,
     get_current_branch_name,
@@ -155,6 +157,35 @@ def _apply_recipe_diff(diff: bytes) -> tuple[bool, str]:
         os.unlink(patch_path)
 
 
+def _bump_recipe_build_number(recipe_dir: Path) -> Path:
+    """
+    Increment build number in recipe.yaml so a pure-reject sync still has a commit.
+
+    Prefers context.build_number when present; otherwise build.number.
+    """
+    recipe_file = recipe_dir / "recipe.yaml"
+    yaml = YAML()
+    yaml.width = 120
+    with open(recipe_file) as file:
+        recipe = yaml.load(file)
+
+    context = recipe.get("context") or {}
+    if "build_number" in context:
+        context["build_number"] = int(context["build_number"]) + 1
+        recipe["context"] = context
+        print(
+            f"Bumped context.build_number to {context['build_number']} in {recipe_file}"
+        )
+    else:
+        build = recipe.setdefault("build", {})
+        build["number"] = int(build.get("number", 0)) + 1
+        print(f"Bumped build.number to {build['number']} in {recipe_file}")
+
+    with open(recipe_file, "w") as file:
+        yaml.dump(recipe, file)
+    return recipe_file
+
+
 def _parse_migration_ref(migration_ref: str) -> tuple[str, str]:
     """Parse ``remote/branch`` or ``branch`` (defaults remote to ``origin``)."""
     if "/" in migration_ref:
@@ -185,6 +216,7 @@ def _build_pr_body(
     updated: list[tuple[str, Path]],
     added: list[tuple[str, Path]],
     deleted: list[tuple[str, Path]],
+    rejects: list[tuple[str, Path, str]] | None = None,
 ) -> str:
     body_lines = [
         f"Automated sync of recipe changes from {commit_sha} onto `{migration_branch}`.",
@@ -209,6 +241,18 @@ def _build_pr_body(
         for recipe, path in deleted:
             body_lines.append(f"- `{recipe}` (removed `{path}`)")
         body_lines.append("")
+    if rejects:
+        body_lines.append("### Rejects / manual follow-up")
+        body_lines.append(
+            "Some hunks could not be applied automatically. "
+            "Please apply the remaining changes by hand."
+        )
+        body_lines.append("")
+        for recipe, path, reject_text in rejects:
+            body_lines.append(f"#### `{recipe}` → `{path}`")
+            body_lines.append("")
+            body_lines.append(reject_text)
+            body_lines.append("")
     return "\n".join(body_lines).strip() + "\n"
 
 
@@ -305,7 +349,14 @@ def sync_migration_branch(
             if changed_files:
                 touched_paths.append(target)
                 updated.append((recipe, target))
-            elif not reject_text:
+            elif reject_text:
+                print(
+                    f"Pure reject for {target}; bumping build number so the PR is non-empty"
+                )
+                _bump_recipe_build_number(target)
+                touched_paths.append(target)
+                updated.append((recipe, target))
+            else:
                 print(f"No diff to apply for {target}")
 
         return updated, added, deleted, touched_paths, rejects
@@ -313,18 +364,12 @@ def sync_migration_branch(
     updated, added, deleted, touched_paths, rejects = _apply_changes()
 
     if not touched_paths:
-        if rejects:
-            print(
-                "Recipe patch(es) produced only rejects; "
-                "no file changes to open a PR with yet"
-            )
-        else:
-            print("Nothing to sync onto the migration branch")
+        print("Nothing to sync onto the migration branch")
         return
 
-    pr_body = _build_pr_body(new, migration_branch, updated, added, deleted)
-    if rejects:
-        print(f"Collected rejects for {len(rejects)} recipe(s)")
+    pr_body = _build_pr_body(
+        new, migration_branch, updated, added, deleted, rejects=rejects
+    )
 
     if dry_run:
         print("---")
