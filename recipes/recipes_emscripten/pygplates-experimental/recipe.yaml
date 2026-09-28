@@ -48,8 +48,20 @@ requirements:
   host:
   - python
   - numpy >=2.0
-  - libboost-python
-  - boost-cpp
+  # Boost.Python compiled library (provides libboost_python*.a) and the
+  # per-module Boost packages the CMakeLists lists as components. The
+  # legacy monolithic boost-cpp is stuck at 1.87 in variant.yaml while
+  # libboost-python has moved to 1.92 — mixing them produces an
+  # unresolved boost::python::detail::init_module at load time.
+  # Post-#6609 split, boost-cpp as a resolvable name effectively means
+  # 1.87. Pin per-module boost packages to 1.92 to align with
+  # libboost-python.
+  - libboost-python 1.92.*
+  - boost-atomic 1.92.*
+  - boost-chrono 1.92.*
+  - boost-program_options 1.92.*
+  - boost-python 1.92.*
+  - boost-thread 1.92.*
   - cgal-cpp
   - gmp
   - mpfr
@@ -66,7 +78,6 @@ requirements:
   - zlib
   - gmp
   - mpfr
-  - boost-cpp
 
 tests:
 - script: pytester

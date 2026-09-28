@@ -70,5 +70,4 @@ env -u _PYTHON_SYSCONFIGDATA_NAME "${BUILD_PY}" -m pip install . \
   -Ccmake.define.Python3_VERSION_MAJOR="${PY_VER_MAJOR}" \
   -Ccmake.define.Python3_VERSION_MINOR="${PY_VER_MINOR}" \
   -Ccmake.define.Python3_STDLIB="${PREFIX}/lib/python${PY_VER}" \
-  -Ccmake.define.Python3_NumPy_INCLUDE_DIR="${BUILD_PREFIX}/lib/python${PY_VER}/site-packages/numpy/_core/include" \
-  -Ccmake.define.CMAKE_VERBOSE_MAKEFILE=ON
+  -Ccmake.define.Python3_NumPy_INCLUDE_DIR="${BUILD_PREFIX}/lib/python${PY_VER}/site-packages/numpy/_core/include"
