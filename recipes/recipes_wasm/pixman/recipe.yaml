@@ -1,0 +1,72 @@
+context:
+  name: pixman
+  version: 0.46.4
+
+source:
+  url: http://cairographics.org/releases/pixman-${{ version }}.tar.gz
+  sha256: d09c44ebc3bd5bee7021c79f922fe8fb2fb57f7320f55e97ff9914d2346a591c
+  patches:
+  - patches/0001-disable-threads.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: pixman-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - meson
+    - ninja
+    - pkg-config
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+- package:
+    name: libpixman-static
+    version: ${{ version }}
+  inherit: pixman-build
+  tests:
+  - package_contents:
+      files:
+      - include/pixman-1/pixman-version.h
+      - include/pixman-1/pixman.h
+      - lib/libpixman-1.a
+      - lib/pkgconfig/pixman-1.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# Meta package for the static library
+- package:
+    name: pixman-static
+    version: ${{ version }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('libpixman-static', exact=True) }}
+  tests:
+  - package_contents:
+      files: []
+
+#==============================================================================#
+
+about:
+  homepage: http://www.pixman.org/
+  license: MIT
+  license_file: COPYING
+  summary: A low-level software library for pixel manipulation.
+  description: |
+    Pixman is a low-level software library for pixel manipulation, providing
+    features such as image compositing and trapezoid rasterization.
+  repository: https://cgit.freedesktop.org/pixman/
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
