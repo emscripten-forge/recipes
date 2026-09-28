@@ -17,10 +17,15 @@ from .git_utils import (
 
 ON_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") == "true"
 
-# Only recipes_emscripten is synced; native recipes are out of scope.
-LINEAGE_ROOTS = {
-    "recipes_emscripten": ("recipes/recipes_wasm", "recipes/recipes_emscripten"),
-}
+# Only recipes_emscripten on main is synced. On the migration branch a recipe may
+# live under recipes_wasm (migrated) or recipes_emscripten (not yet migrated).
+MAIN_RECIPES_SUBDIR = "recipes_emscripten"
+MAIN_RECIPES_PREFIX = f"recipes/{MAIN_RECIPES_SUBDIR}/"
+MIGRATION_ROOTS = ("recipes/recipes_wasm", "recipes/recipes_emscripten")
+
+
+def _main_recipe_path(recipe: str) -> str:
+    return f"{MAIN_RECIPES_PREFIX}{recipe}"
 
 
 def _short_sha(ref: str) -> str:
@@ -39,66 +44,54 @@ def _commit_message(ref: str) -> str:
     )
 
 
-def _recipe_exists_at_ref(ref: str, subdir: str, recipe: str) -> bool:
-    path = f"recipes/{subdir}/{recipe}"
+def _recipe_exists_at_ref(ref: str, recipe: str) -> bool:
     result = subprocess.run(
-        ["git", "ls-tree", "-d", "--name-only", ref, path],
+        ["git", "ls-tree", "-d", "--name-only", ref, _main_recipe_path(recipe)],
         check=False,
         capture_output=True,
     )
     return bool(result.stdout.strip())
 
 
-def _changed_recipes(old: str, new: str) -> list[tuple[str, str]]:
-    """Return (subdir, recipe) pairs changed between old and new, including deletions."""
-    files_with_changes = find_files_with_changes(old=old, new=new)
-    changed: dict[str, set[str]] = {subdir: set() for subdir in LINEAGE_ROOTS}
-
-    for file_path in files_with_changes:
-        for subdir in LINEAGE_ROOTS:
-            prefix = f"recipes/{subdir}/"
-            if file_path.startswith(prefix):
-                rest = os.path.normpath(file_path[len(prefix) :])
-                recipe = rest.split(os.sep)[0]
-                if recipe:
-                    changed[subdir].add(recipe)
-                break
-
-    result: list[tuple[str, str]] = []
-    for subdir, recipes in changed.items():
-        for recipe in sorted(recipes):
-            result.append((subdir, recipe))
-    return result
+def _changed_recipes(old: str, new: str) -> list[str]:
+    """Return recipe names under recipes_emscripten changed between old and new."""
+    recipes: set[str] = set()
+    for file_path in find_files_with_changes(old=old, new=new):
+        if not file_path.startswith(MAIN_RECIPES_PREFIX):
+            continue
+        rest = os.path.normpath(file_path[len(MAIN_RECIPES_PREFIX) :])
+        recipe = rest.split(os.sep)[0]
+        if recipe:
+            recipes.add(recipe)
+    return sorted(recipes)
 
 
-def _locate_recipe(subdir: str, recipe: str) -> tuple[Path, bool]:
+def _locate_recipe(recipe: str) -> tuple[Path, bool]:
     """
-    Find where a recipe lives on the migration branch for its lineage.
+    Find where a recipe lives on the migration branch.
 
-    Returns (target_path, existed). If missing, target_path is under the last
-    lineage root (recipes/recipes_emscripten) for creation.
+    Returns (target_path, existed). If missing, target_path is under
+    recipes/recipes_emscripten for creation.
     """
-    roots = LINEAGE_ROOTS[subdir]
-    for root in roots:
+    for root in MIGRATION_ROOTS:
         path = Path(root) / recipe
         if path.is_dir():
             return path, True
-    return Path(roots[-1]) / recipe, False
+    return Path(MIGRATION_ROOTS[-1]) / recipe, False
 
 
-def _add_recipe_from_ref(ref: str, subdir: str, recipe: str) -> Path:
+def _add_recipe_from_ref(ref: str, recipe: str) -> Path:
     """Check out a new recipe tree from ref into the working tree (same path as on main)."""
-    source = f"recipes/{subdir}/{recipe}"
+    source = _main_recipe_path(recipe)
     print(f"Checking out {source} from {ref}")
     subprocess.check_output(["git", "checkout", ref, "--", source])
     return Path(source)
 
 
-def _diff_for_recipe(old: str, new: str, subdir: str, recipe: str) -> bytes:
+def _diff_for_recipe(old: str, new: str, recipe: str) -> bytes:
     """Return the binary-capable diff for one recipe between old and new."""
-    path = f"recipes/{subdir}/{recipe}"
     return subprocess.check_output(
-        ["git", "diff", "--binary", old, new, "--", path]
+        ["git", "diff", "--binary", old, new, "--", _main_recipe_path(recipe)]
     )
 
 
@@ -189,9 +182,9 @@ def _checkout_migration_branch(remote: str, branch: str) -> None:
 def _build_pr_body(
     commit_sha: str,
     migration_branch: str,
-    updated: list[tuple[str, str, Path]],
-    added: list[tuple[str, str, Path]],
-    deleted: list[tuple[str, str, Path]],
+    updated: list[tuple[str, Path]],
+    added: list[tuple[str, Path]],
+    deleted: list[tuple[str, Path]],
 ) -> str:
     body_lines = [
         f"Automated sync of recipe changes from {commit_sha} onto `{migration_branch}`.",
@@ -199,17 +192,21 @@ def _build_pr_body(
     ]
     if updated:
         body_lines.append("### Updated")
-        for subdir, recipe, path in updated:
-            body_lines.append(f"- `{recipe}` (`recipes/{subdir}/` → `{path}`)")
+        for recipe, path in updated:
+            body_lines.append(
+                f"- `{recipe}` (`{MAIN_RECIPES_PREFIX}` → `{path}`)"
+            )
         body_lines.append("")
     if added:
         body_lines.append("### Added")
-        for subdir, recipe, path in added:
-            body_lines.append(f"- `{recipe}` (`recipes/{subdir}/` → `{path}`)")
+        for recipe, path in added:
+            body_lines.append(
+                f"- `{recipe}` (`{MAIN_RECIPES_PREFIX}` → `{path}`)"
+            )
         body_lines.append("")
     if deleted:
         body_lines.append("### Deleted")
-        for subdir, recipe, path in deleted:
+        for recipe, path in deleted:
             body_lines.append(f"- `{recipe}` (removed `{path}`)")
         body_lines.append("")
     return "\n".join(body_lines).strip() + "\n"
@@ -222,7 +219,8 @@ def sync_migration_branch(
     dry_run: bool = False,
 ) -> None:
     """
-    Sync recipes changed between old and new onto a migration branch and open one PR.
+    Sync recipes_emscripten changes between old and new onto a migration branch
+    and open one PR.
 
     migration_ref must be ``remote/branch`` (e.g. ``upstream/emscripten-6x``)
     or ``branch`` (defaults to ``origin/branch``).
@@ -243,8 +241,8 @@ def sync_migration_branch(
         return
 
     print(f"Found {len(changed)} changed recipe(s):")
-    for subdir, recipe in changed:
-        print(f"  - recipes/{subdir}/{recipe}")
+    for recipe in changed:
+        print(f"  - {_main_recipe_path(recipe)}")
 
     if not dry_run and ON_GITHUB_ACTIONS:
         set_bot_user()
@@ -260,53 +258,53 @@ def sync_migration_branch(
     print(f"Created branch {branch_name} from {migration_branch}")
 
     def _apply_changes() -> tuple[
-        list[tuple[str, str, Path]],
-        list[tuple[str, str, Path]],
-        list[tuple[str, str, Path]],
+        list[tuple[str, Path]],
+        list[tuple[str, Path]],
+        list[tuple[str, Path]],
         list[Path],
-        list[tuple[str, str, Path, str]],
+        list[tuple[str, Path, str]],
     ]:
-        updated: list[tuple[str, str, Path]] = []
-        added: list[tuple[str, str, Path]] = []
-        deleted: list[tuple[str, str, Path]] = []
+        updated: list[tuple[str, Path]] = []
+        added: list[tuple[str, Path]] = []
+        deleted: list[tuple[str, Path]] = []
         touched_paths: list[Path] = []
-        rejects: list[tuple[str, str, Path, str]] = []
+        rejects: list[tuple[str, Path, str]] = []
 
-        for subdir, recipe in changed:
-            target, existed = _locate_recipe(subdir, recipe)
-            exists_on_new = _recipe_exists_at_ref(new, subdir, recipe)
+        for recipe in changed:
+            target, existed = _locate_recipe(recipe)
+            exists_on_new = _recipe_exists_at_ref(new, recipe)
 
             if not exists_on_new:
                 if not existed:
                     print(
-                        f"Skip delete for {recipe} ({subdir}): "
+                        f"Skip delete for {recipe}: "
                         f"not present on {migration_branch}"
                     )
                     continue
                 print(f"Deleting {target} (removed on main)")
                 shutil.rmtree(target)
-                deleted.append((subdir, recipe, target))
+                deleted.append((recipe, target))
                 touched_paths.append(target)
                 continue
 
             if not existed:
-                dest = _add_recipe_from_ref(new, subdir, recipe)
+                dest = _add_recipe_from_ref(new, recipe)
                 touched_paths.append(dest)
-                added.append((subdir, recipe, dest))
+                added.append((recipe, dest))
                 continue
 
-            from_prefix = f"recipes/{subdir}/{recipe}"
+            from_prefix = _main_recipe_path(recipe)
             to_prefix = target.as_posix()
             print(f"Patching {target} from {from_prefix} ({old}..{new})")
-            diff = _diff_for_recipe(old, new, subdir, recipe)
+            diff = _diff_for_recipe(old, new, recipe)
             rewritten = _rewrite_diff_paths(diff, from_prefix, to_prefix)
             changed_files, reject_text = _apply_recipe_diff(rewritten)
             if reject_text:
-                rejects.append((subdir, recipe, target, reject_text))
+                rejects.append((recipe, target, reject_text))
                 print(f"Rejects for {target}:\n{reject_text}")
             if changed_files:
                 touched_paths.append(target)
-                updated.append((subdir, recipe, target))
+                updated.append((recipe, target))
             elif not reject_text:
                 print(f"No diff to apply for {target}")
 
