@@ -21,8 +21,7 @@ ON_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") == "true"
 
 # Only recipes_emscripten on main is synced. On the migration branch a recipe may
 # live under recipes_wasm (migrated) or recipes_emscripten (not yet migrated).
-MAIN_RECIPES_SUBDIR = "recipes_emscripten"
-MAIN_RECIPES_PREFIX = f"recipes/{MAIN_RECIPES_SUBDIR}/"
+MAIN_RECIPES_PREFIX = "recipes/recipes_emscripten/"
 MIGRATION_ROOTS = ("recipes/recipes_wasm", "recipes/recipes_emscripten")
 
 
@@ -224,17 +223,13 @@ def _build_pr_body(
     ]
     if updated:
         body_lines.append("### Updated")
-        for recipe, path in updated:
-            body_lines.append(
-                f"- `{recipe}` (`{MAIN_RECIPES_PREFIX}` → `{path}`)"
-            )
+        for recipe, _ in updated:
+            body_lines.append(f"- `{recipe}`")
         body_lines.append("")
     if added:
         body_lines.append("### Added")
-        for recipe, path in added:
-            body_lines.append(
-                f"- `{recipe}` (`{MAIN_RECIPES_PREFIX}` → `{path}`)"
-            )
+        for recipe, _ in added:
+            body_lines.append(f"- `{recipe}`")
         body_lines.append("")
     if deleted:
         body_lines.append("### Deleted")
