@@ -383,11 +383,15 @@ def sync_migration_branch(
         return
 
     print(f"Opening PR: {pr_title}")
+    labels = None
+    if any(Path(p).parent.name == "recipes_wasm" for p in touched_paths):
+        labels = ["migrated"]
     make_pr(
         paths=touched_paths,
         pr_title=pr_title,
         pr_body=pr_body,
         target_branch_name=migration_branch,
         branch_name=branch_name,
+        labels=labels,
     )
     print("Done")
