@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import io
 import os
 import shutil
 import subprocess
-import tarfile
 import tempfile
 from pathlib import Path
 
@@ -19,8 +17,8 @@ from .git_utils import (
 
 ON_GITHUB_ACTIONS = os.environ.get("GITHUB_ACTIONS") == "true"
 
+# Only recipes_emscripten is synced; native recipes are out of scope.
 LINEAGE_ROOTS = {
-    "recipes": ("recipes/recipes_native", "recipes/recipes"),
     "recipes_emscripten": ("recipes/recipes_wasm", "recipes/recipes_emscripten"),
 }
 
@@ -77,35 +75,91 @@ def _locate_recipe(subdir: str, recipe: str) -> tuple[Path, bool]:
     """
     Find where a recipe lives on the migration branch for its lineage.
 
-    Returns (target_path, existed). If missing, target_path is under the legacy
-    root (recipes/recipes / recipes/recipes_emscripten) for creation.
+    Returns (target_path, existed). If missing, target_path is under the last
+    lineage root (recipes/recipes_emscripten) for creation.
     """
-    new_root, legacy_root = LINEAGE_ROOTS[subdir]
-    for root in (new_root, legacy_root):
+    roots = LINEAGE_ROOTS[subdir]
+    for root in roots:
         path = Path(root) / recipe
         if path.is_dir():
             return path, True
-    return Path(legacy_root) / recipe, False
+    return Path(roots[-1]) / recipe, False
 
 
-def _replace_recipe_dir_from_ref(ref: str, subdir: str, recipe: str, dest: Path) -> None:
-    """Replace dest with the full recipe tree from ref at recipes/<subdir>/<recipe>."""
+def _add_recipe_from_ref(ref: str, subdir: str, recipe: str) -> Path:
+    """Check out a new recipe tree from ref into the working tree (same path as on main)."""
     source = f"recipes/{subdir}/{recipe}"
-    archive = subprocess.check_output(
-        ["git", "archive", "--format=tar", ref, source]
+    print(f"Checking out {source} from {ref}")
+    subprocess.check_output(["git", "checkout", ref, "--", source])
+    return Path(source)
+
+
+def _diff_for_recipe(old: str, new: str, subdir: str, recipe: str) -> bytes:
+    """Return the binary-capable diff for one recipe between old and new."""
+    path = f"recipes/{subdir}/{recipe}"
+    return subprocess.check_output(
+        ["git", "diff", "--binary", old, new, "--", path]
     )
 
-    if dest.exists():
-        shutil.rmtree(dest)
-    dest.parent.mkdir(parents=True, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as tmp:
-        with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as tar:
-            tar.extractall(tmp, filter="data")
-        extracted = Path(tmp) / source
-        if not extracted.is_dir():
-            raise RuntimeError(f"git archive did not produce directory {source}")
-        shutil.move(str(extracted), str(dest))
+def _rewrite_diff_paths(diff: bytes, from_prefix: str, to_prefix: str) -> bytes:
+    """Rewrite recipe path prefixes in a unified/binary diff."""
+    if not diff or from_prefix == to_prefix:
+        return diff
+    text = diff.decode("utf-8", errors="surrogateescape")
+    return text.replace(from_prefix, to_prefix).encode(
+        "utf-8", errors="surrogateescape"
+    )
+
+
+def _apply_recipe_diff(diff: bytes) -> tuple[bool, str]:
+    """
+    Apply a patch with ``git apply --reject``.
+
+    Returns (any_changes_in_worktree, reject_text). Reject ``.rej`` files are
+    read then deleted so they are not committed.
+    """
+    if not diff.strip():
+        return False, ""
+
+    with tempfile.NamedTemporaryFile(suffix=".patch", delete=False) as patch_file:
+        patch_file.write(diff)
+        patch_path = patch_file.name
+
+    try:
+        before = subprocess.check_output(
+            ["git", "status", "--porcelain"]
+        ).decode("utf-8")
+        result = subprocess.run(
+            ["git", "apply", "--reject", "--whitespace=nowarn", patch_path],
+            capture_output=True,
+        )
+        stderr = result.stderr.decode("utf-8", errors="replace")
+        stdout = result.stdout.decode("utf-8", errors="replace")
+        if stdout.strip():
+            print(stdout.rstrip())
+        if result.returncode != 0:
+            print(f"git apply exited {result.returncode}")
+            if stderr.strip():
+                print(stderr.rstrip())
+
+        reject_chunks: list[str] = []
+        for rej_path in sorted(Path(".").rglob("*.rej")):
+            try:
+                reject_chunks.append(
+                    f"`{rej_path.as_posix()}`\n\n```\n"
+                    f"{rej_path.read_text(errors='replace')}```"
+                )
+            finally:
+                rej_path.unlink(missing_ok=True)
+
+        after = subprocess.check_output(
+            ["git", "status", "--porcelain"]
+        ).decode("utf-8")
+        changed = before != after
+        return changed, "\n\n".join(reject_chunks)
+    finally:
+        os.unlink(patch_path)
 
 
 def _parse_migration_ref(migration_ref: str) -> tuple[str, str]:
@@ -210,11 +264,13 @@ def sync_migration_branch(
         list[tuple[str, str, Path]],
         list[tuple[str, str, Path]],
         list[Path],
+        list[tuple[str, str, Path, str]],
     ]:
         updated: list[tuple[str, str, Path]] = []
         added: list[tuple[str, str, Path]] = []
         deleted: list[tuple[str, str, Path]] = []
         touched_paths: list[Path] = []
+        rejects: list[tuple[str, str, Path, str]] = []
 
         for subdir, recipe in changed:
             target, existed = _locate_recipe(subdir, recipe)
@@ -233,24 +289,44 @@ def sync_migration_branch(
                 touched_paths.append(target)
                 continue
 
-            action = "Updating" if existed else "Adding"
-            print(f"{action} {target} from recipes/{subdir}/{recipe}@{new}")
-            _replace_recipe_dir_from_ref(new, subdir, recipe, target)
-            touched_paths.append(target)
-            if existed:
+            if not existed:
+                dest = _add_recipe_from_ref(new, subdir, recipe)
+                touched_paths.append(dest)
+                added.append((subdir, recipe, dest))
+                continue
+
+            from_prefix = f"recipes/{subdir}/{recipe}"
+            to_prefix = target.as_posix()
+            print(f"Patching {target} from {from_prefix} ({old}..{new})")
+            diff = _diff_for_recipe(old, new, subdir, recipe)
+            rewritten = _rewrite_diff_paths(diff, from_prefix, to_prefix)
+            changed_files, reject_text = _apply_recipe_diff(rewritten)
+            if reject_text:
+                rejects.append((subdir, recipe, target, reject_text))
+                print(f"Rejects for {target}:\n{reject_text}")
+            if changed_files:
+                touched_paths.append(target)
                 updated.append((subdir, recipe, target))
-            else:
-                added.append((subdir, recipe, target))
+            elif not reject_text:
+                print(f"No diff to apply for {target}")
 
-        return updated, added, deleted, touched_paths
+        return updated, added, deleted, touched_paths, rejects
 
-    updated, added, deleted, touched_paths = _apply_changes()
+    updated, added, deleted, touched_paths, rejects = _apply_changes()
 
     if not touched_paths:
-        print("Nothing to sync onto the migration branch")
+        if rejects:
+            print(
+                "Recipe patch(es) produced only rejects; "
+                "no file changes to open a PR with yet"
+            )
+        else:
+            print("Nothing to sync onto the migration branch")
         return
 
     pr_body = _build_pr_body(new, migration_branch, updated, added, deleted)
+    if rejects:
+        print(f"Collected rejects for {len(rejects)} recipe(s)")
 
     if dry_run:
         print("---")
