@@ -66,14 +66,18 @@ requirements:
     - nauty
     - ppl
     - singular
+    # SCIP's SoPlex LP interface is compiled into libscip.a, so soplex and zlib have to
+    # be linked alongside it.  The scip packages in this channel were built against
+    # soplex 8.0.x, whose header declares `SOPLEX_THREADLOCAL extern const Real
+    # infinity`; 8.1.0 changed it to a file-scope `static const Real infinity`, so
+    # linking scip against 8.1.0 fails with an undefined `soplex::infinity`.
+    - scip
+    - soplex <8.1
+    - zlib
     - ntl
     - mathicgb
     - mathic
     - memtailor
-    - scip
-    - soplex
-    - zlib
-    - bzip2
 
 tests:
   - package_contents:
