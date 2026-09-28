@@ -87,7 +87,7 @@ def bump_recipes_versions(target_branch_name: str):
 
     # Branch switch happens inside bump_recipe_versions
     if target_branch_name == "emscripten-6x":
-        recipe_dirs = [RECIPES_EMSCRIPTEN_DIR, RECIPES_WASM_DIR]
+        recipe_dirs = [RECIPES_WASM_DIR]
     else:
         recipe_dirs = [RECIPES_EMSCRIPTEN_DIR]
 
