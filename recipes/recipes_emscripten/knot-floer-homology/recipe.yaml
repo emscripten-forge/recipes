@@ -1,29 +1,30 @@
 context:
-  name: knot_floer_homology
-  version: 1.2.1
+  name: knot-floer-homology
+  version: 1.2.2
 
 package:
-  name: knot-floer-homology
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  # 1.2.2 is the latest release but ships wheels only -- 1.2.1 is the most
-  # recent version with an sdist. spherogram asks for >=1.2.2 in its
-  # install_requires; the run dependency in the spherogram recipe is
-  # relaxed to >=1.2.1 to match what can actually be built from source.
-  url: https://pypi.io/packages/source/k/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: fd65df828c155650b47050e4056febc7ba7fd6d6ed41fc0e0796a181044eb24a
+  # Upstream publishes only wheels to PyPI for this release, and GitHub's
+  # generated tarballs are not stable enough to hash, so the tagged commit
+  # is used instead.  Tag ${{ version }}_as_released.
+  git: https://github.com/3-manifolds/knot_floer_homology.git
+  rev: 11061f1003d69e14c8a4c32710b61c195f8300a8
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
-  - python
-  - cross-python_${{ target_platform }}
   - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
   - pip
   - setuptools
+  - wheel
   - cython
   host:
   - python
@@ -40,19 +41,15 @@ tests:
     - pytester
     run:
     - pytester-run
+- package_contents:
+    files:
+    - lib/python3.13/site-packages/knot_floer_homology/hfk.cpython-313-wasm32-emscripten.so
 
 about:
   homepage: https://github.com/3-manifolds/knot_floer_homology
-  license: GPL-3.0-or-later
-  license_file: PKG-INFO
-  summary: Computes knot Floer homology, via Szabo's ComputeHFKv2
-  description: |
-    A Python interface to Zoltan Szabo's program for computing the knot
-    Floer homology of a knot in the 3-sphere from a planar diagram. Used by
-    spherogram, and through it by SnapPy, for Link.knot_floer_homology().
-
-    The C++ sources use no threads, so no patching is needed for a build
-    without pthreads.
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: Knot Floer homology of knots in the 3-sphere via Szabo's geometric algorithm
   repository: https://github.com/3-manifolds/knot_floer_homology
 
 extra:

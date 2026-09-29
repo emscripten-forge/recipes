@@ -1,15 +1,38 @@
-def test_snappy_manifolds():
+import os
+import sqlite3
+
+
+def test_import_snappy_manifolds():
     import snappy_manifolds
 
     assert snappy_manifolds.version() == '1.4'
 
 
-def test_snappy_manifolds_databases():
+def test_census_databases_are_installed():
     import snappy_manifolds
 
-    # get_tables() needs SnapPy's ManifoldTable class, but get_DT_tables()
-    # is self-contained and opens two of the SQLite databases, so it checks
-    # that the data files were actually packaged and are readable.
+    path = snappy_manifolds.manifolds_path
+    assert os.path.isdir(path)
+    for name in ['manifolds.sqlite', 'more_manifolds.sqlite',
+                 'platonic_manifolds.sqlite', 'ribbon_links.sqlite']:
+        assert os.path.isfile(os.path.join(path, name)), name
+
+
+def test_census_is_queryable():
+    import snappy_manifolds
+
+    db = os.path.join(snappy_manifolds.manifolds_path, 'manifolds.sqlite')
+    connection = sqlite3.connect(db)
+    try:
+        rows = list(connection.execute(
+            'select name from orientable_cusped_view where name=?', ('m004',)))
+    finally:
+        connection.close()
+    assert rows == [('m004',)]
+
+
+def test_dt_tables():
+    import snappy_manifolds
+
     tables = snappy_manifolds.get_DT_tables()
-    assert len(tables) == 2
-    assert all(len(table) > 0 for table in tables)
+    assert len(tables) > 0

@@ -7,22 +7,22 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/s/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/s/spherogram/spherogram-${{ version }}.tar.gz
   sha256: 9351a77308fee452421b914ae55f3cdaff805692b834777aa6a034a9a85bf970
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
 requirements:
   build:
-  - python
-  - cross-python_${{ target_platform }}
   - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
   - pip
   - setuptools
-  # Deliberately no cython. The sdist ships the generated
-  # planarity_src/planarity.c and planarmap_src/planarmap.c, and setup.py
-  # only re-cythonizes when Cython happens to be importable.
+  - wheel
+  - cython
   host:
   - python
   run:
@@ -30,12 +30,8 @@ requirements:
   - decorator
   - networkx
   - packaging
-  - snappy_manifolds >=1.4
-  # Upstream asks for >=1.2.2, but that release is wheels-only; 1.2.1 is
-  # the newest that can be built from source. The module is imported
-  # lazily, inside Link.knot_floer_homology() and exhaust.py, so nothing
-  # breaks at import time either way.
-  - knot_floer_homology >=1.2.1
+  - snappy-manifolds >=1.4
+  - knot-floer-homology >=1.2.2
 
 tests:
 - script: pytester
@@ -47,21 +43,17 @@ tests:
     - pytester
     run:
     - pytester-run
+- package_contents:
+    files:
+    - lib/python3.13/site-packages/spherogram/planarity.cpython-313-wasm32-emscripten.so
+    - lib/python3.13/site-packages/spherogram/planarmap.cpython-313-wasm32-emscripten.so
 
 about:
-  homepage: https://github.com/3-manifolds/spherogram
+  homepage: https://github.com/3-manifolds/Spherogram
   license: GPL-2.0-or-later
-  license_file: PKG-INFO
-  summary: Tools for dealing with graphs, links, and their exteriors
-  description: |
-    Spherogram works with links and their diagrams: simplification,
-    invariants, DT and PD codes, and the construction of link exteriors as
-    triangulations. It is a required dependency of SnapPy, which imports it
-    at the top of its __init__.py.
-
-    The planarity C sources are vendored in the sdist, so this does not
-    link the channel's separate planarity package.
-  repository: https://github.com/3-manifolds/spherogram
+  license_file: README.rst
+  summary: Spherical diagrams for 3-manifold topology, including links and their exteriors
+  repository: https://github.com/3-manifolds/Spherogram
 
 extra:
   recipe-maintainers:

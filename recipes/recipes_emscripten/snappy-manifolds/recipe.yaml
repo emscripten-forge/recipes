@@ -1,24 +1,29 @@
 context:
-  name: snappy_manifolds
+  name: snappy-manifolds
   version: '1.4'
 
 package:
-  name: snappy-manifolds
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/s/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/s/snappy_manifolds/snappy_manifolds-${{ version }}.tar.gz
   sha256: 3a5b354e6cb545bed6d13a5f0b99a399d03a352c51111662150632c0c7d316dc
 
 build:
   number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
 
 requirements:
   build:
-  - python
   - cross-python_${{ target_platform }}
+  - python
   - pip
   - setuptools
+  - wheel
   host:
   - python
   run:
@@ -38,30 +43,8 @@ tests:
 about:
   homepage: https://github.com/3-manifolds/snappy_manifolds
   license: GPL-2.0-or-later
-  license_file: PKG-INFO
-  summary: Censuses of 3-manifolds for SnapPy, as SQLite databases
-  description: |
-    The manifold censuses that SnapPy loads at import time. No compiled
-    code: the package is pure Python plus four SQLite databases.
-
-    Be aware of the size. Installed, the databases come to about 131 MB:
-
-      manifolds.sqlite            41.3 MB
-      more_manifolds.sqlite       45.3 MB
-      platonic_manifolds.sqlite   35.3 MB
-      ribbon_links.sqlite          8.7 MB
-
-    All four are required as things stand. snappy_manifolds.get_tables()
-    unconditionally calls get_core_tables(), get_platonic_tables() and
-    get_ribbon_tables(), with no test for a missing file, and SnapPy's
-    __init__.py registers snappy_manifolds with required=True. Shipping a
-    subset therefore means patching database.py, not just dropping files.
-
-    For a browser deployment this is the package that decides your page
-    weight, and preloading 131 MB into the Emscripten filesystem is not
-    viable. Serving the databases over HTTP range requests, so that SQLite
-    reads only the pages it touches, is the approach that fits how these
-    are actually used -- a census lookup reads a handful of rows.
+  license_file: README.rst
+  summary: Censuses of 3-manifolds for use with SnapPy
   repository: https://github.com/3-manifolds/snappy_manifolds
 
 extra:
