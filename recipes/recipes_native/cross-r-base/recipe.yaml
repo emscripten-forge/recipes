@@ -1,24 +1,38 @@
 context:
-  name: cross-r-base_emscripten-wasm32
-  version: 4.5.3
-
-package:
-  name: ${{ name }}
-  version: ${{ version }}
+  name: cross-r-base
 
 build:
-  number: 2
+  number: 0
 
-requirements:
-  run:
-  - r-base ==${{ version }} h15dba0b_1
-  - emscripten_emscripten-wasm32
+outputs:
 
-tests:
-- package_contents:
-    files:
-    - etc/conda/activate.d/activate_z-${{ name }}.sh
-    - etc/conda/deactivate.d/deactivate_z-${{ name }}.sh
+- package:
+    name: ${{ name }}
+    version: 4.5.3
+  requirements:
+    run:
+    - r-base ==4.5.3 h15dba0b_1
+  build:
+    script: build.sh
+  tests:
+  - package_contents:
+      files:
+      - etc/conda/activate.d/activate_z-${{ name }}.sh
+      - etc/conda/deactivate.d/deactivate_z-${{ name }}.sh
+
+- package:
+    name: ${{ name }}
+    version: 4.6.1
+  requirements:
+    run:
+    - r-base ==4.6.1
+  build:
+    script: build.sh
+  tests:
+  - package_contents:
+      files:
+      - etc/conda/activate.d/activate_z-${{ name }}.sh
+      - etc/conda/deactivate.d/deactivate_z-${{ name }}.sh
 
 about:
   summary: Package to cross-compile R packages to WebAssembly using Emscripten.
