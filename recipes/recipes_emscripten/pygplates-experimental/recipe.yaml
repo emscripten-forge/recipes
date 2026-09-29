@@ -21,7 +21,7 @@ source:
   - patches/0001-Allow-skipping-find_package-Python3-for-cross-compil.patch
 
 build:
-  number: 0
+  number: 2
   files:
     exclude:
     - '**/__pycache__/**'
@@ -48,13 +48,24 @@ requirements:
   host:
   - python
   - numpy >=2.0
-  - libboost-python
-  - boost-cpp
+  # Boost.Python compiled library (provides libboost_python*.a) and the
+  # per-module Boost packages the CMakeLists lists as components. The
+  # legacy monolithic boost-cpp is stuck at 1.87 in variant.yaml while
+  # libboost-python has moved to 1.92 — mixing them produces an
+  # unresolved boost::python::detail::init_module at load time.
+  # Post-#6609 split, boost-cpp as a resolvable name effectively means
+  # 1.87. Pin per-module boost packages to 1.92 to align with
+  # libboost-python.
+  - libboost-python 1.92.*
+  - boost-atomic 1.92.*
+  - boost-chrono 1.92.*
+  - boost-program_options 1.92.*
+  - boost-python 1.92.*
+  - boost-thread 1.92.*
   - cgal-cpp
   - gmp
   - mpfr
   - libgdal-core
-  - proj ==9.8.1
   - qt6-main
   - qt6-5compat
   - zlib
@@ -62,13 +73,11 @@ requirements:
   - python
   - numpy
   - libgdal-core
-  - proj ==9.8.1
   - qt6-main
   - qt6-5compat
   - zlib
   - gmp
   - mpfr
-  - boost-cpp
 
 tests:
 - script: pytester
@@ -84,6 +93,12 @@ tests:
 about:
   homepage: https://www.gplates.org/
   repository: https://github.com/GPlates/GPlates
+  # GPlates is GPL-2.0-only (COPYING says "version 2, not any later version").
+  # This build MUST stay headless: linking Qt's WebAssembly QPA plugin
+  # (GPL-3.0-only) would produce a combined binary that no license can
+  # cover, since GPL-2-only and GPL-3-only are mutually incompatible.
+  # Headless works because qt6-main's non-plugin code is tri-licensed
+  # (LGPL-3 OR GPL-2 OR GPL-3), and pygplates picks the GPL-2 option.
   license: GPL-2.0-only
   license_file: COPYING
   summary: Python library for fine-grained access to GPlates functionality (Emscripten build, GUI-less snapshot)
