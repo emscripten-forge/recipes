@@ -19,6 +19,9 @@ outputs:
     - cmake
     - make
     host:
+    # Both zlib flavours are needed at build time: the static pass links
+    # libz.a into libxml2.a; the shared pass links libz.so into libxml2.so.
+    # Runtime deps are declared per-output below.
     - libzlib
     - libzlib-static
   build:
@@ -63,9 +66,16 @@ outputs:
   requirements:
     host:
     - libzlib-static
+    # libzlib publishes a run_export that would otherwise leak into
+    # libxml2-static's run: deps — wrong for a static package (consumers
+    # linking libxml2.a get libz.a's symbols baked in, they don't need
+    # the shared libz.so at runtime).
+    ignore_run_exports:
+      from_package:
+      - libzlib
     run:
     - ${{ pin_subpackage('libxml2-dev', exact=True) }}
-    - ${{ pin_compatible('libzlib-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('libzlib-static', lower_bound='x.x', upper_bound='x.x') }}
   tests:
   - package_contents:
       files:
@@ -86,6 +96,10 @@ outputs:
       include:
       - lib/*.so
   requirements:
+    host:
+    # libxml2.so has NEEDED libz.so in its dylink.0 — libzlib's own
+    # run_exports then propagates the runtime libzlib dep to consumers.
+    - libzlib
     run_constraints:
     - ${{ pin_subpackage('libxml2-dev', exact=True) }}
     run_exports:
@@ -130,7 +144,3 @@ about:
 extra:
   recipe-maintainers:
   - IsabelParedes
-  ci:
-    platforms:
-      emscripten-wasm32: true
-      emscripten-wasm64: true
