@@ -18,7 +18,7 @@ rustup target add wasm32-unknown-emscripten
 # see https://github.com/pola-rs/polars/blob/main/.github/workflows/test-pyodide.yml
 FEATURES="csv|ipc|ipc_streaming|parquet|async|scan_lines|json|extract_jsonpath|catalog|cloud|polars_cloud|tokio|clipboard|decompress|new_streaming"
 sed -i 's/serde_json = { workspace = true, optional = true }/serde_json = { workspace = true }/' crates/polars-python/Cargo.toml
-sed -i 's/"serde_json",//' crates/polars-python/Cargo.toml
+sed -E -i 's/"(dep:)?serde_json",//' crates/polars-python/Cargo.toml
 sed -E -i "/^  \"(${FEATURES})\",$/d" crates/polars-python/Cargo.toml py-polars/runtime/polars-runtime-32/Cargo.toml
 
 "${PYTHON}" -m pip install --no-deps --no-build-isolation . -vv
