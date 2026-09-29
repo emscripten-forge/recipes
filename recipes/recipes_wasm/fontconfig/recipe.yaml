@@ -1,0 +1,83 @@
+context:
+  name: fontconfig
+  version: 2.15.0
+
+source:
+  url: http://www.freedesktop.org/software/${{ name }}/release/${{ name }}-${{ version }}.tar.gz
+  sha256: f5f359d6332861bd497570848fcb42520964a9e83d5e3abe397b6b6db9bcaaf4
+  patches:
+  - patches/0001-disable-threads.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: fontconfig-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - pkg-config
+    - gperf
+    - meson
+    - ninja
+    host:
+    - freetype-static
+    - libexpat-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+- package:
+    name: libfontconfig-static
+    version: ${{ version }}
+  inherit: fontconfig-build
+  requirements:
+    host:
+    - freetype-static
+    - libexpat-static
+    run:
+    - ${{ pin_compatible('freetype-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('libexpat-static', lower_bound='x', upper_bound='x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/fontconfig/fcfreetype.h
+      - include/fontconfig/fcprivate.h
+      - include/fontconfig/fontconfig.h
+      - lib/libfontconfig.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# Meta package for the static library
+- package:
+    name: fontconfig-static
+    version: ${{ version }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('libfontconfig-static', exact=True) }}
+  tests:
+  - package_contents:
+      files: []
+
+#==============================================================================#
+
+about:
+  homepage: http://www.freedesktop.org/wiki/Software/fontconfig/
+  license: MIT
+  license_file: COPYING
+  summary: A library for configuring and customizing font access
+  description: |
+    Fontconfig is a library designed to provide system-wide font configuration,
+    customization and application access.
+  documentation: https://www.freedesktop.org/software/fontconfig/fontconfig-user.html
+  repository: https://cgit.freedesktop.org/fontconfig/
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

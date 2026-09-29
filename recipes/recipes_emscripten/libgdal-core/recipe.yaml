@@ -1,15 +1,16 @@
 context:
   name: libgdal-core
-  version: 3.12.4
+  version: 3.13.1
 
 source:
   url: https://github.com/OSGeo/gdal/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: a7c9cabd19f754ba6ed89a90ba0f5a4414577bd20d94a1914aa098e509d959e7
+  sha256: 8023c9a6e08f151f4723f08982cc73d2bc95095df65e5c1ea563cafafb864ec6
   patches:
   - patches/0001-Add-CPL_CPUID-guards.patch
+  - patches/0002-Add-CPL_CPUID-guard-AVX2.patch
 
 build:
-  number: 1
+  number: 0
 
 outputs:
 - package:
@@ -23,11 +24,11 @@ outputs:
     - cmake
     - pkg-config
     host:
-    - libtiff
+    - libtiff-static
     - proj >=9.8
-    - libiconv
+    - libiconv-static
     - geos
-    - libpng
+    - libpng-static
     run_exports:
     - ${{ pin_subpackage(name, upper_bound='x.x') }}
   tests:
@@ -71,11 +72,11 @@ outputs:
     - cmake
     - pkg-config
     host:
-    - libtiff
+    - libtiff-static
     - proj-static
-    - libiconv
+    - libiconv-static
     - geos-static
-    - libpng
+    - libpng-static
   tests:
   - package_contents:
       files:
