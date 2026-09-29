@@ -52,6 +52,85 @@ outputs:
     - qt6-main == ${{ version }}
     host:
     - zlib-static
+
+- package:
+    name: qt6-wasm-platform
+    version: ${{ version }}
+  inherit: build-cache
+  build:
+    string: ${{ "jspi" if wasm_jspi == "1" else "nojspi" }}_h${{ hash }}_${{ build_number }}
+    variant:
+      use_keys:
+      - wasm_jspi
+      down_prioritize_variant: ${{ 1 if wasm_jspi == "1" else 0 }}
+    files:
+      include:
+      # QPA plugin binary and metadata.
+      - plugins/platforms/libqwasm.*
+      # Runtime shell loaded by the browser.
+      - plugins/platforms/qtloader.js
+      - plugins/platforms/wasm_shell.html
+      - plugins/platforms/qtlogo.svg
+      # QWasm cmake plugin config + build intermediates that Qt install ships.
+      - plugins/platforms/objects-*/QWasmIntegrationPlugin_*/**
+      - lib/cmake/Qt6Gui/Qt6QWasm*
+      - lib/objects-*/QWasmIntegrationPlugin_*/**
+      # libexec/ runtime JS helpers imported by qtloader.js. SPDX:
+      # `LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0`.
+      - libexec/qwasm*.js
+      # qmake plugin-registration file for the QWasm plugin (analog
+      # of the cmake configs above).
+      - mkspecs/modules/qt_plugin_qwasm.pri
+  requirements:
+    # Deliberately no host: entry for qt6-main. rattler-build's file
+    # selector treats every file listed in a host-env PrefixRecord as
+    # a "previous file" and drops it from the new-file set BEFORE
+    # include patterns are evaluated. Putting qt6-main in host: would
+    # mask its files (from an older channel-resolved version, since
+    # this output builds before the sibling qt6-main) and cause
+    # libexec/qwasm*.js, mkspecs/modules/qt_plugin_qwasm.pri etc to
+    # silently disappear despite include patterns matching them.
+    run:
+    - ${{ pin_subpackage('qt6-main', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - plugins/platforms/libqwasm.a
+      - plugins/platforms/qtloader.js
+      - plugins/platforms/wasm_shell.html
+      - lib/cmake/Qt6Gui/Qt6QWasmIntegrationPluginConfig.cmake
+      - libexec/qwasmjsruntime.js
+      - libexec/qwasmtestmain.js
+      - mkspecs/modules/qt_plugin_qwasm.pri
+  about:
+    summary: Qt6 WebAssembly QPA plugin and browser runtime shell (libqwasm.a, qtloader.js, wasm_shell.html); GPL-3.0-only per upstream Qt
+    license: GPL-3.0-only
+    license_file:
+    - LICENSES/GPL-3.0-only.txt
+
+- package:
+    name: qt6-main
+    version: ${{ version }}
+  inherit: build-cache
+  build:
+    string: ${{ "jspi" if wasm_jspi == "1" else "nojspi" }}_h${{ hash }}_${{ build_number }}
+    variant:
+      use_keys:
+      - wasm_jspi
+      down_prioritize_variant: ${{ 1 if wasm_jspi == "1" else 0 }}
+    files:
+      exclude:
+      # Belongs to qt6-wasm-platform (GPL-3.0-only). Keep this list
+      # in sync with qt6-wasm-platform's include list above.
+      - plugins/platforms/libqwasm.*
+      - plugins/platforms/qtloader.js
+      - plugins/platforms/wasm_shell.html
+      - plugins/platforms/qtlogo.svg
+      - plugins/platforms/objects-*/QWasmIntegrationPlugin_*/**
+      - lib/cmake/Qt6Gui/Qt6QWasm*
+      - lib/objects-*/QWasmIntegrationPlugin_*/**
+      - libexec/qwasm*.js
+      - mkspecs/modules/qt_plugin_qwasm.pri
   tests:
   - package_contents:
       files:
