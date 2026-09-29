@@ -9,7 +9,8 @@ emcmake cmake -S tests -B build_tests \
     -GNinja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
-    -Dlibxml2_DIR="${PREFIX}/lib/cmake/libxml2"
+    -Dlibxml2_DIR="${PREFIX}/lib/cmake/libxml2" \
+    -DZLIB_DIR="${PREFIX}/lib/cmake/zlib"
 
 emmake ninja -C build_tests
 
