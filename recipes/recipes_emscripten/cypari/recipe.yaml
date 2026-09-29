@@ -20,8 +20,14 @@ source:
   rev: 17bf39dc4508f2e46de75b95c65982c627652b60
   patches:
   - patches/0001-use-raise-instead-of-abort-on-emscripten.patch
-- url: https://pari.math.u-bordeaux.fr/pub/pari/OLD/2.15/pari-${{ pari_version }}.tar.gz
-  sha256: c3545bfee0c6dfb40b77fb4bbabaf999d82e60069b9f6d28bcb6cf004c8c5c0f
+# PARI is taken from its own git repository at the pari-${{ pari_version }}
+# tag rather than from the release tarball: cypari publishes no sdist, so the
+# entry above cannot be a versioned url, and a recipe that mixes a git entry
+# with a url entry fails the "at least one source url must contain
+# ${{ version }}" lint rule.  The commit below is the pari-${{ pari_version }}
+# tag, so the source is pinned just as tightly as a sha256 would pin it.
+- git: https://pari.math.u-bordeaux.fr/git/pari.git
+  rev: e87796ac3acc76eab7a459c39c271b61a2b16fc3
   target_directory: pari-src
 
 build:
