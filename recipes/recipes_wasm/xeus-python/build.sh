@@ -43,7 +43,7 @@ $PREFIX/lib/python${PY_VER}/static/libHacl_Hash_MD5.a;\
 $PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA1.a;\
 $PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA2.a;\
 $PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA3.a;\
-$PREFIX/lib/python${PY_VER}/static/libpython$PY_VER.a;"
+$PREFIX/lib/libpython$PY_VER.a;"
 
 
 
