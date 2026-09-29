@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+OPENBLAS_LIB="${PREFIX}/lib/libopenblas.a"
+
+export CXXFLAGS="${CXXFLAGS:-} -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
+export LDFLAGS="${LDFLAGS:-} -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
+
+emcmake cmake . \
+    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+    -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DCMAKE_C_FLAGS="${CFLAGS:-}" \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-}" \
+    -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS:-}" \
+    -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS:-}" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_STATIC_LIBS=ON \
+    -DSUITESPARSE_USE_FORTRAN=OFF \
+    -DSUITESPARSE_USE_CUDA=OFF \
+    -DSUITESPARSE_USE_OPENMP=OFF \
+    -DSUITESPARSE_USE_PYTHON=OFF \
+    -DSUITESPARSE_DEMOS=OFF \
+    -DGRAPHBLAS_USE_JIT=OFF \
+    -DBLAS_FOUND=TRUE \
+    -DLAPACK_FOUND=TRUE \
+    -DBLAS_LIBRARIES="$OPENBLAS_LIB" \
+    -DLAPACK_LIBRARIES="$OPENBLAS_LIB" \
+    -DBLA_VENDOR=OpenBLAS \
+    -DSUITESPARSE_ENABLE_PROJECTS="all"
+
+emmake make -j"${CPU_COUNT:-8}"
+emmake make install
+
+# `install(TARGETS ...)` only installs the .js wrapper that Emscripten produces
+# for an executable, so copy the matching .wasm next to it. Without this
+# bin/suitesparse_mongoose cannot run.
+find . -name 'suitesparse_mongoose.wasm' -exec cp {} "${PREFIX}/bin/" \;
