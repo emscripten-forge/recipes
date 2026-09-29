@@ -1,54 +1,54 @@
 context:
   name: openssl
-  version: 3.5.8
+  version: 3.6.0
 
 build:
-  number: 1
+  number: 0
 
 source:
   url: https://www.openssl.org/source/${{ name }}-${{ version }}.tar.gz
-  sha256: a8f84a39918ec6415ce765d9b429d313ba97b8143169c172e734b9514464f5b2
+  sha256: b6a5f44b7eb69e3fa35dbf15524405b44837a481d43d81daddde3ff21fcbb8e9
 
 
 outputs:
 
-  - package:
-      name: libopenssl-static
-      version: ${{ version }}
-    build:
-      script: build.sh
+- package:
+    name: libopenssl-static
+    version: ${{ version }}
+  build:
+    script: build.sh
 
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("c") }}
+
+  tests:
+  - package_contents:
+      files:
+      - lib/libcrypto.a
+      - lib/libssl.a
+      - include/openssl/crypto.h
+      - include/openssl/ssl.h
+      - lib/cmake/OpenSSL/OpenSSLConfig.cmake
+
+  - script:
+    - generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+  - script:
+    - build_tests.sh
     requirements:
       build:
       - ${{ compiler("cxx") }}
-      - ${{ compiler("c") }}
-
-    tests:
-      - package_contents:
-          files:
-          - lib/libcrypto.a
-          - lib/libssl.a
-          - include/openssl/crypto.h
-          - include/openssl/ssl.h
-          - lib/cmake/OpenSSL/OpenSSLConfig.cmake
-
-      - script:
-        - generic-testing
-        requirements:
-          build:
-          - generic-testing
-
-      - script:
-        - build_tests.sh
-        requirements:
-          build:
-          - ${{ compiler("cxx") }}
-          - cmake
-          - make
-        files:
-          recipe:
-          - build_tests.sh
-          - tests/
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
   # NOTE, the shared build is dropped since we run into undefined symbols
 
 about:
@@ -67,4 +67,4 @@ extra:
   version-bot:
     # this recipe is for 3.5.x  (this is the longterm support version of openssl)
     # therefore dont bump to 3.6.x automatically
-    bump_constraint: "< 3.6.0"
+    bump_constraint: < 3.6.0
