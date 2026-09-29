@@ -20,6 +20,8 @@ FEATURES="csv|ipc|ipc_streaming|parquet|async|scan_lines|json|extract_jsonpath|c
 sed -i 's/serde_json = { workspace = true, optional = true }/serde_json = { workspace = true }/' crates/polars-python/Cargo.toml
 sed -E -i 's/"(dep:)?serde_json",//' crates/polars-python/Cargo.toml
 sed -E -i "/^  \"(${FEATURES})\",$/d" crates/polars-python/Cargo.toml py-polars/runtime/polars-runtime-32/Cargo.toml
+# tokio "net" pulls mio, which does not support wasm; polars does not use it
+sed -E -i '/^tokio = /s/"net", //' crates/polars-async/Cargo.toml crates/polars-core/Cargo.toml
 
 "${PYTHON}" -m pip install --no-deps --no-build-isolation . -vv
 
