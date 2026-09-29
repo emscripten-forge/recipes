@@ -2,10 +2,6 @@ context:
   name: libxml2
   version: 2.15.4
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   url: https://gitlab.gnome.org/GNOME/libxml2/-/archive/v${{ version }}/libxml2-v${{ version }}.tar.gz
   sha256: a569ee9c59eabb197a0d5047046d757ee14c86fb2d4a734555b633cb5584ad25
@@ -13,36 +9,111 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-  - ${{ compiler('c') }}
-  - cmake
-  - make
-  host:
-  - libzlib-static
+outputs:
 
-tests:
-- package_contents:
-    files:
-    - lib/libxml2.so
-    - include/libxml2/libxml/globals.h
-- script: generic-testing --allow-pthread  # libxml2 exports xmlInitThreads/xmlCleanupThreads as ABI stubs even with LIBXML2_WITH_THREADS=OFF; no actual pthread activity.
-  requirements:
-    build:
-    - generic-testing
-- script:
-  - build_tests.sh
+- staging:
+    name: libxml2-build
   requirements:
     build:
     - ${{ compiler('c') }}
     - cmake
-    - ninja
+    - make
+    host:
+    - libzlib
+    - libzlib-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Headers, cmake config, pkgconfig
+- package:
+    name: libxml2-dev
+    version: ${{ version }}
+  inherit: libxml2-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/cmake/
+      - lib/pkgconfig/
+  tests:
+  - package_contents:
+      files:
+      - include/libxml2/libxml/parser.h
+      - include/libxml2/libxml/xpath.h
+      - include/libxml2/libxml/tree.h
+      - lib/cmake/libxml2/libxml2-config.cmake
+      - lib/pkgconfig/libxml-2.0.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libxml2-static
+    version: ${{ version }}
+  inherit: libxml2-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    host:
+    - libzlib-static
     run:
-    - libzlib-static  # test writes .xml.gz using zlib's gzopen/gzwrite
-  files:
-    recipe:
+    - ${{ pin_subpackage('libxml2-dev', exact=True) }}
+    - ${{ pin_compatible('libzlib-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libxml2.a
+  - script: generic-testing --allow-pthread  # same ABI-stub story as the shared output
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libxml2
+    version: ${{ version }}
+  inherit: libxml2-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('libxml2-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libxml2', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libxml2.so
+  - script: generic-testing --allow-pthread  # libxml2 exports xmlInitThreads/xmlCleanupThreads as ABI stubs even with LIBXML2_WITH_THREADS=OFF; no actual pthread activity.
+    requirements:
+      build:
+      - generic-testing
+  - script:
     - build_tests.sh
-    - tests/
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - cmake
+      - ninja
+      run:
+      - ${{ pin_subpackage('libxml2-dev', exact=True) }}  # for libxml2-config.cmake
+      - libzlib-static  # test writes .xml.gz using zlib's gzopen/gzwrite
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+
+#==============================================================================#
 
 about:
   homepage: https://xmlsoft.org/
@@ -54,7 +125,7 @@ about:
     Though libxml2 is written in C a variety of language
     bindings make it available in other environments.
   documentation: https://xmlsoft.org/html/index.html
-  repository: https://git.gnome.org/browse/libxml2/
+  repository: https://gitlab.gnome.org/GNOME/libxml2
 
 extra:
   recipe-maintainers:

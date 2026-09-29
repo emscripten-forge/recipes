@@ -14,9 +14,13 @@ emcmake cmake -S tests -B build_tests \
 
 emmake ninja -C build_tests
 
-# When linking against the shared lib, node needs to locate it beside the test.
+# When linking against the shared libxml2, node needs to locate both it and
+# its NEEDED dylibs (libz.so) beside the test binary.
 if [ -f "${PREFIX}/lib/libxml2.so" ]; then
     cp "${PREFIX}/lib/libxml2.so" build_tests/
+fi
+if [ -f "${PREFIX}/lib/libz.so" ]; then
+    cp "${PREFIX}/lib/libz.so" build_tests/
 fi
 
 echo "Running libxml2 link tests..."
