@@ -1,0 +1,28 @@
+--- a/qtui/src/pythonmanager.cpp	2026-09-13 16:21:39.308126117 +0000
++++ b/qtui/src/pythonmanager.cpp	2026-09-13 16:24:02.339149688 +0000
+@@ -167,7 +167,7 @@
+ }
+ 
+ PythonConsole* PythonManager::launchPythonConsole(QWidget* parent,
+-        regina::Packet*, regina::Packet*) {
++        std::shared_ptr<regina::Packet>, std::shared_ptr<regina::Packet>) {
+     return scriptingDisabled(parent);
+ }
+ 
+--- a/qtui/src/packets/spatiallinkui.cpp	2026-09-13 16:21:39.318879934 +0000
++++ b/qtui/src/packets/spatiallinkui.cpp	2026-09-13 16:24:08.394375570 +0000
+@@ -108,7 +108,13 @@
+     buttonBox->addWidget(new QWidget(), 1);
+     content->addLayout(buttonBox);
+ #else
+-    python = 0;
++    // Regina's upstream code assigns "python = 0;" here, but no member
++    // (or local) variable called "python" exists outside the
++    // BUILD_PYTHON_BINDINGS branch above -- that branch declares its own
++    // local "python" via "auto*", so this line does not (and never did)
++    // refer to it.  This branch is only ever compiled when Python
++    // bindings are disabled (as is the case for this WASM build), so we
++    // simply drop the erroneous assignment.
+ #endif
+ 
+     layout->addLayout(content, 1);
