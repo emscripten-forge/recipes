@@ -265,14 +265,19 @@ rm -rf "${BUILD}/$(cat "${BUILD}/pybuilddir.txt" 2>/dev/null || true)" 2>/dev/nu
 rm -f "${BUILD}/pybuilddir.txt" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Collect extra static libraries from extension modules
+# Collect extra static libraries from extension modules.
+# Installing under $PREFIX/lib risks clobbering with system libraries such as
+# $PREFIX/lib/libexpat.a and $PREFIX/lib/libmpdec.a
 # ---------------------------------------------------------------------------
+PY_STATIC_LIBDIR="${PREFIX}/lib/python${PYMAJOR}.${PYMINOR}/static"
+mkdir -p "${PY_STATIC_LIBDIR}"
+
 for module in "${BUILD}/Modules"/*; do
   [ -d "${module}" ] || continue
-  cp "${module}"/*.a "${PREFIX}/lib/" 2>/dev/null || true
+  cp "${module}"/*.a "${PY_STATIC_LIBDIR}/" 2>/dev/null || true
 done
 
-cp ${BUILD}/Modules/_decimal/libmpdec/libmpdec.a $PREFIX/lib
+cp "${BUILD}/Modules/_decimal/libmpdec/libmpdec.a" "${PY_STATIC_LIBDIR}/"
 
 
 
