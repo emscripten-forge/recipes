@@ -18,6 +18,12 @@ CMAKE_COMMON_ARGS=(
     -DLIBXML2_WITH_PROGRAMS=OFF
     -DLIBXML2_WITH_ZLIB=ON
     -DZLIB_INCLUDE_DIR=$PREFIX/include
+    # Disable libiconv integration: cmake would otherwise auto-detect
+    # the sysroot's iconv and produce a libxml2.so that imports
+    # env.iconv_open / env.iconv_close / env.iconv. libxml2's built-in
+    # encoders cover UTF-8, UTF-16, and the ISO-8859-* series, which is
+    # what our downstream Python bindings need.
+    -DLIBXML2_WITH_ICONV=OFF
 )
 
 # ---- static pass ----
