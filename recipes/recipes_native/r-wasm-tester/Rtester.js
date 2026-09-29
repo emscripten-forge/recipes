@@ -76,17 +76,11 @@ var Module = {
       copyTree(hostFontsDir, "/fonts");
     }
 
-    // For RPY: mount Python stdlib and headers so PYTHONHOME="/" resolves correctly.
+    // For RPY: mount Python stdlib so PYTHONHOME="/" resolves correctly.
     if (useRpy) {
-      const prefixIncludeDir = path.join(process.env.PREFIX, "include");
       for (const entry of nodeFs.readdirSync(prefixLibDir, { withFileTypes: true })) {
         if (entry.isDirectory() && /^python\d/.test(entry.name)) {
           copyTree(path.join(prefixLibDir, entry.name), `/lib/${entry.name}`);
-        }
-      }
-      for (const entry of nodeFs.readdirSync(prefixIncludeDir, { withFileTypes: true })) {
-        if (entry.isDirectory() && /^python\d/.test(entry.name)) {
-          copyTree(path.join(prefixIncludeDir, entry.name), `/include/${entry.name}`);
         }
       }
     }
