@@ -1,0 +1,40 @@
+--- a/Python/emscripten_trampoline.c
++++ b/Python/emscripten_trampoline.c
+@@ -13,32 +13,12 @@
+     // JavaScript fallback trampoline
+     return wasmTable.get(func)(arg1, arg2, arg3);
+ }
+-// Try to replace the JS definition of _PyEM_TrampolineCall_inner with a wasm
+-// version.
++// Disable WASM-GC trampoline setup. Patches 0006/0007 stub
++// __builtin_wasm_test_function_pointer_signature to always return true on
++// Emscripten < 4.0.12, so the wasm-gc trampoline traps with
++// "function signature mismatch". Keep the JS fallback above.
+ (function () {
+-    // Starting with iOS 18.3.1, WebKit on iOS has an issue with the garbage
+-    // collector that breaks the call trampoline. See #130418 and
+-    // https://bugs.webkit.org/show_bug.cgi?id=293113 for details.
+-    let isIOS = globalThis.navigator && (
+-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+-        // Starting with iPadOS 13, iPads might send a platform string that looks like a desktop Mac.
+-        // To differentiate, we check if the platform is 'MacIntel' (common for Macs and newer iPads)
+-        // AND if the device has multi-touch capabilities (navigator.maxTouchPoints > 1)
+-        (navigator.platform === 'MacIntel' && typeof navigator.maxTouchPoints !== 'undefined' && navigator.maxTouchPoints > 1)
+-    );
+-    if (isIOS) {
+-        return;
+-    }
+-    try {
+-        const trampolineModule = getWasmTrampolineModule();
+-        const trampolineInstance = new WebAssembly.Instance(trampolineModule, {
+-            env: { __indirect_function_table: wasmTable, memory: wasmMemory },
+-        });
+-        _PyEM_TrampolineCall_inner = trampolineInstance.exports.trampoline_call;
+-    } catch (e) {
+-        // Compilation error due to missing wasm-gc support, fall back to JS
+-        // trampoline
+-    }
++    return;
+ })();
+ );
+ 

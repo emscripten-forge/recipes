@@ -2,82 +2,216 @@ context:
   version: 3.14.3
   name: python
   ver2: '3.14'
-  ver2nd: ${{ version | version_to_buildstring}}
-  build_number: 0
+  ver2nd: ${{ version | version_to_buildstring }}
+  build_number: 1
   abi_tag: cp${{ ver2nd }}
 
-package:
-  name: python
-  version: ${{ version }}
+build:
+  number: ${{ build_number }}
 
 source:
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
   sha256: a97d5549e9ad81fe17159ed02c68774ad5d266c72f8d9a0b5a9c371fe85d902b
   patches:
-  - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
   - patches/0006-Use-emcc-for-emscripten_trampoline_inner.wasm.patch
   - patches/0007-Compat-for-missing-builtin_wasm_test_function_pointer_signature.patch
   - patches/0009-wasm_assets-allow-sysconfig-data-path-for-cross.patch
-  - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
+  #  - patches/0008-Disable-HACL-SIMD-for-Emscripten.patch
+  # - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
   - patches/0011-disable-uuid-generate-time-safe-on-emscripten.patch
-build:
-  number: ${{ build_number }}
-  string: h_${{ hash }}_${{build_number}}_${{ abi_tag }}
+  - patches/0012-hacl_no_simd_for_wasm.patch
+  # only when target_platform is emscripten-wasm32
+  - if: target_platform == "emscripten-wasm32"
+    then:
+      - patches/0005-Fix-LONG_BIT-constant-to-be-always-32bit.patch
+      # Force JS trampoline; avoid 0007 stub traps (function signature mismatch).
+      - patches/0015-force-js-trampoline-on-emscripten-lt-4.0.12.patch
+  - if: target_platform == "emscripten-wasm64"
+    then:
+      - patches/0014-trampoline_wasm64_bigint_return.patch
+  - patches/0013-remove_not_needed_emscripten_syscalls.patch
 
-  files:
-    exclude:
-    - '**/*.ini'
-    - '**/ensurepip/**'
-    - '**/idlelib/**'
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
-requirements:
-  build:
-  - ${{ compiler("cxx") }}
-  - ${{ compiler("c") }}
-  - make
-  - autoconf
-  - nodejs
-  - ccache
-  - f2c
-  - pkg-config
-  - swig
-  - make
-  - cmake
-  - pkg-config
-  - texinfo
-  - autoconf
-  - automake
-  - libtool
-  - patch   # only needed on MacOS
-  - sed   # only needed on MacOS
-  - wget
-  - python=3.14
-  host:
-  - openssl
-  - libffi
-  - liblzma
-  - zstd
-  - libuuid
-  run:
-  - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
-  run_exports:
-    weak:
-    - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
+outputs:
+  - staging:
+      name: python-build
+
+    build:
+      script: build.sh
+
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - ${{ compiler("c") }}
+      - make
+      - autoconf
+      - nodejs
+      - ccache
+      - f2c
+      - pkg-config
+      - swig
+      - make
+      - cmake
+      - pkg-config
+      - texinfo
+      - autoconf
+      - automake
+      - libtool
+      - patch   # only needed on MacOS
+      - sed   # only needed on MacOS
+      - wget
+      - python=3.14
+      host:
+      - openssl <4.0.0a0
+      - libffi
+      - liblzma
+      - zstd
+      - libuuid
+      - sqlite
+      - bzip2
+      - zlib
+  - package:
+      name: libpython-static
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+
+      files:
+        include:
+          - "**/*.a"
+          - '**/*.h'
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - ${{ compiler("c") }}
+      - make
+      - autoconf
+      - nodejs
+      - ccache
+      - f2c
+      - pkg-config
+      - swig
+      - make
+      - cmake
+      - pkg-config
+      - texinfo
+      - autoconf
+      - automake
+      - libtool
+      - patch   # only needed on MacOS
+      - sed   # only needed on MacOS
+      - wget
+      - python=3.14
+      host:
+      - openssl <4.0.0a0
+      - libffi
+      - liblzma
+      - zstd
+      - libuuid
+      - sqlite
+      - bzip2
+      - zlib
+      run:
+      - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
+      - ${{ pin_compatible("openssl", lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("libffi",     lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("liblzma",    lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("zstd",       lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("libuuid",    lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("sqlite",  lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("bzip2",   lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("zlib",    lower_bound='x.x.x', upper_bound='x.x.x') }}
+      run_exports:
+        weak:
+        - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
+
+    tests:
+      - script:
+        - test -f $PREFIX/include/python${{ver2}}/Python.h
+        - test -f $PREFIX/lib/libpython${{ver2}}.a
+        - test -f $PREFIX/lib/libHacl_Hash_BLAKE2.a
+        - test -f $PREFIX/lib/libHacl_Hash_MD5.a
+        - test -f $PREFIX/lib/libHacl_Hash_SHA1.a
+        - test -f $PREFIX/lib/libHacl_Hash_SHA2.a
+        - test -f $PREFIX/lib/libHacl_Hash_SHA3.a
+        - test -f $PREFIX/lib/libexpat.a
+        - test -f $PREFIX/lib/libmpdec.a
+        - test ! -f $PREFIX/lib/python${{ver2}}/enum.py
+        - test ! -f $PREFIX/lib/python${{ver2}}/ast.py
+        - test ! -f $PREFIX/bin/python${{ver2}}
+        # it seems that the thread like symbols are always in even with -sUSE_PTHREADS=0
+
+  - package:
+      name: python
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+
+      files:
+        exclude:
+        - '**/*.ini'
+        - '**/ensurepip/**'
+        - '**/idlelib/**'
+        - '**/__pycache__/**'
+        - '**/*.pyc'
+        - "**/*.a"
+        - "**/*.h"
+
+      python:
+        skip_pyc_compilation:
+        - '**/*.py'
+
+    requirements:
+      run:
+      - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
+      run_exports:
+        weak:
+        - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
+
+    tests:
+      - script:
+        - test ! -f $PREFIX/lib/libpython${{ver2}}.a
+        - test ! -f $PREFIX/include/python${{ver2}}/Python.h
+        - test -f $PREFIX/lib/python${{ver2}}/enum.py
+        - test -f $PREFIX/lib/python${{ver2}}/ast.py
 
 
+  - package:
+      name: python-dev
+      version: ${{ version }}
+    requirements:
+      run:
+      - ${{pin_subpackage('python', lower_bound='x.x.x', upper_bound='x.x.x')}}
+      - ${{pin_subpackage('libpython-static', lower_bound='x.x.x', upper_bound='x.x.x')}}
 
-tests:
-- script:
-  - test -f $PREFIX/include/python${{ver2}}/Python.h
-  - test -f $PREFIX/lib/python${{ver2}}/enum.py
-  - test -f $PREFIX/lib/python${{ver2}}/ast.py
-  - test -f $PREFIX/lib/libpython${{ver2}}.a
-  - test -f $PREFIX/bin/python${{ver2}}
+    tests:
+      - script:
+        - test -f $PREFIX/include/python${{ver2}}/Python.h
+        - test -f $PREFIX/lib/libpython${{ver2}}.a
+        - test -f $PREFIX/lib/python${{ver2}}/enum.py
+        - test -f $PREFIX/lib/python${{ver2}}/ast.py
+      - script:
+        - build_tests.sh
+        requirements:
+          build:
+          - ${{ compiler("c") }}
+          - make
+          - python=${{ver2}}
+          - nodejs
+        files:
+          recipe:
+          - build_tests.sh
+          - test_main.cpp
+          - node_test_wrapper.js
 
+    
 about:
   license: Python-2.0
   license_file: LICENSE
@@ -91,6 +225,7 @@ about:
     on both a small and large scale.
   documentation: https://github.com/python/pythondotorg/blob/master/docs/source/index.rst
   homepage: https://www.python.org/
+
 extra:
   recipe-maintainers:
   - DerThorsten
