@@ -1,0 +1,80 @@
+DB Browser's SqliteTableModel loads rows via a RowLoader that inherits
+QThread and uses std::async, std::mutex and std::condition_variable to
+run row fetches on a worker thread. Qt-wasm doesn't ship pthreads, so
+QThread::run() never fires and std::async's async policy is a no-op:
+opening a table just shows nothing because rows are queued to a worker
+that never runs.
+
+On wasm, run everything synchronously on the calling thread. Signals
+still fire through Qt::QueuedConnection so UI updates happen on the
+next event-loop tick.
+
+--- a/src/RowLoader.cpp
++++ b/src/RowLoader.cpp
+@@ -51,6 +51,14 @@ void RowLoader::setQuery (const QString& new_query, const QString& newCountQuery
+
+ void RowLoader::triggerRowCountDetermination(int token)
+ {
++#ifdef __EMSCRIPTEN__
++    // Wasm without pthreads: count synchronously on the calling thread.
++    std::unique_lock<std::mutex> lk(m);
++    nosync_ensureDbAccess();
++    auto nrows = countRows();
++    if (nrows >= 0)
++        emit rowCountComplete(token, nrows);
++#else
+     std::unique_lock<std::mutex> lk(m);
+
+     num_tasks++;
+@@ -65,6 +73,7 @@ void RowLoader::triggerRowCountDetermination(int token)
+         std::lock_guard<std::mutex> lk2(m);
+         nosync_taskDone();
+     });
++#endif
+ }
+
+ void RowLoader::nosync_ensureDbAccess ()
+@@ -117,6 +126,13 @@ int RowLoader::countRows() const
+
+ void RowLoader::triggerFetch (int token, size_t row_begin, size_t row_end)
+ {
++#ifdef __EMSCRIPTEN__
++    // Wasm without pthreads: fetch synchronously on the calling thread.
++    std::unique_lock<std::mutex> lk(m);
++    nosync_ensureDbAccess();
++    Task t(*this, token, row_begin, row_end);
++    process(t);
++#else
+     std::unique_lock<std::mutex> lk(m);
+
+     if(pDb) {
+@@ -137,6 +153,7 @@ void RowLoader::triggerFetch (int token, size_t row_begin, size_t row_end)
+
+     lk.unlock();
+     cv.notify_all();
++#endif
+ }
+
+ void RowLoader::nosync_taskDone()
+@@ -175,6 +192,10 @@ bool RowLoader::readingData () const
+
+ void RowLoader::waitUntilIdle () const
+ {
++#ifdef __EMSCRIPTEN__
++    // Wasm sync path: fetches complete before triggerFetch returns.
++    return;
++#endif
+     if(row_counter.valid())
+         row_counter.wait();
+     std::unique_lock<std::mutex> lk(m);
+@@ -183,6 +204,10 @@ void RowLoader::waitUntilIdle () const
+
+ void RowLoader::run ()
+ {
++#ifdef __EMSCRIPTEN__
++    // Wasm sync path: no worker thread body; triggerFetch does the work.
++    return;
++#endif
+     for(;;)
+     {
+         std::unique_lock<std::mutex> lk(m);

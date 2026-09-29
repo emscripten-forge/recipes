@@ -1,0 +1,51 @@
+Qt-wasm's shadow-DOM screen container never listens for browser focus
+loss, so when the tab loses focus (user clicks into the URL bar, uses
+a browser shortcut, switches tabs), the plugin still believes its
+window is active. On return, QWasmWindow::pointerEventForWindow
+short-circuits the call to requestActivate() because Qt thinks the
+window is already focused, so the invisible m_focusHelper is never
+re-focused and all subsequent keystrokes are lost until something
+forces a full activation cycle (e.g. opening a menu popup).
+
+Install a blur listener on window: when the browser tab actually loses
+focus, clear Qt's focus window via handleFocusWindowChanged(nullptr).
+The next PointerDown will then take the reactivation path and refocus
+m_focusHelper as intended.
+
+Listening on window.blur (rather than focusout on the shadow container)
+is deliberate: focusout on the shadow host fires spuriously during
+in-app focus transitions (menu popups opening, dialogs showing, etc.)
+which would clear Qt's focus in the middle of a legitimate activation
+sequence and leave popups marked "inactive".
+
+--- a/src/plugins/platforms/wasm/qwasmscreen.h
++++ b/src/plugins/platforms/wasm/qwasmscreen.h
+@@ -88,6 +88,7 @@ private:
+     QWasmCursor m_cursor;
+     static const char *m_canvasResizeObserverCallbackContextPropertyName;
+     std::unique_ptr<qstdweb::EventCallback> m_onContextMenu;
++    std::unique_ptr<qstdweb::EventCallback> m_onWindowBlur;
+ };
+
+ QT_END_NAMESPACE
+--- a/src/plugins/platforms/wasm/qwasmscreen.cpp
++++ b/src/plugins/platforms/wasm/qwasmscreen.cpp
+@@ -71,6 +71,18 @@ QWasmScreen::QWasmScreen(const emscripten::val &containerOrCanvas)
+     m_onContextMenu = std::make_unique<qstdweb::EventCallback>(
+             m_shadowContainer, "contextmenu",
+             [](emscripten::val event) { event.call<void>("preventDefault"); });
++    // Reset Qt's focus-window state when the browser tab loses focus
++    // (user clicks the URL bar, switches tabs, uses a browser shortcut).
++    // Without this, Qt still thinks its window is active on return and
++    // PointerDown short-circuits the reactivation path that focuses
++    // m_focusHelper, leaving the window keyboard-dead until a menu
++    // popup forces a real activation cycle.
++    m_onWindowBlur = std::make_unique<qstdweb::EventCallback>(
++            emscripten::val::global("window"), "blur",
++            [](emscripten::val event) {
++                Q_UNUSED(event);
++                QWindowSystemInterface::handleFocusWindowChanged(nullptr);
++            });
+     // Create "specialHTMLTargets" mapping for the canvas - the element  might be unreachable based
+     // on its id only under some conditions, like the target being embedded in a shadow DOM or a
+     // subframe.

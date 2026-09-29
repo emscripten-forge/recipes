@@ -306,6 +306,8 @@ if(EMSCRIPTEN)
     target_link_options(M2-binary PRIVATE
       "-sNODERAWFS=0"
       "-sENVIRONMENT=web,worker"
+      "-lidbfs.js"
+      "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,PATH,callMain"
     )
   else()
     target_link_options(M2-binary PRIVATE
