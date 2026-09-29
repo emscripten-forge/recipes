@@ -36,13 +36,13 @@ $PREFIX/lib/libzstd.a;\
 $PREFIX/lib/libssl.a;\
 $PREFIX/lib/libcrypto.a;\
 $PREFIX/lib/liblzma.a;\
-$PREFIX/lib/libexpat.a;\
-$PREFIX/lib/libmpdec.a;\
-$PREFIX/lib/libHacl_Hash_BLAKE2.a;\
-$PREFIX/lib/libHacl_Hash_MD5.a;\
-$PREFIX/lib/libHacl_Hash_SHA1.a;\
-$PREFIX/lib/libHacl_Hash_SHA2.a;\
-$PREFIX/lib/libHacl_Hash_SHA3.a;\
+$PREFIX/lib/python${PY_VER}/static/libexpat.a;\
+$PREFIX/lib/python${PY_VER}/static/libmpdec.a;\
+$PREFIX/lib/python${PY_VER}/static/libHacl_Hash_BLAKE2.a;\
+$PREFIX/lib/python${PY_VER}/static/libHacl_Hash_MD5.a;\
+$PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA1.a;\
+$PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA2.a;\
+$PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA3.a;\
 $PREFIX/lib/libpython$PY_VER.a;"
 
 
