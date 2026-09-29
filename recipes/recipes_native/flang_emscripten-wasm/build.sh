@@ -19,7 +19,7 @@ mkdir _build
 cd _build
 
 cmake -G Ninja \
-    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DCMAKE_PREFIX_PATH=$PREFIX \
