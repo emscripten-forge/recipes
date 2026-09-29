@@ -22,8 +22,12 @@ requirements:
 tests:
 - package_contents:
     files:
-    - lib/libxml2.a
+    - lib/libxml2.so
     - include/libxml2/libxml/globals.h
+- script: generic-testing --allow-pthread  # libxml2 exports xmlInitThreads/xmlCleanupThreads as ABI stubs even with LIBXML2_WITH_THREADS=OFF; no actual pthread activity.
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://xmlsoft.org/
@@ -40,3 +44,7 @@ about:
 extra:
   recipe-maintainers:
   - IsabelParedes
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
