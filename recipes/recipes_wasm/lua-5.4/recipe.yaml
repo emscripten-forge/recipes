@@ -1,0 +1,65 @@
+# version is hard coded since we want to prevent to bot from updating this pkg
+context:
+  name: lua
+
+package:
+  name: ${{ name }}-static
+  version: 5.4.9
+
+source:
+- url: https://www.lua.org/ftp/lua-5.4.9.tar.gz
+  sha256: 2335b6c582a52654f94612bf10d2f4672805d05329aa6568b1d8cd9e5c6fb8e6
+  patches:
+  - luaconf.patch
+
+
+- path: CMakeLists.txt
+
+build:
+  number: 1
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - make
+
+tests:
+- script: |
+    test -f $PREFIX/lib/liblua.a
+    test ! -f $PREFIX/lib/liblua.so
+    OUTPUT=$(run_modularized $PREFIX/bin/lua.js -e "a=1+1;print(a)")
+    if [[ "$OUTPUT" != "2" ]]; then
+      echo "Unexpected output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/luac.js -v)
+    echo $OUTPUT
+    if [[ "$OUTPUT" != *"${{ version }}"* ]]; then
+      echo "Unexpected output."
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
+
+- script:
+    - generic-testing
+  requirements:
+    build:
+    - generic-testing
+    
+about:
+  summary: Lua is a powerful, fast, lightweight, embeddable scripting language
+  license: MIT
+  license_file: doc/readme.html
+  homepage: http://www.lua.org/
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - JohanMabille

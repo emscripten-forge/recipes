@@ -1,0 +1,51 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d6294f7..b6f94eb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -75,13 +75,13 @@ if(EMSCRIPTEN)
+     SET(XEUS_LUA_BUILD_STATIC ON)
+     SET(XEUS_LUA_BUILD_SHARED OFF)
+     SET(XEUS_LUA_BUILD_EXECUTABLE OFF)
+-    SET(XEUS_LUA_USE_SHARED_XEUS OFF)
++    SET(XEUS_LUA_USE_SHARED_XEUS ON)
+     SET(XEUS_LUA_USE_SHARED_XEUS_LUA OFF)
+     SET(XEUS_LUA_BUILD_TESTS OFF)
+     # SET(XLUA_WITH_XCANVAS ON)
+     # SET(XLUA_WITH_XWIDGETS ON)
+-    SET(XLUA_USE_SHARED_XWIDGETS OFF)
+-    SET(XLUA_USE_SHARED_XCANVAS OFF)
++    SET(XLUA_USE_SHARED_XWIDGETS ON)
++    SET(XLUA_USE_SHARED_XCANVAS ON)
+ endif()
+ 
+ # Dependencies
+@@ -96,12 +96,12 @@ set(Lua_REQUIRED_VERSION 5.4.0)
+ 
+ find_package(xeus ${xeus_REQUIRED_VERSION} REQUIRED)
+ 
++message(STATUS "FIND LUA ${Lua_REQUIRED_VERSION}")
+ if(NOT XEUS_LUA_USE_LUAJIT)
+     find_package(Lua ${Lua_REQUIRED_VERSION} REQUIRED)
+ else()
+     find_package(LuaJIT  REQUIRED)
+ endif()
+-
+ # Flags
+ # =====
+ include(CheckCXXCompilerFlag)
+@@ -287,9 +287,15 @@ macro(xeus_lua_create_target target_name linkage output_name)
+                                $<BUILD_INTERFACE:${XEUS_LUA_INCLUDE_DIR}>
+                                $<INSTALL_INTERFACE:include>)
+ 
++    target_include_directories(${target_name}
++                               PRIVATE
++                               ${CMAKE_CURRENT_SOURCE_DIR}/src)
++
+     if (XEUS_LUA_USE_SHARED_XEUS)
+         set(XEUS_LUA_XEUS_TARGET xeus)
+     else ()
++        # throw error
++        message(FATAL_ERROR "Shared xeus MUST BE USED")
+         set(XEUS_LUA_XEUS_TARGET xeus-static)
+     endif ()
+ 
