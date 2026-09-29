@@ -45,10 +45,7 @@ namespace {
 #ifndef POLYMAKE_WASM_INSTALL_ARCH
 #define POLYMAKE_WASM_INSTALL_ARCH "/polymake/lib"
 #endif
-// build.sh derives this from the target perl's own archlib and privlib, because
-// which of the two holds a given core module is a decision of the perl package, not
-// something to guess: lib.pm and Config.pm sit in the architecture-dependent tree
-// while most of the pure-perl library sits in the other one.
+// build.sh derives this from the target perl's archlib/privlib.
 #ifndef POLYMAKE_WASM_PERL5LIB
 #define POLYMAKE_WASM_PERL5LIB "/polymake/perl5/core_perl"
 #endif
@@ -60,20 +57,6 @@ const char* env_or(const char* name, const char* fallback)
 {
    const char* v = std::getenv(name);
    return v && *v ? v : fallback;
-}
-
-/* The target perl's compiled-in @INC records the prefix of the machine the perl
- * package was built on, which does not exist inside the wasm filesystem image.
- * PERL5LIB is consulted before those defaults, so pointing it at the preloaded
- * tree is what makes `use strict` and friends resolvable.  polymake adds its own
- * perllib and perlx directories itself, from pm::perl::Main. */
-void prepare_environment()
-{
-   setenv("PERL5LIB", env_or("POLYMAKE_WASM_PERL5LIB", POLYMAKE_WASM_PERL5LIB), 0);
-   // polymake writes nothing outside the image when the config path is "none";
-   // "user" would start the interactive configuration wizard on first run, which
-   // cannot be answered in a non-interactive wasm runtime.
-   setenv("POLYMAKE_CONFIG_PATH", "none", 0);
 }
 
 } // namespace
@@ -88,14 +71,16 @@ int polymake_init(const char* application)
    if (interp)
       return 0;
    try {
-      prepare_environment();
+      // Points @INC at the preloaded perl5 tree instead of the build machine's.
+      setenv("PERL5LIB", env_or("POLYMAKE_WASM_PERL5LIB", POLYMAKE_WASM_PERL5LIB), 0);
+      // "none" skips the interactive first-run configuration wizard.
+      setenv("POLYMAKE_CONFIG_PATH", "none", 0);
       interp.reset(new polymake::Main(env_or("POLYMAKE_CONFIG_PATH", "none"),
                                   env_or("POLYMAKE_WASM_INSTALL_TOP", POLYMAKE_WASM_INSTALL_TOP),
                                   env_or("POLYMAKE_WASM_INSTALL_ARCH", POLYMAKE_WASM_INSTALL_ARCH)));
       interp->shell_enable();
       if (application && *application) {
-         // AnyString keeps a pointer into whatever string it was built from, so
-         // this has to outlive the call rather than be a temporary
+         // AnyString points into this, so it must outlive the call.
          const std::string app_name(application);
          interp->set_application(app_name);
       }
@@ -107,6 +92,12 @@ int polymake_init(const char* application)
    }
 }
 
+// Lazy-init guard for entry points that don't take an application name.
+bool ensure_interp()
+{
+   return interp || polymake_init(nullptr) == 0;
+}
+
 /* Execute one piece of polymake/perl code, as if typed into the interactive
  * shell.  Returns 1 when the input was parsed and executed, 0 when it was
  * incomplete or unparsable.  Use the accessors below to collect the output. */
@@ -116,7 +107,7 @@ int polymake_execute(const char* input)
    last_stdout.clear();
    last_stderr.clear();
    last_error.clear();
-   if (!interp && polymake_init(nullptr) != 0)
+   if (!ensure_interp())
       return 0;
    try {
       const auto result = interp->shell_execute(input ? input : "");
@@ -138,7 +129,7 @@ EMSCRIPTEN_KEEPALIVE
 const char* polymake_greeting()
 {
    static std::string greeting;
-   if (!interp && polymake_init(nullptr) != 0)
+   if (!ensure_interp())
       return last_error.c_str();
    greeting = interp->greeting();
    return greeting.c_str();
@@ -165,12 +156,8 @@ int run_string(const std::string& code)
    return ok ? 0 : 1;
 }
 
-/* Ask the running interpreter which application is current, the same way a
- * user could by typing `print $application->name;` -- $application is
- * polymake's own documented alias for the Core::Application object that is
- * "current" at any moment, updated whenever application('NAME') runs. Falls
- * back to the last known name if the query itself fails, so a hiccup here
- * never breaks the prompt or reverts it to the startup default. */
+// $application is polymake's own alias for the current Core::Application
+// object; falls back to the last known name if the query itself fails.
 std::string current_application_name(const std::string& fallback)
 {
    if (polymake_execute("print $application->name;")) {
@@ -183,37 +170,29 @@ std::string current_application_name(const std::string& fallback)
    return fallback;
 }
 
-/* shell_execute returns {false, "", "", ""} for input which is syntactically
- * correct but not yet complete (an open block, an unfinished statement).  Keep
- * buffering in that case so that multi-line input works the same way it does in
- * the native interactive shell. */
+// shell_execute returns {false, "", "", ""} for input that's syntactically
+// correct but incomplete; keep buffering until a full statement is seen.
 int repl(const std::string& application)
 {
    std::string buffer, line;
    std::string prompt_app = application;
    std::set<std::string> credits_shown;
 
-   // Main::greeting() supplies polymake's own version/copyright/license text.
-   // The native interactive frontend prefixes it with "Welcome to " and adds
-   // this short shell hint; keep those presentation details in the WASM driver.
    std::cout << "Welcome to " << polymake_greeting() << '\n'
-             << "Press F1 or enter 'help;' for basic instructions.\n";
+             << "Press F1 or enter 'help;' for basic instructions.\n"
+             << std::flush;
 
    for (;;) {
       if (buffer.empty()) {
-         // Refreshed once per top-level prompt: picks up `application 'X';`
-         // (or any other way the session's current application may have
-         // changed) without having to parse the user's input for it.
+         // Picks up `application 'X';` without parsing the user's input.
          prompt_app = current_application_name(prompt_app);
 
-         // Mirrors Polymake::Core::Shell::get_line (perllib/Polymake/Core/
-         // Shell.pm)
+         // Mirrors Core::Shell::get_line (Shell.pm): show each application's
+         // credits banner once, the first time its prompt is shown.
          if (credits_shown.insert(prompt_app).second) {
             run_string("show_credits(1);");
-            // Shell.pm additionally warns here if the application has rules
-            // that failed to auto-configure. show_unconfigured prints
-            // nothing at all when there are none, so a non-empty result is
-            // an accurate stand-in for that internal flag.
+            // show_unconfigured prints nothing when there's nothing to report,
+            // so a non-empty result stands in for Shell.pm's internal flag.
             if (polymake_execute("show_unconfigured;") && !last_stdout.empty()) {
                std::cout <<
                   "\nWarning: some rulefiles could not be configured automatically\n"
@@ -239,21 +218,10 @@ int repl(const std::string& application)
       if (incomplete)
          continue;
       report();
+      std::cout << '\n';
       buffer.clear();
    }
    return 0;
-}
-
-void usage(const char* argv0)
-{
-   std::cerr <<
-      "usage: " << argv0 << " [options] [script.pl [args...]]\n"
-      "  -e CODE           execute CODE and exit\n"
-      "  --script FILE     execute the polymake script FILE and exit\n"
-      "  -A, --application NAME\n"
-      "                    select the application to start in (default: polytope)\n"
-      "  -h, --help        this message\n"
-      "With no arguments a read-eval-print loop is started on stdin.\n";
 }
 
 } // namespace
@@ -271,13 +239,10 @@ int main(int argc, char** argv)
          script = argv[++i];
       } else if ((arg == "-A" || arg == "--application") && i + 1 < argc) {
          application = argv[++i];
-      } else if (arg == "-h" || arg == "--help") {
-         usage(argv[0]);
-         return 0;
       } else if (!arg.empty() && arg[0] != '-' && script.empty() && code.empty()) {
          script = arg;
       } else {
-         usage(argv[0]);
+         std::cerr << "polymake: unrecognized argument: " << arg << std::endl;
          return 2;
       }
    }
