@@ -1,0 +1,205 @@
+#!/usr/bin/env bash
+# openjdk21-wasm-link -- link OpenJDK 21 (Zero) and a Java program into a
+# WebAssembly program for the browser (default) or node.
+#
+#   openjdk21-wasm-link -o out/app.html --app build/app.jar \
+#       --arg -jar --arg /app/app.jar
+#
+# Output: <name>.js/.wasm/.data (+ <name>.html for the browser, from the kit's
+# shell.html). The page needs cross-origin isolation (COOP/COEP headers) for
+# SharedArrayBuffer; share/openjdk21-wasm/serve.py serves a directory that way.
+#
+# Options:
+#   -o FILE             output (.html or .js)                        [required]
+#   --app SRC[@DEST]    copy a host file/dir into the virtual file system
+#                       (default DEST: /app/<basename>); repeatable
+#   --arg ARG           default java command-line argument; repeatable.
+#                       node: argv overrides; browser: ?args=a,b overrides
+#   --env NAME=VALUE    environment variable for the program; repeatable.
+#                       browser: ?env=NAME=VALUE,... adds more
+#   --headless          no display: libawt_headless, no x11.wasm
+#   --node              build for node (exit when main returns); implies
+#                       --headless
+#   --max-memory MB     maximum wasm memory (default 2048)
+#   --pool N            pre-started pthread workers (default 12)
+#   --opt LEVEL         emcc optimisation level for the link (default -O2)
+#   --                  everything after is passed to emcc
+set -euo pipefail
+
+usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit "${1:-0}"; }
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PREFIX_DIR="$(cd "$HERE/.." && pwd)"
+NATIVE="$PREFIX_DIR/lib/wasm-native"
+KIT="$PREFIX_DIR/share/openjdk21-wasm"
+JDK="$PREFIX_DIR/jdk-wasm"
+X11="$PREFIX_DIR/share/x11-wasm"
+
+out=""; headless=0; node=0; max_mb=2048; pool=12; opt=-O2
+apps=(); jargs=(); jenv=(); extra=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -o) out=$2; shift 2 ;;
+    --app) apps+=("$2"); shift 2 ;;
+    --arg) jargs+=("$2"); shift 2 ;;
+    --env) jenv+=("$2"); shift 2 ;;
+    --headless) headless=1; shift ;;
+    --node) node=1; headless=1; shift ;;
+    --max-memory) max_mb=$2; shift 2 ;;
+    --pool) pool=$2; shift 2 ;;
+    --opt) opt=$2; shift 2 ;;
+    -h|--help) usage 0 ;;
+    --) shift; extra=("$@"); break ;;
+    *) echo "openjdk21-wasm-link: unknown option $1" >&2; usage 2 ;;
+  esac
+done
+[ -n "$out" ] || usage 2
+command -v emcc >/dev/null || { echo "openjdk21-wasm-link: emcc not on PATH" >&2; exit 1; }
+
+case "$out" in
+  *.html) html=1; js="${out%.html}.js" ;;
+  *) html=0; js="$out" ;;
+esac
+# node: emcc's output becomes <name>.core.js behind a small <name>.js that
+# runs it from its own directory -- the preloaded .data file is otherwise
+# looked up relative to the current directory. (The program itself sees only
+# the virtual file system, so the host cwd does not matter to it.)
+if [ "$node" = 1 ]; then
+  node_entry="$js"
+  js="${js%.js}.core.js"
+fi
+mkdir -p "$(dirname "$js")"
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+
+# --- which archives -----------------------------------------------------------
+# libjvm and java.base go in whole (hotspot relies on static initialisers);
+# the rest is pulled in through the symbol table. Exactly one AWT toolkit:
+# awt_xawt and awt_headless define the same entry points.
+base=(libjvm.a libjava.a libjimage.a libzip.a libnio.a libnet.a libverify.a)
+# The JDWP debugger agent needs sockets and redefines helpers that libjava
+# already has. (libjli stays: libinstrument reads agent jar manifests with it.)
+skip=" libffi.a libjdwp.a libdt_socket.a "
+if [ "$headless" = 1 ]; then
+  skip+=" libawt_xawt.a libjawt.a libsplashscreen.a "
+else
+  skip+=" libawt_headless.a "
+fi
+whole=(); rest=()
+for a in "${base[@]}"; do
+  [ -f "$NATIVE/$a" ] && whole+=("$NATIVE/$a")
+done
+for f in "$NATIVE"/lib*.a; do
+  b=$(basename "$f")
+  case " ${base[*]} $skip " in *" $b "*) continue ;; esac
+  rest+=("$f")
+done
+
+# --- launcher and symbol table ------------------------------------------------
+emcc -c -O2 -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm \
+  -I"$KIT/include" "$KIT/jvm-main.c" -o "$work/jvm-main.o"
+bash "$KIT/gen-symbols.sh" "$work/symbols.c" "${whole[@]}" "${rest[@]}"
+emcc -c -O1 -pthread "$work/symbols.c" -o "$work/symbols.o"
+
+# default arguments (node: only when none are given on the command line;
+# browser: unless the page URL has ?args=...)
+{
+  printf 'var __jvmDefaultArgs = ['
+  sep=""
+  for a in "${jargs[@]+"${jargs[@]}"}"; do
+    printf '%s%s' "$sep" "$(printf '%s' "$a" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()), end="")')"
+    sep=","
+  done
+  printf '];\nvar __jvmDefaultEnv = ['
+  sep=""
+  for a in "${jenv[@]+"${jenv[@]}"}"; do
+    printf '%s%s' "$sep" "$(printf '%s' "$a" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()), end="")')"
+    sep=","
+  done
+  printf '];\n'
+  cat <<'EOF'
+Module['preRun'] = [].concat(Module['preRun'] || [], function () {
+  var vars = __jvmDefaultEnv.slice();
+  if (typeof location === 'object' && location.search) {
+    var e = new URLSearchParams(location.search).get('env');
+    if (e) vars = vars.concat(e.split(','));
+  }
+  vars.forEach(function (kv) {
+    var i = kv.indexOf('=');
+    if (i > 0) ENV[kv.slice(0, i)] = kv.slice(i + 1);
+  });
+});
+if (!Module['arguments']) {
+  var __jvmArgs = __jvmDefaultArgs;
+  if (typeof process === 'object' && process.argv && process.argv.length > 2) {
+    __jvmArgs = null;  // node: use the real command line
+  } else if (typeof location === 'object' && location.search) {
+    var __q = new URLSearchParams(location.search).get('args');
+    if (__q !== null) __jvmArgs = __q.length ? __q.split(',') : [];
+  }
+  if (__jvmArgs) Module['arguments'] = __jvmArgs;
+}
+EOF
+} > "$work/args.js"
+
+# --- files --------------------------------------------------------------------
+files=(--preload-file "$JDK@/opt/jdk")
+for spec in "${apps[@]+"${apps[@]}"}"; do
+  src=${spec%@*}; dest=${spec#*@}
+  [ "$dest" = "$spec" ] && dest="/app/$(basename "$src")"
+  files+=(--preload-file "$src@$dest")
+done
+
+# --- flags --------------------------------------------------------------------
+flags=(
+  "$opt" -pthread -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -sWASM_BIGINT
+  -sPROXY_TO_PTHREAD=1 -sPTHREAD_POOL_SIZE="$pool" -sPTHREAD_POOL_SIZE_STRICT=0
+  -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=268435456
+  -sMAXIMUM_MEMORY=$((max_mb * 1024 * 1024))
+  -sSTACK_SIZE=4194304 -sDEFAULT_PTHREAD_STACK_SIZE=2097152
+  -sFORCE_FILESYSTEM=1
+  -Wl,--wrap=_exit
+  -sEXPORTED_FUNCTIONS=_main,_malloc,_free,_jvm_stdin_write,_jvm_stdin_close,_jvm_enable_ring_buffer_stdin,_jvm_request_thread_dump
+  -sEXPORTED_RUNTIME_METHODS=FS,HEAPU8,ccall,cwrap,stringToUTF8,lengthBytesUTF8
+  # hotspot references a few libc functions emscripten does not implement;
+  # they are only reached on paths the port avoids
+  -sERROR_ON_UNDEFINED_SYMBOLS=0
+  --pre-js "$work/args.js"
+)
+if [ "$node" = 1 ]; then
+  flags+=(-sENVIRONMENT=node -sEXIT_RUNTIME=1)
+else
+  flags+=(-sENVIRONMENT=web,worker)
+fi
+x11=()
+if [ "$headless" = 0 ]; then
+  # x11.wasm: Xlib on canvases, its DOM backend, and the pthread input fix
+  # (archives by path: emcc maps -lX11 to its own tiny JS Xlib, not ours)
+  x11=("$PREFIX_DIR"/lib/lib{X11,Xext,Xrender,Xtst,Xi}.a
+       --js-library "$X11/library.js" --pre-js "$X11/dom.js" --pre-js "$X11/pthreads.js")
+fi
+
+em++ "${flags[@]}" "$work/jvm-main.o" "$work/symbols.o" \
+  -Wl,--whole-archive "${whole[@]}" -Wl,--no-whole-archive \
+  "${rest[@]}" "$NATIVE/libffi.a" \
+  ${x11[@]+"${x11[@]}"} \
+  "${files[@]}" \
+  ${extra[@]+"${extra[@]}"} \
+  -o "$js"
+
+if [ "$node" = 1 ]; then
+  cat > "$node_entry" <<EOF
+#!/usr/bin/env node
+// Runs $(basename "$js") from its own directory so it finds its .wasm/.data.
+process.chdir(__dirname);
+require('./$(basename "$js")');
+EOF
+  chmod +x "$node_entry"
+fi
+
+if [ "$html" = 1 ]; then
+  sed "s|@SCRIPT@|$(basename "$js")|g" "$KIT/shell.html" > "$out"
+  echo "openjdk21-wasm-link: wrote $out and $js" >&2
+else
+  echo "openjdk21-wasm-link: wrote $js" >&2
+fi

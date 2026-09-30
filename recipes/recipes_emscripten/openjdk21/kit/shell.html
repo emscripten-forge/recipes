@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java</title>
+<style>
+  :root { --bg: #f4f4f2; --fg: #1d1d1b; --muted: #6b6b66; --panel: #ffffff; --line: #d9d9d4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151514; --fg: #e8e8e3; --muted: #9a9a93; --panel: #1f1f1d; --line: #33332f; }
+  }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; gap: 12px; align-items: center; padding: 8px 12px;
+    border-bottom: 1px solid var(--line); }
+  #status { color: var(--muted); font-variant-numeric: tabular-nums; }
+  /* x11.wasm puts every X window (canvas) inside this element; its size is the
+     size of the X screen. */
+  #x11-wasm-root { position: relative; flex: 1 1 auto; min-height: 240px;
+    overflow: hidden; background: #6f7f8f; }
+  #console { flex: 0 0 auto; max-height: 30vh; overflow: auto; margin: 0;
+    padding: 8px 12px; background: var(--panel); border-top: 1px solid var(--line);
+    font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  #stdin { display: flex; border-top: 1px solid var(--line); }
+  #stdin input { flex: 1; border: 0; padding: 6px 12px; background: var(--panel); color: var(--fg);
+    font: 12px ui-monospace, Menlo, Consolas, monospace; }
+</style>
+</head>
+<body>
+<header><strong>Java</strong><span id="status">loading…</span></header>
+<div id="x11-wasm-root"></div>
+<pre id="console"></pre>
+<form id="stdin"><input placeholder="System.in — type a line and press Enter" autocomplete="off"></form>
+<script>
+  var consoleEl = document.getElementById("console");
+  var statusEl = document.getElementById("status");
+  function append(text) {
+    consoleEl.textContent += text + "\n";
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+  if (!self.crossOriginIsolated) {
+    append("This page needs cross-origin isolation (COOP/COEP headers) for SharedArrayBuffer.\n" +
+           "Serve it with share/openjdk21-wasm/serve.py or equivalent headers.");
+  }
+  var started = performance.now();
+  var Module = {
+    print: function (t) { console.log(t); append(t); },
+    printErr: function (t) { console.warn(t); append(t); },
+    setStatus: function (t) { statusEl.textContent = t || "running"; },
+    onRuntimeInitialized: function () {
+      statusEl.textContent = "starting JVM (" + ((performance.now() - started) / 1000).toFixed(1) + " s to load)";
+      Module._jvm_enable_ring_buffer_stdin();
+    },
+    onExit: function (code) { statusEl.textContent = "exited with status " + code; },
+  };
+  document.getElementById("stdin").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = e.target.querySelector("input");
+    var text = input.value + "\n";
+    var len = Module.lengthBytesUTF8(text);
+    var p = Module._malloc(len + 1);
+    Module.stringToUTF8(text, p, len + 1);
+    Module._jvm_stdin_write(p, len);
+    Module._free(p);
+    input.value = "";
+  });
+</script>
+<script src="@SCRIPT@"></script>
+</body>
+</html>
