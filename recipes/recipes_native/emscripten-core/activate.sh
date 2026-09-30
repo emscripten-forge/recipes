@@ -60,7 +60,7 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_ACTIVATED+x} ]; then
     export SIMD_FLAGS="-msimd128"
 
     # basics ld
-    export EM_FORGE_LDFLAGS_BASE="-L${PREFIX}/lib"
+    export EM_FORGE_LDFLAGS_BASE="-L${PREFIX}/lib -Wl,-rpath,/lib"
     export EM_FORGE_LDFLAGS_BASE="${EM_FORGE_OPTFLAGS} ${EM_FORGE_DBGFLAGS} ${EM_FORGE_LDFLAGS_BASE}"
 
     # basics cflags
