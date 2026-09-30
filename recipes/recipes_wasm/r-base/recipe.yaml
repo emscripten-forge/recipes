@@ -1,7 +1,7 @@
 context:
   name: r-base
   version: 4.6.1
-  build_number: 2
+  build_number: 0
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
@@ -22,6 +22,9 @@ source:
   - patches/0013-Fix-cairo-font-scaling-in-emscripten.patch
   - patches/0015-Add-RPY-target-linked-with-libpython.patch
   - patches/0016-Route-plotmath-symbols-through-Unicode-font.patch
+  - if: target_platform == "emscripten-wasm64"
+    then:
+    - patches/0017-Avoid-NINT-IDNINT-in-Lapack-wasm64.patch
 
 build:
   number: ${{ build_number }}
@@ -47,17 +50,17 @@ outputs:
     - cmake
     - make
     # Dependencies to build R in the build environment
-    - libflang-rt-static-rt
+    - libflang-rt
     - gcc
     - gxx
-    - libiconv-static
-    - zlib-static
-    - libbzip2-static
+    - libiconv =1.18
+    - zlib
+    - bzip2
     - xz
-    - pcre2-static
-    - libpng-static
-    - libtiff-static
-    - cairo-static
+    - pcre2 =10.47
+    - libpng
+    - libtiff
+    - cairo
     host:
     - libflang-rt-static
     - libiconv-static
@@ -73,15 +76,10 @@ outputs:
     - libexpat-static
     - freetype-static
     # For the r-py output: libpython statically linked into RPY executable.
-    - python
-    - libpython
-    - libffi-static
-    - sqlite
-    - openssl
-    - zstd-static
+    - python-dev
     ignore_run_exports:
       from_package:
-      - python
+      - python-dev
 
 #-------------------------------------------------------------------------------
 # R-BASE
@@ -128,6 +126,10 @@ outputs:
       build:
       - nodejs
       - r-wasm-tester
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 #-------------------------------------------------------------------------------
 # R-PY: R executables linked with Python
@@ -148,12 +150,10 @@ outputs:
   requirements:
     host:
     - r-base ==${{ version }}
-    - python
+    - python-dev
     run:
     - r-base ==${{ version }}
     - python
-    - libpython
-    - zstd-static
 
   tests:
   - package_contents:
@@ -167,6 +167,10 @@ outputs:
     requirements:
       build:
       - r-wasm-tester
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 #-------------------------------------------------------------------------------
 

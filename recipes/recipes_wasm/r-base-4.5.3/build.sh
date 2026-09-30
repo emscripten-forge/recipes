@@ -2,6 +2,11 @@
 
 set -eux
 
+if [ -z "$TARGET_TRIPLE" ]; then
+    echo "TARGET_TRIPLE is not set"
+    exit 1
+fi
+
 # Skip non-working checks
 export r_cv_header_zlib_h=yes
 export r_cv_have_bzlib=yes
@@ -79,12 +84,6 @@ popd
 #-------------------------------------------------------------------------------
 # Building R for WebAssembly using the R binary from the Linux build.
 
-# Remove shared libs to force static linking of dependencies (libz.so also has
-# an invalid ELF header which breaks configure unless libz.a is used).
-rm $PREFIX/lib/libcrypto.so* || true
-rm $PREFIX/lib/libssl.so* || true
-rm $PREFIX/lib/libz.so* || true
-
 mkdir -p _build_wasm
 pushd _build_wasm
 (
@@ -93,7 +92,31 @@ pushd _build_wasm
     # RPY_LIBS are appended to $(R_bin_LDADD) when linking the RPY target
     # (see patch 0015). This statically links libpython and its transitive deps
     # into RPY only; the standard R executable is unaffected.
-    export RPY_LIBS="-lbz2 -lz -lsqlite3 -lffi -lzstd -lssl -lcrypto -llzma -lpython${PY_VER}"
+    # libpython first so wasm-ld sees its undefined refs before scanning dep archives.
+
+    PY_STATIC="$PREFIX/lib/python$PY_VER/static"
+    if [[ ! -d "$PY_STATIC" ]]; then
+        echo "error: python static embed libs not found at $PY_STATIC" >&2
+        exit 1
+    fi
+
+    export RPY_LIBS="\
+$PREFIX/lib/libpython${PY_VER}.a \
+$PREFIX/lib/libbz2.a \
+$PREFIX/lib/libz.a \
+$PREFIX/lib/libsqlite3.a \
+$PREFIX/lib/libffi.a \
+$PREFIX/lib/libzstd.a \
+$PREFIX/lib/libssl.a \
+$PREFIX/lib/libcrypto.a \
+$PREFIX/lib/liblzma.a \
+$PY_STATIC/libexpat.a \
+$PY_STATIC/libmpdec.a \
+$PY_STATIC/libHacl_Hash_BLAKE2.a \
+$PY_STATIC/libHacl_Hash_MD5.a \
+$PY_STATIC/libHacl_Hash_SHA1.a \
+$PY_STATIC/libHacl_Hash_SHA2.a \
+$PY_STATIC/libHacl_Hash_SHA3.a"
 
     export CROSS_COMPILING="true"
     export R_EXECUTABLE=$(realpath ..)/_build_linux/bin/exec/R # binary not shell wrapper
@@ -114,7 +137,7 @@ pushd _build_wasm
     emconfigure ../configure \
         --prefix=$PREFIX    \
         --build="x86_64-conda-linux-gnu" \
-        --host="wasm32-unknown-emscripten" \
+        --host=$TARGET_TRIPLE \
         --enable-R-shlib \
         $CONFIG_ARGS
 
