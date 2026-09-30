@@ -2,6 +2,11 @@
 
 set -eux
 
+if [ -z "$TARGET_TRIPLE" ]; then
+    echo "TARGET_TRIPLE is not set"
+    exit 1
+fi
+
 # Skip non-working checks
 export r_cv_header_zlib_h=yes
 export r_cv_have_bzlib=yes
@@ -129,7 +134,7 @@ $PY_STATIC/libHacl_Hash_SHA3.a"
     emconfigure ../configure \
         --prefix=$PREFIX    \
         --build="x86_64-conda-linux-gnu" \
-        --host="wasm32-unknown-emscripten" \
+        --host=$TARGET_TRIPLE \
         --enable-R-shlib \
         $CONFIG_ARGS
 

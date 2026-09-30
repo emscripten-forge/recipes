@@ -22,6 +22,9 @@ source:
   - patches/0013-Fix-cairo-font-scaling-in-emscripten.patch
   - patches/0015-Add-RPY-target-linked-with-libpython.patch
   - patches/0016-Route-plotmath-symbols-through-Unicode-font.patch
+  - if: target_platform == "emscripten-wasm64"
+    then:
+    - patches/0017-Avoid-NINT-IDNINT-in-Lapack-wasm64.patch
 
 build:
   number: ${{ build_number }}
@@ -123,6 +126,10 @@ outputs:
       build:
       - nodejs
       - r-wasm-tester
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 #-------------------------------------------------------------------------------
 # R-PY: R executables linked with Python
@@ -160,6 +167,10 @@ outputs:
     requirements:
       build:
       - r-wasm-tester
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 #-------------------------------------------------------------------------------
 
