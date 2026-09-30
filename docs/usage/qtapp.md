@@ -29,6 +29,9 @@ channel:
 - **[sqlitebrowser](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fsqlitebrowser-experimental-3.13.99-h8b281d3_3.tar.bz2)** —
   DB Browser for SQLite: create tables, run queries, download `.sqlite` files
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/sqlitebrowser-experimental)).
+- **[regina](/qtapp/?pkg=https%3A%2F%2Fprefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fregina-7.4.1-h99d6908_1.tar.bz2)** -
+  Regina is a software package for low-dimensional topologists, with a focus on 3-manifold and 4-manifold triangulations, knots and links, normal surfaces, and angle structures
+  ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/regina)).
 
 The exact `.tar.bz2` filename changes on each rebuild (build-hash suffix);
 browse the [channel index](https://prefix.dev/channels/emscripten-forge-4x-experimental)
