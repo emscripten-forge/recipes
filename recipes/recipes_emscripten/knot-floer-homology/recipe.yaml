@@ -1,0 +1,57 @@
+context:
+  name: knot-floer-homology
+  version: 1.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # Upstream publishes only wheels to PyPI for this release, and GitHub's
+  # generated tarballs are not stable enough to hash, so the tagged commit
+  # is used instead.  Tag ${{ version }}_as_released.
+  git: https://github.com/3-manifolds/knot_floer_homology.git
+  rev: 11061f1003d69e14c8a4c32710b61c195f8300a8
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  - cython
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_knot_floer_homology.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- package_contents:
+    files:
+    - lib/python3.13/site-packages/knot_floer_homology/hfk.cpython-313-wasm32-emscripten.so
+
+about:
+  homepage: https://github.com/3-manifolds/knot_floer_homology
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: Knot Floer homology of knots in the 3-sphere via Szabo's geometric algorithm
+  repository: https://github.com/3-manifolds/knot_floer_homology
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

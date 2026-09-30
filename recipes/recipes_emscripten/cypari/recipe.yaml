@@ -1,0 +1,80 @@
+context:
+  name: cypari
+  version: 2.5.6
+  # cypari's bindings are generated for PARI 2.15; PARI 2.16 changed the
+  # meaning of the `prec` argument of the transcendental functions from
+  # words to bits, so the pari package (2.17) cannot be used here.
+  pari_version: 2.15.4
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+# Upstream publishes only wheels to PyPI for this release, and the sdists of
+# earlier releases ship bindings pre-generated for Python versions and a PARI
+# that do not match.  The tagged commit carries _pari.pyx and autogen, so the
+# bindings are generated here from the PARI built below.
+# Tag ${{ version }}_as_released.
+- git: https://github.com/3-manifolds/cypari.git
+  rev: 17bf39dc4508f2e46de75b95c65982c627652b60
+  patches:
+  - patches/0001-use-raise-instead-of-abort-on-emscripten.patch
+# PARI is taken from its own git repository at the pari-${{ pari_version }}
+# tag rather than from the release tarball: cypari publishes no sdist, so the
+# entry above cannot be a versioned url, and a recipe that mixes a git entry
+# with a url entry fails the "at least one source url must contain
+# ${{ version }}" lint rule.  The commit below is the pari-${{ pari_version }}
+# tag, so the source is pinned just as tightly as a sha256 would pin it.
+- git: https://pari.math.u-bordeaux.fr/git/pari.git
+  rev: e87796ac3acc76eab7a459c39c271b61a2b16fc3
+  target_directory: pari-src
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  # The Cython version upstream pins; newer Cython rejects the
+  # c_api_binop_methods directive that cypari uses.
+  - cython ==3.0.11
+  # PARI's Configure and gphelp, which autogen calls, are perl scripts.
+  - perl
+  - make
+  host:
+  - python
+  - gmp
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cypari.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- package_contents:
+    files:
+    - lib/python3.13/site-packages/cypari/_pari.cpython-313-wasm32-emscripten.so
+
+about:
+  homepage: https://github.com/3-manifolds/cypari
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: Sage's PARI extension, modified to stand alone
+  repository: https://github.com/3-manifolds/cypari
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
