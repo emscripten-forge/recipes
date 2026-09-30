@@ -1,5 +1,6 @@
 # Credits
 
+(supporters)=
 ## Supporters
 
 - **[QuantStack](https://quantstack.net/)**: sponsors continued development and maintenance.
