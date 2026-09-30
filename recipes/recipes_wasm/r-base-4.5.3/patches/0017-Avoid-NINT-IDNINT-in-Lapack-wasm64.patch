@@ -1,0 +1,188 @@
+From 9fd40d83d2f4b8096d38097455b879a857352eff Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 30 Sep 2026 16:24:08 +0200
+Subject: [PATCH] Avoid NINT/IDNINT in Lapack to work around wasm64 lround
+ codegen
+
+Flang lowers NINT to llvm.lround.i32.*, which the wasm64 backend
+turns into an i64 lround used as i32; INT(ANINT(...)) uses a valid
+round+convert path instead.
+---
+ src/modules/lapack/cmplx.f   |  2 +-
+ src/modules/lapack/dlapack.f | 35 ++++++++++++++++++-----------------
+ 2 files changed, 19 insertions(+), 18 deletions(-)
+
+diff --git a/src/modules/lapack/cmplx.f b/src/modules/lapack/cmplx.f
+index 3bb1505..d33b8c5 100644
+--- a/src/modules/lapack/cmplx.f
++++ b/src/modules/lapack/cmplx.f
+@@ -43436,7 +43436,7 @@
+ *
+    60 CONTINUE
+       IF( LSTICC.GT.0 ) THEN
+-         ITEMP = NINT( VN2( LSTICC ) )
++         ITEMP = INT(ANINT( VN2( LSTICC ) ))
+          VN1( LSTICC ) = DZNRM2( M-RK, A( RK+1, LSTICC ), 1 )
+ *
+ *        NOTE: The computation of VN1( LSTICC ) relies on the fact that
+diff --git a/src/modules/lapack/dlapack.f b/src/modules/lapack/dlapack.f
+index 284657d..bd43593 100644
+--- a/src/modules/lapack/dlapack.f
++++ b/src/modules/lapack/dlapack.f
+@@ -14383,7 +14383,7 @@
+      $                      N, V, LDV, WORK, LWORK, INFO )
+ *
+             SCALEM  = WORK(1)
+-            NUMRANK = IDNINT(WORK(2))
++            NUMRANK = INT(ANINT(WORK(2)))
+ *
+ *
+       ELSE IF ( RSVEC .AND. ( .NOT. LSVEC ) ) THEN
+@@ -14402,7 +14402,7 @@
+             CALL DGESVJ( 'L','U','N', N, NR, V,LDV, SVA, NR, A,LDA,
+      $                  WORK, LWORK, INFO )
+             SCALEM  = WORK(1)
+-            NUMRANK = IDNINT(WORK(2))
++            NUMRANK = INT(ANINT(WORK(2)))
+ 
+          ELSE
+ *
+@@ -14427,7 +14427,7 @@
+             CALL DGESVJ( 'Lower', 'U','N', NR, NR, V,LDV, SVA, NR, U,
+      $                  LDU, WORK(N+1), LWORK, INFO )
+             SCALEM  = WORK(N+1)
+-            NUMRANK = IDNINT(WORK(N+2))
++            NUMRANK = INT(ANINT(WORK(N+2)))
+             IF ( NR .LT. N ) THEN
+                CALL DLASET( 'A',N-NR, NR, ZERO,ZERO, V(NR+1,1),
+      $                      LDV )
+@@ -14473,7 +14473,7 @@
+          CALL DGESVJ( 'Lower', 'U', 'N', NR,NR, U, LDU, SVA, NR, A,
+      $        LDA, WORK(N+1), LWORK-N, INFO )
+          SCALEM  = WORK(N+1)
+-         NUMRANK = IDNINT(WORK(N+2))
++         NUMRANK = INT(ANINT(WORK(N+2)))
+ *
+          IF ( NR .LT. M ) THEN
+             CALL DLASET( 'A',  M-NR, NR,ZERO, ZERO, U(NR+1,1), LDU )
+@@ -14687,7 +14687,7 @@
+                CALL DGESVJ( 'L','U','N',NR,NR,V,LDV,SVA,NR,U,
+      $              LDU,WORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = IDNINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT(ANINT(WORK(2*N+N*NR+NR+2)))
+                DO 3970 p = 1, NR
+                   CALL DCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL DSCAL( NR, SVA(p),    V(1,p), 1 )
+@@ -14731,7 +14731,7 @@
+      $                      U,
+      $              LDU, WORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR, INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = IDNINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT(ANINT(WORK(2*N+N*NR+NR+2)))
+                DO 3870 p = 1, NR
+                   CALL DCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL DSCAL( NR, SVA(p),    U(1,p), 1 )
+@@ -14771,7 +14771,7 @@
+      $                      U,
+      $              LDU, WORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR, INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = IDNINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT(ANINT(WORK(2*N+N*NR+NR+2)))
+                IF ( NR .LT. N ) THEN
+                   CALL DLASET( 'A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV )
+                   CALL DLASET( 'A',NR,N-NR,ZERO,ZERO,V(1,NR+1),LDV )
+@@ -14865,7 +14865,7 @@
+      $           N, U, LDU, WORK(N+N*N+1), LWORK-N-N*N, INFO )
+ *
+             SCALEM  = WORK(N+N*N+1)
+-            NUMRANK = IDNINT(WORK(N+N*N+2))
++            NUMRANK = INT(ANINT(WORK(N+N*N+2)))
+             DO 6970 p = 1, N
+                CALL DCOPY( N, WORK(N+(p-1)*N+1), 1, U(1,p), 1 )
+                CALL DSCAL( N, SVA(p), WORK(N+(p-1)*N+1), 1 )
+@@ -14964,7 +14964,7 @@
+          CALL DGESVJ( 'G', 'U', 'V', NR, NR, U, LDU, SVA,
+      $        N, V, LDV, WORK(2*N+N*NR+1), LWORK-2*N-N*NR, INFO )
+          SCALEM  = WORK(2*N+N*NR+1)
+-         NUMRANK = IDNINT(WORK(2*N+N*NR+2))
++         NUMRANK = INT(ANINT(WORK(2*N+N*NR+2)))
+ 
+          IF ( NR .LT. N ) THEN
+             CALL DLASET( 'A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV )
+@@ -45419,7 +45419,7 @@
+          ELSE
+             X(I) = -ONE
+          END IF
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT(ANINT( X( I ) ))
+    30 CONTINUE
+       KASE = 2
+       ISAVE( 1 ) = 2
+@@ -45456,7 +45456,7 @@
+          ELSE
+             XS = -ONE
+          END IF
+-         IF( NINT( XS ).NE.ISGN( I ) )
++         IF( INT(ANINT( XS )).NE.ISGN( I ) )
+      $      GO TO 90
+    80 CONTINUE
+ *     REPEATED SIGN VECTOR DETECTED, HENCE ALGORITHM HAS CONVERGED.
+@@ -45473,7 +45473,7 @@
+          ELSE
+             X(I) = -ONE
+          END IF
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT(ANINT( X( I ) ))
+   100 CONTINUE
+       KASE = 2
+       ISAVE( 1 ) = 4
+@@ -45701,7 +45701,7 @@
+ *
+       DO 30 I = 1, N
+          X( I ) = SIGN( ONE, X( I ) )
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT(ANINT( X( I ) ))
+    30 CONTINUE
+       KASE = 2
+       JUMP = 2
+@@ -45733,7 +45733,7 @@
+       ESTOLD = EST
+       EST = DASUM( N, V, 1 )
+       DO 80 I = 1, N
+-         IF( NINT( SIGN( ONE, X( I ) ) ).NE.ISGN( I ) )
++         IF( INT(ANINT( SIGN( ONE, X( I ) ) )).NE.ISGN( I ) )
+      $      GO TO 90
+    80 CONTINUE
+ *     REPEATED SIGN VECTOR DETECTED, HENCE ALGORITHM HAS CONVERGED.
+@@ -45746,7 +45746,7 @@
+ *
+       DO 100 I = 1, N
+          X( I ) = SIGN( ONE, X( I ) )
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT(ANINT( X( I ) ))
+   100 CONTINUE
+       KASE = 2
+       JUMP = 4
+@@ -65205,7 +65205,7 @@
+ *
+    40 CONTINUE
+       IF( LSTICC.GT.0 ) THEN
+-         ITEMP = NINT( VN2( LSTICC ) )
++         ITEMP = INT(ANINT( VN2( LSTICC ) ))
+          VN1( LSTICC ) = DNRM2( M-RK, A( RK+1, LSTICC ), 1 )
+ *
+ *        NOTE: The computation of VN1( LSTICC ) relies on the fact that
+@@ -166475,7 +166475,8 @@
+          IF( NH.GE.60 )
+      $      NS = 10
+          IF( NH.GE.150 )
+-     $      NS = MAX( 10, NH / NINT( LOG( REAL( NH ) ) / LOG( TWO ) ) )
++     $      NS = MAX( 10, NH /
++     $      INT(ANINT( LOG( REAL( NH ) ) / LOG( TWO ) )) )
+          IF( NH.GE.590 )
+      $      NS = 64
+          IF( NH.GE.3000 )
+-- 
+2.55.0
+
