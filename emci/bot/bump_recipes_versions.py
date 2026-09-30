@@ -171,6 +171,9 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         elif 'tests' not in recipe:
             automerge = False
 
+    if target_pr_branch_name != "main":
+        automerge = False
+
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
 
 

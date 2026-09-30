@@ -1,0 +1,42 @@
+diff --git a/numba/core/decorators.py b/numba/core/decorators.py
+--- a/numba/core/decorators.py
++++ b/numba/core/decorators.py
+@@ -142,6 +142,13 @@ def jit(signature_or_function=None, locals=MappingProxyType({}), cache=False,
+         raise ValueError("Only one of 'nopython' or 'forceobj' can be True.")
+     target = options.pop('_target', 'cpu')
+ 
++    # The current Emscripten runtime is single-threaded.  Keep libraries that
++    # request ``parallel=True`` usable by compiling the same function through
++    # Numba's serial pipeline; ``prange`` then retains its range semantics.
++    # This can be removed once the complete Emscripten stack supports pthreads.
++    if sys.platform == 'emscripten' and options.get('parallel', False):
++        options['parallel'] = False
++
+     if nopython is False:
+         msg = ("The keyword argument 'nopython=False' was supplied. From "
+                "Numba 0.59.0 the default is True and supplying this argument "
+diff --git a/numba/core/config.py b/numba/core/config.py
+--- a/numba/core/config.py
++++ b/numba/core/config.py
+@@ -507,11 +507,18 @@ class _EnvReloader(object):
+ 
+             return 1
+ 
+-        NUMBA_DEFAULT_NUM_THREADS = num_threads_default()
++        # The packaged Emscripten runtime has no pthread worker pool.  Report
++        # one worker consistently even when the browser exposes several CPUs.
++        NUMBA_DEFAULT_NUM_THREADS = (
++            1 if sys.platform == 'emscripten' else num_threads_default()
++        )
+ 
+         # Numba thread pool size (defaults to number of CPUs on the system).
+-        _NUMBA_NUM_THREADS = _readenv("NUMBA_NUM_THREADS", int,
+-                                      NUMBA_DEFAULT_NUM_THREADS)
++        _NUMBA_NUM_THREADS = (
++            1 if sys.platform == 'emscripten'
++            else _readenv("NUMBA_NUM_THREADS", int,
++                          NUMBA_DEFAULT_NUM_THREADS)
++        )
+         if ('NUMBA_NUM_THREADS' in globals()
+                 and globals()['NUMBA_NUM_THREADS'] != _NUMBA_NUM_THREADS):
+ 

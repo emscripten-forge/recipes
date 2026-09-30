@@ -19,6 +19,8 @@ Options:
 
 Environment:
   PREFIX      Conda environment prefix with r-base (WebAssembly) installed.
+  RTESTER_MOUNT_FONTS
+              Copy $PREFIX/fonts to /fonts in the WebAssembly filesystem.
 EOF
 }
 

@@ -44,8 +44,9 @@ emcmake cmake ../mlir \
     -DPython_LIBRARY="${PREFIX}/lib/libpython3.13.a" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
-emmake make MLIRPythonModules -j${CPU_COUNT:-4}
-emmake make install
+# MLIRPythonModules is an ALL target, so the install build includes it. Building
+# it separately first only serializes work that Make can schedule together.
+emmake make -j${CPU_COUNT:-4} install
 
 # MLIR Python bindings are designed as namespace packages (no __init__.py in the
 # source tree for mlir/, mlir/dialects/, mlir/extras/). Emscripten's MEMFS does

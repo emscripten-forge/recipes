@@ -1,0 +1,41 @@
+diff --git a/pp_sys.c b/pp_sys.c
+index 78e3dd0..047c40c 100644
+--- a/pp_sys.c
++++ b/pp_sys.c
+@@ -4786,22 +4786,15 @@ PP_wrapped(pp_system, 0, 1)
+         PerlProc__exit(-1);
+     }
+ #else /* ! FORK or VMS or OS/2 */
++#if defined(WIN32) || defined(OS2) || defined(__VMS)
+     PL_statusvalue = 0;
+     result = 0;
+     if (PL_op->op_flags & OPf_STACKED) {
+         SV * const really = *++MARK;
+-#  if defined(WIN32) || defined(OS2) || defined(__VMS)
+         value = (I32)do_aspawn(really, MARK, SP);
+-#  else
+-        value = (I32)do_aspawn(really, (void **)MARK, (void **)SP);
+-#  endif
+     }
+     else if (SP - MARK != 1) {
+-#  if defined(WIN32) || defined(OS2) || defined(__VMS)
+         value = (I32)do_aspawn(NULL, MARK, SP);
+-#  else
+-        value = (I32)do_aspawn(NULL, (void **)MARK, (void **)SP);
+-#  endif
+     }
+     else {
+         value = (I32)do_spawn(SvPVx_nolen(sv_mortalcopy(*SP)));
+@@ -4811,6 +4804,12 @@ PP_wrapped(pp_system, 0, 1)
+     STATUS_NATIVE_CHILD_SET(value);
+     SP = ORIGMARK;
+     XPUSHi(result ? value : STATUS_CURRENT);
++#else
++    /* No fork(), and no Windows/OS2/VMS spawn() API either (e.g.
++     * Emscripten/wasm32): there is no way to run a child process at
++     * all, so system() cannot be implemented on this platform. */
++    DIE(aTHX_ PL_no_func, "system");
++#endif
+ #endif /* !FORK or VMS or OS/2 */
+ #endif
+     RETURN;

@@ -1,0 +1,45 @@
+On Qt-wasm, QFileDialog::getOpenFileName can't reliably bridge the
+browser's file picker into MEMFS — the returned "path" doesn't have
+the actual file bytes behind it, so sqlite3_open reads garbage and
+reports "invalid file format".
+
+The wasm-native API is QFileDialog::getOpenFileContent, which delivers
+(name, bytes) asynchronously via callback. Bridge it: write the bytes
+to a MEMFS path in /tmp and recursively invoke fileOpen() with that
+path. From sqlite3's perspective the file just lives on disk (MEMFS)
+and everything downstream works unchanged.
+
+--- a/src/MainWindow.cpp
++++ b/src/MainWindow.cpp
+@@ -517,6 +517,32 @@ bool MainWindow::fileOpen(const QString& fileName, bool openFromProject, bool re
+
+     QString wFile = fileName;
++#ifdef __EMSCRIPTEN__
++    // On wasm the traditional QFileDialog::getOpenFileName can't hand us the
++    // actual file bytes. Use the wasm-native getOpenFileContent API which
++    // delivers (name, bytes) via callback, write the bytes to a MEMFS path,
++    // then re-enter fileOpen() with the real path.
++    if (wFile.isEmpty())
++    {
++        QFileDialog::getOpenFileContent(
++            FileDialog::getSqlDatabaseFileFilter(),
++            [this, openFromProject, readOnly](const QString& name, const QByteArray& bytes) {
++                if (name.isEmpty() || bytes.isEmpty())
++                    return;
++                // Land the uploaded bytes in MEMFS so sqlite3_open can read
++                // them. Fixed subdir avoids polluting / and stays stable.
++                const QString memfs = QStringLiteral("/tmp/wasm-open/") + QFileInfo(name).fileName();
++                QDir().mkpath(QStringLiteral("/tmp/wasm-open"));
++                QFile out(memfs);
++                if (!out.open(QIODevice::WriteOnly))
++                    return;
++                out.write(bytes);
++                out.close();
++                fileOpen(memfs, openFromProject, readOnly);
++            });
++        return true;   // Async; the real open happens inside the callback.
++    }
++#endif
+     // QFile::exist will produce error message if passed empty string.
+     // Test string length before usage w/ QFile to silence warning
+     if (wFile.isEmpty() || !QFile::exists(wFile))

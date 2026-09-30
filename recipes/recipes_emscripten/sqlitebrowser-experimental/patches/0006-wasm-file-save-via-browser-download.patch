@@ -1,0 +1,45 @@
+Mirror of patch 0005 in the save direction: on wasm the traditional
+QFileDialog::getSaveFileName can't produce a persistent writable
+filesystem handle. Use the wasm-native QFileDialog::saveFileContent
+which takes (bytes, suggested-name) and triggers a browser download.
+
+Flow: db.saveAs() into a MEMFS scratch path, read the resulting bytes,
+hand them to saveFileContent. Works uniformly for both in-memory and
+file-backed databases because db.saveAs() serialises the current state
+regardless of source.
+
+--- a/src/MainWindow.cpp
++++ b/src/MainWindow.cpp
+@@ -710,6 +710,32 @@ void MainWindow::fileSave()
+
+ bool MainWindow::fileSaveAs() {
++#ifdef __EMSCRIPTEN__
++    // On wasm we can't return the user a writable file handle, so serialise
++    // the current db into MEMFS and hand the bytes to the browser as a
++    // download via QFileDialog::saveFileContent().
++    const QString scratch = QStringLiteral("/tmp/wasm-save/db.sqlite");
++    QDir().mkpath(QStringLiteral("/tmp/wasm-save"));
++    QFile::remove(scratch);
++
++    if (!db.saveAs(scratch.toStdString())) {
++        QMessageBox::warning(this, QApplication::applicationName(),
++            tr("Error while serialising the database for download."));
++        return false;
++    }
++
++    QFile in(scratch);
++    if (!in.open(QIODevice::ReadOnly)) {
++        QMessageBox::warning(this, QApplication::applicationName(),
++            tr("Error while reading serialised database bytes."));
++        return false;
++    }
++    const QByteArray bytes = in.readAll();
++    in.close();
++
++    const QString suggested = QFileInfo(db.currentFile()).fileName();
++    QFileDialog::saveFileContent(bytes, suggested.isEmpty() ? QStringLiteral("database.sqlite") : suggested);
++    return true;
++#endif
+
+     QString fileName =  FileDialog::getSaveFileName(
+                     OpenDatabaseFile,

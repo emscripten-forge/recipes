@@ -1,0 +1,68 @@
+context:
+  version: 1.3.2
+  name: r-systemfonts
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/systemfonts_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/systemfonts_${{ version }}.tar.gz
+  sha256: 828a1780e540bd05107cd0a1ddfac6727de8aef1d6d82b43591dabaf753dd135
+  patches:
+  - patches/0001-Honor-Emscripten-target-when-cross-compiling-on-macOS.patch
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  - r-base64enc
+  - r-cpp11 >=0.2.1
+  - r-jsonlite
+  - r-lifecycle
+  host:
+  - r-base ==${{ r_base }}
+  - expat
+  - fontconfig
+  - freetype
+  - r-base64enc
+  - r-cpp11 >=0.2.1
+  - r-jsonlite
+  - r-lifecycle
+  run:
+  - font-ttf-dejavu
+  - r-base64enc
+  - r-cpp11 >=0.2.1
+  - r-jsonlite
+  - r-lifecycle
+
+tests:
+- package_contents:
+    lib:
+    - R/library/systemfonts/libs/systemfonts.so
+- script: RTESTER_MOUNT_FONTS=1 run_r_test test-systemfonts.R
+  files:
+    recipe:
+    - test-systemfonts.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://systemfonts.r-lib.org
+  repository: https://github.com/r-lib/systemfonts
+  license: MIT
+  license_file: LICENSE
+  summary: System native font finding
+
+extra:
+  recipe-maintainers:
+  - adamblake

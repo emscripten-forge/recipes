@@ -1,0 +1,40 @@
+From: emscripten-forge
+Subject: [PATCH] Fix GMP linking in the CMake build
+
+target_link_libraries(bliss ${GMP_LIBRARIES}) had two problems:
+
+  * it used the plain signature while the line above it used the keyword
+    signature on the same target, which CMake rejects (CMP0023);
+  * it ran before find_library(GMP_LIBRARIES ...) had populated the
+    variable, so on a fresh configure it expanded to nothing.
+
+Both are invisible unless USE_GMP=ON, which is why they have gone unnoticed.
+
+Link GMP once, after it has been found, using the keyword signature, and
+attach it to libbliss rather than only to the executable so that consumers
+of the exported Bliss::libbliss target inherit it. libbliss is compiled
+with -DBLISS_USE_GMP, so anything linking it needs GMP too.
+
+Upstream: https://github.com/scipopt/bliss
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 415a812..a85c444 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -66,9 +66,6 @@ set_target_properties(libbliss PROPERTIES
+ add_executable(bliss src/bliss.cc)
+ add_executable(Bliss::bliss ALIAS bliss)
+ target_link_libraries(bliss PRIVATE libbliss)
+-if(USE_GMP)
+-  target_link_libraries(bliss ${GMP_LIBRARIES})
+-endif(USE_GMP)
+ 
+ set_target_properties(libbliss bliss PROPERTIES COMPILE_OPTIONS "")
+ 
+@@ -90,6 +87,7 @@ endif()
+ if(USE_GMP)
+   find_path(GMP_INCLUDE_DIR NAMES gmp.h)
+   find_library(GMP_LIBRARIES NAMES gmp libgmp mpir REQUIRED)
++  target_link_libraries(libbliss PUBLIC ${GMP_LIBRARIES})
+   if (MSVC)
+       target_compile_options(libbliss PUBLIC /DBLISS_USE_GMP /I${GMP_INCLUDE_DIR})
+       target_compile_options(bliss PUBLIC /DBLISS_USE_GMP /I${GMP_INCLUDE_DIR})

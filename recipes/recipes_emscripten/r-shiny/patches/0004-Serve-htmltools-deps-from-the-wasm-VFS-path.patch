@@ -1,0 +1,79 @@
+From ec410da09f0145dcbb822d3fa47b103e582e704b Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 4 Sep 2026 12:45:19 +0200
+Subject: [PATCH 4/6] Serve htmltools deps from the wasm VFS path
+
+---
+ R/html-deps.R | 52 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 49 insertions(+), 3 deletions(-)
+
+diff --git a/R/html-deps.R b/R/html-deps.R
+index 014bb0b..46febaf 100644
+--- a/R/html-deps.R
++++ b/R/html-deps.R
+@@ -1,3 +1,42 @@
++#' Map a file under wasm R_HOME to a client URL path (`/lib/R/...`).
++#' Returns NULL off wasm hosts, or when the file is outside R_HOME (e.g. /tmp).
++#' @noRd
++wasmVfsHref <- function(filePath) {
++  if (!isWasmPlotHost()) {
++    return(NULL)
++  }
++  if (is.null(filePath) || !nzchar(filePath[[1]])) {
++    return(NULL)
++  }
++  filePath <- tryCatch(
++    normalizePath(filePath[[1]], winslash = "/", mustWork = TRUE),
++    error = function(e) NULL
++  )
++  if (is.null(filePath)) {
++    return(NULL)
++  }
++  r_home <- Sys.getenv("R_HOME", unset = "")
++  if (!nzchar(r_home)) {
++    return(NULL)
++  }
++  r_home <- tryCatch(
++    normalizePath(r_home, winslash = "/", mustWork = TRUE),
++    error = function(e) NULL
++  )
++  if (is.null(r_home)) {
++    return(NULL)
++  }
++  r_home <- sub("/+$", "", r_home)
++  if (identical(filePath, r_home)) {
++    return(filePath)
++  }
++  if (!startsWith(filePath, paste0(r_home, "/"))) {
++    return(NULL)
++  }
++  filePath
++}
++
++
+ #' Create a web dependency
+ #'
+ #' Ensure that a file-based HTML dependency (from the htmltools package) can be
+@@ -25,9 +64,16 @@ createWebDependency <- function(dependency, scrubFile = TRUE) {
+     stop("Unexpected non-html_dependency type")
+ 
+   if (is.null(dependency$src$href)) {
+-    prefix <- paste(dependency$name, "-", dependency$version, sep = "")
+-    addResourcePath(prefix, dependency$src$file)
+-    dependency$src$href <- prefix
++    vfs_href <- wasmVfsHref(dependency$src$file)
++    if (!is.null(vfs_href)) {
++      # Wasm: Lucent SW serves /lib/R/** from the VFS. Skip addResourcePath so
++      # the client fetches the package tree directly (no /shiny/{name-ver}/ map).
++      dependency$src$href <- vfs_href
++    } else {
++      prefix <- paste(dependency$name, "-", dependency$version, sep = "")
++      addResourcePath(prefix, dependency$src$file)
++      dependency$src$href <- prefix
++    }
+   }
+ 
+   # Don't leak local file path to client
+-- 
+2.55.0
+

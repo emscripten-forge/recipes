@@ -1,0 +1,238 @@
+From b86ee0cfc25c0aece8b6dcb03485c10015d1dbba Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 4 Sep 2026 12:48:00 +0200
+Subject: [PATCH 6/6] Store TimerCallbacks deadlines in binary min-heap
+
+---
+ R/timer.R | 171 ++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 147 insertions(+), 24 deletions(-)
+
+diff --git a/R/timer.R b/R/timer.R
+index c2b2e87..9526ac3 100644
+--- a/R/timer.R
++++ b/R/timer.R
+@@ -3,6 +3,96 @@ getTimeMs <- function() {
+   as.numeric(Sys.time()) * 1000
+ }
+ 
++# ---- Binary min-heap for timer deadlines (1-based) -------------------------
++# Each entry is a list(time=, scheduled=, id=). Replaces sorted data.frame +
++# rbind/order which was O(n log n) per schedule.
++
++.timerHeapSwap <- function(heap, i, j) {
++  tmp <- heap[[i]]
++  heap[[i]] <- heap[[j]]
++  heap[[j]] <- tmp
++  heap
++}
++
++.timerHeapSiftUp <- function(heap, i) {
++  while (i > 1L) {
++    parent <- as.integer(i / 2L)
++    if (heap[[parent]]$time <= heap[[i]]$time) {
++      break
++    }
++    heap <- .timerHeapSwap(heap, parent, i)
++    i <- parent
++  }
++  heap
++}
++
++.timerHeapSiftDown <- function(heap, i) {
++  n <- length(heap)
++  repeat {
++    left <- 2L * i
++    right <- left + 1L
++    smallest <- i
++    if (left <= n && heap[[left]]$time < heap[[smallest]]$time) {
++      smallest <- left
++    }
++    if (right <= n && heap[[right]]$time < heap[[smallest]]$time) {
++      smallest <- right
++    }
++    if (identical(smallest, i)) {
++      break
++    }
++    heap <- .timerHeapSwap(heap, i, smallest)
++    i <- smallest
++  }
++  heap
++}
++
++.timerHeapPush <- function(heap, entry) {
++  heap[[length(heap) + 1L]] <- entry
++  .timerHeapSiftUp(heap, length(heap))
++}
++
++.timerHeapPopMin <- function(heap) {
++  n <- length(heap)
++  if (n == 0L) {
++    return(list(heap = heap, entry = NULL))
++  }
++  entry <- heap[[1L]]
++  if (n == 1L) {
++    return(list(heap = list(), entry = entry))
++  }
++  heap[[1L]] <- heap[[n]]
++  heap[[n]] <- NULL
++  list(heap = .timerHeapSiftDown(heap, 1L), entry = entry)
++}
++
++.timerHeapRemoveAt <- function(heap, idx) {
++  n <- length(heap)
++  if (idx < 1L || idx > n) {
++    return(heap)
++  }
++  if (idx == n) {
++    heap[[n]] <- NULL
++    return(heap)
++  }
++  heap[[idx]] <- heap[[n]]
++  heap[[n]] <- NULL
++  if (length(heap) == 0L) {
++    return(heap)
++  }
++  heap <- .timerHeapSiftUp(heap, idx)
++  .timerHeapSiftDown(heap, idx)
++}
++
++.timerEmptyElapsed <- function() {
++  data.frame(
++    time = numeric(),
++    scheduled = numeric(),
++    id = integer(),
++    stringsAsFactors = FALSE
++  )
++}
++
+ TimerCallbacks <- R6Class(
+   'TimerCallbacks',
+   portable = FALSE,
+@@ -10,17 +100,19 @@ TimerCallbacks <- R6Class(
+   public = list(
+     .nextId = 0L,
+     .funcs = 'Map',
+-    .times = data.frame(),
++    # Min-heap of list(time=, scheduled=, id=); soonest deadline at [[1]].
++    .times = list(),
+     .now = 'Function',
+ 
+     initialize = function(nowFn = getTimeMs) {
+       .funcs <<- Map$new()
++      .times <<- list()
+       .now <<- nowFn
+     },
+     clear = function() {
+       .nextId <<- 0L
+       .funcs$clear()
+-      .times <<- data.frame()
++      .times <<- list()
+     },
+     schedule = function(millis, func) {
+       # If args could fail to evaluate, let's make them do that before
+@@ -32,49 +124,80 @@ TimerCallbacks <- R6Class(
+       .nextId <<- .nextId + 1L
+ 
+       t <- .now()
+-
+-      # TODO: Horribly inefficient, use a heap instead
+-      .times <<- rbind(.times, data.frame(time=t+millis,
+-                                          scheduled=t,
+-                                          id=id))
+-      .times <<- .times[order(.times$time),]
+-
++      .times <<- .timerHeapPush(.times, list(
++        time = t + millis,
++        scheduled = t,
++        id = id
++      ))
+       .funcs$set(as.character(id), func)
+ 
+       return(id)
+     },
+     unschedule = function(id) {
+-      toRemoveIndices <- .times$id %in% id
+-      toRemoveIds <- .times[toRemoveIndices, "id", drop = TRUE]
+-      if (length(toRemoveIds) > 0) {
+-        .times <<- .times[!toRemoveIndices,]
+-        for (toRemoveId in as.character(toRemoveIds)) {
+-          .funcs$remove(toRemoveId)
++      ids <- as.integer(id)
++      removed <- logical(length(ids))
++      for (k in seq_along(ids)) {
++        target <- ids[[k]]
++        idx <- NULL
++        for (i in seq_along(.times)) {
++          if (identical(.times[[i]]$id, target)) {
++            idx <- i
++            break
++          }
++        }
++        if (is.null(idx)) {
++          removed[[k]] <- FALSE
++          next
+         }
++        removed[[k]] <- TRUE
++        .funcs$remove(as.character(target))
++        .times <<- .timerHeapRemoveAt(.times, idx)
++      }
++      if (length(removed) == 1L) {
++        removed[[1L]]
++      } else {
++        removed
+       }
+-      return(id %in% toRemoveIds)
+     },
+     timeToNextEvent = function() {
+-      if (dim(.times)[1] == 0)
++      if (length(.times) == 0L) {
+         return(Inf)
+-      return(.times[1, 'time'] - .now())
++      }
++      .times[[1L]]$time - .now()
+     },
+     takeElapsed = function() {
+-      t <- .now()
+-      elapsed <- .times$time <= .now()
+-      result <- .times[elapsed,]
+-      .times <<- .times[!elapsed,]
++      now <- .now()
++      if (length(.times) == 0L || .times[[1L]]$time > now) {
++        return(.timerEmptyElapsed())
++      }
+ 
+       # TODO: Examine scheduled column to check if any funny business
+       #       has occurred with the system clock (e.g. if scheduled
+       #       is later than .now())
+ 
+-      return(result)
++      result_times <- numeric()
++      result_scheduled <- numeric()
++      result_ids <- integer()
++      while (length(.times) > 0L && .times[[1L]]$time <= now) {
++        popped <- .timerHeapPopMin(.times)
++        .times <<- popped$heap
++        e <- popped$entry
++        result_times <- c(result_times, e$time)
++        result_scheduled <- c(result_scheduled, e$scheduled)
++        result_ids <- c(result_ids, e$id)
++      }
++      data.frame(
++        time = result_times,
++        scheduled = result_scheduled,
++        id = result_ids,
++        stringsAsFactors = FALSE
++      )
+     },
+     executeElapsed = function() {
+       elapsed <- takeElapsed()
+-      if (nrow(elapsed) == 0)
++      if (nrow(elapsed) == 0) {
+         return(FALSE)
++      }
+ 
+       for (id in elapsed$id) {
+         thisFunc <- .funcs$remove(as.character(id))
+-- 
+2.55.0
+

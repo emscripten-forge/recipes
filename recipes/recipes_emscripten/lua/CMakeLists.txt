@@ -1,6 +1,6 @@
 # Credit to https://github.com/walterschell/Lua/blob/master/lua-5.3.3/CMakeLists.txt
 # The version is inspired by the above link.
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.28)
 project(lua C)
 
 include_directories(src)

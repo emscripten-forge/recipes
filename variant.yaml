@@ -56,6 +56,27 @@ r_main_module_static_libpython:
   - "0"
   - "1"
 
+# OpenBLAS WASM: portable SIMD128 default (0). Opt-in relaxed SIMD / FMA (1)
+# is selectable via build string `*relaxed_simd*` and is down-prioritized.
+# See https://github.com/OpenMathLib/OpenBLAS/blob/develop/docs/install.md#webassembly
+openblas_wasm_relaxed_simd:
+  - "0"
+  - "1"
+
+# Generic opt-in for building wasm packages with JavaScript Promise
+# Integration (JSPI). Currently only qt6 uses this flag; other packages
+# can opt in the same way. Downstream consumers select via a build
+# match spec, e.g.:
+#
+#   host:
+#     - qt6-main[build=jspi*]
+#
+# The jspi variant is down-prioritized so bare package specs resolve to
+# nojspi by default.
+wasm_jspi:
+  - "0"
+  - "1"
+
 zip_keys:
   -
     - cxx_compiler_version
@@ -302,7 +323,7 @@ coin_or_osi:
   - 0.108
 coin_or_utils:
   - 2.11
-cross-python_emscripten-32:
+cross-python_emscripten-wasm32:
   - '3.13.1'
 cutensor:
   - 1
@@ -375,7 +396,7 @@ google_cloud_cpp_common:
 googleapis_cpp:
   - '0.10'
 graphviz:
-  - 2.47
+  - 15.1.0
 grpc_cpp:
   - '1.43'
 harfbuzz:
@@ -586,7 +607,7 @@ pip:
 playwright:
   - 1.50
 pyjs:
-  - 4.0.3
+  - 4.0.6
 pyjs_code_runner:
   - 3.1.1
 python:
@@ -596,6 +617,9 @@ python:
 #   - 3.8.* *_cpython
 #   - 3.9.* *_cpython
 #   - 3.11.* *_cpython
+python_min:
+  - 3.13
+  # See https://github.com/conda-forge/cfep/blob/main/cfep-25.md
 python_impl:
   - cpython
 #   # part of a zip_keys: python, python_impl, numpy
