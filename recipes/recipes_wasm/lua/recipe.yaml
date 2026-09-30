@@ -3,24 +3,20 @@ context:
   version: 5.5.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
 - url: https://www.lua.org/ftp/lua-${{ version }}.tar.gz
   sha256: 1c4b4068d67061f2a2231ad2b5422e77acea1487ea9890f6320af614f4373dce
   patches:
-    # Enables Lua to look for packages on a relative path
   - luaconf.patch
-        # Build as a shared library
-  - liblua.so.patch
-    #     # Enables readline on linux
-    # - Makefile.patch
+
 
 - path: CMakeLists.txt
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -30,6 +26,8 @@ requirements:
 
 tests:
 - script: |
+    test -f $PREFIX/lib/liblua.a
+    test ! -f $PREFIX/lib/liblua.so
     OUTPUT=$(run_modularized $PREFIX/bin/lua.js -e "a=1+1;print(a)")
     if [[ "$OUTPUT" != "2" ]]; then
       echo "Unexpected output: $OUTPUT"
@@ -49,6 +47,12 @@ tests:
     build:
     - run_modularized >= 0.1.2
 
+- script:
+    - generic-testing
+  requirements:
+    build:
+    - generic-testing
+    
 about:
   summary: Lua is a powerful, fast, lightweight, embeddable scripting language
   license: MIT
