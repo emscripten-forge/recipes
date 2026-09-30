@@ -1,53 +1,53 @@
 context:
   name: openssl
-  version: 4.0.2
+  version: 4.0.3
 
 build:
-  number: 1
+  number: 0
 
 source:
   url: https://www.openssl.org/source/${{ name }}-${{ version }}.tar.gz
-  sha256: 736b467530f916737b7031310ccb21d8218c6229e61e8e160cd1d3458cd543a8
+  sha256: 325b5c806167c13b40b1ffeadfe0248197c00eccc4cf123ec1e28d2d2fd216d9
 
 outputs:
 
-  - package:
-      name: libopenssl-static
-      version: ${{ version }}
-    build:
-      script: build.sh
+- package:
+    name: libopenssl-static
+    version: ${{ version }}
+  build:
+    script: build.sh
 
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("c") }}
+
+  tests:
+  - package_contents:
+      files:
+      - lib/libcrypto.a
+      - lib/libssl.a
+      - include/openssl/crypto.h
+      - include/openssl/ssl.h
+      - lib/cmake/OpenSSL/OpenSSLConfig.cmake
+
+  - script:
+    - generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+  - script:
+    - build_tests.sh
     requirements:
       build:
       - ${{ compiler("cxx") }}
-      - ${{ compiler("c") }}
-
-    tests:
-      - package_contents:
-          files:
-          - lib/libcrypto.a
-          - lib/libssl.a
-          - include/openssl/crypto.h
-          - include/openssl/ssl.h
-          - lib/cmake/OpenSSL/OpenSSLConfig.cmake
-
-      - script:
-        - generic-testing
-        requirements:
-          build:
-          - generic-testing
-
-      - script:
-        - build_tests.sh
-        requirements:
-          build:
-          - ${{ compiler("cxx") }}
-          - cmake
-          - make
-        files:
-          recipe:
-          - build_tests.sh
-          - tests/
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
   # NOTE, the shared build is dropped since we run into undefined symbols
 
 about:
