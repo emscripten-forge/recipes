@@ -12,6 +12,7 @@ pixi run setup
 
 # this builds the package
 pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/regex
+pixi run build-emscripten-wasm64-pkg recipes/recipes_emscripten/regex
 ```
 
 ```{note}
@@ -36,12 +37,12 @@ I.e. if you open a new terminal, you have to activate the environment again with
 
 ### Setup emsdk
 
- We currently need a patched version of emsdk. This is because emscripten had some regressions in the `3.1.45` release wrt. dynamic loading of shared libraries. We use the `./emsdk/setup_emsdk.sh` which takes
+ We currently need a patched version of emsdk. This is because emscripten had some regressions in the `6.0.8` release wrt. dynamic loading of shared libraries. We use the `./emsdk/setup_emsdk.sh` which takes
  two arguments: the emsdk version and the path where emsdk should be installed.
- In this example we choose `~/emsdk` as the installation path. You have to use version `3.1.45`.
+ In this example we choose `~/emsdk` as the installation path. You have to use version `6.0.8`.
 
 ```bash
-./emsdk/setup_emsdk.sh 3.1.45 ~/emsdk
+./emsdk/setup_emsdk.sh 6.0.8 ~/emsdk
 ```
 
 ### Build compiler packages / meta packages:

@@ -5,9 +5,9 @@
 
 # Introduction
 
-Emscripten-forge is a GitHub [organization](https://github.com/emscripten-forge)/[repository](https://github.com/emscripten-forge/recipes) containing  [conda recipes](https://github.com/emscripten-forge/recipes) for the `emscripten-wasm32` platform.
-Conda-forge does not (yet) support the `emscripten-wasm32` platform. `emscripten-forge` fills this gap by providing a channel with conda packages for the `emscripten-wasm32` platform.
-The recipes repository not only stores the recipe files for multiple packages, but it also builds and uploads these packages to the `emscripten-forge` channel on [prefix.dev](https://prefix.dev/channels/emscripten-forge-4x)
+Emscripten-forge is a GitHub [organization](https://github.com/emscripten-forge)/[repository](https://github.com/emscripten-forge/recipes) containing [conda recipes](https://github.com/emscripten-forge/recipes) for the `emscripten-wasm32` and `emscripten-wasm64` platforms.
+Conda-forge does not (yet) support the `emscripten-wasm*` platforms. `emscripten-forge` fills this gap by providing a channel with conda packages for the `emscripten-wasm*` platforms.
+The recipes repository not only stores the recipe files for multiple packages, but it also builds and uploads these packages to the `emscripten-forge` channel on [prefix.dev](https://prefix.dev/channels/emscripten-forge-6x)
 
 ```{admonition} Community project
 Emscripten-forge strives to be a community project, shaped by its active individual and organizational supporters. Anyone can participate in the decision-making process openly through GitHub. See [Get Involved](project/get_involved.md) to learn how to participate as an individual or organisation.

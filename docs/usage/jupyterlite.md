@@ -28,7 +28,7 @@ To load a xeus-python kernel with a custom environment, create an environment.ya
 ```yaml
 name: xeus-lite-wasm
 channels:
-  - https://repo.prefix.dev/emscripten-forge-4x
+  - https://repo.prefix.dev/emscripten-forge-6x
   - https://repo.prefix.dev/conda-forge
 dependencies:
   - xeus-python
@@ -51,7 +51,7 @@ micromamba create
     -c https://repo.mamba.pm/emscripten-forge \
     -c conda-forge \
     --yes \
-    "python>=3.11"  numpy pandas xeus-python
+    numpy pandas xeus-python
 ```
 
 Use the following command to build JupyterLite.
