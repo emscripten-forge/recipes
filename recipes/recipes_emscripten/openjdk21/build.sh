@@ -218,7 +218,7 @@ cp "$RECIPE_DIR/kit/fontconfig.properties" "$JDK_IMAGE_DIR/lib/fontconfig.proper
 # ---------------------------------------------------------------------------
 # 6. link kit: launcher, symbol-table generator, link script, page shell
 # ---------------------------------------------------------------------------
-cp "$RECIPE_DIR"/kit/{jvm-main.c,gen-symbols.sh,shell.html,serve.py} "$KIT_DIR/"
+cp "$RECIPE_DIR"/kit/{jvm-main.c,gen-symbols.sh,shell.html,serve.py,x11-display-share.c‎} "$KIT_DIR/"
 mkdir -p "$KIT_DIR/include"
 cp src/java.base/share/native/include/jni.h \
    src/java.base/unix/native/include/jni_md.h "$KIT_DIR/include/"
