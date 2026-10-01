@@ -1,48 +1,48 @@
 context:
-  version: 0.30.0
+  version: 0.31.0
 
 
 source:
   url: https://github.com/jupyter-xeus/xwidgets/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 7412a35ae07123dd3c3c6a1164fbef666be7dd1d7e9a297bfa539da18237aeca
+  sha256: 15285774f64ab2fc7425243f24306ee222ba143c9936d3c5621b685faad9f836
 
 build:
-  number: 4
+  number: 0
 
 outputs:
-  - package: 
-      name: xwidgets
-      version: ${{ version }}
-  
-    build:
-      script: build_pkg.sh
+- package:
+    name: xwidgets
+    version: ${{ version }}
 
+  build:
+    script: build_pkg.sh
+
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - nlohmann_json >=3.12
+    - xeus
+    - xproperty < 0.13
+    run:
+    - jupyterlab_widgets >=3.0.15,<3.1.0
+    - ${{ pin_compatible("xproperty", upper_bound="x.x", lower_bound="x.x") }}
+    run_exports:
+    - ${{ pin_subpackage("xwidgets", upper_bound="x.x") }}
+
+  tests:
+  - script:
+    - test -d $PREFIX/include/xwidgets
+    - test -f $PREFIX/include/xwidgets/xtransport.hpp
+    - test -f $PREFIX/lib/libxwidgets.so
+    - generic-testing
     requirements:
       build:
-      - ${{ compiler("cxx") }}
-      - cmake
-      - make
-      host:
-      - nlohmann_json >=3.12
-      - xeus
-      - xproperty < 0.13
-      run:
-      - jupyterlab_widgets >=3.0.15,<3.1.0
-      - ${{ pin_compatible("xproperty", upper_bound="x.x", lower_bound="x.x") }}
-      run_exports:
-      - ${{ pin_subpackage("xwidgets", upper_bound="x.x") }}
-
-    tests:
-    - script:
-      - test -d $PREFIX/include/xwidgets
-      - test -f $PREFIX/include/xwidgets/xtransport.hpp
-      - test -f $PREFIX/lib/libxwidgets.so
       - generic-testing
-      requirements:
-        build:
-        - generic-testing
 
-  
+
 about:
   license: BSD-3-Clause
   license_family: BSD-3
