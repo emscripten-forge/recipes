@@ -75,8 +75,18 @@ cp -R "$BUILD_PREFIX/include/cups" "$EXTRA_INC/"
 mkdir -p "$EXTRA_INC/fontconfig"
 cp "$BUILD_PREFIX/include/fontconfig/fontconfig.h" "$EXTRA_INC/fontconfig/"
 
+# OpenJDK's config.guess reports any Linux whose kernel name contains
+# "microsoft" (WSL) as a Windows build machine -- it supports building Windows
+# JDKs from WSL -- and configure then fails ("could not be imported"). Name the
+# Linux build machine explicitly; on regular Linux this is what it guesses anyway.
+BUILD_MACHINE=()
+if [ "$(uname -s)" = Linux ]; then
+  BUILD_MACHINE=(--build="$(uname -m)-pc-linux-gnu")
+fi
+
 CONFIGURE_ARGS=(
   --with-conf-name="$CONF"
+  "${BUILD_MACHINE[@]}"
   --openjdk-target=wasm32-unknown-emscripten
   --with-boot-jdk="$BOOT_JDK"
   --with-toolchain-type=clang
