@@ -1,0 +1,31 @@
+--- a/support/generate_cpperl_modules.pl	2026-09-24 23:46:22.495835108 +0000
++++ b/support/generate_cpperl_modules.pl	2026-09-24 23:46:22.500219146 +0000
+@@ -20,9 +20,18 @@
+ package Polymake::GenerateCppPerl;
+ 
+ use strict;
+-use JSON;
+ use Fcntl ':flock';
+ 
++# JSON is a CPAN distribution, which a build environment need not have -- the perl
++# packaged for conda-forge, for one, ships only core modules.  The single use made of
++# it here is decoding the .cpperl definition files, and core JSON::PP offers the same
++# relaxed/utf8/decode interface, so fall back to it.  JSON keeps precedence, so a
++# normal polymake build is unaffected.
++my $JSON_class;
++BEGIN {
++   $JSON_class = eval { require JSON; "JSON" } || do { require JSON::PP; "JSON::PP" };
++}
++
+ my $default_chunk_size = 40;
+ my ($temp_module, $ext_config, $allow_report_config_file_dependency);
+ 
+@@ -180,7 +189,7 @@
+    local $/;
+    open my $in, "<:utf8", $def_file
+      or die "can't read definition file $def_file: $!\n";
+-   JSON->new->relaxed->utf8->decode(<$in>);
++   $JSON_class->new->relaxed->utf8->decode(<$in>);
+ }
+ 
+ sub distinct {

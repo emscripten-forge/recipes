@@ -1,0 +1,19 @@
+--- a/include/core/polymake/SparseMatrix.h	2026-09-24 00:26:22.632803064 +0000
++++ b/include/core/polymake/SparseMatrix.h	2026-09-24 00:26:32.326394644 +0000
+@@ -232,7 +232,15 @@
+    }
+ 
+ public:
+-   sparse_matrix_line& operator= (sparse_matrix_line& other)
++   // The parameter has to be const, as it is for the analogous operator of VectorChain
++   // below.  A non-const copy assignment operator makes the implicitly declared copy
++   // assignment of every class holding a sparse_matrix_line take a non-const reference
++   // too -- including std::pair, which libc++ declares as "= default" with a const
++   // parameter whenever _LIBCPP_ABI_TRIVIALLY_COPYABLE_PAIR is in effect (it is, for
++   // ABI version 2, which is what emscripten ships).  Those two declarations disagree,
++   // which is ill-formed, so Map<sparse_matrix_line<...>, Int> -- as built by
++   // find_permutation_impl() -- fails to compile against libc++.
++   sparse_matrix_line& operator= (const sparse_matrix_line& other)
+    {
+       return sparse_matrix_line::generic_type::operator=(other);
+    }
