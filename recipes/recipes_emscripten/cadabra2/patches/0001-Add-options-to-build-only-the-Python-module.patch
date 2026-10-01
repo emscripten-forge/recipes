@@ -1,0 +1,255 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 442146c..bea5e83 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -169,8 +169,30 @@ endif()
+ # Switch between GTK4 and GTK3.
+ option(USE_GTK4 "Build for GTK4 (instead of GTK3)" OFF)
+ 
+-# Include packaging logic.
+-include(cmake/packaging.cmake)
++# Only build the 'cadabra2' Python module, its Python support files and
++# the 'cdb' packages; skip the command line tools, the client/server
++# and all GUI components. This is what is needed to use Cadabra from
++# an existing Python interpreter (e.g. for WebAssembly/Pyodide-like
++# environments), and it avoids the dependencies on glibmm, sqlite,
++# openssl and the compiled Boost libraries.
++option(CADABRA_PYTHON_MODULE_ONLY "Only build the cadabra2 Python module and the cdb packages" OFF)
++
++# Build the compiled 'cdb' packages (cdb.core._component, cdb.utils._algorithm)
++# into the main cadabra2 Python module instead of as separate extension
++# modules which link against it. Required on platforms without a regular
++# dynamic linker (e.g. Emscripten/WebAssembly).
++option(EMBED_COMPILED_PACKAGES "Build the compiled cdb packages into the cadabra2 module" OFF)
++
++if(CADABRA_PYTHON_MODULE_ONLY)
++  message(STATUS "Only building the cadabra2 Python module")
++  set(ENABLE_FRONTEND OFF CACHE BOOL "" FORCE)
++  set(ENABLE_JUPYTER OFF CACHE BOOL "" FORCE)
++  set(ENABLE_PY_JUPYTER OFF CACHE BOOL "" FORCE)
++  set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
++else()
++  # Include packaging logic.
++  include(cmake/packaging.cmake)
++endif()
+ 
+ #---------------------------------------------------------------------------
+ # User options and other notifications
+@@ -235,6 +257,11 @@ endif()
+ 
+ include(CheckIPOSupported)
+ check_ipo_supported(RESULT IPO_SUPPORTED OUTPUT error)
++if(EMSCRIPTEN)
++    # LTO of side modules is slow and brings no benefit for WebAssembly.
++    set(IPO_SUPPORTED FALSE)
++    set(error "disabled for Emscripten")
++endif()
+ if( IPO_SUPPORTED )
+     message(STATUS "IPO / LTO enabled")
+ else()
+@@ -507,7 +534,9 @@ if(ENABLE_PY_JUPYTER)
+ endif()
+ 
+ # Core/packages
+-add_subdirectory(client_server)
++if(NOT CADABRA_PYTHON_MODULE_ONLY)
++  add_subdirectory(client_server)
++endif()
+ add_subdirectory(core)
+ 
+ # Frontend
+@@ -525,7 +554,9 @@ if(BUILD_TESTS)
+   add_subdirectory(tests)
+ endif()
+ 
+-add_subdirectory(web2 EXCLUDE_FROM_ALL)
++if(NOT CADABRA_PYTHON_MODULE_ONLY)
++  add_subdirectory(web2 EXCLUDE_FROM_ALL)
++endif()
+ 
+ # Generate the core/Config.hh file; this needs to come as late as possible
+ # in this CMakeLists.txt to ensure that all variables have been set.
+diff --git a/core/CMakeLists.txt b/core/CMakeLists.txt
+index 7f497a3..85c74f3 100644
+--- a/core/CMakeLists.txt
++++ b/core/CMakeLists.txt
+@@ -34,6 +34,13 @@ configure_file(
+ #   # so no linking takes place
+ #   set(Boost_USE_STATIC_LIBS   ON)
+ # endif()
++if(CADABRA_PYTHON_MODULE_ONLY)
++  # The Python module itself only uses header-only Boost libraries,
++  # and does not need glibmm.
++  find_path(Boost_INCLUDE_DIRS NAMES boost/version.hpp REQUIRED)
++  set(Boost_LIBRARIES "")
++  message(STATUS "Boost headers found in ${Boost_INCLUDE_DIRS}")
++else()
+ find_package(Boost 1.71.0 COMPONENTS system filesystem REQUIRED)
+ message(STATUS "Boost version ${Boost_VERSION}")
+ 
+@@ -43,6 +50,7 @@ if(USE_GTK4)
+ else()
+   find_package(GLIBMM3  REQUIRED)
+ endif()
++endif()
+ 
+ # GMPXX
+ # In order to distribute as a PyPl wheel, we need to link
+@@ -330,6 +338,15 @@ if(mimalloc_FOUND)
+   target_link_libraries(cadabra2 PUBLIC mimalloc)
+ endif()
+ 
++if(EMBED_COMPILED_PACKAGES)
++  message(STATUS "Building compiled cdb packages into the cadabra2 module")
++  target_sources(cadabra2 PRIVATE
++    ${CMAKE_CURRENT_SOURCE_DIR}/packages/cdb/core/_component.cc
++    ${CMAKE_CURRENT_SOURCE_DIR}/packages/cdb/utils/_algorithm.cc
++  )
++  target_compile_definitions(cadabra2 PRIVATE CDB_EMBED_COMPILED_PACKAGES)
++endif()
++
+ if(IPO_SUPPORTED)
+   message(STATUS "IPO / LTO for cadabra2 enabled")     
+   set_property(TARGET cadabra2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+@@ -364,6 +381,7 @@ if(MATHEMATICA_FOUND)
+    target_link_libraries(cadabra2 PRIVATE ${Mathematica_WSTP_LIBRARIES})
+ endif()
+ 
++if(NOT CADABRA_PYTHON_MODULE_ONLY)
+ # cadabra2 CLI
+ add_executable(cadabra2-cli
+    cadabra2-cli.cc
+@@ -504,6 +522,8 @@ else()
+ endif()
+ 
+ 
++endif() # NOT CADABRA_PYTHON_MODULE_ONLY
++
+ # Profiling mode
+ if(CMAKE_BUILD_TYPE STREQUAL "Profile")
+   find_library(GPERFTOOLS_PROFILER profiler REQUIRED)
+@@ -556,6 +576,7 @@ if(WIN32)
+   install(DIRECTORY ${WINPYTHON} DESTINATION lib)
+ endif()
+ 
++if(NOT CADABRA_PYTHON_MODULE_ONLY)
+ install(TARGETS cadabra2-cli DESTINATION ${CDB_BIN_PATH})
+ install(TARGETS cdb-nbtool DESTINATION ${CDB_BIN_PATH})
+ message(STATUS "Triple-check binary install path ${CMAKE_INSTALL_PREFIX}/${CDB_BIN_PATH}")
+@@ -574,6 +595,7 @@ if(NOT WIN32)
+     )
+    ")
+ endif()
++endif() # NOT CADABRA_PYTHON_MODULE_ONLY
+ install(
+    FILES 
+       "${PROJECT_BINARY_DIR}/packages/cadabra2_defaults.py" 
+@@ -590,6 +612,7 @@ install(
+ #     ${CDB_BIN_PATH}
+ # )
+ 
++if(NOT CADABRA_PYTHON_MODULE_ONLY)
+ # cadabra2python
+ install(
+   TARGETS 
+@@ -638,6 +661,7 @@ if(NOT WIN32)
+     share/man/man1
+     )
+ endif()
++endif() # NOT CADABRA_PYTHON_MODULE_ONLY
+ 
+ # if(APPIMAGE_MODE)
+ #   # Install sympy. Matplotlib would be nice, but that pulls in blas and fortran and zillions of other things,
+diff --git a/core/packages/CMakeLists.txt b/core/packages/CMakeLists.txt
+index 7898f6f..b7706b3 100644
+--- a/core/packages/CMakeLists.txt
++++ b/core/packages/CMakeLists.txt
+@@ -89,6 +89,24 @@ add_custom_target(
+ 
+ find_package(GMPXX REQUIRED STATIC)
+ 
++if(EMBED_COMPILED_PACKAGES)
++  # The compiled packages are built into the cadabra2 module itself (see
++  # core/CMakeLists.txt); install small Python stubs which make them
++  # importable under their usual names.
++  foreach(PACKAGE ${COMPILED_PACKAGES})
++    get_filename_component(PINSTALL ${PACKAGE} DIRECTORY)
++    get_filename_component(PNAME ${PACKAGE} NAME_WE)
++    set(PSTUB "${CMAKE_CURRENT_BINARY_DIR}/cdb/${PINSTALL}/${PNAME}.py")
++    file(WRITE ${PSTUB}
++      "# The compiled package '${PNAME}' is built into the cadabra2 module.\n"
++      "import sys\n"
++      "import cadabra2\n"
++      "sys.modules[__name__] = cadabra2.${PNAME}\n")
++    install(FILES ${PSTUB} DESTINATION ${PYTHON_CDB_PACKAGE_PATH}/${PINSTALL})
++  endforeach()
++  set(COMPILED_PACKAGES "")
++endif()
++
+ foreach(PACKAGE ${COMPILED_PACKAGES})
+   SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+   SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+diff --git a/core/packages/cdb/core/_component.cc b/core/packages/cdb/core/_component.cc
+index d0295a1..9b1cd21 100644
+--- a/core/packages/cdb/core/_component.cc
++++ b/core/packages/cdb/core/_component.cc
+@@ -141,7 +141,11 @@ Ex_ptr get_component(Ex_ptr ex, Ex_ptr components)
+ }
+ 
+ 
++#ifdef CDB_EMBED_COMPILED_PACKAGES
++void cdb_embedded_init__component(pybind11::module_& m)
++#else
+ PYBIND11_MODULE(_component, m)
++#endif
+ {
+ 	m.def("get_component", get_component);
+ }
+diff --git a/core/packages/cdb/utils/_algorithm.cc b/core/packages/cdb/utils/_algorithm.cc
+index c063ca4..fa85a60 100644
+--- a/core/packages/cdb/utils/_algorithm.cc
++++ b/core/packages/cdb/utils/_algorithm.cc
+@@ -94,7 +94,11 @@ public:
+ };
+ 
+ 
++#ifdef CDB_EMBED_COMPILED_PACKAGES
++void cdb_embedded_init__algorithm(pybind11::module_& m)
++#else
+ PYBIND11_MODULE(_algorithm, m)
++#endif
+ {
+ 	namespace py = pybind11;
+ 
+diff --git a/core/pythoncdb/py_module.cc b/core/pythoncdb/py_module.cc
+index a579a87..aaaeff4 100644
+--- a/core/pythoncdb/py_module.cc
++++ b/core/pythoncdb/py_module.cc
+@@ -15,6 +15,13 @@
+ 
+ #include "Kernel.hh"
+ 
++#ifdef CDB_EMBED_COMPILED_PACKAGES
++// Compiled 'cdb' packages which are built into this module; see
++// core/packages/CMakeLists.txt.
++void cdb_embedded_init__component(pybind11::module_& m);
++void cdb_embedded_init__algorithm(pybind11::module_& m);
++#endif
++
+ namespace cadabra {
+ 	namespace py = pybind11;
+ 
+@@ -44,6 +51,13 @@ namespace cadabra {
+ 		init_tableau(m);
+ 		init_algorithms(m);
+ 		init_properties(m);
++
++#ifdef CDB_EMBED_COMPILED_PACKAGES
++		auto component_module = m.def_submodule("_component");
++		cdb_embedded_init__component(component_module);
++		auto algorithm_module = m.def_submodule("_algorithm");
++		cdb_embedded_init__algorithm(algorithm_module);
++#endif
+ 		}
+ 
+ 	}
