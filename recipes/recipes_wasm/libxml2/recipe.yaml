@@ -1,0 +1,146 @@
+context:
+  name: libxml2
+  version: 2.15.4
+
+source:
+  url: https://gitlab.gnome.org/GNOME/libxml2/-/archive/v${{ version }}/libxml2-v${{ version }}.tar.gz
+  sha256: a569ee9c59eabb197a0d5047046d757ee14c86fb2d4a734555b633cb5584ad25
+
+build:
+  number: 0
+
+outputs:
+
+- staging:
+    name: libxml2-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+    host:
+    # Both zlib flavours are needed at build time: the static pass links
+    # libz.a into libxml2.a; the shared pass links libz.so into libxml2.so.
+    # Runtime deps are declared per-output below.
+    - libzlib
+    - libzlib-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Headers, cmake config, pkgconfig
+- package:
+    name: libxml2-dev
+    version: ${{ version }}
+  inherit: libxml2-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/cmake/
+      - lib/pkgconfig/
+  tests:
+  - package_contents:
+      files:
+      - include/libxml2/libxml/parser.h
+      - include/libxml2/libxml/xpath.h
+      - include/libxml2/libxml/tree.h
+      - lib/cmake/libxml2/libxml2-config.cmake
+      - lib/pkgconfig/libxml-2.0.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libxml2-static
+    version: ${{ version }}
+  inherit: libxml2-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    host:
+    - libzlib-static
+    # libzlib publishes a run_export that would otherwise leak into
+    # libxml2-static's run: deps — wrong for a static package (consumers
+    # linking libxml2.a get libz.a's symbols baked in, they don't need
+    # the shared libz.so at runtime).
+    ignore_run_exports:
+      from_package:
+      - libzlib
+    run:
+    - ${{ pin_subpackage('libxml2-dev', exact=True) }}
+    - ${{ pin_compatible('libzlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libxml2.a
+  - script: generic-testing --allow-pthread  # same ABI-stub story as the shared output
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libxml2
+    version: ${{ version }}
+  inherit: libxml2-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    host:
+    # libxml2.so has NEEDED libz.so in its dylink.0 — libzlib's own
+    # run_exports then propagates the runtime libzlib dep to consumers.
+    - libzlib
+    run_constraints:
+    - ${{ pin_subpackage('libxml2-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libxml2', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libxml2.so
+  - script: generic-testing --allow-pthread  # libxml2 exports xmlInitThreads/xmlCleanupThreads as ABI stubs even with LIBXML2_WITH_THREADS=OFF; no actual pthread activity.
+    requirements:
+      build:
+      - generic-testing
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - cmake
+      - ninja
+      run:
+      - ${{ pin_subpackage('libxml2-dev', exact=True) }}  # for libxml2-config.cmake
+      - libzlib-static  # test writes .xml.gz using zlib's gzopen/gzwrite
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+
+#==============================================================================#
+
+about:
+  homepage: https://xmlsoft.org/
+  license: MIT
+  license_family: MIT
+  license_file: Copyright
+  summary: The XML C parser and toolkit of Gnome
+  description: |
+    Though libxml2 is written in C a variety of language
+    bindings make it available in other environments.
+  documentation: https://xmlsoft.org/html/index.html
+  repository: https://gitlab.gnome.org/GNOME/libxml2
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
