@@ -182,9 +182,9 @@ else
 fi
 x11=()
 if [ "$headless" = 0 ]; then
-  # x11.wasm: Xlib on canvases, its DOM backend, and the pthread input fix
-  # (archives by path: emcc maps -lX11 to its own tiny JS Xlib, not ours)
-  x11=("$PREFIX_DIR"/lib/lib{X11,Xext,Xrender,Xtst,Xi}.a
+  emcc -c -O2 -pthread -I"$PREFIX_DIR/include" "$KIT/x11-display-share.c" -o "$work/x11-display-share.o"
+  x11=("$work/x11-display-share.o" -Wl,--wrap=XOpenDisplay -Wl,--wrap=XCloseDisplay
+       "$PREFIX_DIR"/lib/lib{X11,Xext,Xrender,Xtst,Xi}.a
        --js-library "$X11/library.js" --pre-js "$X11/dom.js" --pre-js "$X11/pthreads.js")
 fi
 
