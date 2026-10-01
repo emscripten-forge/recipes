@@ -92,6 +92,15 @@ done
 for f in "$NATIVE"/lib*.a; do
   b=$(basename "$f")
   case " ${base[*]} $skip " in *" $b "*) continue ;; esac
+  if [ "$b" = libsplashscreen.a ]; then
+    python3 - "$f" "$work/$b" <<'EOF'
+import sys
+old, new = b"BitmapToYXBandedRectangles", b"SplashToYXBandedRectangles"
+data = open(sys.argv[1], "rb").read()
+open(sys.argv[2], "wb").write(data.replace(old, new))
+EOF
+    f="$work/$b"
+  fi
   rest+=("$f")
 done
 
