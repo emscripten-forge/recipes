@@ -28,45 +28,16 @@
 </style>
 </head>
 <body>
-<header><strong>Java</strong><span id="status">loading…</span></header>
 <div id="x11-wasm-root"></div>
-<!--
-<pre id="console"></pre>
-<form id="stdin"><input placeholder="System.in — type a line and press Enter" autocomplete="off"></form>
--->
 <script>
-  var consoleEl = document.getElementById("console");
-  var statusEl = document.getElementById("status");
-  function append(text) {
-    consoleEl.textContent += text + "\n";
-    consoleEl.scrollTop = consoleEl.scrollHeight;
-  }
-  if (!self.crossOriginIsolated) {
-    append("This page needs cross-origin isolation (COOP/COEP headers) for SharedArrayBuffer.\n" +
-           "Serve it with share/openjdk21-wasm/serve.py or equivalent headers.");
-  }
-  var started = performance.now();
   var Module = {
-    print: function (t) { console.log(t); append(t); },
-    printErr: function (t) { console.warn(t); append(t); },
-    setStatus: function (t) { statusEl.textContent = t || "running"; },
+    print: function (t) { console.log(t); },    
+    printErr: function (t) { console.warn(t); },
     onRuntimeInitialized: function () {
-      statusEl.textContent = "starting JVM (" + ((performance.now() - started) / 1000).toFixed(1) + " s to load)";
       Module._jvm_enable_ring_buffer_stdin();
+      Module._jvm_stdin_close();  
     },
-    onExit: function (code) { statusEl.textContent = "exited with status " + code; },
   };
-  document.getElementById("stdin").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var input = e.target.querySelector("input");
-    var text = input.value + "\n";
-    var len = Module.lengthBytesUTF8(text);
-    var p = Module._malloc(len + 1);
-    Module.stringToUTF8(text, p, len + 1);
-    Module._jvm_stdin_write(p, len);
-    Module._free(p);
-    input.value = "";
-  });
 </script>
 <script src="@SCRIPT@"></script>
 </body>
