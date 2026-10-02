@@ -24,7 +24,7 @@ source:
   - patches/0009-wasm-run-sql-synchronous.patch
 
 build:
-  number: 3
+  number: 4
   script: build.sh
 
 requirements:
@@ -35,12 +35,15 @@ requirements:
   # native Qt6 provides host tools (moc, rcc, uic, lrelease) via QT_HOST_PATH.
   - qt6-main
   host:
-  # cross Qt6 (JSPI variants) — Qt's app.exec() event loop yields to the
-  # browser via JSPI on this build. Qt6::Core5Compat is DB Browser's
-  # extra Qt dep.
+  # cross Qt6 (JSPI variants). Qt's app.exec() event loop yields to
+  # the browser via JSPI on this build. Qt6::Core5Compat is DB
+  # Browser's extra Qt dep.
   - qt6-main[build=jspi*]
   - qt6-5compat[build=jspi*]
-  # SQLite library — DB Browser links libsqlite3.a directly (not via Qt6::Sql).
+  # WebAssembly QPA plugin (libqwasm.a) linked into sqlitebrowser.wasm,
+  # plus qtloader.js. GPL-3.0-only.
+  - qt6-wasm-platform[build=jspi*]
+  # SQLite library. DB Browser links libsqlite3.a directly (not via Qt6::Sql).
   - sqlite
 
 tests:
@@ -51,8 +54,13 @@ tests:
     - share/sqlitebrowser-experimental/qtloader.js
 
 about:
-  summary: DB Browser for SQLite — GUI for SQLite databases, cross-compiled to wasm.
-  license: MPL-2.0 OR GPL-3.0-or-later
+  summary: DB Browser for SQLite (GUI for SQLite databases), cross-compiled to wasm.
+  # DB Browser's own sources are MPL-2.0 OR GPL-3.0-or-later. Vendored
+  # deps (QScintilla GPL-3.0, QCustomPlot GPL-3.0-or-later, embedded
+  # qhexedit LGPL-2.1) already forced the binary onto the GPL-3 branch
+  # before Qt entered the picture. Statically linking Qt's wasm QPA
+  # plugin (GPL-3.0-only) locks it in.
+  license: (MPL-2.0 OR GPL-3.0-or-later) AND GPL-3.0-only
   homepage: https://sqlitebrowser.org/
 
 extra:
