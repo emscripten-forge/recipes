@@ -1,12 +1,7 @@
----
-date: 2024-05-10
-category:
-    - rust
-    - python
-    
-authors:
-    - derthorsten
----
+```{post} 2024-05-10
+:author: derthorsten
+:category: rust, python
+```
 
 # Rust/PyO3 Support 
 
