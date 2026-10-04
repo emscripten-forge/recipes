@@ -1,0 +1,109 @@
+context:
+  # the fork's make/conf/version-numbers.conf (DEFAULT_VERSION_UPDATE=10)
+  version: "21.0.10"
+  # head of bmarti44/openjdk wasm-emscripten this recipe was built and tested with
+  openjdk_commit: e339656cdd1c9e09aaf1c4ca9a87c399e3df56a7
+
+package:
+  name: openjdk21
+  version: ${{ version }}
+
+source:
+  - git: https://github.com/bmarti44/openjdk.git
+    depth: 1
+    rev: ${{ openjdk_commit }}
+    patches:
+      # AWT event loop: wait on x11.wasm's Xlib queue instead of poll()ing fd 0
+      - patches/0001-xtoolkit-wait-on-xlib-queue.patch
+      # java.desktop natives + 32-bit X11 wrappers, jsound without devices
+      - patches/0002-build-java-desktop-with-x11-for-emscripten.patch
+      # Linux-class-library natives (NIO, ProcessHandle, NetworkInterface),
+      # builtin JNI libraries, OperatingSystem=linux
+      - patches/0003-java-base-natives-for-the-linux-class-library.patch
+      # jdk.attach off, jdk.net / jdk.management natives on
+      - patches/0004-jdk-modules-for-emscripten.patch
+  - url: https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz
+    sha256: b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
+    target_directory: libffi
+    patches:
+      # jlong/jdouble arguments from Zero are only 4-byte aligned
+      - patches/libffi-wasm32-unaligned-64bit.patch
+  - url: https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2
+    sha256: fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7
+    target_directory: fonts
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+    - autoconf
+    - pkg-config
+    - findutils
+    - coreutils
+    - file
+    - patch
+    - zip
+    - unzip
+    # boot JDK; also packs the class-library image (jmod + jlink)
+    - openjdk 21.*
+    - clang
+    - lld
+    # headers only (both libraries are dlopen()ed, which fails in wasm)
+    - libcups
+    - fontconfig
+  host:
+    - x11-wasm
+  run:
+    # openjdk21-wasm-link links x11.wasm into GUI programs
+    - x11-wasm
+
+tests:
+  - package_contents:
+      files:
+        - jdk-wasm/lib/modules
+        - jdk-wasm/lib/jvm.cfg
+        - jdk-wasm/lib/tzdb.dat
+        - jdk-wasm/lib/fontconfig.properties
+        - jdk-wasm/lib/fonts/DejaVuSans.ttf
+        - jdk-wasm/lib/security/cacerts
+        - lib/wasm-native/libjvm.a
+        - lib/wasm-native/libjava.a
+        - lib/wasm-native/libffi.a
+        - lib/wasm-native/libawt.a
+        - lib/wasm-native/libawt_xawt.a
+        - lib/wasm-native/libfontmanager.a
+        - lib/wasm-native/libmanagement_ext.a
+        - share/openjdk21-wasm/jvm-main.c
+        - bin/openjdk21-wasm-link
+  - script:
+      - bash test_jvm.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - openjdk 21.*
+    files:
+      recipe:
+        - test_jvm.sh
+        - tests/
+
+about:
+  homepage: https://openjdk.org/
+  summary: OpenJDK 21 (Zero interpreter) for WebAssembly, with AWT/Swing on x11.wasm
+  description: |
+    OpenJDK 21 built with the Zero interpreter for emscripten-wasm32, as static
+    archives plus a class-library image. Includes AWT, Java2D and Swing through
+    the X11 toolkit running on x11.wasm (canvas-backed Xlib), FreeType/HarfBuzz
+    font rendering with DejaVu fonts, image I/O, colour management, JMX
+    management, JVMTI, and the Serial, Parallel, G1 and Epsilon collectors.
+
+    bin/openjdk21-wasm-link links a program for the browser or node:
+      openjdk21-wasm-link -o app.html --app app.jar --arg -jar --arg /app/app.jar
+  license: GPL-2.0-only WITH Classpath-exception-2.0
+  license_file:
+    - LICENSE
+    - ASSEMBLY_EXCEPTION
+    - fonts/LICENSE
