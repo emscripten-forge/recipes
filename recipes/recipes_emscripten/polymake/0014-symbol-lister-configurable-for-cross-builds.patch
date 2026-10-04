@@ -1,0 +1,38 @@
+--- a/support/generate_applib_fake.pl	2026-09-24 01:26:06.303713082 +0000
++++ b/support/generate_applib_fake.pl	2026-09-24 01:27:59.432645600 +0000
+@@ -23,11 +23,24 @@
+ my @out;
+ my $nmopts= $^O eq "darwin" ? "-Ugp" : "--defined-only --extern-only -p";
+ 
++# In a cross build the application modules are in the target's object format, which
++# the build machine's nm cannot read -- it reports "file format not recognized" for
++# every member and this script then aborts with "no external symbols found".  NM
++# names the symbol lister to use instead, e.g. llvm-nm from the emscripten toolchain.
++my $nm = $ENV{NM} || "nm";
++
++# A symbol lister reading a static archive reports every member separately, so a
++# weak symbol -- a template instantiation, say -- shows up once per object file that
++# emitted it.  A shared module, which is what this script was written for, lists each
++# symbol only once.  Remember what has already been emitted; defining an alias twice
++# is a compile error.
++my %seen;
++
+ for my $shlib (@ARGV) {
+    -r $shlib or die "shared module $shlib does not exist or unreadable\n";
+ 
+-   open SYMS, "nm $nmopts $shlib |"
+-     or die "can't run nm $shlib: $!\n";
++   open SYMS, "$nm $nmopts $shlib |"
++     or die "can't run $nm $shlib: $!\n";
+ 
+    my ($appname)= $shlib =~ m{(?:^|/)(\w+)\.$Config::Config{dlext}$}
+      or die "can't derive application name from shared module name $shlib\n";
+@@ -35,7 +48,7 @@
+    my $prefix="8polymake".length($appname).$appname;
+ 
+    while (<SYMS>) {
+-      if (/ [TW] ([_ZNK]+$prefix\w+)$/) {
++      if (/ [TW] ([_ZNK]+$prefix\w+)$/ and not $seen{$1}++) {
+ 	  if ( $^O eq "darwin" ) {    # aliases don't seem to work on MacOS, so we actually define the functions with empty body
+ 	      my $functionname = $1;
+ 	      $functionname =~ s/^__/_/;

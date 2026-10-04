@@ -1,0 +1,22 @@
+--- a/support/rules.ninja	2026-09-22 14:54:40.174608766 +0000
++++ b/support/rules.ninja	2026-09-22 14:54:46.570769432 +0000
+@@ -146,8 +146,18 @@
+   description = GENERATE $out
+ 
+ # rerun the configuration if the configuration script has changed, unless we are using an alternative perl configuration right now
++#
++# Setting POLYMAKE_NO_RECONFIGURE in the environment turns this into a no-op, for
++# one-shot package builds where the configuration is fixed.  ninja otherwise
++# re-runs configure on the first build in a fresh build directory, because an
++# output with no entry in .ninja_log counts as dirty regardless of timestamps.
++# In a cross build that is harmful twice over: the rerun replays the saved
++# command line and rejects options such as --without-polydb, and even when it
++# succeeds it regenerates config.ninja from the native perl, discarding the
++# adjustments the packaging script made for the target.  restat keeps the no-op
++# from dirtying anything downstream.
+ rule reconfigure
+-  command = if [ '${build.file}' = build.ninja ]; then ${PERL} ${ADDITIONAL_PERL_INCLUDES} -I${root}/perllib ${root}/support/configure.pl --builddir=${builddir}; else true; fi
++  command = if [ -n "$$POLYMAKE_NO_RECONFIGURE" ]; then true; elif [ '${build.file}' = build.ninja ]; then ${PERL} ${ADDITIONAL_PERL_INCLUDES} -I${root}/perllib ${root}/support/configure.pl --builddir=${builddir}; else true; fi
+   description = RECONFIGURE $out
+   restat = 1
+   pool = console
