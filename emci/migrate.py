@@ -1,7 +1,8 @@
 
+import contextlib
 import shutil
 import tempfile
-
+import os
 from .rattler_build import build_with_rattler
 from pathlib import Path
 import subprocess
@@ -11,6 +12,15 @@ import fnmatch
 import shutil
 from ruamel.yaml import YAML
 from .constants import RECIPES_EMSCRIPTEN_DIR, TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
+import contextlib
+from .git_utils import (
+    bot_github_user_ctx, 
+    git_branch_ctx, 
+    make_pr_for_recipe, 
+    automerge_is_enabled,
+    set_bot_user,
+    get_current_branch_name
+)
 
 def iter_outputs(recipe):
     is_multi_output = "outputs" in recipe and len(recipe["outputs"]) > 1
@@ -56,9 +66,6 @@ def migrate_recipe(recipe_dir, output_dir):
         YAML().dump(recipe, file)
 
     
-
-
-
 def hash_recipe_content(recipe_content):
     """
     Computes the SHA-256 hash of the given recipe content.
@@ -121,7 +128,35 @@ def build_with_rattler_wrapper(*args, **kwargs):
     except subprocess.TimeoutExpired:
         print("Build timed out, continuing with other recipes...")
 
+ON_GITHUB_ACTIONS = os.environ.get('GITHUB_ACTIONS') == 'true'
 
+
+def get_github_user_ctx(use_bot):
+    
+    @contextlib.contextmanager
+    def empty_context_manager():
+        yield
+
+    if ON_GITHUB_ACTIONS:
+        # We are on GitHub Actions, we **cannot** **restore** the user account
+        # therefore we just set the bot user and use an empty context manager
+        set_bot_user()
+        user_ctx = empty_context_manager
+    else:
+        if use_bot:
+            user_ctx = bot_github_user_ctx
+        else:
+            user_ctx = empty_context_manager
+    return user_ctx
+
+
+
+def pkg_list_to_branch_name(pkg_list):
+    max_branch_name_length = 255 
+    name =  "migrate_6x_" + "_".join(pkg_list)
+    if len(name) > max_branch_name_length:
+        name = name[:max_branch_name_length]
+    return name
 
 def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     # check which recipes were successfully built
@@ -140,25 +175,30 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     
 
     print(f"Successfully built recipes: {successful_builds}")
+    # new branch name 
+    branch_name = pkg_list_to_branch_name(successful_builds)
+    with git_branch_ctx(branch_name, stash_current=False):
 
-    # move build recipes from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
-    # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
-    # copy TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR/<RECIPE> to RECIPES_EMSCRIPTEN_DIR/<RECIPE> 
-    for recipe_dir in successful_builds:
-        src_dir = TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR / recipe_dir
-        dst_dir = RECIPES_EMSCRIPTEN_DIR / recipe_dir
-        if not src_dir.exists():
-            raise RuntimeError(f"Source directory {src_dir} does not exist")
-        
-        if  dst_dir.exists():
-            raise RuntimeError(f"Destination directory {dst_dir} already exists")
-        
-        shutil.copytree(src_dir, dst_dir)
-        print(f"Copied {src_dir} to {dst_dir}")
+    
 
-        # delete from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
-        shutil.rmtree(src_dir)
-        print(f"Deleted {src_dir}") 
+        # move build recipes from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
+        # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
+        # copy TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR/<RECIPE> to RECIPES_EMSCRIPTEN_DIR/<RECIPE> 
+        for recipe_dir in successful_builds:
+            src_dir = TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR / recipe_dir
+            dst_dir = RECIPES_EMSCRIPTEN_DIR / recipe_dir
+            if not src_dir.exists():
+                raise RuntimeError(f"Source directory {src_dir} does not exist")
+            
+            if  dst_dir.exists():
+                raise RuntimeError(f"Destination directory {dst_dir} already exists")
+            
+            shutil.copytree(src_dir, dst_dir)
+            print(f"Copied {src_dir} to {dst_dir}")
+
+            # delete from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
+            # shutil.rmtree(src_dir)
+            print(f"Deleted {src_dir}") 
 
 
 def build_pkg_to_recipe_dir(to_migrate_dir):
@@ -229,13 +269,17 @@ def build_tentative(output_dir,
         pkg_to_recipe_dir = build_pkg_to_recipe_dir(filtered_to_migrate_dir)
 
         # build all pkgs
-        build_with_rattler_wrapper(recipes_dir=filtered_to_migrate_dir, output_dir=output_dir, 
-                        target_platform=target_platform, skip_existing="local", 
-                        timeout=timeout)
+        if 0:
+            build_with_rattler_wrapper(recipes_dir=filtered_to_migrate_dir, output_dir=output_dir, 
+                            target_platform=target_platform, skip_existing="local", 
+                            timeout=timeout)
 
-        # after the build, process the results
-        post_tentative_build((output_dir=output_dir, 
-                            target_platform=target_platform, 
-                            pkg_to_recipe_dir=pkg_to_recipe_dir)
+        ctx = get_github_user_ctx(use_bot=False)
+        with ctx():
+
+            # after the build, process the results
+            post_tentative_build(output_dir=output_dir, 
+                                target_platform=target_platform, 
+                                pkg_to_recipe_dir=pkg_to_recipe_dir)
 
     
