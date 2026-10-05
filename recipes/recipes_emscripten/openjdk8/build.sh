@@ -67,7 +67,7 @@ bash "${SUPPORT}/stage-jre.sh" "${BUILD_DIR}" "${OUT}" "${SRC_DIR}/_jre"
 python3 "${SUPPORT}/pack-jre.py" "${SRC_DIR}/_jre" "${OUT}/openjdk8-jre" --gzip
 
 DEST="${PREFIX}/share/openjdk8-wasm"
-mkdir -p "${PREFIX}/bin"
+mkdir -p "${DEST}" "${PREFIX}/bin"
 install -m 644 "${OUT}/openjdk8.js" "${OUT}/openjdk8.wasm" "${OUT}/openjdk8-jre.json" "${OUT}/openjdk8-jre.data.gz" \
                "${SUPPORT}/web/openjdk8-web.js" "${DEST}/"
 
