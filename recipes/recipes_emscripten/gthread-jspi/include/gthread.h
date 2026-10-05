@@ -1,4 +1,4 @@
-/*
+/* 
  * gthread.h -- cooperative ("green") POSIX threads for single-threaded
  * Emscripten builds, implemented on top of JavaScript Promise Integration
  * (JSPI) stack switching.
