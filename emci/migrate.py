@@ -207,6 +207,10 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
             # call git add to add RECIPES_EMSCRIPTEN_DIR / recipe_dir 
             subprocess.run(["git", "add", str(dst_dir)], check=True)
 
+            # make commit for that recipe
+            subprocess.run(["git", "commit", "-m", f"Migrate recipe {recipe_dir}"], check=True)
+
+
 
     pr_title = pkg_list_to_pr_title(successful_builds)
 
