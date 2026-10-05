@@ -4,7 +4,6 @@ set -euxo pipefail
 # ---------------------------------------------------------------------------
 # 1. x11.wasm: Xlib implemented on top of browser canvases
 # ---------------------------------------------------------------------------
-cd "$SRC_DIR/x11.wasm"
 
 # Run the DOM-backed js-library functions on the browser main thread when they
 # are called from a pthread (every Java thread is a Web Worker).
@@ -45,7 +44,7 @@ if "$NM" --defined-only -g build/emscripten/libx11wasm.a 2>/dev/null \
   exit 1
 fi
 
-B="$SRC_DIR/x11.wasm/build/emscripten"
+B="$SRC_DIR/build/emscripten"
 mkdir -p "$PREFIX/lib" "$PREFIX/include" "$PREFIX/share/x11-wasm"
 cp -R include/X11 include/X11Wasm "$PREFIX/include/"
 cp "$B/libx11wasm.a"               "$PREFIX/lib/libX11.a"
