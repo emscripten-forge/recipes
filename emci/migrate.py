@@ -212,21 +212,21 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
 
 
 
-    pr_title = pkg_list_to_pr_title(successful_builds)
+        pr_title = pkg_list_to_pr_title(successful_builds)
 
-    pr_body = "Migrated recipes:\n" + "\n".join(
-        f"- {recipe}" for recipe in successful_builds
-    )
+        pr_body = "Migrated recipes:\n" + "\n".join(
+            f"- {recipe}" for recipe in successful_builds
+        )
 
-    args = ['gh', 'pr', 'create',
-            '-B', "emscripten-6x",
-            '--title', pr_title, '--body', pr_body,
-            '--label', '6x'
-    ]
+        args = ['gh', 'pr', 'create',
+                '-B', "emscripten-6x",
+                '--title', pr_title, '--body', pr_body,
+                '--label', '6x'
+        ]
 
-    # call gh to create a PR
-    subprocess.check_call(args, cwd=os.getcwd())
-         
+        # call gh to create a PR
+        subprocess.check_call(args, cwd=os.getcwd())
+            
 
 
 def build_pkg_to_recipe_dir(to_migrate_dir):
