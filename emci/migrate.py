@@ -172,7 +172,6 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     if target_output_dir.exists():
         for pkg_file in target_output_dir.iterdir():
 
-
             if pkg_file.is_file() and str(pkg_file).endswith(".tar.bz2"):
                 recipe_hash = get_recipe_hash_build_pkg(pkg_file)
                 if recipe_hash in pkg_to_recipe_dir:
@@ -184,8 +183,7 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     branch_name = pkg_list_to_branch_name(successful_builds)
     with git_branch_ctx(branch_name, stash_current=False):
 
-        # gh set default repo
-        subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
+
 
         # move build recipes from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
         # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
