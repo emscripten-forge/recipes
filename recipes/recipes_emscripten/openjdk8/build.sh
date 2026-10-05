@@ -71,6 +71,8 @@ mkdir -p "${DEST}" "${PREFIX}/bin"
 install -m 644 "${OUT}/openjdk8.js" "${OUT}/openjdk8.wasm" "${OUT}/openjdk8-jre.json" "${OUT}/openjdk8-jre.data.gz" \
                "${SUPPORT}/web/openjdk8-web.js" "${DEST}/"
 
+install -m 755 "${SUPPORT}/node/openjdk8-java" "${PREFIX}/bin/openjdk8-java"
+
 for f in LICENSE ASSEMBLY_EXCEPTION THIRD_PARTY_README; do
   install -m 644 "${SRC_DIR}/${f}" "${DEST}/${f}"
 done
