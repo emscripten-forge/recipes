@@ -357,6 +357,15 @@ void XRenderCompositeText32(Display *d, int op, Picture src, Picture dst,
     UNUSED(nelt);
 }
 
+void XRenderCompositeTrapezoids(Display *d, int op, Picture src, Picture dst,
+                                _Xconst XRenderPictFormat *mask_format,
+                                int x_src, int y_src,
+                                _Xconst XTrapezoid *traps, int ntrap)
+{
+    UNUSED(d); UNUSED(op); UNUSED(src); UNUSED(dst); UNUSED(mask_format);
+    UNUSED(x_src); UNUSED(y_src); UNUSED(traps); UNUSED(ntrap);
+}
+
 /* ------------------------------------------------------------------ XTEST */
 
 Bool XTestQueryExtension(Display *d, int *event_base, int *error_base,

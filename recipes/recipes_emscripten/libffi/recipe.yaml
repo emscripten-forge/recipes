@@ -10,8 +10,13 @@ source:
 # - commit: 3d0ce1e6fcf19f853894862abcbac0ae78a7be60
 - url: https://github.com/libffi/libffi/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 9ac790464c1eb2f5ab5809e978a1683e9393131aede72d1b0a0703771d3c6cda
+  patches:
+  # ffi_call through run-time generated WebAssembly trampolines (works with
+  # JSPI stack switching); unaligned 64-bit values in the JavaScript code;
+  # Emscripten 4: no implicit stackSave/_malloc in JS
+  - patches/0001-wasm32-jspi-calls-unaligned-64bit-emscripten4.patch
 build:
-  number: 1
+  number: 2
 
 requirements:
   build:
@@ -26,6 +31,26 @@ tests:
     - test -f $PREFIX/include/ffi.h
     - test -f $PREFIX/lib/libffi.a
     - test -f $PREFIX/share/man/man3/ffi.3
+- script:
+    # scalar calls (trampolines), unaligned 64-bit arguments, structures,
+    # varargs, closures
+    - emcc -O2 -sALLOW_TABLE_GROWTH -I$PREFIX/include test/test_calls.c $PREFIX/lib/libffi.a -o calls.js
+    - node calls.js
+    # without table growth: JavaScript implementation
+    - emcc -O2 -DNO_CLOSURES -I$PREFIX/include test/test_calls.c $PREFIX/lib/libffi.a -o calls_nogrowth.js
+    - node calls_nogrowth.js
+    # the callee of ffi_call suspends with JSPI
+    - emcc -O2 -sJSPI -sJSPI_EXPORTS=main -sALLOW_TABLE_GROWTH -I$PREFIX/include test/test_jspi.c $PREFIX/lib/libffi.a -o jspi.js
+    - node jspi.js
+  files:
+    recipe:
+    - test/test_calls.c
+    - test/test_jspi.c
+  requirements:
+    build:
+    - emscripten_emscripten-wasm32 ==${{ c_compiler_version }}
+    # JSPI (WebAssembly.Suspending) is enabled by default from Node.js 25
+    - nodejs >=25
 
 about:
   license: MIT
@@ -35,6 +60,10 @@ about:
     The libffi library provides a portable, high level programming interface
     to various calling conventions. This allows a programmer to call any
     function specified by a call interface description at run-time.
+
+    On Emscripten, ffi_call uses WebAssembly trampolines generated at run
+    time when the program is linked with -sALLOW_TABLE_GROWTH, so functions
+    called through libffi can suspend with JSPI (-sJSPI).
   homepage: https://sourceware.org/libffi/
 extra:
   recipe-maintainers:

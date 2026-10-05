@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""emjdk-cc -- compiler/linker wrapper used to cross-build OpenJDK 8 with
+Emscripten.
+
+The OpenJDK make system builds every native library as a shared object.
+Emscripten cannot load shared objects in a JSPI green-thread runtime without
+JavaScript trampolines, so all native code is linked statically into one
+WebAssembly module.  This wrapper keeps the OpenJDK build system unchanged
+by translating its invocations:
+
+  * compile (-c/-E/-S/-M): passed to emcc/em++ with unsupported flags removed
+    (-pthread, -m32, ...).  Objects that belong to libFOO get
+    -DJNI_OnLoad=JNI_OnLoad_FOO so that the JNI_OnLoad entry points of all
+    libraries can coexist in one module.
+  * link with -shared (libFOO.so): produces a *relocatable* wasm object
+    (wasm-ld -r) from the object files and static archives, dropping -l/-L
+    options, other .so inputs, version scripts, sonames and rpaths.  The
+    real link happens once at the end (see link-java.sh).
+  * link of an executable: configure test programs (conftest*, a.out) are
+    linked for real so feature checks keep working; OpenJDK launchers are
+    replaced by a tiny stub because they are never run during a cross build.
+
+Environment: EMJDK_VERBOSE=1 prints the rewritten command lines;
+EMJDK_LDFLAGS is appended to real (configure test) links.
+"""
+import os
+import re
+import subprocess
+import sys
+
+CXX_MODE = os.path.basename(sys.argv[0]).endswith(('++', 'cxx'))
+DRIVER = 'em++' if CXX_MODE else 'emcc'
+
+DROP_EXACT = {
+    '-pthread', '-lpthread', '-m32', '-m64', '-mstackrealign', '-march=i586',
+    '-fno-omit-frame-pointer', '-fcheck-new', '-fstack-protector',
+    '-fstack-protector-strong', '-fno-strict-overflow', '-shared-libgcc',
+    '-static-libgcc', '-static-libstdc++', '-lrt', '-ldl', '-lc', '-lm_dbg',
+    '-Wl,--hash-style=both', '-Wl,-O1', '-Wl,-z,relro', '-Wl,-z,defs',
+    '-Wl,-z,noexecstack', '-Wl,--as-needed', '-Wl,--no-as-needed',
+    '-Xlinker', '-z', 'defs', '-fpch-deps', '-rdynamic', '-Wl,--gc-sections',
+    '-Wl,--allow-shlib-undefined',
+    '-fno-lifetime-dse', '-Wl,-export-dynamic', '-Wl,--export-dynamic',
+}
+DROP_PREFIX = (
+    '-Wl,-soname', '-Wl,-h', '-Wl,--version-script', '-Wl,-rpath',
+    '-Wl,-Bsymbolic', '-Wl,-z,', '-Wl,--hash-style', '-Wl,-version-script',
+    '-Wl,$ORIGIN', '-Wl,-R', '-Xlinker=', '-mtune=', '-march=',
+)
+
+
+# Global helper functions defined with the same name (and different
+# signatures) by two libraries that end up in the same module.
+PRIVATE_RENAMES = {
+    'hprof': ('getObjectSize',),
+}
+
+
+def log(msg):
+    if os.environ.get('EMJDK_VERBOSE'):
+        sys.stderr.write('[emjdk] ' + msg + '\n')
+
+
+def run(cmd):
+    log(' '.join(cmd))
+    return subprocess.call(cmd)
+
+
+def libname_for_object(out):
+    """Name of the OpenJDK library an object file belongs to, if any."""
+    if not out:
+        return None
+    m = re.search(r'/objs/lib([A-Za-z0-9_]+)/', out)
+    if m:
+        # object directories that are not named after their library
+        return {'hprof_jvmti': 'hprof', 'jaas': 'jaas_unix'}.get(m.group(1), m.group(1))
+    return None
+
+
+def clean_args(args, linking):
+    out = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in DROP_EXACT:
+            i += 1
+            continue
+        if a.startswith(DROP_PREFIX):
+            i += 1
+            continue
+        if a == '-Xlinker' and i + 1 < len(args):
+            nxt = args[i + 1]
+            # -Xlinker -soname=... / -Xlinker --version-script=... / -Xlinker -z ...
+            if nxt in ('-z', '-rpath', '-soname', '-h', '--version-script', '-version-script') \
+                    and i + 3 < len(args) and args[i + 2] == '-Xlinker':
+                i += 4
+                continue
+            i += 2
+            continue
+        if a in ('-z',) and i + 1 < len(args):
+            i += 2
+            continue
+        out.append(a)
+        i += 1
+    return out
+
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        return run([DRIVER])
+    if args == ['--version'] or args == ['-v']:
+        # OpenJDK's configure identifies the toolchain from this banner.
+        ver = subprocess.run([DRIVER, '-dumpversion'], capture_output=True, text=True).stdout.strip()
+        clang = subprocess.run([DRIVER, '-v'], capture_output=True, text=True).stderr
+        m = re.search(r'clang version ([0-9.]+)', clang)
+        sys.stdout.write('clang version %s (emscripten %s)\nTarget: wasm32-unknown-emscripten\n'
+                         'Thread model: single\n' % (m.group(1) if m else '21.0.0', ver))
+        return 0
+    if any(a in ('-dumpversion', '-dumpmachine', '-print-search-dirs')
+           for a in args) and not any(a.endswith(('.c', '.cpp', '.cc', '.o')) for a in args):
+        return run([DRIVER] + args)
+
+    compile_only = any(a in ('-c', '-E', '-S', '-M', '-MM') for a in args)
+    out = None
+    for i, a in enumerate(args):
+        if a == '-o' and i + 1 < len(args):
+            out = args[i + 1]
+        elif a.startswith('-o') and len(a) > 2:
+            out = a[2:]
+
+    if compile_only:
+        cmd = [DRIVER] + clean_args(args, False)
+        lib = libname_for_object(out)
+        if lib:
+            # JEP 178 names of the entry points of built-in libraries/agents
+            cmd += ['-DJNI_OnLoad=JNI_OnLoad_' + lib, '-DJNI_OnUnload=JNI_OnUnload_' + lib,
+                    '-DAgent_OnLoad=Agent_OnLoad_' + lib, '-DAgent_OnUnload=Agent_OnUnload_' + lib,
+                    '-DAgent_OnAttach=Agent_OnAttach_' + lib]
+            # private helpers whose names clash between libraries
+            for sym in PRIVATE_RENAMES.get(lib, ()):
+                cmd.append('-D%s=%s_%s' % (sym, lib, sym))
+        return run(cmd)
+
+    shared = '-shared' in args or '-G' in args
+    if shared:
+        # Sources given directly on a -shared command line are compiled first.
+        sources = [a for a in args if a.endswith(('.c', '.cc', '.cpp', '.cxx'))]
+        compiled = []
+        if sources:
+            cflags = [a for a in clean_args(args, False)
+                      if a.startswith(('-D', '-I', '-O', '-f', '-W', '-std', '-include', '-m', '-g'))
+                      and a not in ('-shared',)]
+            # keep "-include <file>" pairs intact
+            fixed = []
+            it = iter(range(len(args)))
+            for i in it:
+                if args[i] == '-include' and i + 1 < len(args):
+                    fixed += ['-include', args[i + 1]]
+            cflags = [c for c in cflags if c != '-include'] + fixed
+            for src in sources:
+                obj = (out or 'a.out') + '-' + os.path.basename(src) + '.o'
+                rc = run([DRIVER, '-c', src, '-o', obj] + cflags)
+                if rc:
+                    return rc
+                compiled.append(obj)
+        inputs = []
+        extra = []
+        inputs.extend(compiled)
+        for a in clean_args(args, True):
+            if a in ('-shared', '-G', '-o') or a == out:
+                continue
+            if a.startswith(('-l', '-L', '-Wl,', '-O', '-g', '-f', '-m', '-D', '-I', '-W', '-s')):
+                continue
+            if a.endswith('.so') or '.so.' in os.path.basename(a):
+                continue
+            if a.endswith(('.o', '.a', '.lo', '.obj')):
+                inputs.append(a)
+            elif a.startswith('@'):
+                # response file with object names
+                with open(a[1:]) as fh:
+                    for tok in fh.read().split():
+                        if tok.endswith(('.o', '.a')):
+                            inputs.append(tok)
+            else:
+                extra.append(a)
+        if extra:
+            log('ignored for relocatable link: ' + ' '.join(extra))
+        if not out:
+            sys.stderr.write('emjdk-cc: -shared without -o\n')
+            return 1
+        objs = [x for x in inputs if not x.endswith('.a')]
+        archives = [x for x in inputs if x.endswith('.a')]
+        cmd = ['wasm-ld', '-r', '-o', out] + objs
+        if archives:
+            cmd += ['--whole-archive'] + archives + ['--no-whole-archive']
+        return run(cmd)
+
+    base = os.path.basename(out) if out else 'a.out'
+    if base.startswith('conftest') or base in ('a.out', 'a.out.js') or os.environ.get('EMJDK_REAL_LINK'):
+        extra = os.environ.get('EMJDK_LDFLAGS', '').split()
+        return run([DRIVER] + clean_args(args, True) + extra)
+
+    # An OpenJDK launcher or tool: never executed in a cross build.
+    log('stub executable ' + str(out))
+    with open(out, 'w') as fh:
+        fh.write('#!/bin/sh\necho "%s: WebAssembly build, not runnable on the build machine" >&2\nexit 1\n' % base)
+    os.chmod(out, 0o755)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

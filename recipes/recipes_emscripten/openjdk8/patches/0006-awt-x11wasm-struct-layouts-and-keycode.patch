@@ -1,0 +1,72 @@
+From: emscripten-forge
+Subject: AWT on x11.wasm: computed X11 structure layouts, wide KeyCode in the modifier map
+
+x11.wasm declares KeyCode as an unsigned long.  The X11 wrapper classes
+get their structure offsets from running the sizer on the target (wasm32,
+with Node.js) instead of the precomputed 32-bit X11 layouts, and
+XGetModifierMapping narrows the map entries to the 8-bit KeyCodes that
+XToolkit reads.
+---
+diff --git a/jdk/make/gensrc/GensrcX11Wrappers.gmk b/jdk/make/gensrc/GensrcX11Wrappers.gmk
+index bcf37a72..1e9dfb87 100644
+--- a/jdk/make/gensrc/GensrcX11Wrappers.gmk
++++ b/jdk/make/gensrc/GensrcX11Wrappers.gmk
+@@ -67,6 +67,32 @@ $(GENSRC_X11WRAPPERS_TMP)/sizes.%: $(GENSRC_SIZER_DIR)/sizes.%
+ 	$(RM) '$@'
+ 	$(SORT) $< > $@
+ 
++ifeq ($(OPENJDK_TARGET_CPU), wasm32)
++  # WebAssembly: the X11 headers are x11.wasm's, whose structures do not all
++  # have X11's 32-bit layouts (its KeyCode is an unsigned long, which moves
++  # the fields of the XKB events).  Compute the offsets for the target
++  # instead: compile the sizer with the cross compiler and run it with
++  # Node.js.
++  $(GENSRC_X11WRAPPERS_TMP)/sizer.32.c: $(GENSRC_SIZER_DIR)/xlibtypes.txt $(BUILD_TOOLS)
++	$(MKDIR) -p $(@D)
++	$(TOOL_WRAPPERGENERATOR) $(@D) $(GENSRC_SIZER_DIR)/xlibtypes.txt "sizer" 32
++
++  $(GENSRC_X11WRAPPERS_TMP)/sizes.32: $(GENSRC_X11WRAPPERS_TMP)/sizer.32.c
++	$(MKDIR) -p $(@D)
++	(cd $(@D) && EMJDK_REAL_LINK=1 $(CC) -o sizer.32.js $< -D__linux__ \
++	    $(X_CFLAGS) \
++	    -I$(JDK_OUTPUTDIR)/include \
++	    -I$(JDK_TOPDIR)/src/share/javavm/export \
++	    -I$(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_EXPORT_DIR)/javavm/export \
++	    -I$(JDK_TOPDIR)/src/share/native/common \
++	    -I$(JDK_TOPDIR)/src/$(OPENJDK_TARGET_OS_API_DIR)/native/common \
++	    -I$(JDK_TOPDIR)/src/solaris/native/sun/awt \
++	    -I$(JDK_TOPDIR)/src/share/native/sun/awt/debug \
++	    -I$(JDK_TOPDIR)/src/share/native/sun/awt/image/cvutils)
++	node $(GENSRC_X11WRAPPERS_TMP)/sizer.32.js | $(SORT) > $@.tmp
++	mv $@.tmp $@
++endif
++
+ # Run the tool on the offset files copied from the source repository to generate several Java classes
+ # used in awt.
+ $(JDK_OUTPUTDIR)/gensrc/_the.generated.x11: $(GENSRC_X11_SIZES_USED) $(BUILD_TOOLS)
+diff --git a/jdk/src/solaris/native/sun/xawt/XlibWrapper.c b/jdk/src/solaris/native/sun/xawt/XlibWrapper.c
+index f1d63185..841af59b 100644
+--- a/jdk/src/solaris/native/sun/xawt/XlibWrapper.c
++++ b/jdk/src/solaris/native/sun/xawt/XlibWrapper.c
+@@ -1966,8 +1966,20 @@ Java_sun_awt_X11_XlibWrapper_XKeysymToKeycode(JNIEnv *env, jclass clazz,
+ JNIEXPORT jlong JNICALL
+ Java_sun_awt_X11_XlibWrapper_XGetModifierMapping(JNIEnv *env, jclass clazz,
+                                               jlong display) {
++    XModifierKeymap *map;
+     AWT_CHECK_HAVE_LOCK_RETURN(0);
+-    return ptr_to_jlong(XGetModifierMapping((Display*) jlong_to_ptr(display)));
++    map = XGetModifierMapping((Display*) jlong_to_ptr(display));
++    if (map != NULL && sizeof(KeyCode) != 1) {
++        /* XToolkit reads the map as an array of 8-bit KeyCodes, as in X11.
++         * Where KeyCode is wider (x11.wasm), narrow the entries in place;
++         * XFreeModifiermap() frees the same block. */
++        unsigned char *bytes = (unsigned char *) map->modifiermap;
++        int i, n = 8 * map->max_keypermod;
++        for (i = 0; i < n; i++) {
++            bytes[i] = (unsigned char) map->modifiermap[i];
++        }
++    }
++    return ptr_to_jlong(map);
+ }
+ 
+ JNIEXPORT void JNICALL

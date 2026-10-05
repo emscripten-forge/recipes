@@ -1,0 +1,388 @@
+From: emscripten-forge
+Subject: wasm32: calls without JavaScript frames (JSPI), unaligned 64-bit values,
+ Emscripten 4 runtime helpers
+
+* ffi_call converts the arguments in C and calls the target through a small
+  WebAssembly trampoline generated at run time, one per signature, for all
+  signatures made of integers, pointers, floats and doubles.  Only
+  WebAssembly frames are on the stack, so the callee may suspend with
+  JavaScript Promise Integration.  Needs -sALLOW_TABLE_GROWTH; other
+  signatures (structures, long double, complex, varargs) and programs
+  without table growth use the JavaScript implementation as before.
+  Narrow integral results are widened to ffi_arg (as upstream now does).
+* The JavaScript implementation reads and writes 64-bit values through a
+  DataView: HEAPF64/HEAPU64[addr >> 3] rounded addresses that are only
+  4-byte aligned, which a 32-bit ABI allows and OpenJDK Zero produces
+  (fix by Brian Martin, from the openjdk21 recipe).
+* The JavaScript code called stackSave/stackRestore/stackAlloc and
+  _malloc/_free, which Emscripten 4 only provides on request
+  ("stackSave is not defined"); it now calls exported C helpers.
+---
+diff --git a/src/wasm32/ffi.c b/src/wasm32/ffi.c
+index 1a8c9aea..d1f64d3a 100644
+--- a/src/wasm32/ffi.c
++++ b/src/wasm32/ffi.c
+@@ -29,6 +29,7 @@
+ 
+ #include <stdlib.h>
+ #include <stdint.h>
++#include <string.h>
+ 
+ #include <emscripten/emscripten.h>
+ 
+@@ -41,15 +42,39 @@
+ 
+ #define EM_JS_MACROS(ret, name, args, body...) EM_JS(ret, name, args, body)
+ 
++/* The JavaScript code moves the C stack pointer (structures passed by
++   value, varargs, closures) and allocates closures.  Emscripten 4 provides
++   stackSave, stackRestore, stackAlloc and _malloc/_free to JavaScript only
++   when the program asks for them, so the code calls these exported helpers
++   instead. */
++#include <emscripten/stack.h>
++extern void _emscripten_stack_restore(uintptr_t sp);
++extern void *_emscripten_stack_alloc(size_t size);
++EMSCRIPTEN_KEEPALIVE uintptr_t ffi_wasm_stack_save(void) {
++  return emscripten_stack_get_current();
++}
++EMSCRIPTEN_KEEPALIVE void ffi_wasm_stack_restore(uintptr_t sp) {
++  _emscripten_stack_restore(sp);
++}
++EMSCRIPTEN_KEEPALIVE uintptr_t ffi_wasm_stack_alloc(size_t size) {
++  return (uintptr_t) _emscripten_stack_alloc(size);
++}
++/* likewise malloc/free for closures */
++EMSCRIPTEN_KEEPALIVE void *ffi_wasm_malloc(size_t size) { return malloc(size); }
++EMSCRIPTEN_KEEPALIVE void ffi_wasm_free(void *p) { free(p); }
++#define stackSave() _ffi_wasm_stack_save()
++#define stackRestore(sp) _ffi_wasm_stack_restore(sp)
++#define stackAlloc(size) _ffi_wasm_stack_alloc(size)
++
+ #if WASM_BIGINT
+-EM_JS_DEPS(libffi, "$getWasmTableEntry,$setWasmTableEntry,$getEmptyTableSlot,$convertJsFunctionToWasm");
++EM_JS_DEPS(libffi, "$getWasmTableEntry,$setWasmTableEntry,$getEmptyTableSlot,$convertJsFunctionToWasm,$wasmTable");
+ #define CALL_FUNCTION_POINTER(ptr, args...) \
+   (LOG_DEBUG("CALL_FUNC_PTR", ptr, args),   \
+   getWasmTableEntry(ptr).apply(null, args))
+ 
+ #define JS_FUNCTION_TO_WASM convertJsFunctionToWasm
+ #else
+-EM_JS_DEPS(libffi, "$getWasmTableEntry,$setWasmTableEntry,$getEmptyTableSlot,$convertJsFunctionToWasm,$dynCall,$generateFuncType,$uleb128Encode");
++EM_JS_DEPS(libffi, "$getWasmTableEntry,$setWasmTableEntry,$getEmptyTableSlot,$convertJsFunctionToWasm,$dynCall,$generateFuncType,$uleb128Encode,$wasmTable");
+ #define CALL_FUNCTION_POINTER(ptr, args...)     \
+   (LOG_DEBUG("CALL_FUNC_PTR", sig, ptr, args),  \
+   dynCall(sig, ptr, args))
+@@ -72,11 +97,22 @@ EM_JS_DEPS(libffi, "$getWasmTableEntry,$setWasmTableEntry,$getEmptyTableSlot,$co
+ #define DEREF_S32(addr, offset) HEAP32[(addr >> 2) + offset]
+ 
+ #define DEREF_F32(addr, offset) HEAPF32[(addr >> 2) + offset]
+-#define DEREF_F64(addr, offset) HEAPF64[(addr >> 3) + offset]
++
++// 8-byte values are read and written through a DataView rather than HEAPF64 /
++// HEAPU64, because a typed-array index silently rounds the address down to the
++// element size. Callers are not required to give us 8-byte-aligned storage: a
++// 32-bit C ABI only guarantees 4-byte alignment for a 64-bit value, and OpenJDK
++// Zero really does hand us 4-byte-aligned jlong/jdouble arguments (it points at
++// interpreter stack slots, which are pointer-sized). HEAPU64[addr >> 3] on such
++// an address reads the wrong eight bytes, quietly corrupting every long and
++// double crossing the JNI boundary.
++#define VIEW_64 (new DataView(HEAPU8.buffer))
++#define DEREF_F64(addr, offset) VIEW_64.getFloat64((addr) + 8 * (offset), true)
++#define SET_F64(addr, offset, value) VIEW_64.setFloat64((addr) + 8 * (offset), value, true)
+ 
+ #if WASM_BIGINT
+-// We have HEAPU64 in this case.
+-#define DEREF_U64(addr, offset) HEAPU64[(addr >> 3) + offset]
++#define DEREF_U64(addr, offset) VIEW_64.getBigUint64((addr) + 8 * (offset), true)
++#define SET_U64(addr, offset, value) VIEW_64.setBigUint64((addr) + 8 * (offset), BigInt(value), true)
+ #endif
+ 
+ 
+@@ -116,6 +152,10 @@ CHECK_FIELD_OFFSET(ffi_type, elements, 8);
+ #include <stddef.h>
+ 
+ #define VARARGS_FLAG 1
++/* cif->flags above VARARGS_FLAG: table index of the call trampoline */
++#define TRAMPOLINE_SHIFT 1
++
++ffi_status FFI_HIDDEN ffi_prep_cif_machdep_js(ffi_cif *cif);
+ 
+ #define FFI_OK_MACRO 0
+ _Static_assert(FFI_OK_MACRO == FFI_OK, "FFI_OK must be 0");
+@@ -123,8 +163,19 @@ _Static_assert(FFI_OK_MACRO == FFI_OK, "FFI_OK must be 0");
+ #define FFI_BAD_TYPEDEF_MACRO 1
+ _Static_assert(FFI_BAD_TYPEDEF_MACRO == FFI_BAD_TYPEDEF, "FFI_BAD_TYPEDEF must be 1");
+ 
++static unsigned int ffi_call_trampoline_for(const ffi_cif *cif);
++
+ ffi_status FFI_HIDDEN
+ ffi_prep_cif_machdep(ffi_cif *cif)
++{
++  ffi_status status = ffi_prep_cif_machdep_js(cif);
++  if (status == FFI_OK)
++    cif->flags |= ffi_call_trampoline_for(cif) << TRAMPOLINE_SHIFT;
++  return status;
++}
++
++ffi_status FFI_HIDDEN
++ffi_prep_cif_machdep_js(ffi_cif *cif)
+ {
+   if (cif->abi != FFI_WASM32_EMSCRIPTEN)
+     return FFI_BAD_ABI;
+@@ -460,7 +511,7 @@ ffi_call_js, (ffi_cif *cif, ffi_fp fn, void *rvalue, void **avalue),
+     DEREF_F32(rvalue, 0) = result;
+     break;
+   case FFI_TYPE_DOUBLE:
+-    DEREF_F64(rvalue, 0) = result;
++    SET_F64(rvalue, 0, result);
+     break;
+   case FFI_TYPE_UINT8:
+   case FFI_TYPE_SINT8:
+@@ -473,7 +524,7 @@ ffi_call_js, (ffi_cif *cif, ffi_fp fn, void *rvalue, void **avalue),
+   case FFI_TYPE_UINT64:
+   case FFI_TYPE_SINT64:
+     #if WASM_BIGINT
+-    DEREF_U64(rvalue, 0) = result;
++    SET_U64(rvalue, 0, result);
+     #else
+     DEREF_U32(rvalue, 0) = result;
+     DEREF_U32(rvalue, 1) = getTempRet0();
+@@ -486,7 +537,191 @@ ffi_call_js, (ffi_cif *cif, ffi_fp fn, void *rvalue, void **avalue),
+   }
+ });
+ 
++/*
++ * Calls without a JavaScript frame.
++ *
++ * ffi_call_js performs the onward call from JavaScript.  With JavaScript
++ * Promise Integration (JSPI) the callee then cannot suspend ("trying to
++ * suspend JS frames").  For signatures made of integers, pointers, floats
++ * and doubles (everything except structures, long double, complex and
++ * varargs) ffi_call instead converts the arguments in C and calls a small
++ * WebAssembly trampoline:
++ *
++ *    void trampoline(fn, const ffi_wasm_value *args, ffi_wasm_value *ret)
++ *      loads args[0..n) with the types of the signature, call_indirect fn,
++ *      stores the result in *ret
++ *
++ * The trampoline module is generated at run time, once per signature, and
++ * its function is added to the indirect function table (this needs
++ * -sALLOW_TABLE_GROWTH; without it the JavaScript implementation is used).
++ * Only WebAssembly frames are on the stack during the call.
++ */
++typedef union {
++  int32_t i;
++  int64_t j;
++  float f;
++  double d;
++} ffi_wasm_value;
++
++#define TRAMPOLINE_MAX_ARGS 64
++
++EM_JS_MACROS(
++unsigned int,
++ffi_call_trampoline_js, (const char *sig_ptr),
++{
++  var sig = UTF8ToString(sig_ptr);
++  var cache = Module['_ffiCallTrampolines'] || (Module['_ffiCallTrampolines'] = {});
++  if (sig in cache) return cache[sig];
++  var VT = { i: 0x7f, j: 0x7e, f: 0x7d, d: 0x7c };
++  var LOAD = { i: [0x28, 2], j: [0x29, 3], f: [0x2a, 2], d: [0x2b, 3] };
++  var STORE = { i: [0x36, 2], j: [0x37, 3], f: [0x38, 2], d: [0x39, 3] };
++  var ret = sig[0];
++  var args = sig.slice(2);
++  var uleb = function (out, n) {
++    do { var b = n & 0x7f; n >>>= 7; if (n) b |= 0x80; out.push(b); } while (n);
++  };
++  var bytes = [0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
++  var section = function (id, content) {
++    bytes.push(id);
++    uleb(bytes, content.length);
++    for (var i = 0; i < content.length; i++) bytes.push(content[i]);
++  };
++  // types: 0 = trampoline (i32 i32 i32) -> (), 1 = target
++  var types = [2, 0x60, 3, 0x7f, 0x7f, 0x7f, 0, 0x60];
++  uleb(types, args.length);
++  for (var i = 0; i < args.length; i++) types.push(VT[args[i]]);
++  if (ret === 'v') types.push(0); else types.push(1, VT[ret]);
++  section(1, types);
++  // imports: e.t = the function table, e.m = the memory
++  section(2, [2, 1, 0x65, 1, 0x74, 0x01, 0x70, 0x00, 0x00,
++                 1, 0x65, 1, 0x6d, 0x02, 0x00, 0x00]);
++  section(3, [1, 0]);
++  section(7, [1, 1, 0x66, 0x00, 0x00]);
++  var body = [0];
++  if (ret !== 'v') body.push(0x20, 2);
++  for (var k = 0; k < args.length; k++) {
++    body.push(0x20, 1, LOAD[args[k]][0], LOAD[args[k]][1]);
++    uleb(body, 8 * k);
++  }
++  body.push(0x20, 0, 0x11, 1, 0);
++  if (ret !== 'v') body.push(STORE[ret][0], STORE[ret][1], 0);
++  body.push(0x0b);
++  var code = [1];
++  uleb(code, body.length);
++  for (var i = 0; i < body.length; i++) code.push(body[i]);
++  section(10, code);
++  var index = 0;
++  try {
++    var instance = new WebAssembly.Instance(new WebAssembly.Module(new Uint8Array(bytes)),
++                                            { e: { t: wasmTable, m: wasmMemory } });
++    index = getEmptyTableSlot();
++    setWasmTableEntry(index, instance.exports['f']);
++  } catch (e) {
++    LOG_DEBUG("CALL_TRAMPOLINE_FAILED", sig, e);
++    index = 0;
++  }
++  cache[sig] = index;
++  return index;
++})
++
++static char
++ffi_wasm_kind(const ffi_type *type)
++{
++  switch (type->type) {
++  case FFI_TYPE_VOID:
++    return 'v';
++  case FFI_TYPE_INT:
++  case FFI_TYPE_UINT8:
++  case FFI_TYPE_SINT8:
++  case FFI_TYPE_UINT16:
++  case FFI_TYPE_SINT16:
++  case FFI_TYPE_UINT32:
++  case FFI_TYPE_SINT32:
++  case FFI_TYPE_POINTER:
++    return 'i';
++  case FFI_TYPE_UINT64:
++  case FFI_TYPE_SINT64:
++    return 'j';
++  case FFI_TYPE_FLOAT:
++    return 'f';
++  case FFI_TYPE_DOUBLE:
++    return 'd';
++  default:
++    return 0;
++  }
++}
++
++static unsigned int
++ffi_call_trampoline_for(const ffi_cif *cif)
++{
++  char sig[TRAMPOLINE_MAX_ARGS + 3];
++  unsigned int n = 0, i;
++
++  if ((cif->flags & VARARGS_FLAG) || cif->nargs > TRAMPOLINE_MAX_ARGS)
++    return 0;
++  if (!(sig[n++] = ffi_wasm_kind(cif->rtype)))
++    return 0;
++  sig[n++] = '_';
++  for (i = 0; i < cif->nargs; i++) {
++    char k = ffi_wasm_kind(cif->arg_types[i]);
++    if (!k || k == 'v')
++      return 0;
++    sig[n++] = k;
++  }
++  sig[n] = 0;
++  return ffi_call_trampoline_js(sig);
++}
++
++static void
++ffi_call_trampoline(ffi_cif *cif, unsigned int trampoline, ffi_fp fn,
++                    void *rvalue, void **avalue)
++{
++  ffi_wasm_value args[TRAMPOLINE_MAX_ARGS];
++  ffi_wasm_value ret;
++  unsigned int i;
++
++  for (i = 0; i < cif->nargs; i++) {
++    const void *p = avalue[i];
++    switch (cif->arg_types[i]->type) {
++    case FFI_TYPE_UINT8:   args[i].i = *(const uint8_t *) p; break;
++    case FFI_TYPE_SINT8:   args[i].i = *(const int8_t *) p; break;
++    case FFI_TYPE_UINT16:  args[i].i = *(const uint16_t *) p; break;
++    case FFI_TYPE_SINT16:  args[i].i = *(const int16_t *) p; break;
++    case FFI_TYPE_UINT64:
++    case FFI_TYPE_SINT64:  memcpy(&args[i].j, p, 8); break;
++    case FFI_TYPE_FLOAT:   memcpy(&args[i].f, p, 4); break;
++    case FFI_TYPE_DOUBLE:  memcpy(&args[i].d, p, 8); break;
++    default:               memcpy(&args[i].i, p, 4); break;  /* 32-bit, pointer */
++    }
++  }
++  ret.j = 0;
++  ((void (*)(ffi_fp, ffi_wasm_value *, ffi_wasm_value *)) (uintptr_t) trampoline)(fn, args, &ret);
++  if (rvalue == NULL)
++    return;
++  /* integral results narrower than ffi_arg are widened to ffi_arg */
++  switch (cif->rtype->type) {
++  case FFI_TYPE_UINT8:   *(ffi_arg *) rvalue = (uint8_t) ret.i; break;
++  case FFI_TYPE_SINT8:   *(ffi_sarg *) rvalue = (int8_t) ret.i; break;
++  case FFI_TYPE_UINT16:  *(ffi_arg *) rvalue = (uint16_t) ret.i; break;
++  case FFI_TYPE_SINT16:  *(ffi_sarg *) rvalue = (int16_t) ret.i; break;
++  case FFI_TYPE_INT:
++  case FFI_TYPE_SINT32:
++  case FFI_TYPE_UINT32:
++  case FFI_TYPE_POINTER: memcpy(rvalue, &ret.i, 4); break;
++  case FFI_TYPE_UINT64:
++  case FFI_TYPE_SINT64:  memcpy(rvalue, &ret.j, 8); break;
++  case FFI_TYPE_FLOAT:   memcpy(rvalue, &ret.f, 4); break;
++  case FFI_TYPE_DOUBLE:  memcpy(rvalue, &ret.d, 8); break;
++  default: break;
++  }
++}
++
+ void ffi_call(ffi_cif *cif, void (*fn)(void), void *rvalue, void **avalue) {
++  unsigned int trampoline = cif->flags >> TRAMPOLINE_SHIFT;
++  if (trampoline) {
++    ffi_call_trampoline(cif, trampoline, fn, rvalue, avalue);
++    return;
++  }
+   ffi_call_js(cif, fn, rvalue, avalue);
+ }
+ 
+@@ -501,7 +736,7 @@ CHECK_FIELD_OFFSET(ffi_closure, user_data, 4*3);
+ #define CLOSURE__user_data(addr) DEREF_U32(addr, 3)
+ 
+ EM_JS_MACROS(void *, ffi_closure_alloc_js, (size_t size, void **code), {
+-  var closure = _malloc(size);
++  var closure = _ffi_wasm_malloc(size);
+   var index = getEmptyTableSlot();
+   DEREF_U32(code, 0) = index;
+   CLOSURE__wrapper(closure) = index;
+@@ -516,7 +751,7 @@ ffi_closure_alloc(size_t size, void **code) {
+ EM_JS_MACROS(void, ffi_closure_free_js, (void *closure), {
+   var index = CLOSURE__wrapper(closure);
+   freeTableIndexes.push(index);
+-  _free(closure);
++  _ffi_wasm_free(closure);
+ })
+ 
+ void __attribute__ ((visibility ("default")))
+@@ -832,14 +1067,14 @@ ffi_prep_closure_loc_js,
+       case FFI_TYPE_DOUBLE:
+         STACK_ALLOC(cur_ptr, 8, 8);
+         DEREF_U32(args_ptr, carg_idx) = cur_ptr;
+-        DEREF_F64(cur_ptr, 0) = cur_arg;
++        SET_F64(cur_ptr, 0, cur_arg);
+         break;
+       case FFI_TYPE_UINT64:
+       case FFI_TYPE_SINT64:
+         STACK_ALLOC(cur_ptr, 8, 8);
+         DEREF_U32(args_ptr, carg_idx) = cur_ptr;
+         #if WASM_BIGINT
+-        DEREF_U64(cur_ptr, 0) = cur_arg;
++        SET_U64(cur_ptr, 0, cur_arg);
+         #else
+         // Bigint arg was split by legalizer adaptor
+         DEREF_U32(cur_ptr, 0) = cur_arg;
+@@ -851,9 +1086,9 @@ ffi_prep_closure_loc_js,
+         STACK_ALLOC(cur_ptr, 16, 8);
+         DEREF_U32(args_ptr, carg_idx) = cur_ptr;
+         #if WASM_BIGINT
+-        DEREF_U64(cur_ptr, 0) = cur_arg;
++        SET_U64(cur_ptr, 0, cur_arg);
+         cur_arg = args[jsarg_idx++];
+-        DEREF_U64(cur_ptr, 1) = cur_arg;
++        SET_U64(cur_ptr, 1, cur_arg);
+         #else
+         // Was split by legalizer adaptor
+         DEREF_U32(cur_ptr, 0) = cur_arg;

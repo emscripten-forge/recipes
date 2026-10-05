@@ -1,0 +1,146 @@
+From: emscripten-forge
+Subject: JDK native libraries on Emscripten: NIO, networking, console input, AWT library selection, built-in libraries
+
+---
+diff --git a/jdk/make/lib/NioLibraries.gmk b/jdk/make/lib/NioLibraries.gmk
+index 6c9c46a3..76e8c8b0 100644
+--- a/jdk/make/lib/NioLibraries.gmk
++++ b/jdk/make/lib/NioLibraries.gmk
+@@ -167,7 +167,7 @@ $(BUILD_LIBNIO): $(BUILD_LIBNET)
+ 
+ ifeq ($(OPENJDK_TARGET_OS_API), posix)
+ 
+-  ifeq (, $(filter $(OPENJDK_TARGET_OS), macosx aix))
++  ifeq (, $(filter $(OPENJDK_TARGET_OS), macosx aix)$(filter $(OPENJDK_TARGET_CPU), wasm32))
+ 
+     # Suppress unused parameters required by exported JNI functions.
+     SCTP_WERROR := -Werror -Wno-error=unused-parameter
+diff --git a/jdk/src/share/native/java/lang/ClassLoader.c b/jdk/src/share/native/java/lang/ClassLoader.c
+index 40b0b85b..b7e59057 100644
+--- a/jdk/src/share/native/java/lang/ClassLoader.c
++++ b/jdk/src/share/native/java/lang/ClassLoader.c
+@@ -403,7 +403,10 @@ Java_java_lang_ClassLoader_00024NativeLibrary_load
+         }
+ 
+         if (!JVM_IsSupportedJNIVersion(jniVersion) ||
+-            (isBuiltin && jniVersion < JNI_VERSION_1_8)) {
++#ifndef __EMSCRIPTEN__
++            (isBuiltin && jniVersion < JNI_VERSION_1_8) ||
++#endif
++            0) {
+             char msg[256];
+             jio_snprintf(msg, sizeof(msg),
+                          "unsupported JNI version 0x%08X required by %s",
+diff --git a/jdk/src/solaris/classes/sun/nio/ch/DefaultSelectorProvider.java b/jdk/src/solaris/classes/sun/nio/ch/DefaultSelectorProvider.java
+index e812e535..f86e6874 100644
+--- a/jdk/src/solaris/classes/sun/nio/ch/DefaultSelectorProvider.java
++++ b/jdk/src/solaris/classes/sun/nio/ch/DefaultSelectorProvider.java
+@@ -64,7 +64,10 @@ public class DefaultSelectorProvider {
+             .doPrivileged(new GetPropertyAction("os.name"));
+         if (osname.equals("SunOS"))
+             return createProvider("sun.nio.ch.DevPollSelectorProvider");
+-        if (osname.equals("Linux"))
++        String osarch = AccessController
++            .doPrivileged(new GetPropertyAction("os.arch"));
++        // WebAssembly: no epoll, use poll(2)
++        if (osname.equals("Linux") && !"wasm32".equals(osarch))
+             return createProvider("sun.nio.ch.EPollSelectorProvider");
+         return new sun.nio.ch.PollSelectorProvider();
+     }
+diff --git a/jdk/src/solaris/native/java/io/io_util_md.c b/jdk/src/solaris/native/java/io/io_util_md.c
+index 0dee96b8..e15a7173 100644
+--- a/jdk/src/solaris/native/java/io/io_util_md.c
++++ b/jdk/src/solaris/native/java/io/io_util_md.c
+@@ -194,6 +194,14 @@ handleAvailable(FD fd, jlong *pbytes)
+     }
+ 
+     if ((current = lseek64(fd, 0, SEEK_CUR)) == -1) {
++#ifdef __EMSCRIPTEN__
++        /* Emscripten's console device supports neither FIONREAD nor
++         * seeking: report that no input is buffered. */
++        if (errno == ESPIPE) {
++            *pbytes = 0;
++            return 1;
++        }
++#endif
+         return 0;
+     }
+ 
+diff --git a/jdk/src/solaris/native/java/lang/java_props_md.c b/jdk/src/solaris/native/java/lang/java_props_md.c
+index b03bd6ac..a948d2a1 100644
+--- a/jdk/src/solaris/native/java/lang/java_props_md.c
++++ b/jdk/src/solaris/native/java/lang/java_props_md.c
+@@ -462,7 +462,14 @@ GetJavaProperties(JNIEnv *env)
+ #else
+         struct utsname name;
+         uname(&name);
++#ifdef __EMSCRIPTEN__
++        /* The WebAssembly runtime provides a Linux-like system (musl, an X11
++         * display); the class library selects its implementations by
++         * os.name, so present it as Linux. */
++        sprops.os_name = strdup("Linux");
++#else
+         sprops.os_name = strdup(name.sysname);
++#endif
+ #ifdef _AIX
+         {
+             char *os_version = malloc(strlen(name.version) +
+diff --git a/jdk/src/solaris/native/java/net/linux_close.c b/jdk/src/solaris/native/java/net/linux_close.c
+index c7a148c7..7639eca4 100644
+--- a/jdk/src/solaris/native/java/net/linux_close.c
++++ b/jdk/src/solaris/native/java/net/linux_close.c
+@@ -59,6 +59,9 @@ typedef struct {
+ /*
+  * Signal to unblock thread
+  */
++#ifndef __SIGRTMAX
++#define __SIGRTMAX 64   /* Emscripten: signals are not delivered anyway */
++#endif
+ static int sigWakeup = (__SIGRTMAX - 2);
+ 
+ /*
+diff --git a/jdk/src/solaris/native/sun/awt/awt_LoadLibrary.c b/jdk/src/solaris/native/sun/awt/awt_LoadLibrary.c
+index 59483027..9c3b0062 100644
+--- a/jdk/src/solaris/native/sun/awt/awt_LoadLibrary.c
++++ b/jdk/src/solaris/native/sun/awt/awt_LoadLibrary.c
+@@ -146,7 +146,9 @@ AWT_OnLoad(JavaVM *vm, void *reserved)
+         CHECK_EXCEPTION_FATAL(env, "Could not allocate set properties");
+     }
+ 
+-#ifndef MACOSX
++#if !defined(MACOSX) && !defined(__EMSCRIPTEN__)
++    /* (WebAssembly: only libawt_xawt is linked in; it also serves headless
++     * mode.) */
+     if (AWTIsHeadless()) {
+         tk = HEADLESS_PATH;
+     }
+@@ -179,6 +181,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
+     return AWT_OnLoad(vm, reserved);
+ }
+ 
++#ifndef __EMSCRIPTEN__ /* WebAssembly: libawt_xawt is linked into the same module */
+ /*
+  * This entry point must remain in libawt.so as part of a contract
+  * with the CDE variant of Java Media Framework. (sdtjmplay)
+@@ -234,3 +237,4 @@ Java_sun_awt_motif_XsessionWMcommand_New(JNIEnv *env, jobjectArray jargv)
+ 
+     (*XsessionWMcommand)(env, jargv);
+ }
++#endif /* !__EMSCRIPTEN__ */
+diff --git a/jdk/src/solaris/native/sun/nio/ch/FileDispatcherImpl.c b/jdk/src/solaris/native/sun/nio/ch/FileDispatcherImpl.c
+index 9b3ff819..b06ad32d 100644
+--- a/jdk/src/solaris/native/sun/nio/ch/FileDispatcherImpl.c
++++ b/jdk/src/solaris/native/sun/nio/ch/FileDispatcherImpl.c
+@@ -71,7 +71,12 @@ JNIEXPORT void JNICALL
+ Java_sun_nio_ch_FileDispatcherImpl_init(JNIEnv *env, jclass cl)
+ {
+     int sp[2];
++#ifdef __EMSCRIPTEN__
++    /* No Unix domain sockets; any descriptor that reads EOF will do. */
++    if (pipe(sp) < 0) {
++#else
+     if (socketpair(PF_UNIX, SOCK_STREAM, 0, sp) < 0) {
++#endif
+         JNU_ThrowIOExceptionWithLastError(env, "socketpair failed");
+         return;
+     }

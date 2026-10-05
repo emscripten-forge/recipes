@@ -1,0 +1,468 @@
+From: emscripten-forge
+Subject: HotSpot Zero on Emscripten: build flags, OS layer, cooperative threads
+
+---
+diff --git a/hotspot/make/linux/makefiles/gcc.make b/hotspot/make/linux/makefiles/gcc.make
+index 70b130b2..9f75e18f 100644
+--- a/hotspot/make/linux/makefiles/gcc.make
++++ b/hotspot/make/linux/makefiles/gcc.make
+@@ -388,3 +388,22 @@ ifndef USE_SUNCC
+ endif
+ 
+ -include $(HS_ALT_MAKE)/linux/makefiles/gcc.make
++
++#------------------------------------------------------------------------
++# WebAssembly (Emscripten) cross build: the VM is linked statically into a
++# single module and runs on cooperative threads (gthread-jspi).
++ifeq ($(ZERO_LIBARCH), wasm32)
++  # Newer clang reports many benign warnings in the 8u sources.
++  WARNINGS_ARE_ERRORS =
++  CFLAGS += -Wno-unknown-warning-option -Wno-deprecated-declarations \
++            -Wno-undef -Wno-format-nonliteral -Wno-missing-braces \
++            -Wno-unused-but-set-variable -Wno-dangling-else
++  # No assembler, no version scripts, no position independent code needed.
++  VM_PICFLAG =
++  PICFLAG =
++  MAPFLAG =
++  SONAMEFLAG =
++  LDFLAGS_HASH_STYLE =
++  STATIC_STDCXX =
++  STACK_ALIGNMENT_OPT =
++endif
+diff --git a/hotspot/make/linux/makefiles/zeroshark.make b/hotspot/make/linux/makefiles/zeroshark.make
+index de1fcb35..7b21b20f 100644
+--- a/hotspot/make/linux/makefiles/zeroshark.make
++++ b/hotspot/make/linux/makefiles/zeroshark.make
+@@ -33,7 +33,7 @@ endif
+ # because some of the zero code has not been updated accordingly.
+ WARNING_FLAGS += -Wno-return-type \
+   -Wno-format-nonliteral -Wno-format-security \
+-  -Wno-maybe-uninitialized
++  $(if $(filter true,$(USE_CLANG)),,-Wno-maybe-uninitialized)
+  
+ 
+ # If FDLIBM_CFLAGS is non-empty it holds CFLAGS needed to be passed to
+diff --git a/hotspot/src/os/linux/vm/jvm_linux.cpp b/hotspot/src/os/linux/vm/jvm_linux.cpp
+index ba84788a..c09c7b41 100644
+--- a/hotspot/src/os/linux/vm/jvm_linux.cpp
++++ b/hotspot/src/os/linux/vm/jvm_linux.cpp
+@@ -154,7 +154,9 @@ struct siglabel siglabels[] = {
+ #ifdef SIGSTKFLT
+   "STKFLT",     SIGSTKFLT,      /* Stack fault.  */
+ #endif
++#ifdef SIGCLD
+   "CLD",        SIGCLD,         /* Same as SIGCHLD (System V).  */
++#endif
+   "CHLD",       SIGCHLD,        /* Child status has changed (POSIX).  */
+   "CONT",       SIGCONT,        /* Continue (POSIX).  */
+   "STOP",       SIGSTOP,        /* Stop, unblockable (POSIX).  */
+@@ -167,9 +169,13 @@ struct siglabel siglabels[] = {
+   "VTALRM",     SIGVTALRM,      /* Virtual alarm clock (4.2 BSD).  */
+   "PROF",       SIGPROF,        /* Profiling alarm clock (4.2 BSD).  */
+   "WINCH",      SIGWINCH,       /* Window size change (4.3 BSD, Sun).  */
++#ifdef SIGPOLL
+   "POLL",       SIGPOLL,        /* Pollable event occurred (System V).  */
++#endif
+   "IO",         SIGIO,          /* I/O now possible (4.2 BSD).  */
++#ifdef SIGPWR
+   "PWR",        SIGPWR,         /* Power failure restart (System V).  */
++#endif
+ #ifdef SIGSYS
+   "SYS",        SIGSYS          /* Bad system call. Only on some Linuxen! */
+ #endif
+diff --git a/hotspot/src/os/linux/vm/os_linux.cpp b/hotspot/src/os/linux/vm/os_linux.cpp
+index 09c40560..c7ef1365 100644
+--- a/hotspot/src/os/linux/vm/os_linux.cpp
++++ b/hotspot/src/os/linux/vm/os_linux.cpp
+@@ -95,7 +95,9 @@
+ # include <string.h>
+ # include <syscall.h>
+ # include <sys/sysinfo.h>
++#ifndef __EMSCRIPTEN__
+ # include <gnu/libc-version.h>
++#endif
+ # include <sys/ipc.h>
+ # include <sys/shm.h>
+ # include <link.h>
+@@ -127,6 +129,65 @@ PRAGMA_FORMAT_MUTE_WARNINGS_FOR_GCC
+ #define ALL_64_BITS CONST64(0xFFFFFFFFFFFFFFFF)
+ 
+ #define LARGEPAGES_BIT (1 << 6)
++#ifdef __EMSCRIPTEN__
++////////////////////////////////////////////////////////////////////////////////
++// WebAssembly (Emscripten) support
++//
++// There is a single linear memory and no virtual memory: mmap() cannot map
++// at a fixed address and munmap() cannot release part of a mapping.  Reserved
++// ranges are therefore carved out of the C heap (lazily zeroed pages at the
++// end of linear memory), commit zeroes the committed range and uncommit is a
++// no-op apart from bookkeeping.  Threads are cooperative green threads
++// (gthread-jspi), which is why the VM runs as a uniprocessor VM.
++extern "C" {
++  int gt_current_id(void);
++  void* emscripten_builtin_memalign(size_t alignment, size_t size);
++  uintptr_t emscripten_stack_get_base(void);
++  uintptr_t emscripten_stack_get_end(void);
++}
++
++// No raw system calls or symbol versioning in Emscripten.
++static inline long syscall(long number, ...) { errno = ENOSYS; return -1; }
++#define dlvsym(handle, name, version) dlsym(handle, name)
++
++#define WASM_VM_PAGE_SIZE 4096
++#define WASM_MAX_RESERVATIONS 1024
++
++struct WasmReservation { char* base; size_t size; char* alloc; };
++static WasmReservation wasm_reservations[WASM_MAX_RESERVATIONS];
++static int wasm_reservation_count = 0;
++
++static char* wasm_reserve(size_t bytes, size_t alignment) {
++  if (alignment < WASM_VM_PAGE_SIZE) alignment = WASM_VM_PAGE_SIZE;
++  if (wasm_reservation_count >= WASM_MAX_RESERVATIONS) return NULL;
++  char* p = (char*) ::emscripten_builtin_memalign(alignment, bytes);
++  if (p == NULL) return NULL;
++  WasmReservation* r = &wasm_reservations[wasm_reservation_count++];
++  r->base = p; r->size = bytes; r->alloc = p;
++  return p;
++}
++
++// Releasing only drops the bookkeeping for the range; the underlying block
++// is returned to the C heap when the whole reservation has been released.
++static bool wasm_release(char* addr, size_t bytes) {
++  for (int i = 0; i < wasm_reservation_count; i++) {
++    WasmReservation* r = &wasm_reservations[i];
++    if (addr >= r->base && addr + bytes <= r->base + r->size) {
++      if (addr == r->base && bytes == r->size) {
++        if (r->alloc == r->base) ::free(r->alloc);
++        *r = wasm_reservations[--wasm_reservation_count];
++      } else if (addr == r->base) {
++        r->base += bytes; r->size -= bytes;
++      } else if (addr + bytes == r->base + r->size) {
++        r->size -= bytes;
++      }
++      return true;
++    }
++  }
++  return false;
++}
++#endif // __EMSCRIPTEN__
++
+ ////////////////////////////////////////////////////////////////////////////////
+ // global variables
+ julong os::Linux::_physical_memory = 0;
+@@ -182,6 +243,9 @@ julong os::Linux::available_memory() {
+   // values in struct sysinfo are "unsigned long"
+   struct sysinfo si;
+   julong avail_mem;
++#ifdef __EMSCRIPTEN__
++  return physical_memory() / 2;
++#endif
+ 
+   if (OSContainer::is_containerized()) {
+     jlong mem_limit = OSContainer::memory_limit_in_bytes();
+@@ -254,6 +318,9 @@ bool os::have_special_privileges() {
+ }
+ 
+ 
++#if !defined(SYS_gettid) && defined(__EMSCRIPTEN__)
++#define SYS_gettid 224   /* unused: see os::Linux::gettid() */
++#endif
+ #ifndef SYS_gettid
+ // i386: 224, ia64: 1105, amd64: 186, sparc 143
+   #ifdef __ia64__
+@@ -287,6 +354,10 @@ static char cpu_arch[] = HOTSPOT_LIB_ARCH;
+ // on NPTL, it returns the same pid for all threads, as required by POSIX.)
+ //
+ pid_t os::Linux::gettid() {
++#ifdef __EMSCRIPTEN__
++  int id = gt_current_id();
++  return id == 0 ? getpid() : (pid_t)(getpid() + 1000 + id);
++#endif
+   int rslt = syscall(SYS_gettid);
+   if (rslt == -1) {
+      // old kernel, no NPTL support
+@@ -314,6 +385,13 @@ static const char *unstable_chroot_error = "/proc file system not found.\n"
+                      "environment on Linux when /proc filesystem is not mounted.";
+ 
+ void os::Linux::initialize_system_info() {
++#ifdef __EMSCRIPTEN__
++  // One cooperative CPU.  1 GB of "physical" memory gives a default
++  // maximum heap of 256 MB (MaxRAMFraction == 4); use -Xmx for more.
++  set_processor_count(1);
++  _physical_memory = (julong)1024 * M;
++  return;
++#endif
+   set_processor_count(sysconf(_SC_NPROCESSORS_CONF));
+   if (processor_count() == 1) {
+     pid_t pid = os::Linux::gettid();
+@@ -595,6 +673,13 @@ void os::Linux::libpthread_init() {
+ # define _CS_GNU_LIBPTHREAD_VERSION 3
+ # endif
+ 
++#ifdef __EMSCRIPTEN__
++  os::Linux::set_glibc_version("emscripten musl");
++  os::Linux::set_libpthread_version("NPTL gthread-jspi");
++  os::Linux::set_is_NPTL();
++  os::Linux::set_is_floating_stack();
++  return;
++#endif
+   size_t n = confstr(_CS_GNU_LIBC_VERSION, NULL, 0);
+   if (n > 0) {
+      char *str = (char *)malloc(n, mtInternal);
+@@ -603,8 +688,10 @@ void os::Linux::libpthread_init() {
+   } else {
+      // _CS_GNU_LIBC_VERSION is not supported, try gnu_get_libc_version()
+      static char _gnu_libc_version[32];
++#ifndef __EMSCRIPTEN__
+      jio_snprintf(_gnu_libc_version, sizeof(_gnu_libc_version),
+               "glibc %s %s", gnu_get_libc_version(), gnu_get_libc_release());
++#endif
+      os::Linux::set_glibc_version(_gnu_libc_version);
+   }
+ 
+@@ -1140,6 +1227,17 @@ static bool find_vma(address addr, address* vma_low, address* vma_high) {
+ // the VM in a new thread since JDK 6, we still have to allow for the use of the
+ // JNI invocation API from a primordial thread.
+ void os::Linux::capture_initial_stack(size_t max_size) {
++#ifdef __EMSCRIPTEN__
++  // The primordial thread runs on Emscripten's C stack; all other threads
++  // (including the one creating the VM) run on green-thread stacks.
++  {
++    uintptr_t base = emscripten_stack_get_base();
++    uintptr_t end = emscripten_stack_get_end();
++    _initial_thread_stack_size = base - end;
++    _initial_thread_stack_bottom = (address)end;
++    return;
++  }
++#endif
+ 
+   // max_size is either 0 (which means accept OS default for thread stacks) or
+   // a user-specified value known to be at least the minimum needed. If we
+@@ -1381,6 +1479,10 @@ jlong os::javaTimeMillis() {
+ #endif
+ 
+ void os::Linux::clock_init() {
++#ifdef __EMSCRIPTEN__
++  _clock_gettime = ::clock_gettime;
++  return;
++#endif
+   // we do dlopen's in this particular order due to bug in linux
+   // dynamical loader (see 6348968) leading to crash on exit
+   void* handle = dlopen("librt.so.1", RTLD_LAZY);
+@@ -1857,6 +1959,7 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen)
+   // guard pages will be lost. We need a safepoint to fix this.
+   //
+   // See Linux man page execstack(8) for more info.
++#ifndef __EMSCRIPTEN__
+   if (os::uses_stack_guard_pages() && !os::Linux::_stack_is_executable) {
+     ElfFile ef(filename);
+     if (!ef.specifies_noexecstack()) {
+@@ -1905,6 +2008,7 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen)
+       }
+     }
+   }
++#endif // !__EMSCRIPTEN__
+ 
+   if (!load_attempted) {
+     result = os::Linux::dlopen_helper(filename, ebuf, ebuflen);
+@@ -1914,6 +2018,11 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen)
+     // Successful loading
+     return result;
+   }
++#ifdef __EMSCRIPTEN__
++  // All native libraries are linked into the WebAssembly module; there is
++  // no ELF file to diagnose.
++  return NULL;
++#endif
+ 
+   Elf32_Ehdr elf_head;
+   int diag_msg_max_length=ebuflen-strlen(ebuf);
+@@ -2023,6 +2132,8 @@ void * os::dll_load(const char *filename, char *ebuf, int ebuflen)
+     static  Elf32_Half running_arch_code=EM_LOONGARCH;
+   #elif  (defined RISCV)
+     static  Elf32_Half running_arch_code=EM_RISCV;
++  #elif  (defined __EMSCRIPTEN__)
++    static  Elf32_Half running_arch_code=EM_NONE;
+   #else
+     #error Method os::dll_load requires that one of following is defined:\
+          IA32, AMD64, IA64, __sparc, __powerpc__, ARM, S390, ALPHA, MIPS, MIPSEL, PARISC, M68K, AARCH64, LOONGARCH64, RISCV
+@@ -2803,6 +2914,11 @@ static void warn_fail_commit_memory(char* addr, size_t size,
+ //       left at the time of mmap(). This could be a potential
+ //       problem.
+ int os::Linux::commit_memory_impl(char* addr, size_t size, bool exec) {
++#ifdef __EMSCRIPTEN__
++  // Reserved memory is plain linear memory; committed pages must read as 0.
++  ::memset(addr, 0, size);
++  return 0;
++#endif
+   int prot = exec ? PROT_READ|PROT_WRITE|PROT_EXEC : PROT_READ|PROT_WRITE;
+   uintptr_t res = (uintptr_t) ::mmap(addr, size, prot,
+                                    MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0);
+@@ -3169,6 +3285,9 @@ struct bitmask* os::Linux::_numa_all_nodes_ptr;
+ struct bitmask* os::Linux::_numa_nodes_ptr;
+ 
+ bool os::pd_uncommit_memory(char* addr, size_t size) {
++#ifdef __EMSCRIPTEN__
++  return true;
++#endif
+   uintptr_t res = (uintptr_t) ::mmap(addr, size, PROT_NONE,
+                 MAP_PRIVATE|MAP_FIXED|MAP_NORESERVE|MAP_ANONYMOUS, -1, 0);
+   return res  != (uintptr_t) MAP_FAILED;
+@@ -3249,6 +3368,10 @@ address get_stack_commited_bottom(address bottom, size_t size) {
+ // mapping. This only affects the main/primordial thread
+ 
+ bool os::pd_create_stack_guard_pages(char* addr, size_t size) {
++#ifdef __EMSCRIPTEN__
++  // No memory protection in WebAssembly; Zero checks the stack explicitly.
++  return true;
++#endif
+ 
+   if (os::is_primordial_thread()) {
+     // As we manually grow stack up to bottom inside create_attached_thread(),
+@@ -3281,6 +3404,9 @@ bool os::pd_create_stack_guard_pages(char* addr, size_t size) {
+ 
+ bool os::remove_stack_guard_pages(char* addr, size_t size) {
+   uintptr_t stack_extent, stack_base;
++#ifdef __EMSCRIPTEN__
++  return true;
++#endif
+ 
+   if (os::is_primordial_thread()) {
+     return ::munmap(addr, size) == 0;
+@@ -3378,10 +3504,17 @@ static int anon_munmap(char * addr, size_t size) {
+ 
+ char* os::pd_reserve_memory(size_t bytes, char* requested_addr,
+                          size_t alignment_hint) {
++#ifdef __EMSCRIPTEN__
++  if (requested_addr != NULL) return NULL;
++  return wasm_reserve(bytes, alignment_hint);
++#endif
+   return anon_mmap(requested_addr, bytes, (requested_addr != NULL));
+ }
+ 
+ bool os::pd_release_memory(char* addr, size_t size) {
++#ifdef __EMSCRIPTEN__
++  return wasm_release(addr, size);
++#endif
+   return anon_munmap(addr, size);
+ }
+ 
+@@ -4009,6 +4142,9 @@ bool os::can_execute_large_page_memory() {
+ // available (and not reserved for something else).
+ 
+ char* os::pd_attempt_reserve_memory_at(size_t bytes, char* requested_addr) {
++#ifdef __EMSCRIPTEN__
++  return NULL;
++#endif
+   const int max_tries = 10;
+   char* base[max_tries];
+   size_t size[max_tries];
+@@ -5081,7 +5217,13 @@ void os::init(void) {
+ 
+   ThreadCritical::initialize();
+ 
++#ifdef __EMSCRIPTEN__
++  // Memory is managed by the VM itself (see wasm_reserve), so a small page
++  // keeps stack zones and alignment overhead low.
++  Linux::set_page_size(WASM_VM_PAGE_SIZE);
++#else
+   Linux::set_page_size(sysconf(_SC_PAGESIZE));
++#endif
+   if (Linux::page_size() == -1) {
+     fatal(err_msg("os_linux.cpp: os::init: sysconf failed (%s)",
+                   strerror(errno)));
+diff --git a/hotspot/src/os/posix/vm/os_posix.cpp b/hotspot/src/os/posix/vm/os_posix.cpp
+index 8b493d4e..9f5f970c 100644
+--- a/hotspot/src/os/posix/vm/os_posix.cpp
++++ b/hotspot/src/os/posix/vm/os_posix.cpp
+@@ -133,6 +133,10 @@ char* os::reserve_memory_aligned(size_t size, size_t alignment) {
+       "Alignment must be a multiple of allocation granularity (page size)");
+   assert((size & (alignment -1)) == 0, "size must be 'alignment' aligned");
+ 
++#ifdef __EMSCRIPTEN__
++  // The WebAssembly reservation layer returns aligned blocks directly.
++  return os::reserve_memory(size, NULL, alignment);
++#endif
+   size_t extra_size = size + alignment;
+   assert(extra_size >= size, "overflow, size is too large to allow alignment");
+ 
+diff --git a/hotspot/src/os_cpu/linux_zero/vm/os_linux_zero.cpp b/hotspot/src/os_cpu/linux_zero/vm/os_linux_zero.cpp
+index 84d29b21..c0d2bc91 100644
+--- a/hotspot/src/os_cpu/linux_zero/vm/os_linux_zero.cpp
++++ b/hotspot/src/os_cpu/linux_zero/vm/os_linux_zero.cpp
+@@ -408,6 +408,11 @@ void os::print_register_info(outputStream *st, void *context) {
+ 
+ extern "C" {
+   int SpinPause() {
++#ifdef __EMSCRIPTEN__
++    // Threads are cooperative: a spinning thread must let the others run.
++    extern void gt_yield(void);
++    gt_yield();
++#endif
+     return 0; // Shouldn't matter.
+   }
+ 
+@@ -481,7 +486,7 @@ extern "C" {
+ // Implementations of atomic operations not supported by processors.
+ //  -- http://gcc.gnu.org/onlinedocs/gcc-4.2.1/gcc/Atomic-Builtins.html
+ 
+-#ifndef _LP64
++#if !defined(_LP64) && !defined(__EMSCRIPTEN__)
+ extern "C" {
+   long long unsigned int __sync_val_compare_and_swap_8(
+     volatile void *ptr,
+diff --git a/hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp b/hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp
+index d9e56155..9b71963a 100644
+--- a/hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp
++++ b/hotspot/src/share/vm/interpreter/bytecodeInterpreter.cpp
+@@ -95,7 +95,25 @@
+   There really shouldn't be any handles remaining to trash but this is cheap
+   in relation to a safepoint.
+ */
++#ifdef __EMSCRIPTEN__
++/*
++  WebAssembly: Java threads are cooperative green threads.  Give other
++  threads (and the browser) a turn when the current time slice is used up.
++  The counter keeps the (JavaScript) clock query off the fast path.
++*/
++extern "C" int gt_yield_counter;
++extern "C" void gt_maybe_yield(void);
++#define WASM_TIMESLICE_CHECK                                                      \
++    if (++gt_yield_counter >= 1024) {                                             \
++      gt_yield_counter = 0;                                                       \
++      gt_maybe_yield();                                                           \
++    }
++#else
++#define WASM_TIMESLICE_CHECK
++#endif
++
+ #define SAFEPOINT                                                                 \
++    WASM_TIMESLICE_CHECK                                                          \
+     if ( SafepointSynchronize::is_synchronizing()) {                              \
+         {                                                                         \
+           /* zap freed handles rather than GC'ing them */                         \
+diff --git a/hotspot/src/share/vm/runtime/arguments.cpp b/hotspot/src/share/vm/runtime/arguments.cpp
+index 478ddf21..7543c446 100644
+--- a/hotspot/src/share/vm/runtime/arguments.cpp
++++ b/hotspot/src/share/vm/runtime/arguments.cpp
+@@ -4110,6 +4110,20 @@ jint Arguments::parse(const JavaVMInitArgs* args) {
+ 
+ jint Arguments::apply_ergo() {
+ 
++#ifdef __EMSCRIPTEN__
++  // WebAssembly defaults: one cooperative CPU, no shared memory files,
++  // no signals and no attach mechanism in the browser.
++  if (FLAG_IS_DEFAULT(UsePerfData))              FLAG_SET_DEFAULT(UsePerfData, false);
++  if (FLAG_IS_DEFAULT(ReduceSignalUsage))        FLAG_SET_DEFAULT(ReduceSignalUsage, true);
++  if (FLAG_IS_DEFAULT(DisableAttachMechanism))   FLAG_SET_DEFAULT(DisableAttachMechanism, true);
++  if (FLAG_IS_DEFAULT(ReservedCodeCacheSize))    FLAG_SET_DEFAULT(ReservedCodeCacheSize, 8*M);
++  if (FLAG_IS_DEFAULT(InitialCodeCacheSize))     FLAG_SET_DEFAULT(InitialCodeCacheSize, 512*K);
++  if (FLAG_IS_DEFAULT(UseLargePages))            FLAG_SET_DEFAULT(UseLargePages, false);
++  if (FLAG_IS_DEFAULT(UseNUMA))                  FLAG_SET_DEFAULT(UseNUMA, false);
++  if (FLAG_IS_DEFAULT(UseSerialGC) && !UseParallelGC && !UseConcMarkSweepGC && !UseG1GC)
++    FLAG_SET_DEFAULT(UseSerialGC, true);
++#endif
++
+   // Set flags based on ergonomics.
+   set_ergonomics_flags();
+ 

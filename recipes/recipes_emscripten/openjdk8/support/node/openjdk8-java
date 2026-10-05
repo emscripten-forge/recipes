@@ -1,0 +1,124 @@
+#!/usr/bin/env node
+/*
+ * openjdk8-java -- run the WebAssembly OpenJDK 8 runtime under Node.js.
+ *
+ *   openjdk8-java [options] <mainclass> [args...]  (the options of OpenJDK's java)
+ *
+ * The host file system is visible at the usual paths and the current
+ * directory is the working directory.  AWT runs headless (Java2D, fonts and
+ * image I/O work; windows need a browser, see share/openjdk8-wasm/openjdk8-web.js).
+ * Sound lines play silently in real time.  Needs WebAssembly JSPI: Node.js
+ * 25 or later (or Node.js 24, which is restarted with
+ * --experimental-wasm-jspi).
+ *
+ * Environment: OPENJDK8_WASM_HOME (directory with openjdk8.js, openjdk8.wasm, openjdk8-jre.json,
+ * openjdk8-jre.data.gz; default ../share/openjdk8-wasm), OPENJDK8_WASM_OPTIONS (extra JVM
+ * options, split at spaces).
+ */
+'use strict';
+const path = require('path');
+const fs = require('fs');
+
+if (typeof WebAssembly.Suspending !== 'function') {
+  const major = parseInt(process.versions.node, 10);
+  if (major === 24 && !process.env.__OPENJDK8_JSPI) {
+    const r = require('child_process').spawnSync(process.execPath,
+      ['--experimental-wasm-jspi', __filename, ...process.argv.slice(2)],
+      { stdio: 'inherit', env: Object.assign({}, process.env, { __OPENJDK8_JSPI: '1' }) });
+    process.exit(r.status === null ? 1 : r.status);
+  }
+  process.stderr.write('openjdk8-java: WebAssembly JSPI is not available; use Node.js 25 or later\n');
+  process.exit(1);
+}
+
+const home = process.env.OPENJDK8_WASM_HOME ||
+  path.resolve(path.dirname(fs.realpathSync(__filename)), '..', 'share', 'openjdk8-wasm');
+const createOpenJDK8Module = require(path.join(home, 'openjdk8.js'));
+
+// Environment variables passed to Java
+const env = {};
+for (const k of ['HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'CLASSPATH',
+                 'JAVA_TOOL_OPTIONS', '_JAVA_OPTIONS', 'TERM']) {
+  if (process.env[k] !== undefined) env[k] = process.env[k];
+}
+env.DISPLAY = '';
+env.PATH = '/java/bin';
+
+// Console input, read synchronously (all Java threads wait meanwhile).
+const inBuf = Buffer.alloc(65536);
+let inPos = 0, inLen = 0, inEof = false;
+function readStdin() {
+  if (inPos < inLen) return inBuf[inPos++];
+  if (inEof) return null;
+  for (;;) {
+    try {
+      inLen = fs.readSync(0, inBuf, 0, inBuf.length, null);
+      break;
+    } catch (e) {
+      if (e.code === 'EAGAIN') { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10); continue; }
+      if (e.code === 'EOF') { inLen = 0; break; }
+      throw e;
+    }
+  }
+  inPos = 0;
+  if (inLen <= 0) { inEof = true; return null; }
+  return inBuf[inPos++];
+}
+
+// Mount the host's top-level directories at the same paths.
+function mountHost(M) {
+  const FS = M.FS;
+  const skip = new Set(['dev', 'proc', 'sys', 'java']);
+  for (const name of fs.readdirSync('/')) {
+    if (skip.has(name)) continue;
+    let real;
+    try {
+      real = fs.realpathSync('/' + name);
+      if (!fs.statSync(real).isDirectory()) continue;
+    } catch (e) { continue; }
+    const mp = '/' + name;
+    try {
+      if (!FS.analyzePath(mp).exists) FS.mkdir(mp);
+      FS.mount(M.NODEFS, { root: real }, mp);
+    } catch (e) { /* not mountable: leave the in-memory directory */ }
+  }
+  try { FS.chdir(process.cwd()); } catch (e) {}
+}
+
+const jvmArgs = [
+  '-Djava.awt.headless=true',
+  '-Djava.protocol.handler.pkgs=org.emscriptenforge.jvm.net',
+  ...(process.env.OPENJDK8_WASM_OPTIONS || '').split(' ').filter(Boolean),
+];
+
+let exitCode = 0;
+createOpenJDK8Module({
+  thisProgram: '/java/bin/java',
+  noInitialRun: true,
+  locateFile: (p) => path.join(home, p),
+  javaEnv: env,
+  nullAudio: true,
+  stdin: readStdin,
+  print: (s) => { process.stdout.write(s + '\n'); },
+  printErr: (s) => { process.stderr.write(s + '\n'); },
+  onExit: (code) => { exitCode = code; },
+  preRun: [mountHost],
+}).then((M) => {
+  let r;
+  try {
+    r = M.callMain(jvmArgs.concat(process.argv.slice(2)));
+  } catch (e) {
+    r = e;
+  }
+  return Promise.resolve(r).then((rc) => {
+    process.exitCode = typeof rc === 'number' ? rc : exitCode;
+    process.exit();
+  }, (e) => {
+    if (e && e.name === 'ExitStatus') process.exitCode = e.status;
+    else { process.stderr.write('openjdk8-java: ' + (e && e.stack || e) + '\n'); process.exitCode = 1; }
+    process.exit();
+  });
+}, (e) => {
+  process.stderr.write('openjdk8-java: cannot start the runtime: ' + (e && e.message || e) + '\n');
+  process.exit(1);
+});

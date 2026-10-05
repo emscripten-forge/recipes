@@ -1,0 +1,62 @@
+context:
+  name: gthread-jspi
+  version: 0.1.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+# The sources are part of the recipe (include/, src/).
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+
+tests:
+  - package_contents:
+      include:
+        - gthread/gthread.h
+        - gthread/gthread_compat.h
+      files:
+        - lib/libgthread-jspi.a
+        - share/gthread-jspi/gthread-library.js
+        - lib/pkgconfig/gthread-jspi.pc
+  - script:
+      # threads, mutexes, condition variables, semaphores, TLS keys, sleeping
+      # and deep stacks switched mid-recursion
+      - export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+      - emcc -O2 -include gthread_compat.h test/test_basic.c -o test_basic.js $(pkg-config --cflags --libs gthread-jspi) -sJSPI_EXPORTS=gt_thread_entry,main -sEXIT_RUNTIME=1
+      - node test_basic.js | tee test.log
+      - grep -q "GTHREAD TEST OK" test.log
+    files:
+      recipe:
+        - test/test_basic.c
+    requirements:
+      build:
+        - emscripten_emscripten-wasm32 ==${{ c_compiler_version }}
+        - pkg-config
+        # JSPI (WebAssembly.Suspending) is enabled by default from Node.js 25
+        - nodejs >=25
+
+about:
+  homepage: https://github.com/emscripten-forge/recipes
+  license: MIT
+  license_file: LICENSE
+  summary: Cooperative POSIX threads for Emscripten programs, built on JSPI
+  description: |
+    gthread-jspi runs pthread-style threads inside one WebAssembly instance
+    (no SharedArrayBuffer, no workers, no cross-origin isolation).  Each
+    thread has its own C stack; threads switch at blocking calls (mutexes,
+    condition variables, sleep, I/O waits) by suspending WebAssembly with
+    JavaScript Promise Integration.  gthread_compat.h maps the pthread,
+    semaphore and sched_yield APIs onto gthreads when force-included
+    (-include gthread_compat.h).  JavaScript can wake threads waiting for
+    I/O with gt_io_notify(channel).  Link with $(pkg-config --libs
+    gthread-jspi) and list main in -sJSPI_EXPORTS if it blocks.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

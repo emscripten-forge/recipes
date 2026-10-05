@@ -1,0 +1,126 @@
+From: emscripten-forge
+Subject: Build system: wasm32-unknown-emscripten target (Zero VM)
+
+---
+diff --git a/common/autoconf/build-aux/config.sub b/common/autoconf/build-aux/config.sub
+index cc958da9..dad936e5 100644
+--- a/common/autoconf/build-aux/config.sub
++++ b/common/autoconf/build-aux/config.sub
+@@ -29,6 +29,15 @@
+ 
+ DIR=`dirname $0`
+ 
++# WebAssembly (Emscripten) triplets are passed through unchanged; the
++# bundled autoconf config.sub predates them.
++case "$1" in
++    wasm32-*)
++        echo $1
++        exit
++        ;;
++esac
++
+ # First, filter out everything that doesn't begin with "aarch64-"
+ if ! echo $* | grep '^aarch64-' >/dev/null ; then
+     . $DIR/autoconf-config.sub "$@"
+diff --git a/common/autoconf/generated-configure.sh b/common/autoconf/generated-configure.sh
+index 344c3164..05529cc7 100644
+--- a/common/autoconf/generated-configure.sh
++++ b/common/autoconf/generated-configure.sh
+@@ -13791,7 +13791,7 @@ test -n "$target_alias" &&
+   # Convert the autoconf OS/CPU value to our own data, into the VAR_OS/CPU variables.
+ 
+   case "$build_os" in
+-    *linux*)
++    *linux*|*emscripten*)
+       VAR_OS=linux
+       VAR_OS_API=posix
+       VAR_OS_ENV=linux
+@@ -13912,6 +13912,12 @@ test -n "$target_alias" &&
+       VAR_CPU_BITS=64
+       VAR_CPU_ENDIAN=little
+       ;;
++    wasm32)
++      VAR_CPU=wasm32
++      VAR_CPU_ARCH=wasm32
++      VAR_CPU_BITS=32
++      VAR_CPU_ENDIAN=little
++      ;;
+     *)
+       as_fn_error $? "unsupported cpu $build_cpu" "$LINENO" 5
+       ;;
+@@ -13941,7 +13947,7 @@ $as_echo "$OPENJDK_BUILD_OS-$OPENJDK_BUILD_CPU" >&6; }
+   # Convert the autoconf OS/CPU value to our own data, into the VAR_OS/CPU variables.
+ 
+   case "$host_os" in
+-    *linux*)
++    *linux*|*emscripten*)
+       VAR_OS=linux
+       VAR_OS_API=posix
+       VAR_OS_ENV=linux
+@@ -14062,6 +14068,12 @@ $as_echo "$OPENJDK_BUILD_OS-$OPENJDK_BUILD_CPU" >&6; }
+       VAR_CPU_BITS=64
+       VAR_CPU_ENDIAN=little
+       ;;
++    wasm32)
++      VAR_CPU=wasm32
++      VAR_CPU_ARCH=wasm32
++      VAR_CPU_BITS=32
++      VAR_CPU_ENDIAN=little
++      ;;
+     *)
+       as_fn_error $? "unsupported cpu $host_cpu" "$LINENO" 5
+       ;;
+@@ -43940,6 +43952,11 @@ $as_echo_n "checking what is not needed on Linux?... " >&6; }
+ $as_echo "pulse" >&6; }
+   fi
+ 
++  # WebAssembly (Emscripten): no ALSA, sound goes through the browser.
++  if test "x$OPENJDK_TARGET_CPU" = xwasm32; then
++    ALSA_NOT_NEEDED=yes
++  fi
++
+   if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking what is not needed on Solaris?" >&5
+ $as_echo_n "checking what is not needed on Solaris?... " >&6; }
+diff --git a/common/autoconf/libraries.m4 b/common/autoconf/libraries.m4
+index 687f6ad8..53a94eda 100644
+--- a/common/autoconf/libraries.m4
++++ b/common/autoconf/libraries.m4
+@@ -36,6 +36,11 @@ AC_DEFUN_ONCE([LIB_SETUP_INIT],
+     AC_MSG_RESULT([pulse])
+   fi
+ 
++  # WebAssembly (Emscripten): no ALSA, sound goes through the browser.
++  if test "x$OPENJDK_TARGET_CPU" = xwasm32; then
++    ALSA_NOT_NEEDED=yes
++  fi
++
+   if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+     AC_MSG_CHECKING([what is not needed on Solaris?])
+     ALSA_NOT_NEEDED=yes
+diff --git a/common/autoconf/platform.m4 b/common/autoconf/platform.m4
+index 99c78202..99c84399 100644
+--- a/common/autoconf/platform.m4
++++ b/common/autoconf/platform.m4
+@@ -108,6 +108,12 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU],
+       VAR_CPU_BITS=64
+       VAR_CPU_ENDIAN=little
+       ;;
++    wasm32)
++      VAR_CPU=wasm32
++      VAR_CPU_ARCH=wasm32
++      VAR_CPU_BITS=32
++      VAR_CPU_ENDIAN=little
++      ;;
+     *)
+       AC_MSG_ERROR([unsupported cpu $1])
+       ;;
+@@ -120,7 +126,7 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU],
+ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_OS],
+ [
+   case "$1" in
+-    *linux*)
++    *linux*|*emscripten*)
+       VAR_OS=linux
+       VAR_OS_API=posix
+       VAR_OS_ENV=linux

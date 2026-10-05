@@ -12,6 +12,17 @@ source:
   - git: https://github.com/t3tra-dev/x11.wasm.git
     rev: ${{ rev }}
     target_directory: x11.wasm
+    patches:
+      # hooks that let a cooperative (single-threaded, JSPI) runtime wait
+      # for events in XNextEvent & co.; no change without hooks
+      - patches/0001-runtime-hooks.patch
+      # XGetImage of a window includes the window background
+      - patches/0002-getimage-composites-window-background.patch
+      # Module.x11WasmDocumentTitle = false keeps the page title
+      - patches/0003-optional-document-title-sync.patch
+      # typed "A" and "!" arrived as "a" and "1": text key events get the
+      # Shift state that selects their keysym
+      - patches/0004-text-events-shift-state.patch
   # headers only -- nothing from these is compiled
   - url: https://www.x.org/releases/individual/proto/xorgproto-2024.1.tar.xz
     sha256: 372225fd40815b8423547f5d890c5debc72e88b91088fbfb13158c20495ccb59
@@ -34,6 +45,16 @@ source:
   - url: https://www.x.org/releases/individual/lib/libXrandr-1.5.4.tar.xz
     sha256: 1ad5b065375f4a85915aa60611cc6407c060492a214d7f9daf214be752c3b4d3
     target_directory: xorg/libXrandr
+  - url: https://www.x.org/releases/individual/lib/libXt-1.3.1.tar.xz
+    sha256: e0a774b33324f4d4c05b199ea45050f87206586d81655f8bef4dba434d931288
+    target_directory: xorg/libXt
+  # X11/Shell.h includes the session management headers
+  - url: https://www.x.org/releases/individual/lib/libSM-1.2.6.tar.xz
+    sha256: be7c0abdb15cbfd29ac62573c1c82e877f9d4047ad15321e7ea97d1e43d835be
+    target_directory: xorg/libSM
+  - url: https://www.x.org/releases/individual/lib/libICE-1.1.2.tar.xz
+    sha256: 974e4ed414225eb3c716985df9709f4da8d22a67a2890066bc6dfc89ad298625
+    target_directory: xorg/libICE
 
 build:
   number: 0
@@ -53,6 +74,10 @@ tests:
         - include/X11/extensions/Xrender.h
         - include/X11/extensions/XShm.h
         - include/X11/extensions/Xrandr.h
+        - include/X11/Intrinsic.h
+        - include/X11/StringDefs.h
+        - include/X11/Shell.h
+        - include/X11Wasm/Hooks.h
         - lib/libX11.a
         - lib/libXext.a
         - share/x11-wasm/library.js
@@ -74,11 +99,21 @@ about:
   description: |
     x11.wasm implements Xlib on HTML canvases. This package adds what X11
     clients such as OpenJDK's AWT expect around it: the Xorg protocol and
-    extension headers, link stubs that report SHAPE, MIT-SHM, DOUBLE-BUFFER,
-    RENDER, XTEST, XInput and XKB as absent, js-library entry points proxied
-    to the browser thread for pthread programs, and pthreads.js, which keeps
-    DOM input from racing Xlib calls made on worker threads.
+    extension headers, the X Toolkit Intrinsics headers (Intrinsic.h,
+    StringDefs.h, Shell.h; no libXt), link stubs that report SHAPE, MIT-SHM,
+    DOUBLE-BUFFER, RENDER, XTEST, XInput and XKB as absent, js-library entry
+    points proxied to the browser thread for pthread programs, and
+    pthreads.js, which keeps DOM input from racing Xlib calls made on worker
+    threads. x11.wasm is patched to let single-threaded programs that
+    switch stacks (JSPI) wait for events through X11WasmSetHooks(), to
+    include window backgrounds in XGetImage, to give typed characters the
+    Shift state that X clients expect, and to leave document.title alone
+    when Module.x11WasmDocumentTitle is false.
   license: MIT AND X11
   license_file:
     - xorg/libX11/COPYING
     - xorg/xorgproto/COPYING-x11proto
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

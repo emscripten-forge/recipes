@@ -1,0 +1,87 @@
+diff --git a/js/browser/dom/draw.js b/js/browser/dom/draw.js
+index 2d38b82..ef63b88 100644
+--- a/js/browser/dom/draw.js
++++ b/js/browser/dom/draw.js
+@@ -1631,6 +1631,55 @@
+      * @param {number} bitsPerPixel
+      * @returns {number}
+      */
++    /**
++     * Background color visible behind a window: its own background, else the
++     * nearest ancestor's, else the CSS background of the root element.
++     * @param {X11WasmDOMResource} resource
++     * @returns {[number, number, number]}
++     */
++    effectiveBackgroundRgb(resource) {
++      /** @type {(css: string | null | undefined) => ([number, number, number] | null)} */
++      const parse = (css) => {
++        if (!css) {
++          return null;
++        }
++        const m = /rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:[\s,/]+([\d.]+%?))?/.exec(css);
++        if (m) {
++          if (m[4] !== undefined && parseFloat(m[4]) === 0) {
++            return null;
++          }
++          return /** @type {[number, number, number]} */ ([Number(m[1]), Number(m[2]), Number(m[3])]);
++        }
++        const h = /^#([0-9a-f]{6})$/i.exec(css.trim());
++        if (h) {
++          const v = parseInt(h[1], 16);
++          return /** @type {[number, number, number]} */ ([(v >> 16) & 255, (v >> 8) & 255, v & 255]);
++        }
++        return null;
++      };
++      let current = resource;
++      let guard = 0;
++      while (current && guard++ < 64) {
++        const rgb = parse(current.backgroundColor);
++        if (rgb) {
++          return rgb;
++        }
++        if (!current.parent || current.parent === current.id) {
++          break;
++        }
++        current = this.resources.get(current.parent);
++      }
++      const root = this.rootElement;
++      const view = this.document && this.document.defaultView;
++      if (root && view && typeof view.getComputedStyle === "function") {
++        const rgb = parse(view.getComputedStyle(root).backgroundColor);
++        if (rgb) {
++          return rgb;
++        }
++      }
++      return [255, 255, 255];
++    },
++
+     getImage(id, srcX, srcY, width, height, bytes, bytesPerLine, bitsPerPixel) {
+       const context = this.getContext(id);
+       const resource = this.resources.get(id);
+@@ -1653,6 +1702,26 @@
+       const bytesPerPixel = Math.max(1, Math.floor(bitsPerPixel / 8));
+       let source = 0;
+ 
++      // Window areas that were never drawn are transparent in the canvas and
++      // show the window background (a CSS background on the element).  An X
++      // server returns the visible contents, so composite the canvas over
++      // that background before handing the pixels out.
++      if (resource.kind === "window") {
++        const background = this.effectiveBackgroundRgb(resource);
++        const data = imageData.data;
++        for (let i = 0; i < data.length; i += 4) {
++          const alpha = data[i + 3];
++          if (alpha === 255) {
++            continue;
++          }
++          const inv = 255 - alpha;
++          data[i] = Math.round((data[i] * alpha + background[0] * inv) / 255);
++          data[i + 1] = Math.round((data[i + 1] * alpha + background[1] * inv) / 255);
++          data[i + 2] = Math.round((data[i + 2] * alpha + background[2] * inv) / 255);
++          data[i + 3] = 255;
++        }
++      }
++
+       for (let row = 0; row < readHeight; row++) {
+         const outY = top - srcY + row;
+         const rowStart =
