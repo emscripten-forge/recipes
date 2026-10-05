@@ -210,8 +210,8 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
             # make commit for that recipe
             subprocess.run(["git", "commit", "-m", f"Migrate recipe {recipe_dir}"], check=True)
 
-        # push the changes to the remote branch
-        subprocess.run(["git", "push", "origin", branch_name], check=True)
+        # push the changes to the remote(with force if necessary)
+        subprocess.run(["git", "push", "--force", "origin", branch_name], check=True)
 
 
         pr_title = pkg_list_to_pr_title(successful_builds)
