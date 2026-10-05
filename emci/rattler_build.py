@@ -5,9 +5,12 @@ from pathlib import Path
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
 
 
-def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip_existing="local"):
+def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, 
+                       skip_existing="local", continue_on_failure=False, 
+                       output_dir=None, timeout=None, format='conda',
+                       log_style='simple'):
 
-    cmd = ["rattler-build", "build", "--package-format", "tar-bz2", "--log-style", "simple"]
+    cmd = ["rattler-build", "build", "--package-format", format, "--log-style", log_style]
 
     # build single recipe or all recipes in a directory ?
     if recipe is not None and recipes_dir is not None:
@@ -41,8 +44,13 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, skip
     # pass existing env vars to subprocess
     print(f"Running rattler-build with command: {cmd}")
 
+    if continue_on_failure:
+        cmd.append("--continue-on-failure")
 
-    ret = subprocess.run(' '.join(cmd), check=False, shell=True)#, env=os.environ)
+    if output_dir is not None:
+        cmd.extend(["--output-dir", str(output_dir)])
+        
+    ret = subprocess.run(' '.join(cmd), check=False, shell=True, timeout=timeout,)#, env=os.environ)
     if ret.returncode != 0:
         raise RuntimeError(f"rattler-build failed with return code {ret.returncode}")
-
+    return ret
