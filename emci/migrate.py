@@ -10,6 +10,7 @@ from hashlib import sha256
 import fnmatch
 import shutil
 from ruamel.yaml import YAML
+from .constants import RECIPES_EMSCRIPTEN_DIR, TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
 
 def iter_outputs(recipe):
     is_multi_output = "outputs" in recipe and len(recipe["outputs"]) > 1
@@ -122,7 +123,7 @@ def build_with_rattler_wrapper(*args, **kwargs):
 
 
 
-def post_tentative_build(to_migrate_dir, output_dir, target_platform, pkg_to_recipe_dir):
+def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     # check which recipes were successfully built
     successful_builds = []
 
@@ -139,6 +140,25 @@ def post_tentative_build(to_migrate_dir, output_dir, target_platform, pkg_to_rec
     
 
     print(f"Successfully built recipes: {successful_builds}")
+
+    # move build recipes from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
+    # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
+    # copy TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR/<RECIPE> to RECIPES_EMSCRIPTEN_DIR/<RECIPE> 
+    for recipe_dir in successful_builds:
+        src_dir = TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR / recipe_dir
+        dst_dir = RECIPES_EMSCRIPTEN_DIR / recipe_dir
+        if not src_dir.exists():
+            raise RuntimeError(f"Source directory {src_dir} does not exist")
+        
+        if  dst_dir.exists():
+            raise RuntimeError(f"Destination directory {dst_dir} already exists")
+        
+        shutil.copytree(src_dir, dst_dir)
+        print(f"Copied {src_dir} to {dst_dir}")
+
+        # delete from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
+        shutil.rmtree(src_dir)
+        print(f"Deleted {src_dir}") 
 
 
 def build_pkg_to_recipe_dir(to_migrate_dir):
@@ -174,8 +194,7 @@ def copy_selected_recipes(to_migrate_dir, wildcards, wildcards_ignore, recipe_tr
 
 
     
-def build_tentative(to_migrate_dir, 
-                    output_dir, 
+def build_tentative(output_dir, 
                     target_platform='emscripten-wasm32', 
                     timeout=None, 
                     wildcards=None,
@@ -183,7 +202,6 @@ def build_tentative(to_migrate_dir,
     """
     entry point for tentative building
     """
-    to_migrate_dir = Path(to_migrate_dir)
     output_dir = Path(output_dir)
     if wildcards is None:
         wildcards = ['*']
@@ -192,8 +210,6 @@ def build_tentative(to_migrate_dir,
 
 
     # sanity checks
-    if not to_migrate_dir.exists():
-        raise ValueError(f"Source directory {to_migrate_dir} does not exist")
     if not output_dir.exists():
         output_dir.mkdir(parents=True)
 
@@ -204,7 +220,7 @@ def build_tentative(to_migrate_dir,
 
         filtered_to_migrate_dir = temp_dir / "filtered_to_migrate"
         filtered_to_migrate_dir.mkdir(parents=True)
-        copy_selected_recipes(to_migrate_dir, wildcards, wildcards_ignore, recipe_transformations=[], output_dir=filtered_to_migrate_dir)
+        copy_selected_recipes(TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR, wildcards, wildcards_ignore, recipe_transformations=[], output_dir=filtered_to_migrate_dir)
 
 
         # map recipe.yaml content to directory name 
@@ -218,8 +234,7 @@ def build_tentative(to_migrate_dir,
                         timeout=timeout)
 
         # after the build, process the results
-        post_tentative_build(to_migrate_dir=to_migrate_dir, 
-                            output_dir=output_dir, 
+        post_tentative_build((output_dir=output_dir, 
                             target_platform=target_platform, 
                             pkg_to_recipe_dir=pkg_to_recipe_dir)
 
