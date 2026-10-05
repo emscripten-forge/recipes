@@ -7,24 +7,34 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://github.com/openjdk/jdk8u/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 406a990606b3452485b1554d0b9463fa0ef8e34c70cd1033b54ff12dd9a2f611
-  patches:
-    # configure: the wasm32-unknown-emscripten target (Zero VM)
-    - patches/0001-build-wasm32-emscripten-target.patch
-    # HotSpot Zero: Emscripten build flags, OS layer for a single-process,
-    # signal-free environment, cooperative threads (gthread-jspi)
-    - patches/0002-hotspot-zero-on-emscripten.patch
-    # clang may otherwise fold markOop lock-bit tests (monitors hang)
-    - patches/0003-hotspot-markoop-value-alignment.patch
-    # class library natives: built-in (statically linked) JNI libraries,
-    # NIO without epoll, console input, XAWT as the only toolkit
-    - patches/0004-jdk-native-libraries-on-emscripten.patch
-    # Java Sound: Direct Audio playback through Web Audio
-    - patches/0005-javasound-webaudio-direct-audio.patch
-    # AWT on x11.wasm: X11 structure layouts computed for its headers,
-    # its wide KeyCode narrowed in the modifier map XToolkit reads
-    - patches/0006-awt-x11wasm-struct-layouts-and-keycode.patch
+  - url: https://github.com/openjdk/jdk8u/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 406a990606b3452485b1554d0b9463fa0ef8e34c70cd1033b54ff12dd9a2f611
+    patches:
+      # configure: the wasm32-unknown-emscripten target (Zero VM)
+      - patches/0001-build-wasm32-emscripten-target.patch
+      # HotSpot Zero: Emscripten build flags, OS layer for a single-process,
+      # signal-free environment, cooperative threads (gthread-jspi)
+      - patches/0002-hotspot-zero-on-emscripten.patch
+      # clang may otherwise fold markOop lock-bit tests (monitors hang)
+      - patches/0003-hotspot-markoop-value-alignment.patch
+      # class library natives: built-in (statically linked) JNI libraries,
+      # NIO without epoll, console input, XAWT as the only toolkit
+      - patches/0004-jdk-native-libraries-on-emscripten.patch
+      # Java Sound: Direct Audio playback through Web Audio
+      - patches/0005-javasound-webaudio-direct-audio.patch
+      # AWT on x11.wasm: X11 structure layouts computed for its headers,
+      # its wide KeyCode narrowed in the modifier map XToolkit reads
+      - patches/0006-awt-x11wasm-struct-layouts-and-keycode.patch
+  # libffi, built by build.sh and linked into openjdk8.wasm: Zero calls every
+  # JNI method through ffi_call
+  - url: https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz
+    sha256: b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
+    target_directory: libffi
+    patches:
+      # ffi_call through WebAssembly trampolines generated at run time, so
+      # native methods can block and switch green threads (JSPI); unaligned
+      # 64-bit values; Emscripten 4: no implicit stackSave/_malloc in JS
+      - patches/libffi-wasm32-jspi-calls-unaligned-64bit-emscripten4.patch
 
 build:
   number: 0
@@ -48,8 +58,6 @@ requirements:
   host:
     - x11-wasm
     - gthread-jspi
-    # build 2 calls through WebAssembly trampolines, which JSPI needs
-    - libffi[version='>=3.4.6',build_number='>=2']
     - freetype
     - zlib
     # headers only (the JDK loads fontconfig at run time when present)
@@ -64,7 +72,6 @@ requirements:
       - expat
       - x11-wasm
       - gthread-jspi
-      - libffi
 
 tests:
   - package_contents:
@@ -78,13 +85,15 @@ tests:
 about:
   homepage: https://openjdk.org/projects/jdk8u/
   repository: https://github.com/openjdk/jdk8u
-  license: GPL-2.0-only WITH Classpath-exception-2.0 AND Bitstream-Vera
+  license: GPL-2.0-only WITH Classpath-exception-2.0 AND Bitstream-Vera AND MIT
   license_file:
     - LICENSE
     - ASSEMBLY_EXCEPTION
     - THIRD_PARTY_README
     # the bundled DejaVu fonts
     - support/jre-overlay/lib/fonts/LICENSE-DejaVu.txt
+    # the bundled libffi
+    - libffi/LICENSE
   summary: OpenJDK 8 Java runtime for WebAssembly, with AWT/Swing and applets in the browser
   description: |
     The OpenJDK 8 Java runtime (HotSpot Zero interpreter and the complete

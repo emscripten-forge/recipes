@@ -30,6 +30,20 @@ export EMJDK_LDFLAGS="-L${PREFIX}/lib"
 ln -sf "${PREFIX}/lib/libfreetype.a" "${TOOLS}/freetype/libfreetype.so"
 ln -sf "${PREFIX}/lib/libfreetype.a" "${TOOLS}/freetype/libfreetype.a"
 
+# libffi (the second source, patched so that calls through ffi_call can
+# suspend with JSPI): a static library in a private prefix, linked into
+# openjdk8.wasm by link-java.sh. Same flags as emscripten-forge's libffi.
+export LIBFFI_DIR="${SRC_DIR}/_libffi"
+(
+  cd "${SRC_DIR}/libffi"
+  emconfigure ./configure --host=wasm32-unknown-linux --prefix="${LIBFFI_DIR}" \
+    --enable-static --disable-shared --disable-dependency-tracking \
+    --disable-builddir --disable-multi-os-directory --disable-raw-api --disable-docs \
+    CFLAGS="-O3 -fPIC -sWASM_BIGINT -fwasm-exceptions -sSUPPORT_LONGJMP -DWASM_BIGINT" \
+    LDFLAGS="-O3 -sWASM_BIGINT -fwasm-exceptions -sSUPPORT_LONGJMP"
+  emmake make install
+)
+
 # Every C/C++ file sees the Linux-like environment the JDK expects: the
 # pthread API maps onto gthread-jspi, a few Linux-only headers are stubbed.
 EXTRA_FLAGS="-D__linux__ -D__SIGRTMAX=64 -I${SUPPORT}/compat-include -include gthread_compat.h \
@@ -55,7 +69,7 @@ bash configure \
   --with-num-cores="${JOBS}" \
   CC=emjdk-cc CXX=emjdk-c++ AR=emar NM=llvm-nm OBJCOPY=llvm-objcopy STRIP=/bin/true \
   BUILD_CC=gcc BUILD_CXX=g++ BUILD_LD=gcc \
-  LIBFFI_CFLAGS="-I${PREFIX}/include" LIBFFI_LIBS="-L${PREFIX}/lib -lffi"
+  LIBFFI_CFLAGS="-I${LIBFFI_DIR}/include" LIBFFI_LIBS="-L${LIBFFI_DIR}/lib -lffi"
 
 make images JOBS="${JOBS}" LOG=warn
 

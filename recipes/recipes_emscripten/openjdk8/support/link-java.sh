@@ -5,8 +5,9 @@
 # usage: link-java.sh BUILD_DIR OUT_DIR
 #   BUILD_DIR  OpenJDK build output (…/build/linux-wasm32-normal-zero-release)
 #   OUT_DIR    where openjdk8.js, openjdk8.wasm and the runtime jar go
-# environment: PREFIX (host prefix with x11-wasm, gthread-jspi, libffi,
-#   freetype, zlib), SUPPORT (this directory), EMLINK_OPT (default -O2)
+# environment: PREFIX (host prefix with x11-wasm, gthread-jspi, freetype,
+#   zlib), LIBFFI_DIR (prefix of the patched libffi build.sh builds),
+#   SUPPORT (this directory), EMLINK_OPT (default -O2)
 set -euo pipefail
 
 BUILD=$(cd "$1" && pwd)
@@ -93,7 +94,7 @@ emcc $OPT -o "$OUT/openjdk8.js" \
   "$WORK/libwasmrt.o" "$WORK/wasm_dl.o" "$WORK/wasm_x11glue.o" "$WORK/wasm_misc.o" \
   "$WORK/dlsym_table.o" \
   -L"$PREFIX/lib" "$PREFIX/lib/libX11.a" \
-  -lfreetype -lz -lgthread-jspi "$PREFIX/lib/libffi.a" \
+  -lfreetype -lz -lgthread-jspi "${LIBFFI_DIR:?}/lib/libffi.a" \
   --js-library "$PREFIX/share/x11-wasm/library.js" \
   --pre-js "$PREFIX/share/x11-wasm/dom.js" \
   --js-library "$PREFIX/share/gthread-jspi/gthread-library.js" \
