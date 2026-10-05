@@ -221,11 +221,16 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
         )
 
         # get current user
-        current_user = subprocess.check_output(['git', 'config', 'user.name']).decode().strip()
+        if ON_GITHUB_ACTIONS:
+            head = branch_name
+        else:
+            current_user = subprocess.check_output(['git', 'config', 'user.name']).decode().strip()
+            head = f"{current_user}:{branch_name}"
 
         args = ['gh', 'pr', 'create',
                 "--repo", "emscripten-forge/recipes",
                 '--base', "emscripten-6x",
+                "--head", head,
                 '--title', pr_title, '--body', pr_body,
                 '--label', '6x'
         ]
