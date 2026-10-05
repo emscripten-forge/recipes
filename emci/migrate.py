@@ -218,9 +218,12 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
             f"- {recipe}" for recipe in successful_builds
         )
 
+        # get current user
+        current_user = subprocess.check_output(['git', 'config', 'user.name']).decode().strip()
+
         args = ['gh', 'pr', 'create',
                 "--repo", "emscripten-forge/recipes",
-                "--head", "DerThorsten/" + branch_name,
+                "--head", f"{current_user}/{branch_name}",
                 '-B', "emscripten-6x",
                 '--title', pr_title, '--body', pr_body,
                 '--label', '6x'
