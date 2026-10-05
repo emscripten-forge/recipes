@@ -300,6 +300,8 @@ def build_tentative(output_dir,
 
         ctx = get_github_user_ctx(use_bot=False)
         with ctx():
+            # gh set default repo
+            subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
 
             # after the build, process the results
             post_tentative_build(output_dir=output_dir, 
