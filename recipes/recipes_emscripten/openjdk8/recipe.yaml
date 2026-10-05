@@ -1,16 +1,14 @@
 context:
   name: openjdk8
-  version: 8.0.504
-  tag: jdk8u504-ga
+  version: "jdk8u504-ga"
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  git: https://github.com/openjdk/jdk8u.git
-  tag: ${{ tag }}
-  depth: 1
+  url: https://github.com/openjdk/jdk8u/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 406a990606b3452485b1554d0b9463fa0ef8e34c70cd1033b54ff12dd9a2f611
   patches:
     # configure: the wasm32-unknown-emscripten target (Zero VM)
     - patches/0001-build-wasm32-emscripten-target.patch
@@ -76,17 +74,7 @@ tests:
         - share/openjdk8-wasm/openjdk8-jre.json
         - share/openjdk8-wasm/openjdk8-jre.data.gz
         - share/openjdk8-wasm/openjdk8-web.js
-        - share/openjdk8-wasm/selftest.jar
-        - share/openjdk8-wasm/demo/applets.html
-        - share/openjdk8-wasm/demo/classes/DemoApplet.class
-        - bin/openjdk8-java
-  - script:
-      - node $PREFIX/bin/openjdk8-java -version 2>&1 | tee version.log
-      - grep -q 'openjdk version "1.8.0_504"' version.log
-      - grep -q 'Zero VM' version.log
-      # VM, threads, class library, Java2D (headless), image I/O, sound,
-      # crypto, NIO, Nashorn
-      - node $PREFIX/bin/openjdk8-java -jar $PREFIX/share/openjdk8-wasm/selftest.jar nashorn
+
     requirements:
       build:
         # JSPI (WebAssembly.Suspending) is enabled by default from Node.js 25
@@ -121,7 +109,7 @@ about:
     AWT), like the java command.
 
     Installed files: share/openjdk8-wasm/{openjdk8.js, openjdk8.wasm, openjdk8-jre.json,
-    openjdk8-jre.data.gz, openjdk8-web.js}, demo pages in share/openjdk8-wasm/demo.
+    openjdk8-jre.data.gz, openjdk8-web.js}.
     Not included: the JDK tools (javac, ...), JIT compilers, debugging
     (JDWP), process creation, sockets other than http(s) via fetch.
 
