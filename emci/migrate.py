@@ -151,12 +151,17 @@ def get_github_user_ctx(use_bot):
 
 
 
-def pkg_list_to_branch_name(pkg_list):
-    max_branch_name_length = 255 
+def pkg_list_to_branch_name(pkg_list, max_branch_name_length=255):
     name =  "migrate_6x_" + "_".join(pkg_list)
     if len(name) > max_branch_name_length:
         name = name[:max_branch_name_length]
     return name
+
+def pkg_list_to_pr_title(pkg_list, max_title_length=100):
+    title = "Migrate " + ", ".join(pkg_list)
+    if len(title) > max_title_length:
+        title = title[:max_title_length]
+    return title
 
 def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     # check which recipes were successfully built
@@ -179,7 +184,8 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
     branch_name = pkg_list_to_branch_name(successful_builds)
     with git_branch_ctx(branch_name, stash_current=False):
 
-    
+        # gh set default repo
+        subprocess.check_call(['gh', 'repo', 'set-default', 'emscripten-forge/recipes'], cwd=os.getcwd())
 
         # move build recipes from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
         # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
@@ -194,11 +200,31 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
                 raise RuntimeError(f"Destination directory {dst_dir} already exists")
             
             shutil.copytree(src_dir, dst_dir)
-            print(f"Copied {src_dir} to {dst_dir}")
+            print(f"Copied {src_dir} to {dst_dir}") 
 
-            # delete from TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR
-            # shutil.rmtree(src_dir)
-            print(f"Deleted {src_dir}") 
+
+            # delete the old file via git
+            subprocess.run(["git", "rm", "-r", str(src_dir)], check=True)
+
+            # call git add to add RECIPES_EMSCRIPTEN_DIR / recipe_dir 
+            subprocess.run(["git", "add", str(dst_dir)], check=True)
+
+
+    pr_title = pkg_list_to_pr_title(successful_builds)
+
+    pr_body = "Migrated recipes:\n" + "\n".join(
+        f"- {recipe}" for recipe in successful_builds
+    )
+
+    args = ['gh', 'pr', 'create',
+            '-B', "emscripten-6x",
+            '--title', pr_title, '--body', pr_body,
+            '--label', '6x'
+    ]
+
+    # call gh to create a PR
+    subprocess.check_call(args, cwd=os.getcwd())
+         
 
 
 def build_pkg_to_recipe_dir(to_migrate_dir):
