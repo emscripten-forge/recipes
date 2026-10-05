@@ -219,6 +219,7 @@ def post_tentative_build( output_dir, target_platform, pkg_to_recipe_dir):
         )
 
         args = ['gh', 'pr', 'create',
+                "--repo", "emscripten-forge/recipes",
                 '-B', "emscripten-6x",
                 '--title', pr_title, '--body', pr_body,
                 '--label', '6x'
