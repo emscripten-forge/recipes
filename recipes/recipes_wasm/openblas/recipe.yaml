@@ -1,0 +1,169 @@
+context:
+  name: openblas
+  version: 0.3.34
+
+source:
+  url: https://github.com/OpenMathLib/OpenBLAS/archive/v${{ version }}.tar.gz
+  sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
+  patches:
+  # Branch containing these patches is v0.3.34-emforge-6x at https://github.com/ianthomas23/OpenBLAS
+  # Use `git format-patch v0.3.34..v0.3.34-emforge-6x` to create patch files.
+  # Patches 0009-0012 adapt the OpenBLAS test suite for emscripten/wasm.
+  - patches/0001-Remove-march-flags.patch
+  - patches/0002-Skip-linktest.patch
+  - patches/0003-Add-emscripten-as-supported-arch.patch
+  - patches/0004-Add-dummy-length-arguments-for-char-arguments.patch
+  - patches/0005-Return-void-not-int.patch
+  - patches/0006-Int-to-void-return-types-of-lapack-functions-used-by.patch
+  - patches/0007-Enable-LAPACK_FORTRAN_STDLEN_END-for-lapacke-calling.patch
+  - patches/0008-Clear-FEXTRALIB-when-linking-shared-library.patch
+  - patches/0009-Skip-fork-based-utests-for-emscripten.patch
+  - patches/0010-Run-OpenBLAS-tests-under-node-for-emscripten.patch
+  - patches/0011-Return-int-from-ctest-F77-wrappers-for-wasm-ABI.patch
+  - patches/0012-Use-int-return-for-f2c-Subroutine-decls-in-ctest.patch
+  - patches/0013-Fix-xerbla-arguments-for-wasm64.patch
+  - patches/0014-Integer-rounding-workaround-for-wasm64.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: openblas-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('fortran') }}
+    - cmake
+    - make
+    - nodejs
+    host:
+    - libflang-rt-static
+  build:
+    script:
+      env:
+        # PKG_VERSION is empty in a staging output, so pass the version explicitly.
+        PKG_VERSION: ${{ version }}
+      # Note this includes building and running OpenBLAS test suite.
+      file: build.sh
+
+#==============================================================================#
+
+# Headers, docs, and config files
+- package:
+    name: openblas-dev
+    version: ${{ version }}
+  inherit: openblas-build
+  build:
+    files:
+      exclude:
+      - lib/*.a
+      - lib/*.so
+  tests:
+  - package_contents:
+      files:
+      - include/cblas.h
+      - include/f77blas.h
+      - include/lapack.h
+      - include/lapacke.h
+      - include/openblas_config.h
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# Static library
+- package:
+    name: openblas-static
+    version: ${{ version }}
+  inherit: openblas-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    run:
+    - ${{ pin_subpackage('openblas-dev', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libopenblas.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# Shared library
+- package:
+    name: openblas
+    version: ${{ version }}
+  inherit: openblas-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('openblas-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('openblas', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libopenblas.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_openblas.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# This test block is commented out until we have builds of numpy and scipy using
+# openblas to test against.
+
+## Rebuild of OpenBLAS is dynamically linked by channel NumPy and SciPy.
+## numpy-tests / scipy-tests overlay the suites onto those packages.
+## SciPy wasm skips ship in scipy/conftest.py (emscripten-forge/recipes#6320).
+#- script:
+#  - playwright install
+#  - PYTESTER_TIMEOUT_MIN=120 python long_pytester.py
+#  files:
+#    recipe:
+#    - test_numpy_scipy_suites.py
+#    - long_pytester.py
+#  requirements:
+#    build:
+#    - pytester
+#    run:
+#    - pytester-run
+#    - numpy-tests
+#    - scipy-tests
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#==============================================================================#
+
+about:
+  homepage: http://www.openblas.net/
+  repository: https://github.com/OpenMathLib/OpenBLAS
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: An optimized BLAS library based on GotoBLAS2 1.13 BSD version
+
+extra:
+  maintainers:
+  - DerThorsten
+  - anutosh491
+  - IsabelParedes
+  - ianthomas23

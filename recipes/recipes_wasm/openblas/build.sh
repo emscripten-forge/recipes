@@ -1,16 +1,10 @@
-#!/bin/bash
-
-set -ex
-
 export CC=emcc
 export FC=flang-new
 export CCOMMON_OPT="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -Wno-implicit-function-declaration -Wno-macro-redefined"
-export FCOMMON_OPT="$FFLAGS"
-export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS $FCLIBS"
+export FCOMMON_OPT="$FFLAGS $FINTRINSIC_MODS"
 
-# It was previously necessary to build on a single core otherwise libopenblas.so can contain
-# undefined symbols.  Not sure if this is still required, but keeping it in just in case.
-export BUILD_CORES=-j1
+ORIGINAL_LDFLAGS="$LDFLAGS"
+export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS $FCLIBS"
 
 export USE_THREAD=0
 # WASM128_GENERIC enables WASM SIMD128 kernels (SGEMM/DGEMM, DAXPY, SUM, DOT, ROT, TRSM).
@@ -18,7 +12,7 @@ export USE_THREAD=0
 export TARGET=WASM128_GENERIC
 
 MAKE_ARGS=(
-    $BUILD_CORES
+    FIXED_LIBNAME=1
     HOSTCC=gcc
     TARGET="${TARGET}"
     USE_THREAD=0
@@ -44,14 +38,13 @@ emmake make shared "${MAKE_ARGS[@]}"
 # too small (stack overflow → OOB). 8MB is enough for c/z blat3.
 TEST_LINK_FLAGS="-fwasm-exceptions -sSUPPORT_LONGJMP=wasm -sALLOW_MEMORY_GROWTH=1 -sFORCE_FILESYSTEM=1 -sNODERAWFS=1 -sSTACK_SIZE=8MB"
 TEST_CCOMMON_OPT="$EM_FORGE_CFLAGS_BASE ${TEST_LINK_FLAGS} -Wno-implicit-function-declaration -Wno-macro-redefined"
-TEST_LDFLAGS="$EM_FORGE_LDFLAGS_BASE $FCLIBS ${TEST_LINK_FLAGS}"
+TEST_LDFLAGS="$ORIGINAL_LDFLAGS $EM_FORGE_LDFLAGS_BASE $FCLIBS ${TEST_LINK_FLAGS}"
 TEST_ARGS=(
     "${MAKE_ARGS[@]}"
     NOFORTRAN=1
     CROSS=0
     EXE=.js
     CCOMMON_OPT="${TEST_CCOMMON_OPT}"
-    FCOMMON_OPT="${FFLAGS}"
     LDFLAGS="${TEST_LDFLAGS}"
 )
 
