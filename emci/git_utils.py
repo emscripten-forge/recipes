@@ -2,6 +2,10 @@ import subprocess
 import os
 import json
 from contextlib import contextmanager
+import sys
+
+import logging
+logger = logging.getLogger(__name__)
 
 def find_files_with_changes(old, new):
     # `origin/main...HEAD` shows the unique files changed in HEAD
@@ -62,10 +66,14 @@ def get_current_branch_name():
 
 
 @contextmanager
-def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
+def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=None, new_branch=True):
 
     old_branch_name = get_current_branch_name()
-
+    if auto_delete is None:
+        if new_branch:
+            auto_delete = True
+        else:
+            auto_delete = False
 
     #  stash current changes and check return code
     stashed_successfully = False
@@ -75,7 +83,10 @@ def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
         if out.returncode == 0:
             stashed_successfully = True
 
-    subprocess.check_output(['git', 'checkout', '-b', new_branch_name])
+    if new_branch:
+        subprocess.check_output(['git', 'checkout', '-b', new_branch_name])
+    else:
+        subprocess.check_output(['git', 'checkout', new_branch_name])
 
 
     try:
@@ -85,7 +96,14 @@ def git_branch_ctx(new_branch_name, stash_current=True,  auto_delete=True):
 
         # unstash changes
         if stash_current and stashed_successfully:
-            subprocess.check_output(['git', 'stash', 'pop'])
+            out = subprocess.run(['git', 'stash', 'pop'], check=False,
+                                  stdout=sys.stdout,
+                                  stderr=sys.stderr,
+                                 )
+            if out.returncode != 0:
+                logger.warning("git stash pop failed")
+
+
 
         if auto_delete:
             subprocess.check_output(['git', 'branch', '-D', new_branch_name])
@@ -125,7 +143,7 @@ def make_pr(
         .strip()
     )
     if not staged:
-        print("No staged changes; skipping PR")
+        logger.info("No staged changes; skipping PR")
         return False
 
     subprocess.check_output(["git", "commit", "-m", pr_title])

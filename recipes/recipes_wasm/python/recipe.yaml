@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 2
+  build_number: 4
   abi_tag: cp${{ ver2nd }}
 
 build:
@@ -117,29 +117,33 @@ outputs:
       - libzlib-static
       run:
       - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
-      - ${{ pin_compatible("libopenssl-static", lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("libffi-static",     lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("liblzma-static",    lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("zstd-static",       lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("libuuid-static",    lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("libsqlite-static",  lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("libbzip2-static",   lower_bound='x.x.x', upper_bound='x.x.x') }}
-      - ${{ pin_compatible("libzlib-static",    lower_bound='x.x.x', upper_bound='x.x.x') }}
+      - ${{ pin_compatible("libopenssl-static", lower_bound='x.x', upper_bound='x.x') }}
+      - ${{ pin_compatible("libffi-static",     lower_bound='x.x', upper_bound='x.x') }}
+      - ${{ pin_compatible("liblzma-static",    lower_bound='x', upper_bound='x') }}
+      - ${{ pin_compatible("zstd-static",       lower_bound='x.x', upper_bound='x.x') }}
+      - ${{ pin_compatible("libuuid-static",    lower_bound='x', upper_bound='x') }}
+      - ${{ pin_compatible("libsqlite-static",  lower_bound='x', upper_bound='x') }}
+      - ${{ pin_compatible("libbzip2-static",   lower_bound='x.x', upper_bound='x.x') }}
+      - ${{ pin_compatible("libzlib-static",    lower_bound='x.x', upper_bound='x.x') }}
       run_exports:
         weak:
         - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
 
     tests:
+      - package_contents:
+          files:
+          - include/python${{ver2}}/Python.h
+          - lib/libpython${{ver2}}.a
+          - lib/python${{ver2}}/static/libHacl_Hash_BLAKE2.a
+          - lib/python${{ver2}}/static/libHacl_Hash_MD5.a
+          - lib/python${{ver2}}/static/libHacl_Hash_SHA1.a
+          - lib/python${{ver2}}/static/libHacl_Hash_SHA2.a
+          - lib/python${{ver2}}/static/libHacl_Hash_SHA3.a
+          - lib/python${{ver2}}/static/libexpat.a
+          - lib/python${{ver2}}/static/libmpdec.a
       - script:
-        - test -f $PREFIX/include/python${{ver2}}/Python.h
-        - test -f $PREFIX/lib/libpython${{ver2}}.a
-        - test -f $PREFIX/lib/libHacl_Hash_BLAKE2.a
-        - test -f $PREFIX/lib/libHacl_Hash_MD5.a
-        - test -f $PREFIX/lib/libHacl_Hash_SHA1.a
-        - test -f $PREFIX/lib/libHacl_Hash_SHA2.a
-        - test -f $PREFIX/lib/libHacl_Hash_SHA3.a
-        - test -f $PREFIX/lib/libexpat.a
-        - test -f $PREFIX/lib/libmpdec.a
+        - test ! -f $PREFIX/lib/libexpat.a
+        - test ! -f $PREFIX/lib/libmpdec.a
         - test ! -f $PREFIX/lib/python${{ver2}}/enum.py
         - test ! -f $PREFIX/lib/python${{ver2}}/ast.py
         - test ! -f $PREFIX/bin/python${{ver2}}
