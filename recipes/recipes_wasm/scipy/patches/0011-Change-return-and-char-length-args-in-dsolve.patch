@@ -1,7 +1,7 @@
-From 6243cb05791aad90484a5243ad5ca9cde853693b Mon Sep 17 00:00:00 2001
+From 734893326d8c4d74e5ec98d22fa86841c65473f5 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Mon, 8 Dec 2025 17:08:15 +0000
-Subject: [PATCH 11/15] Change return and char length args in dsolve
+Subject: [PATCH 11/18] Change return and char length args in dsolve
 
 ---
  .../linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c |   8 +-
@@ -2079,7 +2079,7 @@ index 536b5520e8..849a5c765b 100644
  L140:
  #ifdef _CRAY
 diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
-index 2c25c81d89..80121ccb3b 100644
+index 2c25c81d89..88d864a817 100644
 --- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
 +++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
 @@ -1,9 +1,9 @@
@@ -2197,21 +2197,21 @@ index 2c25c81d89..80121ccb3b 100644
  extern void cgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
                    const singlecomplex*, const singlecomplex*, const slu_blasint*, const singlecomplex*,
 -		  const slu_blasint*, const singlecomplex*, singlecomplex*, const slu_blasint*);
-+		  const slu_blasint*, const singlecomplex*, singlecomplex*, const slu_blasint*, int, int);
++		  const slu_blasint*, const singlecomplex*, singlecomplex*, const slu_blasint*, size_t, size_t);
  extern void ctrsv_(char*, char*, char*, slu_blasint*, singlecomplex*, slu_blasint*,
 -                  singlecomplex*, slu_blasint*);
-+                  singlecomplex*, slu_blasint*, int, int, int);
++                  singlecomplex*, slu_blasint*, size_t, size_t, size_t);
  extern void ctrsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
 -                  singlecomplex*, singlecomplex*, slu_blasint*, singlecomplex*, slu_blasint*);
-+                  singlecomplex*, singlecomplex*, slu_blasint*, singlecomplex*, slu_blasint*, int, int, int, int);
++                  singlecomplex*, singlecomplex*, slu_blasint*, singlecomplex*, slu_blasint*, size_t, size_t, size_t, size_t);
  extern void cgemv_(char *, slu_blasint *, slu_blasint *, singlecomplex *, singlecomplex *a, slu_blasint *,
 -                  singlecomplex *, slu_blasint *, singlecomplex *, singlecomplex *, slu_blasint *);
-+                  singlecomplex *, slu_blasint *, singlecomplex *, singlecomplex *, slu_blasint *, int);
++                  singlecomplex *, slu_blasint *, singlecomplex *, singlecomplex *, slu_blasint *, size_t);
  
  extern void cusolve(int, int, singlecomplex*, singlecomplex*);
  extern void clsolve(int, int, singlecomplex*, singlecomplex*);
 diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
-index 27762382c9..a25a351032 100644
+index 27762382c9..b115de5aed 100644
 --- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
 +++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
 @@ -1,9 +1,9 @@
@@ -2329,21 +2329,21 @@ index 27762382c9..a25a351032 100644
  extern void dgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
                    const double*, const double*, const slu_blasint*, const double*,
 -		  const slu_blasint*, const double*, double*, const slu_blasint*);
-+		  const slu_blasint*, const double*, double*, const slu_blasint*, int, int);
++		  const slu_blasint*, const double*, double*, const slu_blasint*, size_t, size_t);
  extern void dtrsv_(char*, char*, char*, slu_blasint*, double*, slu_blasint*,
 -                  double*, slu_blasint*);
-+                  double*, slu_blasint*, int, int, int);
++                  double*, slu_blasint*, size_t, size_t, size_t);
  extern void dtrsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
 -                  double*, double*, slu_blasint*, double*, slu_blasint*);
-+                  double*, double*, slu_blasint*, double*, slu_blasint*, int, int, int, int);
++                  double*, double*, slu_blasint*, double*, slu_blasint*, size_t, size_t, size_t, size_t);
  extern void dgemv_(char *, slu_blasint *, slu_blasint *, double *, double *a, slu_blasint *,
 -                  double *, slu_blasint *, double *, double *, slu_blasint *);
-+                  double *, slu_blasint *, double *, double *, slu_blasint *, int);
++                  double *, slu_blasint *, double *, double *, slu_blasint *, size_t);
  
  extern void dusolve(int, int, double*, double*);
  extern void dlsolve(int, int, double*, double*);
 diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
-index e0d5c6c612..c6a2dcd7de 100644
+index e0d5c6c612..2a6e031502 100644
 --- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
 +++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
 @@ -1,9 +1,9 @@
@@ -2461,21 +2461,21 @@ index e0d5c6c612..c6a2dcd7de 100644
  extern void sgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
                    const float*, const float*, const slu_blasint*, const float*,
 -		  const slu_blasint*, const float*, float*, const slu_blasint*);
-+		  const slu_blasint*, const float*, float*, const slu_blasint*, int, int);
++		  const slu_blasint*, const float*, float*, const slu_blasint*, size_t, size_t);
  extern void strsv_(char*, char*, char*, slu_blasint*, float*, slu_blasint*,
 -                  float*, slu_blasint*);
-+                  float*, slu_blasint*, int, int, int);
++                  float*, slu_blasint*, size_t, size_t, size_t);
  extern void strsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
 -                  float*, float*, slu_blasint*, float*, slu_blasint*);
-+                  float*, float*, slu_blasint*, float*, slu_blasint*, int, int, int, int);
++                  float*, float*, slu_blasint*, float*, slu_blasint*, size_t, size_t, size_t, size_t);
  extern void sgemv_(char *, slu_blasint *, slu_blasint *, float *, float *a, slu_blasint *,
 -                  float *, slu_blasint *, float *, float *, slu_blasint *);
-+                  float *, slu_blasint *, float *, float *, slu_blasint *, int);
++                  float *, slu_blasint *, float *, float *, slu_blasint *, size_t);
  
  extern void susolve(int, int, float*, float*);
  extern void slsolve(int, int, float*, float*);
 diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
-index cb65506594..0e7a37fe5d 100644
+index cb65506594..76abdc6cc8 100644
 --- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
 +++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
 @@ -1,9 +1,9 @@
@@ -2593,16 +2593,16 @@ index cb65506594..0e7a37fe5d 100644
  extern void zgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
                    const doublecomplex*, const doublecomplex*, const slu_blasint*, const doublecomplex*,
 -		  const slu_blasint*, const doublecomplex*, doublecomplex*, const slu_blasint*);
-+		  const slu_blasint*, const doublecomplex*, doublecomplex*, const slu_blasint*, int, int);
++		  const slu_blasint*, const doublecomplex*, doublecomplex*, const slu_blasint*, size_t, size_t);
  extern void ztrsv_(char*, char*, char*, slu_blasint*, doublecomplex*, slu_blasint*,
 -                  doublecomplex*, slu_blasint*);
-+                  doublecomplex*, slu_blasint*, int, int, int);
++                  doublecomplex*, slu_blasint*, size_t, size_t, size_t);
  extern void ztrsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
 -                  doublecomplex*, doublecomplex*, slu_blasint*, doublecomplex*, slu_blasint*);
-+                  doublecomplex*, doublecomplex*, slu_blasint*, doublecomplex*, slu_blasint*, int, int, int, int);
++                  doublecomplex*, doublecomplex*, slu_blasint*, doublecomplex*, slu_blasint*, size_t, size_t, size_t, size_t);
  extern void zgemv_(char *, slu_blasint *, slu_blasint *, doublecomplex *, doublecomplex *a, slu_blasint *,
 -                  doublecomplex *, slu_blasint *, doublecomplex *, doublecomplex *, slu_blasint *);
-+                  doublecomplex *, slu_blasint *, doublecomplex *, doublecomplex *, slu_blasint *, int);
++                  doublecomplex *, slu_blasint *, doublecomplex *, doublecomplex *, slu_blasint *, size_t);
  
  extern void zusolve(int, int, doublecomplex*, doublecomplex*);
  extern void zlsolve(int, int, doublecomplex*, doublecomplex*);
@@ -3437,5 +3437,5 @@ index bf81e315ec..fef5943491 100644
    		}
    	    } /* for k ... */
 -- 
-2.53.0
+2.54.0 (Apple Git-157)
 

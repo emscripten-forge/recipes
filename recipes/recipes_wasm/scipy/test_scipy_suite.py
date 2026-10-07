@@ -29,7 +29,9 @@ def _assert_openblas(pkg, cfg):
 
 
 def test_openblas_build_config():
-    _assert_openblas("numpy", np.show_config(mode="dicts"))
+    # TODO: re-enable when numpy compiled using openblas
+    #_assert_openblas("numpy", np.show_config(mode="dicts"))
+
     _assert_openblas("scipy", scipy.show_config(mode="dicts"))
 
 
@@ -40,7 +42,15 @@ def test_scipy_suite():
     # FFT backends, batched tridiagonal eigensolvers) are skipped in
     # scipy/conftest.py. Default pytest verbosity already prints a running
     # [ 12%] on each module line; --tb=line keeps failure output short.
-    assert scipy.test(
+    # faulthandler.enable() raises ENOSYS on emscripten, so disable the plugin
+    # in the nested pytest session as pytester does for the outer one.
+    ok = scipy.test(
         label="fast",
-        extra_argv=["--tb=line", "--continue-on-collection-errors"],
-    ), "SciPy tests failed"
+        extra_argv=[
+            "--tb=line",
+            "--continue-on-collection-errors",
+            "--color=no",
+            "-p", "no:faulthandler",
+        ],
+    )
+    assert ok, "SciPy tests failed"

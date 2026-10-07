@@ -1,0 +1,168 @@
+context:
+  name: scipy
+  version: 1.18.0
+  build_number: 0
+
+build:
+  number: ${{ build_number }}
+
+source:
+- url: https://pypi.org/packages/source/s/scipy/scipy-${{ version }}.tar.gz
+  sha256: 67b2ad2ad54c72ca6d04975a9b2df8c3638c34ddd5b28738e94fc2b57929d378
+  patches:
+  # Patches for subprojects
+  - patches/0001-Disable-threads-in-subprojects.patch
+  # Branch containing following patches is v1.18.0-emforge-6x at https://github.com/ianthomas23/scipy
+  # Use `git format-patch v1.18.0...v1.18.0-emforge-6x --start-number 2` to create patch files.
+  - patches/0002-Disable-unsupported-ffloat-store.patch
+  - patches/0003-Set-fortran-linker-to-emcc.patch
+  - patches/0004-Remove-unsupported-version-script.patch
+  - patches/0005-Remove-chla_transtype.patch
+  - patches/0006-Disable-threads.patch
+  - patches/0007-Extra-char-length-arguments-in-linalg-cython-wrapper.patch
+  - patches/0008-Extra-char-length-args-in-_common_array_utils.patch
+  - patches/0009-Extra-char-length-args-in-propack.patch
+  - patches/0010-Extra-char-length-args-in-arpack.patch
+  - patches/0011-Change-return-and-char-length-args-in-dsolve.patch
+  - patches/0012-Change-return-and-char-length-args-in-optimize.patch
+  - patches/0013-Extra-char-length-args-in-integrate.patch
+  - patches/0014-int-return-for-superlu_utils-and-input_error.patch
+  - patches/0015-Extra-char-length-args-to-f2py-source-files.patch
+  - patches/0016-Skip-wasm-unsupported-SciPy-tests-and-avoid-destruct.patch
+  - patches/0017-Char-length-arg-in-odr.patch
+  - patches/0018-Fix-ndimage-test-arg-type-for-wasm64.patch
+
+outputs:
+# One SciPy build; runtime files go to scipy, tests to scipy-tests.
+- staging:
+    name: scipy-build
+  build:
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - python
+    - cross-python_${{ target_platform }}
+    - cython
+    - meson-python
+    - numpy
+    - pkg-config
+    host:
+    - libflang-rt-static
+    - numpy
+    - openblas-dev
+    - openblas
+    - pybind11
+    - python-dev
+
+- package:
+    name: scipy
+    version: ${{ version }}
+  inherit: scipy-build
+  build:
+    script: echo "Collecting SciPy runtime files from cache"
+    files:
+      exclude:
+      - '**/*.pyi'
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/tests/**'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    host:
+    - python
+    - numpy
+    - openblas
+    run:
+    - python
+    - numpy
+    - openblas
+  tests:
+  - package_contents:
+      site_packages:
+      - scipy/__init__.py
+      - scipy/conftest.py
+      files:
+        not_exists:
+        - lib/python*/site-packages/scipy/**/tests/**
+        - lib/python*/site-packages/scipy/**/test_*.py
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_scipy.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+# Overlay of SciPy test modules onto site-packages/scipy. Other recipes
+# can add scipy-tests as a test requirement and call scipy.test().
+- package:
+    name: scipy-tests
+    version: ${{ version }}
+  inherit: scipy-build
+  build:
+    script: echo "Collecting SciPy test files from cache"
+    files:
+      include:
+      - lib/python*/site-packages/scipy/**/tests/**
+      - lib/python*/site-packages/scipy/**/test_*.py
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/*.pyi'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    host:
+    - python
+    run:
+    - ${{ pin_subpackage('scipy', exact=True) }}
+    - pytest
+    - hypothesis
+    - gmpy2
+  tests:
+  - package_contents:
+      site_packages:
+      - scipy/linalg/tests/test_batch.py
+      - scipy/stats/tests/test_stats.py
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script:
+    - playwright install
+    - PYTESTER_TIMEOUT_MIN=60 python long_pytester.py
+    files:
+      recipe:
+      - test_scipy_suite.py
+      - long_pytester.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+about:
+  homepage: http://www.scipy.org/
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Scientific Library for Python
+  description: |
+    SciPy is a Python-based ecosystem of open-source software for mathematics,
+    science, and engineering.
+
+extra:
+  maintainers:
+  - ianthomas23
