@@ -1,28 +1,36 @@
-From bddf7e92ab0cafdf1f9bb3022f33f2f585bb9102 Mon Sep 17 00:00:00 2001
+From 646e2d064552581e476153771a4de3feb30b8578 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Sun, 11 Jan 2026 17:20:45 +0000
-Subject: [PATCH 13/15] Extra char length args in integrate
+Subject: [PATCH 13/18] Extra char length args in integrate
 
 ---
- scipy/integrate/src/blaslapack_declarations.h | 8 ++++----
+ scipy/integrate/src/blaslapack_declarations.h | 9 +++++----
  scipy/integrate/src/lsoda.c                   | 4 ++--
  scipy/integrate/src/vode.c                    | 4 ++--
  scipy/integrate/src/zvode.c                   | 4 ++--
- 4 files changed, 10 insertions(+), 10 deletions(-)
+ 4 files changed, 11 insertions(+), 10 deletions(-)
 
 diff --git a/scipy/integrate/src/blaslapack_declarations.h b/scipy/integrate/src/blaslapack_declarations.h
-index 44c937ef26..21924a7cb7 100644
+index 44c937ef26..64c7df4cd8 100644
 --- a/scipy/integrate/src/blaslapack_declarations.h
 +++ b/scipy/integrate/src/blaslapack_declarations.h
-@@ -20,17 +20,17 @@ void BLAS_FUNC(daxpy)(CBLAS_INT* n, double* a, double* x, CBLAS_INT* incx, doubl
+@@ -3,6 +3,7 @@
+ 
+ #include "scipy_complex_support.h"
+ #include "scipy_blas_defines.h"
++#include <stddef.h>
+ 
+ #if defined(_MSC_VER)
+     // MSVC definition
+@@ -20,17 +21,17 @@ void BLAS_FUNC(daxpy)(CBLAS_INT* n, double* a, double* x, CBLAS_INT* incx, doubl
  void BLAS_FUNC(dcopy)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
  void BLAS_FUNC(dscal)(CBLAS_INT* n, double* a, double* x, CBLAS_INT* incx);
  void BLAS_FUNC(dgbtrf)(CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, double* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, CBLAS_INT* info);
 -void BLAS_FUNC(dgbtrs)(char* trans, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, CBLAS_INT* nrhs, double* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, double* b, CBLAS_INT* ldb, CBLAS_INT* info);
-+void BLAS_FUNC(dgbtrs)(char* trans, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, CBLAS_INT* nrhs, double* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, double* b, CBLAS_INT* ldb, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(dgbtrs)(char* trans, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, CBLAS_INT* nrhs, double* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, double* b, CBLAS_INT* ldb, CBLAS_INT* info, size_t);
  void BLAS_FUNC(dgetrf)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* ipiv, CBLAS_INT* info);
 -void BLAS_FUNC(dgetrs)(char* trans, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, CBLAS_INT* ipiv, double* b, CBLAS_INT* ldb, CBLAS_INT* info);
-+void BLAS_FUNC(dgetrs)(char* trans, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, CBLAS_INT* ipiv, double* b, CBLAS_INT* ldb, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(dgetrs)(char* trans, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, CBLAS_INT* ipiv, double* b, CBLAS_INT* ldb, CBLAS_INT* info, size_t);
  
  // For ZVODE complex routines
  void BLAS_FUNC(zaxpy)(CBLAS_INT* n, ZVODE_CPLX_TYPE* a, ZVODE_CPLX_TYPE* x, CBLAS_INT* incx, ZVODE_CPLX_TYPE* y, CBLAS_INT* incy);
@@ -30,10 +38,10 @@ index 44c937ef26..21924a7cb7 100644
  void BLAS_FUNC(zscal)(CBLAS_INT* n, ZVODE_CPLX_TYPE* a, ZVODE_CPLX_TYPE* x, CBLAS_INT* incx);
  void BLAS_FUNC(zgbtrf)(CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, ZVODE_CPLX_TYPE* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, CBLAS_INT* info);
 -void BLAS_FUNC(zgbtrs)(char* trans, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, CBLAS_INT* nrhs, ZVODE_CPLX_TYPE* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, ZVODE_CPLX_TYPE* b, CBLAS_INT* ldb, CBLAS_INT* info);
-+void BLAS_FUNC(zgbtrs)(char* trans, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, CBLAS_INT* nrhs, ZVODE_CPLX_TYPE* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, ZVODE_CPLX_TYPE* b, CBLAS_INT* ldb, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(zgbtrs)(char* trans, CBLAS_INT* n, CBLAS_INT* kl, CBLAS_INT* ku, CBLAS_INT* nrhs, ZVODE_CPLX_TYPE* ab, CBLAS_INT* ldab, CBLAS_INT* ipiv, ZVODE_CPLX_TYPE* b, CBLAS_INT* ldb, CBLAS_INT* info, size_t);
  void BLAS_FUNC(zgetrf)(CBLAS_INT* m, CBLAS_INT* n, ZVODE_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* ipiv, CBLAS_INT* info);
 -void BLAS_FUNC(zgetrs)(char* trans, CBLAS_INT* n, CBLAS_INT* nrhs, ZVODE_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* ipiv, ZVODE_CPLX_TYPE* b, CBLAS_INT* ldb, CBLAS_INT* info);
-+void BLAS_FUNC(zgetrs)(char* trans, CBLAS_INT* n, CBLAS_INT* nrhs, ZVODE_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* ipiv, ZVODE_CPLX_TYPE* b, CBLAS_INT* ldb, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(zgetrs)(char* trans, CBLAS_INT* n, CBLAS_INT* nrhs, ZVODE_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* ipiv, ZVODE_CPLX_TYPE* b, CBLAS_INT* ldb, CBLAS_INT* info, size_t);
  
  #endif
 diff --git a/scipy/integrate/src/lsoda.c b/scipy/integrate/src/lsoda.c
@@ -103,5 +111,5 @@ index 0132cb0b9a..e820591847 100644
          }
      }
 -- 
-2.53.0
+2.54.0 (Apple Git-157)
 

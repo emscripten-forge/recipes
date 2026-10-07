@@ -1,7 +1,8 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Julien Jerphanion <git@jjerphan.xyz>
-Date: Fri, 21 Aug 2026 16:30:00 +0200
-Subject: [PATCH] Skip wasm-unsupported SciPy tests and avoid destructor abort
+From 370253069ff2387b13580fb74c1a6cde05e2c594 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Thu, 1 Oct 2026 08:05:39 +0100
+Subject: [PATCH 16/18] Skip wasm-unsupported SciPy tests and avoid destructor
+ abort
 
 Emscripten has no fork, threads, subprocesses, mmap, or host libm via
 ctypes. FITPACK and scipy.io Fortran wrappers mismatch llvm-flang's
@@ -18,15 +19,15 @@ emscripten-forge ships that NumPy) but does not implement rounding-mode
 control, and cannot restore hardware FP traps used for RuntimeWarning.
 
 These skips are independent of whether NumPy is linked to OpenBLAS.
-
-Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 ---
- scipy/conftest.py | 167 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 166 insertions(+), 1 deletion(-)
+ scipy/conftest.py | 173 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 171 insertions(+), 2 deletions(-)
 
+diff --git a/scipy/conftest.py b/scipy/conftest.py
+index 2b8287143a..808f4e8944 100644
 --- a/scipy/conftest.py
 +++ b/scipy/conftest.py
-@@ -97,12 +97,31 @@
+@@ -97,12 +97,31 @@ def pytest_configure(config):
              "iterations(n): run the given test function `n` times in each thread",
          )
  
@@ -59,7 +60,16 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  
  def pytest_runtest_setup(item):
      mark = item.get_closest_marker("xslow")
-@@ -738,3 +757,149 @@
+@@ -239,7 +258,7 @@ if SCIPY_ARRAY_API:
+ 
+     try:
+         import jax.numpy  # type: ignore[import-not-found]
+-        
++
+         xp_available_backends.append(
+             pytest.param(jax.numpy, id='jax.numpy',
+             marks=[pytest.mark.array_api_backends,
+@@ -738,3 +757,153 @@ if HAVE_SCPDT:
      # ignore Matplotlib's `ax.text`:
      dt_config.stopwords.add('.text(')
  ############################################################################
@@ -111,11 +121,15 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    skip_nyquist = pytest.mark.skip(
 +        reason="minimum_phase nyquist float32 N=964 exceeds atol"
 +    )
++    skip_large_alloc = pytest.mark.skip(
++        reason="3 GiB read buffer exceeds wasm heap (MemoryError, not ValueError)"
++    )
 +    marks = [
 +        ("interpolate/tests/test_bsplines.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack.py", skip_fitpack),
 +        ("interpolate/tests/test_fitpack2.py", skip_fitpack),
 +        ("io/tests/test_fortran.py", skip_fortran_io),
++        ("test_mio.py::test_large_m4", skip_large_alloc),
 +        ("test_mmio.py::.+fast_matrix_market", skip_thread),
 +        ("test_mmio.py::TestMMIOCoordinate.test_precision", skip_thread),
 +        ("test_paths.py::TestPaths.test_mmio_(read|write)", skip_thread),
@@ -209,3 +223,6 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
 +    if platform.machine() not in ("wasm32", "wasm64"):
 +        return
 +    atexit.register(os._exit, int(exitstatus))
+-- 
+2.54.0 (Apple Git-157)
+

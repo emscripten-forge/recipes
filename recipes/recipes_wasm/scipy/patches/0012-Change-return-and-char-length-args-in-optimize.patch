@@ -1,30 +1,65 @@
-From 86ace2de309afd1e4164b6b40be27cac78fc5c36 Mon Sep 17 00:00:00 2001
+From 7158beb803c11c82cd84037a6fd69030253ffd85 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Tue, 9 Dec 2025 09:55:21 +0000
-Subject: [PATCH 12/15] Change return and char length args in optimize
+Subject: [PATCH 12/18] Change return and char length args in optimize
 
 ---
- scipy/optimize/src/blaslapack_declarations.h | 20 +++++-----
+ scipy/optimize/_trlib/trlib_private.h        |  6 +--
+ scipy/optimize/src/blaslapack_declarations.h | 21 +++++-----
  scipy/optimize/src/lbfgsb.c                  | 20 +++++-----
  scipy/optimize/src/nnls.c                    |  4 +-
  scipy/optimize/src/slsqp.c                   | 42 ++++++++++----------
- 4 files changed, 43 insertions(+), 43 deletions(-)
+ 5 files changed, 47 insertions(+), 46 deletions(-)
 
+diff --git a/scipy/optimize/_trlib/trlib_private.h b/scipy/optimize/_trlib/trlib_private.h
+index 92bfabe51d..c719b857e5 100644
+--- a/scipy/optimize/_trlib/trlib_private.h
++++ b/scipy/optimize/_trlib/trlib_private.h
+@@ -8,10 +8,10 @@
+  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  * copies of the Software, and to permit persons to whom the Software is
+  * furnished to do so, subject to the following conditions:
+- * 
++ *
+  * The above copyright notice and this permission notice shall be included in all
+  * copies or substantial portions of the Software.
+- * 
++ *
+  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+@@ -49,7 +49,7 @@ double BLAS_FUNC(ddot)(CBLAS_INT *n, double *x, CBLAS_INT *incx, double *y, CBLA
+ void BLAS_FUNC(dpttrf)(CBLAS_INT *n, double *d, double *e, CBLAS_INT *info);
+ void BLAS_FUNC(dpttrs)(CBLAS_INT *n, CBLAS_INT *nrhs, double *d, double *e, double *b, CBLAS_INT *ldb, CBLAS_INT *info);
+ void BLAS_FUNC(dptrfs)(CBLAS_INT *n, CBLAS_INT *nrhs, double *d, double *e, double *df, double *ef, double *b, CBLAS_INT *ldb, double *x, CBLAS_INT *ldx, double *ferr, double *berr, double *work, CBLAS_INT *info);
+-void BLAS_FUNC(dlagtm)(char *trans, CBLAS_INT *n, CBLAS_INT *nrhs, double *alpha, double *dl, double *d, double *du, double *x, CBLAS_INT *ldx, double *beta, double *b, CBLAS_INT *ldb, int);
++void BLAS_FUNC(dlagtm)(char *trans, CBLAS_INT *n, CBLAS_INT *nrhs, double *alpha, double *dl, double *d, double *du, double *x, CBLAS_INT *ldx, double *beta, double *b, CBLAS_INT *ldb, size_t);
+ 
+ 
+ static void trlib_daxpy(trlib_int_t *n, double *alpha, double *x, trlib_int_t *incx, double *y, trlib_int_t *incy)
 diff --git a/scipy/optimize/src/blaslapack_declarations.h b/scipy/optimize/src/blaslapack_declarations.h
-index 029b1ccfa0..4327e0ddb8 100644
+index 029b1ccfa0..b3df253cad 100644
 --- a/scipy/optimize/src/blaslapack_declarations.h
 +++ b/scipy/optimize/src/blaslapack_declarations.h
-@@ -8,20 +8,20 @@ void   BLAS_FUNC(dcopy)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBL
+@@ -1,6 +1,7 @@
+ #ifndef BLASLAPACK_DECLARATIONS_H
+ #define BLASLAPACK_DECLARATIONS_H
+ #include "scipy_blas_defines.h"
++#include <stddef.h>
+ 
+ void   BLAS_FUNC(daxpy)(CBLAS_INT* n, double* alpha, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
+ void   BLAS_FUNC(dscal)(CBLAS_INT* n, double* alpha, double* x, CBLAS_INT* incx);
+@@ -8,20 +9,20 @@ void   BLAS_FUNC(dcopy)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBL
  double BLAS_FUNC(dnrm2)(CBLAS_INT* n, double* x, CBLAS_INT* incx);
  double BLAS_FUNC(ddot)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
  void   BLAS_FUNC(dgelsy)(CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* jpvt, double* rcond, CBLAS_INT* rank, double* work, CBLAS_INT* lwork, CBLAS_INT* info);
 -void   BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy);
-+void   BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy, CBLAS_INT);
++void   BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy, size_t);
  void   BLAS_FUNC(dgeqr2)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* tau, double* work, CBLAS_INT* info);
  void   BLAS_FUNC(dgeqrf)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* tau, double* work, double* lwork, CBLAS_INT* info);
  void   BLAS_FUNC(dgerq2)(CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* tau, double* work, CBLAS_INT* info);
 -void   BLAS_FUNC(dlarf)(char* side, CBLAS_INT* m, CBLAS_INT* n, double* v, CBLAS_INT* incv, double* tau, double* c, CBLAS_INT* ldc, double* work);
-+void   BLAS_FUNC(dlarf)(char* side, CBLAS_INT* m, CBLAS_INT* n, double* v, CBLAS_INT* incv, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT);
++void   BLAS_FUNC(dlarf)(char* side, CBLAS_INT* m, CBLAS_INT* n, double* v, CBLAS_INT* incv, double* tau, double* c, CBLAS_INT* ldc, double* work, size_t);
  void   BLAS_FUNC(dlarfgp)(CBLAS_INT* n, double* alpha, double* x, CBLAS_INT* incx, double* tau);
  void   BLAS_FUNC(dlartgp)(double* f, double* g, double* cs, double* sn, double* r);
 -void   BLAS_FUNC(dorm2r)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info);
@@ -35,14 +70,14 @@ index 029b1ccfa0..4327e0ddb8 100644
 -void   BLAS_FUNC(dtrsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx);
 -void   BLAS_FUNC(dpotrf)(char* uplo, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info);
 -void   BLAS_FUNC(dtrtrs)(char* uplo, char* trans, char* diag, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* info);
-+void   BLAS_FUNC(dorm2r)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, CBLAS_INT, CBLAS_INT);
-+void   BLAS_FUNC(dormr2)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, CBLAS_INT, CBLAS_INT);
-+void   BLAS_FUNC(dtpmv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx, CBLAS_INT, CBLAS_INT, CBLAS_INT);
-+void   BLAS_FUNC(dtpsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx, CBLAS_INT, CBLAS_INT, CBLAS_INT);
-+void   BLAS_FUNC(dtrsm)(char* side, char* uplo, char* transa, char* diag, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT, CBLAS_INT, CBLAS_INT, CBLAS_INT);
-+void   BLAS_FUNC(dtrsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, CBLAS_INT, CBLAS_INT, CBLAS_INT);
-+void   BLAS_FUNC(dpotrf)(char* uplo, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info, CBLAS_INT);
-+void   BLAS_FUNC(dtrtrs)(char* uplo, char* trans, char* diag, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* info, CBLAS_INT, CBLAS_INT, CBLAS_INT);
++void   BLAS_FUNC(dorm2r)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, size_t, size_t);
++void   BLAS_FUNC(dormr2)(char* side, char* trans, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* a, CBLAS_INT* lda, double* tau, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, size_t, size_t);
++void   BLAS_FUNC(dtpmv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx, size_t, size_t, size_t);
++void   BLAS_FUNC(dtpsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* ap, double* x, CBLAS_INT* incx, size_t, size_t, size_t);
++void   BLAS_FUNC(dtrsm)(char* side, char* uplo, char* transa, char* diag, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, size_t, size_t, size_t, size_t);
++void   BLAS_FUNC(dtrsv)(char* uplo, char* trans, char* diag, CBLAS_INT* n, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, size_t, size_t, size_t);
++void   BLAS_FUNC(dpotrf)(char* uplo, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info, size_t);
++void   BLAS_FUNC(dtrtrs)(char* uplo, char* trans, char* diag, CBLAS_INT* n, CBLAS_INT* nrhs, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, CBLAS_INT* info, size_t, size_t, size_t);
  
  #endif
 diff --git a/scipy/optimize/src/lbfgsb.c b/scipy/optimize/src/lbfgsb.c
@@ -317,5 +352,5 @@ index 21a02fe046..2b84b43916 100644
  
      // Compute the lagrange multipliers for the primal problem
 -- 
-2.53.0
+2.54.0 (Apple Git-157)
 
