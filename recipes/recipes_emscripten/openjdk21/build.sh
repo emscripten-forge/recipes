@@ -67,13 +67,12 @@ JVM_FEATURES="zero,static-build,serialgc,epsilongc,parallelgc,g1gc,cds,jvmti,man
 # CUPSfuncs.c and fontpath.c (compiled into libawt_xawt) need the CUPS and
 # fontconfig headers even though both libraries are dlopen()ed at runtime --
 # which fails here, so printing reports "no printers" and fonts come from
-# lib/fontconfig.properties. Only those two header directories are exposed,
-# not the rest of the (linux-64) build prefix.
+# lib/fontconfig.properties. fontconfig.h comes from the fontconfig host
+# package (-I$PREFIX/include); the CUPS headers come from the (linux-64)
+# build prefix, of which only the cups/ directory is exposed.
 EXTRA_INC="$SRC_DIR/extra-include"
 mkdir -p "$EXTRA_INC"
 cp -R "$BUILD_PREFIX/include/cups" "$EXTRA_INC/"
-mkdir -p "$EXTRA_INC/fontconfig"
-cp "$BUILD_PREFIX/include/fontconfig/fontconfig.h" "$EXTRA_INC/fontconfig/"
 
 # OpenJDK's config.guess reports any Linux whose kernel name contains
 # "microsoft" (WSL) as a Windows build machine -- it supports building Windows
@@ -208,11 +207,12 @@ mkdir -p "$JDK_IMAGE_DIR/lib/zero"
 touch "$JDK_IMAGE_DIR/lib/zero/libjvm.so"
 
 # Fonts: there is no fontconfig in the browser, so the JDK falls back to
-# lib/fontconfig.properties and the fonts in lib/fonts.
+# lib/fontconfig.properties and the fonts in lib/fonts (from the
+# font-ttf-dejavu build dependency).
 mkdir -p "$JDK_IMAGE_DIR/lib/fonts"
-cp "$SRC_DIR"/fonts/ttf/DejaVu{Sans,Sans-Bold,Sans-Oblique,Sans-BoldOblique,Serif,Serif-Bold,Serif-Italic,Serif-BoldItalic,SansMono,SansMono-Bold,SansMono-Oblique,SansMono-BoldOblique}.ttf \
+cp "$BUILD_PREFIX"/fonts/DejaVu{Sans,Sans-Bold,Sans-Oblique,Sans-BoldOblique,Serif,Serif-Bold,Serif-Italic,Serif-BoldItalic,SansMono,SansMono-Bold,SansMono-Oblique,SansMono-BoldOblique}.ttf \
   "$JDK_IMAGE_DIR/lib/fonts/"
-cp "$SRC_DIR/fonts/LICENSE" "$JDK_IMAGE_DIR/lib/fonts/LICENSE-DejaVu"
+cp "$RECIPE_DIR/kit/LICENSE-DejaVu" "$JDK_IMAGE_DIR/lib/fonts/LICENSE-DejaVu"
 cp "$RECIPE_DIR/kit/fontconfig.properties" "$JDK_IMAGE_DIR/lib/fontconfig.properties"
 
 # ---------------------------------------------------------------------------

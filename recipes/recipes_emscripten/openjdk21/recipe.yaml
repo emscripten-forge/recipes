@@ -25,9 +25,6 @@ source:
     patches:
       # jlong/jdouble arguments from Zero are only 4-byte aligned
       - patches/libffi-wasm32-unaligned-64bit.patch
-  - url: https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2
-    sha256: fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7
-    target_directory: fonts
 
 build:
   number: 0
@@ -48,11 +45,14 @@ requirements:
     # boot JDK; also packs the class-library image (jmod + jlink)
     - openjdk 21.*
     - lld
-    # headers only (both libraries are dlopen()ed, which fails in wasm)
+    # headers only (libcups is dlopen()ed, which fails in wasm)
     - libcups
-    - fontconfig
+    # DejaVu fonts, bundled in the JDK image (lib/fonts)
+    - font-ttf-dejavu
   host:
     - x11-wasm
+    # headers only (fontconfig is dlopen()ed, which fails in wasm)
+    - fontconfig
   run:
     # openjdk21-wasm-link links x11.wasm into GUI programs
     - x11-wasm
@@ -102,7 +102,8 @@ about:
   license_file:
     - LICENSE
     - ASSEMBLY_EXCEPTION
-    - fonts/LICENSE
+    # the bundled DejaVu fonts (font-ttf-dejavu ships no license file)
+    - kit/LICENSE-DejaVu
 
 extra:
   recipe-maintainers:

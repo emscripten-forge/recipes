@@ -122,6 +122,10 @@ done
 # Flags a final program needs to use x11.wasm (read by consumers' link steps).
 # pthreads.js keeps DOM input from racing Xlib calls made on worker threads.
 # The archive is named by path: emcc turns -lX11 into its own small JS Xlib.
-cat > "$PREFIX/share/x11-wasm/link-flags.txt" <<EOF
-$PREFIX/lib/libX11.a --js-library $PREFIX/share/x11-wasm/library.js --pre-js $PREFIX/share/x11-wasm/dom.js --pre-js $PREFIX/share/x11-wasm/pthreads.js -pthread -sPROXY_TO_PTHREAD=1 -sEXPORTED_FUNCTIONS=_main,_malloc,_free
+# The paths are written as ${PREFIX}/... (literally, not expanded here), so the
+# file holds no build-time path; consumers substitute the prefix of the
+# environment it is installed in, e.g.
+#   eval "flags=\"$(cat "$PREFIX/share/x11-wasm/link-flags.txt")\""
+cat > "$PREFIX/share/x11-wasm/link-flags.txt" <<'EOF'
+${PREFIX}/lib/libX11.a --js-library ${PREFIX}/share/x11-wasm/library.js --pre-js ${PREFIX}/share/x11-wasm/dom.js --pre-js ${PREFIX}/share/x11-wasm/pthreads.js -pthread -sPROXY_TO_PTHREAD=1 -sEXPORTED_FUNCTIONS=_main,_malloc,_free
 EOF

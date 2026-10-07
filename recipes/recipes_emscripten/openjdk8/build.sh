@@ -29,6 +29,11 @@ export EMJDK_LDFLAGS="-L${PREFIX}/lib"
 # configure looks for libfreetype.so; the static library is what gets linked
 ln -sf "${PREFIX}/lib/libfreetype.a" "${TOOLS}/freetype/libfreetype.so"
 ln -sf "${PREFIX}/lib/libfreetype.a" "${TOOLS}/freetype/libfreetype.a"
+# CUPSfuncs.c needs the CUPS headers (from the libcups build dependency);
+# libcups itself is dlopen()ed at run time, which fails in the browser. Only
+# the cups/ directory is exposed, not the rest of the (linux-64) build prefix.
+mkdir -p "${TOOLS}/cups-include"
+cp -R "${BUILD_PREFIX}/include/cups" "${TOOLS}/cups-include/"
 
 # libffi (the second source, patched so that calls through ffi_call can
 # suspend with JSPI): a static library in a private prefix, linked into
@@ -56,7 +61,7 @@ bash configure \
   --disable-debug-symbols --disable-zip-debug-info \
   --with-boot-jdk="${BOOT_JDK}" \
   --x-includes="${PREFIX}/include" --x-libraries="${PREFIX}/lib" \
-  --with-cups-include="${SUPPORT}/cups-stub" \
+  --with-cups-include="${TOOLS}/cups-include" \
   --with-fontconfig-include="${PREFIX}/include" \
   --with-freetype-include="${PREFIX}/include/freetype2" --with-freetype-lib="${TOOLS}/freetype" \
   --with-zlib=system --with-giflib=bundled \
