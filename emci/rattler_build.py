@@ -9,6 +9,45 @@ class BuildTimeoutError(Exception):
     def __init__(self, message):
         super().__init__(message)
 
+
+try:
+    import psutil
+except ImportError:
+    raise ImportError("pip install psutil  # required for reliable process-tree kill")
+
+
+def kill_proc_tree(pid, sig=signal.SIGKILL, include_parent=True, timeout=5):
+    """Recursively kill a process and all its descendants."""
+    try:
+        parent = psutil.Process(pid)
+    except psutil.NoSuchProcess:
+        return
+
+    children = parent.children(recursive=True)
+
+    # kill children first (bottom-up)
+    for child in reversed(children):
+        try:
+            child.send_signal(sig)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    if include_parent:
+        try:
+            parent.send_signal(sig)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    # wait a bit for them to disappear
+    gone, alive = psutil.wait_procs(children + ([parent] if include_parent else []), timeout=timeout)
+    for p in alive:
+        try:
+            p.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+
+        
 def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, 
                        skip_existing="local", continue_on_failure=False, 
                        output_dir=None, timeout=None, format='conda',
@@ -54,32 +93,25 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None,
     if output_dir is not None:
         cmd.extend(["--output-dir", str(output_dir)])
         
-    # start_new_session=True  →  the child becomes the leader of a new process group
     proc = subprocess.Popen(
-        cmd,
-        env=os.environ,
-        start_new_session=True,          # critical
-    )
+            cmd,
+            env=os.environ,
+            # still useful, but not sufficient by itself
+            start_new_session=True,
+        )
 
     try:
         ret = proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired as e:
-        # kill the whole process group (negative PID = process group)
+    except subprocess.TimeoutExpired:
+        print(f"Timeout of {timeout}s reached – killing process tree (pid={proc.pid})")
+        kill_proc_tree(proc.pid, sig=signal.SIGKILL)
+        # make sure the Popen object is reaped
         try:
-            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-        except ProcessLookupError:
-            pass  # already gone
-        # wait a bit so the kernel reaps everything
-        try:
-            proc.wait(timeout=5)
+            proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             pass
-        raise BuildTimeoutError(
-            f"rattler-build timed out after {timeout} seconds "
-            f"(process group killed)"
-        ) from None
+        raise RuntimeError(f"rattler-build timed out after {timeout} seconds") from None
 
     if ret != 0:
         raise RuntimeError(f"rattler-build failed with return code {ret}")
     return proc
-
