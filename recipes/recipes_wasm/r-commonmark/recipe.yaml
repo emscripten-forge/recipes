@@ -10,6 +10,7 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 7f47d7f9f4ff5d1e2a73a69f6e233d2ddbafae97944ddf664a6000aa94936904
 
 build:
@@ -27,13 +28,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test-r-commonmark.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test-r-commonmark.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=${{ name }}
@@ -53,4 +57,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - IsabelParedes
+  - IsabelParedes
