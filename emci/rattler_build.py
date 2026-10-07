@@ -3,7 +3,11 @@ import os
 import subprocess
 from pathlib import Path
 from .constants import RATTLER_CONDA_BUILD_CONFIG_PATH
+import signal
 
+class BuildTimeoutError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, 
                        skip_existing="local", continue_on_failure=False, 
@@ -50,9 +54,32 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None,
     if output_dir is not None:
         cmd.extend(["--output-dir", str(output_dir)])
         
-    ret = subprocess.run(cmd, check=False, shell=False, timeout=timeout, env=os.environ)
-    if ret.returncode != 0:
-        raise RuntimeError(f"rattler-build failed with return code {ret.returncode}")
-    return ret
+    # start_new_session=True  →  the child becomes the leader of a new process group
+    proc = subprocess.Popen(
+        cmd,
+        env=os.environ,
+        start_new_session=True,          # critical
+    )
 
+    try:
+        ret = proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        # kill the whole process group (negative PID = process group)
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass  # already gone
+        # wait a bit so the kernel reaps everything
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
+        raise BuildTimeoutError(
+            f"rattler-build timed out after {timeout} seconds "
+            f"(process group killed)"
+        ) from None
+
+    if ret != 0:
+        raise RuntimeError(f"rattler-build failed with return code {ret}")
+    return proc
 
