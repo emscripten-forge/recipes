@@ -1,0 +1,54 @@
+context:
+  name: tar
+  version: '1.35'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- git: https://git.savannah.gnu.org/git/tar.git
+  tag: v${{ version }}
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - autoconf
+  - automake
+  - bison
+  - gettext
+  - make
+  - patch
+  - perl
+  - texinfo
+
+tests:
+- package_contents:
+    files:
+    - bin/tar.js
+    - bin/tar.wasm
+- script: node test_tar.js
+  files:
+    recipe:
+    - test_tar.js
+  requirements:
+    build:
+    - nodejs
+
+about:
+  homepage: https://www.gnu.org/software/tar/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: GNU tar, an archiving utility
+  description: |
+    GNU tar is an archiving program designed to store multiple files in a
+    single file (an archive), and to manipulate such archives. The archive can
+    be either a regular file or a device (e.g. a tape drive).
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
