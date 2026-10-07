@@ -1,15 +1,15 @@
-From 66b728dedc5e76b2a6d974b751357708d2d430d6 Mon Sep 17 00:00:00 2001
+From 1f4b05c35506091e295958e6b07c46795b9af704 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Mon, 8 Dec 2025 16:02:58 +0000
-Subject: [PATCH 07/15] Extra char length arguments in linalg cython wrappers
+Subject: [PATCH 07/18] Extra char length arguments in linalg cython wrappers
 
 ---
- scipy/linalg/_generate_pyx.py     |  19 +++
+ scipy/linalg/_generate_pyx.py     |  13 ++
  scipy/linalg/src/_matfuncs_expm.c | 208 +++++++++++++++---------------
- 2 files changed, 123 insertions(+), 104 deletions(-)
+ 2 files changed, 117 insertions(+), 104 deletions(-)
 
 diff --git a/scipy/linalg/_generate_pyx.py b/scipy/linalg/_generate_pyx.py
-index 0fac032040..892ae7f3d0 100644
+index 0fac032040..d8a24e98aa 100644
 --- a/scipy/linalg/_generate_pyx.py
 +++ b/scipy/linalg/_generate_pyx.py
 @@ -539,6 +539,13 @@ def generate_decl_pyx(name, return_type, argnames, argtypes, accelerate,
@@ -20,31 +20,25 @@ index 0fac032040..892ae7f3d0 100644
 +    # Extra length argument for each char argument.
 +    for argtype, argname in zip(argtypes, argnames):
 +        if argtype == 'char':
-+            c_proto += f', int {argname}_len'
++            c_proto += f', size_t {argname}_len'
 +            pyx_call_args += ', 1'
 +
      return f"""
  cdef extern from "{header_name}":
      {blas_return_type} _fortran_{name} "{blas_macro}({blas_name})"({c_proto}) nogil
-@@ -690,6 +697,18 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate,
-         argnames = ['out'] + argnames
-         c_argtypes = [c_return_type] + c_argtypes
+@@ -692,6 +699,12 @@ def generate_decl_c(name, return_type, argnames, argtypes, accelerate,
          c_return_type = 'void'
-+    extra_c_argtypes = []
-+    extra_argnames = []
-+
-+    # Extra length argument for each char argument.
-+    for c_argtype, argname in zip(c_argtypes, argnames):
-+        if c_argtype == 'char':
-+            extra_c_argtypes.append("int")
-+            extra_argnames.append(f"{argname}_len")
-+
-+    c_argtypes = c_argtypes + extra_c_argtypes
-+    argnames = argnames + extra_argnames
-+
      blas_macro, blas_name = get_blas_macro_and_name(name, accelerate, ilp64)
      c_args = ', '.join(f'{t} *{n}' for t, n in zip(c_argtypes, argnames))
++
++    # Extra length argument (passed by value) for each char argument.
++    for c_argtype, argname in zip(c_argtypes, argnames):
++        if c_argtype == 'char':
++            c_args += f', size_t {argname}_len'
++
      return f"{c_return_type} {blas_macro}({blas_name})({c_args});\n"
+ 
+ 
 diff --git a/scipy/linalg/src/_matfuncs_expm.c b/scipy/linalg/src/_matfuncs_expm.c
 index 802e5ba258..e088cc1c33 100644
 --- a/scipy/linalg/src/_matfuncs_expm.c
@@ -730,5 +724,5 @@ index 802e5ba258..e088cc1c33 100644
  
  #if defined(_MSC_VER)
 -- 
-2.53.0
+2.54.0 (Apple Git-157)
 

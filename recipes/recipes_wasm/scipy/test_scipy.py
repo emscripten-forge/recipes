@@ -34,13 +34,15 @@ def test_config():
     assert c["Compilers"]["c++"]["commands"] == "em++"
 
     assert c["Compilers"]["fortran"]["name"] == "llvm-flang"
-    assert c["Compilers"]["fortran"]["version"] == "20.1.7"
+    assert c["Compilers"]["fortran"]["version"] == "23.1.2"
 
 
 def test_openblas_build_config():
     import scipy
 
-    _assert_openblas("numpy", np.show_config(mode="dicts"))
+    # TODO: re-enable when numpy compiled using openblas
+    #_assert_openblas("numpy", np.show_config(mode="dicts"))
+
     _assert_openblas("scipy", scipy.show_config(mode="dicts"))
 
 

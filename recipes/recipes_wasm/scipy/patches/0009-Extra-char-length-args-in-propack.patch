@@ -1,18 +1,18 @@
-From 880f42e523e4b0c3e0b7a2f5063bafb23e269de8 Mon Sep 17 00:00:00 2001
+From 121db1ec915375568913e4d7fc2175f8df6931a8 Mon Sep 17 00:00:00 2001
 From: Ian Thomas <ianthomas23@gmail.com>
 Date: Sun, 11 Jan 2026 15:29:17 +0000
-Subject: [PATCH 09/15] Extra char length args in propack
+Subject: [PATCH 09/18] Extra char length args in propack
 
 ---
- .../linalg/_propack/PROPACK/src/common.c      |  4 +--
- .../_propack/PROPACK/src/gemm_overwrite.c     | 16 ++++-----
- scipy/sparse/linalg/_propack/PROPACK/src/gs.c | 16 ++++-----
- .../src/include/blaslapack_declarations.h     | 36 +++++++++----------
- .../linalg/_propack/PROPACK/src/lanbpro.c     |  8 ++---
- .../linalg/_propack/PROPACK/src/lansvd.c      |  8 ++---
- .../linalg/_propack/PROPACK/src/lansvd_irl.c  |  8 ++---
- .../linalg/_propack/PROPACK/src/ritzvec.c     |  8 ++---
- 8 files changed, 52 insertions(+), 52 deletions(-)
+ .../linalg/_propack/PROPACK/src/common.c      |  4 +-
+ .../_propack/PROPACK/src/gemm_overwrite.c     | 16 ++++----
+ scipy/sparse/linalg/_propack/PROPACK/src/gs.c | 16 ++++----
+ .../src/include/blaslapack_declarations.h     | 37 ++++++++++---------
+ .../linalg/_propack/PROPACK/src/lanbpro.c     |  8 ++--
+ .../linalg/_propack/PROPACK/src/lansvd.c      |  8 ++--
+ .../linalg/_propack/PROPACK/src/lansvd_irl.c  |  8 ++--
+ .../linalg/_propack/PROPACK/src/ritzvec.c     |  8 ++--
+ 8 files changed, 53 insertions(+), 52 deletions(-)
 
 diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/common.c b/scipy/sparse/linalg/_propack/PROPACK/src/common.c
 index f5ddebf21d..12309051ba 100644
@@ -169,28 +169,35 @@ index a0daad08b5..f870ab1126 100644
          idx += 2;  // Move to next block
          start = indices[idx];
 diff --git a/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h b/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h
-index ed4a6f4e65..699dc25af5 100644
+index ed4a6f4e65..2a9fd493b6 100644
 --- a/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h
 +++ b/scipy/sparse/linalg/_propack/PROPACK/src/include/blaslapack_declarations.h
-@@ -8,8 +8,8 @@
+@@ -2,14 +2,15 @@
+ #define BLASLAPACK_DECLARATIONS_H
+ 
+ #include "../include/propack/types.h"
++#include <stddef.h>
+ 
+ 
+ // BLAS
  void BLAS_FUNC(saxpy)(CBLAS_INT* n, float* alpha, float* x, CBLAS_INT* incx, float* y, CBLAS_INT* incy);
  void BLAS_FUNC(scopy)(CBLAS_INT* n, float* x, CBLAS_INT* incx, float* y, CBLAS_INT* incy);
  float BLAS_FUNC(sdot)(CBLAS_INT* n, float* x, CBLAS_INT* incx, float* y, CBLAS_INT* incy);
 -void BLAS_FUNC(sgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, float* alpha, float* a, CBLAS_INT* lda, float* b, CBLAS_INT* ldb, float* beta, float* c, CBLAS_INT* ldc);
 -void BLAS_FUNC(sgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, float* alpha, float* a, CBLAS_INT* lda, float* x, CBLAS_INT* incx, float* beta, float* y, CBLAS_INT* incy);
-+void BLAS_FUNC(sgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, float* alpha, float* a, CBLAS_INT* lda, float* b, CBLAS_INT* ldb, float* beta, float* c, CBLAS_INT* ldc, CBLAS_INT, CBLAS_INT);
-+void BLAS_FUNC(sgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, float* alpha, float* a, CBLAS_INT* lda, float* x, CBLAS_INT* incx, float* beta, float* y, CBLAS_INT* incy, CBLAS_INT);
++void BLAS_FUNC(sgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, float* alpha, float* a, CBLAS_INT* lda, float* b, CBLAS_INT* ldb, float* beta, float* c, CBLAS_INT* ldc, size_t, size_t);
++void BLAS_FUNC(sgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, float* alpha, float* a, CBLAS_INT* lda, float* x, CBLAS_INT* incx, float* beta, float* y, CBLAS_INT* incy, size_t);
  float BLAS_FUNC(snrm2)(CBLAS_INT* n, float* x, CBLAS_INT* incx);
  void BLAS_FUNC(srot)(CBLAS_INT* n, float* sx, CBLAS_INT* incx, float* sy, CBLAS_INT* incy, float* c, float* s);
  void BLAS_FUNC(sscal)(CBLAS_INT* n, float* alpha, float* x, CBLAS_INT* incx);
-@@ -17,43 +17,43 @@ void BLAS_FUNC(sscal)(CBLAS_INT* n, float* alpha, float* x, CBLAS_INT* incx);
+@@ -17,43 +18,43 @@ void BLAS_FUNC(sscal)(CBLAS_INT* n, float* alpha, float* x, CBLAS_INT* incx);
  void BLAS_FUNC(daxpy)(CBLAS_INT* n, double* alpha, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
  void BLAS_FUNC(dcopy)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
  double BLAS_FUNC(ddot)(CBLAS_INT* n, double* x, CBLAS_INT* incx, double* y, CBLAS_INT* incy);
 -void BLAS_FUNC(dgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, double* beta, double* c, CBLAS_INT* ldc);
 -void BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy);
-+void BLAS_FUNC(dgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, double* beta, double* c, CBLAS_INT* ldc, CBLAS_INT, CBLAS_INT);
-+void BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy, CBLAS_INT);
++void BLAS_FUNC(dgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, double* alpha, double* a, CBLAS_INT* lda, double* b, CBLAS_INT* ldb, double* beta, double* c, CBLAS_INT* ldc, size_t, size_t);
++void BLAS_FUNC(dgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* a, CBLAS_INT* lda, double* x, CBLAS_INT* incx, double* beta, double* y, CBLAS_INT* incy, size_t);
  double BLAS_FUNC(dnrm2)(CBLAS_INT* n, double* x, CBLAS_INT* incx);
  void BLAS_FUNC(drot)(CBLAS_INT* n, double* sx, CBLAS_INT* incx, double* sy, CBLAS_INT* incy, double* c, double* s);
  void BLAS_FUNC(dscal)(CBLAS_INT* n, double* alpha, double* x, CBLAS_INT* incx);
@@ -199,47 +206,47 @@ index ed4a6f4e65..699dc25af5 100644
  float BLAS_FUNC(scnrm2)(CBLAS_INT* n, PROPACK_CPLXF_TYPE* x, CBLAS_INT* incx);
 -void BLAS_FUNC(cgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, PROPACK_CPLXF_TYPE* b, CBLAS_INT* ldb, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* c, CBLAS_INT* ldc);
 -void BLAS_FUNC(cgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, PROPACK_CPLXF_TYPE* x, CBLAS_INT* incx, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* y, CBLAS_INT* incy);
-+void BLAS_FUNC(cgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, PROPACK_CPLXF_TYPE* b, CBLAS_INT* ldb, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* c, CBLAS_INT* ldc, CBLAS_INT, CBLAS_INT);
-+void BLAS_FUNC(cgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, PROPACK_CPLXF_TYPE* x, CBLAS_INT* incx, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* y, CBLAS_INT* incy, CBLAS_INT);
++void BLAS_FUNC(cgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, PROPACK_CPLXF_TYPE* b, CBLAS_INT* ldb, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* c, CBLAS_INT* ldc, size_t, size_t);
++void BLAS_FUNC(cgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, PROPACK_CPLXF_TYPE* x, CBLAS_INT* incx, PROPACK_CPLXF_TYPE* beta, PROPACK_CPLXF_TYPE* y, CBLAS_INT* incy, size_t);
  void BLAS_FUNC(csscal)(CBLAS_INT* n, float* da, PROPACK_CPLXF_TYPE* zx, CBLAS_INT* incx);
  
  void BLAS_FUNC(zaxpy)(CBLAS_INT* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* x, CBLAS_INT* incx, PROPACK_CPLX_TYPE* y, CBLAS_INT* incy);
  double BLAS_FUNC(dznrm2)(CBLAS_INT* n, PROPACK_CPLX_TYPE* x, CBLAS_INT* incx);
 -void BLAS_FUNC(zgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, PROPACK_CPLX_TYPE* b, CBLAS_INT* ldb, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* c, CBLAS_INT* ldc);
 -void BLAS_FUNC(zgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, PROPACK_CPLX_TYPE* x, CBLAS_INT* incx, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* y, CBLAS_INT* incy);
-+void BLAS_FUNC(zgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, PROPACK_CPLX_TYPE* b, CBLAS_INT* ldb, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* c, CBLAS_INT* ldc, CBLAS_INT, CBLAS_INT);
-+void BLAS_FUNC(zgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, PROPACK_CPLX_TYPE* x, CBLAS_INT* incx, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* y, CBLAS_INT* incy, CBLAS_INT);
++void BLAS_FUNC(zgemm)(char* transa, char* transb, CBLAS_INT* m, CBLAS_INT* n, CBLAS_INT* k, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, PROPACK_CPLX_TYPE* b, CBLAS_INT* ldb, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* c, CBLAS_INT* ldc, size_t, size_t);
++void BLAS_FUNC(zgemv)(char* trans, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, PROPACK_CPLX_TYPE* x, CBLAS_INT* incx, PROPACK_CPLX_TYPE* beta, PROPACK_CPLX_TYPE* y, CBLAS_INT* incy, size_t);
  void BLAS_FUNC(zdscal)(CBLAS_INT* n, double* da, PROPACK_CPLX_TYPE* zx, CBLAS_INT* incx);
  
  // LAPACK
  
 -void BLAS_FUNC(sbdsdc)(char* uplo, char* compq, CBLAS_INT* n, float* d, float* e, float* u, CBLAS_INT* ldu, float* vt, CBLAS_INT* ldvt, float* q, CBLAS_INT* iq, float* work, CBLAS_INT* iwork, CBLAS_INT* info);
 -void BLAS_FUNC(sbdsqr)(char* uplo, CBLAS_INT* n, CBLAS_INT* ncvt, CBLAS_INT* nru, CBLAS_INT* ncc, float* d, float* e, float* vt, CBLAS_INT* ldvt, float* u, CBLAS_INT* ldu, float* c, CBLAS_INT* ldc, float* work, CBLAS_INT* info);
-+void BLAS_FUNC(sbdsdc)(char* uplo, char* compq, CBLAS_INT* n, float* d, float* e, float* u, CBLAS_INT* ldu, float* vt, CBLAS_INT* ldvt, float* q, CBLAS_INT* iq, float* work, CBLAS_INT* iwork, CBLAS_INT* info, CBLAS_INT, CBLAS_INT);
-+void BLAS_FUNC(sbdsqr)(char* uplo, CBLAS_INT* n, CBLAS_INT* ncvt, CBLAS_INT* nru, CBLAS_INT* ncc, float* d, float* e, float* vt, CBLAS_INT* ldvt, float* u, CBLAS_INT* ldu, float* c, CBLAS_INT* ldc, float* work, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(sbdsdc)(char* uplo, char* compq, CBLAS_INT* n, float* d, float* e, float* u, CBLAS_INT* ldu, float* vt, CBLAS_INT* ldvt, float* q, CBLAS_INT* iq, float* work, CBLAS_INT* iwork, CBLAS_INT* info, size_t, size_t);
++void BLAS_FUNC(sbdsqr)(char* uplo, CBLAS_INT* n, CBLAS_INT* ncvt, CBLAS_INT* nru, CBLAS_INT* ncc, float* d, float* e, float* vt, CBLAS_INT* ldvt, float* u, CBLAS_INT* ldu, float* c, CBLAS_INT* ldc, float* work, CBLAS_INT* info, size_t);
  void BLAS_FUNC(slartg)(float* f, float* g, float* c, float* s, float* r);
 -void BLAS_FUNC(slascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, float* cfrom, float* cto, CBLAS_INT* m, CBLAS_INT* n, float* a, CBLAS_INT* lda, CBLAS_INT* info);
 -void BLAS_FUNC(slaset)(char* uplo, CBLAS_INT* m, CBLAS_INT* n, float* alpha, float* beta, float* a, CBLAS_INT* lda);
-+void BLAS_FUNC(slascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, float* cfrom, float* cto, CBLAS_INT* m, CBLAS_INT* n, float* a, CBLAS_INT* lda, CBLAS_INT* info, CBLAS_INT);
-+void BLAS_FUNC(slaset)(char* uplo, CBLAS_INT* m, CBLAS_INT* n, float* alpha, float* beta, float* a, CBLAS_INT* lda, CBLAS_INT);
++void BLAS_FUNC(slascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, float* cfrom, float* cto, CBLAS_INT* m, CBLAS_INT* n, float* a, CBLAS_INT* lda, CBLAS_INT* info, size_t);
++void BLAS_FUNC(slaset)(char* uplo, CBLAS_INT* m, CBLAS_INT* n, float* alpha, float* beta, float* a, CBLAS_INT* lda, size_t);
  
 -void BLAS_FUNC(dbdsdc)(char* uplo, char* compq, CBLAS_INT* n, double* d, double* e, double* u, CBLAS_INT* ldu, double* vt, CBLAS_INT* ldvt, double* q, CBLAS_INT* iq, double* work, CBLAS_INT* iwork, CBLAS_INT* info);
 -void BLAS_FUNC(dbdsqr)(char* uplo, CBLAS_INT* n, CBLAS_INT* ncvt, CBLAS_INT* nru, CBLAS_INT* ncc, double* d, double* e, double* vt, CBLAS_INT* ldvt, double* u, CBLAS_INT* ldu, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info);
-+void BLAS_FUNC(dbdsdc)(char* uplo, char* compq, CBLAS_INT* n, double* d, double* e, double* u, CBLAS_INT* ldu, double* vt, CBLAS_INT* ldvt, double* q, CBLAS_INT* iq, double* work, CBLAS_INT* iwork, CBLAS_INT* info, CBLAS_INT, CBLAS_INT);
-+void BLAS_FUNC(dbdsqr)(char* uplo, CBLAS_INT* n, CBLAS_INT* ncvt, CBLAS_INT* nru, CBLAS_INT* ncc, double* d, double* e, double* vt, CBLAS_INT* ldvt, double* u, CBLAS_INT* ldu, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(dbdsdc)(char* uplo, char* compq, CBLAS_INT* n, double* d, double* e, double* u, CBLAS_INT* ldu, double* vt, CBLAS_INT* ldvt, double* q, CBLAS_INT* iq, double* work, CBLAS_INT* iwork, CBLAS_INT* info, size_t, size_t);
++void BLAS_FUNC(dbdsqr)(char* uplo, CBLAS_INT* n, CBLAS_INT* ncvt, CBLAS_INT* nru, CBLAS_INT* ncc, double* d, double* e, double* vt, CBLAS_INT* ldvt, double* u, CBLAS_INT* ldu, double* c, CBLAS_INT* ldc, double* work, CBLAS_INT* info, size_t);
  void BLAS_FUNC(dlartg)(double* f, double* g, double* c, double* s, double* r);
 -void BLAS_FUNC(dlascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, double* cfrom, double* cto, CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info);
 -void BLAS_FUNC(dlaset)(char* uplo, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* beta, double* a, CBLAS_INT* lda);
-+void BLAS_FUNC(dlascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, double* cfrom, double* cto, CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info, CBLAS_INT);
-+void BLAS_FUNC(dlaset)(char* uplo, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* beta, double* a, CBLAS_INT* lda, CBLAS_INT);
++void BLAS_FUNC(dlascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, double* cfrom, double* cto, CBLAS_INT* m, CBLAS_INT* n, double* a, CBLAS_INT* lda, CBLAS_INT* info, size_t);
++void BLAS_FUNC(dlaset)(char* uplo, CBLAS_INT* m, CBLAS_INT* n, double* alpha, double* beta, double* a, CBLAS_INT* lda, size_t);
  
  void BLAS_FUNC(clarfg)(CBLAS_INT* n, PROPACK_CPLXF_TYPE* alpha, PROPACK_CPLXF_TYPE* x, CBLAS_INT* incx, PROPACK_CPLXF_TYPE* tau);
 -void BLAS_FUNC(clascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, float* cfrom, float* cto, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, CBLAS_INT* info);
-+void BLAS_FUNC(clascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, float* cfrom, float* cto, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(clascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, float* cfrom, float* cto, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLXF_TYPE* a, CBLAS_INT* lda, CBLAS_INT* info, size_t);
  
  void BLAS_FUNC(zlarfg)(CBLAS_INT* n, PROPACK_CPLX_TYPE* alpha, PROPACK_CPLX_TYPE* x, CBLAS_INT* incx, PROPACK_CPLX_TYPE* tau);
 -void BLAS_FUNC(zlascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, double* cfrom, double* cto, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* info);
-+void BLAS_FUNC(zlascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, double* cfrom, double* cto, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* info, CBLAS_INT);
++void BLAS_FUNC(zlascl)(char* mtype, CBLAS_INT* kl, CBLAS_INT* ku, double* cfrom, double* cto, CBLAS_INT* m, CBLAS_INT* n, PROPACK_CPLX_TYPE* a, CBLAS_INT* lda, CBLAS_INT* info, size_t);
  
  
  // (c,z)dotc is the complex conjugate dot product of two complex vectors.
@@ -404,5 +411,5 @@ index 155e39a5af..29def462ca 100644
      dgemm_ovwr(1, dim, dim+1, dim, 1.0, &work[ip], dim, 0.0, &work[imt], dim+1, &work[iwrk], lwrk / dim);
  
 -- 
-2.53.0
+2.54.0 (Apple Git-157)
 
