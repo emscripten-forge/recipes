@@ -47,7 +47,7 @@ def kill_proc_tree(pid, sig=signal.SIGKILL, include_parent=True, timeout=5):
             pass
 
 
-        
+
 def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, 
                        skip_existing="local", continue_on_failure=False, 
                        output_dir=None, timeout=None, format='conda',
@@ -110,7 +110,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None,
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             pass
-        raise RuntimeError(f"rattler-build timed out after {timeout} seconds") from None
+        raise BuildTimeoutError(f"rattler-build timed out after {timeout} seconds") from None
 
     if ret != 0:
         raise RuntimeError(f"rattler-build failed with return code {ret}")
