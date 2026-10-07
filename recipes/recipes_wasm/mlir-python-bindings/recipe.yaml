@@ -19,9 +19,11 @@ source:
   - patches/0006-target-native-crunner-utils.patch
   # Keep NumPy-backed descriptors ABI-compatible with CRunnerUtils.
   - patches/0007-target-native-numpy-memrefs.patch
+  # Avoid unused parallel code when LLVM threads are disabled.
+  - patches/0008-single-threaded-helpers.patch
 
 build:
-  number: 1
+  number: 2
 
 outputs:
 - staging:
@@ -41,9 +43,9 @@ outputs:
     - nanobind >=2.9,<3
     host:
     - python-dev
-    # LLVM bundles the wasm static libraries, liblldWasm.a, liblldCommon.a,
+    # llvm-static bundles the wasm archives, liblldWasm.a, liblldCommon.a,
     # LLVMConfig.cmake and LLDConfig.cmake required by this standalone build.
-    - llvm ==${{ version }}
+    - llvm-static ==${{ version }}
 
 - package:
     name: mlir
@@ -61,8 +63,11 @@ outputs:
       - lib/cmake/mlir/**
       - share/mlir/**
   requirements:
+    host:
+    - llvm-static ==${{ version }}
     run:
-    - llvm ==${{ version }}
+    # MLIRConfig.cmake requires the exact LLVM source version.
+    - ${{ pin_compatible('llvm-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
   tests:
   - package_contents:
       files:
@@ -70,6 +75,11 @@ outputs:
       - include/mlir-c/IR.h
       - lib/libMLIRIR.a
       - lib/cmake/mlir/MLIRConfig.cmake
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: mlir-python-bindings
@@ -101,6 +111,11 @@ outputs:
       - lib/python*/site-packages/mlir/_mlir_libs/libMLIRPythonCAPI.so*
       - lib/python*/site-packages/mlir/_mlir_libs/libnanobind-mlir.so
       - lib/python*/site-packages/mlir/wasm_execution_engine.py
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
   - script: pytester
     files:
       recipe:
