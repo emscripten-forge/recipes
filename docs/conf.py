@@ -16,7 +16,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 blog_post_pattern = "blog/posts/*"
 blog_title = f"{project} blog"
 blog_authors = {
-    "derthorsten": ("Dr. Thorsten Beier", "https://github.com/DerThorsten"),
+    "derthorsten": ("Thorsten Beier", "https://github.com/DerThorsten"),
     "wolfv": ("Wolf Vollprecht", "https://prefix.dev"),
 }
 post_date_format = "%Y-%m-%d"
