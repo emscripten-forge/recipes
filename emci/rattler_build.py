@@ -50,7 +50,7 @@ def kill_proc_tree(pid, sig=signal.SIGKILL, include_parent=True, timeout=5):
 
 def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, 
                        skip_existing="local", continue_on_failure=False, 
-                       output_dir=None, timeout=None, format='conda',
+                       output_dir=None, timeout=None, format='tar-bz2',
                        log_style='simple'):
 
     cmd = ["rattler-build", "build", "--package-format", format, "--log-style", log_style]
