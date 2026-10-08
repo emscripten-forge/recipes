@@ -16,7 +16,7 @@ class BuildTimeoutError(Exception):
 
 
 
-def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True, timeout=5):
+def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True, timeout=10):
     """Recursively kill a process tree reliably, catching newly spawned children."""
     try:
         parent = psutil.Process(pid)
@@ -54,8 +54,7 @@ def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True, timeout=5):
             pass
 
     # Final wait to reap processes
-    psutil.wait_procs(alive, timeout=3)
-
+    psutil.wait_procs(alive, timeout=10)
 
 
 def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None, 
