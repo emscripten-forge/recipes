@@ -64,11 +64,13 @@ jobs:
       ################################################################
       - name: Sync migration branch
         shell: bash -el {0}
-        # Use the previous sha as old and the current sha as new
         run: |
           python -m emci migrate build-tentative \
-            --wildcards "${{inputs.wildcards || "*"}}" \
-            --wildcards-ignore "${{inputs.wildcards_ignore || "boost*,clang*,llvm*"}}" \
-            --timeout ${{inputs.timeout || "6000"}}
+            --wildcards "$WILDCARDS" \
+            --wildcards-ignore "$WILDCARDS_IGNORE" \
+            --timeout "$TIMEOUT"
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
+          WILDCARDS: ${{ inputs.wildcards || '*' }}
+          WILDCARDS_IGNORE: ${{ inputs.wildcards_ignore || 'boost*,clang*,llvm*' }}
+          TIMEOUT: ${{ inputs.timeout || '6000' }}
