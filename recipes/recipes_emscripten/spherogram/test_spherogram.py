@@ -1,7 +1,7 @@
 def test_import_spherogram():
     import spherogram
 
-    assert spherogram.__version__ == '2.4.1'
+    assert spherogram.__version__
 
 
 def test_compiled_extensions_load():

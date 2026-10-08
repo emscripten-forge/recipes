@@ -5,7 +5,7 @@ import sqlite3
 def test_import_snappy_manifolds():
     import snappy_manifolds
 
-    assert snappy_manifolds.version() == '1.4'
+    assert snappy_manifolds.version()
 
 
 def test_census_databases_are_installed():

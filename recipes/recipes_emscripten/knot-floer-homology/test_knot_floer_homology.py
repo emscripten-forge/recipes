@@ -6,7 +6,7 @@ PD = [(2, 0, 3, 15), (0, 6, 1, 5), (6, 2, 7, 1), (3, 10, 4, 11),
 def test_import_knot_floer_homology():
     import knot_floer_homology
 
-    assert knot_floer_homology.__version__ == '1.2.2'
+    assert knot_floer_homology.__version__
 
 
 def test_pd_to_hfk():

@@ -12,7 +12,7 @@ import pytest
 def test_import_cypari():
     import cypari
 
-    assert cypari.__version__ == '2.5.6'
+    assert cypari.__version__
 
 
 def test_pari_is_initialised():

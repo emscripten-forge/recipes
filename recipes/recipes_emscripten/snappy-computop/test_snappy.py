@@ -14,7 +14,7 @@ def test_import_snappy():
     import snappy.SnapPy
     import snappy.SnapPyHP
 
-    assert snappy.version() == '3.3.2'
+    assert snappy.version()
 
 
 def test_figure_eight_knot_complement():

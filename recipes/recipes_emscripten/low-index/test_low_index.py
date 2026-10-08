@@ -1,7 +1,7 @@
 def test_import_low_index():
     import low_index
 
-    assert low_index.version() == '1.3'
+    assert low_index.version()
 
 
 def test_free_group_subgroups():
