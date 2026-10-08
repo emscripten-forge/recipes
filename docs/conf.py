@@ -1,3 +1,4 @@
+import os
 import shutil
 from pathlib import Path
 
@@ -26,6 +27,14 @@ _book_sidebar = ["navbar-logo.html", "icon-links.html", "search-button-field.htm
 _blog_widgets = ["ablog/categories.html", "ablog/authors.html", "ablog/archives.html"]
 
 html_css_files = ["custom.css"]
+html_js_files = []
+if os.environ.get("DOCS_ANALYTICS"):
+    # Privacy-friendly analytics by Plausible, only enabled for deployed builds
+    html_js_files += [
+        ("https://plausible.io/js/pa-bn73BBhX5to7i8j6XrXy2.js", {"async": "async"}),
+        (None, {"body": "window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},"
+                        "plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()"}),
+    ]
 html_static_path = ['assets']
 html_sidebars = {
     "blog/posts/*": _book_sidebar[:3] + ["ablog/postcard.html"] + _book_sidebar[3:],
