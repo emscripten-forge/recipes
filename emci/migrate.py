@@ -28,6 +28,8 @@ from .git_utils import (
     get_current_branch_name
 )
 import logging
+import tarfile
+
 
 # globals
 ON_GITHUB_ACTIONS = os.environ.get('GITHUB_ACTIONS') == 'true'
@@ -110,11 +112,11 @@ def migrate_recipe(recipe_dir, output_dir):
     with open(recipe_file, "w") as file:
         yaml.dump(recipe, file)
 
-    
 @contextlib.contextmanager
 def extract_pkg(pkg_path):
     with TemporaryDirectory() as temp_dir:
-        subprocess.run(["tar", "-xzf", str(pkg_path), "-C", temp_dir], check=True)
+        with tarfile.open(pkg_path, mode="r:*") as tar:
+            tar.extractall(temp_dir)
         yield Path(temp_dir)
 
 
