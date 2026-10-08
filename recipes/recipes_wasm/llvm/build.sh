@@ -32,9 +32,12 @@ emcmake cmake ${CMAKE_ARGS} -S "${SRC_DIR}/llvm" -B build \
     -DLLVM_INCLUDE_DOCS=OFF                         \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
-    -DLLVM_DISTRIBUTIONS="Static;Shared"            \
+    -DLLVM_DISTRIBUTIONS="Static;Interpreter;Shared;LibClang;ClangCpp" \
     -DLLVM_Static_DISTRIBUTION_COMPONENTS="cmake-exports;static-cmake-exports;llvm-headers;llvm-libraries;clang-cmake-exports;clang-static-cmake-exports;clang-headers;clang-resource-headers;clang-libraries;lld-cmake-exports;lld-static-cmake-exports;lld-headers;lldCommon;lldWasm" \
-    -DLLVM_Shared_DISTRIBUTION_COMPONENTS="LTO;Remarks;libclang;clang-cpp;shared-cmake-exports;clang-shared-cmake-exports" \
+    -DLLVM_Interpreter_DISTRIBUTION_COMPONENTS="clangInterpreter;clang-interpreter-cmake-exports" \
+    -DLLVM_Shared_DISTRIBUTION_COMPONENTS="LTO;Remarks;shared-cmake-exports" \
+    -DLLVM_LibClang_DISTRIBUTION_COMPONENTS="libclang;clang-libclang-cmake-exports" \
+    -DLLVM_ClangCpp_DISTRIBUTION_COMPONENTS="clang-cpp;clang-clangcpp-cmake-exports" \
     -DLLVM_ENABLE_THREADS=OFF                       \
     -DLLVM_ENABLE_PIC=ON                            \
     -DLLVM_ENABLE_ZSTD=OFF                          \
@@ -51,4 +54,6 @@ emcmake cmake ${CMAKE_ARGS} -S "${SRC_DIR}/llvm" -B build \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin"
 
 emmake make -C build -j"${CPU_COUNT:-2}" \
-    install-static-distribution install-shared-distribution
+    install-static-distribution install-interpreter-distribution \
+    install-shared-distribution install-libclang-distribution \
+    install-clangcpp-distribution

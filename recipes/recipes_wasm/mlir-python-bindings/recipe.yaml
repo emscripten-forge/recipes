@@ -19,11 +19,11 @@ source:
   - patches/0006-target-native-crunner-utils.patch
   # Keep NumPy-backed descriptors ABI-compatible with CRunnerUtils.
   - patches/0007-target-native-numpy-memrefs.patch
-  # Avoid unused parallel code when LLVM threads are disabled.
+  # Inline the context threading query when LLVM threads are disabled.
   - patches/0008-single-threaded-helpers.patch
 
 build:
-  number: 2
+  number: 3
 
 outputs:
 - staging:
@@ -43,9 +43,9 @@ outputs:
     - nanobind >=2.9,<3
     host:
     - python-dev
-    # llvm-static bundles the wasm archives, liblldWasm.a, liblldCommon.a,
-    # LLVMConfig.cmake and LLDConfig.cmake required by this standalone build.
+    # The Wasm execution engine links LLVM and LLD libraries.
     - llvm-static ==${{ version }}
+    - lld-static ==${{ version }}
 
 - package:
     name: mlir
@@ -65,9 +65,11 @@ outputs:
   requirements:
     host:
     - llvm-static ==${{ version }}
+    - lld-static ==${{ version }}
     run:
     # MLIRConfig.cmake requires the exact LLVM source version.
     - ${{ pin_compatible('llvm-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('lld-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
   tests:
   - package_contents:
       files:
