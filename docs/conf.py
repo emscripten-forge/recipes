@@ -55,6 +55,7 @@ html_theme_options = {
     "use_repository_button": True,
 }
 html_title = project
+html_favicon = "assets/icon.svg"
 
 
 def _copy_qtapp(app, exception):
