@@ -60,6 +60,7 @@ outputs:
       - include/mlir-c/**
       - lib/libMLIR*.a
       - lib/libmlir*.a
+      - lib/objects-*/obj.MLIR*/**
       - lib/cmake/mlir/**
       - share/mlir/**
   requirements:
@@ -77,6 +78,13 @@ outputs:
       - include/mlir-c/IR.h
       - lib/libMLIRIR.a
       - lib/cmake/mlir/MLIRConfig.cmake
+  - script: cmake -S tests -B test-build -DCMAKE_PREFIX_PATH="$PREFIX"
+    files:
+      recipe:
+      - tests/CMakeLists.txt
+    requirements:
+      build:
+      - cmake
   # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
   - script: generic-testing --allow-pthread
     requirements:
