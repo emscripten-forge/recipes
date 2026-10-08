@@ -1,10 +1,6 @@
 context:
   version: 23.1.2
 
-package:
-  name: llvm
-  version: ${{ version }}
-
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
   sha256: 75788d759e6987a910975b902f554dc77c08b076b945b2cebde54116d8e831ca
@@ -12,36 +8,323 @@ source:
   - patches/enable_exception_handling.patch
   - patches/fix_initialization_logs.patch
   - patches/support_wasm64.patch
+  # Backport LLVM PR #221647: Emscripten does not support ELF version scripts.
+  - patches/disable-emscripten-version-scripts.patch
+  # Preserve the shared LLVM/Clang APIs with WebAssembly export lists.
+  - patches/emscripten-symbol-exports.patch
 
 build:
-  number: 0
+  number: 2
 
-  files:
-    exclude:
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
-requirements:
+outputs:
+- staging:
+    name: llvm-build
   build:
-  - ${{ compiler("c") }}
-  - ${{ compiler("cxx") }}
-  - cmake >=4.3.3,<4.4
-  - make
-  - llvm-tblgen ==${{ version }}
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake >=4.3.3,<4.4
+    - make
+    - llvm-tblgen ==${{ version }}
 
-tests:
-- package_contents:
+# Build once; install LLVM, Clang, Interpreter and LLD independently.
+# Exact sibling pins keep matching CMake export sets together and exclude the
+# older llvm-static bundle, which also owned Clang and LLD files.
+- package:
+    name: llvm-static
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging llvm-static"
     files:
-    - lib/cmake/llvm/LLVMConfig.cmake
-    - lib/cmake/clang/ClangConfig.cmake
-    - lib/cmake/lld/LLDConfig.cmake
-    - lib/liblldWasm.a
-    - lib/libclangInterpreter.a
-    - lib/libLLVMX86CodeGen.a
-    - lib/libLLVMAArch64CodeGen.a
-    - lib/libLTO.so
+      include:
+      - include/llvm/**
+      - include/llvm-c/**
+      - lib/libLLVM*.a
+      - lib/cmake/llvm/**
+      - share/llvm/**
+      exclude:
+      - lib/cmake/llvm/LLVMSharedExports*.cmake
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - include/llvm-c/lto.h
+        - lib/cmake/llvm/LLVMConfig.cmake
+        - lib/cmake/llvm/LLVMStaticExports.cmake
+        - lib/libLLVMX86CodeGen.a
+        - lib/libLLVMAArch64CodeGen.a
+        not_exists:
+        - '**/*.so*'
+        - include/clang/**
+        - include/lld/**
+        - lib/libclang*.a
+        - lib/liblld*.a
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+  - script: test_static.sh
+    files:
+      recipe:
+      - test_static.sh
+      - tests/
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+
+- package:
+    name: clangdev-static
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging clangdev-static"
+    files:
+      include:
+      - include/clang/**
+      - include/clang-c/**
+      - lib/libclang*.a
+      - lib/clang/**
+      - lib/cmake/clang/ClangConfig*.cmake
+      - lib/cmake/clang/AddClang.cmake
+      - lib/cmake/clang/ClangStaticTargets*.cmake
+      exclude:
+      - lib/libclangInterpreter.a
+  requirements:
+    host:
+    - ${{ pin_subpackage('llvm-static', exact=True) }}
+    run:
+    - ${{ pin_compatible('llvm-static', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - include/clang/AST/ASTContext.h
+        - include/clang-c/Index.h
+        - lib/libclangBasic.a
+        - lib/clang/23/include/stddef.h
+        - lib/cmake/clang/ClangConfig.cmake
+        - lib/cmake/clang/ClangStaticTargets.cmake
+        not_exists:
+        - '**/*.so*'
+        - lib/libclangInterpreter.a
+        - lib/liblld*.a
+        - lib/cmake/clang/ClangInterpreterTargets*.cmake
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+  - script: test_static.sh
+    files:
+      recipe:
+      - test_static.sh
+      - tests/
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+
+- package:
+    name: lld-static
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging lld-static"
+    files:
+      include:
+      - include/lld/**
+      - lib/liblldCommon.a
+      - lib/liblldWasm.a
+      - lib/cmake/lld/**
+  requirements:
+    host:
+    - ${{ pin_subpackage('llvm-static', exact=True) }}
+    run:
+    - ${{ pin_compatible('llvm-static', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - include/lld/Common/Driver.h
+        - lib/liblldCommon.a
+        - lib/liblldWasm.a
+        - lib/cmake/lld/LLDConfig.cmake
+        - lib/cmake/lld/LLDStaticTargets.cmake
+        not_exists:
+        - '**/*.so*'
+        - lib/libclang*.a
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+  - script: test_static.sh
+    files:
+      recipe:
+      - test_static.sh
+      - tests/
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+
+- package:
+    name: clang-interpreter-static
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging clang-interpreter-static"
+    files:
+      include:
+      - lib/libclangInterpreter.a
+      - lib/cmake/clang/ClangInterpreterTargets*.cmake
+  requirements:
+    host:
+    - ${{ pin_subpackage('llvm-static', exact=True) }}
+    - ${{ pin_subpackage('clangdev-static', exact=True) }}
+    - ${{ pin_subpackage('lld-static', exact=True) }}
+    run:
+    - ${{ pin_compatible('llvm-static', exact=True) }}
+    - ${{ pin_compatible('clangdev-static', exact=True) }}
+    - ${{ pin_compatible('lld-static', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/libclangInterpreter.a
+        - lib/cmake/clang/ClangInterpreterTargets.cmake
+        not_exists:
+        - '**/*.so*'
+        - lib/libclangBasic.a
+        - lib/liblld*.a
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+  - script: test_static.sh
+    files:
+      recipe:
+      - test_static.sh
+      - tests/
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+
+- package:
+    name: llvm
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging llvm"
+    files:
+      include:
+      - lib/libLTO.so
+      - lib/libRemarks.so
+      - lib/cmake/llvm/LLVMSharedExports*.cmake
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('llvm', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/libLTO.so
+        - lib/libRemarks.so
+        - lib/cmake/llvm/LLVMSharedExports.cmake
+        not_exists:
+        - '**/*.a'
+        - lib/libclang*.so
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: libclang
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging libclang"
+    files:
+      include:
+      - lib/libclang.so
+      - lib/cmake/clang/ClangLibClangTargets*.cmake
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('libclang', lower_bound='x.x', upper_bound='x.x') }}
+    # Older llvm packages owned these shared libraries; older llvm-static
+    # packages shipped ClangConfig.cmake without the separate export sets.
+    run_constraints:
+    - ${{ pin_subpackage('llvm', exact=True) }}
+    - ${{ pin_subpackage('llvm-static', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/libclang.so
+        - lib/cmake/clang/ClangLibClangTargets.cmake
+        not_exists:
+        - '**/*.a'
+        - lib/libclang-cpp.so
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: libclang-cpp
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging libclang-cpp"
+    files:
+      include:
+      - lib/libclang-cpp.so
+      - lib/cmake/clang/ClangClangCppTargets*.cmake
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('libclang-cpp', lower_bound='x.x', upper_bound='x.x') }}
+    # Older llvm packages owned these shared libraries; older llvm-static
+    # packages shipped ClangConfig.cmake without the separate export sets.
+    run_constraints:
+    - ${{ pin_subpackage('llvm', exact=True) }}
+    - ${{ pin_subpackage('llvm-static', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/libclang-cpp.so
+        - lib/cmake/clang/ClangClangCppTargets.cmake
+        not_exists:
+        - '**/*.a'
+        - lib/libclang.so
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
 
 about:
   license: Apache-2.0 WITH LLVM-exception
@@ -50,6 +333,10 @@ about:
   summary: The LLVM Project is a collection of modular and reusable compiler and toolchain technologies.
   homepage: https://llvm.org
 extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
   recipe-maintainers:
   - DerThorsten
   - anutosh491

@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 3.20)
+project(test_llvm_static LANGUAGES C CXX)
+
+find_package(LLVM $ENV{PKG_VERSION} EXACT REQUIRED CONFIG)
+
+set(required_targets LLVMX86CodeGen LLVMAArch64CodeGen)
+if(PACKAGE_NAME STREQUAL "lld-static" OR
+   PACKAGE_NAME STREQUAL "clang-interpreter-static")
+  # ClangInterpreter's export set references LLD targets.
+  find_package(LLD $ENV{PKG_VERSION} EXACT REQUIRED CONFIG)
+  list(APPEND required_targets lldCommon lldWasm)
+endif()
+if(PACKAGE_NAME STREQUAL "clangdev-static" OR
+   PACKAGE_NAME STREQUAL "clang-interpreter-static")
+  find_package(Clang $ENV{PKG_VERSION} EXACT REQUIRED CONFIG)
+  list(APPEND required_targets clangBasic clangFrontend)
+endif()
+if(PACKAGE_NAME STREQUAL "clang-interpreter-static")
+  list(APPEND required_targets clangInterpreter)
+elseif(TARGET clangInterpreter)
+  message(FATAL_ERROR "ClangInterpreter must be independently installable")
+endif()
+if(PACKAGE_NAME STREQUAL "llvm-static" OR
+   PACKAGE_NAME STREQUAL "clangdev-static")
+  if(TARGET lldCommon OR TARGET lldWasm)
+    message(FATAL_ERROR "LLVM and core Clang must not require LLD")
+  endif()
+endif()
+
+foreach(component LTO Remarks libclang clang-cpp)
+  if(TARGET ${component})
+    message(FATAL_ERROR "The static package must not export the shared target: ${component}")
+  endif()
+endforeach()
+foreach(component ${required_targets})
+  if(NOT TARGET ${component})
+    message(FATAL_ERROR "Missing imported target: ${component}")
+  endif()
+endforeach()
+
+if(PACKAGE_NAME STREQUAL "llvm-static")
+  add_executable(test_llvm test_llvm.cpp)
+  target_compile_features(test_llvm PRIVATE cxx_std_17)
+  target_include_directories(test_llvm PRIVATE ${LLVM_INCLUDE_DIRS})
+  target_compile_definitions(test_llvm PRIVATE ${LLVM_DEFINITIONS})
+  target_link_libraries(test_llvm PRIVATE LLVMCore)
+endif()
