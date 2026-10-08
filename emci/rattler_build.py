@@ -10,41 +10,52 @@ class BuildTimeoutError(Exception):
         super().__init__(message)
 
 
+
 try:
     import psutil
 except ImportError:
     raise ImportError("pip install psutil  # required for reliable process-tree kill")
 
 
-def kill_proc_tree(pid, sig=signal.SIGKILL, include_parent=True, timeout=5):
-    """Recursively kill a process and all its descendants."""
+def kill_proc_tree(pid, sig=signal.SIGTERM, include_parent=True, timeout=5):
+    """Recursively kill a process tree reliably, catching newly spawned children."""
     try:
         parent = psutil.Process(pid)
     except psutil.NoSuchProcess:
         return
 
-    children = parent.children(recursive=True)
-
-    # kill children first (bottom-up)
-    for child in reversed(children):
-        try:
-            child.send_signal(sig)
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-
+    # Grab initial process hierarchy
+    procs = parent.children(recursive=True)
     if include_parent:
+        procs.append(parent)
+
+    # Step 1: Send initial signal (SIGTERM preferred to allow clean shutdown)
+    for p in procs:
         try:
-            parent.send_signal(sig)
+            p.send_signal(sig)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 
-    # wait a bit for them to disappear
-    gone, alive = psutil.wait_procs(children + ([parent] if include_parent else []), timeout=timeout)
-    for p in alive:
+    # Step 2: Wait briefly for processes to terminate
+    gone, alive = psutil.wait_procs(procs, timeout=timeout)
+
+    # Step 3: Re-scan for any newly spawned children that escaped the first round
+    if parent.is_running():
         try:
-            p.kill()
+            extra_children = parent.children(recursive=True)
+            alive.extend([c for c in extra_children if c not in alive])
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
+
+    # Step 4: Forcefully SIGKILL remaining process tree (bottom-up)
+    for p in reversed(alive):
+        try:
+            p.kill()  # SIGKILL
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    # Final wait to reap processes
+    psutil.wait_procs(alive, timeout=3)
 
 
 
