@@ -14,6 +14,7 @@ from pathlib import Path
 
 from typing import Optional
 import typer
+import logging
 
 app = typer.Typer(pretty_exceptions_enable=False)
 build_app = typer.Typer()
@@ -170,6 +171,35 @@ def sync(
     from .sync_migration_branch import sync_migration_branch
 
     sync_migration_branch(migration_ref, old, new, dry_run=dry_run)
+
+
+
+migrate = typer.Typer()
+app.add_typer(migrate, name="migrate")
+
+from .migrate import build_tentative as build_tentative_impl
+
+@migrate.command()
+def build_tentative(
+    output_dir: Optional[Path] = None,
+    timeout: Optional[int] = None, 
+    wildcards: Optional[str] = None,
+    wildcards_ignore: Optional[str] = None,
+    log_level: Optional[str] = "INFO",
+):
+    # split wildcards by comma if provided
+    if wildcards is not None:
+        wildcards = wildcards.split(",")
+
+    wildcards_base = ["arrow", "thrift", "r-factominer"]
+    if wildcards_ignore is not None:
+        wildcards_ignore = wildcards_ignore.split(",") + wildcards_base
+    else:
+        wildcards_ignore = wildcards_base
+
+    logging.basicConfig(level=getattr(logging, log_level.upper(), logging.INFO))
+    build_tentative_impl(output_dir=output_dir, timeout=timeout, wildcards=wildcards, wildcards_ignore=wildcards_ignore)
+
 
 
 if __name__ == "__main__":
