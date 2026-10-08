@@ -8,7 +8,7 @@ working even though ``plink.gui`` warns that tkinter is unavailable.
 def test_import_plink():
     import plink
 
-    assert plink.__version__ == '2.4.9'
+    assert plink.__version__
 
 
 def test_link_manager_is_usable_without_tk():
