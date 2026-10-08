@@ -1,26 +1,54 @@
-From 0bfc8383396cb0dfbcacbd239d6363b8291c1a01 Mon Sep 17 00:00:00 2001
+From a56f3d2e9861dae549bef5ee73d34bcc5243afad Mon Sep 17 00:00:00 2001
 From: anutosh491 <andersonbhat491@gmail.com>
 Date: Wed, 7 Oct 2026 20:46:07 +0530
-Subject: [PATCH] [mlir] Avoid parallel code in single-threaded builds
+Subject: [PATCH] [mlir] Inline the threading query when threads are disabled
 
 ---
- mlir/include/mlir/IR/Threading.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mlir/include/mlir/IR/MLIRContext.h | 5 +++++
+ mlir/lib/IR/MLIRContext.cpp        | 4 +++-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/mlir/include/mlir/IR/Threading.h b/mlir/include/mlir/IR/Threading.h
-index 3ceab6b3e883..0cf1faf7561d 100644
---- a/mlir/include/mlir/IR/Threading.h
-+++ b/mlir/include/mlir/IR/Threading.h
-@@ -41,7 +41,8 @@ LogicalResult failableParallelForEach(MLIRContext *context, IteratorT begin,
- 
-   // If multithreading is disabled or there is a small number of elements,
-   // process the elements directly on this thread.
--  if (!context->isMultithreadingEnabled() || numElements <= 1) {
-+  if (!LLVM_ENABLE_THREADS || !context->isMultithreadingEnabled() ||
-+      numElements <= 1) {
-     for (; begin != end; ++begin)
-       if (failed(func(*begin)))
-         return failure();
+diff --git a/mlir/include/mlir/IR/MLIRContext.h b/mlir/include/mlir/IR/MLIRContext.h
+index 12cd00b..8199d93 100644
+--- a/mlir/include/mlir/IR/MLIRContext.h
++++ b/mlir/include/mlir/IR/MLIRContext.h
+@@ -12,6 +12,7 @@
+ #include "mlir/Support/LLVM.h"
+ #include "mlir/Support/TypeID.h"
+ #include "llvm/ADT/ArrayRef.h"
++#include "llvm/Config/llvm-config.h"
+ #include <functional>
+ #include <memory>
+ #include <vector>
+@@ -146,7 +147,11 @@ public:
+   void allowUnregisteredDialects(bool allow = true);
+
+   /// Return true if multi-threading is enabled by the context.
++#if LLVM_ENABLE_THREADS
+   bool isMultithreadingEnabled();
++#else
++  bool isMultithreadingEnabled() { return false; }
++#endif
+
+   /// Set the flag specifying if multi-threading is disabled by the context.
+   /// The command line debugging flag `--mlir-disable-threading` is overriding
+diff --git a/mlir/lib/IR/MLIRContext.cpp b/mlir/lib/IR/MLIRContext.cpp
+index da891a7..5b94e26 100644
+--- a/mlir/lib/IR/MLIRContext.cpp
++++ b/mlir/lib/IR/MLIRContext.cpp
+@@ -602,9 +602,11 @@ void MLIRContext::allowUnregisteredDialects(bool allowing) {
+ }
+
+ /// Return true if multi-threading is enabled by the context.
++#if LLVM_ENABLE_THREADS
+ bool MLIRContext::isMultithreadingEnabled() {
+-  return impl->threadingIsEnabled && llvm::llvm_is_multithreaded();
++  return impl->threadingIsEnabled;
+ }
++#endif
+
+ /// Set the flag specifying if multi-threading is disabled by the context.
+ void MLIRContext::disableMultithreading(bool disable) {
 -- 
 2.50.1 (Apple Git-155)
 
