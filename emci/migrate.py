@@ -460,7 +460,7 @@ def build_tentative(output_dir=None,
         pkg_to_recipe_dir = build_pkg_to_recipe_dir(filtered_to_migrate_dir)
 
         # build all pkgs
-        if 0:
+        if 1:
             build_with_rattler_wrapper(recipes_dir=filtered_to_migrate_dir, output_dir=output_dir, 
                             target_platform=target_platform, skip_existing="local", 
                         timeout=timeout)
