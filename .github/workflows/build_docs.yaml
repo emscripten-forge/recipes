@@ -38,7 +38,9 @@ jobs:
       # BUILD
       ################################################################
       - name: Build docs
-        run: pixi run docs-build -d docs_build
+        run: pixi run docs-build
+        env:
+          DOCS_ANALYTICS: ${{ github.ref == 'refs/heads/main' && github.repository == 'emscripten-forge/recipes' && '1' || '' }}
 
       ################################################################
       # UPLOAD
@@ -46,7 +48,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: docs_build
+          path: docs/_build/html/
 
   deploy:
     # only run on main branch

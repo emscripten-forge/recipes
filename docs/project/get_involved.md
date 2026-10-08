@@ -11,4 +11,4 @@ Emscripten-forge strives to be a community project. Contributions from individua
 
 Emscripten-forge is sustained by organizational supporters that contribute engineering time, maintenance, and infrastructure. If your organization would like to support the project, reach out via [GitHub](https://github.com/emscripten-forge/recipes/issues).
 
-Current organizational supporters are listed on the [Credits](credits.md#supporters) page.
+Current organizational supporters are listed on the [Credits](#supporters) page.
