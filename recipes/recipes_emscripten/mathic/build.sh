@@ -5,7 +5,7 @@ set -euxo pipefail
 
 CPPFLAGS="-I${PREFIX}/include" \
 LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=gnu++14" \
+CXXFLAGS="-std=gnu++17" \
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --with-gtest=no \
