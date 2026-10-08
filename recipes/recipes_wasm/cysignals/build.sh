@@ -1,7 +1,7 @@
 cp $RECIPE_DIR/emscripten.meson.cross $SRC_DIR
 
 # write out the cross file
-sed "s|@(PYTHON)|${PYTHON}|g" $SRC_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.new
+sed "s|@(PYTHON)|${PYTHON}|g" $MESON_CROSS_FILE  > $SRC_DIR/emscripten.meson.new
 mv $SRC_DIR/emscripten.meson.new $SRC_DIR/emscripten.meson.cross
 
 cat $SRC_DIR/emscripten.meson.cross
