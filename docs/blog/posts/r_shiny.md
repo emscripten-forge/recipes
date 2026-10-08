@@ -1,11 +1,17 @@
 ```{post} 2026-10-08
 :author: IsabelParedes
 :category: r-lang
+:image: 1
 ```
 
-# Publishing Static Shiny Dashboards on GitHub Pages with Emscripten-Forge
+# Serverless Shiny Dashboards with Emscripten-Forge
 
-Today, we are excited to announce the integration of Shiny with emscripten-forge, enabling fully-static Shiny dashboards that run entirely in the browser and can be published to GitHub Pages with a single template repository.
+```{image} ../../assets/blog_banner_r_shiny.png
+:alt: Emscripten-forge and Shiny
+:class: banner dark-light
+```
+
+We are excited to announce the integration of Shiny with emscripten-forge, enabling fully-static Shiny dashboards that run entirely in the browser and can be published to GitHub Pages with a single template repository.
 
 ## The Cost of Traditional Shiny Deployment
 
@@ -15,7 +21,7 @@ Beyond raw cost, operating a Shiny server also comes with the usual operational 
 
 ## WebAssembly Changes Everything
 
-WebAssembly changes the economics of Shiny deployment entirely. With R compiled to WebAssembly, the application logic runs in the browser of each visitor: compute resources are provided by the user, and your infrastructure cost goes from O(n) to O(1). Serving the dashboard is no different from serving any static website, a flat cost, regardless of how many people connect.
+WebAssembly changes the economics of Shiny deployment entirely. With R compiled to WebAssembly, the application logic runs in the browser of each visitor: compute resources are provided by the user, and your infrastructure cost goes from $O(n)$ to $O(1)$. Serving the dashboard is no different from serving any static website, a flat cost, regardless of how many people connect.
 
 For most basic Shiny applications, the resources available to a modern browser are more than enough. This model is a perfect fit for:
 
