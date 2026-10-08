@@ -1,0 +1,76 @@
+context:
+  version: 23.1.2
+
+source:
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
+  sha256: 75788d759e6987a910975b902f554dc77c08b076b945b2cebde54116d8e831ca
+
+package:
+  name: lld-static
+  version: ${{ version }}
+
+build:
+  number: 3
+  script: build.sh
+  files:
+    include:
+    - include/lld/**
+    - lib/liblldCommon.a
+    - lib/liblldWasm.a
+    - lib/cmake/lld/**
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake >=4.3.3,<4.4
+  - make
+  - llvm-tblgen ==${{ version }}
+  host:
+  - llvm-static ==${{ version }}[build_number='>=2']
+  run:
+  - ${{ pin_compatible('llvm-static', exact=True) }}
+
+tests:
+- package_contents:
+    files:
+      exists:
+      - include/lld/Common/Driver.h
+      - lib/liblldCommon.a
+      - lib/liblldWasm.a
+      - lib/cmake/lld/LLDConfig.cmake
+      - lib/cmake/lld/LLDStaticTargets.cmake
+      not_exists:
+      - '**/*.so*'
+      - lib/libclang*.a
+# libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+- script: test_static.sh
+  files:
+    recipe:
+    - test_static.sh
+    - tests/
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+
+about:
+  license: Apache-2.0 WITH LLVM-exception
+  license_family: Apache
+  license_file: LICENSE.TXT
+  summary: LLD WebAssembly linker libraries.
+  homepage: https://llvm.org
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
+  recipe-maintainers:
+  - DerThorsten
+  - anutosh491
