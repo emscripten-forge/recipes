@@ -13,7 +13,7 @@ set -euxo pipefail
 # The build machine's Java settings must not leak into the boot JDK.
 unset JAVA_TOOL_OPTIONS _JAVA_OPTIONS CLASSPATH JAVA_HOME || true
 
-SUPPORT="${RECIPE_DIR}/support"
+SUPPORT="${SRC_DIR}/support"        # the openjdk8-support source
 BOOT_JDK="${BUILD_PREFIX}"          # conda-forge openjdk 8
 JOBS="${CPU_COUNT:-2}"
 TOOLS="${SRC_DIR}/_emjdk"

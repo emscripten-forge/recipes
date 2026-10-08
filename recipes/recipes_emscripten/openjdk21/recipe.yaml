@@ -1,5 +1,6 @@
 context:
   version: "21.0.10"
+  kit_version: "0.1.0"
 
 package:
   name: openjdk21
@@ -25,6 +26,11 @@ source:
     patches:
       # jlong/jdouble arguments from Zero are only 4-byte aligned
       - patches/libffi-wasm32-unaligned-64bit.patch
+  # link kit: launcher, symbol-table generator, link script, page shell,
+  # fontconfig.properties
+  - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ kit_version }}.tar.gz
+    sha256: 2ef032b39bc720960d1dfade80bcf0cc292ad4f1f315a6c019dbcf7d13c6a13c
+    target_directory: kit
 
 build:
   number: 0
@@ -98,12 +104,17 @@ about:
 
     bin/openjdk21-wasm-link links a program for the browser or node:
       openjdk21-wasm-link -o app.html --app app.jar --arg -jar --arg /app/app.jar
-  license: GPL-2.0-only WITH Classpath-exception-2.0
+  license: GPL-2.0-only WITH Classpath-exception-2.0 AND MIT AND Bitstream-Vera
   license_file:
     - LICENSE
     - ASSEMBLY_EXCEPTION
+    # the link kit (openjdk21-kit) and the coi-serviceworker.js it ships
+    - kit/LICENSE
+    - kit/LICENSE-coi-serviceworker
     # the bundled DejaVu fonts (font-ttf-dejavu ships no license file)
     - kit/LICENSE-DejaVu
+    # the bundled libffi (lib/wasm-native/libffi.a)
+    - libffi/LICENSE
 
 extra:
   recipe-maintainers:

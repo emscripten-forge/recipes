@@ -1,6 +1,7 @@
 context:
   name: openjdk8
   version: "jdk8u504-ga"
+  support_version: "0.1.0"
 
 package:
   name: ${{ name }}
@@ -35,6 +36,11 @@ source:
       # native methods can block and switch green threads (JSPI); unaligned
       # 64-bit values; Emscripten 4: no implicit stackSave/_malloc in JS
       - patches/libffi-wasm32-jspi-calls-unaligned-64bit-emscripten4.patch
+  # build support: compiler wrapper, browser runtime, link and JRE staging
+  # scripts, launcher and applet loader
+  - url: https://github.com/wangyenshu/openjdk8-support/archive/refs/tags/v${{ support_version }}.tar.gz
+    sha256: 37d3100137e676381815655f9cfe4401d08de87041548b16d8b610e8ca1dcd77
+    target_directory: support
 
 build:
   number: 0
@@ -92,6 +98,8 @@ about:
     - LICENSE
     - ASSEMBLY_EXCEPTION
     - THIRD_PARTY_README
+    # the build support code and browser runtime (openjdk8-support)
+    - support/LICENSE
     # the bundled DejaVu fonts
     - support/jre-overlay/lib/fonts/LICENSE-DejaVu.txt
     # the bundled libffi
