@@ -59,19 +59,19 @@ jobs:
           cache-environment: false
           post-cleanup: "all"
 
-      # hotfix to disable
-      # ################################################################
-      # # SYNC
-      # ################################################################
-      # - name: Sync migration branch
-      #   shell: bash -el {0}
-      #   run: |
-      #     python -m emci migrate build-tentative \
-      #       --wildcards "$WILDCARDS" \
-      #       --wildcards-ignore "$WILDCARDS_IGNORE" \
-      #       --timeout "$TIMEOUT"
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
-      #     WILDCARDS: ${{ inputs.wildcards || '*' }}
-      #     WILDCARDS_IGNORE: ${{ inputs.wildcards_ignore || 'boost*,clang*,llvm*' }}
-      #     TIMEOUT: ${{ inputs.timeout || '6000' }}
+
+      ################################################################
+      # SYNC
+      ################################################################
+      - name: Sync migration branch
+        shell: bash -el {0}
+        run: |
+          python -m emci migrate build-tentative \
+            --wildcards "$WILDCARDS" \
+            --wildcards-ignore "$WILDCARDS_IGNORE" \
+            --timeout "$TIMEOUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_ACCESS_TOKEN }}
+          WILDCARDS: ${{ inputs.wildcards || '*' }}
+          WILDCARDS_IGNORE: ${{ inputs.wildcards_ignore || 'boost*,clang*,llvm*' }}
+          TIMEOUT: ${{ inputs.timeout || '6000' }}
