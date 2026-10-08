@@ -12,14 +12,12 @@ source:
   - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
-  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version 
-    }}_src_all.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
   sha256: cfe78db85b5dc98034031807d6699fb96eed7a228b0ccfa474e1ede642acddc9
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on bioconda
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -37,6 +35,10 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   repository: https://github.com/Bioconductor/S4Vectors
