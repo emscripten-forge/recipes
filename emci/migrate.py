@@ -3,6 +3,8 @@ import contextlib
 import shutil
 import tempfile
 import os
+
+from exceptiongroup import catch
 from .rattler_build import build_with_rattler, BuildTimeoutError
 from pathlib import Path
 import subprocess
@@ -325,64 +327,66 @@ def post_tentative_build( filtered_to_migrate_dir, output_dir, target_platform, 
 
     for cluster in clusters:
         successful_builds = list(cluster)
-        
-        branch_name = pkg_list_to_branch_name(successful_builds)
-        with git_branch_ctx(branch_name, stash_current=False):
+
+        try:
+            branch_name = pkg_list_to_branch_name(successful_builds)
+            with git_branch_ctx(branch_name, stash_current=False):
 
 
 
-            # move build recipes from filtered_to_migrate_dir
-            # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
-            # copy filtered_to_migrate_dir/<RECIPE> to RECIPES_EMSCRIPTEN_DIR/<RECIPE> 
-            for recipe_dir in successful_builds:
+                # move build recipes from filtered_to_migrate_dir
+                # to the actual recipe dir RECIPES_EMSCRIPTEN_DIR
+                # copy filtered_to_migrate_dir/<RECIPE> to RECIPES_EMSCRIPTEN_DIR/<RECIPE> 
+                for recipe_dir in successful_builds:
 
-                # this is the recipe where we already applied some transformations
-                # (ie python in host ist renamed to python-dev, and similar changes)
-                src_dir_modified = filtered_to_migrate_dir / recipe_dir
+                    # this is the recipe where we already applied some transformations
+                    # (ie python in host ist renamed to python-dev, and similar changes)
+                    src_dir_modified = filtered_to_migrate_dir / recipe_dir
 
-                # where the original recipe is located
-                src_dir_original = TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR / recipe_dir
+                    # where the original recipe is located
+                    src_dir_original = TO_MIGRATE_RECIPES_EMSCRIPTEN_DIR / recipe_dir
 
-                dst_dir = RECIPES_EMSCRIPTEN_DIR / recipe_dir
+                    dst_dir = RECIPES_EMSCRIPTEN_DIR / recipe_dir
 
-                
-                if  dst_dir.exists():
-                    logger.warning(f"Destination directory {dst_dir} already exists")
+                    
+                    if  dst_dir.exists():
+                        logger.warning(f"Destination directory {dst_dir} already exists")
 
-                
-                shutil.copytree(src_dir_modified, dst_dir)
+                    
+                    shutil.copytree(src_dir_modified, dst_dir)
 
-                # delete the old file via git
-                subprocess.run(["git", "rm", "-r", str(src_dir_original)], check=True)
-                subprocess.run(["git", "add", str(dst_dir)], check=True)
-                subprocess.run(["git", "commit", "-m", f"Migrate recipe {recipe_dir}"], check=True)
+                    # delete the old file via git
+                    subprocess.run(["git", "rm", "-r", str(src_dir_original)], check=True)
+                    subprocess.run(["git", "add", str(dst_dir)], check=True)
+                    subprocess.run(["git", "commit", "-m", f"Migrate recipe {recipe_dir}"], check=True)
 
-            # push the changes to the remote(with force if necessary)
-            subprocess.run(["git", "push", "--force", "origin", branch_name], check=True)
+                # push the changes to the remote(with force if necessary)
+                subprocess.run(["git", "push", "--force", "origin", branch_name], check=True)
 
 
-            pr_title = pkg_list_to_pr_title(successful_builds)
+                pr_title = pkg_list_to_pr_title(successful_builds)
 
-            pr_body = generate_pr_body(successful_builds)
+                pr_body = generate_pr_body(successful_builds)
 
-            # get current user
-            if ON_GITHUB_ACTIONS:
-                head = branch_name
-            else:
-                current_user = subprocess.check_output(['git', 'config', 'user.name']).decode().strip()
-                head = f"{current_user}:{branch_name}"
+                # get current user
+                if ON_GITHUB_ACTIONS:
+                    head = branch_name
+                else:
+                    current_user = subprocess.check_output(['git', 'config', 'user.name']).decode().strip()
+                    head = f"{current_user}:{branch_name}"
 
-            args = ['gh', 'pr', 'create',
-                    "--repo", "emscripten-forge/recipes",
-                    '--base', "emscripten-6x",
-                    "--head", head,
-                    '--title', pr_title, '--body', pr_body,
-                    '--label', '6x'
-            ]
+                args = ['gh', 'pr', 'create',
+                        "--repo", "emscripten-forge/recipes",
+                        '--base', "emscripten-6x",
+                        "--head", head,
+                        '--title', pr_title, '--body', pr_body,
+                        '--label', '6x'
+                ]
 
-            # call gh to create a PR
-            subprocess.check_call(args, cwd=os.getcwd())
-                
+                # call gh to create a PR
+                subprocess.check_call(args, cwd=os.getcwd())
+        except Exception as e:
+            logger.error(f"Failed to create PR: {e}, continuing with the next one")
 
 
 
