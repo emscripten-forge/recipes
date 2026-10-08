@@ -4,7 +4,6 @@ import shutil
 import tempfile
 import os
 
-from exceptiongroup import catch
 from .rattler_build import build_with_rattler, BuildTimeoutError
 from pathlib import Path
 import subprocess
