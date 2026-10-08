@@ -1,0 +1,77 @@
+From 3a495c2456ecf6f2d0590f2bd1599d2cf7986ecf Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 28 Sep 2026 16:04:28 +0100
+Subject: [PATCH 13/14] Fix xerbla arguments for wasm64
+
+---
+ common_interface.h     |  2 +-
+ driver/others/xerbla.c | 16 ++++++++--------
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/common_interface.h b/common_interface.h
+index 097905d7b..54e99f053 100644
+--- a/common_interface.h
++++ b/common_interface.h
+@@ -46,7 +46,7 @@ extern "C" {
+ 	/* Assume C declarations for C++ */
+ #endif  /* __cplusplus */
+ 
+-void    BLASFUNC(xerbla)(char *, blasint *info, blasint);
++void    BLASFUNC(xerbla)(char *, blasint *info, size_t);
+ 
+ void    openblas_set_num_threads_(int *);
+ 
+diff --git a/driver/others/xerbla.c b/driver/others/xerbla.c
+index 43516eea6..7c4f732f7 100644
+--- a/driver/others/xerbla.c
++++ b/driver/others/xerbla.c
+@@ -51,15 +51,15 @@
+ #define MSGFMT " ** On entry to %6.*s parameter number %2lld had an illegal value\n"
+ 
+ static size_t openblas_xerbla_name_length(const char *message,
+-                                          blasint length) {
++                                          size_t length) {
+   const char *terminator;
+ 
+-  if (message == NULL || length <= 0) return 0;
++  if (message == NULL || length == 0) return 0;
+ 
+-  terminator = memchr(message, '\0', (size_t)length);
++  terminator = memchr(message, '\0', length);
+   if (terminator != NULL) return (size_t)(terminator - message);
+ 
+-  return (size_t)length;
++  return length;
+ }
+ 
+ static void openblas_xerbla_default(const char *message, const blasint *info,
+@@ -88,7 +88,7 @@ openblas_set_xerbla(openblas_xerbla_handler handler) {
+ }
+ 
+ static void openblas_xerbla_dispatch(char *message, blasint *info,
+-                                     blasint length) {
++                                     size_t length) {
+   openblas_xerbla_handler handler;
+   size_t name_length = openblas_xerbla_name_length(message, length);
+ 
+@@ -100,14 +100,14 @@ static void openblas_xerbla_dispatch(char *message, blasint *info,
+ }
+ 
+ #ifdef __ELF__
+-void __xerbla(char *message, blasint *info, blasint length) {
++void __xerbla(char *message, blasint *info, size_t length) {
+   openblas_xerbla_dispatch(message, info, length);
+ }
+ 
+-void BLASFUNC(xerbla)(char *, blasint *, blasint)
++void BLASFUNC(xerbla)(char *, blasint *, size_t)
+   __attribute__ ((weak, alias ("__xerbla")));
+ #else
+-void BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
++void BLASFUNC(xerbla)(char *message, blasint *info, size_t length) {
+   openblas_xerbla_dispatch(message, info, length);
+ }
+ #endif
+-- 
+2.54.0 (Apple Git-157)
+

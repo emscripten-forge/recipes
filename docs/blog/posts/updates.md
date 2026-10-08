@@ -1,13 +1,7 @@
----
-date: 2025-04-30
-category:
-    - server
-    - python
-    - compiler
-    
-authors:
-    - derthorsten
----
+```{post} 2025-04-30
+:author: derthorsten
+:category: server, python, compiler
+```
 
 # Major updates
 

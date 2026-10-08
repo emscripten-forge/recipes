@@ -18,7 +18,9 @@ esac
 export CMAKE_PREFIX_PATH="${PREFIX}"
 export CMAKE_SYSTEM_PREFIX_PATH="${PREFIX}"
 
-emcmake cmake -S "${SRC_DIR}/llvm" -B build \
+# CMAKE_ARGS carries the compiler package's toolchain and target settings.
+# Intentional word splitting follows the recipe convention for CMAKE_ARGS.
+emcmake cmake ${CMAKE_ARGS} -S "${SRC_DIR}/llvm" -B build \
     -DCMAKE_BUILD_TYPE=Release                      \
     -DCMAKE_PREFIX_PATH="${PREFIX}"                 \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}"              \
@@ -30,7 +32,9 @@ emcmake cmake -S "${SRC_DIR}/llvm" -B build \
     -DLLVM_INCLUDE_DOCS=OFF                         \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
     -DLLVM_ENABLE_PROJECTS="clang;lld"              \
-    -DLLVM_DISTRIBUTION_COMPONENTS="cmake-exports;llvm-headers;llvm-libraries;clang-cmake-exports;clang-headers;clang-resource-headers;clang-libraries;lld-cmake-exports;lld-headers;lldCommon;lldWasm" \
+    -DLLVM_DISTRIBUTIONS="Static;Shared"            \
+    -DLLVM_Static_DISTRIBUTION_COMPONENTS="cmake-exports;static-cmake-exports;llvm-headers;llvm-libraries;clang-cmake-exports;clang-static-cmake-exports;clang-headers;clang-resource-headers;clang-libraries;lld-cmake-exports;lld-static-cmake-exports;lld-headers;lldCommon;lldWasm" \
+    -DLLVM_Shared_DISTRIBUTION_COMPONENTS="LTO;Remarks;libclang;clang-cpp;shared-cmake-exports;clang-shared-cmake-exports" \
     -DLLVM_ENABLE_THREADS=OFF                       \
     -DLLVM_ENABLE_PIC=ON                            \
     -DLLVM_ENABLE_ZSTD=OFF                          \
@@ -42,8 +46,9 @@ emcmake cmake -S "${SRC_DIR}/llvm" -B build \
     -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
     -DCLANG_BUILD_TOOLS=OFF                         \
     -DLLD_BUILD_TOOLS=OFF                           \
-    -DCMAKE_C_FLAGS="${EMCC_CFLAGS} -mtail-call"    \
-    -DCMAKE_CXX_FLAGS="${EMCC_CFLAGS} -mtail-call -Dwait4=__syscall_wait4" \
+    -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -mtail-call" \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -mtail-call -Dwait4=__syscall_wait4" \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin"
 
-emmake make -C build -j"${CPU_COUNT:-2}" install-distribution
+emmake make -C build -j"${CPU_COUNT:-2}" \
+    install-static-distribution install-shared-distribution

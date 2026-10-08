@@ -1,0 +1,1336 @@
+From 699a94fb70792a4cb7feec2ef00ecbbf59a91b82 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 8 Dec 2025 08:00:00 +0000
+Subject: [PATCH 05/14] Return void not int
+
+Co-authored-by: Julien Jerphanion <git@jjerphan.xyz>
+---
+ common_interface.h        | 240 +++++++++++++++++++-------------------
+ driver/others/xerbla.c    |  15 ++-
+ interface/lapack/gesv.c   |  10 +-
+ interface/lapack/getf2.c  |   8 +-
+ interface/lapack/getrf.c  |   8 +-
+ interface/lapack/getrs.c  |   8 +-
+ interface/lapack/laed3.c  |  10 +-
+ interface/lapack/laswp.c  |   6 +-
+ interface/lapack/lauu2.c  |   8 +-
+ interface/lapack/lauum.c  |   8 +-
+ interface/lapack/potf2.c  |   8 +-
+ interface/lapack/potrf.c  |   8 +-
+ interface/lapack/potri.c  |   8 +-
+ interface/lapack/trti2.c  |   8 +-
+ interface/lapack/trtri.c  |  10 +-
+ interface/lapack/trtrs.c  |  10 +-
+ interface/lapack/zgetf2.c |   8 +-
+ interface/lapack/zgetrf.c |   8 +-
+ interface/lapack/zgetrs.c |   8 +-
+ interface/lapack/zlaswp.c |   6 +-
+ interface/lapack/zlauu2.c |   8 +-
+ interface/lapack/zlauum.c |   8 +-
+ interface/lapack/zpotf2.c |   8 +-
+ interface/lapack/zpotrf.c |   8 +-
+ interface/lapack/zpotri.c |   8 +-
+ interface/lapack/ztrti2.c |   8 +-
+ interface/lapack/ztrtri.c |  10 +-
+ interface/lapack/ztrtrs.c |  10 +-
+ 28 files changed, 235 insertions(+), 236 deletions(-)
+
+diff --git a/common_interface.h b/common_interface.h
+index 1e213d886..097905d7b 100644
+--- a/common_interface.h
++++ b/common_interface.h
+@@ -46,7 +46,7 @@ extern "C" {
+ 	/* Assume C declarations for C++ */
+ #endif  /* __cplusplus */
+ 
+-int    BLASFUNC(xerbla)(char *, blasint *info, blasint);
++void    BLASFUNC(xerbla)(char *, blasint *info, blasint);
+ 
+ void    openblas_set_num_threads_(int *);
+ 
+@@ -449,10 +449,10 @@ void BLASFUNC(zhpmv) (char *, blasint *, double  *, double *,
+ void BLASFUNC(xhpmv) (char *, blasint *, xdouble  *, xdouble *,
+ 		     xdouble  *, blasint *, xdouble *, xdouble *, blasint *, size_t);
+ 
+-int BLASFUNC(snorm)(char *, blasint *, blasint *, float  *, blasint *, size_t);
+-int BLASFUNC(dnorm)(char *, blasint *, blasint *, double *, blasint *, size_t);
+-int BLASFUNC(cnorm)(char *, blasint *, blasint *, float  *, blasint *, size_t);
+-int BLASFUNC(znorm)(char *, blasint *, blasint *, double *, blasint *, size_t);
++void BLASFUNC(snorm)(char *, blasint *, blasint *, float  *, blasint *, size_t);
++void BLASFUNC(dnorm)(char *, blasint *, blasint *, double *, blasint *, size_t);
++void BLASFUNC(cnorm)(char *, blasint *, blasint *, float  *, blasint *, size_t);
++void BLASFUNC(znorm)(char *, blasint *, blasint *, double *, blasint *, size_t);
+ 
+ void BLASFUNC(sgbmv)(char *, blasint *, blasint *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, float  *, float  *, blasint *, size_t);
+@@ -524,16 +524,16 @@ void BLASFUNC(cgemmt)(char*, char *, char *, blasint *, blasint *, float *,
+ void BLASFUNC(zgemmt)(char*, char *, char *, blasint *, blasint *, double *,
+ 	   double *, blasint *, double *, blasint *, double *, double *, blasint *, size_t, size_t, size_t);
+ 
+-int BLASFUNC(sge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(sge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     float *, float  *, blasint *, float  *, blasint *,
+ 		     float *, float  *, blasint *, size_t, size_t, size_t);
+-int BLASFUNC(dge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(dge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     double *, double  *, blasint *, double  *, blasint *,
+ 		     double *, double  *, blasint *, size_t, size_t, size_t);
+-int BLASFUNC(cge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(cge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     float *, float  *, blasint *, float  *, blasint *,
+ 		     float *, float  *, blasint *, size_t, size_t, size_t);
+-int BLASFUNC(zge2mm)(char *, char *, char *, blasint *, blasint *,
++void BLASFUNC(zge2mm)(char *, char *, char *, blasint *, blasint *,
+ 		     double *, double  *, blasint *, double  *, blasint *,
+ 		     double *, double  *, blasint *, size_t, size_t, size_t);
+ 
+@@ -637,145 +637,145 @@ void BLASFUNC(zher2k)(char *, char *, blasint *, blasint *, double *, double *,
+ void BLASFUNC(xher2k)(char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
+ 	   xdouble*, blasint *, xdouble *, xdouble *, blasint *, size_t, size_t);
+ 
+-int BLASFUNC(cher2m)(char *, char *, char *, blasint *, blasint *, float  *, float  *, blasint *,
++void BLASFUNC(cher2m)(char *, char *, char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 	   float *, blasint *, float  *, float  *, blasint *, size_t, size_t, size_t);
+-int BLASFUNC(zher2m)(char *, char *, char *, blasint *, blasint *, double *, double *, blasint *,
++void BLASFUNC(zher2m)(char *, char *, char *, blasint *, blasint *, double *, double *, blasint *,
+ 	   double*, blasint *, double *, double *, blasint *, size_t, size_t, size_t);
+-int BLASFUNC(xher2m)(char *, char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
++void BLASFUNC(xher2m)(char *, char *, char *, blasint *, blasint *, xdouble *, xdouble *, blasint *,
+ 	   xdouble*, blasint *, xdouble *, xdouble *, blasint *, size_t, size_t, size_t);
+ 
+-int BLASFUNC(sgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
++void BLASFUNC(sgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, size_t);
+-int BLASFUNC(dgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
++void BLASFUNC(dgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
+ 		    double *, blasint *, size_t);
+-int BLASFUNC(cgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
++void BLASFUNC(cgemt)(char *, blasint *, blasint *, float  *, float  *, blasint *,
+ 		    float  *, blasint *, size_t);
+-int BLASFUNC(zgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
++void BLASFUNC(zgemt)(char *, blasint *, blasint *, double *, double *, blasint *,
+ 		    double *, blasint *, size_t);
+ 
+-int BLASFUNC(sgema)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(sgema)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, size_t, size_t);
+-int BLASFUNC(dgema)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(dgema)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, size_t, size_t);
+-int BLASFUNC(cgema)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(cgema)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, size_t, size_t);
+-int BLASFUNC(zgema)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(zgema)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, size_t, size_t);
+ 
+-int BLASFUNC(sgems)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(sgems)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, size_t, size_t);
+-int BLASFUNC(dgems)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(dgems)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, size_t, size_t);
+-int BLASFUNC(cgems)(char *, char *, blasint *, blasint *, float  *,
++void BLASFUNC(cgems)(char *, char *, blasint *, blasint *, float  *,
+ 		    float  *, blasint *, float *, float  *, blasint *, float *, blasint *, size_t, size_t);
+-int BLASFUNC(zgems)(char *, char *, blasint *, blasint *, double *,
++void BLASFUNC(zgems)(char *, char *, blasint *, blasint *, double *,
+ 		    double *, blasint *, double*, double *, blasint *, double*, blasint *, size_t, size_t);
+ 
+-int BLASFUNC(sgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
++void BLASFUNC(sgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
+ 	   float  *, blasint *, float  *, blasint *, float  *, blasint *, float  *, float  *, blasint *, size_t, size_t);
+-int BLASFUNC(dgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
++void BLASFUNC(dgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
+ 	   double *, blasint *, double *, blasint *, double *, blasint *, double *, double *, blasint *, size_t, size_t);
+-int BLASFUNC(qgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
++void BLASFUNC(qgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
+ 	   xdouble *, blasint *, xdouble *, blasint *, xdouble *, blasint *,  xdouble *, xdouble *, blasint *, size_t, size_t);
+-int BLASFUNC(cgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
++void BLASFUNC(cgemc)(char *, char *, blasint *, blasint *, blasint *, float *,
+ 	   float  *, blasint *, float  *, blasint *, float  *, blasint *, float  *, float  *, blasint *, size_t, size_t);
+-int BLASFUNC(zgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
++void BLASFUNC(zgemc)(char *, char *, blasint *, blasint *, blasint *, double *,
+ 	   double *, blasint *, double *, blasint *, double *, blasint *, double *, double *, blasint *, size_t, size_t);
+-int BLASFUNC(xgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
++void BLASFUNC(xgemc)(char *, char *, blasint *, blasint *, blasint *, xdouble *,
+ 	   xdouble *, blasint *, xdouble *, blasint *, xdouble *, blasint *, xdouble *, xdouble *, blasint *, size_t, size_t);
+ 
+ /* Lapack routines */
+ 
+-int BLASFUNC(sgetf2)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
+-int BLASFUNC(dgetf2)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
+-int BLASFUNC(qgetf2)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
+-int BLASFUNC(cgetf2)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
+-int BLASFUNC(zgetf2)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
+-int BLASFUNC(xgetf2)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
+-
+-int BLASFUNC(sgetrf)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
+-int BLASFUNC(dgetrf)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
+-int BLASFUNC(qgetrf)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
+-int BLASFUNC(cgetrf)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
+-int BLASFUNC(zgetrf)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
+-int BLASFUNC(xgetrf)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
+-
+-int BLASFUNC(slaswp)(blasint *, float  *, blasint *, blasint *, blasint *, blasint *, blasint *);
+-int BLASFUNC(dlaswp)(blasint *, double *, blasint *, blasint *, blasint *, blasint *, blasint *);
+-int BLASFUNC(qlaswp)(blasint *, xdouble *, blasint *, blasint *, blasint *, blasint *, blasint *);
+-int BLASFUNC(claswp)(blasint *, float  *, blasint *, blasint *, blasint *, blasint *, blasint *);
+-int BLASFUNC(zlaswp)(blasint *, double *, blasint *, blasint *, blasint *, blasint *, blasint *);
+-int BLASFUNC(xlaswp)(blasint *, xdouble *, blasint *, blasint *, blasint *, blasint *, blasint *);
+-
+-int BLASFUNC(sgetrs)(char *, blasint *, blasint *, float  *, blasint *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(dgetrs)(char *, blasint *, blasint *, double *, blasint *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(qgetrs)(char *, blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(cgetrs)(char *, blasint *, blasint *, float  *, blasint *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(zgetrs)(char *, blasint *, blasint *, double *, blasint *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(xgetrs)(char *, blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(sgesv)(blasint *, blasint *, float  *, blasint *, blasint *, float *, blasint *, blasint *);
+-int BLASFUNC(dgesv)(blasint *, blasint *, double *, blasint *, blasint *, double*, blasint *, blasint *);
+-int BLASFUNC(qgesv)(blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble*, blasint *, blasint *);
+-int BLASFUNC(cgesv)(blasint *, blasint *, float  *, blasint *, blasint *, float *, blasint *, blasint *);
+-int BLASFUNC(zgesv)(blasint *, blasint *, double *, blasint *, blasint *, double*, blasint *, blasint *);
+-int BLASFUNC(xgesv)(blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble*, blasint *, blasint *);
+-
+-int BLASFUNC(spotf2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(dpotf2)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(qpotf2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(cpotf2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(zpotf2)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(xpotf2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(spotrf)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(dpotrf)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(qpotrf)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(cpotrf)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(zpotrf)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(xpotrf)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(spotri)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(dpotri)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(qpotri)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(cpotri)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(zpotri)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(xpotri)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(spotrs)(char *, blasint *, blasint *, float   *, blasint *, float   *, blasint *, blasint *, size_t);
+-int BLASFUNC(dpotrs)(char *, blasint *, blasint *, double  *, blasint *, double  *, blasint *, blasint *, size_t);
+-int BLASFUNC(qpotrs)(char *, blasint *, blasint *, xdouble *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(cpotrs)(char *, blasint *, blasint *, float   *, blasint *, float   *, blasint *, blasint *, size_t);
+-int BLASFUNC(zpotrs)(char *, blasint *, blasint *, double  *, blasint *, double  *, blasint *, blasint *, size_t);
+-int BLASFUNC(xpotrs)(char *, blasint *, blasint *, xdouble *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(slauu2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(dlauu2)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(qlauu2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(clauu2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(zlauu2)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(xlauu2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(slauum)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(dlauum)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(qlauum)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-int BLASFUNC(clauum)(char *, blasint *, float  *, blasint *, blasint *, size_t);
+-int BLASFUNC(zlauum)(char *, blasint *, double *, blasint *, blasint *, size_t);
+-int BLASFUNC(xlauum)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
+-
+-int BLASFUNC(strti2)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(dtrti2)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(qtrti2)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(ctrti2)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(ztrti2)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(xtrti2)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
+-
+-int BLASFUNC(strtri)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(dtrtri)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(qtrtri)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(ctrtri)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(ztrtri)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
+-int BLASFUNC(xtrtri)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(sgetf2)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
++void BLASFUNC(dgetf2)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
++void BLASFUNC(qgetf2)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
++void BLASFUNC(cgetf2)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
++void BLASFUNC(zgetf2)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
++void BLASFUNC(xgetf2)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
++
++void BLASFUNC(sgetrf)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
++void BLASFUNC(dgetrf)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
++void BLASFUNC(qgetrf)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
++void BLASFUNC(cgetrf)(blasint *, blasint *, float  *, blasint *, blasint *, blasint *);
++void BLASFUNC(zgetrf)(blasint *, blasint *, double *, blasint *, blasint *, blasint *);
++void BLASFUNC(xgetrf)(blasint *, blasint *, xdouble *, blasint *, blasint *, blasint *);
++
++void BLASFUNC(slaswp)(blasint *, float  *, blasint *, blasint *, blasint *, blasint *, blasint *);
++void BLASFUNC(dlaswp)(blasint *, double *, blasint *, blasint *, blasint *, blasint *, blasint *);
++void BLASFUNC(qlaswp)(blasint *, xdouble *, blasint *, blasint *, blasint *, blasint *, blasint *);
++void BLASFUNC(claswp)(blasint *, float  *, blasint *, blasint *, blasint *, blasint *, blasint *);
++void BLASFUNC(zlaswp)(blasint *, double *, blasint *, blasint *, blasint *, blasint *, blasint *);
++void BLASFUNC(xlaswp)(blasint *, xdouble *, blasint *, blasint *, blasint *, blasint *, blasint *);
++
++void BLASFUNC(sgetrs)(char *, blasint *, blasint *, float  *, blasint *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(dgetrs)(char *, blasint *, blasint *, double *, blasint *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(qgetrs)(char *, blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(cgetrs)(char *, blasint *, blasint *, float  *, blasint *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(zgetrs)(char *, blasint *, blasint *, double *, blasint *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(xgetrs)(char *, blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(sgesv)(blasint *, blasint *, float  *, blasint *, blasint *, float *, blasint *, blasint *);
++void BLASFUNC(dgesv)(blasint *, blasint *, double *, blasint *, blasint *, double*, blasint *, blasint *);
++void BLASFUNC(qgesv)(blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble*, blasint *, blasint *);
++void BLASFUNC(cgesv)(blasint *, blasint *, float  *, blasint *, blasint *, float *, blasint *, blasint *);
++void BLASFUNC(zgesv)(blasint *, blasint *, double *, blasint *, blasint *, double*, blasint *, blasint *);
++void BLASFUNC(xgesv)(blasint *, blasint *, xdouble *, blasint *, blasint *, xdouble*, blasint *, blasint *);
++
++void BLASFUNC(spotf2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(dpotf2)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(qpotf2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(cpotf2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(zpotf2)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(xpotf2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(spotrf)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(dpotrf)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(qpotrf)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(cpotrf)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(zpotrf)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(xpotrf)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(spotri)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(dpotri)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(qpotri)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(cpotri)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(zpotri)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(xpotri)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(spotrs)(char *, blasint *, blasint *, float   *, blasint *, float   *, blasint *, blasint *, size_t);
++void BLASFUNC(dpotrs)(char *, blasint *, blasint *, double  *, blasint *, double  *, blasint *, blasint *, size_t);
++void BLASFUNC(qpotrs)(char *, blasint *, blasint *, xdouble *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(cpotrs)(char *, blasint *, blasint *, float   *, blasint *, float   *, blasint *, blasint *, size_t);
++void BLASFUNC(zpotrs)(char *, blasint *, blasint *, double  *, blasint *, double  *, blasint *, blasint *, size_t);
++void BLASFUNC(xpotrs)(char *, blasint *, blasint *, xdouble *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(slauu2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(dlauu2)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(qlauu2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(clauu2)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(zlauu2)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(xlauu2)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(slauum)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(dlauum)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(qlauum)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++void BLASFUNC(clauum)(char *, blasint *, float  *, blasint *, blasint *, size_t);
++void BLASFUNC(zlauum)(char *, blasint *, double *, blasint *, blasint *, size_t);
++void BLASFUNC(xlauum)(char *, blasint *, xdouble *, blasint *, blasint *, size_t);
++
++void BLASFUNC(strti2)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(dtrti2)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(qtrti2)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(ctrti2)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(ztrti2)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(xtrti2)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
++
++void BLASFUNC(strtri)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(dtrtri)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(qtrtri)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(ctrtri)(char *, char *, blasint *, float  *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(ztrtri)(char *, char *, blasint *, double *, blasint *, blasint *, size_t, size_t);
++void BLASFUNC(xtrtri)(char *, char *, blasint *, xdouble *, blasint *, blasint *, size_t, size_t);
+ 
+ 
+ FLOATRET  BLASFUNC(slamch)(char *, size_t);
+diff --git a/driver/others/xerbla.c b/driver/others/xerbla.c
+index c7cc69b82..43516eea6 100644
+--- a/driver/others/xerbla.c
++++ b/driver/others/xerbla.c
+@@ -87,8 +87,8 @@ openblas_set_xerbla(openblas_xerbla_handler handler) {
+   return previous;
+ }
+ 
+-static int openblas_xerbla_dispatch(char *message, blasint *info,
+-                                    blasint length) {
++static void openblas_xerbla_dispatch(char *message, blasint *info,
++                                     blasint length) {
+   openblas_xerbla_handler handler;
+   size_t name_length = openblas_xerbla_name_length(message, length);
+ 
+@@ -97,18 +97,17 @@ static int openblas_xerbla_dispatch(char *message, blasint *info,
+   blas_unlock(&openblas_xerbla_lock);
+ 
+   handler(message, info, name_length);
+-  return 0;
+ }
+ 
+ #ifdef __ELF__
+-int __xerbla(char *message, blasint *info, blasint length) {
+-  return openblas_xerbla_dispatch(message, info, length);
++void __xerbla(char *message, blasint *info, blasint length) {
++  openblas_xerbla_dispatch(message, info, length);
+ }
+ 
+-int BLASFUNC(xerbla)(char *, blasint *, blasint)
++void BLASFUNC(xerbla)(char *, blasint *, blasint)
+   __attribute__ ((weak, alias ("__xerbla")));
+ #else
+-int BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
+-  return openblas_xerbla_dispatch(message, info, length);
++void BLASFUNC(xerbla)(char *message, blasint *info, blasint length) {
++  openblas_xerbla_dispatch(message, info, length);
+ }
+ #endif
+diff --git a/interface/lapack/gesv.c b/interface/lapack/gesv.c
+index 61aa5c168..2263096cd 100644
+--- a/interface/lapack/gesv.c
++++ b/interface/lapack/gesv.c
+@@ -60,7 +60,7 @@
+ #endif
+ #endif
+ 
+-int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
++void NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
+          FLOAT *b, blasint *ldB, blasint *Info){
+ 
+   blas_arg_t args;
+@@ -91,7 +91,7 @@ int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   args.alpha = NULL;
+@@ -99,7 +99,7 @@ int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
+ 
+   *Info = 0;
+ 
+-  if (args.m == 0) return 0;
++  if (args.m == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -107,7 +107,7 @@ int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
+ 
+ #ifndef PPC440
+   buffer = (FLOAT *)blas_memory_alloc(1);
+-  
++
+   sa = (FLOAT *)((BLASLONG)buffer + GEMM_OFFSET_A);
+   sb = (FLOAT *)(((BLASLONG)sa + ((GEMM_P * GEMM_Q * COMPSIZE * SIZE + GEMM_ALIGN) & ~GEMM_ALIGN)) + GEMM_OFFSET_B);
+ #endif
+@@ -171,5 +171,5 @@ int NAME(blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA, blasint *ipiv,
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/getf2.c b/interface/lapack/getf2.c
+index 8506feca9..26f40df4e 100644
+--- a/interface/lapack/getf2.c
++++ b/interface/lapack/getf2.c
+@@ -50,7 +50,7 @@
+ #define ERROR_NAME "SGETF2"
+ #endif
+ 
+-int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
++void NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
+ 
+   blas_arg_t args;
+ 
+@@ -76,11 +76,11 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+-  if (args.m == 0 || args.n == 0) return 0;
++  if (args.m == 0 || args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -105,5 +105,5 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/getrf.c b/interface/lapack/getrf.c
+index 4a58774d1..e62158e61 100644
+--- a/interface/lapack/getrf.c
++++ b/interface/lapack/getrf.c
+@@ -50,7 +50,7 @@
+ #define ERROR_NAME "SGETRF"
+ #endif
+ 
+-int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
++void NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
+ 
+   blas_arg_t args;
+ 
+@@ -76,11 +76,11 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+-  if (args.m == 0 || args.n == 0) return 0;
++  if (args.m == 0 || args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -129,5 +129,5 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/getrs.c b/interface/lapack/getrs.c
+index 5f05a2929..302aa2c7b 100644
+--- a/interface/lapack/getrs.c
++++ b/interface/lapack/getrs.c
+@@ -60,7 +60,7 @@ static blasint (*getrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
++void NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+   blasint *ipiv, FLOAT *b, blasint *ldB, blasint *Info, size_t dummy_len){
+ 
+   char trans_arg = *TRANS;
+@@ -103,7 +103,7 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 
+   if (info != 0) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+-    return 0;
++    return;
+   }
+ 
+   args.alpha = NULL;
+@@ -111,7 +111,7 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 
+   *Info = info;
+ 
+-  if (args.m == 0 || args.n == 0) return 0;
++  if (args.m == 0 || args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -151,6 +151,6 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ 
+ }
+diff --git a/interface/lapack/laed3.c b/interface/lapack/laed3.c
+index bf3198bc0..470393ad2 100644
+--- a/interface/lapack/laed3.c
++++ b/interface/lapack/laed3.c
+@@ -40,9 +40,9 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #endif
+ 
+ /* ===================================================================== */
+-int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d, 
++void NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+         FLOAT *q, blasint *ldq, FLOAT *rho, FLOAT *dlamda,
+-        FLOAT *q2, blasint *indx, blasint *ctot, FLOAT *w, 
++        FLOAT *q2, blasint *indx, blasint *ctot, FLOAT *w,
+         FLOAT *s, blasint *Info)
+ {
+   blasint kval, nval, qdim, info;
+@@ -63,13 +63,13 @@ int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+ /*   Quick return if possible */
+ 
+   *Info = 0;
+-  if (kval == 0) return 0;
++  if (kval == 0) return;
+ 
+ #ifdef SMP
+   int nthreads = 1;
+@@ -84,5 +84,5 @@ int NAME(blasint *k, blasint *n, blasint *n1, FLOAT *d,
+   }
+ #endif
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/laswp.c b/interface/lapack/laswp.c
+index 698e39a99..c0bfdf336 100644
+--- a/interface/lapack/laswp.c
++++ b/interface/lapack/laswp.c
+@@ -52,7 +52,7 @@ static int (*laswp[])(BLASLONG, BLASLONG, BLASLONG, FLOAT, FLOAT *, BLASLONG, FL
+ #endif
+ };
+ 
+-int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *ipiv, blasint *INCX){
++void NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *ipiv, blasint *INCX){
+ 
+   blasint n    = *N;
+   blasint lda  = *LDA;
+@@ -68,7 +68,7 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
+ 
+   PRINT_DEBUG_NAME;
+ 
+-  if (incx == 0 || n <= 0) return 0;
++  if (incx == 0 || n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -109,6 +109,6 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ 
+ }
+diff --git a/interface/lapack/lauu2.c b/interface/lapack/lauu2.c
+index 2ffdc443b..64558103f 100644
+--- a/interface/lapack/lauu2.c
++++ b/interface/lapack/lauu2.c
+@@ -60,7 +60,7 @@ static blasint (*lauu2[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *
+ #endif
+   };
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -92,12 +92,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n <= 0) return 0;
++  if (args.n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -124,5 +124,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/lauum.c b/interface/lapack/lauum.c
+index f9b2ef0cf..02dfbce32 100644
+--- a/interface/lapack/lauum.c
++++ b/interface/lapack/lauum.c
+@@ -60,7 +60,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -92,12 +92,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -139,5 +139,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/potf2.c b/interface/lapack/potf2.c
+index 0fa11f8f8..ec4ed2246 100644
+--- a/interface/lapack/potf2.c
++++ b/interface/lapack/potf2.c
+@@ -60,7 +60,7 @@ static blasint (*potf2[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *
+ #endif
+   };
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -92,12 +92,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n <= 0) return 0;
++  if (args.n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -124,5 +124,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/potrf.c b/interface/lapack/potrf.c
+index 509193d2d..2869f048b 100644
+--- a/interface/lapack/potrf.c
++++ b/interface/lapack/potrf.c
+@@ -60,7 +60,7 @@ static blasint (*potrf_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -92,12 +92,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -146,5 +146,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/potri.c b/interface/lapack/potri.c
+index b7780a153..444df4cfe 100644
+--- a/interface/lapack/potri.c
++++ b/interface/lapack/potri.c
+@@ -68,7 +68,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -101,12 +101,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -159,5 +159,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/trti2.c b/interface/lapack/trti2.c
+index 2d9cadcc5..c26d5fb63 100644
+--- a/interface/lapack/trti2.c
++++ b/interface/lapack/trti2.c
+@@ -60,7 +60,7 @@ static blasint (*trti2[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *
+ #endif
+   };
+ 
+-int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
++void NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
+ 
+   blas_arg_t args;
+ 
+@@ -98,12 +98,12 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n <= 0) return 0;
++  if (args.n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -130,5 +130,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/trtri.c b/interface/lapack/trtri.c
+index 1e55428cb..9d2013e81 100644
+--- a/interface/lapack/trtri.c
++++ b/interface/lapack/trtri.c
+@@ -61,7 +61,7 @@ static blasint (*trtri_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ #endif
+ 
+ 
+-int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
++void NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
+ 
+   blas_arg_t args;
+ 
+@@ -101,17 +101,17 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   if (diag) {
+     if (AMIN_K(args.n, args.a, args.lda + 1) == ZERO) {
+       *Info = IAMIN_K(args.n, args.a, args.lda + 1);
+-      return 0;
++      return;
+     }
+   }
+ 
+@@ -155,5 +155,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/trtrs.c b/interface/lapack/trtrs.c
+index aad83529c..606575dfe 100644
+--- a/interface/lapack/trtrs.c
++++ b/interface/lapack/trtrs.c
+@@ -60,7 +60,7 @@ static blasint (*trtrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
++void NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+   FLOAT *b, blasint *ldB, blasint *Info, size_t dummy_len0, size_t dummy_len1, size_t dummy_len2){
+ 
+     char uplo_arg = *UPLO;
+@@ -116,7 +116,7 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+   if (info != 0) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   args.alpha = NULL;
+@@ -124,12 +124,12 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+ 
+   *Info = 0;
+ 
+-  if (args.m == 0) return 0;
++  if (args.m == 0) return;
+ 
+   if (diag) {
+     if (AMIN_K(args.m, args.a, args.lda + 1) == ZERO) {
+       *Info = IAMIN_K(args.m, args.a, args.lda + 1);
+-      return 0;
++      return;
+     }
+   }
+ 
+@@ -172,6 +172,6 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ 
+ }
+diff --git a/interface/lapack/zgetf2.c b/interface/lapack/zgetf2.c
+index 68b9a7e4b..772115f5f 100644
+--- a/interface/lapack/zgetf2.c
++++ b/interface/lapack/zgetf2.c
+@@ -50,7 +50,7 @@
+ #define ERROR_NAME "CGETF2"
+ #endif
+ 
+-int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
++void NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
+ 
+   blas_arg_t args;
+ 
+@@ -76,11 +76,11 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+-  if (args.m == 0 || args.n == 0) return 0;
++  if (args.m == 0 || args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -105,5 +105,5 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zgetrf.c b/interface/lapack/zgetrf.c
+index d03541fad..bea44cf78 100644
+--- a/interface/lapack/zgetrf.c
++++ b/interface/lapack/zgetrf.c
+@@ -50,7 +50,7 @@
+ #define ERROR_NAME "CGETRF"
+ #endif
+ 
+-int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
++void NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint *Info){
+ 
+   blas_arg_t args;
+ 
+@@ -76,11 +76,11 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+-  if (args.m == 0 || args.n == 0) return 0;
++  if (args.m == 0 || args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -121,5 +121,5 @@ int NAME(blasint *M, blasint *N, FLOAT *a, blasint *ldA, blasint *ipiv, blasint
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zgetrs.c b/interface/lapack/zgetrs.c
+index 9c27a763b..e5553159e 100644
+--- a/interface/lapack/zgetrs.c
++++ b/interface/lapack/zgetrs.c
+@@ -60,7 +60,7 @@ static blasint (*getrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
++void NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 	    blasint *ipiv, FLOAT *b, blasint *ldB, blasint *Info, size_t dummy_len){
+ 
+   char trans_arg = *TRANS;
+@@ -103,7 +103,7 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 
+   if (info != 0) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+-    return 0;
++    return;
+   }
+ 
+   args.alpha = NULL;
+@@ -111,7 +111,7 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 
+   *Info = info;
+ 
+-  if (args.m == 0 || args.n == 0) return 0;
++  if (args.m == 0 || args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -152,6 +152,6 @@ int NAME(char *TRANS, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ 
+ }
+diff --git a/interface/lapack/zlaswp.c b/interface/lapack/zlaswp.c
+index c5188cdf7..1ab566228 100644
+--- a/interface/lapack/zlaswp.c
++++ b/interface/lapack/zlaswp.c
+@@ -52,7 +52,7 @@ static int (*laswp[])(BLASLONG, BLASLONG, BLASLONG, FLOAT, FLOAT, FLOAT *, BLASL
+ #endif
+ };
+ 
+-int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *ipiv, blasint *INCX){
++void NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *ipiv, blasint *INCX){
+ 
+   blasint n    = *N;
+   blasint lda  = *LDA;
+@@ -69,7 +69,7 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
+ 
+   PRINT_DEBUG_NAME;
+ 
+-  if (incx == 0 || n <= 0) return 0;
++  if (incx == 0 || n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -108,5 +108,5 @@ int NAME(blasint *N, FLOAT *a, blasint *LDA, blasint *K1, blasint *K2, blasint *
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zlauu2.c b/interface/lapack/zlauu2.c
+index 8e7a7344a..a7f233c43 100644
+--- a/interface/lapack/zlauu2.c
++++ b/interface/lapack/zlauu2.c
+@@ -61,7 +61,7 @@ static blasint (*lauu2[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *
+ #endif
+   };
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -93,12 +93,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n <= 0) return 0;
++  if (args.n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -125,5 +125,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zlauum.c b/interface/lapack/zlauum.c
+index 0c3c2adb1..d9c85768f 100644
+--- a/interface/lapack/zlauum.c
++++ b/interface/lapack/zlauum.c
+@@ -60,7 +60,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -92,12 +92,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME));
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -141,5 +141,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zpotf2.c b/interface/lapack/zpotf2.c
+index 288c47b20..186c1e51a 100644
+--- a/interface/lapack/zpotf2.c
++++ b/interface/lapack/zpotf2.c
+@@ -61,7 +61,7 @@ static blasint (*potf2[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *
+ #endif
+   };
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0){
+ 
+   blas_arg_t args;
+ 
+@@ -93,12 +93,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n <= 0) return 0;
++  if (args.n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -125,5 +125,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zpotrf.c b/interface/lapack/zpotrf.c
+index 98f312733..9277ccacb 100644
+--- a/interface/lapack/zpotrf.c
++++ b/interface/lapack/zpotrf.c
+@@ -60,7 +60,7 @@ static blasint (*potrf_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -92,12 +92,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -144,5 +144,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/zpotri.c b/interface/lapack/zpotri.c
+index 09ec71c32..5eeabc3b1 100644
+--- a/interface/lapack/zpotri.c
++++ b/interface/lapack/zpotri.c
+@@ -68,7 +68,7 @@ static blasint (*lauum_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
++void NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len){
+ 
+   blas_arg_t args;
+ 
+@@ -101,12 +101,12 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -165,5 +165,5 @@ int NAME(char *UPLO, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t d
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/ztrti2.c b/interface/lapack/ztrti2.c
+index a4b50c9e7..345b50b64 100644
+--- a/interface/lapack/ztrti2.c
++++ b/interface/lapack/ztrti2.c
+@@ -60,7 +60,7 @@ static blasint (*trti2[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *, FLOAT *
+ #endif
+   };
+ 
+-int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
++void NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
+ 
+   blas_arg_t args;
+ 
+@@ -98,12 +98,12 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n <= 0) return 0;
++  if (args.n <= 0) return;
+ 
+   IDEBUG_START;
+ 
+@@ -130,5 +130,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/ztrtri.c b/interface/lapack/ztrtri.c
+index 01b3223b4..da13606cc 100644
+--- a/interface/lapack/ztrtri.c
++++ b/interface/lapack/ztrtri.c
+@@ -60,7 +60,7 @@ static blasint (*trtri_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
++void NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *Info, size_t dummy_len0, size_t dummy_len1){
+ 
+   blas_arg_t args;
+ 
+@@ -98,17 +98,17 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+   if (info) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   *Info = 0;
+ 
+-  if (args.n == 0) return 0;
++  if (args.n == 0) return;
+ 
+   if (diag) {
+     if (AMIN_K(args.n, args.a, args.lda + 1) == ZERO) {
+       *Info = IAMIN_K(args.n, args.a, args.lda + 1);
+-      return 0;
++      return;
+     }
+   }
+ 
+@@ -154,5 +154,5 @@ int NAME(char *UPLO, char *DIAG, blasint *N, FLOAT *a, blasint *ldA, blasint *In
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ }
+diff --git a/interface/lapack/ztrtrs.c b/interface/lapack/ztrtrs.c
+index 60e2bc0d8..1c092d319 100644
+--- a/interface/lapack/ztrtrs.c
++++ b/interface/lapack/ztrtrs.c
+@@ -60,7 +60,7 @@ static blasint (*trtrs_parallel[])(blas_arg_t *, BLASLONG *, BLASLONG *, FLOAT *
+ };
+ #endif
+ 
+-int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
++void NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *a, blasint *ldA,
+   FLOAT *b, blasint *ldB, blasint *Info, size_t dummy_len0, size_t dummy_len1, size_t dummy_len2){
+ 
+     char uplo_arg = *UPLO;
+@@ -116,7 +116,7 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+   if (info != 0) {
+     BLASFUNC(xerbla)(ERROR_NAME, &info, sizeof(ERROR_NAME) - 1);
+     *Info = - info;
+-    return 0;
++    return;
+   }
+ 
+   args.alpha = NULL;
+@@ -124,12 +124,12 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+ 
+   *Info = 0;
+ 
+-  if (args.m == 0) return 0;
++  if (args.m == 0) return;
+ 
+   if (diag) {
+     if (AMIN_K(args.m, args.a, args.lda + 1) == ZERO) {
+       *Info = IAMIN_K(args.m, args.a, args.lda + 1);
+-      return 0;
++      return;
+     }
+   }
+ 
+@@ -172,6 +172,6 @@ int NAME(char *UPLO, char* TRANS, char* DIAG, blasint *N, blasint *NRHS, FLOAT *
+ 
+   IDEBUG_END;
+ 
+-  return 0;
++  return;
+ 
+ }
+-- 
+2.54.0 (Apple Git-157)
+

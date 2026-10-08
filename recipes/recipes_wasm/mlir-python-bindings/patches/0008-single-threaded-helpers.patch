@@ -1,0 +1,26 @@
+From 0bfc8383396cb0dfbcacbd239d6363b8291c1a01 Mon Sep 17 00:00:00 2001
+From: anutosh491 <andersonbhat491@gmail.com>
+Date: Wed, 7 Oct 2026 20:46:07 +0530
+Subject: [PATCH] [mlir] Avoid parallel code in single-threaded builds
+
+---
+ mlir/include/mlir/IR/Threading.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mlir/include/mlir/IR/Threading.h b/mlir/include/mlir/IR/Threading.h
+index 3ceab6b3e883..0cf1faf7561d 100644
+--- a/mlir/include/mlir/IR/Threading.h
++++ b/mlir/include/mlir/IR/Threading.h
+@@ -41,7 +41,8 @@ LogicalResult failableParallelForEach(MLIRContext *context, IteratorT begin,
+ 
+   // If multithreading is disabled or there is a small number of elements,
+   // process the elements directly on this thread.
+-  if (!context->isMultithreadingEnabled() || numElements <= 1) {
++  if (!LLVM_ENABLE_THREADS || !context->isMultithreadingEnabled() ||
++      numElements <= 1) {
+     for (; begin != end; ++begin)
+       if (failed(func(*begin)))
+         return failure();
+-- 
+2.50.1 (Apple Git-155)
+
