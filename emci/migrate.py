@@ -78,7 +78,7 @@ def migrate_recipe_yaml(recipe):
 
     # add generic testing block to each output's tests section
     for output in iter_outputs(recipe, include_staging_outputs=False):
-        if "test" not in output:
+        if "tests" not in output:
             output["tests"] = []
         output["tests"].append({
             "script": "generic-testing",
