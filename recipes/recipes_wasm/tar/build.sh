@@ -1,12 +1,7 @@
 #!/bin/bash
 set -eo pipefail
 
-# GNU tar ships no configure script in git, generate it together with the
-# gnulib/paxutils imports. --no-git: rattler-build has already checked out the
-# gnulib and paxutils submodules.
-./bootstrap --gnulib-srcdir=$PWD/gnulib --no-git
-
-CONFIG_LDFLAGS="\
+export CONFIG_LDFLAGS="\
     -Os \
     --minify=0 \
     -sALLOW_MEMORY_GROWTH=1 \
