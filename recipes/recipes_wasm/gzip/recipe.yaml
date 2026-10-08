@@ -1,0 +1,47 @@
+context:
+  name: gzip
+  version: 1.15
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.xz
+  sha256: 9aa0cc780dec156b8282844833b342ab7cb08c25d2cd9a1869cdd0df31deff48
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - make
+
+tests:
+- package_contents:
+    files:
+    - bin/gzip.js
+    - bin/gzip.wasm
+- script: node test_gzip.js
+  files:
+    recipe:
+    - test_gzip.js
+  requirements:
+    build:
+    - nodejs
+
+about:
+  homepage: https://www.gnu.org/software/gzip/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: The GNU data compression program
+  description: |
+    gzip (GNU zip) is a popular data compression program originally written by
+    Jean-loup Gailly for the GNU project. It reduces the size of the named
+    files, replacing each file with one with the .gz extension.
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
