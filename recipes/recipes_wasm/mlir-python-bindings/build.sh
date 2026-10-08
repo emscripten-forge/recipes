@@ -24,7 +24,7 @@ cd build
 #                              so files land in site-packages/mlir (xeus-python search path)
 #   Python3_*/Python_*       – cross-python executable with target sysconfig;
 #                              include/library from the wasm host prefix
-emcmake cmake ../mlir \
+emcmake cmake ${CMAKE_ARGS} ../mlir \
     -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
