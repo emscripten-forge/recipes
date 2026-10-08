@@ -15,19 +15,21 @@ export CONFIG_LDFLAGS="\
     -sSTACK_SIZE=1MB \
     "
 
+if [[ "${target_platform}" == "emscripten-wasm64" ]]; then
+  host="wasm64-unknown-emscripten"
+else
+  host="wasm32-unknown-emscripten"
+fi
+
 emconfigure ./configure \
     --disable-acl \
     --disable-nls \
     --disable-threads \
     --disable-xattr \
     --enable-single-binary \
+    --host="${host}" \
     CFLAGS="$CFLAGS $CONFIG_CFLAGS" \
-    LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS" \
-    gl_cv_bitsizeof_ptrdiff_t=32 \
-    gl_cv_bitsizeof_sig_atomic_t=32 \
-    gl_cv_bitsizeof_size_t=32 \
-    gl_cv_bitsizeof_wchar_t=16 \
-    gl_cv_bitsizeof_wint_t=32
+    LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS"
 
 make EXEEXT=.js LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS" -j$CPU_COUNT
 
