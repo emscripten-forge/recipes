@@ -1,47 +1,165 @@
 context:
   version: 23.1.2
 
-package:
-  name: llvm
-  version: ${{ version }}
-
 source:
   url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
   sha256: 75788d759e6987a910975b902f554dc77c08b076b945b2cebde54116d8e831ca
   patches:
-  - patches/enable_exception_handling.patch
-  - patches/fix_initialization_logs.patch
-  - patches/support_wasm64.patch
+  # Backport LLVM PR #221647: Emscripten does not support ELF version scripts.
+  - patches/disable-emscripten-version-scripts.patch
+  # Preserve the shared LLVM/Clang APIs with WebAssembly export lists.
+  - patches/emscripten-symbol-exports.patch
+  # Backport the reusable llc driver and host-owned opt lifetime.
+  - patches/llc-driver-library.patch
+  - patches/opt-driver-initllvm.patch
 
 build:
-  number: 0
+  number: 4
 
-  files:
-    exclude:
-    - '**/__pycache__/**'
-    - '**/*.pyc'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
-requirements:
+outputs:
+- staging:
+    name: llvm-build
   build:
-  - ${{ compiler("c") }}
-  - ${{ compiler("cxx") }}
-  - cmake >=4.3.3,<4.4
-  - make
-  - llvm-tblgen ==${{ version }}
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake >=4.3.3,<4.4
+    - make
+    - llvm-tblgen ==${{ version }}
 
-tests:
-- package_contents:
+# LLVM libraries are built independently of Clang and LLD.
+- package:
+    name: llvm-static
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging llvm-static"
     files:
-    - lib/cmake/llvm/LLVMConfig.cmake
-    - lib/cmake/clang/ClangConfig.cmake
-    - lib/cmake/lld/LLDConfig.cmake
-    - lib/liblldWasm.a
-    - lib/libclangInterpreter.a
-    - lib/libLLVMX86CodeGen.a
-    - lib/libLLVMAArch64CodeGen.a
-    - lib/libLTO.so
+      include:
+      - include/llvm/**
+      - include/llvm-c/**
+      - lib/libLLVM*.a
+      - lib/cmake/llvm/**
+      - share/llvm/**
+      exclude:
+      - lib/cmake/llvm/LLVMSharedExports*.cmake
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - include/llvm-c/lto.h
+        - lib/cmake/llvm/LLVMConfig.cmake
+        - lib/cmake/llvm/LLVMStaticExports.cmake
+        - lib/libLLVMX86CodeGen.a
+        - lib/libLLVMAArch64CodeGen.a
+        - lib/libLLVMLlcDriver.a
+        - lib/libLLVMOptDriver.a
+        not_exists:
+        - '**/*.so*'
+        - include/clang/**
+        - include/lld/**
+        - lib/libclang*.a
+        - lib/liblld*.a
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+  - script: test_static.sh
+    files:
+      recipe:
+      - test_static.sh
+      - tests/
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+
+- package:
+    name: llvm-tools
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging llvm-tools"
+    files:
+      include:
+      - bin/*.js
+      - bin/*.wasm
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - bin/opt.js
+        - bin/opt.wasm
+        - bin/llc.js
+        - bin/llc.wasm
+        - bin/llvm-ar.js
+        - bin/llvm-ar.wasm
+        - bin/llvm-cxxfilt.js
+        - bin/llvm-cxxfilt.wasm
+        - bin/llvm-nm.js
+        - bin/llvm-nm.wasm
+        - bin/llvm-objcopy.js
+        - bin/llvm-objcopy.wasm
+        - bin/llvm-objdump.js
+        - bin/llvm-objdump.wasm
+        - bin/llvm-readobj.js
+        - bin/llvm-readobj.wasm
+        - bin/llvm-size.js
+        - bin/llvm-size.wasm
+        not_exists:
+        - lib/**
+        - include/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: node test_tools.mjs
+    files:
+      recipe:
+      - test_tools.mjs
+    requirements:
+      build:
+      - nodejs
+
+- package:
+    name: llvm
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging llvm"
+    files:
+      include:
+      - lib/libLTO.so
+      - lib/libRemarks.so
+      - lib/cmake/llvm/LLVMSharedExports*.cmake
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('llvm', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/libLTO.so
+        - lib/libRemarks.so
+        - lib/cmake/llvm/LLVMSharedExports.cmake
+        not_exists:
+        - '**/*.a'
+        - lib/libclang*.so
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
 
 about:
   license: Apache-2.0 WITH LLVM-exception
@@ -50,6 +168,10 @@ about:
   summary: The LLVM Project is a collection of modular and reusable compiler and toolchain technologies.
   homepage: https://llvm.org
 extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
   recipe-maintainers:
   - DerThorsten
   - anutosh491

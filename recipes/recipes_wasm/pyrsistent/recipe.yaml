@@ -1,0 +1,56 @@
+context:
+  version: 0.20.0
+
+package:
+  name: pyrsistent
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pyrsistent/pyrsistent-${{ version }}.tar.gz
+  sha256: 4c48f78f62ab596c679086084d0dd13254ae4f3d6c72a83ffdf5ebdef8f265a4
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - cross-python_emscripten-wasm32
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyrsistent.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: http://github.com/tobgu/pyrsistent/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.mit
+  summary: Persistent/Functional/Immutable data structures

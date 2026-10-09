@@ -18,13 +18,12 @@ cd build
 #   LLVM_NATIVE_TOOL_DIR     – native mlir-tblgen / llvm-tblgen / mlir-linalg-ods-yaml-gen
 #   LLVM_TABLEGEN            – explicit path (also picked up via NATIVE_TOOL_DIR)
 #   MLIR_TABLEGEN_EXE        – same
-#   LLVM_BUILD_TOOLS=OFF     – prevents wasm tools (mlir-tblgen.js, mlir-pdll.js etc.)
-#                              from being compiled during `make install` (wasted build time)
+#   LLVM_DISTRIBUTION_COMPONENTS – export development targets independently of tools
 #   MLIR_BINDINGS_PYTHON_INSTALL_PREFIX – override default python_packages/mlir_core/mlir
 #                              so files land in site-packages/mlir (xeus-python search path)
 #   Python3_*/Python_*       – cross-python executable with target sysconfig;
 #                              include/library from the wasm host prefix
-emcmake cmake ../mlir \
+emcmake cmake ${CMAKE_ARGS} ../mlir \
     -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
@@ -35,7 +34,11 @@ emcmake cmake ../mlir \
     -DMLIR_ENABLE_EXECUTION_ENGINE=OFF \
     -DMLIR_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_BENCHMARKS=OFF \
-    -DLLVM_BUILD_TOOLS=OFF \
+    -DLLVM_BUILD_TOOLS=ON \
+    -DLLVM_DISTRIBUTION_COMPONENTS="mlir-libraries;mlir-python-sources" \
+    -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -mno-tail-call" \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -mno-tail-call" \
+    -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS:-} -O2 -mno-tail-call -fwasm-exceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=8MB -sEXIT_RUNTIME=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain" \
     -DMLIR_BINDINGS_PYTHON_INSTALL_PREFIX="lib/python${PY_VER}/site-packages/mlir" \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin" \
     -DLLVM_TABLEGEN="${BUILD_PREFIX}/bin/llvm-tblgen" \
@@ -49,9 +52,20 @@ emcmake cmake ../mlir \
     -DNB_SUFFIX="${TARGET_EXT_SUFFIX}" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
-# MLIRPythonModules is an ALL target, so the install build includes it. Building
-# it separately first only serializes work that Make can schedule together.
-emmake make -j${CPU_COUNT:-4} install
+# Emscripten 6.0.8 predates LLVM's byval tail-call fix (#227491), so use the
+# same no-tail-call policy as llvm-tools for both wasm32 and wasm64.
+# Build libraries once before the Python modules and tools share them.
+# Install selected targets rather than building every MLIR executable.
+emmake make -j${CPU_COUNT:-4} install-mlir-libraries
+emmake make -j${CPU_COUNT:-4} \
+    install-mlir-headers install-mlir-cmake-exports \
+    install-mlir-python-sources install-MLIRPythonModules \
+    install-mlir-opt install-mlir-translate
+
+# CMake installs the JavaScript executable; install its companion Wasm file.
+for tool in mlir-opt mlir-translate; do
+    install -m 644 "bin/${tool}.wasm" "${PREFIX}/bin/${tool}.wasm"
+done
 
 # MLIR Python bindings are designed as namespace packages (no __init__.py in the
 # source tree for mlir/, mlir/dialects/, mlir/extras/). Emscripten's MEMFS does
