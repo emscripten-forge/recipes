@@ -71,20 +71,24 @@ depends-on = [{ task = "_base", args = ["{{ recipe }}", "emscripten-wasm64", "no
 ############################################
 # documentation feature / tasks
 ############################################
+
+
 [feature.feature_documentation]
 [feature.feature_documentation.dependencies]
+ablog = "<1"
+myst-parser = "<6"
 python = "3.14.*"
-mkdocs = ">=1.6.0"
-mkdocs-material = ">=9.5.2"
-pip = "*"
-mkdocs-git-committers-plugin-2 = "*"
+sphinx = "<10"
+sphinx-book-theme = "*"
 
-
-[feature.feature_documentation.tasks.docs-serve]
-cmd = ["mkdocs", "serve"]
 
 [feature.feature_documentation.tasks.docs-build]
-cmd = ["mkdocs", "build"]
+cmd = ["make", "html"]
+cwd = "docs"
+
+[feature.feature_documentation.tasks.docs-serve]
+cmd = ["python", "-m", "http.server", "--directory", "_build/html", "8000"]
+cwd = "docs"
 
 ############################################
 # environments
