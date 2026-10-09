@@ -1,0 +1,52 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -52,3 +52,8 @@
+ set(MIN_USABLE_BOOST_VERSION "1.70")
+ set(BOOST_REQ_COMPONENTS iostreams program_options regex thread random coroutine locale filesystem graph)
++if(EMSCRIPTEN)
++	list(REMOVE_ITEM BOOST_REQ_COMPONENTS coroutine)
++	add_compile_definitions(BOOST_ASIO_DISABLE_THREADS)
++	add_compile_options(-fexceptions)
++endif()
+ 
+@@ -302,6 +307,10 @@
+-	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
++	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT EMSCRIPTEN)
+ 		set(CMAKE_EXE_LINKER_FLAGS "-lstdc++ -lm ${CMAKE_EXE_LINKER_FLAGS}")
+ 	endif()
+ 
+-	add_compile_definitions(WESNOTH_PATH="${CMAKE_INSTALL_FULL_DATADIR}/${DATADIRNAME}")
++	if(EMSCRIPTEN)
++		add_compile_definitions(WESNOTH_PATH="/usr/share/${DATADIRNAME}")
++	else()
++		add_compile_definitions(WESNOTH_PATH="${CMAKE_INSTALL_FULL_DATADIR}/${DATADIRNAME}")
++	endif()
+ 
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -149,3 +149,23 @@
+ 	set_target_properties(wesnoth PROPERTIES OUTPUT_NAME ${BINARY_PREFIX}wesnoth${BINARY_SUFFIX})
++	if(EMSCRIPTEN)
++		set_target_properties(wesnoth PROPERTIES SUFFIX ".js")
++		target_link_options(wesnoth PRIVATE
++			-fexceptions
++			-sALLOW_MEMORY_GROWTH=1
++			-sFORCE_FILESYSTEM=1
++			-sASYNCIFY=1
++			-sEXIT_RUNTIME=1
++			-sENVIRONMENT=web,node
++			-sEMULATE_FUNCTION_POINTER_CASTS=1
++		)
++		option(WESNOTH_EMSCRIPTEN_PRELOAD_ASSETS "Preload Wesnoth data into the Emscripten virtual filesystem" ON)
++		if(WESNOTH_EMSCRIPTEN_PRELOAD_ASSETS)
++			foreach(asset data fonts images sounds)
++				target_link_options(wesnoth PRIVATE
++					"SHELL:--preload-file ${CMAKE_SOURCE_DIR}/${asset}@/usr/share/${DATADIRNAME}/${asset}"
++				)
++			endforeach()
++		endif()
++	endif()
+ 
+ 	install(TARGETS wesnoth DESTINATION ${CMAKE_INSTALL_BINDIR})
