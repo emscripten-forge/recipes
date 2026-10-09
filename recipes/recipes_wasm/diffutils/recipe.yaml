@@ -1,0 +1,48 @@
+context:
+  name: diffutils
+  version: '3.12'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.xz
+  sha256: 7c8b7f9fc8609141fdea9cece85249d308624391ff61dedaf528fcb337727dfd
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - make
+
+tests:
+- package_contents:
+    files:
+    - bin/diff.js
+    - bin/diff.wasm
+    - bin/cmp.js
+    - bin/cmp.wasm
+- script: node test_diffutils.js
+  files:
+    recipe:
+    - test_diffutils.js
+  requirements:
+    build:
+    - nodejs
+
+about:
+  homepage: https://www.gnu.org/software/diffutils/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: GNU diff and cmp
+  description: |
+    Diffutils is a package of programs related to finding differences between
+    files. This build provides diff and cmp. The sdiff and diff3 programs are
+    not built: they run diff as a child process, which emscripten cannot do.
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
