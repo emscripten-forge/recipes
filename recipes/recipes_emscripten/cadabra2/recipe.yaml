@@ -1,0 +1,154 @@
+context:
+  name: cadabra2
+  version: 2.5.14
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/kpeeters/cadabra2/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9e85977f49dae20230f4865a4f879d819cbfaaf3797d22adef1407990eab66ff
+  patches:
+  # Adds CADABRA_PYTHON_MODULE_ONLY (build only the Python module + cdb
+  # packages, no CLI/GUI/server, no glibmm/sqlite/openssl/compiled boost)
+  # and EMBED_COMPILED_PACKAGES (build cdb.core._component and
+  # cdb.utils._algorithm into the cadabra2 module, since wasm side modules
+  # cannot link against another Python extension module).
+  - patches/0001-Add-options-to-build-only-the-Python-module.patch
+  # The import hook class on sys.meta_path breaks importlib.invalidate_caches()
+  # (called e.g. by micropip/pip after installing packages).
+  - patches/0002-Make-PackageCompiler-invalidate_caches-a-classmethod.patch
+
+build:
+  number: 0
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  - python
+  - cross-python_${{ target_platform }}
+  host:
+  - python
+  - gmp
+  # header-only parts of Boost used by the core (ublas, odeint, quadrature,
+  # hash, demangle, version)
+  - boost-config
+  - boost-core
+  - boost-container_hash
+  - boost-functional
+  - boost-math
+  - boost-numeric_ublas
+  - boost-numeric_odeint
+  ignore_run_exports:
+    from_package:
+    - gmp
+    - boost-config
+    - boost-core
+    - boost-container_hash
+    - boost-functional
+    - boost-math
+    - boost-numeric_ublas
+    - boost-numeric_odeint
+  run:
+  - python
+  # rational multipliers are exchanged with Python as gmpy2.mpq
+  - gmpy2
+  # scalar simplification backend (simplify, map_sympy, ...)
+  - sympy
+
+tests:
+- package_contents:
+    site_packages:
+    - cadabra2_defaults
+    - cdb_appdirs
+    - cdb/main.py
+    - cdb/core/manip.cnb
+    - cdb/core/_component.py
+    - cdb/utils/_algorithm.py
+    files:
+    - lib/python3.13/site-packages/cadabra2.cpython-313-wasm32-emscripten.so
+- script:
+  # Embed Cadabra's own regression tests (tests/*.cdb, normally run through
+  # the cadabra2 REPL) into test_upstream_cdb.py so they run in the browser.
+  - python gen_upstream_tests.py tests
+  - pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    # used by the nevaluate/numerical upstream tests
+    - numpy
+  files:
+    recipe:
+    - gen_upstream_tests.py
+    - test_cadabra2.py
+    - test_cadabra2_notation.py
+    - test_cadabra2_packages.py
+    # The regression tests upstream runs (tests/CMakeLists.txt), except
+    # modules.cdb (imports helper notebooks from the tests/ directory),
+    # sympy_cdb.cdb (its dsolve() call is rejected by SymPy 1.14) and
+    # mma.cdb (needs Mathematica).
+    source:
+    - tests/algebra.cdb
+    - tests/basic.cdb
+    - tests/canonicalise.cdb
+    - tests/components.cdb
+    - tests/derivative.cdb
+    - tests/display.cdb
+    - tests/dummies.cdb
+    - tests/explicit_implicit.cdb
+    - tests/factor.cdb
+    - tests/field_theory.cdb
+    - tests/fierz.cdb
+    - tests/forms.cdb
+    - tests/gamma_paper.cdb
+    - tests/implicit.cdb
+    - tests/index_positions.cdb
+    - tests/integrals.cdb
+    - tests/kaluza_klein.cdb
+    - tests/manip.cdb
+    - tests/meld.cdb
+    - tests/nevaluate.cdb
+    - tests/noncovariant.cdb
+    - tests/numerical.cdb
+    - tests/output.cdb
+    - tests/packages.cdb
+    - tests/paper.cdb
+    - tests/programming.cdb
+    - tests/properties.cdb
+    - tests/relativity.cdb
+    - tests/selecting.cdb
+    - tests/serialize.cdb
+    - tests/spinors.cdb
+    - tests/substitute.cdb
+    - tests/symmetry.cdb
+    - tests/trigonometric.cdb
+    - tests/vary.cdb
+    - tests/young.cdb
+
+about:
+  homepage: https://cadabra.science/
+  repository: https://github.com/kpeeters/cadabra2
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: A field-theory motivated approach to computer algebra (Python module)
+  description: |
+    Cadabra is a symbolic computer algebra system designed specifically for
+    the solution of problems encountered in field theory. This package
+    provides the `cadabra2` Python module, the `cadabra2_defaults` helper
+    module and the `cdb` library packages, so that Cadabra can be used from
+    Python (e.g. in JupyterLite with xeus-python). Cadabra notation can be
+    translated to Python with `cadabra2.cdb2python_string`.
+  documentation: https://cadabra.science/man.html
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
