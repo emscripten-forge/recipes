@@ -33,7 +33,7 @@ For most basic Shiny applications, the resources available to a modern browser a
 
 Emscripten-forge is a conda/mamba-based software distribution for the Web browser. Unlike language-specific ecosystems such as Pyodide (Python) and WebR (R), emscripten-forge is language-agnostic: Python, R, GNU Octave packages, console applications, and native libraries are all peers that can share common binary dependencies.
 
-This matters beyond convenience. With R and Python packages living in the same dependency graph, a static R-Shiny dashboard built with emscripten-forge can invoke Python code directly — imagine a Shiny UI backed by a Python ML model or a Python data-processing library, all in a single static page. Language-specific runtimes cannot offer this out of the box.
+This matters beyond convenience. With R and Python packages living in the same dependency graph, a static R-Shiny dashboard built with emscripten-forge can invoke Python code directly. For instance, a Shiny UI can be backed by a Python ML model or a Python data-processing library, all in a single static page. Language-specific runtimes cannot offer this out of the box.
 
 ## How Does it Work?
 
