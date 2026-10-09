@@ -1,0 +1,166 @@
+diff -ur a/include/core/polymake/client.h b/include/core/polymake/client.h
+--- a/include/core/polymake/client.h	2026-09-24 11:36:10.319609622 +0000
++++ b/include/core/polymake/client.h	2026-09-24 11:36:10.346777648 +0000
+@@ -87,14 +87,22 @@
+ 
+ namespace {
+ 
++// The registration itself is handed to pm::perl::defer_registration (see
++// perl/wrappers.h) rather than carried out here, because these constructors may run
++// before the perl interpreter exists.  The arguments are captured by copy: they are
++// string literals, small integers and empty attribute tags, and the callbacks are
++// kept for the lifetime of the process, so the AnyStrings built from them stay valid.
++
+ template <typename What, int id>
+ class QueueingRegistrator4perl {
+ public:
+    template <typename... Args>
+    explicit QueueingRegistrator4perl(Args&&... args)
+    {
+-      static_cast<const What&>(get_registrator_queue(mlist<PolymakeGlueRegistratorTag>(), std::integral_constant<pm::perl::RegistratorQueue::Kind, What::kind>()))
+-                              .add__me(std::forward<Args>(args)...);
++      pm::perl::defer_registration([args...]() {
++         static_cast<const What&>(get_registrator_queue(mlist<PolymakeGlueRegistratorTag>(), std::integral_constant<pm::perl::RegistratorQueue::Kind, What::kind>()))
++                                 .add__me(args...);
++      });
+    }
+ 
+    static QueueingRegistrator4perl r;
+@@ -106,7 +114,9 @@
+    template <typename... Args>
+    explicit StaticRegistrator4perl(Args&&... args)
+    {
+-      What::add__me(std::forward<Args>(args)...);
++      pm::perl::defer_registration([args...]() {
++         What::add__me(args...);
++      });
+    }
+ 
+    static StaticRegistrator4perl r;
+diff -ur a/include/core/polymake/perl/wrappers.h b/include/core/polymake/perl/wrappers.h
+--- a/include/core/polymake/perl/wrappers.h	2026-09-24 11:36:10.314880066 +0000
++++ b/include/core/polymake/perl/wrappers.h	2026-09-24 11:36:10.342865116 +0000
+@@ -24,11 +24,33 @@
+    in the package Polymake::Core::CPlusPlus
+ */
+ 
++#include <functional>
++
+ namespace pm { namespace perl {
+ 
+ template <typename T>
+ using is_mutable = bool_constant<pm::is_mutable<T>::value && !object_traits<T>::is_always_const>;
+ 
++/* Registration of C++ clients, deferred until the perl side is ready.
++
++   The registrators in client.h run from static constructors.  Normally every
++   application is a shared module which is dlopen'ed long after the interpreter
++   exists, so a registrator can address it straight away.  When polymake is linked
++   into a single executable together with libperl -- as the WebAssembly build has to,
++   because that perl has no dynamic loading -- all of those constructors instead run
++   before main(), and the first one to ask for its queue dereferences a
++   Polymake::Core::CPlusPlus::root that does not exist yet.
++
++   Registrations are therefore held back until Polymake::Core::CPlusPlus::init() has
++   built that structure and called run_deferred_registrations().  From then on they
++   are carried out as they arrive, so a module loaded later behaves exactly as before
++   and the standard build is unaffected apart from the order of the very first batch.
++
++   The callbacks are kept afterwards rather than discarded: the argument copies they
++   hold are what the AnyStrings handed to perl point at. */
++void defer_registration(std::function<void()> reg);
++void run_deferred_registrations();
++
+ class RegistratorQueue {
+ public:
+    enum class Kind {
+diff -ur a/lib/core/src/perl/CPlusPlus.xxs b/lib/core/src/perl/CPlusPlus.xxs
+--- a/lib/core/src/perl/CPlusPlus.xxs	2026-09-24 11:36:10.327229657 +0000
++++ b/lib/core/src/perl/CPlusPlus.xxs	2026-09-24 11:36:10.354679088 +0000
+@@ -29,6 +29,11 @@
+     bool mgs_bumped;
+ };
+ 
++namespace pm { namespace perl {
++   // defined in wrappers.cc; perl/wrappers.h, which declares it, is not included here
++   void run_deferred_registrations();
++} }
++
+ namespace pm { namespace perl { namespace glue {
+ 
+ using polymake::AnyString;
+@@ -958,6 +963,16 @@
+ 
+ PROTOTYPES: DISABLE
+ 
++void run_deferred_registrations()
++PPCODE:
++{
++   // Carry out the client registrations that were held back because they happened
++   // before this structure existed; see perl/wrappers.h.  Called at the end of
++   // Polymake::Core::CPlusPlus::init(); a no-op unless something registered early,
++   // which only happens when the applications are linked into the executable.
++   pm::perl::run_deferred_registrations();
++}
++
+ void assign_to_cpp_object(SV* obj, SV* value, SV* flags_sv)
+ PPCODE:
+ {
+diff -ur a/lib/core/src/perl/wrappers.cc b/lib/core/src/perl/wrappers.cc
+--- a/lib/core/src/perl/wrappers.cc	2026-09-24 11:36:10.323038034 +0000
++++ b/lib/core/src/perl/wrappers.cc	2026-09-24 11:36:10.350910103 +0000
+@@ -450,6 +450,39 @@
+    return v.get_temp();
+ }
+ 
++namespace {
++
++// zero-initialized, so it is readable from a static constructor of any other
++// translation unit without an initialization order hazard
++bool registrations_enabled = false;
++
++std::vector<std::function<void()>>& deferred_registrations()
++{
++   // function-local: constructed on first use, never during static initialization
++   static std::vector<std::function<void()>> queue;
++   return queue;
++}
++
++}
++
++void defer_registration(std::function<void()> reg)
++{
++   if (registrations_enabled)
++      reg();
++   else
++      deferred_registrations().push_back(std::move(reg));
++}
++
++void run_deferred_registrations()
++{
++   registrations_enabled = true;
++   auto& queue = deferred_registrations();
++   // indexed, because a callback is in principle free to append another one
++   for (size_t i = 0; i < queue.size(); ++i)
++      queue[i]();
++   // the queue is deliberately not cleared, see the comment in perl/wrappers.h
++}
++
+ RegistratorQueue::RegistratorQueue(const AnyString& name, Kind kind)
+ {
+    dTHX;
+diff -ur a/perllib/Polymake/Core/CPlusPlus.pm b/perllib/Polymake/Core/CPlusPlus.pm
+--- a/perllib/Polymake/Core/CPlusPlus.pm	2026-09-24 11:36:10.335162743 +0000
++++ b/perllib/Polymake/Core/CPlusPlus.pm	2026-09-24 11:36:10.359210371 +0000
+@@ -1447,6 +1447,11 @@
+          recompile_extension($private_wrapper_ext, $core_last_built);
+       }
+    }
++
++   # Clients whose static constructors ran before $root existed have queued their
++   # registrations instead of performing them; see lib/core/include/perl/wrappers.h.
++   # Nothing is queued unless the applications are linked into the executable.
++   run_deferred_registrations();
+ }
+ 
+ sub Polymake::Core::BigObjectType::cppoptions { $BigObject_cpp_options }
