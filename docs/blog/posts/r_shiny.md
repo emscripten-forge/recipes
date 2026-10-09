@@ -43,21 +43,8 @@ Lucent is a browser runtime dedicated to running Shiny apps entirely on the clie
 
 To Shiny, the setup still acts as an ordinary web server, but this server is virtual.  A service worker intercepts HTTP and WebSocket traffic from the app and forwards it to R running in a background worker. The app UI is displayed in an embedded iframe and matches the experience of a regular Shiny dashboard while keeping all R computations entirely on the user’s machine.
 
-```mermaid
-flowchart TB
-  subgraph page [Browser page]
-    Shell[Lucent host page]
-    Iframe[iframe: Shiny UI]
-  end
-  Bridge[httpuv bridge / service worker]
-  subgraph worker [R web worker]
-    R[R.wasm]
-    Shiny[Shiny app]
-  end
-  Shell --> Iframe
-  Iframe <--> Bridge
-  Bridge <--> R
-  R --- Shiny
+```{raw} html
+:file: ../../assets/blog_r_shiny_arch.svg
 ```
 
 To simplify deployments, we developed [`lucent-pack`](https://github.com/emscripten-forge/lucent-pack), a tool which turns a Shiny app and its R environment into a fully static site. Lucent-pack requires two inputs: the path to the Shiny app directory and the path to the WebAssembly environment containing all of the app dependencies. Then, it uses [`empack`](https://github.com/emscripten-forge/empack) to archive the environment and the app into tarballs. Lastly, it outputs a publishable static tree which includes the lucent runtime. This static site will automatically boot R, run the Shiny app, and connect the app UI to the browser’s R session.
@@ -74,6 +61,8 @@ The requirements to run the app are specified in the [environment.yaml](https://
 :alt: SVM demo shiny app running on GitHub pages
 :class: banner dark-light
 ```
+
+👉 [Try the demo!](https://emscripten-forge.github.io/r-shiny-template/)
 
 ## About the Author
 
