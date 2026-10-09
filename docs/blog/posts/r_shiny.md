@@ -21,7 +21,7 @@ Beyond raw cost, operating a Shiny server also comes with the usual operational 
 
 ## WebAssembly Changes Everything
 
-WebAssembly changes the economics of Shiny deployment entirely. With R compiled to WebAssembly, the application logic runs in the browser of each visitor: compute resources are provided by the user, and your infrastructure cost goes from $O(n)$ to $O(1)$. Serving the dashboard is no different from serving any static website, a flat cost, regardless of how many people connect.
+WebAssembly changes the economics of Shiny deployment entirely. With R compiled to WebAssembly, the application logic runs in the browser of each visitor: compute resources are provided by the user, and your infrastructure cost goes from O(n) to O(1). Serving the dashboard is no different from serving any static website, a flat cost, regardless of how many people connect.
 
 For most basic Shiny applications, the resources available to a modern browser are more than enough. This model is a perfect fit for:
 
@@ -63,6 +63,12 @@ The requirements to run the app are specified in the [environment.yaml](https://
 ```
 
 👉 [Try the demo!](https://emscripten-forge.github.io/r-shiny-template/)
+
+Shiny dashboards also support calling Python functions from R by using `reticulate`. You can learn more about `reticulate` from our previous blog post {doc}`./reticulate`.
+
+## Acknowledgements
+
+The work by Isabel Paredes at QuantStack to integrate Shiny with emscripten-forge was funded by Safran Tech.
 
 ## About the Author
 
