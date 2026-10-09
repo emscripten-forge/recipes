@@ -1,0 +1,48 @@
+context:
+  name: coreutils
+  version: '9.10'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/coreutils/coreutils/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.xz
+  sha256: 16535a9adf0b10037364e2d612aad3d9f4eca3a344949ced74d12faf4bd51d25
+  patches:
+  - patches/0001-sethostname-not-static.patch
+  - patches/0002-Don-t-build-tests-or-man-pages.patch
+  - patches/0003-Avoid-use-of-freopen-in-uniq.patch
+  - patches/0004-Avoid-use-of-fd_reopen-in-touch.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - make    # [unix]
+  - autoconf
+  - gettext
+  - pkg-config
+  - help2man
+  - automake
+
+tests:
+- package_contents:
+    files:
+    - bin/coreutils.js
+    - bin/coreutils.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-3.0-only
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - ianthomas23
