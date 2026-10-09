@@ -1,0 +1,65 @@
+context:
+  name: pytest
+  version: 9.1.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pytest/pytest-${{ version }}.tar.gz
+  sha256: 1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . --no-deps
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  host:
+  - python-dev
+  run:
+  - iniconfig
+  - packaging
+  - pluggy
+  - pygments
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pytest.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simple and powerful testing with Python.
+  description: |
+    The pytest framework makes it easy to write small tests, yet scales to
+    support complex functional testing for applications and libraries.
+  homepage: https://docs.pytest.org/en/latest/
+  repository: https://github.com/pytest-dev/pytest
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
