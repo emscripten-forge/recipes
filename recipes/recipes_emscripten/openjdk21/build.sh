@@ -26,26 +26,18 @@ mkdir -p "$WASM_NATIVE_DIR" "$KIT_DIR" "$PREFIX/bin"
 THREAD_FLAGS="-pthread -sUSE_PTHREADS=1 -sSHARED_MEMORY=1"
 
 # ---------------------------------------------------------------------------
-# 1. libffi (Zero's call path for every native method), built with pthreads.
-#    emscripten-forge's libffi package is not thread-enabled, so it cannot be
-#    linked into this module. WASM_BIGINT must match -sWASM_BIGINT at link.
+# 1. libffi (Zero's call path for every native method) comes from the
+#    libffi-pthread host package: built with -pthread like everything else
+#    in this module, with the fix for the 4-byte-aligned jlong/jdouble
+#    arguments Zero passes. It installs under its own names
+#    (include/libffi-pthread, lib/libffi-pthread), and openjdk21-wasm-link
+#    links it from there (a run dependency).
 # ---------------------------------------------------------------------------
-FFI_OUT="$SRC_DIR/libffi-install"
-if [ ! -f "$FFI_OUT/lib/libffi.a" ]; then
-  (
-    cd "$SRC_DIR/libffi"
-    emconfigure ./configure \
-      --host=wasm32-unknown-linux \
-      --prefix="$FFI_OUT" \
-      --enable-static --disable-shared --disable-docs \
-      --disable-multi-os-directory --disable-raw-api \
-      --disable-dependency-tracking \
-      CFLAGS="-O2 $THREAD_FLAGS -DWASM_BIGINT"
-    emmake make -j"$JOBS"
-    emmake make install
-  )
-fi
-cp "$FFI_OUT/lib/libffi.a" "$WASM_NATIVE_DIR/libffi.a"
+FFI_INCLUDE="$PREFIX/include/libffi-pthread"
+FFI_LIB="$PREFIX/lib/libffi-pthread"
+for f in "$FFI_INCLUDE/ffi.h" "$FFI_LIB/libffi.a"; do
+  [ -f "$f" ] || { echo "missing $f: is libffi-pthread in host?" >&2; exit 1; }
+done
 
 # ---------------------------------------------------------------------------
 # 2. configure
@@ -99,7 +91,8 @@ CONFIGURE_ARGS=(
   --disable-jvm-feature-shenandoahgc
   --disable-jvm-feature-zgc
   --enable-static-build
-  --with-libffi="$FFI_OUT"
+  --with-libffi-include="$FFI_INCLUDE"
+  --with-libffi-lib="$FFI_LIB"
   --with-sysroot="$EMSDK_SYSROOT"
   --with-extra-cflags="$THREAD_FLAGS -D__EMSCRIPTEN__ -I$PREFIX/include -I$EXTRA_INC"
   --with-extra-cxxflags="$THREAD_FLAGS -D__EMSCRIPTEN__ -fwasm-exceptions -I$PREFIX/include -I$EXTRA_INC"
@@ -200,7 +193,7 @@ done
 
 for a in "$WASM_NATIVE_DIR"/lib*.a; do
   n=$(basename "$a" .a)
-  case $n in libjvm|libffi) continue ;; esac
+  case $n in libjvm) continue ;; esac
   touch "$JDK_IMAGE_DIR/lib/$n.so"
 done
 mkdir -p "$JDK_IMAGE_DIR/lib/zero"

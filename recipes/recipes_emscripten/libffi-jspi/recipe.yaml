@@ -1,0 +1,83 @@
+context:
+  name: libffi-jspi
+  version: 3.4.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/libffi/libffi/releases/download/v${{ version }}/libffi-${{ version }}.tar.gz
+    sha256: b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
+    patches:
+      # ffi_call through WebAssembly trampolines generated at run time, so
+      # the callee can suspend with JSPI; unaligned 64-bit values;
+      # Emscripten 4: no implicit stackSave/_malloc in JS
+      - patches/libffi-wasm32-jspi-calls-unaligned-64bit-emscripten4.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - make
+
+tests:
+  - package_contents:
+      files:
+        - include/libffi-jspi/ffi.h
+        - include/libffi-jspi/ffitarget.h
+        - lib/libffi-jspi/libffi.a
+        - lib/pkgconfig/libffi-jspi.pc
+        - share/licenses/libffi-jspi/LICENSE
+  # links through the pkg-config file and calls with unaligned 64-bit values,
+  # through the WebAssembly trampolines (table growth) and the JavaScript path;
+  # then a call that suspends with JSPI
+  - script:
+      - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+      - emcc -O2 -fwasm-exceptions -sSUPPORT_LONGJMP $(pkg-config --cflags libffi-jspi) test_ffi.c $(pkg-config --libs libffi-jspi) -sWASM_BIGINT -sALLOW_TABLE_GROWTH=1 -sEXIT_RUNTIME=1 -o test_trampoline.js
+      - node test_trampoline.js
+      - emcc -O2 -fwasm-exceptions -sSUPPORT_LONGJMP $(pkg-config --cflags libffi-jspi) test_ffi.c $(pkg-config --libs libffi-jspi) -sWASM_BIGINT -sEXIT_RUNTIME=1 -o test_js.js
+      - node test_js.js
+      # a function called through ffi_call suspends with JSPI and resumes,
+      # as JNI methods do under gthread-jspi; needs a node with JSPI
+      - emcc -O2 -fwasm-exceptions -sSUPPORT_LONGJMP $(pkg-config --cflags libffi-jspi) test_jspi.c $(pkg-config --libs libffi-jspi) -sJSPI -sJSPI_EXPORTS=main -sWASM_BIGINT -sALLOW_TABLE_GROWTH=1 -sEXIT_RUNTIME=1 -o test_jspi.js
+      - if node -e 'typeof WebAssembly.Suspending == "function" || process.exit(1)'; then node test_jspi.js; elif node --experimental-wasm-jspi -e 'typeof WebAssembly.Suspending == "function" || process.exit(1)'; then node --experimental-wasm-jspi test_jspi.js; else echo "JSPI test skipped, node $(node --version) has no JSPI"; fi
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - pkg-config
+    files:
+      recipe:
+        - test_ffi.c
+        - test_jspi.c
+
+about:
+  homepage: https://sourceware.org/libffi/
+  repository: https://github.com/libffi/libffi
+  license: MIT
+  license_file: LICENSE
+  summary: libffi for emscripten-wasm32 whose calls can suspend with JSPI (no pthreads)
+  description: |
+    libffi whose ffi_call converts the arguments in C and calls the target
+    through a WebAssembly trampoline generated at run time, one per
+    signature, so only WebAssembly frames are on the stack and the callee may
+    suspend with JavaScript Promise Integration (used by cooperative green
+    threads such as gthread-jspi). Needs -sALLOW_TABLE_GROWTH; structures,
+    long double, complex and varargs, and programs without table growth, use
+    the JavaScript implementation. 64-bit arguments and results may be only
+    4-byte aligned. Built without -pthread, with the same flags as the libffi
+    package (-fwasm-exceptions -sSUPPORT_LONGJMP -sWASM_BIGINT); for
+    pthreads programs see libffi-pthread.
+
+    It is installed under its own names, so it can be installed next to the
+    libffi package without replacing it or being picked up by accident:
+      include/libffi-jspi/ffi.h, ffitarget.h
+      lib/libffi-jspi/libffi.a      (-L$PREFIX/lib/libffi-jspi -lffi)
+      lib/pkgconfig/libffi-jspi.pc
+      share/licenses/libffi-jspi/LICENSE (for programs that link it in)
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

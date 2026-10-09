@@ -35,19 +35,21 @@ ln -sf "${PREFIX}/lib/libfreetype.a" "${TOOLS}/freetype/libfreetype.a"
 mkdir -p "${TOOLS}/cups-include"
 cp -R "${BUILD_PREFIX}/include/cups" "${TOOLS}/cups-include/"
 
-# libffi (the second source, patched so that calls through ffi_call can
-# suspend with JSPI): a static library in a private prefix, linked into
-# openjdk8.wasm by link-java.sh. Same flags as emscripten-forge's libffi.
+# libffi comes from the libffi-jspi host package (calls through ffi_call can
+# suspend with JSPI), installed under its own names so it cannot clash with
+# the libffi package. link-java.sh expects a prefix with lib/libffi.a, so a
+# private one points at it; openjdk8.wasm links it in, so its license notice
+# is packaged with openjdk8 (about.license_file).
+FFI_INCLUDE="${PREFIX}/include/libffi-jspi"
+FFI_LIB="${PREFIX}/lib/libffi-jspi"
+for f in "${FFI_INCLUDE}/ffi.h" "${FFI_LIB}/libffi.a" "${PREFIX}/share/licenses/libffi-jspi/LICENSE"; do
+  [ -f "${f}" ] || { echo "missing ${f}: is libffi-jspi in host?" >&2; exit 1; }
+done
 export LIBFFI_DIR="${SRC_DIR}/_libffi"
-(
-  cd "${SRC_DIR}/libffi"
-  emconfigure ./configure --host=wasm32-unknown-linux --prefix="${LIBFFI_DIR}" \
-    --enable-static --disable-shared --disable-dependency-tracking \
-    --disable-builddir --disable-multi-os-directory --disable-raw-api --disable-docs \
-    CFLAGS="-O3 -fPIC -sWASM_BIGINT -fwasm-exceptions -sSUPPORT_LONGJMP -DWASM_BIGINT" \
-    LDFLAGS="-O3 -sWASM_BIGINT -fwasm-exceptions -sSUPPORT_LONGJMP"
-  emmake make install
-)
+mkdir -p "${LIBFFI_DIR}/lib" "${SRC_DIR}/libffi-jspi"
+ln -sfn "${FFI_INCLUDE}" "${LIBFFI_DIR}/include"
+ln -sf "${FFI_LIB}/libffi.a" "${LIBFFI_DIR}/lib/libffi.a"
+cp "${PREFIX}/share/licenses/libffi-jspi/LICENSE" "${SRC_DIR}/libffi-jspi/LICENSE"
 
 # Every C/C++ file sees the Linux-like environment the JDK expects: the
 # pthread API maps onto gthread-jspi, a few Linux-only headers are stubbed.

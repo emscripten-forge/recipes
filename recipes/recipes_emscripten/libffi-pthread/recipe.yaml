@@ -1,0 +1,72 @@
+context:
+  name: libffi-pthread
+  version: 3.4.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/libffi/libffi/releases/download/v${{ version }}/libffi-${{ version }}.tar.gz
+    sha256: b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
+    patches:
+      # 64-bit values are read and written through a DataView: OpenJDK Zero
+      # passes jlong/jdouble arguments that are only 4-byte aligned
+      - patches/libffi-wasm32-unaligned-64bit.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - make
+
+tests:
+  - package_contents:
+      files:
+        - include/libffi-pthread/ffi.h
+        - include/libffi-pthread/ffitarget.h
+        - lib/libffi-pthread/libffi.a
+        - lib/pkgconfig/libffi-pthread.pc
+        - share/licenses/libffi-pthread/LICENSE
+  # links into a shared-memory (-pthread) program through the pkg-config file
+  # and calls with unaligned 64-bit values, on the main thread and a pthread
+  - script:
+      - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+      - emcc -O2 -DTEST_PTHREAD $(pkg-config --cflags libffi-pthread) test_ffi.c $(pkg-config --libs libffi-pthread) -sWASM_BIGINT -sPTHREAD_POOL_SIZE=1 -sEXIT_RUNTIME=1 -o test_ffi.js
+      - node test_ffi.js
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - pkg-config
+    files:
+      recipe:
+        - test_ffi.c
+
+about:
+  homepage: https://sourceware.org/libffi/
+  repository: https://github.com/libffi/libffi
+  license: MIT
+  license_file: LICENSE
+  summary: libffi for emscripten-wasm32 programs built with pthreads (shared memory)
+  description: |
+    libffi built with -pthread (atomics and bulk memory), for shared-memory
+    (pthreads) WebAssembly programs. 64-bit arguments and results may be only
+    4-byte aligned, as a 32-bit C ABI allows (OpenJDK's Zero interpreter
+    passes them that way). Not for programs without -pthread: its JavaScript
+    calls stackSave, which Emscripten 4 only provides in pthread builds (use
+    libffi-jspi there).
+
+    It is installed under its own names, so it can be installed next to the
+    libffi package without replacing it or being picked up by accident:
+      include/libffi-pthread/ffi.h, ffitarget.h
+      lib/libffi-pthread/libffi.a   (-L$PREFIX/lib/libffi-pthread -lffi)
+      lib/pkgconfig/libffi-pthread.pc
+      share/licenses/libffi-pthread/LICENSE (for programs that link it in)
+
+    Programs must be compiled and linked with -pthread and -sWASM_BIGINT.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

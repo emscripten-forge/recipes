@@ -20,17 +20,14 @@ source:
       - patches/0003-java-base-natives-for-the-linux-class-library.patch
       # jdk.attach off, jdk.net / jdk.management natives on
       - patches/0004-jdk-modules-for-emscripten.patch
-  - url: https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz
-    sha256: b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
-    target_directory: libffi
-    patches:
-      # jlong/jdouble arguments from Zero are only 4-byte aligned
-      - patches/libffi-wasm32-unaligned-64bit.patch
   # link kit: launcher, symbol-table generator, link script, page shell,
   # fontconfig.properties
   - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ kit_version }}.tar.gz
     sha256: 2ef032b39bc720960d1dfade80bcf0cc292ad4f1f315a6c019dbcf7d13c6a13c
     target_directory: kit
+    patches:
+      # link libffi from the libffi-pthread package, not lib/wasm-native
+      - patches/0005-kit-link-libffi-pthread.patch
 
 build:
   number: 0
@@ -59,9 +56,14 @@ requirements:
     - x11-wasm
     # headers only (fontconfig is dlopen()ed, which fails in wasm)
     - fontconfig
+    # Zero calls every native method through ffi_call; built with -pthread
+    # like everything else in this shared-memory module
+    - libffi-pthread
   run:
     # openjdk21-wasm-link links x11.wasm into GUI programs
     - x11-wasm
+    # openjdk21-wasm-link links lib/libffi-pthread/libffi.a into every program
+    - libffi-pthread
 
 tests:
   - package_contents:
@@ -74,7 +76,6 @@ tests:
         - jdk-wasm/lib/security/cacerts
         - lib/wasm-native/libjvm.a
         - lib/wasm-native/libjava.a
-        - lib/wasm-native/libffi.a
         - lib/wasm-native/libawt.a
         - lib/wasm-native/libawt_xawt.a
         - lib/wasm-native/libfontmanager.a
@@ -113,8 +114,6 @@ about:
     - kit/LICENSE-coi-serviceworker
     # the bundled DejaVu fonts (font-ttf-dejavu ships no license file)
     - kit/LICENSE-DejaVu
-    # the bundled libffi (lib/wasm-native/libffi.a)
-    - libffi/LICENSE
 
 extra:
   recipe-maintainers:
