@@ -1,0 +1,164 @@
+context:
+  name: x11-wasm
+  version: "0.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/wangyenshu/x11.wasm/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: a88293ba01036918d6a386fdd864d540c20f2a2e27d1a042052c19472f806c75
+    patches:
+      # hooks that let a cooperative (single-threaded, JSPI) runtime wait
+      # for events in XNextEvent & co.; no change without hooks
+      - patches/0001-runtime-hooks.patch
+      # XGetImage of a window includes the window background
+      - patches/0002-getimage-composites-window-background.patch
+      # Module.x11WasmDocumentTitle = false keeps the page title
+      - patches/0003-optional-document-title-sync.patch
+      # typed "A" and "!" arrived as "a" and "1": text key events get the
+      # Shift state that selects their keysym
+      - patches/0004-text-events-shift-state.patch
+      - patches/0005-pointer-events-subwindow.patch
+  # headers only -- nothing from these is compiled
+  - url: https://www.x.org/releases/individual/proto/xorgproto-2024.1.tar.xz
+    sha256: 372225fd40815b8423547f5d890c5debc72e88b91088fbfb13158c20495ccb59
+    target_directory: xorg/xorgproto
+  - url: https://www.x.org/releases/individual/lib/libX11-1.8.10.tar.xz
+    sha256: 2b3b3dad9347db41dca56beb7db5878f283bde1142f04d9f8e478af435dfdc53
+    target_directory: xorg/libX11
+  - url: https://www.x.org/releases/individual/lib/libXext-1.3.6.tar.xz
+    sha256: edb59fa23994e405fdc5b400afdf5820ae6160b94f35e3dc3da4457a16e89753
+    target_directory: xorg/libXext
+  - url: https://www.x.org/releases/individual/lib/libXrender-0.9.12.tar.xz
+    sha256: b832128da48b39c8d608224481743403ad1691bf4e554e4be9c174df171d1b97
+    target_directory: xorg/libXrender
+  - url: https://www.x.org/releases/individual/lib/libXtst-1.2.5.tar.xz
+    sha256: b50d4c25b97009a744706c1039c598f4d8e64910c9fde381994e1cae235d9242
+    target_directory: xorg/libXtst
+  - url: https://www.x.org/releases/individual/lib/libXi-1.8.2.tar.xz
+    sha256: d0e0555e53d6e2114eabfa44226ba162d2708501a25e18d99cfb35c094c6c104
+    target_directory: xorg/libXi
+  - url: https://www.x.org/releases/individual/lib/libXrandr-1.5.4.tar.xz
+    sha256: 1ad5b065375f4a85915aa60611cc6407c060492a214d7f9daf214be752c3b4d3
+    target_directory: xorg/libXrandr
+  - url: https://www.x.org/releases/individual/lib/libXt-1.3.1.tar.xz
+    sha256: e0a774b33324f4d4c05b199ea45050f87206586d81655f8bef4dba434d931288
+    target_directory: xorg/libXt
+  # X11/Shell.h includes the session management headers
+  - url: https://www.x.org/releases/individual/lib/libSM-1.2.6.tar.xz
+    sha256: be7c0abdb15cbfd29ac62573c1c82e877f9d4047ad15321e7ea97d1e43d835be
+    target_directory: xorg/libSM
+  - url: https://www.x.org/releases/individual/lib/libICE-1.1.2.tar.xz
+    sha256: 974e4ed414225eb3c716985df9709f4da8d22a67a2890066bc6dfc89ad298625
+    target_directory: xorg/libICE
+
+build:
+  number: 0
+
+requirements:
+  build:
+    # python3 comes with the emscripten compiler package
+    - ${{ compiler('c') }}
+    - ninja
+
+tests:
+  - package_contents:
+      files:
+        - include/X11/Xlib.h
+        - include/X11Wasm/Events.h
+        - include/X11/XKBlib.h
+        - include/X11/extensions/Xrender.h
+        - include/X11/extensions/XShm.h
+        - include/X11/extensions/Xrandr.h
+        - include/X11/Intrinsic.h
+        - include/X11/StringDefs.h
+        - include/X11/Shell.h
+        - include/X11Wasm/Hooks.h
+        - lib/libX11.a
+        - lib/libXext.a
+        - share/x11-wasm/library.js
+        - share/x11-wasm/dom.js
+        - share/x11-wasm/pthreads.js
+  - script:
+      - bash test_x11.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+    files:
+      recipe:
+        - test_x11.sh
+        - tests/
+
+about:
+  homepage: https://github.com/wangyenshu/x11.wasm
+  summary: Browser X11/Xlib compatibility layer (x11.wasm) plus Xorg extension headers and link stubs
+  description: |
+    x11.wasm implements Xlib on HTML canvases. This package adds what X11
+    clients such as OpenJDK's AWT expect around it: the Xorg protocol and
+    extension headers, the X Toolkit Intrinsics headers (Intrinsic.h,
+    StringDefs.h, Shell.h; no libXt), link stubs that report SHAPE, MIT-SHM,
+    DOUBLE-BUFFER, RENDER, XTEST, XInput and XKB as absent, js-library entry
+    points proxied to the browser thread for pthread programs, and
+    pthreads.js, which keeps DOM input from racing Xlib calls made on worker
+    threads. x11.wasm is patched to let single-threaded programs that
+    switch stacks (JSPI) wait for events through X11WasmSetHooks(), to
+    include window backgrounds in XGetImage, to give typed characters the
+    Shift state that X clients expect, and to leave document.title alone
+    when Module.x11WasmDocumentTitle is false.
+  license: MIT AND X11
+  license_file:
+    # x11.wasm (MIT, stated in its README; the repository has no license file)
+    - LICENSE-x11.wasm.txt
+    # the Xorg headers installed next to it
+    - xorg/libX11/COPYING
+    - xorg/libXext/COPYING
+    - xorg/libXrender/COPYING
+    - xorg/libXtst/COPYING
+    - xorg/libXi/COPYING
+    - xorg/libXrandr/COPYING
+    - xorg/libXt/COPYING
+    - xorg/libSM/COPYING
+    - xorg/libICE/COPYING
+    # every xorgproto header under X11/ (the GL headers are not installed)
+    - xorg/xorgproto/COPYING-applewmproto
+    - xorg/xorgproto/COPYING-bigreqsproto
+    - xorg/xorgproto/COPYING-compositeproto
+    - xorg/xorgproto/COPYING-damageproto
+    - xorg/xorgproto/COPYING-dmxproto
+    - xorg/xorgproto/COPYING-dri2proto
+    - xorg/xorgproto/COPYING-dri3proto
+    - xorg/xorgproto/COPYING-evieproto
+    - xorg/xorgproto/COPYING-fixesproto
+    - xorg/xorgproto/COPYING-fontcacheproto
+    - xorg/xorgproto/COPYING-fontsproto
+    - xorg/xorgproto/COPYING-inputproto
+    - xorg/xorgproto/COPYING-kbproto
+    - xorg/xorgproto/COPYING-lg3dproto
+    - xorg/xorgproto/COPYING-pmproto
+    - xorg/xorgproto/COPYING-presentproto
+    - xorg/xorgproto/COPYING-printproto
+    - xorg/xorgproto/COPYING-randrproto
+    - xorg/xorgproto/COPYING-recordproto
+    - xorg/xorgproto/COPYING-renderproto
+    - xorg/xorgproto/COPYING-resourceproto
+    - xorg/xorgproto/COPYING-scrnsaverproto
+    - xorg/xorgproto/COPYING-trapproto
+    - xorg/xorgproto/COPYING-videoproto
+    - xorg/xorgproto/COPYING-windowswmproto
+    - xorg/xorgproto/COPYING-x11proto
+    - xorg/xorgproto/COPYING-xcmiscproto
+    - xorg/xorgproto/COPYING-xextproto
+    - xorg/xorgproto/COPYING-xf86bigfontproto
+    - xorg/xorgproto/COPYING-xf86dgaproto
+    - xorg/xorgproto/COPYING-xf86driproto
+    - xorg/xorgproto/COPYING-xf86miscproto
+    - xorg/xorgproto/COPYING-xf86rushproto
+    - xorg/xorgproto/COPYING-xf86vidmodeproto
+    - xorg/xorgproto/COPYING-xineramaproto
+    - xorg/xorgproto/COPYING-xwaylandproto
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

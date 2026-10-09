@@ -1,0 +1,325 @@
+From: emscripten-forge
+Subject: Java Sound: Direct Audio playback through the Web Audio API
+
+---
+diff --git a/jdk/make/lib/SoundLibraries.gmk b/jdk/make/lib/SoundLibraries.gmk
+index b59a9462..cbcd8bec 100644
+--- a/jdk/make/lib/SoundLibraries.gmk
++++ b/jdk/make/lib/SoundLibraries.gmk
+@@ -186,27 +186,37 @@ BUILD_LIBRARIES += $(BUILD_LIBJSOUND)
+ 
+ ifneq ($(filter jsoundalsa, $(EXTRA_SOUND_JNI_LIBS)), )
+ 
++  ifeq ($(OPENJDK_TARGET_CPU), wasm32)
++    # WebAssembly: Direct Audio through the browser's Web Audio API
++    # (playback only); no ports, no platform MIDI devices.
++    LIBJSOUNDALSA_PLATFORM_FILES := PLATFORM_API_WasmOS_WebAudio.c
++    LIBJSOUNDALSA_FEATURES := -DUSE_DAUDIO=TRUE -DUSE_PORTS=FALSE \
++        -DUSE_PLATFORM_MIDI_OUT=FALSE -DUSE_PLATFORM_MIDI_IN=FALSE
++  else
++    LIBJSOUNDALSA_PLATFORM_FILES := \
++        PLATFORM_API_LinuxOS_ALSA_CommonUtils.c \
++        PLATFORM_API_LinuxOS_ALSA_PCM.c \
++        PLATFORM_API_LinuxOS_ALSA_PCMUtils.c \
++        PLATFORM_API_LinuxOS_ALSA_MidiIn.c \
++        PLATFORM_API_LinuxOS_ALSA_MidiOut.c \
++        PLATFORM_API_LinuxOS_ALSA_MidiUtils.c \
++        PLATFORM_API_LinuxOS_ALSA_Ports.c
++    LIBJSOUNDALSA_FEATURES := -DUSE_DAUDIO=TRUE -DUSE_PORTS=TRUE \
++        -DUSE_PLATFORM_MIDI_OUT=TRUE -DUSE_PLATFORM_MIDI_IN=TRUE
++  endif
++
+   $(eval $(call SetupNativeCompilation,BUILD_LIBJSOUNDALSA, \
+       LIBRARY := jsoundalsa, \
+       OUTPUT_DIR := $(INSTALL_LIBRARIES_HERE), \
+       SRC := $(LIBJSOUND_SRC_DIRS), \
+       INCLUDE_FILES := Utilities.c $(LIBJSOUND_MIDIFILES) $(LIBJSOUND_PORTFILES) \
+           $(LIBJSOUND_DAUDIOFILES) \
+-          PLATFORM_API_LinuxOS_ALSA_CommonUtils.c \
+-          PLATFORM_API_LinuxOS_ALSA_PCM.c \
+-          PLATFORM_API_LinuxOS_ALSA_PCMUtils.c \
+-          PLATFORM_API_LinuxOS_ALSA_MidiIn.c \
+-          PLATFORM_API_LinuxOS_ALSA_MidiOut.c \
+-          PLATFORM_API_LinuxOS_ALSA_MidiUtils.c \
+-          PLATFORM_API_LinuxOS_ALSA_Ports.c, \
++          $(LIBJSOUNDALSA_PLATFORM_FILES), \
+       LANG := C, \
+       OPTIMIZATION := LOW, \
+       CFLAGS := $(CFLAGS_JDKLIB) $(ALSA_CFLAGS) \
+           $(LIBJSOUND_CFLAGS) \
+-          -DUSE_DAUDIO=TRUE \
+-          -DUSE_PORTS=TRUE \
+-          -DUSE_PLATFORM_MIDI_OUT=TRUE \
+-          -DUSE_PLATFORM_MIDI_IN=TRUE, \
++          $(LIBJSOUNDALSA_FEATURES), \
+       MAPFILE := $(JDK_TOPDIR)/make/mapfiles/libjsoundalsa/mapfile-vers, \
+       LDFLAGS := $(LDFLAGS_JDKLIB) \
+           $(call SET_SHARED_LIBRARY_ORIGIN), \
+diff --git a/jdk/src/solaris/native/com/sun/media/sound/PLATFORM_API_WasmOS_WebAudio.c b/jdk/src/solaris/native/com/sun/media/sound/PLATFORM_API_WasmOS_WebAudio.c
+new file mode 100644
+index 00000000..1899fe17
+--- /dev/null
++++ b/jdk/src/solaris/native/com/sun/media/sound/PLATFORM_API_WasmOS_WebAudio.c
+@@ -0,0 +1,262 @@
++/*
++ * Copyright (c) 2026, emscripten-forge contributors.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.  Oracle designates this
++ * particular file as subject to the "Classpath" exception as provided
++ * by Oracle in the LICENSE file that accompanied this code.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ */
++
++/*
++ * Direct Audio for WebAssembly: one playback device backed by the browser's
++ * Web Audio API.  The PCM data written by Java is converted to float here;
++ * the JavaScript side (wasm_audio_* in the runtime's --js-library) resamples
++ * it to the AudioContext rate and schedules it gap-free.  Recording, ports
++ * and MIDI devices are not provided (the Java software synthesizer plays
++ * MIDI through a SourceDataLine).
++ */
++
++#define USE_ERROR
++//#define USE_TRACE
++
++#include <stdlib.h>
++#include <string.h>
++#include "DirectAudio.h"
++
++#if USE_DAUDIO == TRUE
++
++/* implemented in JavaScript */
++extern int  wasm_audio_available(void);
++extern int  wasm_audio_open(int sampleRate, int channels, int bufferFrames);
++extern int  wasm_audio_write(int handle, const float* samples, int frames);
++extern int  wasm_audio_buffered(int handle);  /* frames not yet played */
++extern void wasm_audio_start(int handle);
++extern void wasm_audio_stop(int handle);
++extern void wasm_audio_flush(int handle);
++extern void wasm_audio_close(int handle);
++
++typedef struct {
++    int handle;
++    int sampleSize;          /* bytes per sample */
++    int frameSize;           /* bytes per frame */
++    int channels;
++    int isSigned;
++    int isBigEndian;
++    int bufferFrames;
++    int flushed;
++    float* scratch;          /* bufferFrames * channels floats */
++} WebAudioLine;
++
++INT32 DAUDIO_GetDirectAudioDeviceCount() {
++    return wasm_audio_available() ? 1 : 0;
++}
++
++INT32 DAUDIO_GetDirectAudioDeviceDescription(INT32 mixerIndex,
++                                             DirectAudioDeviceDescription* description) {
++    if (mixerIndex != 0) {
++        return FALSE;
++    }
++    description->deviceID = 0;
++    description->maxSimulLines = -1;
++    strncpy(description->name, "Web Audio", DAUDIO_STRING_LENGTH);
++    strncpy(description->vendor, "emscripten-forge", DAUDIO_STRING_LENGTH);
++    strncpy(description->description, "Browser audio output (Web Audio API)",
++            DAUDIO_STRING_LENGTH);
++    strncpy(description->version, "1.0", DAUDIO_STRING_LENGTH);
++    return TRUE;
++}
++
++void DAUDIO_GetFormats(INT32 mixerIndex, INT32 deviceID, int isSource, void* creator) {
++    int bytes, channels;
++    if (!isSource) {
++        return;    /* no capture */
++    }
++    for (bytes = 1; bytes <= 4; bytes++) {
++        for (channels = 1; channels <= 2; channels++) {
++            /* any sample rate (-1 == AudioSystem.NOT_SPECIFIED) */
++            if (bytes == 1) {
++                DAUDIO_AddAudioFormat(creator, 8, channels, channels, -1,
++                                      DAUDIO_PCM, TRUE, FALSE);
++                DAUDIO_AddAudioFormat(creator, 8, channels, channels, -1,
++                                      DAUDIO_PCM, FALSE, FALSE);
++            } else {
++                DAUDIO_AddAudioFormat(creator, bytes * 8, bytes * channels, channels, -1,
++                                      DAUDIO_PCM, TRUE, FALSE);
++                DAUDIO_AddAudioFormat(creator, bytes * 8, bytes * channels, channels, -1,
++                                      DAUDIO_PCM, TRUE, TRUE);
++            }
++        }
++    }
++}
++
++void* DAUDIO_Open(INT32 mixerIndex, INT32 deviceID, int isSource,
++                  int encoding, float sampleRate, int sampleSizeInBits,
++                  int frameSize, int channels,
++                  int isSigned, int isBigEndian, int bufferSizeInBytes) {
++    WebAudioLine* line;
++    int sampleSize = (sampleSizeInBits + 7) / 8;
++    int minFrames;
++
++    if (!isSource || encoding != DAUDIO_PCM || sampleSize < 1 || sampleSize > 4
++        || channels < 1 || channels > 8 || sampleRate < 1000 || sampleRate > 384000) {
++        ERROR0("DAUDIO_Open: unsupported format\n");
++        return NULL;
++    }
++    if (frameSize <= 0) {
++        frameSize = sampleSize * channels;
++    }
++    line = (WebAudioLine*) calloc(1, sizeof(WebAudioLine));
++    if (line == NULL) {
++        return NULL;
++    }
++    line->sampleSize = sampleSize;
++    line->frameSize = frameSize;
++    line->channels = channels;
++    line->isSigned = isSigned;
++    line->isBigEndian = isBigEndian;
++    /* default 0.5 s; at least 100 ms so that writes can stay ahead of the
++     * browser's audio thread */
++    line->bufferFrames = bufferSizeInBytes > 0 ? bufferSizeInBytes / frameSize
++                                               : (int) (sampleRate / 2);
++    minFrames = (int) (sampleRate / 10);
++    if (line->bufferFrames < minFrames) {
++        line->bufferFrames = minFrames;
++    }
++    line->scratch = (float*) malloc(sizeof(float) * line->bufferFrames * channels);
++    if (line->scratch == NULL) {
++        free(line);
++        return NULL;
++    }
++    line->handle = wasm_audio_open((int) (sampleRate + 0.5f), channels, line->bufferFrames);
++    if (line->handle <= 0) {
++        ERROR0("DAUDIO_Open: cannot create Web Audio output\n");
++        free(line->scratch);
++        free(line);
++        return NULL;
++    }
++    line->flushed = TRUE;
++    TRACE3("DAUDIO_Open: rate=%d channels=%d bufferFrames=%d\n",
++           (int) sampleRate, channels, line->bufferFrames);
++    return line;
++}
++
++int DAUDIO_Start(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    wasm_audio_start(line->handle);
++    return TRUE;
++}
++
++int DAUDIO_Stop(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    wasm_audio_stop(line->handle);
++    return TRUE;
++}
++
++void DAUDIO_Close(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    wasm_audio_close(line->handle);
++    free(line->scratch);
++    free(line);
++}
++
++static float sampleToFloat(const unsigned char* p, const WebAudioLine* line) {
++    int n = line->sampleSize;
++    unsigned int u = 0;
++    int i, v;
++    if (line->isBigEndian) {
++        for (i = 0; i < n; i++) u = (u << 8) | p[i];
++    } else {
++        for (i = n - 1; i >= 0; i--) u = (u << 8) | p[i];
++    }
++    if (line->isSigned) {
++        /* sign-extend from n bytes */
++        v = (int) (u << (32 - 8 * n)) >> (32 - 8 * n);
++    } else {
++        v = (int) u - (1 << (8 * n - 1));
++    }
++    return (float) v / (float) (n == 4 ? 2147483648.0 : (double) (1u << (8 * n - 1)));
++}
++
++int DAUDIO_Write(void* id, char* data, int byteSize) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    int space, frames, f, c, accepted;
++    const unsigned char* p = (const unsigned char*) data;
++    float* out = line->scratch;
++
++    if (byteSize < 0) {
++        return -1;
++    }
++    space = line->bufferFrames - wasm_audio_buffered(line->handle);
++    frames = byteSize / line->frameSize;
++    if (frames > space) frames = space;
++    if (frames <= 0) {
++        return 0;
++    }
++    for (f = 0; f < frames; f++) {
++        const unsigned char* fp = p + f * line->frameSize;
++        for (c = 0; c < line->channels; c++) {
++            *out++ = sampleToFloat(fp + c * line->sampleSize, line);
++        }
++    }
++    accepted = wasm_audio_write(line->handle, line->scratch, frames);
++    if (accepted < 0) {
++        return -1;
++    }
++    line->flushed = FALSE;
++    return accepted * line->frameSize;
++}
++
++int DAUDIO_Read(void* id, char* data, int byteSize) {
++    return -1;
++}
++
++int DAUDIO_GetBufferSize(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    return line->bufferFrames * line->frameSize;
++}
++
++int DAUDIO_StillDraining(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    return wasm_audio_buffered(line->handle) > 0 ? TRUE : FALSE;
++}
++
++int DAUDIO_Flush(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    wasm_audio_flush(line->handle);
++    line->flushed = TRUE;
++    return TRUE;
++}
++
++int DAUDIO_GetAvailable(void* id, int isSource) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    int space = line->bufferFrames - wasm_audio_buffered(line->handle);
++    if (space < 0) space = 0;
++    return space * line->frameSize;
++}
++
++INT64 DAUDIO_GetBytePosition(void* id, int isSource, INT64 javaBytePos) {
++    WebAudioLine* line = (WebAudioLine*) id;
++    /* javaBytePos is reached once everything buffered has been played */
++    return javaBytePos - (INT64) wasm_audio_buffered(line->handle) * line->frameSize;
++}
++
++void DAUDIO_SetBytePosition(void* id, int isSource, INT64 javaBytePos) {
++    /* nothing to do: GetBytePosition is relative to javaBytePos */
++}
++
++int DAUDIO_RequiresServicing(void* id, int isSource) {
++    return FALSE;
++}
++
++void DAUDIO_Service(void* id, int isSource) {
++}
++
++#endif /* USE_DAUDIO */

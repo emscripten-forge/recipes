@@ -1,0 +1,26 @@
+From: emscripten-forge
+Subject: markOopDesc::value(): keep clang from assuming an aligned this
+
+---
+diff --git a/hotspot/src/share/vm/oops/markOop.hpp b/hotspot/src/share/vm/oops/markOop.hpp
+index 649217c8..73a3dc65 100644
+--- a/hotspot/src/share/vm/oops/markOop.hpp
++++ b/hotspot/src/share/vm/oops/markOop.hpp
+@@ -104,7 +104,16 @@ class JavaThread;
+ class markOopDesc: public oopDesc {
+  private:
+   // Conversion
+-  uintptr_t value() const { return (uintptr_t) this; }
++  // A markOop is a tagged value, not a pointer to an object.  Modern
++  // compilers assume "this" is suitably aligned (and non-null) and would
++  // fold the lock-bit tests below; hide the value's provenance from them.
++  uintptr_t value() const {
++    uintptr_t v = (uintptr_t) this;
++#if defined(__GNUC__)
++    __asm__ volatile("" : "+r"(v));
++#endif
++    return v;
++  }
+ 
+  public:
+   // Constants

@@ -1,0 +1,85 @@
+From: emscripten-forge
+Subject: Text key events carry the Shift state that selects their keysym
+
+Printable keys reach X clients as text events (the character the browser
+resolved), queued with no modifiers on key press.  Clients that look the
+keysym up again from keycode and state (XLookupString, Xt, Tk, OpenJDK
+AWT) then saw "a" for "A" and "1" for "!".  Set or clear ShiftMask so that
+the state selects the keycode level that holds the character.
+---
+diff --git a/src/libX11/BrowserBind.c b/src/libX11/BrowserBind.c
+index c6e25bf..c1bad8b 100644
+--- a/src/libX11/BrowserBind.c
++++ b/src/libX11/BrowserBind.c
+@@ -52,6 +52,33 @@ X11WasmQueueKeyEvent(
+ 	    browserDisplay.pointerX, browserDisplay.pointerY, time);
+ }
+ 
++/*
++ * A text event stands for a character that the browser has already
++ * resolved (keyboard layout, input method).  X clients look the keysym up
++ * again from the keycode and the modifier state (XLookupString, Xt, Tk,
++ * OpenJDK's AWT), so the state has to select the level of the keycode that
++ * holds the character, as an X server's would: Shift for the second
++ * keysym, no Shift for the first.  Without this, typing "A" or "!" arrives
++ * as "a" or "1".
++ */
++static unsigned int
++BrowserTextEventState(
++    unsigned int keycode,
++    KeySym keySym,
++    unsigned int state)
++{
++    if (keycode == 0) {
++	return state;
++    }
++    if (BrowserKeySymForKeycodeLevel(keycode, 0) == keySym) {
++	return state & ~(unsigned int)ShiftMask;
++    }
++    if (BrowserKeySymForKeycodeLevel(keycode, 1) == keySym) {
++	return state | ShiftMask;
++    }
++    return state;
++}
++
+ EMSCRIPTEN_KEEPALIVE int
+ X11WasmQueueTextEventFields(
+     int type,
+@@ -61,14 +88,16 @@ X11WasmQueueTextEventFields(
+     unsigned int time)
+ {
+     KeySym keySym = BrowserKeySymFromCodepoint(codepoint);
++    unsigned int keycode;
+ 
+     BrowserInitDisplay();
+     if (((type != KeyPress) && (type != KeyRelease))
+ 	    || (keySym == NoSymbol)) {
+ 	return 0;
+     }
+-    return X11WasmQueueKeyEventFields(type, window,
+-	    BrowserKeycodeFromKeySym(keySym), (unsigned int)keySym, state,
++    keycode = BrowserKeycodeFromKeySym(keySym);
++    return X11WasmQueueKeyEventFields(type, window, keycode,
++	    (unsigned int)keySym, BrowserTextEventState(keycode, keySym, state),
+ 	    browserDisplay.pointerX, browserDisplay.pointerY, time);
+ }
+ 
+@@ -81,14 +110,16 @@ X11WasmQueueTextEventFieldsAtWindow(
+     unsigned int time)
+ {
+     KeySym keySym = BrowserKeySymFromCodepoint(codepoint);
++    unsigned int keycode;
+ 
+     BrowserInitDisplay();
+     if (((type != KeyPress) && (type != KeyRelease))
+ 	    || (keySym == NoSymbol)) {
+ 	return 0;
+     }
+-    return BrowserQueueKeyEventFieldsAtWindow(type, window,
+-	    BrowserKeycodeFromKeySym(keySym), (unsigned int)keySym, state,
++    keycode = BrowserKeycodeFromKeySym(keySym);
++    return BrowserQueueKeyEventFieldsAtWindow(type, window, keycode,
++	    (unsigned int)keySym, BrowserTextEventState(keycode, keySym, state),
+ 	    browserDisplay.pointerX, browserDisplay.pointerY, time, 0);
+ }
+ 

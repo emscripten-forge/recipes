@@ -1,0 +1,120 @@
+context:
+  version: "21.0.10"
+  kit_version: "0.1.0"
+
+package:
+  name: openjdk21
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/openjdk/jdk21u/archive/refs/tags/jdk-${{ version }}-ga.tar.gz
+    sha256: 133a864987b4732d46cca5084b7cde8ffef168bde4e4b0118ebd2b38c1fda2f1
+    patches:
+      - patches/0000-emscripten-os-port-for-hotspot-zero.patch
+      # AWT event loop: wait on x11.wasm's Xlib queue instead of poll()ing fd 0
+      - patches/0001-xtoolkit-wait-on-xlib-queue.patch
+      # java.desktop natives + 32-bit X11 wrappers, jsound without devices
+      - patches/0002-build-java-desktop-with-x11-for-emscripten.patch
+      # Linux-class-library natives (NIO, ProcessHandle, NetworkInterface),
+      # builtin JNI libraries, OperatingSystem=linux
+      - patches/0003-java-base-natives-for-the-linux-class-library.patch
+      # jdk.attach off, jdk.net / jdk.management natives on
+      - patches/0004-jdk-modules-for-emscripten.patch
+  # link kit: launcher, symbol-table generator, link script, page shell,
+  # fontconfig.properties
+  - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ kit_version }}.tar.gz
+    sha256: 2ef032b39bc720960d1dfade80bcf0cc292ad4f1f315a6c019dbcf7d13c6a13c
+    target_directory: kit
+    patches:
+      # link libffi from the libffi-pthread package, not lib/wasm-native
+      - patches/0005-kit-link-libffi-pthread.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+    - autoconf
+    - pkg-config
+    - findutils
+    - coreutils
+    - file
+    - patch
+    - zip
+    - unzip
+    # boot JDK; also packs the class-library image (jmod + jlink)
+    - openjdk 21.*
+    - lld
+    # headers only (libcups is dlopen()ed, which fails in wasm)
+    - libcups
+    # DejaVu fonts, bundled in the JDK image (lib/fonts)
+    - font-ttf-dejavu
+  host:
+    - x11-wasm
+    # headers only (fontconfig is dlopen()ed, which fails in wasm)
+    - fontconfig
+    # Zero calls every native method through ffi_call; built with -pthread
+    # like everything else in this shared-memory module
+    - libffi-pthread
+  run:
+    # openjdk21-wasm-link links x11.wasm into GUI programs
+    - x11-wasm
+    # openjdk21-wasm-link links lib/libffi-pthread/libffi.a into every program
+    - libffi-pthread
+
+tests:
+  - package_contents:
+      files:
+        - jdk-wasm/lib/modules
+        - jdk-wasm/lib/jvm.cfg
+        - jdk-wasm/lib/tzdb.dat
+        - jdk-wasm/lib/fontconfig.properties
+        - jdk-wasm/lib/fonts/DejaVuSans.ttf
+        - jdk-wasm/lib/security/cacerts
+        - lib/wasm-native/libjvm.a
+        - lib/wasm-native/libjava.a
+        - lib/wasm-native/libawt.a
+        - lib/wasm-native/libawt_xawt.a
+        - lib/wasm-native/libfontmanager.a
+        - lib/wasm-native/libmanagement_ext.a
+        - share/openjdk21-wasm/jvm-main.c
+        - bin/openjdk21-wasm-link
+  - script:
+      - bash test_jvm.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - openjdk 21.*
+    files:
+      recipe:
+        - test_jvm.sh
+        - tests/
+
+about:
+  homepage: https://openjdk.org/
+  summary: OpenJDK 21 (Zero interpreter) for WebAssembly, with AWT/Swing on x11.wasm
+  description: |
+    OpenJDK 21 built with the Zero interpreter for emscripten-wasm32, as static
+    archives plus a class-library image. Includes AWT, Java2D and Swing through
+    the X11 toolkit running on x11.wasm (canvas-backed Xlib), FreeType/HarfBuzz
+    font rendering with DejaVu fonts, image I/O, colour management, JMX
+    management, JVMTI, and the Serial, Parallel, G1 and Epsilon collectors.
+
+    bin/openjdk21-wasm-link links a program for the browser or node:
+      openjdk21-wasm-link -o app.html --app app.jar --arg -jar --arg /app/app.jar
+  license: GPL-2.0-only WITH Classpath-exception-2.0 AND MIT AND Bitstream-Vera
+  license_file:
+    - LICENSE
+    - ASSEMBLY_EXCEPTION
+    # the link kit (openjdk21-kit) and the coi-serviceworker.js it ships
+    - kit/LICENSE
+    - kit/LICENSE-coi-serviceworker
+    # the bundled DejaVu fonts (font-ttf-dejavu ships no license file)
+    - kit/LICENSE-DejaVu
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

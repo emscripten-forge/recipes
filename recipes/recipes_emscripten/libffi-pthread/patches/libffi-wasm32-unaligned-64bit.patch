@@ -1,0 +1,100 @@
+commit 0b72a27b7cd647eb31f15144dcfeacde864de9f1
+Author: Brian Martin <brian.m.martin@oracle.com>
+Date:   Mon Jul 27 16:33:29 2026 -0400
+
+    wasm32: read and write 64-bit values through a DataView
+    
+    HEAPF64[addr >> 3] and HEAPU64[addr >> 3] silently round the address
+    down to the element size, so any 64-bit value that is not 8-byte aligned
+    is read from - or written to - the wrong eight bytes.
+    
+    Nothing guarantees that alignment. A 32-bit C ABI only requires 4-byte
+    alignment for a 64-bit type, and OpenJDK's Zero interpreter really does
+    hand libffi 4-byte-aligned jlong and jdouble arguments, because it
+    points at pointer-sized interpreter stack slots.
+    
+    The corruption is silent: every long and double crossing the JNI
+    boundary comes back wrong, which showed up as Unsafe.compareAndSetLong
+    spinning forever inside its retry loop rather than as a crash.
+    
+    Use a DataView with explicit byte offsets instead. DEREF_F64 and
+    DEREF_U64 are no longer assignable, so the six lvalue uses become
+    SET_F64 / SET_U64.
+
+diff --git a/src/wasm32/ffi.c b/src/wasm32/ffi.c
+index 1a8c9aea..d7ffa90e 100644
+--- a/src/wasm32/ffi.c
++++ b/src/wasm32/ffi.c
+@@ -72,11 +72,22 @@ EM_JS_DEPS(libffi, "$getWasmTableEntry,$setWasmTableEntry,$getEmptyTableSlot,$co
+ #define DEREF_S32(addr, offset) HEAP32[(addr >> 2) + offset]
+ 
+ #define DEREF_F32(addr, offset) HEAPF32[(addr >> 2) + offset]
+-#define DEREF_F64(addr, offset) HEAPF64[(addr >> 3) + offset]
++
++// 8-byte values are read and written through a DataView rather than HEAPF64 /
++// HEAPU64, because a typed-array index silently rounds the address down to the
++// element size. Callers are not required to give us 8-byte-aligned storage: a
++// 32-bit C ABI only guarantees 4-byte alignment for a 64-bit value, and OpenJDK
++// Zero really does hand us 4-byte-aligned jlong/jdouble arguments (it points at
++// interpreter stack slots, which are pointer-sized). HEAPU64[addr >> 3] on such
++// an address reads the wrong eight bytes, quietly corrupting every long and
++// double crossing the JNI boundary.
++#define VIEW_64 (new DataView(HEAPU8.buffer))
++#define DEREF_F64(addr, offset) VIEW_64.getFloat64((addr) + 8 * (offset), true)
++#define SET_F64(addr, offset, value) VIEW_64.setFloat64((addr) + 8 * (offset), value, true)
+ 
+ #if WASM_BIGINT
+-// We have HEAPU64 in this case.
+-#define DEREF_U64(addr, offset) HEAPU64[(addr >> 3) + offset]
++#define DEREF_U64(addr, offset) VIEW_64.getBigUint64((addr) + 8 * (offset), true)
++#define SET_U64(addr, offset, value) VIEW_64.setBigUint64((addr) + 8 * (offset), BigInt(value), true)
+ #endif
+ 
+ 
+@@ -460,7 +471,7 @@ ffi_call_js, (ffi_cif *cif, ffi_fp fn, void *rvalue, void **avalue),
+     DEREF_F32(rvalue, 0) = result;
+     break;
+   case FFI_TYPE_DOUBLE:
+-    DEREF_F64(rvalue, 0) = result;
++    SET_F64(rvalue, 0, result);
+     break;
+   case FFI_TYPE_UINT8:
+   case FFI_TYPE_SINT8:
+@@ -473,7 +484,7 @@ ffi_call_js, (ffi_cif *cif, ffi_fp fn, void *rvalue, void **avalue),
+   case FFI_TYPE_UINT64:
+   case FFI_TYPE_SINT64:
+     #if WASM_BIGINT
+-    DEREF_U64(rvalue, 0) = result;
++    SET_U64(rvalue, 0, result);
+     #else
+     DEREF_U32(rvalue, 0) = result;
+     DEREF_U32(rvalue, 1) = getTempRet0();
+@@ -832,14 +843,14 @@ ffi_prep_closure_loc_js,
+       case FFI_TYPE_DOUBLE:
+         STACK_ALLOC(cur_ptr, 8, 8);
+         DEREF_U32(args_ptr, carg_idx) = cur_ptr;
+-        DEREF_F64(cur_ptr, 0) = cur_arg;
++        SET_F64(cur_ptr, 0, cur_arg);
+         break;
+       case FFI_TYPE_UINT64:
+       case FFI_TYPE_SINT64:
+         STACK_ALLOC(cur_ptr, 8, 8);
+         DEREF_U32(args_ptr, carg_idx) = cur_ptr;
+         #if WASM_BIGINT
+-        DEREF_U64(cur_ptr, 0) = cur_arg;
++        SET_U64(cur_ptr, 0, cur_arg);
+         #else
+         // Bigint arg was split by legalizer adaptor
+         DEREF_U32(cur_ptr, 0) = cur_arg;
+@@ -851,9 +862,9 @@ ffi_prep_closure_loc_js,
+         STACK_ALLOC(cur_ptr, 16, 8);
+         DEREF_U32(args_ptr, carg_idx) = cur_ptr;
+         #if WASM_BIGINT
+-        DEREF_U64(cur_ptr, 0) = cur_arg;
++        SET_U64(cur_ptr, 0, cur_arg);
+         cur_arg = args[jsarg_idx++];
+-        DEREF_U64(cur_ptr, 1) = cur_arg;
++        SET_U64(cur_ptr, 1, cur_arg);
+         #else
+         // Was split by legalizer adaptor
+         DEREF_U32(cur_ptr, 0) = cur_arg;

@@ -1,0 +1,34 @@
+From: emscripten-forge
+Subject: Make syncing document.title with the top-level window title optional
+
+Module.x11WasmDocumentTitle = false keeps the page title unchanged
+(used when X windows are embedded into an existing page, e.g. applets).
+---
+diff --git a/js/emscripten/library/wm.js b/js/emscripten/library/wm.js
+index 71b4221..434069f 100644
+--- a/js/emscripten/library/wm.js
++++ b/js/emscripten/library/wm.js
+@@ -22,7 +22,12 @@
+           title = UTF8ToString(utf8, utf8Length);
+         }
+         return (
+-          X11WasmBridge.call("setWindowTitle", [id, title, !!updatesDocument]) | 0
++          X11WasmBridge.call("setWindowTitle", [
++            id,
++            title,
++            // @ts-ignore Module is provided by Emscripten generated code.
++            !!updatesDocument && Module["x11WasmDocumentTitle"] !== false,
++          ]) | 0
+         );
+       },
+ 
+@@ -41,7 +46,8 @@
+         return (
+           X11WasmBridge.call("clearWindowMetadata", [
+             id,
+-            !!updatesDocument,
++            // @ts-ignore Module is provided by Emscripten generated code.
++            !!updatesDocument && Module["x11WasmDocumentTitle"] !== false,
+           ]) | 0
+         );
+       },

@@ -1,0 +1,85 @@
+diff --git a/src/java.desktop/unix/native/libawt_xawt/xawt/XToolkit.c b/src/java.desktop/unix/native/libawt_xawt/xawt/XToolkit.c
+index dc8338eca..e5af575de 100644
+--- a/src/java.desktop/unix/native/libawt_xawt/xawt/XToolkit.c
++++ b/src/java.desktop/unix/native/libawt_xawt/xawt/XToolkit.c
+@@ -620,6 +620,68 @@ JNIEXPORT void JNICALL Java_sun_awt_X11_XToolkit_wakeup_1poll (JNIEnv *env, jcla
+     wakeUp();
+ }
+ 
++#ifdef __EMSCRIPTEN__
++/*
++ * In the browser the X "server" is x11.wasm, which runs in-process: there is
++ * no X connection fd (ConnectionNumber() returns 0, i.e. stdin), DOM input is
++ * delivered into the Xlib event queue whenever x11.wasm calls into the page,
++ * and Emscripten's poll() never blocks. So instead of poll()ing, wait in short sleeps and check the Xlib
++ * queue and the AWT wake-up pipe in between. Fills in pollFds[].revents the
++ * same way poll() would so the caller is unchanged.
++ */
++#define AWT_WASM_POLL_SLICE_MS 4
++
++static int32_t
++awt_wasm_poll(JNIEnv *env, int32_t timeout) {
++    jlong start = awtJNI_TimeMillis();
++
++    for (;;) {
++        int queued;
++        int32_t ready = 0;
++        jlong elapsed;
++        int32_t slice;
++
++        pollFds[0].revents = 0;
++        pollFds[1].revents = 0;
++
++        /* QueuedAfterFlush makes x11.wasm call into the page, which is where
++         * input that arrived from the DOM gets moved into the Xlib queue. */
++        AWT_LOCK();
++        queued = XEventsQueued(awt_display, QueuedAfterFlush);
++        AWT_NOFLUSH_UNLOCK();
++        if (queued > 0) {
++            pollFds[0].revents = POLLRDNORM;
++            ready++;
++        }
++
++        if (AWT_READPIPE >= 0) {
++            struct pollfd pipeFd;
++            pipeFd.fd = AWT_READPIPE;
++            pipeFd.events = POLLRDNORM;
++            pipeFd.revents = 0;
++            if (poll(&pipeFd, 1, 0) > 0 && pipeFd.revents != 0) {
++                pollFds[1].revents = pipeFd.revents;
++                ready++;
++            }
++        }
++
++        if (ready > 0) {
++            return ready;
++        }
++
++        elapsed = awtJNI_TimeMillis() - start;
++        if (timeout >= 0 && elapsed >= timeout) {
++            return 0;
++        }
++        slice = AWT_WASM_POLL_SLICE_MS;
++        if (timeout >= 0 && (jlong) timeout - elapsed < slice) {
++            slice = (int32_t) ((jlong) timeout - elapsed);
++        }
++        usleep((useconds_t) slice * 1000);
++    }
++}
++#endif /* __EMSCRIPTEN__ */
++
+ /*
+  * Polls both the X pipe and our AWT utility pipe. Returns
+  * when there is data on one of the pipes, or the operation times
+@@ -664,7 +726,11 @@ performPoll(JNIEnv *env, jlong nextTaskTime) {
+     }
+ 
+     if (tracing) poll_sleep_time = awtJNI_TimeMillis();
++#ifdef __EMSCRIPTEN__
++    result = awt_wasm_poll(env, (int32_t) timeout);
++#else
+     result = poll( pollFds, 2, (int32_t) timeout );
++#endif
+     if (tracing) poll_wakeup_time = awtJNI_TimeMillis();
+     PRINT("%d of %d, res: %d\n", (int)(poll_wakeup_time-poll_sleep_time), (int)timeout, result);
+ 
