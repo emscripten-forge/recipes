@@ -1,0 +1,66 @@
+--- a/include/core/polymake/PuiseuxFraction.h	2026-09-22 15:22:39.291723045 +0000
++++ b/include/core/polymake/PuiseuxFraction.h	2026-09-22 15:22:39.293645922 +0000
+@@ -45,6 +45,27 @@
+ 
+ namespace pf_internal {
+ 
++// Compound assignment between rational functions.  Deliberately function templates with an
++// explicit return type: resolving a call to one needs nothing but its declaration,
++// and its body is instantiated at the end of the translation unit, by which time
++// RationalFunction is complete.  Writing `rf += r.rf` directly inside
++// PuiseuxFraction_generic can otherwise be reached while RationalFunction itself is
++// still being instantiated; clang 21 then sees only the members declared so far,
++// finds just the constrained template operator+=, and rejects the call with
++// "no viable overloaded '+='".
++template <typename RF>
++void add_rational_functions(RF& a, const RF& b) { a += b; }
++
++template <typename RF>
++void subtract_rational_functions(RF& a, const RF& b) { a -= b; }
++
++template <typename RF>
++void multiply_rational_functions(RF& a, const RF& b) { a *= b; }
++
++template <typename RF>
++void divide_rational_functions(RF& a, const RF& b) { a /= b; }
++
++
+ template <typename MinMax, typename Coefficient, typename Exponent>
+ struct impl_chooser {
+    using type = PuiseuxFraction_generic<MinMax, Coefficient, Exponent>;
+@@ -236,7 +257,7 @@
+ 
+    PuiseuxFraction_generic& operator+= (const PuiseuxFraction_generic& r)
+    {
+-      rf += r.rf;
++      pf_internal::add_rational_functions(rf, r.rf);
+       return *this;
+    }
+ 
+@@ -253,7 +274,7 @@
+ 
+    PuiseuxFraction_generic& operator-= (const PuiseuxFraction_generic& r)
+    {
+-      rf -= r.rf;
++      pf_internal::subtract_rational_functions(rf, r.rf);
+       return *this;
+    }
+ 
+@@ -270,7 +291,7 @@
+ 
+    PuiseuxFraction_generic& operator*= (const PuiseuxFraction_generic& r)
+    {
+-      rf *= r.rf;
++      pf_internal::multiply_rational_functions(rf, r.rf);
+       return *this;
+    }
+ 
+@@ -285,7 +306,7 @@
+ 
+    PuiseuxFraction_generic& operator/= (const PuiseuxFraction_generic& r)
+    {
+-      rf /= r.rf;
++      pf_internal::divide_rational_functions(rf, r.rf);
+       return *this;
+    }
+ 
