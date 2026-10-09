@@ -34,8 +34,9 @@ _OGP_PAGE_META = {
         "og:image": "https://emscripten-forge.org/_static/og_image_r_shiny.png",
         "og:image:alt": "Emscripten-forge and Shiny",
         "og:description": (
-            "Run fully static Shiny dashboards in the browser with emscripten-forge, "
-            "and publish them to GitHub Pages with a single template repository."
+            "Fully-static Shiny dashboards that run entirely in the browser with "
+            "emscripten-forge, and can be published to GitHub Pages with a single "
+            "template repository."
         ),
     },
 }
