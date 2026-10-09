@@ -31,29 +31,19 @@ emcmake cmake ${CMAKE_ARGS} -S "${SRC_DIR}/llvm" -B build \
     -DLLVM_INCLUDE_TESTS=OFF                        \
     -DLLVM_INCLUDE_DOCS=OFF                         \
     -DLLVM_ENABLE_LIBEDIT=OFF                       \
-    -DLLVM_ENABLE_PROJECTS="clang;lld"              \
-    -DLLVM_DISTRIBUTIONS="Static;Interpreter;Shared;LibClang;ClangCpp" \
-    -DLLVM_Static_DISTRIBUTION_COMPONENTS="cmake-exports;static-cmake-exports;llvm-headers;llvm-libraries;clang-cmake-exports;clang-static-cmake-exports;clang-headers;clang-resource-headers;clang-libraries;lld-cmake-exports;lld-static-cmake-exports;lld-headers;lldCommon;lldWasm" \
-    -DLLVM_Interpreter_DISTRIBUTION_COMPONENTS="clangInterpreter;clang-interpreter-cmake-exports" \
+    -DLLVM_ENABLE_PROJECTS=""                       \
+    -DLLVM_DISTRIBUTIONS="Static;Shared"            \
+    -DLLVM_Static_DISTRIBUTION_COMPONENTS="cmake-exports;static-cmake-exports;llvm-headers;llvm-libraries" \
     -DLLVM_Shared_DISTRIBUTION_COMPONENTS="LTO;Remarks;shared-cmake-exports" \
-    -DLLVM_LibClang_DISTRIBUTION_COMPONENTS="libclang;clang-libclang-cmake-exports" \
-    -DLLVM_ClangCpp_DISTRIBUTION_COMPONENTS="clang-cpp;clang-clangcpp-cmake-exports" \
     -DLLVM_ENABLE_THREADS=OFF                       \
     -DLLVM_ENABLE_PIC=ON                            \
     -DLLVM_ENABLE_ZSTD=OFF                          \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
     -DLLVM_BUILD_TOOLS=OFF                          \
     -DLLVM_BUILD_UTILS=OFF                          \
-    -DCLANG_ENABLE_STATIC_ANALYZER=OFF              \
-    -DCLANG_ENABLE_OBJC_REWRITER=OFF                \
-    -DCLANG_ENABLE_BOOTSTRAP=OFF                    \
-    -DCLANG_BUILD_TOOLS=OFF                         \
-    -DLLD_BUILD_TOOLS=OFF                           \
     -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -mtail-call" \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -mtail-call -Dwait4=__syscall_wait4" \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin"
 
 emmake make -C build -j"${CPU_COUNT:-2}" \
-    install-static-distribution install-interpreter-distribution \
-    install-shared-distribution install-libclang-distribution \
-    install-clangcpp-distribution
+    install-static-distribution install-shared-distribution

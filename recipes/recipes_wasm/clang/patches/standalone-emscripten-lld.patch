@@ -1,0 +1,17 @@
+# Backport de689575cd6335fdf4e2ff09c48878311157b268:
+# [clang-repl] Find installed LLD for standalone Emscripten builds.
+diff --git a/clang/lib/Interpreter/CMakeLists.txt b/clang/lib/Interpreter/CMakeLists.txt
+--- a/clang/lib/Interpreter/CMakeLists.txt
++++ b/clang/lib/Interpreter/CMakeLists.txt
+@@ -13,7 +13,10 @@
+    TransformUtils
+    )
+ 
+-if (EMSCRIPTEN AND "lld" IN_LIST LLVM_ENABLE_PROJECTS)
++if (EMSCRIPTEN)
++  if (NOT TARGET lldWasm)
++    find_package(LLD REQUIRED CONFIG)
++  endif()
+   set(WASM_SRC Wasm.cpp)
+   set(WASM_LINK lldWasm)
+   set(COMMON_LINK lldCommon)

@@ -1,7 +1,7 @@
 context:
   name: graphviz
   version: 15.1.0
-  build_number: 1
+  build_number: 2
 
 build:
   number: ${{ build_number }}
@@ -21,24 +21,27 @@ outputs:
         - flex
         - pkg-config
         - swig
-        - cross-python_emscripten-wasm32
+        - cross-python_${{ target_platform }}
         - python
       host:
         - zlib-static
-        - libwebp
-        - python
+        - libwebp-static
+        - python-dev
       ignore_run_exports:
         from_package:
           - python
-          - cross-python_emscripten-wasm32
+          - python-dev
+          - libpython-static
+          - cross-python_${{ target_platform }}
     source:
       url: https://gitlab.com/graphviz/graphviz/-/archive/${{ version }}/${{ name }}-${{ version }}.tar.gz
       sha256: cc673e3eb9013f40761590b2b071c0fb89ad5c5d694e25d4e1238c74df86c697
       patches:
         - patches/0001-preload-python-builtin-plugins.patch
+        - patches/0002-python-development-module.patch
 
   - package:
-      name: graphviz
+      name: graphviz-static
       version: ${{ version }}
     inherit: build-cache
     build:
@@ -72,9 +75,12 @@ outputs:
           - lib/pkgconfig/libxdot.pc
           - include/graphviz/**
     requirements:
-      run:
+      host:
         - zlib-static
-        - libwebp
+        - libwebp-static
+      run:
+        - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+        - ${{ pin_compatible('libwebp-static', lower_bound='x.x', upper_bound='x.x') }}
     tests:
       - package_contents:
           lib:
@@ -103,13 +109,21 @@ outputs:
             - graphviz/types.h
             - graphviz/graphviz_version.h
           files:
-            - lib/cmake/Graphviz/GraphvizConfig.cmake
-            - lib/pkgconfig/libcdt.pc
-            - lib/pkgconfig/libcgraph.pc
-            - lib/pkgconfig/libgvc.pc
-            - lib/pkgconfig/libgvpr.pc
-            - lib/pkgconfig/libpathplan.pc
-            - lib/pkgconfig/libxdot.pc
+            exists:
+              - lib/cmake/Graphviz/GraphvizConfig.cmake
+              - lib/pkgconfig/libcdt.pc
+              - lib/pkgconfig/libcgraph.pc
+              - lib/pkgconfig/libgvc.pc
+              - lib/pkgconfig/libgvpr.pc
+              - lib/pkgconfig/libpathplan.pc
+              - lib/pkgconfig/libxdot.pc
+            not_exists:
+              - '**/*.so*'
+              - bin/**
+      - script: generic-testing
+        requirements:
+          build:
+            - generic-testing
       - script:
           - build_tests.sh
         requirements:
@@ -118,15 +132,14 @@ outputs:
             - cmake
             - ninja
             - pkg-config
-            - zlib-static
-            - libwebp
+            - nodejs
         files:
           recipe:
             - build_tests.sh
             - tests/
 
   - package:
-      name: graphviz-cli
+      name: graphviz
       version: ${{ version }}
     inherit: build-cache
     build:
@@ -136,15 +149,19 @@ outputs:
         include:
           - bin/dot.js
           - bin/dot.wasm
-    requirements:
-      run:
-        - zlib-static
-        - libwebp
     tests:
       - package_contents:
           files:
-            - bin/dot.js
-            - bin/dot.wasm
+            exists:
+              - bin/dot.js
+              - bin/dot.wasm
+            not_exists:
+              - lib/**
+              - include/**
+      - script: generic-testing
+        requirements:
+          build:
+            - generic-testing
       - script:
           - bash test_cli.sh
         requirements:
@@ -162,8 +179,6 @@ outputs:
       script: echo "Collecting Python files from cache"
       files:
         include:
-          - lib/_gv_python3.*
-          - lib/graphviz/python3/**
           - lib/python*/site-packages/_gv_python3.so
           - lib/python*/site-packages/gv.py
         exclude:
@@ -176,14 +191,22 @@ outputs:
       host:
         - python
       run:
-        - graphviz =${{ version }}
+        - python
+      run_exports:
+        - ${{ pin_subpackage('graphviz-python', lower_bound='x.x', upper_bound='x.x') }}
     tests:
       - package_contents:
-          lib:
-            - _gv_python3.a
           files:
-            - lib/graphviz/python3/gv.py
-            - lib/python*/site-packages/_gv_python3.so
+            exists:
+              - lib/python*/site-packages/gv.py
+              - lib/python*/site-packages/_gv_python3.so
+            not_exists:
+              - '**/*.a'
+              - bin/**
+      - script: generic-testing
+        requirements:
+          build:
+            - generic-testing
       - script: pytester
         files:
           recipe:
@@ -209,5 +232,9 @@ about:
   repository: https://gitlab.com/graphviz/graphviz
 
 extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
   recipe-maintainers:
     - Alex-PLACET
