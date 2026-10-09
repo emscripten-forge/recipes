@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-// Each command gets its own module, as it would in a disposable browser worker.
+// Match WasmBolt: initialize, restore files, then call the tool once.
 async function run(tool, args, inputs = {}, outputs = []) {
   const url = pathToFileURL(path.join(process.env.PREFIX, "bin", `${tool}.js`));
   const { default: createTool } = await import(url.href);
@@ -10,14 +10,19 @@ async function run(tool, args, inputs = {}, outputs = []) {
   const stderr = [];
   let exitCode;
   const module = await createTool({
-    arguments: args,
-    preRun: [(m) => {
-      for (const [name, data] of Object.entries(inputs)) m.FS.writeFile(name, data);
-    }],
+    noInitialRun: true,
+    thisProgram: tool,
     print: (s) => stdout.push(s),
     printErr: (s) => stderr.push(s),
     onExit: (status) => { exitCode = status; },
   });
+  for (const [name, data] of Object.entries(inputs)) module.FS.writeFile(name, data);
+  try {
+    exitCode = module.callMain(args);
+  } catch (error) {
+    if (error?.name !== "ExitStatus" || !Number.isInteger(error.status)) throw error;
+    exitCode = error.status;
+  }
   assert.equal(exitCode, 0, `${tool}: ${stderr.join("\n")}`);
   const files = Object.fromEntries(outputs.map(name =>
     [name, Buffer.from(module.FS.readFile(name))]));

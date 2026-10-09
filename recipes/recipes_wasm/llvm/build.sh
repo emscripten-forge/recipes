@@ -20,6 +20,8 @@ export CMAKE_SYSTEM_PREFIX_PATH="${PREFIX}"
 
 llvm_tools="opt;llc;llvm-ar;llvm-cxxfilt;llvm-nm;llvm-objcopy;llvm-objdump;llvm-readobj;llvm-size"
 
+# Emscripten 6.0.8 predates LLVM's byval tail-call fix (#227491).
+# Disable tail calls for both targets until the SDK includes that fix.
 # CMAKE_ARGS carries the compiler package's toolchain and target settings.
 # Intentional word splitting follows the recipe convention for CMAKE_ARGS.
 emcmake cmake ${CMAKE_ARGS} -S "${SRC_DIR}/llvm" -B build \
@@ -44,9 +46,9 @@ emcmake cmake ${CMAKE_ARGS} -S "${SRC_DIR}/llvm" -B build \
     -DLLVM_ENABLE_LIBXML2=OFF                       \
     -DLLVM_BUILD_TOOLS=ON                           \
     -DLLVM_BUILD_UTILS=OFF                          \
-    -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -mtail-call" \
-    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -mtail-call -Dwait4=__syscall_wait4" \
-    -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS:-} -O2 -fwasm-exceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=8MB -sEXIT_RUNTIME=1 -sEXPORTED_RUNTIME_METHODS=FS" \
+    -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -mno-tail-call" \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -mno-tail-call -Dwait4=__syscall_wait4" \
+    -DCMAKE_EXE_LINKER_FLAGS="${LDFLAGS:-} -O2 -mno-tail-call -fwasm-exceptions -sMODULARIZE=1 -sEXPORT_ES6=1 -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=64MB -sSTACK_SIZE=8MB -sEXIT_RUNTIME=1 -sEXPORTED_RUNTIME_METHODS=FS,callMain" \
     -DLLVM_NATIVE_TOOL_DIR="${BUILD_PREFIX}/bin"
 
 emmake make -C build -j"${CPU_COUNT:-2}" \
