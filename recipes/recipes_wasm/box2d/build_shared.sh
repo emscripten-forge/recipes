@@ -11,7 +11,6 @@ cmake ${CMAKE_ARGS} ..             \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DBOX2D_SAMPLES=OFF            \
     -DBUILD_SHARED_LIBS=ON         \
-    -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
     -DBOX2D_UNIT_TESTS=OFF                       
 
 # Build step
