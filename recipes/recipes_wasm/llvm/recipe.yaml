@@ -9,9 +9,12 @@ source:
   - patches/disable-emscripten-version-scripts.patch
   # Preserve the shared LLVM/Clang APIs with WebAssembly export lists.
   - patches/emscripten-symbol-exports.patch
+  # Backport the reusable llc driver and host-owned opt lifetime.
+  - patches/llc-driver-library.patch
+  - patches/opt-driver-initllvm.patch
 
 build:
-  number: 3
+  number: 4
 
 outputs:
 - staging:
@@ -56,6 +59,8 @@ outputs:
         - lib/cmake/llvm/LLVMStaticExports.cmake
         - lib/libLLVMX86CodeGen.a
         - lib/libLLVMAArch64CodeGen.a
+        - lib/libLLVMLlcDriver.a
+        - lib/libLLVMOptDriver.a
         not_exists:
         - '**/*.so*'
         - include/clang/**
@@ -78,6 +83,53 @@ outputs:
       - ${{ compiler("cxx") }}
       - cmake
       - make
+
+- package:
+    name: llvm-tools
+    version: ${{ version }}
+  inherit: llvm-build
+  build:
+    script: echo "Packaging llvm-tools"
+    files:
+      include:
+      - bin/*.js
+      - bin/*.wasm
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - bin/opt.js
+        - bin/opt.wasm
+        - bin/llc.js
+        - bin/llc.wasm
+        - bin/llvm-ar.js
+        - bin/llvm-ar.wasm
+        - bin/llvm-cxxfilt.js
+        - bin/llvm-cxxfilt.wasm
+        - bin/llvm-nm.js
+        - bin/llvm-nm.wasm
+        - bin/llvm-objcopy.js
+        - bin/llvm-objcopy.wasm
+        - bin/llvm-objdump.js
+        - bin/llvm-objdump.wasm
+        - bin/llvm-readobj.js
+        - bin/llvm-readobj.wasm
+        - bin/llvm-size.js
+        - bin/llvm-size.wasm
+        not_exists:
+        - lib/**
+        - include/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: node test_tools.mjs
+    files:
+      recipe:
+      - test_tools.mjs
+    requirements:
+      build:
+      - nodejs
 
 - package:
     name: llvm

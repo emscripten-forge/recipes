@@ -8,7 +8,7 @@ foreach(component LTO Remarks libclang clang-cpp clangInterpreter lldCommon lldW
     message(FATAL_ERROR "LLVM static exports must not require: ${component}")
   endif()
 endforeach()
-foreach(component LLVMX86CodeGen LLVMAArch64CodeGen)
+foreach(component LLVMX86CodeGen LLVMAArch64CodeGen LLVMLlcDriver LLVMOptDriver)
   if(NOT TARGET ${component})
     message(FATAL_ERROR "Missing imported target: ${component}")
   endif()
