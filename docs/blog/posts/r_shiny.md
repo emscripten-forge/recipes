@@ -39,7 +39,7 @@ This matters beyond convenience. With R and Python packages living in the same d
 
 Lucent, our client-side Shiny runtime, boots a full R-Shiny stack inside the browser. When a Lucent site is opened, a bundled WebAssembly environment (R runtime and all required dependencies) is loaded onto a virtual filesystem. The Shiny app is initialized from within that local R session, without the need for a remote R server or any installation required by the visitor.
 
-As far as Shiny is concerned, the setup still acts as an ordinary web server, but this server is virtual. A service worker intercepts HTTP and WebSocket traffic from the app and forwards it to R running in a background worker. The app UI is displayed in an embedded iframe and matches the experience of a regular Shiny dashboard while keeping all R computations entirely on the user’s machine.
+As far as Shiny is concerned, the setup still acts as an ordinary web server, but this server is virtual. A service worker intercepts HTTP traffic from the app and forwards it to R running in a background worker; Shiny’s WebSocket traffic goes through a virtual socket that uses fetch for open/send/close messages and a MessagePort for server-to-client pushes. The app UI is displayed in an embedded iframe and matches the experience of a regular Shiny dashboard while keeping all R computations entirely on the user’s machine.
 
 The diagram below shows how Lucent connects the host page, the Shiny UI iframe, and the R WebAssembly worker:
 
