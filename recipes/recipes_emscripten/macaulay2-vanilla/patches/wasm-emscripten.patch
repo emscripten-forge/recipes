@@ -1,0 +1,812 @@
+diff --git a/M2/Macaulay2/CMakeLists.txt b/M2/Macaulay2/CMakeLists.txt
+index bf19931124..9b422ea482 100644
+--- a/M2/Macaulay2/CMakeLists.txt
++++ b/M2/Macaulay2/CMakeLists.txt
+@@ -143,5 +143,3 @@ install(EXPORT Macaulay2 NAMESPACE Macaulay2::
+   COMPONENT devel EXCLUDE_FROM_ALL)
+ export(TARGETS M2-binary M2-engine M2-interpreter M2-supervisor
+   NAMESPACE Macaulay2:: FILE Macaulay2Config.cmake)
+-export(TARGETS mathicgb mathic memtailor
+-  NAMESPACE MathicGB:: FILE MathicGBConfig.cmake)
+diff --git a/M2/Macaulay2/bin/CMakeLists.txt b/M2/Macaulay2/bin/CMakeLists.txt
+index ef452d8224..e591c6f563 100644
+--- a/M2/Macaulay2/bin/CMakeLists.txt
++++ b/M2/Macaulay2/bin/CMakeLists.txt
+@@ -74,19 +74,7 @@ install(TARGETS M2-binary EXPORT Macaulay2
+ ###############################################################################
+ ## After linking, print a list of all shared libraries M2-binary uses
+ 
+-find_program(LDD ldd)
+-find_program(OTOOL otool)
+-if(LDD)
+-  add_custom_command(TARGET M2-binary POST_BUILD
+-    COMMAND ${CMAKE_COMMAND} -E echo "-- Linked libraries:"
+-    COMMAND ${SET_LD_LIBRARY_PATH} ${LDD} $<TARGET_FILE:M2-binary>
+-    COMMAND ${CMAKE_COMMAND} -E echo "-- INSTALL_RPATH: ${INSTALL_RPATH}")
+-elseif(OTOOL)
+-  add_custom_command(TARGET M2-binary POST_BUILD
+-    COMMAND ${CMAKE_COMMAND} -E echo "-- Linked libraries:"
+-    COMMAND ${SET_LD_LIBRARY_PATH} ${OTOOL} -L $<TARGET_FILE:M2-binary>
+-    COMMAND ${CMAKE_COMMAND} -E echo "-- INSTALL_RPATH: ${INSTALL_RPATH}")
+-endif()
++set(LDD "")
+ 
+ # TODO: strip args
+ # objdump -x M2-binary | grep RPATH
+@@ -104,9 +92,40 @@ else()
+ endif()
+ 
+ string(CONFIGURE "#!/bin/sh\n${EXPORT_STRING} exec `dirname \"$0\"`/M2@EXE@ \"$@\"" M2_CONTENT @ONLY)
++if(EMSCRIPTEN)
++  string(CONFIGURE "#!/bin/sh\n${EXPORT_STRING} exec node --max-old-space-size=4096 `dirname \"$0\"`/M2@EXE@ \"$@\"" M2_CONTENT @ONLY)
++endif()
+ file(MAKE_DIRECTORY ${M2_DIST_PREFIX}/${M2_INSTALL_BINDIR})
+ execute_process(
+   COMMAND ${CMAKE_COMMAND} -E echo "${M2_CONTENT}"
+   OUTPUT_FILE ${M2_DIST_PREFIX}/${M2_INSTALL_BINDIR}/M2)
+ execute_process(
+   COMMAND chmod +x ${M2_DIST_PREFIX}/${M2_INSTALL_BINDIR}/M2)
++
++option(
++  M2_EMSCRIPTEN_RUNTIME_BUNDLE
++  "Build the final M2 runtime for a file_packager MEMFS data bundle"
++  OFF
++)
++
++if(EMSCRIPTEN)
++  target_link_options(M2-binary PRIVATE
++    "-sTOTAL_STACK=32mb"
++    "-sINITIAL_MEMORY=2gb"
++    "-sALLOW_MEMORY_GROWTH=1"
++    "-sMAXIMUM_MEMORY=4gb"
++    "-sFORCE_FILESYSTEM=1"
++    "-sEXIT_RUNTIME=1"
++  )
++
++  if(M2_EMSCRIPTEN_RUNTIME_BUNDLE)
++    target_link_options(M2-binary PRIVATE
++      "-sNODERAWFS=0"
++      "-sENVIRONMENT=web,worker"
++    )
++  else()
++    target_link_options(M2-binary PRIVATE
++      "-sNODERAWFS=1"
++    )
++  endif()
++endif()
+diff --git a/M2/Macaulay2/bin/main.cpp b/M2/Macaulay2/bin/main.cpp
+index f03d2a45b6..bfd1e2b292 100644
+--- a/M2/Macaulay2/bin/main.cpp
++++ b/M2/Macaulay2/bin/main.cpp
+@@ -101,7 +101,7 @@ int main(/* const */ int argc, /* const */ char *argv[], /* const */ char *env[]
+   M2_vargs->envp = env; /* environment pointer */
+   M2_vargs->envc = envc; /* environment count */
+ 
+-  if (gotArg("--no-threads", argv)) {
++  if (true) {
+ #if PROFILING
+     std::thread profileThread(profFunc, M2_vargs);
+ #endif
+diff --git a/M2/Macaulay2/c/CMakeLists.txt b/M2/Macaulay2/c/CMakeLists.txt
+index b4e61e32e1..66415636fa 100644
+--- a/M2/Macaulay2/c/CMakeLists.txt
++++ b/M2/Macaulay2/c/CMakeLists.txt
+@@ -33,13 +33,19 @@ target_include_directories(scc1 PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+   $<INSTALL_INTERFACE:include/Macaulay2>)
+ 
+-if(BDWGC_FOUND AND GDBM_FOUND)
+-  target_link_libraries(scc1 Threads::Threads
+-    ${BDWGC_LIBRARIES} ${GDBM_LIBRARY} ${CMAKE_DL_LIBS})
++if(GDBM_FOUND)
++  target_link_libraries(scc1
++    ${GDBM_LIBRARY} ${CMAKE_DL_LIBS})
+   target_include_directories(scc1 PUBLIC
+-    $<BUILD_INTERFACE:${BDWGC_INCLUDE_DIR}>
+     $<BUILD_INTERFACE:${GDBM_INCLUDE_DIR}>)
+ endif()
+ 
+ target_compile_options(scc1 PRIVATE
+   $<$<COMPILE_LANG_AND_ID:C,GNU>:-Wno-implicit-fallthrough>) # FIXME: caused by type.c:175:26
++
++if(EMSCRIPTEN)
++  target_link_options(scc1 PRIVATE
++    "-sFORCE_FILESYSTEM=1"
++    "-sNODERAWFS=1"
++  )
++endif()
+diff --git a/M2/Macaulay2/c/chk.c b/M2/Macaulay2/c/chk.c
+index a01faa91e5..66324428dc 100644
+--- a/M2/Macaulay2/c/chk.c
++++ b/M2/Macaulay2/c/chk.c
+@@ -99,7 +99,7 @@ static void popscope(scope *vp){
+      v->tmpdecls = join(w->tmpdecls,v->tmpdecls);
+      v->signature = join(w->signature,v->signature);
+      unwind(&w->symbols);
+-     GC_FREE(w);
++     free(w);
+      }
+ 
+ static void errorpopscope(scope *vp){
+diff --git a/M2/Macaulay2/c/cprint.c b/M2/Macaulay2/c/cprint.c
+index 1a0de4c7d1..8d91ecab01 100644
+--- a/M2/Macaulay2/c/cprint.c
++++ b/M2/Macaulay2/c/cprint.c
+@@ -484,7 +484,6 @@ static void cprintdefine(node t,bool definitions) {
+ 	  put(" ");
+ 	  cprint(t);
+ 	  }
+-     if (flags & constructor_F) put(" __attribute__ ((constructor))");
+      if (flags & destructor_F) put(" __attribute__ ((destructor))");
+      }
+ 
+diff --git a/M2/Macaulay2/c/readfile.c b/M2/Macaulay2/c/readfile.c
+index a931aeb61b..64e728f857 100644
+--- a/M2/Macaulay2/c/readfile.c
++++ b/M2/Macaulay2/c/readfile.c
+@@ -259,7 +259,7 @@ static char *readfile2(int fd, int *plen) {
+ 	       }
+ 	  len += n;
+ 	  if (len == bufsize) {
+-	       char *p = GC_MALLOC(bufsize *= 2);
++	       char *p = getmem(bufsize *= 2);
+ 	       memcpy(p,txt,len);
+ 	       txt = p;
+ 	       }
+diff --git a/M2/Macaulay2/c/scc.h b/M2/Macaulay2/c/scc.h
+index 224056ffd2..1fc005e057 100644
+--- a/M2/Macaulay2/c/scc.h
++++ b/M2/Macaulay2/c/scc.h
+@@ -1,6 +1,7 @@
+ /*		Copyright 1993 by Daniel R. Grayson		*/
+ 
+ #include "M2/config.h"
++#include <stdlib.h>
+ #include "compat.h"
+ 
+ #define EQUAL 0
+diff --git a/M2/Macaulay2/c/scc1.c b/M2/Macaulay2/c/scc1.c
+index 0b74b7d775..3e5d307b1e 100644
+--- a/M2/Macaulay2/c/scc1.c
++++ b/M2/Macaulay2/c/scc1.c
+@@ -21,7 +21,7 @@ static char Copyright[] = "Copyright 1993, 2010, by Daniel R. Grayson";
+ static char Version[]   = "Safe C - version 2.0";
+ 
+ char *getmem(unsigned n) {
+-     char *p = GC_MALLOC(n);	/* GC_MALLOC clears the memory */
++     char *p = calloc(1, n);	/* calloc clears the memory */
+      if (p == NULL) fatal("out of memory");
+      return p;
+      }
+@@ -188,7 +188,7 @@ static void usage() {
+ int main(int argc, char **argv){
+      int i;
+      char *p;
+-     GC_INIT();
++     (void)0;
+      progname = BaseName(argv[0]);
+      yyinit();
+      for (p=argv[0]; *p; p++) if (*p=='/') progname = p+1;
+diff --git a/M2/Macaulay2/d/CMakeLists.txt b/M2/Macaulay2/d/CMakeLists.txt
+index 73d7ba8e13..4349642980 100644
+--- a/M2/Macaulay2/d/CMakeLists.txt
++++ b/M2/Macaulay2/d/CMakeLists.txt
+@@ -156,7 +156,6 @@ target_link_libraries(M2-interpreter PRIVATE M2-supervisor
+ 
+ # TODO: c.f. https://github.com/Macaulay2/M2/issues/2682
+ if(NOT APPLE)
+-  target_link_libraries(M2-interpreter PRIVATE quadmath)
+ endif()
+ 
+ target_include_directories(M2-interpreter
+@@ -232,3 +231,9 @@ target_compile_options(M2-interpreter PRIVATE
+ ## Export the target
+ 
+ install(TARGETS M2-interpreter EXPORT Macaulay2 COMPONENT devel EXCLUDE_FROM_ALL)
++
++if(EMSCRIPTEN)
++  add_custom_target(M2-generated-sources
++    DEPENDS ${_c_source}
++  )
++endif()
+diff --git a/M2/Macaulay2/d/M2lib.c b/M2/Macaulay2/d/M2lib.c
+index 15c5df72d5..b10616819b 100644
+--- a/M2/Macaulay2/d/M2lib.c
++++ b/M2/Macaulay2/d/M2lib.c
+@@ -7,8 +7,6 @@
+ #include <interface/m2-mem.h>
+ #include "supervisorinterface.h"
+ 
+-#include <readline/readline.h>
+-#include <readline/history.h>
+ 
+ extern struct JumpCell abort_jmp;
+ extern struct JumpCell interrupt_jmp;
+@@ -96,110 +94,22 @@ extern void fatalarrayindex(int indx, int len, const char *file, int line, int c
+ extern void fatalarraylen(int len, const char *file, int line, int column);
+ 
+ /******************************************************************************/
+-/*  Functions dealing with libreadline and completion                         */
+-/******************************************************************************/
+-
+-static char *M2_completion_generator(const char *text, int state) {
+-  static int i;
+-  static char **v;
+-  char *p;
+-  if (state == 0) {
+-    M2_string s;
+-    M2_ArrayString ret;
+-    i = 0;
+-#ifdef free
+-#warning "'free' defined as macro, but we want to use the libc function"
+-#define free x
+-#endif
+-    if (v != NULL) free(v);
+-    s = M2_tostring(text);
+-    ret = expr_completions(s);
+-    freemem(s);
+-    v = M2_tocharstarstarmalloc(ret); /* readline will use free() to free these strings */
+-    freemem(ret);
+-  }
+-  p = v[i];
+-  if (p != NULL) i++;
+-  return p;
+-}
+-
+-static char **M2_completion(const char *text, int start, int end) {
+-  (void)start; (void)end;
+-  rl_attempted_completion_over = TRUE;
+-  /* if (start > 0 && rl_line_buffer[start-1] == '"') ... filename completion ... */
+-  return rl_completion_matches(text, M2_completion_generator);
+-}
+-
+-int system_readHistory(char *filename) { return read_history(filename); }
+-int system_appendHistory(int n, char *filename)
+-{
+-  return append_history(n, filename);
+-}
+ 
+-void system_addHistory(char *buf) { add_history(buf); }
+-char *system_getHistory(const int n)
+-{
+-  HIST_ENTRY *entry = history_get(n);
+-  if (entry != NULL) return entry->line;
+-  return NULL;
+-}
+-
+-int system_historyLength() { return history_length; }
+-
+-void system_initReadlineVariables(void) {
+-  static char readline_name[] = "M2";
+-  static char basic_word_break_characters[] = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r";
+-  rl_catch_signals = FALSE; /* tell readline not to catch signals, such as SIGINT */
+-  rl_readline_name = readline_name;
+-  rl_attempted_completion_function = M2_completion;
+-  rl_basic_word_break_characters = basic_word_break_characters;
+-  using_history();		/* this might also initialize readine, by calling rl_readline, on Mac OS X */
+-}
+-
+-static int read_via_readline(char *buf,int len,char *prompt) {
+-  static char *p;		/* buffer, NULL if newline has already been returned */
+-  static int plen;		/* number of chars in p */
+-  static int i;			/* number of chars in p already returned */
+-  int r;			/* number of chars to return this time */
+-  if (len == 0) return 0;
+-  if (p == NULL) {
+-    interrupt_jmp.is_set = TRUE; /* for the interrupt handler */
+-    if (SETJMP(interrupt_jmp.addr)) { /* long jump occurred */
+-	 fprintf(stderr,"^C\n");
+-	 interrupt_jmp.is_set = FALSE;
+-	 rl_cleanup_after_signal();
+-	 rl_free_line_state();
+-	 return ERROR;
+-	 }
+-    p = readline(prompt);
+-    interrupt_jmp.is_set = FALSE;
+-    if (p == NULL) return 0;	/* EOF */
+-    i = 0;
+-    plen = strlen(p);
+-    add_history(p);
+-  }
+-  r = plen - i;
+-  if (r > len) r = len;
+-  memmove(buf,p+i,r), i+=r;
+-  if (i == plen && r < len) {
+-    free(p), p = NULL;
+-    buf[r++] = '\n';		/* readline() doesn't include the \n at the end */
+-  }
+-  return r;
+-}
++#include <stdio.h>
++#include <string.h>
+ 
++int system_readHistory(char *filename) { return 0; }
++int system_appendHistory(int n, char *filename) { return 0; }
++void system_addHistory(char *buf) { }
++char *system_getHistory(const int n) { return NULL; }
++int system_historyLength() { return 0; }
++void system_initReadlineVariables(void) { }
+ int system_readline(M2_string buffer, int len, int offset, M2_string prompt) {
+-  char *p = M2_tocharstar(prompt);
+-  int r;
+-  if (offset < 0 || (int)buffer->len - offset < len) fatalarrayindex(len,buffer->len,__FILE__,__LINE__,-1);
+-  r = read_via_readline((char *)buffer->array + offset,len,p);
+-  freemem(p);
+-  return r;
++    char *p = M2_tocharstar(prompt);
++    printf("%s", p);
++    fflush(stdout);
++    freemem(p);
++    char *buf_ptr = (char *)buffer->array + offset;
++    if (fgets(buf_ptr, len, stdin) == NULL) return 0;
++    return (int)strlen(buf_ptr);
+ }
+-
+-/*
+-// Local Variables:
+-// compile-command: "echo \"make: Entering directory \\`$M2BUILDDIR/Macaulay2/d'\" && make -C $M2BUILDDIR/Macaulay2/d M2lib.o "
+-// tags-file-name: "TAGS"
+-// End:
+-*/
+diff --git a/M2/Macaulay2/d/scclib.c b/M2/Macaulay2/d/scclib.c
+index 80c7baf0ef..4dbf3193d2 100644
+--- a/M2/Macaulay2/d/scclib.c
++++ b/M2/Macaulay2/d/scclib.c
+@@ -10,7 +10,7 @@
+ 
+ #include "../system/supervisorinterface.h"
+ 
+-extern void profiler_stacktrace(int);
++extern void *profiler_stacktrace(int);
+ 
+ void
+ fatal(const char *s,...)   {
+diff --git a/M2/Macaulay2/d/version.dd b/M2/Macaulay2/d/version.dd
+index f4d249c9fc..e90b36d9fe 100644
+--- a/M2/Macaulay2/d/version.dd
++++ b/M2/Macaulay2/d/version.dd
+@@ -109,7 +109,6 @@ factoryversion():constcharstar := Ccode(returns,"
+      //   return p ? p+1 : factoryVersion;
+      ");
+ 
+-header "#include <readline/readline.h>";
+ 
+ header "#include <gdbm.h>";
+ gdbmversion():constcharstar := Ccode(returns, "return gdbm_version");
+@@ -213,7 +212,7 @@ setupconst("version", Expr(toHashTable(Sequence(
+    "mathic version" => Ccode(constcharstar,"MATHIC_VERSION_STRING"),
+    "mathicgb version" => Ccode(constcharstar,"MATHICGB_VERSION_STRING"),
+    "factory version" => factoryversion(),
+-   "readline version" => Ccode(constcharstar,"stringize(RL_VERSION_MAJOR) \".\" stringize(RL_VERSION_MINOR)"),
++   "readline version" => "not present",
+    "mpfr version" => Ccode(constcharstar,"MPFR_VERSION_STRING"),
+    "mpfi version" => Ccode(constcharstar,"MPFI_VERSION_STRING"),
+    "tbb version" => Ccode(constcharstar,"
+diff --git a/M2/Macaulay2/e/CMakeLists.txt b/M2/Macaulay2/e/CMakeLists.txt
+index b58d5c1f87..52b6625058 100644
+--- a/M2/Macaulay2/e/CMakeLists.txt
++++ b/M2/Macaulay2/e/CMakeLists.txt
+@@ -5,14 +5,7 @@
+ 
+ set(with_tbb ${WITH_TBB}) # for mathicgb
+ 
+-add_subdirectory(memtailor)
+-add_subdirectory(mathic)
+-add_subdirectory(mathicgb)
+ 
+-target_compile_options(mathicgb PRIVATE
+-  -Wall -Wextra -Wno-unused-parameter -Wno-unused-value -Wno-unused-variable -Wno-sign-compare
+-  -Wno-deprecated-declarations
+-  )
+ 
+ if(CMAKE_BUILD_TYPE MATCHES "Debug") # Debugging
+   add_compile_definitions(MEMT_DEBUG MATHIC_DEBUG MATHICGB_DEBUG)
+@@ -371,7 +364,7 @@ target_include_directories(M2-engine PUBLIC
+   $<INSTALL_INTERFACE:include/Macaulay2>)
+ 
+ # TODO: make engine independent of interpreter headers
+-target_link_libraries(M2-engine PUBLIC memtailor mathic mathicgb)
++target_link_libraries(M2-engine PUBLIC ${CMAKE_PREFIX_PATH}/lib/libmemtailor.a ${CMAKE_PREFIX_PATH}/lib/libmathic.a ${CMAKE_PREFIX_PATH}/lib/libmathicgb.a)
+ 
+ if(EIGEN3_FOUND)
+   target_link_libraries(M2-engine PUBLIC Eigen3::Eigen)
+@@ -420,7 +413,7 @@ target_compile_options(M2-engine PRIVATE
+ ## Export the target
+ 
+ # TODO: change ARCHIVE to LIBRARY once M2-engine can be used independently
+-install(TARGETS M2-engine mathicgb mathic memtailor EXPORT Macaulay2
++install(TARGETS M2-engine  EXPORT Macaulay2
+   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/Macaulay2/lib
+   COMPONENT devel EXCLUDE_FROM_ALL
+   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Macaulay2
+diff --git a/M2/Macaulay2/e/basic-mutable-matrices/lapack.hpp b/M2/Macaulay2/e/basic-mutable-matrices/lapack.hpp
+index 0545ef1a92..b40bdcc687 100644
+--- a/M2/Macaulay2/e/basic-mutable-matrices/lapack.hpp
++++ b/M2/Macaulay2/e/basic-mutable-matrices/lapack.hpp
+@@ -18,8 +18,10 @@ typedef DMat<M2::ARingCC> DMatCC;
+ /* MES, On my mac, 10.12.4, lapack include file is at
+   /System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers/clapack.h
+ */
++#include <stddef.h>
++/* M2_WASM_OPENBLAS_ABI_PATCH */
+ extern "C" {
+-int dgesv_(int *n,      // number of rows in A
++void dgesv_(int *n,      // number of rows in A
+            int *nrhs,   // number of right hand sides
+            double *a,   // n by n matrix A, on exit L&U from A=PLU
+            int *lda,    // n
+@@ -28,7 +30,7 @@ int dgesv_(int *n,      // number of rows in A
+            int *ldb,    // n
+            int *info);  // error info
+ 
+-int dgeev_(char *n,     // whether to compute left eigenvectors
++void dgeev_(char *n,     // whether to compute left eigenvectors
+            char *n2,    // whether to compute right eigenvectors
+            int *size,   // rows
+            double *M,   // input matrix A
+@@ -41,9 +43,9 @@ int dgeev_(char *n,     // whether to compute left eigenvectors
+            int *,       // rows
+            double *,    // workspace
+            int *,       // size of workspace
+-           int *);      // error info
++           int *, size_t = 1, size_t = 1);      // error info
+ 
+-int dsyev_(char *n,       // whether to compute eigenvectors
++void dsyev_(char *n,       // whether to compute eigenvectors
+            char *n2,      // how to store A (upper or lower)
+            int *size,     // rows
+            double *M,     // symmetric matrix A
+@@ -51,7 +53,7 @@ int dsyev_(char *n,       // whether to compute eigenvectors
+            double *eig,   // becomes eigenvalues
+            double *work,  // workspace
+            int *wsize,    // size of workspace
+-           int *info);    // error info
++           int *info, size_t = 1, size_t = 1);    // error info
+ 
+ void dgetrf_(const int *rows,  // rows
+              const int *cols,  // columns
+@@ -60,7 +62,7 @@ void dgetrf_(const int *rows,  // rows
+              int *ipiv,        // becomes permutation indices of P
+              int *info);       // error info
+ 
+-int dgesvd_(char *jobU,     // amount of U to return
++void dgesvd_(char *jobU,     // amount of U to return
+             char *jobV,     // amount of V to return
+             int *rows,      // rows
+             int *cols,      // columns
+@@ -73,9 +75,9 @@ int dgesvd_(char *jobU,     // amount of U to return
+             int *ldVT,      // cols
+             double *work,   // workspace
+             int *lwork,     // size of workspace
+-            int *info);     // error info
++            int *info, size_t = 1, size_t = 1);     // error info
+ 
+-int dgesdd_(char *jobU,     // amount of U to return
++void dgesdd_(char *jobU,     // amount of U to return
+             int *rows,      // rows
+             int *cols,      // columns
+             double *A,      // input matrix for SVD
+@@ -88,9 +90,9 @@ int dgesdd_(char *jobU,     // amount of U to return
+             double *work,   // workspace
+             int *lwork,     // size of workspace
+             int *iwork,     // integer workspace
+-            int *info);     // error info
++            int *info, size_t = 1);     // error info
+ 
+-int dgels_(char *job,     // type of least squares problem
++void dgels_(char *job,     // type of least squares problem
+            int *rows,     // rows
+            int *cols,     // columns
+            int *nhrs,     // number right hand sides
+@@ -100,9 +102,9 @@ int dgels_(char *job,     // type of least squares problem
+            int *ldb,      // rows of right hand side
+            double *work,  // workspace
+            int *lwork,    // size of workspace
+-           int *info);    // error info
++           int *info, size_t = 1);    // error info
+ 
+-int dgelss_(int *rows,      // rows
++void dgelss_(int *rows,      // rows
+             int *cols,      // columns
+             int *nhrs,      // number right hand sides
+             double *A,      // input matrix for least squares
+@@ -137,7 +139,7 @@ int dgelss_(int *rows,      // rows
+ // dormqr: to instead multiply by this Q without creating it:
+ //   https://docs.oracle.com/cd/E19422-01/819-3691/dormqr.html
+ 
+-int dgeqrf_(int *m,     // #rows (input)
++void dgeqrf_(int *m,     // #rows (input)
+             int *n,     // #columns (input)
+             double *A,  // input matrix, in row or column major order? (inout)
+             // on output: the top part of A, min(m,n) x n, is R
+@@ -150,7 +152,7 @@ int dgeqrf_(int *m,     // #rows (input)
+             int *lwork,    // size of workspace?
+             int *info);  // error info: ==0: successful, ==-i, i-th argument had
+                          // illegal value
+-int dorgqr_(int *m,      // #rows m >= 0
++void dorgqr_(int *m,      // #rows m >= 0
+             int *n,      // #cols of Q, m >= n >= 0
+             int *k,      // number of elementary reflectors (n >= k >= 0)
+             double *A,   // on input: i-th column contains the v_i defining the
+@@ -179,7 +181,7 @@ int dorgqr_(int *m,      // #rows m >= 0
+ //  f. add in a routine in interface.dd
+ //  g. add in a routine in m2/mutablemat.m2
+ //  h. document and test QR, ReturnQR.
+-int zgeqrf_(int *m,     // #rows (input)
++void zgeqrf_(int *m,     // #rows (input)
+             int *n,     // #columns (input)
+             double *A,  // input matrix, in row or column major order? (inout)
+             // on output: the top part of A, min(m,n) x n, is R
+@@ -192,7 +194,7 @@ int zgeqrf_(int *m,     // #rows (input)
+             int *lwork,    // size of workspace?
+             int *info);  // error info: ==0: successful, ==-i, i-th argument had
+                          // illegal value
+-int zungqr_(int *m,      // #rows m >= 0
++void zungqr_(int *m,      // #rows m >= 0
+             int *n,      // #cols of Q, m >= n >= 0
+             int *k,      // number of elementary reflectors (n >= k >= 0)
+             double *A,   // on input: i-th column contains the v_i defining the
+@@ -257,7 +259,7 @@ void cblas_dscal(const int n,      // length of vectors
+                  double *x,        // vector x
+                  const int incx);  // increment of x
+ 
+-int zgesv_(int *n,      // number of rows in A
++void zgesv_(int *n,      // number of rows in A
+            int *nrhs,   // number of right hand sides
+            double *a,   // n by n matrix A, on exit L&U from A=PLU
+            int *lda,    // n
+@@ -266,7 +268,7 @@ int zgesv_(int *n,      // number of rows in A
+            int *ldb,    // n
+            int *info);  // error info
+ 
+-int zgeev_(char *n,        // whether to compute left eigenvectors
++void zgeev_(char *n,        // whether to compute left eigenvectors
+            char *n2,       // whether to compute right eigenvectors
+            int *size,      // rows
+            double *M,      // n by n input matrix
+@@ -279,9 +281,9 @@ int zgeev_(char *n,        // whether to compute left eigenvectors
+            double *w,      // workspace
+            int *wsize,     // size of workspace
+            double *rwork,  // another workspace
+-           int *info);     // error info
++           int *info, size_t = 1, size_t = 1);     // error info
+ 
+-int zheev_(char *n,        // whether to compute eigenvectors
++void zheev_(char *n,        // whether to compute eigenvectors
+            char *n2,       // how to store A (upper or lower)
+            int *size,      // rows
+            double *M,      // hermitian matrix A
+@@ -290,16 +292,16 @@ int zheev_(char *n,        // whether to compute eigenvectors
+            double *w,      // workspace
+            int *wsize,     // size of workspace
+            double *rwork,  // another workspace
+-           int *info);     // error info
++           int *info, size_t = 1, size_t = 1);     // error info
+ 
+-int zgetrf_(int *rows,   // rows
++void zgetrf_(int *rows,   // rows
+             int *cols,   // columns
+             double *M,   // input matrix, on exit L & U from A=PLU.
+             int *ld,     // rows
+             int *ipiv,   // becomes permutation indices of P
+             int *info);  // error info
+ 
+-int zgesvd_(char *jobU,     // amount of U to return
++void zgesvd_(char *jobU,     // amount of U to return
+             char *jobV,     // amount of V to return
+             int *rows,      // rows
+             int *cols,      // columns
+@@ -313,9 +315,9 @@ int zgesvd_(char *jobU,     // amount of U to return
+             double *w,      // workspace
+             int *lwork,     // size of workspace
+             double *rwork,  // another workspace
+-            int *info);     // error info
++            int *info, size_t = 1, size_t = 1);     // error info
+ 
+-int zgesdd_(char *jobU,     // amount of U to return
++void zgesdd_(char *jobU,     // amount of U to return
+             int *rows,      // rows
+             int *cols,      // columns
+             double *A,      // input matrix for SVD
+@@ -329,9 +331,9 @@ int zgesdd_(char *jobU,     // amount of U to return
+             int *lwork,     // size of workspace
+             double *rwork,  // another workspace
+             int *iwork,     // integer workspace
+-            int *info);     // error info
++            int *info, size_t = 1);     // error info
+ 
+-int zgels_(char *job,     // type of least squares problem
++void zgels_(char *job,     // type of least squares problem
+            int *rows,     // rows
+            int *cols,     // columns
+            int *nhrs,     // number right hand sides
+@@ -341,9 +343,9 @@ int zgels_(char *job,     // type of least squares problem
+            int *ldb,      // rows of right hand side
+            double *work,  // workspace
+            int *lwork,    // size of workspace
+-           int *info);    // error info
++           int *info, size_t = 1);    // error info
+ 
+-int zgelss_(int *rows,      // rows
++void zgelss_(int *rows,      // rows
+             int *cols,      // columns
+             int *nhrs,      // number right hand sides
+             double *A,      // input matrix for least squares
+diff --git a/M2/Macaulay2/system/supervisor.cpp b/M2/Macaulay2/system/supervisor.cpp
+index 04e2e7dd07..37cb3d8dda 100644
+--- a/M2/Macaulay2/system/supervisor.cpp
++++ b/M2/Macaulay2/system/supervisor.cpp
+@@ -11,7 +11,7 @@
+ using std::lock_guard;
+ 
+ // The maximum number of concurrent threads
+-const static unsigned int numCores = std::thread::hardware_concurrency();
++const static unsigned int numCores = 1;
+ // We allocate between 5 and 17 threads initially, to save trouble with memory allocation.
+ const static int maxNumThreads = ((numCores < 4) ? 4 : (16 < numCores ? 16 : numCores)) + 1;
+ 
+@@ -44,7 +44,7 @@ extern "C" {
+     if(interpThread==pthread_self()) {
+       return 0;
+     } else {
+-      pthread_kill(interpThread,SIGINT);
++      (void)0;
+       return -1;
+     }
+   }
+@@ -53,7 +53,7 @@ extern "C" {
+     if(interpThread==pthread_self()) {
+       return 0;
+     } else {
+-      pthread_kill(interpThread,SIGALRM);
++      (void)0;
+       return -1;
+     }
+   }
+@@ -62,7 +62,7 @@ extern "C" {
+     if(interpThread==pthread_self()) {
+       return 0;
+     } else {
+-      pthread_kill(interpThread,SIGUSR1);
++      (void)0;
+       return -1;
+     }
+   }
+@@ -179,23 +179,35 @@ extern "C" {
+   {
+     return task->waitOn();
+   }
+-  void** TS_Get_LocalArray() {  return (void**)pthread_getspecific(*(pthread_key_t*)threadSupervisor); }
+-  void** TS_Get_Local(int refno) { return &TS_Get_LocalArray()[refno]; }
++  static void* wasmThreadLocalMemory[1024] = {0};
++  static int wasmThreadLocalIdCounter = 1;
++
++  void** TS_Get_LocalArray()
++  {
++    return wasmThreadLocalMemory;
++  }
++
++  void** TS_Get_Local(int refno)
++  {
++    if (refno <= 0 || refno >= 1024)
++      abort();
++
++    return &wasmThreadLocalMemory[refno];
++  }
++
+   void TS_Add_ThreadLocal(int* refno, const char* name)
+   {
+     (void) name;
+-    if(NULL == threadSupervisor)
+-      threadSupervisor = new (GC) ThreadSupervisor(maxNumThreads);
+-    assert(threadSupervisor);
+-    lock_guard<pthreadMutex> supLock(threadSupervisor->m_Mutex);
+-    if(threadSupervisor->m_ThreadLocalIdPtrSet.find(refno)!=threadSupervisor->m_ThreadLocalIdPtrSet.end())
+-	return;
+-    threadSupervisor->m_ThreadLocalIdPtrSet.insert(refno);
+-    int ref = threadSupervisor->m_ThreadLocalIdCounter++;
+-    if(ref>threadSupervisor->s_MaxThreadLocalIdCounter)
+-     abort();
+-    *refno = ref;
++
++    if (*refno != 0)
++      return;
++
++    if (wasmThreadLocalIdCounter >= 1024)
++      abort();
++
++    *refno = wasmThreadLocalIdCounter++;
+   }
++
+   int getAllowableThreads()
+   {
+     return currentAllowedThreads;
+diff --git a/M2/cmake/FindFactory.cmake b/M2/cmake/FindFactory.cmake
+index 3e8cb7558a..66e4efd3aa 100644
+--- a/M2/cmake/FindFactory.cmake
++++ b/M2/cmake/FindFactory.cmake
+@@ -98,3 +98,4 @@ if(NOT FACTORY_FOUND)
+   mark_as_advanced(FACTORY_INCLUDE_DIR FACTORY_LIBRARIES)
+ 
+ endif()
++list(APPEND FACTORY_LIBRARIES "${CMAKE_PREFIX_PATH}/lib/libomalloc.a" "${CMAKE_PREFIX_PATH}/lib/libsingular_resources.a")
+diff --git a/M2/cmake/FindNauty.cmake b/M2/cmake/FindNauty.cmake
+index 1876f632a9..50af8955f4 100644
+--- a/M2/cmake/FindNauty.cmake
++++ b/M2/cmake/FindNauty.cmake
+@@ -60,8 +60,6 @@ macro(_NAUTY_check_version)
+ endmacro(_NAUTY_check_version)
+ 
+ if(NOT NAUTY_FOUND)
+-  set(NAUTY_INCLUDE_DIR NOTFOUND)
+-  set(NAUTY_LIBRARIES NOTFOUND)
+ 
+   # search first if an NautyConfig.cmake is available in the system,
+   # if successful this would set NAUTY_INCLUDE_DIR and the rest of
+@@ -80,7 +78,6 @@ if(NOT NAUTY_FOUND)
+   endif()
+ 
+   if(NAUTY_INCLUDE_DIR)
+-    _NAUTY_check_version()
+   endif()
+ 
+   if(NOT NAUTY_LIBRARIES)
+diff --git a/M2/cmake/FindNormaliz.cmake b/M2/cmake/FindNormaliz.cmake
+index cd59919f67..27e71748ca 100644
+--- a/M2/cmake/FindNormaliz.cmake
++++ b/M2/cmake/FindNormaliz.cmake
+@@ -107,3 +107,4 @@ if(NOT NORMALIZ_FOUND)
+   mark_as_advanced(NORMALIZ_EXECUTABLE NORMALIZ_INCLUDE_DIR NORMALIZ_LIBRARIES)
+ 
+ endif()
++list(APPEND NORMALIZ_LIBRARIES "${CMAKE_PREFIX_PATH}/lib/libcocoa.a")
+diff --git a/M2/cmake/check-libraries.cmake b/M2/cmake/check-libraries.cmake
+index e676fe52b9..9b4a82d6a7 100644
+--- a/M2/cmake/check-libraries.cmake
++++ b/M2/cmake/check-libraries.cmake
+@@ -11,7 +11,7 @@
+ # TODO: turn all these libraries into imported libraries and find incompatibilities another way.
+ set(PKGLIB_LIST    FFLAS_FFPACK GIVARO)
+ set(LIBRARIES_LIST MPSOLVE FROBBY NORMALIZ FACTORY FLINT NTL MPFI MPFR GMP GLPK BDWGC LAPACK)
+-set(LIBRARY_LIST   READLINE HISTORY GDBM JANSSON)
++set(LIBRARY_LIST   GDBM JANSSON)
+ 
+ message(CHECK_START " Checking for existing libraries and programs")
+ 
+@@ -49,7 +49,6 @@ if(STATIC_BOOST)
+ endif()
+ set(Boost_USE_STATIC_LIBS ${STATIC_BOOST})
+ if(UNIX)
+-  cmake_policy(SET CMP0167 OLD) # load CMake's FindBoost module
+   find_package(Boost	REQUIRED QUIET COMPONENTS regex OPTIONAL_COMPONENTS stacktrace_addr2line)
+ else()
+   find_package(Boost	REQUIRED QUIET COMPONENTS regex OPTIONAL_COMPONENTS stacktrace_backtrace)
+@@ -106,8 +105,6 @@ endif()
+ #    (provided by libreadline-dev on Ubuntu and readline )
+ 
+ # TODO: replace these two with libedit, see https://github.com/Macaulay2/M2/issues/825
+-find_package(Readline	REQUIRED QUIET) # See FindReadline.cmake
+-find_package(History	REQUIRED QUIET) # See FindHistory.cmake
+ 
+ ###############################################################################
+ ## Multi-precision arithmetic requirements:
+diff --git a/M2/include/M2/gc-include.h b/M2/include/M2/gc-include.h
+index e87878c0a4..61695d361b 100644
+--- a/M2/include/M2/gc-include.h
++++ b/M2/include/M2/gc-include.h
+@@ -13,7 +13,6 @@
+   #endif
+ 
+   #if defined(__linux__) 
+-    #define GC_LINUX_THREADS
+   #endif 
+ 
+   #define _REENTRANT 1
+@@ -32,7 +31,6 @@
+    #define GC_IGNORE_WARN 1
+   #endif
+ 
+-  #define GC_THREADS 1
+ 
+   /*
+    * these two macros affect the definition of GC_INIT, but have
