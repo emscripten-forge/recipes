@@ -1,56 +1,33 @@
 #!/bin/bash
 set -exuo pipefail
 
-# Set default values for potentially unset variables
-EM_FORGE_SIDE_MODULE_CFLAGS="${EM_FORGE_SIDE_MODULE_CFLAGS:-}"
-CFLAGS="${CFLAGS:-}"
-CXXFLAGS="${CXXFLAGS:-}"
-LDFLAGS="${LDFLAGS:-}"
-
-export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
-export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
-# Graphviz links several executables from object libraries and their static
-# archives. SIDE_MODULE makes wasm-ld use --whole-archive, which links those
-# objects twice and produces duplicate-symbol errors. The Python binding is a
-# static archive on Emscripten, so it does not need SIDE_MODULE at this stage.
-LDFLAGS="${LDFLAGS//-s SIDE_MODULE=1/}"
-LDFLAGS="${LDFLAGS//-sSIDE_MODULE=1/}"
-export LDFLAGS="$LDFLAGS -L${PREFIX}/lib"
+export LDFLAGS="${LDFLAGS:-} -L${PREFIX}/lib"
 
 TARGET_PYTHON_INCLUDE="${PREFIX}/include/python${PY_VER}"
-TARGET_PYTHON_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a"
 BUILD_PYTHON="${BUILD_PREFIX}/bin/python"
 
 # Upstream creates non-suffixed alias symlinks for dot (circo, fdp, ...),
 # but Emscripten installs executables with a .js suffix. Make the alias names
 # include the executable suffix so `ninja install` can find circo.js, etc.
-sed -i '/create_symlink \$<TARGET_FILE_NAME:dot>/{n;s/${cmd_alias}/${cmd_alias}${CMAKE_EXECUTABLE_SUFFIX}/;}' \
+sed -i.bak '/create_symlink \$<TARGET_FILE_NAME:dot>/{n;s/${cmd_alias}/${cmd_alias}${CMAKE_EXECUTABLE_SUFFIX}/;}' \
     "${SRC_DIR}/cmd/dot/CMakeLists.txt"
-sed -i '/create_symlink \$<TARGET_FILE_NAME:gxl2gv>/{n;s/${cmd_alias}/${cmd_alias}${CMAKE_EXECUTABLE_SUFFIX}/;}' \
+sed -i.bak '/create_symlink \$<TARGET_FILE_NAME:gxl2gv>/{n;s/${cmd_alias}/${cmd_alias}${CMAKE_EXECUTABLE_SUFFIX}/;}' \
     "${SRC_DIR}/cmd/tools/CMakeLists.txt"
+rm "${SRC_DIR}/cmd/dot/CMakeLists.txt.bak" "${SRC_DIR}/cmd/tools/CMakeLists.txt.bak"
 
 mkdir -p build
 cd build
 
 emcmake cmake -GNinja \
     ${CMAKE_ARGS} \
-    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
+    -DPKG_CONFIG_ARGN=--static \
     -DPython3_EXECUTABLE="${BUILD_PYTHON}" \
     -DPython3_INCLUDE_DIR="${TARGET_PYTHON_INCLUDE}" \
     -DPython3_INCLUDE_DIRS="${TARGET_PYTHON_INCLUDE}" \
-    -DPython3_LIBRARY="${TARGET_PYTHON_LIBRARY}" \
-    -DPython3_LIBRARIES="${TARGET_PYTHON_LIBRARY}" \
-    -DPYTHON3_EXECUTABLE="${BUILD_PYTHON}" \
-    -DPYTHON3_INCLUDE_DIR="${TARGET_PYTHON_INCLUDE}" \
-    -DPYTHON3_INCLUDE_PATH="${TARGET_PYTHON_INCLUDE}" \
-    -DPYTHON3_LIBRARY="${TARGET_PYTHON_LIBRARY}" \
-    -DPYTHON3_LIBRARIES="${TARGET_PYTHON_LIBRARY}" \
-    -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=BOTH \
-    -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH \
-    -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=BOTH \
     -DBUILD_SHARED_LIBS=OFF \
     -DGRAPHVIZ_CLI=ON \
     -Dwith_cxx_api=ON \
@@ -93,10 +70,6 @@ emcmake cmake -GNinja \
     -DMATH_LIB= \
     "${SRC_DIR}"
 
-# The zlib recipe exposes libz.so as well, but wasm-ld requires the static
-# archive. Force any generated CMake metadata to use libz.a.
-find . -type f -name '*.cmake' -exec sed -i 's|libz\.so|libz.a|g' {} + 2>/dev/null || true
-
 ninja install
 
 # UseSWIG generates the Python proxy module next to the binding target, but
@@ -107,24 +80,10 @@ if [ -z "${gv_python_proxy}" ]; then
     echo "Unable to locate the SWIG-generated gv.py proxy" >&2
     exit 1
 fi
-install -Dm644 "${gv_python_proxy}" "${PREFIX}/lib/graphviz/python3/gv.py"
-
-# Emscripten maps CMake MODULE libraries to static archives. Python cannot
-# import that archive directly, so link the SWIG wrapper and Graphviz archives
-# into a side module for the runtime package.
-mapfile -t graphviz_archives < <(
-    find "${PWD}" -type f -name '*.a' \
-        ! -path "${PWD}/tclpkg/gv/_gv_python3.a" | sort
-)
+# Emscripten 6 builds CMake MODULE targets as real shared libraries.
 mkdir -p "${PREFIX}/lib/python${PY_VER}/site-packages"
-em++ -shared -sSIDE_MODULE=1 \
-    -o "${PREFIX}/lib/python${PY_VER}/site-packages/_gv_python3.so" \
-    -Wl,--start-group \
-    "${PWD}/tclpkg/gv/_gv_python3.a" \
-    "${graphviz_archives[@]}" \
-    -Wl,--end-group \
-    "${PREFIX}/lib/libz.a" \
-    "${PREFIX}/lib/libwebp.a"
+mv "${PREFIX}/lib/graphviz/python3/_gv_python3.so" \
+    "${PREFIX}/lib/python${PY_VER}/site-packages/_gv_python3.so"
 install -Dm644 "${gv_python_proxy}" \
     "${PREFIX}/lib/python${PY_VER}/site-packages/gv.py"
 
