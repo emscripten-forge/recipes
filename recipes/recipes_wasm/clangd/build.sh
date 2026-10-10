@@ -18,7 +18,7 @@ link_flags+=" -sEXPORTED_RUNTIME_METHODS=FS,callMain --js-library=${RECIPE_DIR}/
 
 # LLVM and Clang are internal pthread-enabled dependencies, not package outputs.
 # CMAKE_ARGS supplies the compiler toolchain and matching wasm32/wasm64 target.
-emcmake cmake ${CMAKE_ARGS} -G Ninja -S "${SRC_DIR}/llvm" -B build \
+emcmake cmake ${CMAKE_ARGS} -G "Unix Makefiles" -S "${SRC_DIR}/llvm" -B build \
   -DCMAKE_BUILD_TYPE=MinSizeRel \
   -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS:-} ${flags}" \
   -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS:-} ${flags} -Dwait4=__syscall_wait4" \
@@ -43,6 +43,6 @@ emcmake cmake ${CMAKE_ARGS} -G Ninja -S "${SRC_DIR}/llvm" -B build \
   -DCLANG_TIDY_ENABLE_STATIC_ANALYZER=OFF \
   -DCLANG_TIDY_ENABLE_QUERY_BASED_CUSTOM_CHECKS=OFF
 
-cmake --build build --target clangd -- -j"${CPU_COUNT:-2}"
+emmake make -C build -j"${CPU_COUNT:-2}" clangd
 mkdir -p "${PREFIX}/bin"
 install -m 644 build/bin/clangd.js build/bin/clangd.wasm "${PREFIX}/bin/"
