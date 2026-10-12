@@ -16,33 +16,35 @@ source:
 build:
   number: 0
   script: $R CMD INSTALL $R_ARGS .
-  skip: ${{ r_base == '4.6.0' }} 
+  skip: ${{ r_base == '4.6.0' }}
 requirements:
   build:
   - cross-r-base ==${{ r_base }}
-  - ${{ compiler('c') }}  
-  
+  - ${{ compiler('c') }}
+
   host:
   - r-base ==${{ r_base }}
-  
-
 tests:
 - package_contents:
     lib:
     - R/library/${{ ccname }}/libs/${{ ccname }}.so
-- script: run_r_test 
+- script: run_r_test
   files:
     recipe:
     - test_import.R
   requirements:
     build:
     - r-wasm-tester
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   homepage: http://dice.emse.fr/
   license: GPL-3.0-only
   license_file: GPL3
-  summary:  Space-Filling Designs and Uniformity Criteria.
+  summary: Space-Filling Designs and Uniformity Criteria.
 
 extra:
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten
