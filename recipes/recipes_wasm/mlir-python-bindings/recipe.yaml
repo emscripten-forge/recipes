@@ -23,7 +23,7 @@ source:
   - patches/0008-single-threaded-helpers.patch
 
 build:
-  number: 3
+  number: 4
 
 outputs:
 - staging:
@@ -34,7 +34,7 @@ outputs:
     build:
     - ${{ compiler("c") }}
     - ${{ compiler("cxx") }}
-    - cmake
+    - cmake >=4.3.3,<4.4
     - make    # [unix]
     # mlir-tblgen + llvm-tblgen + mlir-linalg-ods-yaml-gen must match the
     # LLVM/MLIR source version being cross-compiled.
@@ -48,14 +48,13 @@ outputs:
     - lld-static ==${{ version }}
 
 - package:
-    name: mlir
+    name: mlir-static
     version: ${{ version }}
   inherit: mlir-build
   build:
-    script: echo "Packaging the MLIR C++ SDK from the shared build"
+    script: echo "Packaging MLIR static libraries and development files"
     files:
       include:
-      - bin/mlir-*
       - include/mlir/**
       - include/mlir-c/**
       - lib/libMLIR*.a
@@ -63,6 +62,7 @@ outputs:
       - lib/objects-*/obj.MLIR*/**
       - lib/cmake/mlir/**
       - share/mlir/**
+      - src/python/**
   requirements:
     host:
     - llvm-static ==${{ version }}
@@ -74,10 +74,16 @@ outputs:
   tests:
   - package_contents:
       files:
-      - include/mlir/IR/MLIRContext.h
-      - include/mlir-c/IR.h
-      - lib/libMLIRIR.a
-      - lib/cmake/mlir/MLIRConfig.cmake
+        exists:
+        - include/mlir/IR/MLIRContext.h
+        - include/mlir-c/IR.h
+        - lib/libMLIRIR.a
+        - lib/libMLIRMlirOptMain.a
+        - lib/libMLIRTranslateLib.a
+        - lib/cmake/mlir/MLIRConfig.cmake
+        not_exists:
+        - bin/**
+        - '**/*.so*'
   - script: cmake -S tests -B test-build -DCMAKE_PREFIX_PATH="$PREFIX"
     files:
       recipe:
@@ -90,6 +96,41 @@ outputs:
     requirements:
       build:
       - generic-testing
+
+- package:
+    name: mlir
+    version: ${{ version }}
+  inherit: mlir-build
+  build:
+    script: echo "Packaging MLIR WebAssembly tools"
+    files:
+      include:
+      - bin/mlir-opt.js
+      - bin/mlir-opt.wasm
+      - bin/mlir-translate.js
+      - bin/mlir-translate.wasm
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - bin/mlir-opt.js
+        - bin/mlir-opt.wasm
+        - bin/mlir-translate.js
+        - bin/mlir-translate.wasm
+        not_exists:
+        - lib/**
+        - include/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: node test_tools.mjs
+    files:
+      recipe:
+      - test_tools.mjs
+    requirements:
+      build:
+      - nodejs
 
 - package:
     name: mlir-python-bindings
@@ -107,6 +148,8 @@ outputs:
       skip_pyc_compilation:
       - '**/*.py'
   requirements:
+    run_exports:
+    - ${{ pin_subpackage('mlir-python-bindings', lower_bound='x.x', upper_bound='x.x') }}
     run:
     - python
     # Used by mlir.runtime.np_to_memref, mlir.ir NumPy interop and the Linalg
@@ -149,5 +192,9 @@ about:
   repository: https://github.com/llvm/llvm-project
 
 extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
   recipe-maintainers:
   - anutosh491
