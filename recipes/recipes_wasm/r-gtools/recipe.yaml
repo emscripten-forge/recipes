@@ -1,56 +1,51 @@
 context:
-  name: gss
-  version: 3.0-0
+  name: gtools
+  version: 3.9.5
 
 package:
   name: r-${{ name }}
-  version: ${{ version | replace('-', '_') }}
+  version: ${{ version }}
 
 source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-  sha256: 097abb57c82948517bb7ad4395933fc9faae3e15b9f273f3e0fa74409752bb89
+  sha256: dee9b6c1152db1a5dc427d074b32bbbb738708683f17a95e0e95e4d79fdf174b
 
 build:
   number: 0
-  script: |
-    cp $RECIPE_DIR/Makevars src/Makevars
-    $R CMD INSTALL $R_ARGS .
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base ==${{ r_base }}
   - ${{ compiler('c') }}
-  - ${{ compiler('fortran') }}
   host:
   - r-base ==${{ r_base }}
-  - libflang-rt-static
 
 tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
-  homepage: https://cran.r-project.org/package=${{ name }}
-  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
-  repository: https://cran.r-project.org/package=${{ name }}
-  license: GPL-2.0-or-later
+  homepage: https://cran.r-project.org/package=gtools
+  repository: https://github.com/cran/gtools
+  license: GPL-2.0-only
+  license_family: GPL2
   license_file:
   - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
-  summary: General Smoothing Splines
-  description: |-
-    A comprehensive package for structural multivariate
-    function estimation using smoothing splines.
 
 extra:
   recipe-maintainers:

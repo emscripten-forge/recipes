@@ -1,9 +1,9 @@
 context:
-  name: kernlab
-  version: 0.9-33
+  name: gsl
+  version: 2.1-9
 
 package:
-  name: r-${{ name | lower }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
@@ -11,49 +11,48 @@ source:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-  sha256: 70c0787d6d3762c89bb68218fbee19e861fcb5d4c05b787a9692055d95dd3061
+  sha256: 56dec6105a882c7d976765b879d0832b436f0371c174e34a3e37bc390c56ed80
 
 build:
   number: 0
-  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base ==${{ r_base }}
   - ${{ compiler('c') }}
-  - ${{ compiler('fortran') }}
   host:
   - r-base ==${{ r_base }}
-  - libflang-rt-static
+  - gsl-static
 
 tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
-  homepage: https://cran.r-project.org/package=${{ name }}
+  homepage: https://github.com/RobinHankin/gsl
   documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
-  repository: https://cran.r-project.org/package=${{ name }}
-  license: GPL-2.0-only
+  repository: https://github.com/RobinHankin/gsl
+  license: GPL-3.0-only
   license_family: GPL
   license_file:
-  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
-  summary: Kernel-Based Machine Learning Lab
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Wrapper for the Gnu Scientific Library
   description: |-
-    Kernel-based machine learning methods for classification,
-    regression, clustering, novelty detection, quantile regression
-    and dimensionality reduction.  Among other methods 'kernlab'
-    includes Support Vector Machines, Spectral Clustering, Kernel
-    PCA, Gaussian Processes and a QP solver.
+    An R wrapper for some of the functionality of the
+    Gnu Scientific Library.
 
 extra:
   recipe-maintainers:
