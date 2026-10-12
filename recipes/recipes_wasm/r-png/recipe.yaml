@@ -1,20 +1,24 @@
 context:
+  name: png
   version: 0.1-9
-  name: r-png
 
 package:
-  name: ${{ name | lower }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 0b8502363c6f5c73cf284dee4fd1416f5adf4115b6ae9a1e09531c143b978589
+  patches:
+  - patches/0001-Remove-dummy.c.patch
+  - patches/0002-Use-static-libpng.patch
 
 build:
   number: 0
-
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -28,23 +32,28 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_import.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: http://www.rforge.net/png/
   license: GPL-2.0-only OR GPL-3.0-only
   license_family: GPL3
-  license_file: GPL-3
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
   summary: |
     PNG: Read and write PNG images
 
 extra:
   recipe-maintainers:
-    - DerThorsten
+  - DerThorsten
+  - IsabelParedes
