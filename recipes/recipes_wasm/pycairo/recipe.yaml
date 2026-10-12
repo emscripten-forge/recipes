@@ -1,0 +1,70 @@
+context:
+  name: pycairo
+  version: 1.29.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pygobject/pycairo/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3e69fff74fe64f5ba2dfa31f67c6bdf26413342574047437d2ac520d35e9a489
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - meson >=0.62
+  - ninja
+  - pkg-config
+  - python
+  host:
+  - cairo-static
+  - libexpat-static
+  - fontconfig-static
+  - freetype-static
+  - libffi-static
+  - libpng-static
+  - liblzo-static
+  - pixman-static
+  - python-dev
+  - zlib-static
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pycairo.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: http://cairographics.org/pycairo/
+  license: LGPL-2.1-only OR MPL-1.1
+  license_file: COPYING
+  summary: Python bindings for the Cairo graphics library.
+  repository: https://github.com/pygobject/pycairo/
+
+extra:
+  recipe-maintainers:
+  - wolfv
