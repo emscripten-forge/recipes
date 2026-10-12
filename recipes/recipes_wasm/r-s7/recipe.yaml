@@ -1,19 +1,20 @@
 context:
+  name: S7
   version: 0.2.2
-  name: r-S7
 
 package:
-  name: ${{ name | lower }}
+  name: r-${{ name | lower }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 6f33245dde05b74265b1c4d379e034bc3a8923d41e7b52e6e75a75ce97d42af7
 
 build:
-  number: 2
+  number: 0
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -26,7 +27,17 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=s7
