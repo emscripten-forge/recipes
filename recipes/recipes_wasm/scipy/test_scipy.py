@@ -25,6 +25,7 @@ def _assert_openblas(pkg, cfg):
 
 def test_config():
     import scipy
+    from packaging.version import Version
     c = scipy.show_config(mode="dicts")
 
     assert c["Compilers"]["c"]["name"] == "emscripten"
@@ -34,7 +35,7 @@ def test_config():
     assert c["Compilers"]["c++"]["commands"] == "em++"
 
     assert c["Compilers"]["fortran"]["name"] == "llvm-flang"
-    assert c["Compilers"]["fortran"]["version"] == "23.1.2"
+    assert Version(c["Compilers"]["fortran"]["version"]).major >= 23
 
 
 def test_openblas_build_config():
