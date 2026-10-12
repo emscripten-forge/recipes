@@ -1,0 +1,49 @@
+context:
+  name: awk
+  version: 20260426
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/onetrueawk/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 7ae5b9fc6a8149bc45ea0ba3ba434a69a16d1460d19f6d01b6f04cc885b8e02b
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - make
+    - bison
+
+tests:
+- package_contents:
+    files:
+    - bin/awk.js
+    - bin/awk.wasm
+- script:
+  - bash test_awk.sh
+  files:
+    recipe:
+    - test_awk.sh
+  requirements:
+    build:
+    - run_modularized
+
+about:
+  homepage: https://github.com/onetrueawk/awk
+  license: LicenseRef-Lucent-Technologies
+  license_file: LICENSE
+  summary: The one true awk
+  description: |
+    This is the version of awk described in The AWK Programming Language, Second
+    Edition, by Al Aho, Brian Kernighan, and Peter Weinberger (Addison-Wesley,
+    2024, ISBN-13 978-0138269722, ISBN-10 0138269726).
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

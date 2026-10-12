@@ -12,10 +12,12 @@ pixi run setup
 
 # this builds the package
 pixi run build-emscripten-wasm32-pkg recipes/recipes_emscripten/regex
+pixi run build-emscripten-wasm64-pkg recipes/recipes_emscripten/regex
 ```
 
-!!! note
-    When using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/) (WSL), some local builds might fail due to `libatomic` not being available. For cases like this, developers are required to use a full Linux machine such as a virtual machine or cloud server.
+```{note}
+When using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/) (WSL), some local builds might fail due to `libatomic` not being available. For cases like this, developers are required to use a full Linux machine such as a virtual machine or cloud server.
+```
 
 ## Local builds with `rattler-build`
 We recommend using the `pixi` command to build packages locally. However, if you want to use `rattler-build` directly, you can do so with the following steps:
@@ -35,12 +37,12 @@ I.e. if you open a new terminal, you have to activate the environment again with
 
 ### Setup emsdk
 
- We currently need a patched version of emsdk. This is because emscripten had some regressions in the `3.1.45` release wrt. dynamic loading of shared libraries. We use the `./emsdk/setup_emsdk.sh` which takes
+ We currently need a patched version of emsdk. This is because emscripten had some regressions in the `6.0.8` release wrt. dynamic loading of shared libraries. We use the `./emsdk/setup_emsdk.sh` which takes
  two arguments: the emsdk version and the path where emsdk should be installed.
- In this example we choose `~/emsdk` as the installation path. You have to use version `3.1.45`.
+ In this example we choose `~/emsdk` as the installation path. You have to use version `6.0.8`.
 
 ```bash
-./emsdk/setup_emsdk.sh 3.1.45 ~/emsdk
+./emsdk/setup_emsdk.sh 6.0.8 ~/emsdk
 ```
 
 ### Build compiler packages / meta packages:
