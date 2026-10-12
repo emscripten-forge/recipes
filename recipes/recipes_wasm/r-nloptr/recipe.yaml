@@ -1,15 +1,16 @@
 context:
-  name: r-nloptr
+  name: nloptr
   version: 2.2.1
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 76ba40750b475c8b1ad6a86c9e05f0c1746af16d965235ff9293953920aed7f4
 
 build:
@@ -23,27 +24,31 @@ requirements:
   - pkg-config
   host:
   - r-base ==${{ r_base }}
-  - libnlopt
+  - libnlopt-static
   - libflang-rt-static
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test test_nloptr.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_nloptr.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://astamm.github.io/nloptr/
   repository: https://github.com/astamm/nloptr
   license: LGPL-3.0-only
   license_family: LGPL
-  license_file: LICENSE
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/LGPL-3
   summary: R interface to NLopt
   description: |
     Solve optimization problems using an R interface to NLopt. NLopt is a
