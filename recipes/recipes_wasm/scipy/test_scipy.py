@@ -25,6 +25,7 @@ def _assert_openblas(pkg, cfg):
 
 def test_config():
     import scipy
+    from packaging.version import Version
     c = scipy.show_config(mode="dicts")
 
     assert c["Compilers"]["c"]["name"] == "emscripten"
@@ -34,13 +35,15 @@ def test_config():
     assert c["Compilers"]["c++"]["commands"] == "em++"
 
     assert c["Compilers"]["fortran"]["name"] == "llvm-flang"
-    assert c["Compilers"]["fortran"]["version"] == "20.1.7"
+    assert Version(c["Compilers"]["fortran"]["version"]).major >= 23
 
 
 def test_openblas_build_config():
     import scipy
 
-    _assert_openblas("numpy", np.show_config(mode="dicts"))
+    # TODO: re-enable when numpy compiled using openblas
+    #_assert_openblas("numpy", np.show_config(mode="dicts"))
+
     _assert_openblas("scipy", scipy.show_config(mode="dicts"))
 
 
