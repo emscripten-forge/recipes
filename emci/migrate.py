@@ -261,9 +261,8 @@ def cluster_recipes(filtered_to_migrate_dir, output_dir, target_platform, pkg_to
                     assert 'name' in dep
                     info["needs"].add(dep['name'])
 
-
-            run = finalized_dependencies.get("run", [])
-            if run is not None and  'depends' in run:
+            run = finalized_dependencies.get("run", {})
+            if run is not None and 'depends' in run:
                 for dep in run['depends']:
                     if 'spec' in dep:
                         spec = dep['spec']
