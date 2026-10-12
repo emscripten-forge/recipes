@@ -1,6 +1,6 @@
 context:
-  version: 2.23-27
   name: KernSmooth
+  version: 2.23-27
 
 package:
   name: r-${{ name | lower }}
@@ -10,6 +10,7 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: d501066a63959bee97d1ce7c556cb90862b3261fa6fc1c3cf8e5b2cdea2cc70d
 
 build:
@@ -29,13 +30,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_import.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://CRAN.R-project.org/package=KernSmooth
