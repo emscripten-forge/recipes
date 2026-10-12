@@ -3,7 +3,7 @@ context:
   version: 1.0-21
 
 package:
-  name: r-${{ name | lower }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
@@ -15,7 +15,6 @@ source:
 
 build:
   number: 0
-  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -31,21 +30,23 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=${{ name }}
   documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
   repository: https://cran.r-project.org/package=${{ name }}
   license: LicenseRef-Unlimited
-  license_file:
-  - LICENSE
+  license_file: LICENSE
   summary: Penalized Smoothing Splines
   description: |-
     Smoothing splines with penalties on order m derivatives.
@@ -53,3 +54,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
