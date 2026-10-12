@@ -260,7 +260,7 @@ def cluster_recipes(filtered_to_migrate_dir, output_dir, target_platform, pkg_to
                 for dep in host['resolved']:
                     assert 'name' in dep
                     info["needs"].add(dep['name'])
-               
+
 
             run = finalized_dependencies.get("run", [])
             if run is not None and  'depends' in run:
