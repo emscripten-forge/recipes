@@ -1,17 +1,21 @@
 context:
-  name: r-flashclust
-  version: "1.1-4"
-  ccname: flashClust
+  name: flashClust
+  version: 1.1-4
 
 package:
-  name: ${{ name }}
+  name: r-${{ name | lower }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 4ea74236921a05457bedeb7415323d4ca5479dcfa56f8ba5489de604c33db4e9
+  patches:
+  - if: target_platform == "emscripten-wasm64"
+    then:
+    - patches/0001-Avoid-NINT-to-work-around-wasm64-lround-codegen.patch
 
 build:
   number: 0
@@ -29,19 +33,23 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccname }}/libs/${{ ccname }}.so
-- script: run_r_test test_flashclust.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_flashclust.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=flashClust
   license: GPL-2.0-or-later
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Implementation of optimal hierarchical clustering
 
 extra:
