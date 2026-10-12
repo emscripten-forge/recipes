@@ -3,7 +3,7 @@ context:
   name: mpc
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -21,12 +21,19 @@ requirements:
   host:
     - gmp-static
     - mpfr-static
+  run:
+    - ${{ pin_compatible("gmp-static", lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible("mpfr-static", lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
     files:
     - include/mpc.h
     - lib/libmpc.a
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.multiprecision.org/
