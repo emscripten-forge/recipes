@@ -1,11 +1,7 @@
----
-date: 2024-05-10
-category:
-    - rust
-    
-authors:
-    - derthorsten
----
+```{post} 2024-05-10
+:author: derthorsten
+:category: rust
+```
 
 # Local builds with `pixi`
 

@@ -1,0 +1,691 @@
+From 73bb9bb0df738c90431caac05de1d54ddae8d1fe Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 28 Sep 2026 16:05:28 +0100
+Subject: [PATCH 14/14] Integer rounding workaround for wasm64
+
+---
+ lapack-netlib/SRC/cgejsv.f | 23 ++++++++++++-----------
+ lapack-netlib/SRC/claqps.f |  4 ++--
+ lapack-netlib/SRC/dgejsv.f | 20 ++++++++++----------
+ lapack-netlib/SRC/dlacn2.f |  8 ++++----
+ lapack-netlib/SRC/dlacon.f |  8 ++++----
+ lapack-netlib/SRC/dlaqps.f |  4 ++--
+ lapack-netlib/SRC/iparmq.f |  5 +++--
+ lapack-netlib/SRC/sgejsv.f | 20 ++++++++++----------
+ lapack-netlib/SRC/slacn2.f |  8 ++++----
+ lapack-netlib/SRC/slacon.f |  8 ++++----
+ lapack-netlib/SRC/slaqps.f |  4 ++--
+ lapack-netlib/SRC/zgejsv.f | 23 ++++++++++++-----------
+ lapack-netlib/SRC/zlaqps.f |  4 ++--
+ 13 files changed, 71 insertions(+), 68 deletions(-)
+
+diff --git a/lapack-netlib/SRC/cgejsv.f b/lapack-netlib/SRC/cgejsv.f
+index 55afcb90a..fbb59e009 100644
+--- a/lapack-netlib/SRC/cgejsv.f
++++ b/lapack-netlib/SRC/cgejsv.f
+@@ -609,7 +609,8 @@
+       REAL    RDUMMY(1)
+ *
+ *     .. Intrinsic Functions ..
+-      INTRINSIC ABS, CMPLX, CONJG, ALOG, MAX, MIN, REAL, NINT, SQRT
++      INTRINSIC ABS, CMPLX, CONJG, ALOG, MAX, MIN, REAL, SQRT, ANINT,
++     $          INT
+ *     ..
+ *     .. External Functions ..
+       REAL      SLAMCH, SCNRM2
+@@ -1543,7 +1544,7 @@
+      $                N, V, LDV, CWORK, LWORK, RWORK, LRWORK, INFO )
+ *
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+ *
+ *
+       ELSE IF ( ( RSVEC .AND. ( .NOT. LSVEC ) .AND. ( .NOT. JRACC ) ) 
+@@ -1564,7 +1565,7 @@
+             CALL CGESVJ( 'L','U','N', N, NR, V, LDV, SVA, NR, A, LDA,
+      $                  CWORK, LWORK, RWORK, LRWORK, INFO )
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+ 
+          ELSE
+ *
+@@ -1587,7 +1588,7 @@
+             CALL CGESVJ( 'L', 'U','N', NR, NR, V,LDV, SVA, NR, U,
+      $                  LDU, CWORK(N+1), LWORK-N, RWORK, LRWORK, INFO )
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+             IF ( NR .LT. N ) THEN
+                CALL CLASET( 'A',N-NR, NR, CZERO,CZERO, V(NR+1,1),
+      $                      LDV )
+@@ -1619,7 +1620,7 @@
+          CALL CGESVJ( 'U','N','V', N, N, A, LDA, SVA, N, V, LDV,
+      $               CWORK, LWORK, RWORK, LRWORK, INFO )
+           SCALEM  = RWORK(1)
+-          NUMRANK = NINT(RWORK(2))
++          NUMRANK = INT( ANINT(RWORK(2)) )
+           CALL CLAPMR( .FALSE., N, N, V, LDV, IWORK )
+ *
+       ELSE IF ( LSVEC .AND. ( .NOT. RSVEC ) ) THEN
+@@ -1646,7 +1647,7 @@
+          CALL CGESVJ( 'L', 'U', 'N', NR,NR, U, LDU, SVA, NR, A,
+      $        LDA, CWORK(N+1), LWORK-N, RWORK, LRWORK, INFO )
+          SCALEM  = RWORK(1)
+-         NUMRANK = NINT(RWORK(2))
++         NUMRANK = INT( ANINT(RWORK(2)) )
+ *
+          IF ( NR .LT. M ) THEN
+             CALL CLASET( 'A',  M-NR, NR,CZERO, CZERO, U(NR+1,1),
+@@ -1875,7 +1876,7 @@
+      $              CWORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,RWORK,
+      $              LRWORK, INFO )
+                SCALEM  = RWORK(1)
+-               NUMRANK = NINT(RWORK(2))
++               NUMRANK = INT( ANINT(RWORK(2)) )
+                DO 3970 p = 1, NR
+                   CALL CCOPY(  NR, V(1,p), 1, U(1,p), 1 )
+                   CALL CSSCAL( NR, SVA(p),    V(1,p), 1 )
+@@ -1919,7 +1920,7 @@
+      $              LDU, CWORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR,
+      $              RWORK, LRWORK, INFO )
+                SCALEM  = RWORK(1)
+-               NUMRANK = NINT(RWORK(2))
++               NUMRANK = INT( ANINT(RWORK(2)) )
+                DO 3870 p = 1, NR
+                   CALL CCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL CSSCAL( NR, SVA(p),    U(1,p), 1 )
+@@ -1962,7 +1963,7 @@
+      $              LDU, CWORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR,
+      $                         RWORK, LRWORK, INFO )
+                SCALEM  = RWORK(1)
+-               NUMRANK = NINT(RWORK(2))
++               NUMRANK = INT( ANINT(RWORK(2)) )
+                IF ( NR .LT. N ) THEN
+                   CALL CLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),
+      $                         LDV )
+@@ -2061,7 +2062,7 @@
+      $       INFO )
+ *
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+             DO 6970 p = 1, N
+                CALL CCOPY( N, CWORK(N+(p-1)*N+1), 1, U(1,p), 1 )
+                CALL CSSCAL( N, SVA(p), CWORK(N+(p-1)*N+1), 1 )
+@@ -2168,7 +2169,7 @@
+      $        N, V, LDV, CWORK(2*N+N*NR+1), LWORK-2*N-N*NR,
+      $         RWORK, LRWORK, INFO )
+          SCALEM  = RWORK(1)
+-         NUMRANK = NINT(RWORK(2))
++         NUMRANK = INT( ANINT(RWORK(2)) )
+ 
+          IF ( NR .LT. N ) THEN
+             CALL CLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV )
+diff --git a/lapack-netlib/SRC/claqps.f b/lapack-netlib/SRC/claqps.f
+index e41c47c3c..51d16a294 100644
+--- a/lapack-netlib/SRC/claqps.f
++++ b/lapack-netlib/SRC/claqps.f
+@@ -207,7 +207,7 @@
+       EXTERNAL           CGEMM, CGEMV, CLARFG, CSWAP
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, CONJG, MAX, MIN, NINT, REAL, SQRT
++      INTRINSIC          ABS, CONJG, MAX, MIN, REAL, SQRT, ANINT, INT
+ *     ..
+ *     .. External Functions ..
+       INTEGER            ISAMAX
+@@ -349,7 +349,7 @@
+ *
+    60 CONTINUE
+       IF( LSTICC.GT.0 ) THEN
+-         ITEMP = NINT( VN2( LSTICC ) )
++         ITEMP = INT( ANINT( VN2( LSTICC ) ) )
+          VN1( LSTICC ) = SCNRM2( M-RK, A( RK+1, LSTICC ), 1 )
+ *
+ *        NOTE: The computation of VN1( LSTICC ) relies on the fact that
+diff --git a/lapack-netlib/SRC/dgejsv.f b/lapack-netlib/SRC/dgejsv.f
+index bec88dfd1..571d6dad0 100644
+--- a/lapack-netlib/SRC/dgejsv.f
++++ b/lapack-netlib/SRC/dgejsv.f
+@@ -503,7 +503,7 @@
+      $        NOSCAL, ROWPIV, RSVEC,  TRANSP
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC DABS, DLOG, MAX, MIN, DBLE, IDNINT, DSIGN, DSQRT
++      INTRINSIC DABS, DLOG, MAX, MIN, DBLE, DNINT, DSIGN, DSQRT, INT
+ *     ..
+ *     .. External Functions ..
+       DOUBLE PRECISION  DLAMCH, DNRM2
+@@ -1133,7 +1133,7 @@
+      $                      N, V, LDV, WORK, LWORK, INFO )
+ *
+             SCALEM  = WORK(1)
+-            NUMRANK = IDNINT(WORK(2))
++            NUMRANK = INT( DNINT(WORK(2)) )
+ *
+ *
+       ELSE IF ( RSVEC .AND. ( .NOT. LSVEC ) ) THEN
+@@ -1152,7 +1152,7 @@
+             CALL DGESVJ( 'L','U','N', N, NR, V,LDV, SVA, NR, A,LDA,
+      $                  WORK, LWORK, INFO )
+             SCALEM  = WORK(1)
+-            NUMRANK = IDNINT(WORK(2))
++            NUMRANK = INT( DNINT(WORK(2)) )
+ 
+          ELSE
+ *
+@@ -1177,7 +1177,7 @@
+             CALL DGESVJ( 'Lower', 'U','N', NR, NR, V,LDV, SVA, NR, U,
+      $                  LDU, WORK(N+1), LWORK-N, INFO )
+             SCALEM  = WORK(N+1)
+-            NUMRANK = IDNINT(WORK(N+2))
++            NUMRANK = INT( DNINT(WORK(N+2)) )
+             IF ( NR .LT. N ) THEN
+                CALL DLASET( 'A',N-NR, NR, ZERO,ZERO, V(NR+1,1),
+      $                      LDV )
+@@ -1223,7 +1223,7 @@
+          CALL DGESVJ( 'Lower', 'U', 'N', NR,NR, U, LDU, SVA, NR, A,
+      $        LDA, WORK(N+1), LWORK-N, INFO )
+          SCALEM  = WORK(N+1)
+-         NUMRANK = IDNINT(WORK(N+2))
++         NUMRANK = INT( DNINT(WORK(N+2)) )
+ *
+          IF ( NR .LT. M ) THEN
+             CALL DLASET( 'A',  M-NR, NR,ZERO, ZERO, U(NR+1,1), LDU )
+@@ -1437,7 +1437,7 @@
+                CALL DGESVJ( 'L','U','N',NR,NR,V,LDV,SVA,NR,U,
+      $              LDU,WORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = IDNINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT( DNINT(WORK(2*N+N*NR+NR+2)) )
+                DO 3970 p = 1, NR
+                   CALL DCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL DSCAL( NR, SVA(p),    V(1,p), 1 )
+@@ -1481,7 +1481,7 @@
+      $                      U,
+      $              LDU, WORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR, INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = IDNINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT( DNINT(WORK(2*N+N*NR+NR+2)) )
+                DO 3870 p = 1, NR
+                   CALL DCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL DSCAL( NR, SVA(p),    U(1,p), 1 )
+@@ -1521,7 +1521,7 @@
+      $                      U,
+      $              LDU, WORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR, INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = IDNINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT( DNINT(WORK(2*N+N*NR+NR+2)) )
+                IF ( NR .LT. N ) THEN
+                   CALL DLASET( 'A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV )
+                   CALL DLASET( 'A',NR,N-NR,ZERO,ZERO,V(1,NR+1),LDV )
+@@ -1615,7 +1615,7 @@
+      $           N, U, LDU, WORK(N+N*N+1), LWORK-N-N*N, INFO )
+ *
+             SCALEM  = WORK(N+N*N+1)
+-            NUMRANK = IDNINT(WORK(N+N*N+2))
++            NUMRANK = INT( DNINT(WORK(N+N*N+2)) )
+             DO 6970 p = 1, N
+                CALL DCOPY( N, WORK(N+(p-1)*N+1), 1, U(1,p), 1 )
+                CALL DSCAL( N, SVA(p), WORK(N+(p-1)*N+1), 1 )
+@@ -1714,7 +1714,7 @@
+          CALL DGESVJ( 'G', 'U', 'V', NR, NR, U, LDU, SVA,
+      $        N, V, LDV, WORK(2*N+N*NR+1), LWORK-2*N-N*NR, INFO )
+          SCALEM  = WORK(2*N+N*NR+1)
+-         NUMRANK = IDNINT(WORK(2*N+N*NR+2))
++         NUMRANK = INT( DNINT(WORK(2*N+N*NR+2)) )
+ 
+          IF ( NR .LT. N ) THEN
+             CALL DLASET( 'A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV )
+diff --git a/lapack-netlib/SRC/dlacn2.f b/lapack-netlib/SRC/dlacn2.f
+index ee2e7ca26..eb8e45a2c 100644
+--- a/lapack-netlib/SRC/dlacn2.f
++++ b/lapack-netlib/SRC/dlacn2.f
+@@ -168,7 +168,7 @@
+       EXTERNAL           DCOPY
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, DBLE, NINT
++      INTRINSIC          ABS, DBLE, ANINT, INT
+ *     ..
+ *     .. Executable Statements ..
+ *
+@@ -201,7 +201,7 @@
+          ELSE
+             X(I) = -ONE
+          END IF
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+    30 CONTINUE
+       KASE = 2
+       ISAVE( 1 ) = 2
+@@ -238,7 +238,7 @@
+          ELSE
+             XS = -ONE
+          END IF
+-         IF( NINT( XS ).NE.ISGN( I ) )
++         IF( INT( ANINT( XS ) ).NE.ISGN( I ) )
+      $      GO TO 90
+    80 CONTINUE
+ *     REPEATED SIGN VECTOR DETECTED, HENCE ALGORITHM HAS CONVERGED.
+@@ -255,7 +255,7 @@
+          ELSE
+             X(I) = -ONE
+          END IF
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+   100 CONTINUE
+       KASE = 2
+       ISAVE( 1 ) = 4
+diff --git a/lapack-netlib/SRC/dlacon.f b/lapack-netlib/SRC/dlacon.f
+index c4f8a4512..f9a7ad433 100644
+--- a/lapack-netlib/SRC/dlacon.f
++++ b/lapack-netlib/SRC/dlacon.f
+@@ -147,7 +147,7 @@
+       EXTERNAL           DCOPY
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, DBLE, NINT, SIGN
++      INTRINSIC          ABS, DBLE, SIGN, ANINT, INT
+ *     ..
+ *     .. Save statement ..
+       SAVE
+@@ -179,7 +179,7 @@
+ *
+       DO 30 I = 1, N
+          X( I ) = SIGN( ONE, X( I ) )
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+    30 CONTINUE
+       KASE = 2
+       JUMP = 2
+@@ -211,7 +211,7 @@
+       ESTOLD = EST
+       EST = DASUM( N, V, 1 )
+       DO 80 I = 1, N
+-         IF( NINT( SIGN( ONE, X( I ) ) ).NE.ISGN( I ) )
++         IF( INT( ANINT( SIGN( ONE, X( I ) ) ) ).NE.ISGN( I ) )
+      $      GO TO 90
+    80 CONTINUE
+ *     REPEATED SIGN VECTOR DETECTED, HENCE ALGORITHM HAS CONVERGED.
+@@ -224,7 +224,7 @@
+ *
+       DO 100 I = 1, N
+          X( I ) = SIGN( ONE, X( I ) )
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+   100 CONTINUE
+       KASE = 2
+       JUMP = 4
+diff --git a/lapack-netlib/SRC/dlaqps.f b/lapack-netlib/SRC/dlaqps.f
+index dda8278bb..b7dc65d6a 100644
+--- a/lapack-netlib/SRC/dlaqps.f
++++ b/lapack-netlib/SRC/dlaqps.f
+@@ -202,7 +202,7 @@
+       EXTERNAL           DGEMM, DGEMV, DLARFG, DSWAP
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, DBLE, MAX, MIN, NINT, SQRT
++      INTRINSIC          ABS, DBLE, MAX, MIN, SQRT, ANINT, INT
+ *     ..
+ *     .. External Functions ..
+       INTEGER            IDAMAX
+@@ -336,7 +336,7 @@
+ *
+    40 CONTINUE
+       IF( LSTICC.GT.0 ) THEN
+-         ITEMP = NINT( VN2( LSTICC ) )
++         ITEMP = INT( ANINT( VN2( LSTICC ) ) )
+          VN1( LSTICC ) = DNRM2( M-RK, A( RK+1, LSTICC ), 1 )
+ *
+ *        NOTE: The computation of VN1( LSTICC ) relies on the fact that
+diff --git a/lapack-netlib/SRC/iparmq.f b/lapack-netlib/SRC/iparmq.f
+index 54c05471c..ec2437b23 100644
+--- a/lapack-netlib/SRC/iparmq.f
++++ b/lapack-netlib/SRC/iparmq.f
+@@ -253,7 +253,7 @@
+       CHARACTER          SUBNAM*6
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          LOG, MAX, MOD, NINT, REAL
++      INTRINSIC          LOG, MAX, MOD, REAL, ANINT, INT
+ *     ..
+ *     .. Executable Statements ..
+       IF( ( ISPEC.EQ.ISHFTS ) .OR. ( ISPEC.EQ.INWIN ) .OR.
+@@ -268,7 +268,8 @@
+          IF( NH.GE.60 )
+      $      NS = 10
+          IF( NH.GE.150 )
+-     $      NS = MAX( 10, NH / NINT( LOG( REAL( NH ) ) / LOG( TWO ) ) )
++     $      NS = MAX( 10, NH / INT( ANINT( LOG( REAL( NH ) ) /
++     $           LOG( TWO ) ) ) )
+          IF( NH.GE.590 )
+      $      NS = 64
+          IF( NH.GE.3000 )
+diff --git a/lapack-netlib/SRC/sgejsv.f b/lapack-netlib/SRC/sgejsv.f
+index d88ef4d77..0090a26e3 100644
+--- a/lapack-netlib/SRC/sgejsv.f
++++ b/lapack-netlib/SRC/sgejsv.f
+@@ -503,7 +503,7 @@
+      $        NOSCAL, ROWPIV, RSVEC,  TRANSP
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC ABS, ALOG, MAX, MIN, FLOAT, NINT, SIGN, SQRT
++      INTRINSIC ABS, ALOG, MAX, MIN, FLOAT, SIGN, SQRT, ANINT, INT
+ *     ..
+ *     .. External Functions ..
+       REAL      SLAMCH, SNRM2
+@@ -1133,7 +1133,7 @@
+      $                      N, V, LDV, WORK, LWORK, INFO )
+ *
+             SCALEM  = WORK(1)
+-            NUMRANK = NINT(WORK(2))
++            NUMRANK = INT( ANINT(WORK(2)) )
+ *
+ *
+       ELSE IF ( RSVEC .AND. ( .NOT. LSVEC ) ) THEN
+@@ -1152,7 +1152,7 @@
+             CALL SGESVJ( 'L','U','N', N, NR, V,LDV, SVA, NR, A,LDA,
+      $                  WORK, LWORK, INFO )
+             SCALEM  = WORK(1)
+-            NUMRANK = NINT(WORK(2))
++            NUMRANK = INT( ANINT(WORK(2)) )
+ 
+          ELSE
+ *
+@@ -1177,7 +1177,7 @@
+             CALL SGESVJ( 'Lower', 'U','N', NR, NR, V,LDV, SVA, NR, U,
+      $                  LDU, WORK(N+1), LWORK-N, INFO )
+             SCALEM  = WORK(N+1)
+-            NUMRANK = NINT(WORK(N+2))
++            NUMRANK = INT( ANINT(WORK(N+2)) )
+             IF ( NR .LT. N ) THEN
+                CALL SLASET( 'A',N-NR, NR, ZERO,ZERO, V(NR+1,1),
+      $                      LDV )
+@@ -1223,7 +1223,7 @@
+          CALL SGESVJ( 'Lower', 'U', 'N', NR,NR, U, LDU, SVA, NR, A,
+      $        LDA, WORK(N+1), LWORK-N, INFO )
+          SCALEM  = WORK(N+1)
+-         NUMRANK = NINT(WORK(N+2))
++         NUMRANK = INT( ANINT(WORK(N+2)) )
+ *
+          IF ( NR .LT. M ) THEN
+             CALL SLASET( 'A',  M-NR, NR,ZERO, ZERO, U(NR+1,1), LDU )
+@@ -1437,7 +1437,7 @@
+                CALL SGESVJ( 'L','U','N',NR,NR,V,LDV,SVA,NR,U,
+      $              LDU,WORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = NINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT( ANINT(WORK(2*N+N*NR+NR+2)) )
+                DO 3970 p = 1, NR
+                   CALL SCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL SSCAL( NR, SVA(p),    V(1,p), 1 )
+@@ -1481,7 +1481,7 @@
+      $                      U,
+      $              LDU, WORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR, INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = NINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT( ANINT(WORK(2*N+N*NR+NR+2)) )
+                DO 3870 p = 1, NR
+                   CALL SCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL SSCAL( NR, SVA(p),    U(1,p), 1 )
+@@ -1521,7 +1521,7 @@
+      $                      U,
+      $              LDU, WORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR, INFO )
+                SCALEM  = WORK(2*N+N*NR+NR+1)
+-               NUMRANK = NINT(WORK(2*N+N*NR+NR+2))
++               NUMRANK = INT( ANINT(WORK(2*N+N*NR+NR+2)) )
+                IF ( NR .LT. N ) THEN
+                   CALL SLASET( 'A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV )
+                   CALL SLASET( 'A',NR,N-NR,ZERO,ZERO,V(1,NR+1),LDV )
+@@ -1615,7 +1615,7 @@
+      $           N, U, LDU, WORK(N+N*N+1), LWORK-N-N*N, INFO )
+ *
+             SCALEM  = WORK(N+N*N+1)
+-            NUMRANK = NINT(WORK(N+N*N+2))
++            NUMRANK = INT( ANINT(WORK(N+N*N+2)) )
+             DO 6970 p = 1, N
+                CALL SCOPY( N, WORK(N+(p-1)*N+1), 1, U(1,p), 1 )
+                CALL SSCAL( N, SVA(p), WORK(N+(p-1)*N+1), 1 )
+@@ -1714,7 +1714,7 @@
+          CALL SGESVJ( 'G', 'U', 'V', NR, NR, U, LDU, SVA,
+      $        N, V, LDV, WORK(2*N+N*NR+1), LWORK-2*N-N*NR, INFO )
+          SCALEM  = WORK(2*N+N*NR+1)
+-         NUMRANK = NINT(WORK(2*N+N*NR+2))
++         NUMRANK = INT( ANINT(WORK(2*N+N*NR+2)) )
+ 
+          IF ( NR .LT. N ) THEN
+             CALL SLASET( 'A',N-NR,NR,ZERO,ZERO,V(NR+1,1),LDV )
+diff --git a/lapack-netlib/SRC/slacn2.f b/lapack-netlib/SRC/slacn2.f
+index 1d6217a7c..42e0671e9 100644
+--- a/lapack-netlib/SRC/slacn2.f
++++ b/lapack-netlib/SRC/slacn2.f
+@@ -168,7 +168,7 @@
+       EXTERNAL           SCOPY
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, NINT, REAL
++      INTRINSIC          ABS, REAL, ANINT, INT
+ *     ..
+ *     .. Executable Statements ..
+ *
+@@ -201,7 +201,7 @@
+          ELSE
+             X(I) = -ONE
+          END IF
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+    30 CONTINUE
+       KASE = 2
+       ISAVE( 1 ) = 2
+@@ -238,7 +238,7 @@
+          ELSE
+             XS = -ONE
+          END IF
+-         IF( NINT( XS ).NE.ISGN( I ) )
++         IF( INT( ANINT( XS ) ).NE.ISGN( I ) )
+      $      GO TO 90
+    80 CONTINUE
+ *     REPEATED SIGN VECTOR DETECTED, HENCE ALGORITHM HAS CONVERGED.
+@@ -255,7 +255,7 @@
+          ELSE
+             X(I) = -ONE
+          END IF
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+   100 CONTINUE
+       KASE = 2
+       ISAVE( 1 ) = 4
+diff --git a/lapack-netlib/SRC/slacon.f b/lapack-netlib/SRC/slacon.f
+index 8e3cc7355..7634487ed 100644
+--- a/lapack-netlib/SRC/slacon.f
++++ b/lapack-netlib/SRC/slacon.f
+@@ -147,7 +147,7 @@
+       EXTERNAL           SCOPY
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, NINT, REAL, SIGN
++      INTRINSIC          ABS, REAL, SIGN, ANINT, INT
+ *     ..
+ *     .. Save statement ..
+       SAVE
+@@ -179,7 +179,7 @@
+ *
+       DO 30 I = 1, N
+          X( I ) = SIGN( ONE, X( I ) )
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+    30 CONTINUE
+       KASE = 2
+       JUMP = 2
+@@ -211,7 +211,7 @@
+       ESTOLD = EST
+       EST = SASUM( N, V, 1 )
+       DO 80 I = 1, N
+-         IF( NINT( SIGN( ONE, X( I ) ) ).NE.ISGN( I ) )
++         IF( INT( ANINT( SIGN( ONE, X( I ) ) ) ).NE.ISGN( I ) )
+      $      GO TO 90
+    80 CONTINUE
+ *     REPEATED SIGN VECTOR DETECTED, HENCE ALGORITHM HAS CONVERGED.
+@@ -224,7 +224,7 @@
+ *
+       DO 100 I = 1, N
+          X( I ) = SIGN( ONE, X( I ) )
+-         ISGN( I ) = NINT( X( I ) )
++         ISGN( I ) = INT( ANINT( X( I ) ) )
+   100 CONTINUE
+       KASE = 2
+       JUMP = 4
+diff --git a/lapack-netlib/SRC/slaqps.f b/lapack-netlib/SRC/slaqps.f
+index 0de94ced3..3161d658e 100644
+--- a/lapack-netlib/SRC/slaqps.f
++++ b/lapack-netlib/SRC/slaqps.f
+@@ -203,7 +203,7 @@
+       EXTERNAL           SGEMM, SGEMV, SLARFG, SSWAP
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, MAX, MIN, NINT, REAL, SQRT
++      INTRINSIC          ABS, MAX, MIN, REAL, SQRT, ANINT, INT
+ *     ..
+ *     .. External Functions ..
+       INTEGER            ISAMAX
+@@ -337,7 +337,7 @@
+ *
+    40 CONTINUE
+       IF( LSTICC.GT.0 ) THEN
+-         ITEMP = NINT( VN2( LSTICC ) )
++         ITEMP = INT( ANINT( VN2( LSTICC ) ) )
+          VN1( LSTICC ) = SNRM2( M-RK, A( RK+1, LSTICC ), 1 )
+ *
+ *        NOTE: The computation of VN1( LSTICC ) relies on the fact that
+diff --git a/lapack-netlib/SRC/zgejsv.f b/lapack-netlib/SRC/zgejsv.f
+index b3678af6f..fcf2e3410 100644
+--- a/lapack-netlib/SRC/zgejsv.f
++++ b/lapack-netlib/SRC/zgejsv.f
+@@ -612,7 +612,8 @@
+       DOUBLE PRECISION   RDUMMY(1)
+ *
+ *     .. Intrinsic Functions ..
+-      INTRINSIC ABS, DCMPLX, CONJG, DLOG, MAX, MIN, DBLE, NINT, SQRT
++      INTRINSIC ABS, DCMPLX, CONJG, DLOG, MAX, MIN, DBLE, SQRT, ANINT,
++     $          INT
+ *     ..
+ *     .. External Functions ..
+       DOUBLE PRECISION      DLAMCH, DZNRM2
+@@ -1545,7 +1546,7 @@
+      $                N, V, LDV, CWORK, LWORK, RWORK, LRWORK, INFO )
+ *
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+ *
+ *
+       ELSE IF ( ( RSVEC .AND. ( .NOT. LSVEC ) .AND. ( .NOT. JRACC ) )
+@@ -1566,7 +1567,7 @@
+             CALL ZGESVJ( 'L','U','N', N, NR, V, LDV, SVA, NR, A, LDA,
+      $                  CWORK, LWORK, RWORK, LRWORK, INFO )
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+ 
+          ELSE
+ *
+@@ -1589,7 +1590,7 @@
+             CALL ZGESVJ( 'L', 'U','N', NR, NR, V,LDV, SVA, NR, U,
+      $                  LDU, CWORK(N+1), LWORK-N, RWORK, LRWORK, INFO )
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+             IF ( NR .LT. N ) THEN
+                CALL ZLASET( 'A',N-NR, NR, CZERO,CZERO, V(NR+1,1),
+      $                      LDV )
+@@ -1621,7 +1622,7 @@
+          CALL ZGESVJ( 'U','N','V', N, N, A, LDA, SVA, N, V, LDV,
+      $               CWORK, LWORK, RWORK, LRWORK, INFO )
+           SCALEM  = RWORK(1)
+-          NUMRANK = NINT(RWORK(2))
++          NUMRANK = INT( ANINT(RWORK(2)) )
+           CALL ZLAPMR( .FALSE., N, N, V, LDV, IWORK )
+ *
+       ELSE IF ( LSVEC .AND. ( .NOT. RSVEC ) ) THEN
+@@ -1648,7 +1649,7 @@
+          CALL ZGESVJ( 'L', 'U', 'N', NR,NR, U, LDU, SVA, NR, A,
+      $        LDA, CWORK(N+1), LWORK-N, RWORK, LRWORK, INFO )
+          SCALEM  = RWORK(1)
+-         NUMRANK = NINT(RWORK(2))
++         NUMRANK = INT( ANINT(RWORK(2)) )
+ *
+          IF ( NR .LT. M ) THEN
+             CALL ZLASET( 'A',  M-NR, NR,CZERO, CZERO, U(NR+1,1),
+@@ -1877,7 +1878,7 @@
+      $              CWORK(2*N+N*NR+NR+1),LWORK-2*N-N*NR-NR,RWORK,
+      $              LRWORK, INFO )
+                SCALEM  = RWORK(1)
+-               NUMRANK = NINT(RWORK(2))
++               NUMRANK = INT( ANINT(RWORK(2)) )
+                DO 3970 p = 1, NR
+                   CALL ZCOPY(  NR, V(1,p), 1, U(1,p), 1 )
+                   CALL ZDSCAL( NR, SVA(p),    V(1,p), 1 )
+@@ -1921,7 +1922,7 @@
+      $              LDU, CWORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR,
+      $              RWORK, LRWORK, INFO )
+                SCALEM  = RWORK(1)
+-               NUMRANK = NINT(RWORK(2))
++               NUMRANK = INT( ANINT(RWORK(2)) )
+                DO 3870 p = 1, NR
+                   CALL ZCOPY( NR, V(1,p), 1, U(1,p), 1 )
+                   CALL ZDSCAL( NR, SVA(p),    U(1,p), 1 )
+@@ -1964,7 +1965,7 @@
+      $              LDU, CWORK(2*N+N*NR+NR+1), LWORK-2*N-N*NR-NR,
+      $                         RWORK, LRWORK, INFO )
+                SCALEM  = RWORK(1)
+-               NUMRANK = NINT(RWORK(2))
++               NUMRANK = INT( ANINT(RWORK(2)) )
+                IF ( NR .LT. N ) THEN
+                   CALL ZLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),
+      $                         LDV )
+@@ -2063,7 +2064,7 @@
+      $       INFO )
+ *
+             SCALEM  = RWORK(1)
+-            NUMRANK = NINT(RWORK(2))
++            NUMRANK = INT( ANINT(RWORK(2)) )
+             DO 6970 p = 1, N
+                CALL ZCOPY( N, CWORK(N+(p-1)*N+1), 1, U(1,p), 1 )
+                CALL ZDSCAL( N, SVA(p), CWORK(N+(p-1)*N+1), 1 )
+@@ -2170,7 +2171,7 @@
+      $        N, V, LDV, CWORK(2*N+N*NR+1), LWORK-2*N-N*NR,
+      $         RWORK, LRWORK, INFO )
+          SCALEM  = RWORK(1)
+-         NUMRANK = NINT(RWORK(2))
++         NUMRANK = INT( ANINT(RWORK(2)) )
+ 
+          IF ( NR .LT. N ) THEN
+             CALL ZLASET( 'A',N-NR,NR,CZERO,CZERO,V(NR+1,1),LDV )
+diff --git a/lapack-netlib/SRC/zlaqps.f b/lapack-netlib/SRC/zlaqps.f
+index c2387dba8..3f6d483db 100644
+--- a/lapack-netlib/SRC/zlaqps.f
++++ b/lapack-netlib/SRC/zlaqps.f
+@@ -206,7 +206,7 @@
+       EXTERNAL           ZGEMM, ZGEMV, ZLARFG, ZSWAP
+ *     ..
+ *     .. Intrinsic Functions ..
+-      INTRINSIC          ABS, DBLE, DCONJG, MAX, MIN, NINT, SQRT
++      INTRINSIC          ABS, DBLE, DCONJG, MAX, MIN, SQRT, ANINT, INT
+ *     ..
+ *     .. External Functions ..
+       INTEGER            IDAMAX
+@@ -348,7 +348,7 @@
+ *
+    60 CONTINUE
+       IF( LSTICC.GT.0 ) THEN
+-         ITEMP = NINT( VN2( LSTICC ) )
++         ITEMP = INT( ANINT( VN2( LSTICC ) ) )
+          VN1( LSTICC ) = DZNRM2( M-RK, A( RK+1, LSTICC ), 1 )
+ *
+ *        NOTE: The computation of VN1( LSTICC ) relies on the fact that
+-- 
+2.54.0 (Apple Git-157)
+

@@ -46,7 +46,6 @@ tests:
       recipe:
         - test_regex.py
 
-
 about:
   homepage: https://bitbucket.org/mrabarnett/mrab-regex
   license: Apache-2.0

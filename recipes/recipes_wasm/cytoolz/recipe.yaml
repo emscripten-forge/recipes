@@ -1,0 +1,63 @@
+context:
+  name: cytoolz
+  version: 1.1.0
+
+package:
+  name: cytoolz
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/cytoolz-${{ version }}.tar.gz
+  sha256: 13a7bf254c3c0d28b12e2290b82aed0f0977a4c2a2bf84854fcdc7796a29f3b0
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyx'
+    - '**/*.pxd'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - cython
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python-dev
+  run:
+  - nose
+  - toolz >=0.10.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_cytoolz.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/pytoolz/cytoolz
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Cython implementation of Toolz. High performance functional utilities
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

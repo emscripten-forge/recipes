@@ -19,9 +19,11 @@ source:
   - patches/0006-target-native-crunner-utils.patch
   # Keep NumPy-backed descriptors ABI-compatible with CRunnerUtils.
   - patches/0007-target-native-numpy-memrefs.patch
+  # Inline the context threading query when LLVM threads are disabled.
+  - patches/0008-single-threaded-helpers.patch
 
 build:
-  number: 1
+  number: 4
 
 outputs:
 - staging:
@@ -32,7 +34,7 @@ outputs:
     build:
     - ${{ compiler("c") }}
     - ${{ compiler("cxx") }}
-    - cmake
+    - cmake >=4.3.3,<4.4
     - make    # [unix]
     # mlir-tblgen + llvm-tblgen + mlir-linalg-ods-yaml-gen must match the
     # LLVM/MLIR source version being cross-compiled.
@@ -41,35 +43,94 @@ outputs:
     - nanobind >=2.9,<3
     host:
     - python-dev
-    # LLVM bundles the wasm static libraries, liblldWasm.a, liblldCommon.a,
-    # LLVMConfig.cmake and LLDConfig.cmake required by this standalone build.
-    - llvm ==${{ version }}
+    # The Wasm execution engine links LLVM and LLD libraries.
+    - llvm-static ==${{ version }}
+    - lld-static ==${{ version }}
+
+- package:
+    name: mlir-static
+    version: ${{ version }}
+  inherit: mlir-build
+  build:
+    script: echo "Packaging MLIR static libraries and development files"
+    files:
+      include:
+      - include/mlir/**
+      - include/mlir-c/**
+      - lib/libMLIR*.a
+      - lib/libmlir*.a
+      - lib/objects-*/obj.MLIR*/**
+      - lib/cmake/mlir/**
+      - share/mlir/**
+      - src/python/**
+  requirements:
+    host:
+    - llvm-static ==${{ version }}
+    - lld-static ==${{ version }}
+    run:
+    # MLIRConfig.cmake requires the exact LLVM source version.
+    - ${{ pin_compatible('llvm-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('lld-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - include/mlir/IR/MLIRContext.h
+        - include/mlir-c/IR.h
+        - lib/libMLIRIR.a
+        - lib/libMLIRMlirOptMain.a
+        - lib/libMLIRTranslateLib.a
+        - lib/cmake/mlir/MLIRConfig.cmake
+        not_exists:
+        - bin/**
+        - '**/*.so*'
+  - script: cmake -S tests -B test-build -DCMAKE_PREFIX_PATH="$PREFIX"
+    files:
+      recipe:
+      - tests/CMakeLists.txt
+    requirements:
+      build:
+      - cmake
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: mlir
     version: ${{ version }}
   inherit: mlir-build
   build:
-    script: echo "Packaging the MLIR C++ SDK from the shared build"
+    script: echo "Packaging MLIR WebAssembly tools"
     files:
       include:
-      - bin/mlir-*
-      - include/mlir/**
-      - include/mlir-c/**
-      - lib/libMLIR*.a
-      - lib/libmlir*.a
-      - lib/cmake/mlir/**
-      - share/mlir/**
-  requirements:
-    run:
-    - llvm ==${{ version }}
+      - bin/mlir-opt.js
+      - bin/mlir-opt.wasm
+      - bin/mlir-translate.js
+      - bin/mlir-translate.wasm
   tests:
   - package_contents:
       files:
-      - include/mlir/IR/MLIRContext.h
-      - include/mlir-c/IR.h
-      - lib/libMLIRIR.a
-      - lib/cmake/mlir/MLIRConfig.cmake
+        exists:
+        - bin/mlir-opt.js
+        - bin/mlir-opt.wasm
+        - bin/mlir-translate.js
+        - bin/mlir-translate.wasm
+        not_exists:
+        - lib/**
+        - include/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: node test_tools.mjs
+    files:
+      recipe:
+      - test_tools.mjs
+    requirements:
+      build:
+      - nodejs
 
 - package:
     name: mlir-python-bindings
@@ -87,6 +148,8 @@ outputs:
       skip_pyc_compilation:
       - '**/*.py'
   requirements:
+    run_exports:
+    - ${{ pin_subpackage('mlir-python-bindings', lower_bound='x.x', upper_bound='x.x') }}
     run:
     - python
     # Used by mlir.runtime.np_to_memref, mlir.ir NumPy interop and the Linalg
@@ -101,6 +164,11 @@ outputs:
       - lib/python*/site-packages/mlir/_mlir_libs/libMLIRPythonCAPI.so*
       - lib/python*/site-packages/mlir/_mlir_libs/libnanobind-mlir.so
       - lib/python*/site-packages/mlir/wasm_execution_engine.py
+  # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
   - script: pytester
     files:
       recipe:
@@ -124,5 +192,9 @@ about:
   repository: https://github.com/llvm/llvm-project
 
 extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
   recipe-maintainers:
   - anutosh491
