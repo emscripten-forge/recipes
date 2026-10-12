@@ -1,6 +1,6 @@
 context:
   version: 2.8
-  name: gsl
+  name: gsl-static
 
 package:
   name: ${{ name }}
@@ -15,14 +15,20 @@ build:
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - gnuconfig
-    - make
+  - ${{ compiler('c') }}
+  - gnuconfig
+  - make
 
 tests:
 - package_contents:
     files:
     - include/gsl/gsl_cdf.h
+    - lib/libgsl.a
+    - lib/libgslcblas.a
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.gnu.org/software/gsl/
@@ -33,4 +39,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - mkoeppe
+  - mkoeppe
