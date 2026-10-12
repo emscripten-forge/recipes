@@ -1,19 +1,20 @@
 context:
-  name: r-matrixStats
+  name: matrixStats
   version: 1.5.0
 
 package:
-  name: ${{ name | lower }}
+  name: r-${{ name | lower }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 12996c5f3e6fc202a43e1087f16a71b7fa93d7e908f512542c7ee89cf95dcc15
 
 build:
-  number: 4
+  number: 0
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -26,14 +27,25 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=matrixStats
   repository: https://github.com/HenrikBengtsson/matrixStats
   license: Artistic-2.0
   license_family: Artistic
-  license_file: LICENSE
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/Artistic-2.0
   summary: High-performing functions operating on rows and columns of matrices
   description: |
     High-performing functions operating on rows and columns of matrices, e.g.
