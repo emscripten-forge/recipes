@@ -1,15 +1,16 @@
 context:
-  name: r-proxy
-  version: "0.4-29"
+  name: proxy
+  version: 0.4-29
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/proxy_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/proxy_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: c6eb0e36ef2eecb1b8564f0188ca8d2c91a80865c86698386a7b5d5baa92c35b
 
 build:
@@ -26,21 +27,26 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/proxy/libs/proxy.so
-- script: run_r_test test_proxy.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_proxy.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=proxy
   license: GPL-2.0-only
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Distance and Similarity Measures
 
 extra:
   recipe-maintainers:
   - anutosh491
+  - IsabelParedes
