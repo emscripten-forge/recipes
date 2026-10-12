@@ -1,0 +1,37 @@
+diff --git a/llvm/cmake/modules/AddLLVM.cmake b/llvm/cmake/modules/AddLLVM.cmake
+--- a/llvm/cmake/modules/AddLLVM.cmake
++++ b/llvm/cmake/modules/AddLLVM.cmake
+@@ -164,6 +164,21 @@
+     set(native_export_file "${export_file}")
+     set_property(TARGET ${target_name} APPEND_STRING PROPERTY
+                  LINK_FLAGS " -Wl,-bE:${export_file}")
++  elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
++    # wasm-ld uses explicit exports, not ELF version scripts. These also
++    # pull the exported API definitions out of static dependency archives.
++    set(native_export_file "${target_name}.exports")
++    add_custom_command(OUTPUT ${native_export_file}
++      COMMAND "${Python3_EXECUTABLE}" "-c"
++      "import sys;print(''.join('-Wl,--export-if-defined=' + l.strip() + '\\n' for l in sys.stdin if l.strip()), end='')"
++      < ${export_file} > ${native_export_file}
++      DEPENDS ${export_file}
++      VERBATIM
++      COMMENT "Creating export file for ${target_name}")
++    # Forward each response-file entry through the Emscripten driver.
++    set_property(TARGET ${target_name} APPEND PROPERTY
++                 LINK_OPTIONS "-Wl,--no-export-dynamic"
++                              "@${CMAKE_CURRENT_BINARY_DIR}/${native_export_file}")
+   elseif(LLVM_HAVE_LINK_VERSION_SCRIPT)
+     # Gold and BFD ld require a version script rather than a plain list.
+     set(native_export_file "${target_name}.exports")
+diff --git a/clang/tools/libclang/CMakeLists.txt b/clang/tools/libclang/CMakeLists.txt
+--- a/clang/tools/libclang/CMakeLists.txt
++++ b/clang/tools/libclang/CMakeLists.txt
+@@ -95,7 +95,7 @@
+   set(LLVM_EXPORTED_SYMBOL_FILE)
+ endif()
+ 
+-if (UNIX AND NOT APPLE AND NOT "${CMAKE_SYSTEM_NAME}" MATCHES "AIX" AND NOT CYGWIN)
++if (UNIX AND NOT APPLE AND NOT "${CMAKE_SYSTEM_NAME}" MATCHES "AIX|Emscripten" AND NOT CYGWIN)
+   set(LLVM_EXPORTED_SYMBOL_FILE)
+   set(USE_VERSION_SCRIPT ${LLVM_HAVE_LINK_VERSION_SCRIPT})
+ endif()

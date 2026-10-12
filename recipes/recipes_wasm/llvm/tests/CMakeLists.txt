@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.20)
+project(test_llvm_static LANGUAGES C CXX)
+
+find_package(LLVM $ENV{PKG_VERSION} EXACT REQUIRED CONFIG)
+
+foreach(component LTO Remarks libclang clang-cpp clangInterpreter lldCommon lldWasm)
+  if(TARGET ${component})
+    message(FATAL_ERROR "LLVM static exports must not require: ${component}")
+  endif()
+endforeach()
+foreach(component LLVMX86CodeGen LLVMAArch64CodeGen LLVMLlcDriver LLVMOptDriver)
+  if(NOT TARGET ${component})
+    message(FATAL_ERROR "Missing imported target: ${component}")
+  endif()
+endforeach()
+
+add_executable(test_llvm test_llvm.cpp)
+target_compile_features(test_llvm PRIVATE cxx_std_17)
+target_include_directories(test_llvm PRIVATE ${LLVM_INCLUDE_DIRS})
+target_compile_definitions(test_llvm PRIVATE ${LLVM_DEFINITIONS})
+target_link_libraries(test_llvm PRIVATE LLVMCore)
