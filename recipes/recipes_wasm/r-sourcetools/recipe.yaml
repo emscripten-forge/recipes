@@ -10,6 +10,7 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 07e584b780d7fcdfa5b527214361fface49350ab49cf901bd3d5c15950e4f1a7
 
 build:
@@ -27,13 +28,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test-r-sourcetools.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test-r-sourcetools.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=${{ name }}
@@ -48,4 +52,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - IsabelParedes
+  - IsabelParedes
