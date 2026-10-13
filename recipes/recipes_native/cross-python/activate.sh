@@ -117,13 +117,9 @@ export CMAKE_ARGS="${CMAKE_ARGS} \
 fi
 
 
-
 ################################################################################################
 # Meson cross python
 ################################################################################################
-# Set up the cross file
-
-
 
 if [[ "$target_platform" == "emscripten-wasm32" ]]; then
   export RAW_MESON_CROSS_FILE=$BUILD_PREFIX/etc/crosspython_wasm32.meson.cross
