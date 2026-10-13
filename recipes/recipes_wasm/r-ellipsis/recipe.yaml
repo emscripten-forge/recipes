@@ -1,23 +1,23 @@
 context:
-  name: r-ellipsis
+  name: ellipsis
   version: 0.3.3
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: da1782bce5c1baf1cf8c69877078db51fabf2693a393b55ff044fd2e32966873
 
 # TODO: remove from emscripten-forge once the noarch version is available on
-# conda-forge
+# conda-forge. See https://github.com/conda-forge/r-ellipsis-feedstock/issues/18
 build:
-  number: 3
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
   noarch: generic
   script: $R CMD INSTALL $R_ARGS .
 
@@ -34,7 +34,15 @@ requirements:
 tests:
 - package_contents:
     files:
-    - lib/R/library/${{ name[2:] }}/R/${{ name[2:] }}*
+    - lib/R/library/${{ name }}/R/${{ name }}*
+- script:
+  - run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: https://ellipsis.r-lib.org

@@ -13,9 +13,13 @@ source:
   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 21903bd977e2cf6382f016bbef3d14b5a77305b9d0dc2041b0f26a76938c95fb
 
+
+# TODO: remove from emscripten-forge once the noarch version is available on
+# conda-forge. See https://github.com/conda-forge/r-rocr-feedstock/issues/14
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }} 
+  skip: ${{ r_base >= '4.6.0' }}
+  noarch: generic
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -30,9 +34,11 @@ requirements:
   - r-gplots
 
 tests:
-
-
-- script: run_r_test test_${{ name }}.R
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/R/${{ name }}*
+- script:
+  - run_r_test test_${{ name }}.R
   files:
     recipe:
     - test_${{ name }}.R
@@ -69,3 +75,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes

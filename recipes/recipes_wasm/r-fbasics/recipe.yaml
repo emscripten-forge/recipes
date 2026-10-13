@@ -4,7 +4,7 @@ context:
 
 package:
   name: r-${{ name | lower }}
-  version: ${{ version | replace('-', '_') }}
+  version: ${{ version }}
 
 source:
   url:
@@ -15,7 +15,7 @@ source:
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -49,13 +49,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://geobosh.github.io/fBasicsDoc/ (doc)
@@ -77,3 +80,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
