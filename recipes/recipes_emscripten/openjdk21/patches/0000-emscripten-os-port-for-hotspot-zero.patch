@@ -1,0 +1,3719 @@
+From e339656cdd1c9e09aaf1c4ca9a87c399e3df56a7 Mon Sep 17 00:00:00 2001
+From: Brian Martin <brian.m.martin@oracle.com>
+Date: Mon, 27 Jul 2026 16:32:24 -0400
+Subject: [PATCH] Add an Emscripten/WebAssembly OS port for HotSpot Zero
+
+Cross-compiles OpenJDK 21 Zero to WebAssembly with Emscripten.
+
+  * autoconf learns the emscripten OS (VAR_OS_TYPE=unix), so
+    src/hotspot/os/posix/* is reused unchanged - threading, semaphores
+    and perf memory all come from the stock POSIX layer.
+  * src/hotspot/os/emscripten/ and src/hotspot/os_cpu/emscripten_zero/
+    are modelled on their bsd/bsd_zero counterparts. Only
+    os_emscripten.cpp and os_emscripten_zero.cpp carry real logic; the
+    rest are thin headers and stubs. src/hotspot/cpu/zero/* is untouched.
+  * There is no dynamic loader, so os::dll_lookup resolves JNI entry
+    points through a static name -> address table supplied by the
+    embedder rather than dlsym(). imageDecompressor.cpp goes through
+    JVM_FindLibraryEntry for the same reason - its dlsym() returned NULL
+    and left ZipInflateFully null, trapping on every jimage read.
+  * Emscripten's mmap emulation rejects a non-zero address, so reserve
+    and commit collapse into a single mapping and mprotect/madvise are
+    no-ops.
+  * java.base natives build from share/ + unix/ only; there is no
+    src/java.base/emscripten/. handleRead/handleAvailable gain an
+    __EMSCRIPTEN__ branch that drains the embedder's SharedArrayBuffer
+    stdin ring buffer, since nothing is on the other end of fd 0 in a
+    browser tab.
+
+Verified by booting the JVM in Node and in the browser, compiling and
+running a class through the in-process CompileServer, and rendering
+Mocha Doom to a canvas.
+---
+ make/autoconf/basic.m4                        |    5 +-
+ make/autoconf/flags-cflags.m4                 |    5 +
+ make/autoconf/jdk-options.m4                  |    5 +-
+ make/autoconf/lib-freetype.m4                 |    1 +
+ make/autoconf/libraries.m4                    |   13 +-
+ make/autoconf/platform.m4                     |   18 +
+ make/common/Modules.gmk                       |    9 +
+ make/common/NativeCompilation.gmk             |   18 +-
+ make/hotspot/lib/JvmMapfile.gmk               |   14 +
+ make/modules/java.base/Lib.gmk                |    7 +
+ make/modules/jdk.jdwp.agent/Lib.gmk           |    7 +
+ make/modules/jdk.management/Lib.gmk           |    7 +
+ make/modules/jdk.sctp/Lib.gmk                 |    4 +-
+ .../emscripten/attachListener_emscripten.cpp  |   84 ++
+ .../os/emscripten/c1_globals_emscripten.hpp   |   36 +
+ .../os/emscripten/c2_globals_emscripten.hpp   |   36 +
+ .../os/emscripten/decoder_emscripten.cpp      |   44 +
+ .../os/emscripten/globals_emscripten.hpp      |   47 +
+ .../os/emscripten/osThread_emscripten.cpp     |   48 +
+ .../os/emscripten/osThread_emscripten.hpp     |  127 ++
+ src/hotspot/os/emscripten/os_emscripten.cpp   | 1287 +++++++++++++++++
+ src/hotspot/os/emscripten/os_emscripten.hpp   |   74 +
+ .../os/emscripten/os_emscripten.inline.hpp    |   62 +
+ .../os/emscripten/vmStructs_emscripten.hpp    |   44 +
+ src/hotspot/os/posix/os_posix.cpp             |    9 +
+ src/hotspot/os/posix/signals_posix.cpp        |    2 +
+ .../assembler_emscripten_zero.cpp             |   26 +
+ .../atomic_emscripten_zero.hpp                |  152 ++
+ .../globals_emscripten_zero.hpp               |   46 +
+ .../javaThread_emscripten_zero.cpp            |   74 +
+ .../javaThread_emscripten_zero.hpp            |  105 ++
+ .../orderAccess_emscripten_zero.hpp           |   50 +
+ .../emscripten_zero/os_emscripten_zero.cpp    |  336 +++++
+ .../os_emscripten_zero.inline.hpp             |   30 +
+ .../prefetch_emscripten_zero.inline.hpp       |   39 +
+ .../vmStructs_emscripten_zero.hpp             |   41 +
+ .../vm_version_emscripten_zero.cpp            |   30 +
+ src/hotspot/share/runtime/mutex.hpp           |    2 +-
+ src/hotspot/share/runtime/os.hpp              |    4 +-
+ src/hotspot/share/runtime/osThread.hpp        |    2 +-
+ src/hotspot/share/runtime/park.hpp            |    2 +-
+ src/hotspot/share/runtime/semaphore.hpp       |    2 +-
+ .../share/runtime/threadCrashProtection.hpp   |    2 +-
+ .../share/utilities/globalDefinitions_gcc.hpp |   10 +-
+ .../native/libjimage/imageDecompressor.cpp    |    9 +-
+ src/java.base/share/native/libjli/jli_util.h  |    3 +
+ .../sun/nio/fs/UnixConstants.java.template    |    4 +-
+ .../unix/native/libjava/TimeZone_md.c         |    9 +-
+ .../unix/native/libjava/io_util_md.c          |   37 +-
+ .../unix/native/libnio/ch/NativeThread.c      |    5 +
+ .../native/libnio/fs/UnixNativeDispatcher.c   |    2 +-
+ 51 files changed, 3008 insertions(+), 27 deletions(-)
+ create mode 100644 src/hotspot/os/emscripten/attachListener_emscripten.cpp
+ create mode 100644 src/hotspot/os/emscripten/c1_globals_emscripten.hpp
+ create mode 100644 src/hotspot/os/emscripten/c2_globals_emscripten.hpp
+ create mode 100644 src/hotspot/os/emscripten/decoder_emscripten.cpp
+ create mode 100644 src/hotspot/os/emscripten/globals_emscripten.hpp
+ create mode 100644 src/hotspot/os/emscripten/osThread_emscripten.cpp
+ create mode 100644 src/hotspot/os/emscripten/osThread_emscripten.hpp
+ create mode 100644 src/hotspot/os/emscripten/os_emscripten.cpp
+ create mode 100644 src/hotspot/os/emscripten/os_emscripten.hpp
+ create mode 100644 src/hotspot/os/emscripten/os_emscripten.inline.hpp
+ create mode 100644 src/hotspot/os/emscripten/vmStructs_emscripten.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/assembler_emscripten_zero.cpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/atomic_emscripten_zero.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/globals_emscripten_zero.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.cpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/orderAccess_emscripten_zero.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.cpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.inline.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/prefetch_emscripten_zero.inline.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/vmStructs_emscripten_zero.hpp
+ create mode 100644 src/hotspot/os_cpu/emscripten_zero/vm_version_emscripten_zero.cpp
+
+diff --git a/make/autoconf/basic.m4 b/make/autoconf/basic.m4
+index 02c477f4c..b327122e4 100644
+--- a/make/autoconf/basic.m4
++++ b/make/autoconf/basic.m4
+@@ -347,7 +347,10 @@ AC_DEFUN_ONCE([BASIC_SETUP_DEVKIT],
+       [UTIL_PREPEND_TO_PATH([EXTRA_PATH],$with_extra_path)]
+   )
+ 
+-  if test "x$OPENJDK_BUILD_OS" = "xmacosx"; then
++  if test "x$OPENJDK_BUILD_OS" = "xmacosx" && \
++      test "x$OPENJDK_TARGET_OS" != "xemscripten"; then
++    # When cross-compiling to Emscripten the sysroot is supplied by the emsdk,
++    # not by Xcode, so the macOS SDK detection must not run.
+     BASIC_SETUP_XCODE_SYSROOT
+   fi
+ 
+diff --git a/make/autoconf/flags-cflags.m4 b/make/autoconf/flags-cflags.m4
+index ab8c48e16..19180e87e 100644
+--- a/make/autoconf/flags-cflags.m4
++++ b/make/autoconf/flags-cflags.m4
+@@ -497,6 +497,11 @@ AC_DEFUN([FLAGS_SETUP_CFLAGS_HELPER],
+     CFLAGS_OS_DEF_JDK="-D_ALLBSD_SOURCE -D_DARWIN_UNLIMITED_SELECT"
+   elif test "x$OPENJDK_TARGET_OS" = xaix; then
+     CFLAGS_OS_DEF_JVM="-DAIX -D_LARGE_FILES"
++  elif test "x$OPENJDK_TARGET_OS" = xemscripten; then
++    # Deliberately does not define LINUX, BSD or AIX: the port reuses the
++    # POSIX layer but none of those platforms' code paths.
++    CFLAGS_OS_DEF_JVM="-DEMSCRIPTEN -D_FILE_OFFSET_BITS=64"
++    CFLAGS_OS_DEF_JDK="-D_GNU_SOURCE -D_REENTRANT"
+   elif test "x$OPENJDK_TARGET_OS" = xbsd; then
+     CFLAGS_OS_DEF_JDK="-D_ALLBSD_SOURCE"
+   elif test "x$OPENJDK_TARGET_OS" = xwindows; then
+diff --git a/make/autoconf/jdk-options.m4 b/make/autoconf/jdk-options.m4
+index 77cba5f2a..863fb9b30 100644
+--- a/make/autoconf/jdk-options.m4
++++ b/make/autoconf/jdk-options.m4
+@@ -578,7 +578,10 @@ AC_DEFUN_ONCE([JDKOPT_SETUP_STATIC_BUILD],
+       CHECKING_MSG: [if static build is enabled],
+       CHECK_AVAILABLE: [
+         AC_MSG_CHECKING([if static build is available])
+-        if test "x$OPENJDK_TARGET_OS" = "xmacosx"; then
++        # WebAssembly has no dynamic linker in the browser, so an Emscripten
++        # target is always a static build.
++        if test "x$OPENJDK_TARGET_OS" = "xmacosx" || \
++            test "x$OPENJDK_TARGET_OS" = "xemscripten"; then
+           AC_MSG_RESULT([yes])
+         else
+           AC_MSG_RESULT([no])
+diff --git a/make/autoconf/lib-freetype.m4 b/make/autoconf/lib-freetype.m4
+index 6a7109342..40518409d 100644
+--- a/make/autoconf/lib-freetype.m4
++++ b/make/autoconf/lib-freetype.m4
+@@ -103,6 +103,7 @@ AC_DEFUN_ONCE([LIB_SETUP_FREETYPE],
+   FREETYPE_TO_USE=bundled
+   if test "x$OPENJDK_TARGET_OS" != "xwindows" && \
+       test "x$OPENJDK_TARGET_OS" != "xmacosx" && \
++      test "x$OPENJDK_TARGET_OS" != "xemscripten" && \
+       test "x$OPENJDK_TARGET_OS" != "xaix"; then
+     FREETYPE_TO_USE=system
+   fi
+diff --git a/make/autoconf/libraries.m4 b/make/autoconf/libraries.m4
+index 51d4f724c..c21edd8bc 100644
+--- a/make/autoconf/libraries.m4
++++ b/make/autoconf/libraries.m4
+@@ -42,8 +42,9 @@ m4_include([lib-tests.m4])
+ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
+ [
+   # Check if X11 is needed
+-  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx; then
+-    # No X11 support on windows or macosx
++  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx || \
++      test "x$OPENJDK_TARGET_OS" = xemscripten; then
++    # No X11 support on windows, macosx or emscripten
+     NEEDS_LIB_X11=false
+   else
+     # All other instances need X11, even if building headless only, libawt still
+@@ -52,8 +53,9 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
+   fi
+ 
+   # Check if fontconfig is needed
+-  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx; then
+-    # No fontconfig support on windows or macosx
++  if test "x$OPENJDK_TARGET_OS" = xwindows || test "x$OPENJDK_TARGET_OS" = xmacosx || \
++      test "x$OPENJDK_TARGET_OS" = xemscripten; then
++    # No fontconfig support on windows, macosx or emscripten
+     NEEDS_LIB_FONTCONFIG=false
+   else
+     # All other instances need fontconfig, even if building headless only,
+@@ -65,6 +67,9 @@ AC_DEFUN_ONCE([LIB_DETERMINE_DEPENDENCIES],
+   if test "x$OPENJDK_TARGET_OS" = xwindows; then
+     # Windows have a separate print system
+     NEEDS_LIB_CUPS=false
++  elif test "x$OPENJDK_TARGET_OS" = xemscripten; then
++    # There is no printing subsystem in the browser sandbox
++    NEEDS_LIB_CUPS=false
+   else
+     NEEDS_LIB_CUPS=true
+   fi
+diff --git a/make/autoconf/platform.m4 b/make/autoconf/platform.m4
+index df610cc48..b85ed6504 100644
+--- a/make/autoconf/platform.m4
++++ b/make/autoconf/platform.m4
+@@ -186,6 +186,14 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_CPU],
+       VAR_CPU_BITS=64
+       VAR_CPU_ENDIAN=big
+       ;;
++    wasm32)
++      # WebAssembly is only ever executed by the Zero interpreter, so the
++      # platform is named after Zero rather than after the wasm target.
++      VAR_CPU=zero
++      VAR_CPU_ARCH=zero
++      VAR_CPU_BITS=32
++      VAR_CPU_ENDIAN=little
++      ;;
+     *)
+       AC_MSG_ERROR([unsupported cpu $1])
+       ;;
+@@ -226,6 +234,12 @@ AC_DEFUN([PLATFORM_EXTRACT_VARS_FROM_OS],
+       VAR_OS=aix
+       VAR_OS_TYPE=unix
+       ;;
++    *emscripten*)
++      # Emscripten provides a POSIX-like libc on top of WebAssembly, so the
++      # shared src/hotspot/os/posix sources apply unchanged.
++      VAR_OS=emscripten
++      VAR_OS_TYPE=unix
++      ;;
+     *)
+       AC_MSG_ERROR([unsupported operating system $1])
+       ;;
+@@ -459,6 +473,10 @@ AC_DEFUN([PLATFORM_SETUP_LEGACY_VARS_HELPER],
+   elif test "x$OPENJDK_$1_CPU" = xsh; then
+     # Avoid name collisions with variables named sh
+     OPENJDK_$1_CPU_LEGACY="_sh_"
++  elif test "x$OPENJDK_$1_CPU" = xzero; then
++    # Avoid name collisions with variables named zero
++    # (e.g. the 'zero' parameter of CCalloc() in libverify/check_code.c)
++    OPENJDK_$1_CPU_LEGACY="_zero_"
+   fi
+   AC_SUBST(OPENJDK_$1_CPU_LEGACY)
+ 
+diff --git a/make/common/Modules.gmk b/make/common/Modules.gmk
+index 0eb0fb2dd..9c5f848c3 100644
+--- a/make/common/Modules.gmk
++++ b/make/common/Modules.gmk
+@@ -85,6 +85,15 @@ TOP_SRC_DIRS += \
+     #
+ 
+ SRC_SUBDIRS += $(OPENJDK_TARGET_OS)/classes
++ifeq ($(OPENJDK_TARGET_OS), emscripten)
++  # The Emscripten port has no Java sources of its own - the class library it
++  # runs is produced by jlink from a host JDK. Borrow the linux classes so
++  # java.base's OS-specific providers (DefaultFileSystemProvider,
++  # DefaultSelectorProvider, FileDispatcherImpl, ...) resolve. This is the
++  # Java side only; native sources are selected separately and stay
++  # share/ + unix/.
++  SRC_SUBDIRS += linux/classes
++endif
+ ifneq ($(OPENJDK_TARGET_OS), $(OPENJDK_TARGET_OS_TYPE))
+   SRC_SUBDIRS += $(OPENJDK_TARGET_OS_TYPE)/classes
+ endif
+diff --git a/make/common/NativeCompilation.gmk b/make/common/NativeCompilation.gmk
+index 24e76ddc2..43e7fbb4b 100644
+--- a/make/common/NativeCompilation.gmk
++++ b/make/common/NativeCompilation.gmk
+@@ -38,6 +38,21 @@ endif
+ # Create exported symbols file for static libraries
+ ################################################################################
+ 
++# The no-mapfile fallback below reads the archive with nm. The Mach-O form
++# (-m, then keep the __TEXT entries) is what the static build has always used,
++# but llvm-nm ignores -m for wasm objects and prints the plain "addr type name"
++# columns instead, so that filter matches nothing and the pipeline fails.
++# Select the defined text symbols directly for emscripten; its ABI has no
++# leading underscore, so the names are already what the linker expects.
++ifeq ($(OPENJDK_TARGET_OS), emscripten)
++  ARCHIVE_SYMBOLS_CMD = $(NM) $(NMFLAGS) --defined-only
++  ARCHIVE_SYMBOLS_FILTER = $(GREP) " T "
++else
++  ARCHIVE_SYMBOLS_CMD = $(NM) $(NMFLAGS) -m
++  ARCHIVE_SYMBOLS_FILTER = $(GREP) "__TEXT" | \
++      $(EGREP) -v "non-external|private extern|__TEXT,__eh_frame"
++endif
++
+ # get the exported symbols from mapfiles and if there
+ # is no mapfile, get them from the archive
+ define GetSymbols
+@@ -53,8 +68,7 @@ define GetSymbols
+         $(CUT) -d ' ' -f 3 >>  $$(@D)/$$(basename $$(@F)).symbols || true;\
+   else \
+     $(ECHO) "Getting symbols from nm"; \
+-    $(NM) $(NMFLAGS) -m $$($1_TARGET) | $(GREP)  "__TEXT" | \
+-        $(EGREP) -v "non-external|private extern|__TEXT,__eh_frame" | \
++    $(ARCHIVE_SYMBOLS_CMD) $$($1_TARGET) | $(ARCHIVE_SYMBOLS_FILTER) | \
+         $(SED) -e  's/.* //' > $$(@D)/$$(basename $$(@F)).symbols; \
+   fi
+ endef
+diff --git a/make/hotspot/lib/JvmMapfile.gmk b/make/hotspot/lib/JvmMapfile.gmk
+index 2808ac2af..4b4fccbe3 100644
+--- a/make/hotspot/lib/JvmMapfile.gmk
++++ b/make/hotspot/lib/JvmMapfile.gmk
+@@ -64,6 +64,20 @@ ifeq ($(call isTargetOs, linux), true)
+         if ($$3 ~ /$(FILTER_SYMBOLS_PATTERN)/) print $$3; \
+       }'
+ 
++else ifeq ($(call isTargetOs, emscripten), true)
++  # llvm-nm reads wasm objects and prints the same "addr type name" columns as
++  # GNU nm does for ELF, so the linux filtering works unchanged here.
++  DUMP_SYMBOLS_CMD := $(NM) $(NMFLAGS) --defined-only *$(OBJ_SUFFIX)
++  ifneq ($(FILTER_SYMBOLS_PATTERN), )
++    FILTER_SYMBOLS_PATTERN := $(FILTER_SYMBOLS_PATTERN)|
++  endif
++  FILTER_SYMBOLS_PATTERN := $(FILTER_SYMBOLS_PATTERN)^_ZTV|^gHotSpotVM|^UseSharedSpaces$$
++  FILTER_SYMBOLS_PATTERN := $(FILTER_SYMBOLS_PATTERN)|^_ZN9Arguments17SharedArchivePathE$$
++  FILTER_SYMBOLS_AWK_SCRIPT := \
++      '{ \
++        if ($$3 ~ /$(FILTER_SYMBOLS_PATTERN)/) print $$3; \
++      }'
++
+ else ifeq ($(call isTargetOs, macosx), true)
+   # nm on macosx prints out "warning: nm: no name list" to stderr for
+   # files without symbols. Hide this, even at the expense of hiding real errors.
+diff --git a/make/modules/java.base/Lib.gmk b/make/modules/java.base/Lib.gmk
+index 1e0f66726..8b3680968 100644
+--- a/make/modules/java.base/Lib.gmk
++++ b/make/modules/java.base/Lib.gmk
+@@ -166,6 +166,12 @@ endif
+ ################################################################################
+ # Create the symbols file for static builds.
+ 
++# Skipped for emscripten: the sources below live in modules_libs, which only
++# the shared-library build populates, and the list hardcodes the server JVM
++# variant while this port builds zero. The aggregated file only feeds the
++# static launcher link, which this port does not use - the final link is done
++# by emcc against the archives directly.
++ifeq ($(call isTargetOs, emscripten), false)
+ ifeq ($(STATIC_BUILD), true)
+   JAVA_BASE_EXPORT_SYMBOLS_SRC := \
+       $(SUPPORT_OUTPUTDIR)/modules_libs/java.base/$(LIBRARY_PREFIX)jli.symbols \
+@@ -191,6 +197,7 @@ ifeq ($(STATIC_BUILD), true)
+ 
+   TARGETS += $(JAVA_BASE_EXPORT_SYMBOL_FILE)
+ endif
++endif
+ 
+ ################################################################################
+ # Copy tzmappings file for Windows
+diff --git a/make/modules/jdk.jdwp.agent/Lib.gmk b/make/modules/jdk.jdwp.agent/Lib.gmk
+index 52ac6564d..30dc612af 100644
+--- a/make/modules/jdk.jdwp.agent/Lib.gmk
++++ b/make/modules/jdk.jdwp.agent/Lib.gmk
+@@ -76,6 +76,12 @@ TARGETS += $(BUILD_LIBJDWP)
+ 
+ ################################################################################
+ 
++# The aggregation below reads the per-library symbols files from modules_libs,
++# which is only populated when the shared libraries are also built. The
++# emscripten port only ever runs static-libs-image, so there is nothing to
++# aggregate - and the debugger transport it describes needs sockets, which this
++# port does not link in.
++ifeq ($(call isTargetOs, emscripten), false)
+ ifeq ($(STATIC_BUILD), true)
+   JDK_JDWP_AGENT_EXPORT_SYMBOLS_SRC := \
+       $(SUPPORT_OUTPUTDIR)/modules_libs/jdk.jdwp.agent/$(LIBRARY_PREFIX)dt_socket.symbols \
+@@ -93,5 +99,6 @@ ifeq ($(STATIC_BUILD), true)
+   TARGETS += $(JDK_JDWP_AGENT_EXPORT_SYMBOL_FILE)
+ 
+ endif
++endif
+ 
+ ################################################################################
+diff --git a/make/modules/jdk.management/Lib.gmk b/make/modules/jdk.management/Lib.gmk
+index b4bf50844..a837e841e 100644
+--- a/make/modules/jdk.management/Lib.gmk
++++ b/make/modules/jdk.management/Lib.gmk
+@@ -41,6 +41,11 @@ ifeq ($(call isTargetOs, linux), true)
+   endif
+ endif
+ 
++# The emscripten sysroot has neither <sys/swap.h> nor <sys/sysinfo.h>, and the
++# swap/load statistics OperatingSystemImpl.c reports have no meaning inside a
++# wasm sandbox, so this library is not built there.
++ifeq ($(call isTargetOs, emscripten), false)
++
+ $(eval $(call SetupJdkLibrary, BUILD_LIBMANAGEMENT_EXT, \
+     NAME := management_ext, \
+     OPTIMIZATION := $(LIBMANAGEMENT_EXT_OPTIMIZATION), \
+@@ -56,3 +61,5 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBMANAGEMENT_EXT, \
+ $(BUILD_LIBMANAGEMENT_EXT): $(call FindLib, java.base, java)
+ 
+ TARGETS += $(BUILD_LIBMANAGEMENT_EXT)
++
++endif
+diff --git a/make/modules/jdk.sctp/Lib.gmk b/make/modules/jdk.sctp/Lib.gmk
+index afce891ee..0e4be2826 100644
+--- a/make/modules/jdk.sctp/Lib.gmk
++++ b/make/modules/jdk.sctp/Lib.gmk
+@@ -29,7 +29,9 @@ include LibCommon.gmk
+ 
+ ifeq ($(call isTargetOsType, unix), true)
+ 
+-  ifeq ($(call isTargetOs, macosx aix), false)
++  # Emscripten joins macosx/aix here: there is no SCTP stack, and Sctp.h pulls
++  # in <linux/types.h> which the emscripten sysroot does not provide.
++  ifeq ($(call isTargetOs, macosx aix emscripten), false)
+     $(eval $(call SetupJdkLibrary, BUILD_LIBSCTP, \
+         NAME := sctp, \
+         OPTIMIZATION := LOW, \
+diff --git a/src/hotspot/os/emscripten/attachListener_emscripten.cpp b/src/hotspot/os/emscripten/attachListener_emscripten.cpp
+new file mode 100644
+index 000000000..afbcac542
+--- /dev/null
++++ b/src/hotspot/os/emscripten/attachListener_emscripten.cpp
+@@ -0,0 +1,84 @@
++/*
++ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#include "precompiled.hpp"
++#include "logging/log.hpp"
++#include "runtime/os.inline.hpp"
++#include "services/attachListener.hpp"
++
++// The attach mechanism on the other POSIX ports is a UNIX domain socket that a
++// separate client process connects to. A WebAssembly module has neither: it is
++// a single process inside a sandbox with no filesystem the outside world can
++// reach and no way for another process to signal it. So the platform half of
++// the attach listener is present only to satisfy the linker - every entry point
++// reports "unavailable" and the shared code never starts a listener thread.
++
++AttachOperation* AttachListener::dequeue() {
++  // The listener thread is never started, so nothing can ever be queued.
++  return nullptr;
++}
++
++void AttachListener::vm_start() {
++  // No .java_pid file is ever created, so there is no stale one to clean up.
++}
++
++int AttachListener::pd_init() {
++  // Non-zero tells the shared code initialization failed and keeps the
++  // listener thread from being created.
++  return -1;
++}
++
++bool AttachListener::check_socket_file() {
++  return false;
++}
++
++bool AttachListener::init_at_startup() {
++  return false;
++}
++
++bool AttachListener::is_init_trigger() {
++  return false;
++}
++
++void AttachListener::abort() {
++  // Nothing was ever set up, so there is nothing to tear down.
++}
++
++void AttachListener::pd_data_dump() {
++  // SIGQUIT has no meaning in the browser; the thread dump would have nowhere
++  // to go anyway.
++}
++
++AttachOperationFunctionInfo* AttachListener::pd_find_operation(const char* n) {
++  return nullptr;
++}
++
++jint AttachListener::pd_set_flag(AttachOperation* op, outputStream* out) {
++  out->print_cr("Setting flag not supported in Emscripten");
++  return JNI_ERR;
++}
++
++void AttachListener::pd_detachall() {
++  // Nothing can be attached in the first place.
++}
+diff --git a/src/hotspot/os/emscripten/c1_globals_emscripten.hpp b/src/hotspot/os/emscripten/c1_globals_emscripten.hpp
+new file mode 100644
+index 000000000..28945c451
+--- /dev/null
++++ b/src/hotspot/os/emscripten/c1_globals_emscripten.hpp
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_C1_GLOBALS_EMSCRIPTEN_HPP
++#define OS_EMSCRIPTEN_C1_GLOBALS_EMSCRIPTEN_HPP
++
++#include "utilities/globalDefinitions.hpp"
++#include "utilities/macros.hpp"
++
++//
++// Sets the default values for operating system dependent flags used by the
++// client compiler. (see c1_globals.hpp)
++//
++
++#endif // OS_EMSCRIPTEN_C1_GLOBALS_EMSCRIPTEN_HPP
+diff --git a/src/hotspot/os/emscripten/c2_globals_emscripten.hpp b/src/hotspot/os/emscripten/c2_globals_emscripten.hpp
+new file mode 100644
+index 000000000..b788011c7
+--- /dev/null
++++ b/src/hotspot/os/emscripten/c2_globals_emscripten.hpp
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_C2_GLOBALS_EMSCRIPTEN_HPP
++#define OS_EMSCRIPTEN_C2_GLOBALS_EMSCRIPTEN_HPP
++
++#include "utilities/globalDefinitions.hpp"
++#include "utilities/macros.hpp"
++
++//
++// Sets the default values for operating system dependent flags used by the
++// server compiler. (see c2_globals.hpp)
++//
++
++#endif // OS_EMSCRIPTEN_C2_GLOBALS_EMSCRIPTEN_HPP
+diff --git a/src/hotspot/os/emscripten/decoder_emscripten.cpp b/src/hotspot/os/emscripten/decoder_emscripten.cpp
+new file mode 100644
+index 000000000..da7baf7ad
+--- /dev/null
++++ b/src/hotspot/os/emscripten/decoder_emscripten.cpp
+@@ -0,0 +1,44 @@
++/*
++ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#include "jvm.h"
++#include "runtime/os.hpp"
++#include "utilities/decoder_elf.hpp"
++#include "utilities/elfFile.hpp"
++#include "utilities/globalDefinitions.hpp"
++
++// Decoder::create_decoder() picks ElfDecoder for every non-Windows, non-AIX,
++// non-macOS target, so this out-of-line member has to exist here the way it does
++// in os/linux/decoder_linux.cpp. Without it wasm-ld leaves ElfDecoder::demangle
++// undefined and -sERROR_ON_UNDEFINED_SYMBOLS=0 silently turns it into a JS stub
++// that traps if a stack trace is ever decoded.
++//
++// There is nothing to do: the WASM binary is not an ELF file, symbol names are
++// stripped out of it, and os::dll_address_to_function_name() already reports
++// failure, so no mangled name ever reaches demangle().
++// (ElfFile::specifies_noexecstack is inline for every non-Linux target.)
++
++bool ElfDecoder::demangle(const char* symbol, char* buf, int buflen) {
++  return false;
++}
+diff --git a/src/hotspot/os/emscripten/globals_emscripten.hpp b/src/hotspot/os/emscripten/globals_emscripten.hpp
+new file mode 100644
+index 000000000..ed6244940
+--- /dev/null
++++ b/src/hotspot/os/emscripten/globals_emscripten.hpp
+@@ -0,0 +1,47 @@
++/*
++ * Copyright (c) 2005, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_GLOBALS_EMSCRIPTEN_HPP
++#define OS_EMSCRIPTEN_GLOBALS_EMSCRIPTEN_HPP
++
++//
++// Declare Emscripten specific flags. There are none.
++//
++#define RUNTIME_OS_FLAGS(develop,                                           \
++                         develop_pd,                                        \
++                         product,                                           \
++                         product_pd,                                        \
++                         notproduct,                                        \
++                         range,                                             \
++                         constraint)
++
++//
++// Defines Emscripten specific flags. They are not available on other platforms.
++//
++define_pd_global(size_t, PreTouchParallelChunkSize, 1 * G);
++define_pd_global(bool, UseLargePages, false);
++define_pd_global(bool, UseLargePagesIndividualAllocation, false);
++define_pd_global(bool, UseThreadPriorities, false);
++
++#endif // OS_EMSCRIPTEN_GLOBALS_EMSCRIPTEN_HPP
+diff --git a/src/hotspot/os/emscripten/osThread_emscripten.cpp b/src/hotspot/os/emscripten/osThread_emscripten.cpp
+new file mode 100644
+index 000000000..9c77cb32f
+--- /dev/null
++++ b/src/hotspot/os/emscripten/osThread_emscripten.cpp
+@@ -0,0 +1,48 @@
++/*
++ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++// no precompiled headers
++#include "memory/allocation.inline.hpp"
++#include "runtime/mutex.hpp"
++#include "runtime/osThread.hpp"
++
++#include <signal.h>
++
++void OSThread::pd_initialize() {
++  _thread_id        = 0;
++  _pthread_id       = 0;
++  _siginfo = nullptr;
++  _ucontext = nullptr;
++  _expanding_stack = 0;
++  _alt_sig_stack = nullptr;
++
++  sigemptyset(&_caller_sigmask);
++
++  _startThread_lock = new Monitor(Mutex::event, "startThread_lock");
++  assert(_startThread_lock !=nullptr, "check");
++}
++
++void OSThread::pd_destroy() {
++  delete _startThread_lock;
++}
+diff --git a/src/hotspot/os/emscripten/osThread_emscripten.hpp b/src/hotspot/os/emscripten/osThread_emscripten.hpp
+new file mode 100644
+index 000000000..803997db9
+--- /dev/null
++++ b/src/hotspot/os/emscripten/osThread_emscripten.hpp
+@@ -0,0 +1,127 @@
++/*
++ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_OSTHREAD_EMSCRIPTEN_HPP
++#define OS_EMSCRIPTEN_OSTHREAD_EMSCRIPTEN_HPP
++ public:
++  // Emscripten's pthreads implementation reports a pid_t-shaped id, the same
++  // way musl does on Linux.
++  typedef pid_t thread_id_t;
++
++ private:
++  int _thread_type;
++
++ public:
++
++  int thread_type() const {
++    return _thread_type;
++  }
++  void set_thread_type(int type) {
++    _thread_type = type;
++  }
++
++  // _pthread_id is the pthread id, which is used by library calls
++  // (e.g. pthread_kill).
++  pthread_t _pthread_id;
++
++  sigset_t _caller_sigmask; // Caller's signal mask
++
++ public:
++
++  // Methods to save/restore caller's signal mask
++  sigset_t  caller_sigmask() const       { return _caller_sigmask; }
++  void    set_caller_sigmask(sigset_t sigmask)  { _caller_sigmask = sigmask; }
++
++#ifndef PRODUCT
++  // Used for debugging, return a unique integer for each thread.
++  int thread_identifier() const   { return _thread_id; }
++#endif
++
++  pthread_t pthread_id() const {
++    return _pthread_id;
++  }
++  void set_pthread_id(pthread_t tid) {
++    _pthread_id = tid;
++  }
++
++  // ***************************************************************
++  // suspension support.
++  // ***************************************************************
++
++public:
++  // flags that support signal based suspend/resume are in a separate class
++  // to avoid confusion with many flags in OSThread that are used by VM level
++  // suspend/resume.
++  SuspendResume sr;
++
++  // _ucontext and _siginfo are used by SR_handler() to save thread context,
++  // and they will later be used to walk the stack or reposition thread PC.
++  // If the thread is not suspended in SR_handler() (e.g. self suspend),
++  // the value in _ucontext is meaningless, so we must use the last Java
++  // frame information as the frame. This will mean that for threads
++  // that are parked on a mutex the profiler (and safepoint mechanism)
++  // will see the thread as if it were still in the Java frame. This
++  // not a problem for the profiler since the Java frame is a close
++  // enough result. For the safepoint mechanism when the give it the
++  // Java frame we are not at a point where the safepoint needs the
++  // frame to that accurate (like for a compiled safepoint) since we
++  // should be in a place where we are native and will block ourselves
++  // if we transition.
++private:
++  void* _siginfo;
++  ucontext_t* _ucontext;
++  int _expanding_stack;                 /* non zero if manually expanding stack */
++  address _alt_sig_stack;               /* address of base of alternate signal stack */
++
++public:
++  void* siginfo() const                   { return _siginfo;  }
++  void set_siginfo(void* ptr)             { _siginfo = ptr;   }
++  ucontext_t* ucontext() const            { return _ucontext; }
++  void set_ucontext(ucontext_t* ptr)      { _ucontext = ptr;  }
++  void set_expanding_stack(void)          { _expanding_stack = 1;  }
++  void clear_expanding_stack(void)        { _expanding_stack = 0;  }
++  int  expanding_stack(void)              { return _expanding_stack;  }
++
++  void set_alt_sig_stack(address val)     { _alt_sig_stack = val; }
++  address alt_sig_stack(void)             { return _alt_sig_stack; }
++
++private:
++  Monitor* _startThread_lock;     // sync parent and child in thread creation
++
++public:
++
++  Monitor* startThread_lock() const {
++    return _startThread_lock;
++  }
++
++  // ***************************************************************
++  // Platform dependent initialization and cleanup
++  // ***************************************************************
++
++private:
++
++  void pd_initialize();
++  void pd_destroy();
++
++#endif // OS_EMSCRIPTEN_OSTHREAD_EMSCRIPTEN_HPP
+diff --git a/src/hotspot/os/emscripten/os_emscripten.cpp b/src/hotspot/os/emscripten/os_emscripten.cpp
+new file mode 100644
+index 000000000..b904251ea
+--- /dev/null
++++ b/src/hotspot/os/emscripten/os_emscripten.cpp
+@@ -0,0 +1,1287 @@
++/*
++ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++// no precompiled headers
++#include "classfile/vmSymbols.hpp"
++#include "code/icBuffer.hpp"
++#include "code/vtableStubs.hpp"
++#include "compiler/compileBroker.hpp"
++#include "interpreter/interpreter.hpp"
++#include "jvm.h"
++#include "jvmtifiles/jvmti.h"
++#include "logging/log.hpp"
++#include "logging/logStream.hpp"
++#include "memory/allocation.inline.hpp"
++#include "oops/oop.inline.hpp"
++#include "os_emscripten.inline.hpp"
++#include "os_posix.inline.hpp"
++#include "prims/jniFastGetField.hpp"
++#include "prims/jvm_misc.hpp"
++#include "runtime/arguments.hpp"
++#include "runtime/atomic.hpp"
++#include "runtime/globals.hpp"
++#include "runtime/globals_extension.hpp"
++#include "runtime/interfaceSupport.inline.hpp"
++#include "runtime/java.hpp"
++#include "runtime/javaCalls.hpp"
++#include "runtime/javaThread.hpp"
++#include "runtime/mutexLocker.hpp"
++#include "runtime/objectMonitor.hpp"
++#include "runtime/osInfo.hpp"
++#include "runtime/osThread.hpp"
++#include "runtime/perfMemory.hpp"
++#include "runtime/semaphore.hpp"
++#include "runtime/sharedRuntime.hpp"
++#include "runtime/statSampler.hpp"
++#include "runtime/stubRoutines.hpp"
++#include "runtime/threadCritical.hpp"
++#include "runtime/threads.hpp"
++#include "runtime/timer.hpp"
++#include "runtime/vm_version.hpp"
++#include "services/attachListener.hpp"
++#include "services/memTracker.hpp"
++#include "services/runtimeService.hpp"
++#include "signals_posix.hpp"
++#include "utilities/align.hpp"
++#include "utilities/decoder.hpp"
++#include "utilities/defaultStream.hpp"
++#include "utilities/events.hpp"
++#include "utilities/growableArray.hpp"
++#include "utilities/vmError.hpp"
++
++// put OS-includes here
++# include <alloca.h>
++# include <dlfcn.h>
++# include <errno.h>
++# include <fcntl.h>
++# include <inttypes.h>
++# include <poll.h>
++# include <pthread.h>
++# include <signal.h>
++# include <stdint.h>
++# include <stdio.h>
++# include <string.h>
++# include <sys/mman.h>
++# include <sys/param.h>
++# include <sys/resource.h>
++# include <sys/stat.h>
++# include <sys/time.h>
++# include <sys/times.h>
++# include <sys/types.h>
++# include <time.h>
++# include <unistd.h>
++
++# include <emscripten.h>
++# include <emscripten/heap.h>
++
++#define MAX_PATH    (2 * K)
++
++// The subdirectory of <java_home>/lib that libjvm would live in. This port
++// only ever builds the zero variant, but keep the same shape as the other
++// POSIX ports so the path logic stays recognisable.
++#ifdef ZERO
++  #define JVM_VARIANT "zero"
++#elif defined(COMPILER2)
++  #define JVM_VARIANT "server"
++#elif defined(COMPILER1)
++  #define JVM_VARIANT "client"
++#else
++  #define JVM_VARIANT "unknown"
++#endif
++
++// for timer info max values which include all bits
++#define ALL_64_BITS CONST64(0xFFFFFFFFFFFFFFFF)
++
++////////////////////////////////////////////////////////////////////////////////
++// global variables
++
++julong os::Emscripten::_physical_memory = 0;
++pthread_t os::Emscripten::_main_thread;
++
++////////////////////////////////////////////////////////////////////////////////
++// utility functions
++
++julong os::Emscripten::available_memory() {
++  // The linear memory grows on demand up to a ceiling fixed at link time
++  // (MAXIMUM_MEMORY). Everything between the current heap size and that
++  // ceiling is what the VM can still get, so that is the honest answer to
++  // "how much memory is available".
++  size_t heap_size = emscripten_get_heap_size();
++  size_t heap_max = emscripten_get_heap_max();
++  if (heap_max <= heap_size) {
++    return 0;
++  }
++  return (julong)(heap_max - heap_size);
++}
++
++julong os::available_memory() {
++  return Emscripten::available_memory();
++}
++
++julong os::free_memory() {
++  return Emscripten::available_memory();
++}
++
++julong os::physical_memory() {
++  return Emscripten::physical_memory();
++}
++
++void os::Emscripten::print_uptime_info(outputStream* st) {
++  // There is no machine to have been up; emscripten_get_now() is a
++  // monotonic millisecond clock started when the module was instantiated,
++  // which is the closest thing to an uptime this port has.
++  double now_ms = emscripten_get_now();
++  os::print_dhm(st, "OS uptime:", (long) (now_ms / 1000.0));
++}
++
++void os::Emscripten::initialize_system_info() {
++  // A WebAssembly module has no sysctl to ask. The core count comes from the
++  // host through sysconf(), and the memory ceiling is the one the linker
++  // baked into the module.
++  long cpus = ::sysconf(_SC_NPROCESSORS_ONLN);
++  set_processor_count(cpus >= 1 ? (int)cpus : 1);
++
++  size_t heap_max = emscripten_get_heap_max();
++  if (heap_max == 0) {
++    _physical_memory = 256 * 1024 * 1024;  // fallback
++  } else {
++    _physical_memory = (julong)heap_max;
++  }
++}
++
++void os::init_system_properties_values() {
++  // The layout below is the generic (non-Apple) POSIX one. The module's
++  // in-memory filesystem is populated by the embedder to match it.
++#define DEFAULT_LIBPATH "/lib:/usr/lib"
++#define SYS_EXT_DIR     "/usr/java/packages"
++#define EXTENSIONS_DIR  "/lib/ext"
++
++  // Buffer that fits several sprintfs.
++  char buf[3 * MAXPATHLEN + sizeof(EXTENSIONS_DIR) + sizeof(SYS_EXT_DIR) + 3];
++  char *pslash;
++
++  // sysclasspath, java_home, dll_dir
++  {
++    char *end;
++
++    // Found the full path to libjvm.so.
++    // Now cut the path to <java_home>/jre if we can.
++    os::jvm_path(buf, sizeof(buf));
++
++    if ((pslash = strrchr(buf, '/')) != nullptr) {
++      *pslash = '\0';            // Get rid of /libjvm.so.
++    }
++    if ((pslash = strrchr(buf, '/')) != nullptr) {
++      *pslash = '\0';            // Get rid of /{client|server|hotspot}.
++    }
++    Arguments::set_dll_dir(buf);
++
++    if (pslash != nullptr) {
++      if ((pslash = strrchr(buf, '/')) != nullptr) {
++        *pslash = '\0';          // Get rid of /lib.
++      }
++    }
++    Arguments::set_java_home(buf);
++    if (!set_boot_path('/', ':')) {
++      vm_exit_during_initialization("Failed setting boot class path.", nullptr);
++    }
++    end = buf;
++    (void)end;
++  }
++
++  // Where to look for native libraries.
++  //
++  // Everything is statically linked, so this path never actually loads a
++  // shared object; it is what java.lang.ClassLoader stats before handing a
++  // System.loadLibrary() call down to the (always-succeeding) os::dll_load.
++  // The embedder stages placeholder .so files in <java_home>/lib, so the dll
++  // dir and the JVM variant dir under it have to be on the path or the Java
++  // side throws UnsatisfiedLinkError before the VM is ever asked.
++  {
++    char *ld_library_path;
++    const char *v = ::getenv("LD_LIBRARY_PATH");
++    if (v == nullptr) {
++      v = "";
++    }
++    const char *dll_dir = Arguments::get_dll_dir();
++
++    size_t pathsize = strlen(v) + 1 + 2 * strlen(dll_dir) + sizeof("/" JVM_VARIANT) +
++                      sizeof(SYS_EXT_DIR) + sizeof("/lib/") +
++                      strlen(DEFAULT_LIBPATH) + 5;
++    ld_library_path = NEW_C_HEAP_ARRAY(char, pathsize, mtInternal);
++    jio_snprintf(ld_library_path, pathsize, "%s%s%s:%s/" JVM_VARIANT ":"
++                 SYS_EXT_DIR "/lib:" DEFAULT_LIBPATH,
++                 v, (*v == '\0' ? "" : ":"), dll_dir, dll_dir);
++    Arguments::set_library_path(ld_library_path);
++    FREE_C_HEAP_ARRAY(char, ld_library_path);
++  }
++
++  // Extensions directories.
++  jio_snprintf(buf, sizeof(buf), "%s" EXTENSIONS_DIR ":" SYS_EXT_DIR EXTENSIONS_DIR,
++               Arguments::get_java_home());
++  Arguments::set_ext_dirs(buf);
++
++#undef DEFAULT_LIBPATH
++#undef SYS_EXT_DIR
++#undef EXTENSIONS_DIR
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// thread stack
++
++// Thread start routine for all newly created threads.
++static void *thread_native_entry(Thread *thread) {
++
++  thread->record_stack_base_and_size();
++
++  // Try to randomize the cache line index of hot stack frames.
++  // This helps when threads of the same stack traces evict each other's
++  // cache lines. The threads can be either from the same JVM instance, or
++  // from different JVM instances. The benefit is especially true for
++  // processors with hyperthreading technology.
++  static int counter = 0;
++  int pid = os::current_process_id();
++  alloca(((pid ^ counter++) & 7) * 128);
++
++  thread->initialize_thread_current();
++
++  OSThread* osthread = thread->osthread();
++  Monitor* sync = osthread->startThread_lock();
++
++  osthread->set_thread_id(os::Emscripten::gettid());
++
++  log_info(os, thread)("Thread is alive (tid: " UINTX_FORMAT ", pthread id: " UINTX_FORMAT ").",
++    os::current_thread_id(), (uintx) pthread_self());
++
++  // initialize signal mask for this thread
++  PosixSignals::hotspot_sigmask(thread);
++
++  // initialize floating point control register
++  os::Emscripten::init_thread_fpu_state();
++
++  // handshaking with parent thread
++  {
++    MutexLocker ml(sync, Mutex::_no_safepoint_check_flag);
++
++    // notify parent thread
++    osthread->set_state(INITIALIZED);
++    sync->notify_all();
++
++    // wait until os::start_thread()
++    while (osthread->get_state() == INITIALIZED) {
++      sync->wait_without_safepoint_check();
++    }
++  }
++
++  log_info(os, thread)("Thread finished (tid: " UINTX_FORMAT ", pthread id: " UINTX_FORMAT ").",
++    os::current_thread_id(), (uintx) pthread_self());
++
++  // call one more level start routine
++  thread->call_run();
++
++  // Note: at this point the thread object may already have deleted itself.
++  // Prevent dereferencing it from here on out.
++  thread = nullptr;
++
++  return 0;
++}
++
++bool os::create_thread(Thread* thread, ThreadType thr_type,
++                       size_t req_stack_size) {
++  assert(thread->osthread() == nullptr, "caller responsible");
++
++  // Allocate the OSThread object
++  OSThread* osthread = new OSThread();
++  if (osthread == nullptr) {
++    return false;
++  }
++
++  // set the correct thread state
++  osthread->set_thread_type(thr_type);
++
++  // Initial state is ALLOCATED but not INITIALIZED
++  osthread->set_state(ALLOCATED);
++
++  thread->set_osthread(osthread);
++
++  // init thread attributes
++  pthread_attr_t attr;
++  pthread_attr_init(&attr);
++  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
++
++  // calculate stack size if it's not specified by caller
++  size_t stack_size = os::Posix::get_initial_stack_size(thr_type, req_stack_size);
++  int status = pthread_attr_setstacksize(&attr, stack_size);
++  if (status != 0) {
++    log_warning(os, thread)("The %zuk stack size specified for thread is invalid, "
++                            "will use default stack size", stack_size / K);
++  }
++
++  ThreadState state;
++
++  {
++    pthread_t tid;
++    int ret = pthread_create(&tid, &attr, (void* (*)(void*)) thread_native_entry, thread);
++
++    char buf[64];
++    if (ret == 0) {
++      log_info(os, thread)("Thread \"%s\" started (pthread id: " UINTX_FORMAT ", attributes: %s). ",
++                           thread->name(), (uintx) tid, os::Posix::describe_pthread_attr(buf, sizeof(buf), &attr));
++    } else {
++      log_warning(os, thread)("Failed to start thread \"%s\" - pthread_create failed (%s) for attributes: %s.",
++                              thread->name(), os::errno_name(ret), os::Posix::describe_pthread_attr(buf, sizeof(buf), &attr));
++      // Log some OS information which might explain why creating the thread failed.
++      log_info(os, thread)("Number of threads approx. running in the VM: %d", Threads::number_of_threads());
++      LogStream st(Log(os, thread)::info());
++      os::Posix::print_rlimit_info(&st);
++      os::print_memory_info(&st);
++    }
++
++    pthread_attr_destroy(&attr);
++
++    if (ret != 0) {
++      // Need to clean up stuff we've allocated so far
++      thread->set_osthread(nullptr);
++      delete osthread;
++      return false;
++    }
++
++    // Store pthread info into the OSThread
++    osthread->set_pthread_id(tid);
++
++    // Wait until child thread is either initialized or aborted
++    {
++      Monitor* sync_with_child = osthread->startThread_lock();
++      MutexLocker ml(sync_with_child, Mutex::_no_safepoint_check_flag);
++      while ((state = osthread->get_state()) == ALLOCATED) {
++        sync_with_child->wait_without_safepoint_check();
++      }
++    }
++  }
++
++  // The thread is returned suspended (in state INITIALIZED),
++  // and is started higher up in the call chain
++  assert(state == INITIALIZED, "race condition");
++  return true;
++}
++
++/////////////////////////////////////////////////////////////////////////////
++// attach existing thread
++
++// bootstrap the main thread
++bool os::create_main_thread(JavaThread* thread) {
++  assert(os::Emscripten::_main_thread == pthread_self(), "should be called inside main thread");
++  return create_attached_thread(thread);
++}
++
++bool os::create_attached_thread(JavaThread* thread) {
++#ifdef ASSERT
++  thread->verify_not_published();
++#endif
++
++  // Allocate the OSThread object
++  OSThread* osthread = new OSThread();
++
++  if (osthread == nullptr) {
++    return false;
++  }
++
++  osthread->set_thread_id(os::Emscripten::gettid());
++
++  // Store pthread info into the OSThread
++  osthread->set_pthread_id(::pthread_self());
++
++  // initialize floating point control register
++  os::Emscripten::init_thread_fpu_state();
++
++  // Initial thread state is RUNNABLE
++  osthread->set_state(RUNNABLE);
++
++  thread->set_osthread(osthread);
++
++  log_info(os, thread)("Thread attached (tid: " UINTX_FORMAT ", pthread id: " UINTX_FORMAT ").",
++                       os::current_thread_id(), (uintx) pthread_self());
++
++  // initialize signal mask for this thread
++  // and save the caller's signal mask
++  PosixSignals::hotspot_sigmask(thread);
++
++  return true;
++}
++
++void os::pd_start_thread(Thread* thread) {
++  OSThread * osthread = thread->osthread();
++  assert(osthread->get_state() != INITIALIZED, "just checking");
++  Monitor* sync_with_child = osthread->startThread_lock();
++  MutexLocker ml(sync_with_child, Mutex::_no_safepoint_check_flag);
++  sync_with_child->notify();
++}
++
++// Free Emscripten resources related to the OSThread
++void os::free_thread(OSThread* osthread) {
++  assert(osthread != nullptr, "osthread not set");
++
++  // We are told to free resources of the argument thread,
++  // but we can only really operate on the current thread.
++  assert(Thread::current()->osthread() == osthread,
++         "os::free_thread but not current thread");
++
++  // Restore caller's signal mask
++  sigset_t sigmask = osthread->caller_sigmask();
++  pthread_sigmask(SIG_SETMASK, &sigmask, nullptr);
++
++  delete osthread;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// time support
++
++double os::elapsedVTime() {
++  // Not implemented; fall back to elapsed wall clock time.
++  return elapsedTime();
++}
++
++void os::Emscripten::clock_init() {
++  // Nothing to do - the POSIX layer uses clock_gettime(), which emscripten
++  // backs with performance.now().
++}
++
++pid_t os::Emscripten::gettid() {
++  // Emscripten's pthreads are web workers; there is no separate kernel task
++  // id, so the pthread handle doubles as the thread id. It is stable for the
++  // life of the thread, which is all the VM requires of it.
++  return (pid_t)(intptr_t) ::pthread_self();
++}
++
++intx os::current_thread_id() {
++  return (intx) ::pthread_self();
++}
++
++int os::current_process_id() {
++  return (int)(getpid());
++}
++
++const char* os::get_temp_directory() { return "/tmp"; }
++
++// check if addr is inside libjvm.so
++bool os::address_is_in_vm(address addr) {
++  // Everything is one static module, so there is no libjvm image to compare
++  // against and no dladdr() to ask. The only honest answer is "no" - callers
++  // use this to decide whether to symbolize a frame, and a wrong "yes" would
++  // produce bogus stack traces.
++  return false;
++}
++
++void os::prepare_native_symbols() {
++}
++
++bool os::dll_address_to_function_name(address addr, char *buf,
++                                      int buflen, int *offset,
++                                      bool demangle) {
++  // buf is not optional, but offset is optional
++  assert(buf != nullptr, "sanity check");
++
++  // Symbol names are stripped out of the wasm binary; there is nothing to
++  // resolve an address against.
++  buf[0] = '\0';
++  if (offset != nullptr) *offset = -1;
++  return false;
++}
++
++bool os::dll_address_to_library_name(address addr, char* buf,
++                                     int buflen, int* offset) {
++  // buf is not optional, but offset is optional
++  assert(buf != nullptr, "sanity check");
++
++  buf[0] = '\0';
++  if (offset) *offset = -1;
++  return false;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// static symbol dispatch table
++//
++// There is no dynamic loader. Everything the VM would normally dlopen() is
++// already linked into the single module, so dll_load() hands back a token
++// standing for the requested library and lookups are answered out of the
++// table below rather than by walking a symbol table at runtime.
++//
++// The table itself cannot live here. It has to name every JNI entry point in
++// libjava/libnio/libzip/libjimage, and those archives are built after libjvm
++// and linked after it. So the embedder generates the table at link time and
++// exposes it through the two weak symbols below; libjvm only holds the lookup
++// logic. If no table was supplied the weak pointer is null and every lookup
++// simply misses, which is also what a build without java.base natives wants.
++//
++// Note that this is what keeps the natives alive at all: with no dlsym there is
++// no other reference to any Java_* function, and wasm-ld would garbage-collect
++// the lot.
++
++extern "C" {
++  struct EmscriptenStaticSymbol {
++    const char* name;
++    void*       addr;
++  };
++
++  // Null-terminated; supplied by the embedder.
++  extern const EmscriptenStaticSymbol emscripten_static_symbols[] __attribute__((weak));
++}
++
++void* os::Emscripten::dll_lookup_static(const char* name) {
++  if (name == nullptr || emscripten_static_symbols == nullptr) {
++    return nullptr;
++  }
++  for (const EmscriptenStaticSymbol* e = emscripten_static_symbols; e->name != nullptr; e++) {
++    if (strcmp(e->name, name) == 0) {
++      return e->addr;
++    }
++  }
++  log_debug(os)("Dynamic loading not supported in Emscripten WASM: %s", name);
++  return nullptr;
++}
++
++void* os::dll_lookup(void* handle, const char* name) {
++  // Deliberately not dlsym(): see above.
++  return os::Emscripten::dll_lookup_static(name);
++}
++
++void* os::get_default_process_handle() {
++  // dlopen(nullptr) is a stub that returns nullptr unless the module was built
++  // with dynamic linking, and callers treat nullptr as failure. There is only
++  // ever one module here, so hand back a stable non-null token; dll_lookup
++  // ignores the handle and answers out of the static table anyway.
++  static int process_handle_token = 0;
++  return &process_handle_token;
++}
++
++void* os::dll_load(const char* filename, char* ebuf, int ebuflen) {
++  log_info(os)("attempting shared library load of %s", filename);
++  // Everything is statically linked; hand back the process handle so the
++  // shared code proceeds to look the entry points up by name.
++  log_debug(os)("Dynamic loading not supported in Emscripten WASM");
++  return os::get_default_process_handle();
++}
++
++bool os::pd_dll_unload(void* libhandle, char* ebuf, int ebuflen) {
++  if (ebuf != nullptr && ebuflen > 0) {
++    ebuf[0] = '\0';
++  }
++  // Nothing was ever really loaded, so unloading always "succeeds".
++  return true;
++}
++
++void os::print_dll_info(outputStream *st) {
++  st->print_cr("Dynamic libraries:");
++  st->print_cr("Statically linked into the WebAssembly module.");
++}
++
++int os::get_loaded_modules_info(os::LoadedModulesCallbackFunc callback, void *param) {
++  // There is exactly one module and it has no on-disk representation, so
++  // there is nothing to report. Non-zero means "not supported".
++  return 1;
++}
++
++void os::get_summary_os_info(char* buf, size_t buflen) {
++  strncpy(buf, "Emscripten WebAssembly", buflen);
++  buf[buflen - 1] = '\0';
++}
++
++void os::print_os_info_brief(outputStream* st) {
++  os::Posix::print_uname_info(st);
++}
++
++void os::print_os_info(outputStream* st) {
++  st->print_cr("OS:");
++  st->print_cr("OS: Emscripten WebAssembly");
++
++  os::Posix::print_uname_info(st);
++
++  os::Emscripten::print_uptime_info(st);
++
++  os::Posix::print_rlimit_info(st);
++
++  os::Posix::print_load_average(st);
++
++  VM_Version::print_platform_virtualization_info(st);
++}
++
++void os::pd_print_cpu_info(outputStream* st, char* buf, size_t buflen) {
++  // Nothing to do for now.
++}
++
++void os::get_summary_cpu_info(char* buf, size_t buflen) {
++  strncpy(buf, "WebAssembly (Emscripten)", buflen);
++  buf[buflen - 1] = '\0';
++}
++
++void os::print_memory_info(outputStream* st) {
++  st->print("Memory:");
++  st->print(" %dk page", os::vm_page_size() >> 10);
++
++  st->print(", physical " UINT64_FORMAT "k",
++            os::physical_memory() >> 10);
++  st->print("(" UINT64_FORMAT "k free)",
++            os::available_memory() >> 10);
++  st->cr();
++  st->print_cr("CPU: WebAssembly");
++}
++
++static char saved_jvm_path[MAXPATHLEN] = {0};
++
++// Find the full path to the current module, libjvm
++void os::jvm_path(char *buf, jint buflen) {
++  // Error checking.
++  if (buflen < MAXPATHLEN) {
++    assert(false, "must use a large-enough buffer");
++    buf[0] = '\0';
++    return;
++  }
++  // Lazy resolve the path to current module.
++  if (saved_jvm_path[0] != 0) {
++    strcpy(buf, saved_jvm_path);
++    return;
++  }
++
++  // There is no libjvm image and no dladdr() to locate one. The layout the
++  // embedder stages into the module's filesystem is the answer instead:
++  // JAVA_HOME is where the jimage lives, and init_system_properties_values()
++  // walks two components up from the path returned here.
++  // This runs from Arguments::init_system_properties(), before any -D option
++  // is parsed, so -Djava.home cannot be consulted here. The environment is the
++  // only channel the embedder has this early.
++  const char* java_home = ::getenv("JAVA_HOME");
++  if (java_home == nullptr || *java_home == '\0') {
++    java_home = "/opt/jdk";
++  }
++  jio_snprintf(buf, buflen, "%s/lib/%s/libjvm%s",
++               java_home, JVM_VARIANT, JNI_LIB_SUFFIX);
++
++  strncpy(saved_jvm_path, buf, MAXPATHLEN);
++  saved_jvm_path[MAXPATHLEN - 1] = '\0';
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// Virtual Memory
++
++static void warn_fail_commit_memory(char* addr, size_t size, bool exec,
++                                    int err) {
++  warning("INFO: os::commit_memory(" INTPTR_FORMAT ", " SIZE_FORMAT
++          ", %d) failed; error='%s' (errno=%d)", (intptr_t)addr, size, exec,
++           os::errno_name(err), err);
++}
++
++// NOTE: the emscripten mmap() emulation carves regions out of the single
++// linear memory. It honours PROT_* only loosely - wasm has no page
++// protection hardware - but the bookkeeping is what the VM depends on here.
++//
++// It also rejects any mapping request that carries an address: an anonymous
++// mmap is serviced by memalign() and the emulation refuses a non-zero addr
++// (and therefore MAP_FIXED) outright with EINVAL. So the reserve/commit split
++// collapses - whatever pd_reserve_memory handed back is already real, usable
++// memory, and commit/uncommit are pure bookkeeping.
++
++bool os::pd_commit_memory(char* addr, size_t size, bool exec) {
++  // Reserved memory is already backed; there is nothing to fault in and no
++  // way to re-map the range at a fixed address. Anything else would fail
++  // every commit, starting with the safepoint polling page.
++  return true;
++}
++
++bool os::pd_commit_memory(char* addr, size_t size, size_t alignment_hint,
++                          bool exec) {
++  // alignment_hint is ignored on this OS
++  return pd_commit_memory(addr, size, exec);
++}
++
++void os::pd_commit_memory_or_exit(char* addr, size_t size, bool exec,
++                                  const char* mesg) {
++  assert(mesg != nullptr, "mesg must be specified");
++  if (!pd_commit_memory(addr, size, exec)) {
++    // add extra info in product mode for vm_exit_out_of_memory():
++    PRODUCT_ONLY(warn_fail_commit_memory(addr, size, exec, errno);)
++    vm_exit_out_of_memory(size, OOM_MMAP_ERROR, "%s", mesg);
++  }
++}
++
++void os::pd_commit_memory_or_exit(char* addr, size_t size,
++                                  size_t alignment_hint, bool exec,
++                                  const char* mesg) {
++  // alignment_hint is ignored on this OS
++  pd_commit_memory_or_exit(addr, size, exec, mesg);
++}
++
++void os::pd_realign_memory(char *addr, size_t bytes, size_t alignment_hint) {
++}
++
++void os::pd_free_memory(char *addr, size_t bytes, size_t alignment_hint) {
++  ::madvise(addr, bytes, MADV_DONTNEED);
++}
++
++size_t os::pd_pretouch_memory(void* first, void* last, size_t page_size) {
++  return page_size;
++}
++
++void os::numa_make_global(char *addr, size_t bytes) {
++}
++
++void os::numa_make_local(char *addr, size_t bytes, int lgrp_hint) {
++}
++
++bool os::numa_topology_changed()   { return false; }
++
++size_t os::numa_get_groups_num() {
++  return 1;
++}
++
++int os::numa_get_group_id() {
++  return 0;
++}
++
++size_t os::numa_get_leaf_groups(int *ids, size_t size) {
++  if (size > 0) {
++    ids[0] = 0;
++    return 1;
++  }
++  return 0;
++}
++
++int os::numa_get_group_id_for_address(const void* address) {
++  return 0;
++}
++
++bool os::numa_get_group_ids_for_range(const void** addresses, int* lgrp_ids, size_t count) {
++  return false;
++}
++
++char *os::scan_pages(char *start, char* end, page_info* page_expected, page_info* page_found) {
++  return end;
++}
++
++bool os::pd_uncommit_memory(char* addr, size_t size, bool exec) {
++  // The counterpart of pd_commit_memory: the range stays mapped for the life
++  // of the reservation, so this is a no-op rather than a MAP_FIXED re-map.
++  return true;
++}
++
++bool os::pd_create_stack_guard_pages(char* addr, size_t size) {
++  return os::commit_memory(addr, size, !ExecMem);
++}
++
++// If this is a growable mapping, remove the guard pages entirely by
++// munmap()ping them.  If not, just call uncommit_memory().
++bool os::remove_stack_guard_pages(char* addr, size_t size) {
++  return os::uncommit_memory(addr, size);
++}
++
++static char* anon_mmap(char* requested_addr, size_t bytes, bool exec) {
++  // MAP_FIXED is intentionally left out, to leave existing mappings intact.
++  const int flags = MAP_PRIVATE | MAP_NORESERVE | MAP_ANONYMOUS;
++
++  char* addr = (char*)::mmap(requested_addr, bytes, PROT_NONE, flags, -1, 0);
++
++  return addr == MAP_FAILED ? nullptr : addr;
++}
++
++static int anon_munmap(char * addr, size_t size) {
++  return ::munmap(addr, size) == 0;
++}
++
++char* os::pd_reserve_memory(size_t bytes, bool exec) {
++  return anon_mmap(nullptr, bytes, exec);
++}
++
++bool os::pd_release_memory(char* addr, size_t size) {
++  return anon_munmap(addr, size);
++}
++
++static bool emscripten_mprotect(char* addr, size_t size, int prot) {
++  // Emscripten's mprotect() is a no-op that validates its arguments, so the
++  // alignment work below is still worth doing: it keeps the VM's own
++  // assertions about page boundaries honest.
++  char* bottom = (char*)align_down((intptr_t)addr, os::vm_page_size());
++  assert(addr == bottom, "sanity check");
++
++  size = align_up(pointer_delta(addr, bottom, 1) + size, os::vm_page_size());
++  Events::log_memprotect(nullptr, "Protecting memory [" INTPTR_FORMAT "," INTPTR_FORMAT
++                         "] with protection modes %x", p2i(bottom), p2i(bottom+size), prot);
++  return ::mprotect(bottom, size, prot) == 0;
++}
++
++// Set protections specified
++bool os::protect_memory(char* addr, size_t bytes, ProtType prot,
++                        bool is_committed) {
++  unsigned int p = 0;
++  switch (prot) {
++  case MEM_PROT_NONE: p = PROT_NONE; break;
++  case MEM_PROT_READ: p = PROT_READ; break;
++  case MEM_PROT_RW:   p = PROT_READ|PROT_WRITE; break;
++  case MEM_PROT_RWX:  p = PROT_READ|PROT_WRITE|PROT_EXEC; break;
++  default:
++    ShouldNotReachHere();
++  }
++  // is_committed is unused.
++  return emscripten_mprotect(addr, bytes, p);
++}
++
++bool os::guard_memory(char* addr, size_t size) {
++  return emscripten_mprotect(addr, size, PROT_NONE);
++}
++
++bool os::unguard_memory(char* addr, size_t size) {
++  return emscripten_mprotect(addr, size, PROT_READ|PROT_WRITE);
++}
++
++static size_t _large_page_size = 0;
++
++void os::large_page_init() {
++}
++
++char* os::pd_reserve_memory_special(size_t bytes, size_t alignment, size_t page_size,
++                                    char* req_addr, bool exec) {
++  fatal("os::reserve_memory_special should not be called on Emscripten.");
++  return nullptr;
++}
++
++bool os::pd_release_memory_special(char* base, size_t bytes) {
++  fatal("os::release_memory_special should not be called on Emscripten.");
++  return false;
++}
++
++size_t os::large_page_size() {
++  return _large_page_size;
++}
++
++bool os::can_commit_large_page_memory() {
++  return false;
++}
++
++bool os::can_execute_large_page_memory() {
++  return false;
++}
++
++char* os::pd_attempt_map_memory_to_file_at(char* requested_addr, size_t bytes, int file_desc) {
++  assert(file_desc >= 0, "file_desc is not valid");
++  char* result = pd_attempt_reserve_memory_at(requested_addr, bytes, !ExecMem);
++  if (result != nullptr) {
++    if (replace_existing_mapping_with_file_mapping(result, bytes, file_desc) == nullptr) {
++      vm_exit_during_initialization(err_msg("Error in mapping Java heap at the given filesystem directory"));
++    }
++  }
++  return result;
++}
++
++// Reserve memory at an arbitrary address, only if that area is
++// available (and not reserved for something else).
++char* os::pd_attempt_reserve_memory_at(char* requested_addr, size_t bytes, bool exec) {
++  assert(bytes % os::vm_page_size() == 0, "reserving unexpected size block");
++
++  // mmap() allows the caller to pass an address as a hint; give it a try
++  // first, and if it is honoured we can return immediately.
++  char * addr = anon_mmap(requested_addr, bytes, exec);
++  if (addr == requested_addr) {
++    return requested_addr;
++  }
++
++  if (addr != nullptr) {
++    // mmap() is successful but it fails to reserve at the requested address
++    anon_munmap(addr, bytes);
++  }
++
++  return nullptr;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// thread priority support
++
++// There is no priority control in a web worker, so UseThreadPriorities
++// defaults to false (see globals_emscripten.hpp) and the two entry points
++// below never get past their first line. The table is still required: shared
++// code indexes it whenever it maps a Java priority.
++
++int os::java_to_os_priority[CriticalPriority + 1] = {
++  19,              // 0 Entry should never be used
++
++   0,              // 1 MinPriority
++   3,              // 2
++   6,              // 3
++
++  10,              // 4
++  15,              // 5 NormPriority
++  18,              // 6
++
++  21,              // 7
++  25,              // 8
++  28,              // 9 NearMaxPriority
++
++  31,              // 10 MaxPriority
++
++  31               // 11 CriticalPriority
++};
++
++static int prio_init() {
++  if (UseCriticalJavaThreadPriority) {
++    os::java_to_os_priority[MaxPriority] = os::java_to_os_priority[CriticalPriority];
++  }
++  return 0;
++}
++
++OSReturn os::set_native_priority(Thread* thread, int newpri) {
++  if (!UseThreadPriorities || ThreadPriorityPolicy == 0) return OS_OK;
++  return OS_OK;
++}
++
++OSReturn os::get_native_priority(const Thread* const thread, int *priority_ptr) {
++  if (!UseThreadPriorities || ThreadPriorityPolicy == 0) {
++    *priority_ptr = java_to_os_priority[NormPriority];
++    return OS_OK;
++  }
++  *priority_ptr = java_to_os_priority[NormPriority];
++  return OS_OK;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// initialization
++
++// this is called _before_ most of the global arguments have been parsed
++void os::init(void) {
++  char dummy;   // used to get a guess on initial stack address
++
++  size_t page_size = (size_t)getpagesize();
++  OSInfo::set_vm_page_size(page_size);
++  OSInfo::set_vm_allocation_granularity(page_size);
++  if (os::vm_page_size() == 0) {
++    fatal("os_emscripten.cpp: os::init: page size setup failed (%s)", os::strerror(errno));
++  }
++  _page_sizes.add(os::vm_page_size());
++
++  Emscripten::initialize_system_info();
++
++  // _main_thread points to the thread that created/loaded the JVM.
++  Emscripten::_main_thread = pthread_self();
++
++  Emscripten::clock_init();
++
++  os::Posix::init();
++
++  log_info(os)("HotSpot is running on Emscripten/WebAssembly");
++}
++
++// To install functions for atexit system call
++extern "C" {
++  static void perfMemory_exit_helper() {
++    perfMemory_exit();
++  }
++}
++
++// this is called _after_ the global arguments have been parsed
++jint os::init_2(void) {
++
++  // This could be set after os::Posix::init() but all platforms
++  // have to set it the same so we have to mirror Solaris.
++  DEBUG_ONLY(os::set_mutex_init_done();)
++
++  os::Posix::init_2();
++
++  // Check and sets minimum stack sizes against command line options
++  if (set_minimum_stack_sizes() == JNI_ERR) {
++    return JNI_ERR;
++  }
++
++  if (PosixSignals::init() == JNI_ERR) {
++    return JNI_ERR;
++  }
++
++  // Not supported.
++  FLAG_SET_ERGO(UseNUMA, false);
++  FLAG_SET_ERGO(UseNUMAInterleaving, false);
++
++  if (MaxFDLimit) {
++    // set the number of file descriptors to max. print out error
++    // if getrlimit/setrlimit fails but continue regardless.
++    struct rlimit nbr_files;
++    int status = getrlimit(RLIMIT_NOFILE, &nbr_files);
++    if (status != 0) {
++      log_info(os)("os::init_2 getrlimit failed: %s", os::strerror(errno));
++    } else {
++      nbr_files.rlim_cur = nbr_files.rlim_max;
++      status = setrlimit(RLIMIT_NOFILE, &nbr_files);
++      if (status != 0) {
++        log_info(os)("os::init_2 setrlimit failed: %s", os::strerror(errno));
++      }
++    }
++  }
++
++  // at-exit methods are called in the reverse order of their registration.
++  // atexit functions are called on return from main or as a result of a
++  // call to exit(3C). There can be only 32 of these functions registered
++  // and atexit() does not set errno.
++
++  if (PerfAllowAtExitRegistration) {
++    // only register atexit functions if PerfAllowAtExitRegistration is set.
++    // atexit functions can be delayed until process exit time, which
++    // can be problematic for embedded VM situations. Embedded VMs should
++    // call DestroyJavaVM() to assure that VM resources are released.
++
++    // note: perfMemory_exit_helper atexit function may be removed in
++    // the future if the appropriate cleanup code can be added to the
++    // VM_Exit VMOperation's doit method.
++    if (atexit(perfMemory_exit_helper) != 0) {
++      warning("os::init_2 atexit(perfMemory_exit_helper) failed");
++    }
++  }
++
++  // initialize thread priority policy
++  prio_init();
++
++  return JNI_OK;
++}
++
++int os::active_processor_count() {
++  // User has overridden the number of active processors
++  if (ActiveProcessorCount > 0) {
++    log_trace(os)("active_processor_count: "
++                  "active processor count set by user : %d",
++                  ActiveProcessorCount);
++    return ActiveProcessorCount;
++  }
++
++  return _processor_count;
++}
++
++uint os::processor_id() {
++  // Every pthread is a worker with no exposed affinity, so there is no
++  // meaningful processor id to report.
++  return 0;
++}
++
++void os::set_native_thread_name(const char *name) {
++  // Not supported - worker threads have no name visible to the host.
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// debug support
++
++bool os::find(address addr, outputStream* st) {
++  // Needs dladdr(), which resolves nothing in a static wasm module.
++  return false;
++}
++
++////////////////////////////////////////////////////////////////////////////////
++// misc
++
++// This does not do anything on Emscripten. This is basically a hook for being
++// able to use structured exception handling (thread-local exception filters)
++// on, e.g., Win32.
++void os::os_exception_wrapper(java_call_t f, JavaValue* value,
++                              const methodHandle& method, JavaCallArguments* args,
++                              JavaThread* thread) {
++  f(value, method, args, thread);
++}
++
++static inline struct timespec get_mtime(const char* filename) {
++  struct stat st;
++  int ret = os::stat(filename, &st);
++  assert(ret == 0, "failed to stat() file '%s': %s", filename, os::strerror(errno));
++  return st.st_mtim;
++}
++
++int os::compare_file_modified_times(const char* file1, const char* file2) {
++  struct timespec filetime1 = get_mtime(file1);
++  struct timespec filetime2 = get_mtime(file2);
++  int diff = filetime1.tv_sec - filetime2.tv_sec;
++  if (diff == 0) {
++    return filetime1.tv_nsec - filetime2.tv_nsec;
++  }
++  return diff;
++}
++
++int os::open(const char *path, int oflag, int mode) {
++  if (strlen(path) > MAX_PATH - 1) {
++    errno = ENAMETOOLONG;
++    return -1;
++  }
++
++  // O_CLOEXEC is meaningless here - there is no exec - but MEMFS accepts it.
++  int fd = ::open(path, oflag | O_CLOEXEC, mode);
++  if (fd == -1) return -1;
++
++  // If the open succeeded, the file might still be a directory
++  {
++    struct stat buf;
++    int ret = ::fstat(fd, &buf);
++    int st_mode = buf.st_mode;
++
++    if (ret != -1) {
++      if ((st_mode & S_IFMT) == S_IFDIR) {
++        errno = EISDIR;
++        ::close(fd);
++        return -1;
++      }
++    } else {
++      ::close(fd);
++      return -1;
++    }
++  }
++
++  return fd;
++}
++
++// create binary file, rewriting existing file if required
++int os::create_binary_file(const char* path, bool rewrite_existing) {
++  int oflags = O_WRONLY | O_CREAT;
++  oflags |= rewrite_existing ? O_TRUNC : O_EXCL;
++  return ::open(path, oflags, S_IRUSR | S_IWUSR);
++}
++
++// return current position of file pointer
++jlong os::current_file_offset(int fd) {
++  return (jlong)::lseek(fd, (off_t)0, SEEK_CUR);
++}
++
++// move file pointer to the specified offset
++jlong os::seek_to_file_offset(int fd, jlong offset) {
++  return (jlong)::lseek(fd, (off_t)offset, SEEK_SET);
++}
++
++// Map a block of memory.
++char* os::pd_map_memory(int fd, const char* file_name, size_t file_offset,
++                        char *addr, size_t bytes, bool read_only,
++                        bool allow_exec) {
++  int prot;
++  int flags;
++
++  if (read_only) {
++    prot = PROT_READ;
++    flags = MAP_SHARED;
++  } else {
++    prot = PROT_READ | PROT_WRITE;
++    flags = MAP_PRIVATE;
++  }
++
++  if (allow_exec) {
++    prot |= PROT_EXEC;
++  }
++
++  if (addr != nullptr) {
++    flags |= MAP_FIXED;
++  }
++
++  char* mapped_address = (char*)mmap(addr, (size_t)bytes, prot, flags,
++                                     fd, file_offset);
++  if (mapped_address == MAP_FAILED) {
++    return nullptr;
++  }
++  return mapped_address;
++}
++
++// Remap a block of memory.
++char* os::pd_remap_memory(int fd, const char* file_name, size_t file_offset,
++                          char *addr, size_t bytes, bool read_only,
++                          bool allow_exec) {
++  // same as map_memory() on this OS
++  return os::map_memory(fd, file_name, file_offset, addr, bytes, read_only,
++                        allow_exec);
++}
++
++// Unmap a block of memory.
++bool os::pd_unmap_memory(char* addr, size_t bytes) {
++  return munmap(addr, bytes) == 0;
++}
++
++// current_thread_cpu_time(bool) and thread_cpu_time(Thread*, bool)
++// are used by JVM M&M and JVMTI to get user+sys or user CPU time
++// of a thread.
++//
++// There is no per-thread CPU accounting available to a wasm module.
++
++jlong os::current_thread_cpu_time() {
++  Unimplemented();
++  return 0;
++}
++
++jlong os::thread_cpu_time(Thread* thread) {
++  Unimplemented();
++  return 0;
++}
++
++jlong os::current_thread_cpu_time(bool user_sys_cpu_time) {
++  Unimplemented();
++  return 0;
++}
++
++jlong os::thread_cpu_time(Thread *thread, bool user_sys_cpu_time) {
++  Unimplemented();
++  return 0;
++}
++
++void os::current_thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
++  info_ptr->max_value = ALL_64_BITS;       // will not wrap in less than 64 bits
++  info_ptr->may_skip_backward = false;     // elapsed time not wall time
++  info_ptr->may_skip_forward = false;      // elapsed time not wall time
++  info_ptr->kind = JVMTI_TIMER_TOTAL_CPU;  // user+system time is returned
++}
++
++void os::thread_cpu_time_info(jvmtiTimerInfo *info_ptr) {
++  info_ptr->max_value = ALL_64_BITS;       // will not wrap in less than 64 bits
++  info_ptr->may_skip_backward = false;     // elapsed time not wall time
++  info_ptr->may_skip_forward = false;      // elapsed time not wall time
++  info_ptr->kind = JVMTI_TIMER_TOTAL_CPU;  // user+system time is returned
++}
++
++bool os::is_thread_cpu_time_supported() {
++  return false;
++}
++
++// System loadavg support. There is no load average to report.
++int os::loadavg(double loadavg[], int nelem) {
++  return -1;
++}
++
++// Get the default path to the core file
++int os::get_core_path(char* buffer, size_t bufferSize) {
++  // A wasm module cannot dump core; keep the shape of the answer so callers
++  // have something printable.
++  int n = jio_snprintf(buffer, bufferSize, "/cores/core.%d", os::current_process_id());
++  n = MIN2(n, (int)bufferSize);
++  return n;
++}
++
++bool os::supports_map_sync() {
++  return false;
++}
++
++bool os::start_debugging(char *buf, int buflen) {
++  // No debugger can be attached to a module running inside a browser tab.
++  return false;
++}
++
++void os::print_memory_mappings(char* addr, size_t bytes, outputStream* st) {}
++
++#if INCLUDE_JFR
++
++void os::jfr_report_memory_info() {
++  // No per-process resident set size is observable from inside the sandbox.
++}
++
++#endif // INCLUDE_JFR
+diff --git a/src/hotspot/os/emscripten/os_emscripten.hpp b/src/hotspot/os/emscripten/os_emscripten.hpp
+new file mode 100644
+index 000000000..f030a357e
+--- /dev/null
++++ b/src/hotspot/os/emscripten/os_emscripten.hpp
+@@ -0,0 +1,74 @@
++/*
++ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_OS_EMSCRIPTEN_HPP
++#define OS_EMSCRIPTEN_OS_EMSCRIPTEN_HPP
++
++#include "runtime/os.hpp"
++
++// os::Emscripten defines the interface to the Emscripten/WebAssembly runtime.
++//
++// The module runs inside a single WebAssembly linear memory, so most of what a
++// native OS port would query from the kernel is either a compile-time constant
++// or simply unavailable. Anything that has no meaning in a browser sandbox is
++// answered with a conservative constant rather than an error.
++
++class os::Emscripten {
++  friend class os;
++
++ protected:
++
++  static julong _physical_memory;
++  static pthread_t _main_thread;
++
++  static julong available_memory();
++  static julong free_memory();
++  static julong physical_memory() { return _physical_memory; }
++  static void initialize_system_info();
++
++ public:
++
++  static void init_thread_fpu_state();
++  static int  get_fpu_control_word();
++  static void set_fpu_control_word(int fpu_control);
++
++  static pthread_t main_thread(void)                                { return _main_thread; }
++
++  static pid_t gettid();
++
++  static intptr_t* ucontext_get_sp(const ucontext_t* uc);
++  static intptr_t* ucontext_get_fp(const ucontext_t* uc);
++
++  // Real-time clock functions
++  static void clock_init(void);
++
++  // Static replacement for the dynamic loader. WebAssembly modules are linked
++  // statically, so dll_load()/dll_lookup() are answered out of a table built
++  // at link time; see os_emscripten.cpp.
++  static void* dll_lookup_static(const char* name);
++
++  static void print_uptime_info(outputStream* st);
++};
++
++#endif // OS_EMSCRIPTEN_OS_EMSCRIPTEN_HPP
+diff --git a/src/hotspot/os/emscripten/os_emscripten.inline.hpp b/src/hotspot/os/emscripten/os_emscripten.inline.hpp
+new file mode 100644
+index 000000000..cd758069f
+--- /dev/null
++++ b/src/hotspot/os/emscripten/os_emscripten.inline.hpp
+@@ -0,0 +1,62 @@
++/*
++ * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_OS_EMSCRIPTEN_INLINE_HPP
++#define OS_EMSCRIPTEN_OS_EMSCRIPTEN_INLINE_HPP
++
++#include "os_emscripten.hpp"
++
++#include "runtime/os.hpp"
++#include "os_posix.inline.hpp"
++
++inline bool os::zero_page_read_protected() {
++  // Address zero is not mapped by the Emscripten runtime, and reads through a
++  // null pointer trap the same way they would on a native POSIX target.
++  return true;
++}
++
++inline bool os::uses_stack_guard_pages() {
++  // The guard zones are still reserved and tracked: the Zero interpreter does
++  // its stack overflow checks in software against them, which is what makes
++  // them useful here even though wasm has no hardware page protection.
++  return true;
++}
++
++inline bool os::must_commit_stack_guard_pages() {
++  assert(uses_stack_guard_pages(), "sanity check");
++  // Thread stacks are carved out of the linear memory up front and are always
++  // fully backed, so there is nothing to commit.
++  return false;
++}
++
++// Bang the shadow pages if they need to be touched to be mapped.
++inline void os::map_stack_shadow_pages(address sp) {
++}
++
++// Trim-native support. The linear memory only ever grows, so there is nothing
++// that could be returned to the host.
++inline bool os::can_trim_native_heap() { return false; }
++inline bool os::trim_native_heap(os::size_change_t* rss_change) { return false; }
++
++#endif // OS_EMSCRIPTEN_OS_EMSCRIPTEN_INLINE_HPP
+diff --git a/src/hotspot/os/emscripten/vmStructs_emscripten.hpp b/src/hotspot/os/emscripten/vmStructs_emscripten.hpp
+new file mode 100644
+index 000000000..9ac36454f
+--- /dev/null
++++ b/src/hotspot/os/emscripten/vmStructs_emscripten.hpp
+@@ -0,0 +1,44 @@
++/*
++ * Copyright (c) 2013, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_EMSCRIPTEN_VMSTRUCTS_EMSCRIPTEN_HPP
++#define OS_EMSCRIPTEN_VMSTRUCTS_EMSCRIPTEN_HPP
++
++#include <dlfcn.h>
++
++// These are the OS-specific fields, types and integer
++// constants required by the Serviceability Agent.
++
++#define VM_STRUCTS_OS(nonstatic_field, static_field, unchecked_nonstatic_field, volatile_nonstatic_field, nonproduct_nonstatic_field, c2_nonstatic_field, unchecked_c1_static_field, unchecked_c2_static_field)
++
++#define VM_TYPES_OS(declare_type, declare_toplevel_type, declare_oop_type, declare_integer_type, declare_unsigned_integer_type, declare_c1_toplevel_type, declare_c2_type, declare_c2_toplevel_type)
++
++#define VM_INT_CONSTANTS_OS(declare_constant, declare_preprocessor_constant, declare_c1_constant, declare_c2_constant, declare_c2_preprocessor_constant)
++
++#define VM_LONG_CONSTANTS_OS(declare_constant, declare_preprocessor_constant, declare_c1_constant, declare_c2_constant, declare_c2_preprocessor_constant)
++
++#define VM_ADDRESSES_OS(declare_address, declare_preprocessor_address, declare_function) \
++  declare_preprocessor_address("RTLD_DEFAULT", RTLD_DEFAULT)
++
++#endif // OS_EMSCRIPTEN_VMSTRUCTS_EMSCRIPTEN_HPP
+diff --git a/src/hotspot/os/posix/os_posix.cpp b/src/hotspot/os/posix/os_posix.cpp
+index 7f95560a1..408788f5c 100644
+--- a/src/hotspot/os/posix/os_posix.cpp
++++ b/src/hotspot/os/posix/os_posix.cpp
+@@ -716,6 +716,10 @@ bool os::has_allocatable_memory_limit(size_t* limit) {
+ #endif
+ }
+ 
++#ifndef __EMSCRIPTEN__
++// There is no dynamic loader under Emscripten, so dlopen(nullptr) yields
++// nullptr and callers read that as failure; the port supplies its own handle
++// in os_emscripten.cpp.
+ void* os::get_default_process_handle() {
+ #ifdef __APPLE__
+   // MacOS X needs to use RTLD_FIRST instead of RTLD_LAZY
+@@ -726,10 +730,15 @@ void* os::get_default_process_handle() {
+   return (void*)::dlopen(nullptr, RTLD_LAZY);
+ #endif
+ }
++#endif // !__EMSCRIPTEN__
+ 
++#ifndef __EMSCRIPTEN__
++// The Emscripten port has no dynamic loader and answers lookups out of a
++// static table instead; it defines os::dll_lookup in os_emscripten.cpp.
+ void* os::dll_lookup(void* handle, const char* name) {
+   return dlsym(handle, name);
+ }
++#endif
+ 
+ void os::dll_unload(void *lib) {
+   // os::Linux::dll_path returns a pointer to a string that is owned by the dynamic loader. Upon
+diff --git a/src/hotspot/os/posix/signals_posix.cpp b/src/hotspot/os/posix/signals_posix.cpp
+index 9491d250b..24269222f 100644
+--- a/src/hotspot/os/posix/signals_posix.cpp
++++ b/src/hotspot/os/posix/signals_posix.cpp
+@@ -554,6 +554,8 @@ public:
+ #define JVM_HANDLE_XXX_SIGNAL JVM_handle_aix_signal
+ #elif defined(LINUX)
+ #define JVM_HANDLE_XXX_SIGNAL JVM_handle_linux_signal
++#elif defined(EMSCRIPTEN)
++#define JVM_HANDLE_XXX_SIGNAL JVM_handle_emscripten_signal
+ #else
+ #error who are you?
+ #endif
+diff --git a/src/hotspot/os_cpu/emscripten_zero/assembler_emscripten_zero.cpp b/src/hotspot/os_cpu/emscripten_zero/assembler_emscripten_zero.cpp
+new file mode 100644
+index 000000000..cb6fbce15
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/assembler_emscripten_zero.cpp
+@@ -0,0 +1,26 @@
++/*
++ * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2009 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++// This file is intentionally empty
+diff --git a/src/hotspot/os_cpu/emscripten_zero/atomic_emscripten_zero.hpp b/src/hotspot/os_cpu/emscripten_zero/atomic_emscripten_zero.hpp
+new file mode 100644
+index 000000000..639d07ac0
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/atomic_emscripten_zero.hpp
+@@ -0,0 +1,152 @@
++/*
++ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2007, 2008, 2011, 2015, Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_ATOMIC_EMSCRIPTEN_ZERO_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_ATOMIC_EMSCRIPTEN_ZERO_HPP
++
++#include "orderAccess_emscripten_zero.hpp"
++
++// Implementation of class atomic
++
++template<size_t byte_size>
++struct Atomic::PlatformAdd {
++  template<typename D, typename I>
++  D add_then_fetch(D volatile* dest, I add_value, atomic_memory_order order) const;
++
++  template<typename D, typename I>
++  D fetch_then_add(D volatile* dest, I add_value, atomic_memory_order order) const {
++    return add_then_fetch(dest, add_value, order) - add_value;
++  }
++};
++
++template<>
++template<typename D, typename I>
++inline D Atomic::PlatformAdd<4>::add_then_fetch(D volatile* dest, I add_value,
++                                                atomic_memory_order order) const {
++  STATIC_ASSERT(4 == sizeof(I));
++  STATIC_ASSERT(4 == sizeof(D));
++
++  D res = __atomic_add_fetch(dest, add_value, __ATOMIC_RELEASE);
++  FULL_MEM_BARRIER;
++  return res;
++}
++
++template<>
++template<typename D, typename I>
++inline D Atomic::PlatformAdd<8>::add_then_fetch(D volatile* dest, I add_value,
++                                                atomic_memory_order order) const {
++  STATIC_ASSERT(8 == sizeof(I));
++  STATIC_ASSERT(8 == sizeof(D));
++
++  D res = __atomic_add_fetch(dest, add_value, __ATOMIC_RELEASE);
++  FULL_MEM_BARRIER;
++  return res;
++}
++
++template<>
++template<typename T>
++inline T Atomic::PlatformXchg<4>::operator()(T volatile* dest,
++                                             T exchange_value,
++                                             atomic_memory_order order) const {
++  STATIC_ASSERT(4 == sizeof(T));
++  FULL_MEM_BARRIER;
++  T result = __atomic_exchange_n(dest, exchange_value, __ATOMIC_RELAXED);
++  FULL_MEM_BARRIER;
++  return result;
++}
++
++template<>
++template<typename T>
++inline T Atomic::PlatformXchg<8>::operator()(T volatile* dest,
++                                             T exchange_value,
++                                             atomic_memory_order order) const {
++  STATIC_ASSERT(8 == sizeof(T));
++  FULL_MEM_BARRIER;
++  T result = __atomic_exchange_n(dest, exchange_value, __ATOMIC_RELAXED);
++  FULL_MEM_BARRIER;
++  return result;
++}
++
++// No direct support for cmpxchg of bytes; emulate using int.
++template<>
++struct Atomic::PlatformCmpxchg<1> : Atomic::CmpxchgByteUsingInt {};
++
++template<>
++template<typename T>
++inline T Atomic::PlatformCmpxchg<4>::operator()(T volatile* dest,
++                                                T compare_value,
++                                                T exchange_value,
++                                                atomic_memory_order order) const {
++  STATIC_ASSERT(4 == sizeof(T));
++
++  T value = compare_value;
++  FULL_MEM_BARRIER;
++  __atomic_compare_exchange(dest, &value, &exchange_value, /*weak*/false,
++                            __ATOMIC_RELAXED, __ATOMIC_RELAXED);
++  FULL_MEM_BARRIER;
++  return value;
++}
++
++template<>
++template<typename T>
++inline T Atomic::PlatformCmpxchg<8>::operator()(T volatile* dest,
++                                                T compare_value,
++                                                T exchange_value,
++                                                atomic_memory_order order) const {
++  STATIC_ASSERT(8 == sizeof(T));
++
++  FULL_MEM_BARRIER;
++  T value = compare_value;
++  __atomic_compare_exchange(dest, &value, &exchange_value, /*weak*/false,
++                            __ATOMIC_RELAXED, __ATOMIC_RELAXED);
++  FULL_MEM_BARRIER;
++  return value;
++}
++
++// Atomically copy 64 bits of data
++inline void atomic_copy64(const volatile void *src, volatile void *dst) {
++  int64_t tmp;
++  __atomic_load(reinterpret_cast<const volatile int64_t*>(src), &tmp, __ATOMIC_RELAXED);
++  __atomic_store(reinterpret_cast<volatile int64_t*>(dst), &tmp, __ATOMIC_RELAXED);
++}
++
++template<>
++template<typename T>
++inline T Atomic::PlatformLoad<8>::operator()(T const volatile* src) const {
++  STATIC_ASSERT(8 == sizeof(T));
++  T dest;
++  __atomic_load(const_cast<T*>(src), &dest, __ATOMIC_RELAXED);
++  return dest;
++}
++
++template<>
++template<typename T>
++inline void Atomic::PlatformStore<8>::operator()(T volatile* dest,
++                                                 T store_value) const {
++  STATIC_ASSERT(8 == sizeof(T));
++  __atomic_store(dest, &store_value, __ATOMIC_RELAXED);
++}
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_ATOMIC_EMSCRIPTEN_ZERO_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/globals_emscripten_zero.hpp b/src/hotspot/os_cpu/emscripten_zero/globals_emscripten_zero.hpp
+new file mode 100644
+index 000000000..5c1e3da15
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/globals_emscripten_zero.hpp
+@@ -0,0 +1,46 @@
++/*
++ * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2007, 2008, 2010 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_GLOBALS_EMSCRIPTEN_ZERO_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_GLOBALS_EMSCRIPTEN_ZERO_HPP
++
++//
++// Set the default values for platform dependent flags used by the
++// runtime system.  See globals.hpp for details of what they do.
++//
++
++define_pd_global(bool,  DontYieldALot,           false);
++
++// Emscripten pthreads get a fixed-size stack carved out of the linear
++// memory, so the default has to stay well inside the browser's budget.
++define_pd_global(intx,  ThreadStackSize,         1536);
++define_pd_global(intx,  VMThreadStackSize,       512);
++define_pd_global(intx,  CompilerThreadStackSize, 0);
++define_pd_global(size_t, JVMInvokeMethodSlack,   8192);
++
++// Used on 64 bit platforms for UseCompressedOops base address
++define_pd_global(size_t, HeapBaseMinAddress,     2*G);
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_GLOBALS_EMSCRIPTEN_ZERO_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.cpp b/src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.cpp
+new file mode 100644
+index 000000000..4f4f4efad
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.cpp
+@@ -0,0 +1,74 @@
++/*
++ * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2009, 2021, Red Hat, Inc. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#include "precompiled.hpp"
++#include "runtime/frame.inline.hpp"
++#include "runtime/javaThread.hpp"
++
++frame JavaThread::pd_last_frame() {
++  assert(has_last_Java_frame(), "must have last_Java_sp() when suspended");
++  return frame(last_Java_fp(), last_Java_sp());
++}
++
++void JavaThread::cache_global_variables() {
++  // nothing to do
++}
++
++bool JavaThread::pd_get_top_frame_for_signal_handler(frame* fr_addr,
++                                         void* ucontext,
++                                         bool isInJava) {
++  if (has_last_Java_frame()) {
++    *fr_addr = pd_last_frame();
++    return true;
++  }
++
++  if (isInJava) {
++    // We know we are in Java, but there is no frame?
++    // Try to find the top-most Java frame on Zero stack then.
++    intptr_t* sp = zero_stack()->sp();
++    ZeroFrame* zf = top_zero_frame();
++    while (zf != nullptr) {
++      if (zf->is_interpreter_frame()) {
++        interpreterState istate = zf->as_interpreter_frame()->interpreter_state();
++        if (istate->self_link() == istate) {
++          // Valid interpreter state found, this is our frame.
++          *fr_addr = frame(zf, sp);
++          return true;
++        }
++      }
++      sp = ((intptr_t *) zf) + 1;
++      zf = zf->next();
++    }
++  }
++
++  // No dice.
++  return false;
++}
++
++bool JavaThread::pd_get_top_frame_for_profiling(frame* fr_addr,
++                                    void* ucontext,
++                                    bool isInJava) {
++  return pd_get_top_frame_for_signal_handler(fr_addr, ucontext, isInJava);
++}
+diff --git a/src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.hpp b/src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.hpp
+new file mode 100644
+index 000000000..63e8adb07
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/javaThread_emscripten_zero.hpp
+@@ -0,0 +1,105 @@
++/*
++ * Copyright (c) 2000, 2023, Oracle and/or its affiliates. All rights reserved.
++ * Copyright (c) 2007, 2021, Red Hat, Inc. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_JAVATHREAD_EMSCRIPTEN_ZERO_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_JAVATHREAD_EMSCRIPTEN_ZERO_HPP
++
++ private:
++  ZeroStack  _zero_stack;
++  ZeroFrame* _top_zero_frame;
++
++  void pd_initialize() {
++    _top_zero_frame = nullptr;
++  }
++
++ public:
++  ZeroStack *zero_stack() {
++    return &_zero_stack;
++  }
++
++ public:
++  ZeroFrame *top_zero_frame() {
++    return _top_zero_frame;
++  }
++  void push_zero_frame(ZeroFrame *frame) {
++    *(ZeroFrame **) frame = _top_zero_frame;
++    _top_zero_frame = frame;
++  }
++  void pop_zero_frame() {
++    zero_stack()->set_sp((intptr_t *) _top_zero_frame + 1);
++    _top_zero_frame = *(ZeroFrame **) _top_zero_frame;
++  }
++
++ public:
++  static ByteSize zero_stack_offset() {
++    return byte_offset_of(JavaThread, _zero_stack);
++  }
++  static ByteSize top_zero_frame_offset() {
++    return byte_offset_of(JavaThread, _top_zero_frame);
++  }
++
++ public:
++  void set_last_Java_frame() {
++    set_last_Java_frame(top_zero_frame(), zero_stack()->sp());
++  }
++  void reset_last_Java_frame() {
++    frame_anchor()->zap();
++  }
++  void set_last_Java_frame(ZeroFrame* fp, intptr_t* sp) {
++    frame_anchor()->set(sp, nullptr, fp);
++  }
++
++ public:
++  ZeroFrame* last_Java_fp() {
++    return frame_anchor()->last_Java_fp();
++  }
++
++ private:
++  frame pd_last_frame();
++
++ public:
++  static ByteSize last_Java_fp_offset() {
++    return byte_offset_of(JavaThread, _anchor) +
++      JavaFrameAnchor::last_Java_fp_offset();
++  }
++
++ public:
++  // Check for pending suspend requests and pending asynchronous
++  // exceptions.  There are separate accessors for these, but
++  // _suspend_flags is volatile so using them would be unsafe.
++  bool has_special_condition_for_native_trans() {
++    return _suspend_flags != 0;
++  }
++
++ public:
++  bool pd_get_top_frame_for_signal_handler(frame* fr_addr,
++                                           void* ucontext,
++                                           bool isInJava);
++
++  bool pd_get_top_frame_for_profiling(frame* fr_addr,
++                                      void* ucontext,
++                                      bool isInJava);
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_JAVATHREAD_EMSCRIPTEN_ZERO_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/orderAccess_emscripten_zero.hpp b/src/hotspot/os_cpu/emscripten_zero/orderAccess_emscripten_zero.hpp
+new file mode 100644
+index 000000000..78d07b579
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/orderAccess_emscripten_zero.hpp
+@@ -0,0 +1,50 @@
++/*
++ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2007, 2008, 2009 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_ORDERACCESS_EMSCRIPTEN_ZERO_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_ORDERACCESS_EMSCRIPTEN_ZERO_HPP
++
++// Included in orderAccess.hpp header file.
++
++// WebAssembly's threads proposal only provides a single, sequentially
++// consistent fence (atomic.fence), so there is no cheaper "light" barrier
++// to reach for: both map onto __sync_synchronize().  On a single-threaded
++// build the fence is a no-op anyway.
++
++#define LIGHT_MEM_BARRIER __sync_synchronize()
++#define FULL_MEM_BARRIER  __sync_synchronize()
++
++inline void OrderAccess::loadload()   { LIGHT_MEM_BARRIER; }
++inline void OrderAccess::storestore() { LIGHT_MEM_BARRIER; }
++inline void OrderAccess::loadstore()  { LIGHT_MEM_BARRIER; }
++inline void OrderAccess::storeload()  { FULL_MEM_BARRIER;  }
++
++inline void OrderAccess::acquire()    { LIGHT_MEM_BARRIER; }
++inline void OrderAccess::release()    { LIGHT_MEM_BARRIER; }
++
++inline void OrderAccess::fence()      { FULL_MEM_BARRIER;  }
++inline void OrderAccess::cross_modify_fence_impl()            { }
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_ORDERACCESS_EMSCRIPTEN_ZERO_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.cpp b/src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.cpp
+new file mode 100644
+index 000000000..a224a56df
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.cpp
+@@ -0,0 +1,336 @@
++/*
++ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2007, 2008, 2009, 2010 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++// no precompiled headers
++#include "asm/assembler.inline.hpp"
++#include "atomic_emscripten_zero.hpp"
++#include "classfile/vmSymbols.hpp"
++#include "code/icBuffer.hpp"
++#include "code/vtableStubs.hpp"
++#include "interpreter/interpreter.hpp"
++#include "jvm.h"
++#include "memory/allocation.inline.hpp"
++#include "nativeInst_zero.hpp"
++#include "os_emscripten.hpp"
++#include "os_posix.hpp"
++#include "prims/jniFastGetField.hpp"
++#include "prims/jvm_misc.hpp"
++#include "runtime/arguments.hpp"
++#include "runtime/frame.inline.hpp"
++#include "runtime/interfaceSupport.inline.hpp"
++#include "runtime/java.hpp"
++#include "runtime/javaCalls.hpp"
++#include "runtime/javaThread.hpp"
++#include "runtime/mutexLocker.hpp"
++#include "runtime/osThread.hpp"
++#include "runtime/sharedRuntime.hpp"
++#include "runtime/stubRoutines.hpp"
++#include "runtime/timer.hpp"
++#include "signals_posix.hpp"
++#include "utilities/align.hpp"
++#include "utilities/events.hpp"
++#include "utilities/vmError.hpp"
++
++#include <emscripten/stack.h>
++
++address os::current_stack_pointer() {
++  // return the address of the current function
++  return (address)__builtin_frame_address(0);
++}
++
++frame os::get_sender_for_C_frame(frame* fr) {
++  ShouldNotCallThis();
++  return frame(nullptr, nullptr); // silence compile warning.
++}
++
++frame os::current_frame() {
++  // The only thing that calls this is the stack printing code in
++  // VMError::report.  The frame we hand back has a null pc, which is
++  // ignored as an invalid frame, but a plausible sp so that the stack
++  // bounds step can complete.
++  frame dummy = frame();
++  dummy.set_sp((intptr_t *) current_stack_pointer());
++  return dummy;
++}
++
++char* os::non_memory_address_word() {
++  // Must never look like an address returned by reserve_memory,
++  // even in its subfields (as defined by the CPU immediate fields,
++  // if the CPU splits constants across multiple instructions).
++  return (char *) -1;
++}
++
++address os::Posix::ucontext_get_pc(const ucontext_t* uc) {
++  // WebAssembly keeps the program counter and the call stack outside of
++  // linear memory, so there is nothing a signal context could hand back.
++  // TOS/PC not available in Emscripten.
++  return nullptr;
++}
++
++void os::Posix::ucontext_set_pc(ucontext_t* uc, address pc) {
++  ShouldNotCallThis();
++}
++
++intptr_t* os::Emscripten::ucontext_get_sp(const ucontext_t* uc) {
++  // TOS/PC not available in Emscripten.
++  return nullptr;
++}
++
++intptr_t* os::Emscripten::ucontext_get_fp(const ucontext_t* uc) {
++  // TOS/PC not available in Emscripten.
++  return nullptr;
++}
++
++address os::fetch_frame_from_context(const void* ucVoid,
++                                     intptr_t** ret_sp,
++                                     intptr_t** ret_fp) {
++  address epc;
++  const ucontext_t* uc = (const ucontext_t*)ucVoid;
++
++  if (uc != nullptr) {
++    epc = os::Posix::ucontext_get_pc(uc);
++    if (ret_sp) {
++      *ret_sp = (intptr_t*) os::Emscripten::ucontext_get_sp(uc);
++    }
++    if (ret_fp) {
++      *ret_fp = (intptr_t*) os::Emscripten::ucontext_get_fp(uc);
++    }
++  } else {
++    epc = nullptr;
++    if (ret_sp) {
++      *ret_sp = nullptr;
++    }
++    if (ret_fp) {
++      *ret_fp = nullptr;
++    }
++  }
++
++  return epc;
++}
++
++frame os::fetch_frame_from_context(const void* ucVoid) {
++  // This code is only called from error handler to get PC and SP.
++  // We don't have the ready ZeroFrame* at this point, so fake the
++  // frame with bare minimum.
++  if (ucVoid != nullptr) {
++    const ucontext_t* uc = (const ucontext_t*)ucVoid;
++    frame dummy = frame();
++    dummy.set_pc(os::Posix::ucontext_get_pc(uc));
++    dummy.set_sp((intptr_t*)os::Emscripten::ucontext_get_sp(uc));
++    return dummy;
++  } else {
++    return frame(nullptr, nullptr);
++  }
++}
++
++bool PosixSignals::pd_hotspot_signal_handler(int sig, siginfo_t* info,
++                                             ucontext_t* uc, JavaThread* thread) {
++
++  if (info != nullptr && thread != nullptr) {
++    // Handle ALL stack overflow variations here
++    if (sig == SIGSEGV) {
++      address addr = (address) info->si_addr;
++
++      // check if fault address is within thread stack
++      if (thread->is_in_full_stack(addr)) {
++        StackOverflow* overflow_state = thread->stack_overflow_state();
++        // stack overflow
++        if (overflow_state->in_stack_yellow_reserved_zone(addr)) {
++          overflow_state->disable_stack_yellow_reserved_zone();
++          ShouldNotCallThis();
++        }
++        else if (overflow_state->in_stack_red_zone(addr)) {
++          overflow_state->disable_stack_red_zone();
++          ShouldNotCallThis();
++        }
++        // Emscripten stacks are fixed-size regions carved out of the linear
++        // memory up front, so there is no growable stack to expand here.
++      }
++    }
++
++    if ((thread->thread_state() == _thread_in_vm ||
++         thread->thread_state() == _thread_in_native) &&
++        sig == SIGBUS && thread->doing_unsafe_access()) {
++      ShouldNotCallThis();
++    }
++  }
++
++  return false; // Fatal error
++}
++
++void os::Emscripten::init_thread_fpu_state(void) {
++  // Nothing to do
++}
++
++int os::Emscripten::get_fpu_control_word() {
++  ShouldNotCallThis();
++  return -1; // silence compile warnings
++}
++
++void os::Emscripten::set_fpu_control_word(int fpu) {
++  ShouldNotCallThis();
++}
++
++///////////////////////////////////////////////////////////////////////////////
++// thread stack
++
++size_t os::_compiler_thread_min_stack_allowed = 64 * K;
++size_t os::_java_thread_min_stack_allowed = 64 * K;
++size_t os::_vm_internal_thread_min_stack_allowed = 64 * K;
++
++size_t os::Posix::default_stack_size(os::ThreadType thr_type) {
++  // Every pthread stack is carved out of the single linear memory the
++  // module is given, so keep the defaults modest.
++  return (thr_type == os::compiler_thread ? 2 * M : 512 * K);
++}
++
++static void current_stack_region(address *bottom, size_t *size) {
++  // emscripten_stack_get_base() is the high address the stack grows down
++  // from, emscripten_stack_get_end() the low address it may not pass.
++  // Both are per-thread and are valid on the main thread as well as on
++  // pthreads, which is why they are used here in place of the
++  // pthread_getattr_np()/primordial-thread dance the POSIX ports do.
++  address stack_top = (address) emscripten_stack_get_base();
++  address stack_bottom = (address) emscripten_stack_get_end();
++
++  assert(stack_bottom < stack_top, "sanity");
++  assert(os::current_stack_pointer() >= stack_bottom, "should do");
++  assert(os::current_stack_pointer() < stack_top, "should do");
++
++  *bottom = stack_bottom;
++  *size = stack_top - stack_bottom;
++}
++
++address os::current_stack_base() {
++  address bottom;
++  size_t size;
++  current_stack_region(&bottom, &size);
++  return bottom + size;
++}
++
++size_t os::current_stack_size() {
++  // stack size includes normal stack and HotSpot guard pages
++  address bottom;
++  size_t size;
++  current_stack_region(&bottom, &size);
++  return size;
++}
++
++/////////////////////////////////////////////////////////////////////////////
++// helper functions for fatal error handler
++
++void os::print_context(outputStream* st, const void* ucVoid) {
++  st->print_cr("No context information.");
++}
++
++void os::print_register_info(outputStream *st, const void *context, int& continuation) {
++  st->print_cr("No register info.");
++}
++
++/////////////////////////////////////////////////////////////////////////////
++// Stubs for things that would be in emscripten_zero.s if it existed.
++
++extern "C" {
++  int SpinPause() {
++      return -1; // silence compile warnings
++  }
++
++
++  void _Copy_conjoint_jshorts_atomic(const jshort* from, jshort* to, size_t count) {
++    if (from > to) {
++      const jshort *end = from + count;
++      while (from < end)
++        *(to++) = *(from++);
++    }
++    else if (from < to) {
++      const jshort *end = from;
++      from += count - 1;
++      to   += count - 1;
++      while (from >= end)
++        *(to--) = *(from--);
++    }
++  }
++  void _Copy_conjoint_jints_atomic(const jint* from, jint* to, size_t count) {
++    if (from > to) {
++      const jint *end = from + count;
++      while (from < end)
++        *(to++) = *(from++);
++    }
++    else if (from < to) {
++      const jint *end = from;
++      from += count - 1;
++      to   += count - 1;
++      while (from >= end)
++        *(to--) = *(from--);
++    }
++  }
++  void _Copy_conjoint_jlongs_atomic(const jlong* from, jlong* to, size_t count) {
++    if (from > to) {
++      const jlong *end = from + count;
++      while (from < end)
++        atomic_copy64(from++, to++);
++    }
++    else if (from < to) {
++      const jlong *end = from;
++      from += count - 1;
++      to   += count - 1;
++      while (from >= end)
++        atomic_copy64(from--, to--);
++    }
++  }
++
++  void _Copy_arrayof_conjoint_bytes(const HeapWord* from,
++                                    HeapWord* to,
++                                    size_t    count) {
++    memmove(to, from, count);
++  }
++  void _Copy_arrayof_conjoint_jshorts(const HeapWord* from,
++                                      HeapWord* to,
++                                      size_t    count) {
++    memmove(to, from, count * 2);
++  }
++  void _Copy_arrayof_conjoint_jints(const HeapWord* from,
++                                    HeapWord* to,
++                                    size_t    count) {
++    memmove(to, from, count * 4);
++  }
++  void _Copy_arrayof_conjoint_jlongs(const HeapWord* from,
++                                     HeapWord* to,
++                                     size_t    count) {
++    memmove(to, from, count * 8);
++  }
++};
++
++#ifndef PRODUCT
++void os::verify_stack_alignment() {
++}
++#endif
++
++int os::extra_bang_size_in_bytes() {
++  // Zero does not require an additional stack banging.
++  return 0;
++}
++
++void os::setup_fpu() {}
+diff --git a/src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.inline.hpp b/src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.inline.hpp
+new file mode 100644
+index 000000000..a64df1a48
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/os_emscripten_zero.inline.hpp
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_OS_EMSCRIPTEN_ZERO_INLINE_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_OS_EMSCRIPTEN_ZERO_INLINE_HPP
++
++
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_OS_EMSCRIPTEN_ZERO_INLINE_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/prefetch_emscripten_zero.inline.hpp b/src/hotspot/os_cpu/emscripten_zero/prefetch_emscripten_zero.inline.hpp
+new file mode 100644
+index 000000000..c5fff6b90
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/prefetch_emscripten_zero.inline.hpp
+@@ -0,0 +1,39 @@
++/*
++ * Copyright (c) 2003, 2010, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2007, 2008 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_PREFETCH_EMSCRIPTEN_ZERO_INLINE_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_PREFETCH_EMSCRIPTEN_ZERO_INLINE_HPP
++
++#include "runtime/prefetch.hpp"
++
++// WebAssembly has no prefetch instruction.
++
++inline void Prefetch::read(const void* loc, intx interval) {
++}
++
++inline void Prefetch::write(void* loc, intx interval) {
++}
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_PREFETCH_EMSCRIPTEN_ZERO_INLINE_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/vmStructs_emscripten_zero.hpp b/src/hotspot/os_cpu/emscripten_zero/vmStructs_emscripten_zero.hpp
+new file mode 100644
+index 000000000..d71589e63
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/vmStructs_emscripten_zero.hpp
+@@ -0,0 +1,41 @@
++/*
++ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2007 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#ifndef OS_CPU_EMSCRIPTEN_ZERO_VMSTRUCTS_EMSCRIPTEN_ZERO_HPP
++#define OS_CPU_EMSCRIPTEN_ZERO_VMSTRUCTS_EMSCRIPTEN_ZERO_HPP
++
++// These are the OS and CPU-specific fields, types and integer
++// constants required by the Serviceability Agent. This file is
++// referenced by vmStructs.cpp.
++
++#define VM_STRUCTS_OS_CPU(nonstatic_field, static_field, unchecked_nonstatic_field, volatile_nonstatic_field, nonproduct_nonstatic_field, c2_nonstatic_field, unchecked_c1_static_field, unchecked_c2_static_field)
++
++#define VM_TYPES_OS_CPU(declare_type, declare_toplevel_type, declare_oop_type, declare_integer_type, declare_unsigned_integer_type, declare_c1_toplevel_type, declare_c2_type, declare_c2_toplevel_type)
++
++#define VM_INT_CONSTANTS_OS_CPU(declare_constant, declare_preprocessor_constant, declare_c1_constant, declare_c2_constant, declare_c2_preprocessor_constant)
++
++#define VM_LONG_CONSTANTS_OS_CPU(declare_constant, declare_preprocessor_constant, declare_c1_constant, declare_c2_constant, declare_c2_preprocessor_constant)
++
++#endif // OS_CPU_EMSCRIPTEN_ZERO_VMSTRUCTS_EMSCRIPTEN_ZERO_HPP
+diff --git a/src/hotspot/os_cpu/emscripten_zero/vm_version_emscripten_zero.cpp b/src/hotspot/os_cpu/emscripten_zero/vm_version_emscripten_zero.cpp
+new file mode 100644
+index 000000000..eaf1b85e4
+--- /dev/null
++++ b/src/hotspot/os_cpu/emscripten_zero/vm_version_emscripten_zero.cpp
+@@ -0,0 +1,30 @@
++/*
++ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
++ * Copyright 2009 Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ *
++ */
++
++#include "precompiled.hpp"
++#include "runtime/os.hpp"
++#include "runtime/vm_version.hpp"
++
++// This file is intentionally empty
+diff --git a/src/hotspot/share/runtime/mutex.hpp b/src/hotspot/share/runtime/mutex.hpp
+index 3f38bcd5e..1a6ca1fee 100644
+--- a/src/hotspot/share/runtime/mutex.hpp
++++ b/src/hotspot/share/runtime/mutex.hpp
+@@ -28,7 +28,7 @@
+ #include "memory/allocation.hpp"
+ #include "runtime/atomic.hpp"
+ 
+-#if defined(LINUX) || defined(AIX) || defined(BSD)
++#if defined(LINUX) || defined(AIX) || defined(BSD) || defined(EMSCRIPTEN)
+ # include "mutex_posix.hpp"
+ #else
+ # include OS_HEADER(mutex)
+diff --git a/src/hotspot/share/runtime/os.hpp b/src/hotspot/share/runtime/os.hpp
+index 8e1c430c6..0a05e26b4 100644
+--- a/src/hotspot/share/runtime/os.hpp
++++ b/src/hotspot/share/runtime/os.hpp
+@@ -558,7 +558,7 @@ class os: AllStatic {
+   // need special-case handling of the primordial thread if it attaches
+   // to the VM.
+   static bool is_primordial_thread(void)
+-#if defined(_WINDOWS) || defined(BSD)
++#if defined(_WINDOWS) || defined(BSD) || defined(EMSCRIPTEN)
+     // No way to identify the primordial thread.
+     { return false; }
+ #else
+@@ -993,6 +993,8 @@ class os: AllStatic {
+   // like ::LinuxUtils
+ #if defined(AIX)
+   class Aix;
++#elif defined(EMSCRIPTEN)
++  class Emscripten;
+ #elif defined(BSD)
+   class Bsd;
+ #elif defined(LINUX)
+diff --git a/src/hotspot/share/runtime/osThread.hpp b/src/hotspot/share/runtime/osThread.hpp
+index b0e0588a6..54eb735ea 100644
+--- a/src/hotspot/share/runtime/osThread.hpp
++++ b/src/hotspot/share/runtime/osThread.hpp
+@@ -32,7 +32,7 @@
+ #include "runtime/suspendedThreadTask.hpp"
+ #include "utilities/macros.hpp"
+ 
+-#if defined(LINUX) || defined(AIX) || defined(BSD)
++#if defined(LINUX) || defined(AIX) || defined(BSD) || defined(EMSCRIPTEN)
+ #include "suspendResume_posix.hpp"
+ #endif
+ 
+diff --git a/src/hotspot/share/runtime/park.hpp b/src/hotspot/share/runtime/park.hpp
+index 1af24f863..c741a8182 100644
+--- a/src/hotspot/share/runtime/park.hpp
++++ b/src/hotspot/share/runtime/park.hpp
+@@ -28,7 +28,7 @@
+ #include "utilities/debug.hpp"
+ #include "utilities/globalDefinitions.hpp"
+ 
+-#if defined(LINUX) || defined(AIX) || defined(BSD)
++#if defined(LINUX) || defined(AIX) || defined(BSD) || defined(EMSCRIPTEN)
+ # include "park_posix.hpp"
+ #else
+ # include OS_HEADER(park)
+diff --git a/src/hotspot/share/runtime/semaphore.hpp b/src/hotspot/share/runtime/semaphore.hpp
+index df96da549..5b2d1042c 100644
+--- a/src/hotspot/share/runtime/semaphore.hpp
++++ b/src/hotspot/share/runtime/semaphore.hpp
+@@ -28,7 +28,7 @@
+ #include "memory/allocation.hpp"
+ #include "utilities/globalDefinitions.hpp"
+ 
+-#if defined(LINUX) || defined(AIX)
++#if defined(LINUX) || defined(AIX) || defined(EMSCRIPTEN)
+ # include "semaphore_posix.hpp"
+ #else
+ # include OS_HEADER(semaphore)
+diff --git a/src/hotspot/share/runtime/threadCrashProtection.hpp b/src/hotspot/share/runtime/threadCrashProtection.hpp
+index e375567d7..869ccde95 100644
+--- a/src/hotspot/share/runtime/threadCrashProtection.hpp
++++ b/src/hotspot/share/runtime/threadCrashProtection.hpp
+@@ -27,7 +27,7 @@
+ #define SHARE_RUNTIME_THREADCRASHPROTECTION_HPP
+ 
+ #include "memory/allocation.hpp"
+-#if defined(LINUX) || defined(AIX) || defined(BSD)
++#if defined(LINUX) || defined(AIX) || defined(BSD) || defined(EMSCRIPTEN)
+ # include "threadCrashProtection_posix.hpp"
+ #else
+ # include OS_HEADER(threadCrashProtection)
+diff --git a/src/hotspot/share/utilities/globalDefinitions_gcc.hpp b/src/hotspot/share/utilities/globalDefinitions_gcc.hpp
+index 0d7b1164a..860153450 100644
+--- a/src/hotspot/share/utilities/globalDefinitions_gcc.hpp
++++ b/src/hotspot/share/utilities/globalDefinitions_gcc.hpp
+@@ -48,7 +48,7 @@
+ #include <limits.h>
+ #include <errno.h>
+ 
+-#if defined(LINUX) || defined(_ALLBSD_SOURCE)
++#if defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(EMSCRIPTEN)
+ #include <inttypes.h>
+ #include <signal.h>
+ #ifndef __OpenBSD__
+@@ -59,7 +59,7 @@
+   #include <mach/mach.h>
+ #endif
+ #include <sys/time.h>
+-#endif // LINUX || _ALLBSD_SOURCE
++#endif // LINUX || _ALLBSD_SOURCE || EMSCRIPTEN
+ 
+ // NULL vs NULL_WORD:
+ // On Linux NULL is defined as a special type '__null'. Assigning __null to
+@@ -79,7 +79,7 @@
+   #define NULL_WORD  NULL
+ #endif
+ 
+-#if !defined(LINUX) && !defined(_ALLBSD_SOURCE)
++#if !defined(LINUX) && !defined(_ALLBSD_SOURCE) && !defined(EMSCRIPTEN)
+ // Compiler-specific primitive types
+ typedef unsigned short     uint16_t;
+ #ifndef _UINT32_T
+@@ -99,12 +99,12 @@ typedef unsigned int            uintptr_t;
+ // prior definition of intptr_t, and add "&& !defined(XXX)" above.
+ #endif // _SYS_INT_TYPES_H
+ 
+-#endif // !LINUX && !_ALLBSD_SOURCE
++#endif // !LINUX && !_ALLBSD_SOURCE && !EMSCRIPTEN
+ 
+ // checking for nanness
+ #if defined(__APPLE__)
+ inline int g_isnan(double f) { return isnan(f); }
+-#elif defined(LINUX) || defined(_ALLBSD_SOURCE)
++#elif defined(LINUX) || defined(_ALLBSD_SOURCE) || defined(EMSCRIPTEN)
+ inline int g_isnan(float  f) { return isnan(f); }
+ inline int g_isnan(double f) { return isnan(f); }
+ #else
+diff --git a/src/java.base/share/native/libjimage/imageDecompressor.cpp b/src/java.base/share/native/libjimage/imageDecompressor.cpp
+index 65bda0957..3ee6d2b96 100644
+--- a/src/java.base/share/native/libjimage/imageDecompressor.cpp
++++ b/src/java.base/share/native/libjimage/imageDecompressor.cpp
+@@ -62,7 +62,14 @@ static void* findEntry(const char* name) {
+     if (addr == NULL) {
+         return NULL;
+     }
+-#ifdef WIN32
++#if defined(__EMSCRIPTEN__)
++    // WASM has no dynamic loader. JVM_LoadZipLibrary() hands back the process
++    // pseudo-handle and the JVM resolves entry points out of the static symbol
++    // table instead (see os::dll_lookup in os_emscripten.cpp), so ask it rather
++    // than dlsym() - which has no notion of these symbols and returns NULL,
++    // leaving ZipInflateFully null and every jimage read trapping.
++    return JVM_FindLibraryEntry(addr, name);
++#elif defined(WIN32)
+     return (void*) GetProcAddress(static_cast<HMODULE>(addr), name);
+ #else
+     return dlsym(addr, name);
+diff --git a/src/java.base/share/native/libjli/jli_util.h b/src/java.base/share/native/libjli/jli_util.h
+index d2ea01b1d..f5e99765e 100644
+--- a/src/java.base/share/native/libjli/jli_util.h
++++ b/src/java.base/share/native/libjli/jli_util.h
+@@ -110,6 +110,9 @@ JLI_CmdToArgs(char *cmdline);
+ #ifdef _AIX
+ #define JLI_Lseek                       lseek
+ #endif
++#ifdef __EMSCRIPTEN__
++#define JLI_Lseek                       lseek
++#endif
+ #endif /* _WIN32 */
+ 
+ /*
+diff --git a/src/java.base/unix/classes/sun/nio/fs/UnixConstants.java.template b/src/java.base/unix/classes/sun/nio/fs/UnixConstants.java.template
+index a8a521caf..ff5b13dc9 100644
+--- a/src/java.base/unix/classes/sun/nio/fs/UnixConstants.java.template
++++ b/src/java.base/unix/classes/sun/nio/fs/UnixConstants.java.template
+@@ -166,7 +166,9 @@ class UnixConstants {
+     static final int PREFIX_FSOPT_NOFOLLOW = 00;
+ #endif
+ 
+-#ifdef __linux__
++// The Emscripten port borrows the linux java.base classes, which reference
++// these constants; emscripten's musl defines them in <fcntl.h> as well.
++#if defined(__linux__) || defined(__EMSCRIPTEN__)
+     // advice flags used with posix_fadvise(2)
+     static final int PREFIX_POSIX_FADV_SEQUENTIAL = POSIX_FADV_SEQUENTIAL;
+     static final int PREFIX_POSIX_FADV_NOREUSE    = POSIX_FADV_NOREUSE;
+diff --git a/src/java.base/unix/native/libjava/TimeZone_md.c b/src/java.base/unix/native/libjava/TimeZone_md.c
+index ac44133b7..ff0c4f99c 100644
+--- a/src/java.base/unix/native/libjava/TimeZone_md.c
++++ b/src/java.base/unix/native/libjava/TimeZone_md.c
+@@ -60,14 +60,14 @@ static char *isFileIdentical(char* buf, size_t size, char *pathname);
+ #define fstat64 fstat
+ #endif
+ 
+-#if defined(__linux__) || defined(_ALLBSD_SOURCE)
++#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(__EMSCRIPTEN__)
+ static const char *ZONEINFO_DIR = "/usr/share/zoneinfo";
+ static const char *DEFAULT_ZONEINFO_FILE = "/etc/localtime";
+ #else
+ static const char *SYS_INIT_FILE = "/etc/default/init";
+ static const char *ZONEINFO_DIR = "/usr/share/lib/zoneinfo";
+ static const char *DEFAULT_ZONEINFO_FILE = "/usr/share/lib/zoneinfo/localtime";
+-#endif /* defined(__linux__) || defined(_ALLBSD_SOURCE) */
++#endif /* defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(__EMSCRIPTEN__) */
+ 
+ static const char popularZones[][4] = {"UTC", "GMT"};
+ 
+@@ -75,7 +75,10 @@ static const char popularZones[][4] = {"UTC", "GMT"};
+ static const char *ETC_ENVIRONMENT_FILE = "/etc/environment";
+ #endif
+ 
+-#if defined(__linux__) || defined(MACOSX)
++/* Emscripten uses the linux implementation. There is normally no zoneinfo
++ * database in the virtual filesystem, so getPlatformTimeZoneID() just returns
++ * NULL and the caller falls back to the GMT+/-hh:mm form. */
++#if defined(__linux__) || defined(MACOSX) || defined(__EMSCRIPTEN__)
+ 
+ /*
+  * remove repeated path separators ('/') in the given 'path'.
+diff --git a/src/java.base/unix/native/libjava/io_util_md.c b/src/java.base/unix/native/libjava/io_util_md.c
+index 1151fa728..1db245539 100644
+--- a/src/java.base/unix/native/libjava/io_util_md.c
++++ b/src/java.base/unix/native/libjava/io_util_md.c
+@@ -30,7 +30,7 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
+-#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(_AIX)
++#if defined(__linux__) || defined(_ALLBSD_SOURCE) || defined(_AIX) || defined(__EMSCRIPTEN__)
+ #include <sys/ioctl.h>
+ #endif
+ 
+@@ -181,10 +181,37 @@ fileDescriptorClose(JNIEnv *env, jobject this)
+     }
+ }
+ 
++#ifdef __EMSCRIPTEN__
++/* In the browser there is nothing on the other end of fd 0: keystrokes are
++   pushed into a shared-memory ring buffer by the page and drained here. Both
++   symbols live in the embedder (build/jvm-main.c in javabox), which is linked
++   into the same WASM module. jvm_use_ring_buffer_stdin() stays false under
++   Node.js, where the normal read() path works. */
++extern int jvm_use_ring_buffer_stdin(void);
++extern int stdin_read_byte(void);
++extern int jvm_stdin_available(void);
++#endif
++
+ ssize_t
+ handleRead(FD fd, void *buf, jint len)
+ {
+     ssize_t result;
++#ifdef __EMSCRIPTEN__
++    if (fd == 0 && jvm_use_ring_buffer_stdin()) {
++        int c;
++        if (len <= 0) {
++            return 0;
++        }
++        /* Blocks until a byte is available, or returns EOF at end of stream.
++           One byte per call is enough - callers are buffered readers. */
++        c = stdin_read_byte();
++        if (c < 0) {
++            return 0;
++        }
++        *(unsigned char*)buf = (unsigned char)c;
++        return 1;
++    }
++#endif
+     RESTARTABLE(read(fd, buf, len), result);
+     return result;
+ }
+@@ -205,6 +232,14 @@ handleAvailable(FD fd, jlong *pbytes)
+     jlong size = -1, current = -1;
+ 
+     int result;
++
++#ifdef __EMSCRIPTEN__
++    if (fd == 0 && jvm_use_ring_buffer_stdin()) {
++        *pbytes = jvm_stdin_available();
++        return 1;
++    }
++#endif
++
+     RESTARTABLE(fstat64(fd, &buf64), result);
+     if (result != -1) {
+         mode = buf64.st_mode;
+diff --git a/src/java.base/unix/native/libnio/ch/NativeThread.c b/src/java.base/unix/native/libnio/ch/NativeThread.c
+index f273b9515..56e931211 100644
+--- a/src/java.base/unix/native/libnio/ch/NativeThread.c
++++ b/src/java.base/unix/native/libnio/ch/NativeThread.c
+@@ -43,6 +43,11 @@
+ #elif defined(_ALLBSD_SOURCE)
+   /* Also defined in net/bsd_close.c */
+   #define INTERRUPT_SIGNAL SIGIO
++#elif defined(__EMSCRIPTEN__)
++  /* Emscripten's realtime signals are not usable, so borrow the BSD choice.
++   * Nothing ever delivers it - the port does not link libnet - but the value
++   * has to be a valid signal number for sigaction() to accept it. */
++  #define INTERRUPT_SIGNAL SIGIO
+ #else
+   #error "missing platform-specific definition here"
+ #endif
+diff --git a/src/java.base/unix/native/libnio/fs/UnixNativeDispatcher.c b/src/java.base/unix/native/libnio/fs/UnixNativeDispatcher.c
+index 9499bae2d..3fcb45675 100644
+--- a/src/java.base/unix/native/libnio/fs/UnixNativeDispatcher.c
++++ b/src/java.base/unix/native/libnio/fs/UnixNativeDispatcher.c
+@@ -54,7 +54,7 @@
+ #include <sys/sysmacros.h> // makedev macros
+ #endif
+ 
+-#if defined(__linux__) || defined(_AIX)
++#if defined(__linux__) || defined(_AIX) || defined(__EMSCRIPTEN__)
+ #include <string.h>
+ #endif
+ 
