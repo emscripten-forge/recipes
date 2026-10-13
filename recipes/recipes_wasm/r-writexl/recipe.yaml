@@ -24,20 +24,21 @@ requirements:
   host:
   - r-base ==${{ r_base }}
   - zlib-static
-  run:
-  - zlib-static
 
 tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://libxlsxwriter.github.io/
