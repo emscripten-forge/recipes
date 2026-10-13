@@ -1,0 +1,57 @@
+context:
+  name: Rcpp
+  version: 1.1.1-1.1
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 32e5d5fee4080c8ca315f31b74c3eaa6367a1900e92e860e00390c9565f5fbe1
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('cxx') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://www.rcpp.org/
+  repository: https://github.com/RcppCore/Rcpp
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Seamless R and C++ Integration
+  description: |
+    The 'Rcpp' package provides R functions as well as C++ classes which offer a
+    seamless integration of R and C++. Many R data types and objects can be
+    mapped back and forth to C++ equivalents which facilitates both writing of
+    new code as well as easier integration of third-party libraries.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
