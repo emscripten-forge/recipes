@@ -3,7 +3,7 @@ context:
   version: 20250128
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -22,14 +22,19 @@ requirements:
   - gnuconfig
   - pkg-config
   host:
-  - m4ri
-
+  - m4ri-static
+  run:
+  - ${{ pin_compatible('m4ri-static', lower_bound='x.x', upper_bound='x.x') }}
 tests:
 - package_contents:
     files:
     - include/m4rie/m4rie.h
     - lib/libm4rie.a
 
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   license: LGPL-2.0-or-later
   license_file: COPYING
