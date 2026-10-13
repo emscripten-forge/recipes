@@ -1,0 +1,68 @@
+context:
+  name: safetensors
+  version: 0.8.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - setuptools-rust
+  - rust-nightly
+  - maturin
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_safetensors.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/huggingface/safetensors
+  repository: https://github.com/huggingface/safetensors
+  summary: Fast and Safe Tensor serialization
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      # rust-nightly hardcodes CARGO_BUILD_TARGET=wasm32-unknown-emscripten, so the
+      # wasm64 build produces a wasm32 shared object that fails at import
+      # ("cannot import i64 memory as i32").
+      emscripten-wasm64: false
+  recipe-maintainers:
+  - Alex-PLACET
