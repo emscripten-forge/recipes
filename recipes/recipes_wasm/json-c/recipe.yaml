@@ -2,35 +2,60 @@ context:
   version: '0.19'
   name: json-c
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
 
 source:
   url: https://s3.amazonaws.com/json-c_releases/releases/json-c-${{ version }}.tar.gz
   sha256: 37ad0249902e301bd9052bf712e511fcc6acff4ecaad4b5900aad9ce564e26de
 build:
   number: 0
-requirements:
-  build:
-  - ${{ compiler("c") }}
-  - cmake
-  - make
 
-
-
-tests:
-- package_contents:
-    files:
-    - include/json-c/json.h
-    - lib/libjson-c.a
-    - lib/libjson-c.so
-
-
-- script: generic-testing
-  requirements:
+outputs:
+  - package:
+      name: ${{ name }}-static
+      version: ${{ version }}
     build:
-    - generic-testing
+      script:
+        env:
+          BUILD_SHARED_LIBS: "OFF"
+          BUILD_STATIC_LIBS: "ON"
+        file: build.sh
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - cmake
+      - make
+    tests:
+    - package_contents:
+        files:
+        - include/json-c/json.h
+        - lib/libjson-c.a
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
+  - package:
+      name: ${{ name }}
+      version: ${{ version }}
+    build:
+      script:
+        env:
+          BUILD_SHARED_LIBS: "ON"
+          BUILD_STATIC_LIBS: "OFF"
+        file: build.sh
+    requirements:
+      build:
+      - ${{ compiler("c") }}
+      - cmake
+      - make
+    tests:
+    - package_contents:
+        files:
+        - include/json-c/json.h
+        - lib/libjson-c.so
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
 about:
   homepage: https://github.com/json-c/json-c
   license: MIT

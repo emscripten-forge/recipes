@@ -7,7 +7,6 @@ export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
 mkdir build
 cd build
 emcmake cmake $CMAKE_ARGS \
-    -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/overwriteProp.cmake \
     -DISABLE_BSYMBOLIC=ON \
     -DISABLE_THREAD_LOCAL_STORAGE=ON \
     -DISABLE_WERROR=ON \
@@ -17,6 +16,8 @@ emcmake cmake $CMAKE_ARGS \
     -DDISABLE_EXTRA_LIBS=ON \
     -DBUILD_APPS=OFF \
     -DBUILD_TESTING=OFF \
+    -DBUILD_SHARED_LIBS=$BUILD_SHARED_LIBS \
+    -DBUILD_STATIC_LIBS=$BUILD_STATIC_LIBS \
     .. 
 
 emmake make ${VERBOSE_AT}
