@@ -82,53 +82,38 @@ test_7 <- function() {
     poker.test(runif(420000), 42)
 }
 
+# NOTE: set.generator() + RNGkind("user-supplied") does not work on WebAssembly.
+# That path registers C function pointers (user_unif_rand / user_unif_init) across
+# R's MAIN_MODULE and the randtoolbox/rngWELL SIDE_MODULEs. Emscripten then fails
+# with "RuntimeError: table index is out of bounds" on call_indirect.
+# Use direct APIs (WELL(), congruRand(), setSeed(), setSeed4WELL()) instead.
+
 test_8 <- function() {
-      print("set generator to WELL512a")
-      set.generator("WELL", order=512, version="a", seed=123456)
-      print("GET RNGkind()")
-      print(RNGkind()[1])
-      s <- getWELLState()
-      x <- runif(500)
-      y <- rngWELLScriptR(500, s, "512a")
-      all(x == y)
-      # [1] TRUE
+      # WELL512a via direct API (avoids user-supplied RNG)
+      print("WELL512a via WELL()")
+      setSeed4WELL(123456)
+      x <- WELL(500, order = 512, version = "a")
+      stopifnot(is.numeric(x), length(x) == 500L)
+      stopifnot(all(x >= 0), all(x <= 1))
 }
 
 test_9 <- function() {
-    #set WELL19937a
-    set.generator("WELL", version="19937a", seed=12345)
-    runif(5)
+    # WELL19937a via direct API
+    print("WELL19937a via WELL()")
+    setSeed4WELL(12345)
+    x <- WELL(5, order = 19937, version = "a")
+    stopifnot(length(x) == 5L)
 
-    #Store the current state  and generate 10 random numbers
-    storedState <- get.description()
-    x <- runif(10)
-
-    #Park Miller congruential generator
-    set.generator(name="congruRand", mod=2^31-1, mult=16807, incr=0, seed=12345)
-    runif(5)
+    # Park Miller congruential generator (direct API)
     setSeed(12345)
-    congruRand(5, dim=1, mod=2^31-1, mult=16807, incr=0)
+    congruRand(5, dim = 1, mod = 2^31 - 1, mult = 16807, incr = 0)
 
-    # the Knuth Lewis RNG
-    set.generator(name="congruRand", mod="4294967296", mult="1664525", incr="1013904223", seed=1)
-    runif(5)
+    # Knuth Lewis RNG (direct API)
     setSeed(1)
-    congruRand(5, dim=1, mod=4294967296, mult=1664525, incr=1013904223)
+    congruRand(5, dim = 1, mod = 4294967296, mult = 1664525, incr = 1013904223)
 
-    #Restore the generator from storedState and regenerate the same numbers
-    put.description(storedState)
-    x == runif(10)
-
-    # generate the same random numbers as in Matlab
-    set.generator("MersenneTwister", initialization="init2002", resolution=53, seed=12345)
-    runif(5)
-    # [1] 0.9296161 0.3163756 0.1839188 0.2045603 0.5677250
-    # Matlab commands rand('twister', 12345); rand(1, 5) generate the same numbers,
-    # which in short format are   0.9296    0.3164    0.1839    0.2046    0.5677
-
-    #Restore the original R setting
-    set.generator("default")
-    RNGkind()
+    # SFMT / Mersenne Twister via direct API (avoids set.generator user-supplied)
+    print(SFMT(5, dim = 1))
 }
 
 test_10 <- function() {
@@ -169,24 +154,11 @@ test_6()
 print("Running test_7")
 test_7()
 
-# NOTE that test_8 and test_9 fail with
-#  │ RuntimeError: table index is out of bounds
-#  │     at wasm://wasm/000287c2:wasm-function[193]:0x9bd5
-#  │     at wasm://wasm/0235b552:wasm-function[978]:0xcbbc6
-#  │     at wasm://wasm/0235b552:wasm-function[1313]:0xf39a7
-#  │     at wasm://wasm/0235b552:wasm-function[1330]:0x5b8090
-#  │     at wasm://wasm/0235b552:wasm-function[1317]:0xf4304
-#  │     at wasm://wasm/0235b552:wasm-function[1313]:0xf3a82
-#  │     at wasm://wasm/0235b552:wasm-function[1348]:0x5bea5f
-#  │     at wasm://wasm/0235b552:wasm-function[1313]:0xf386e
-#  │     at wasm://wasm/0235b552:wasm-function[1339]:0x5b97e3
-#  │     at wasm://wasm/0235b552:wasm-function[1313]:0xf386e
+print("Running test_8")
+test_8()
 
-print("SKIPPING test_8")
-# test_8()
-
-print("SKIPPING test_9")
-#test_9()
+print("Running test_9")
+test_9()
 
 print("Running test_10")
 test_10()
