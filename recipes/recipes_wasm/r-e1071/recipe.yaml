@@ -1,21 +1,22 @@
 context:
-  name: r-e1071
-  version: "1.7-17"
+  name: e1071
+  version: 1.7-17
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/e1071_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/e1071_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 6debc371ad478c2aa6de1f6510e254e80e797de4974b855f63b35509a3c2ac87
 
 build:
   number: 0
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
-  skip: ${{ r_base == '4.6.0' }}
 
 requirements:
   build:
@@ -35,21 +36,32 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/e1071/libs/e1071.so
-- script: run_r_test test_e1071.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_e1071.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=e1071
   license: GPL-2.0-or-later
-  license_file: GPL-2
-  summary: Misc Functions of the Department of Statistics, Probability Theory Group (Formerly E1071), TU Wien
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: |
+    Misc Functions of the Department of Statistics, Probability Theory Group
+    (Formerly E1071), TU Wien
+  description:
+    Functions for latent class analysis, short time Fourier transform, fuzzy
+    clustering, support vector machines, shortest path computation, bagged
+    clustering, naive Bayes classifier, generalized k-nearest neighbour ...
 
 extra:
   recipe-maintainers:
   - anutosh491
+  - IsabelParedes
