@@ -1,0 +1,63 @@
+context:
+  name: pyyaml
+  version: 6.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/P/PyYAML/PyYAML-${{ version }}.tar.gz
+  sha256: 68fb519c14306fec9720a2a5b45bc9f0c8d1b9c72adf45c37baedfcd949c35a2
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - libyaml-static
+  - python-dev
+  run:
+  - ${{ pin_compatible("libyaml-static", lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pyyaml.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: http://pyyaml.org/wiki/PyYAML
+  license_file: LICENSE
+  license: MIT
+  license_family: MIT
+  summary: YAML parser and emitter for Python
+  repository: https://github.com/yaml/pyyaml
+  documentation: http://pyyaml.org/wiki/PyYAML
+
+extra:
+  maintainers:
+  - IsabelParedes
