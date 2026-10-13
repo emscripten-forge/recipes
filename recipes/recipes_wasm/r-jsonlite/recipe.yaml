@@ -1,0 +1,63 @@
+context:
+  name: jsonlite
+  version: 2.0.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 75eb910c82b350ec33f094779da0f87bff154c232e4ae39c9896a9b89f3ac82d
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://arxiv.org/abs/1403.2805, https://www.opencpu.org/posts/jsonlite-a-smarter-json-encoder
+  repository: https://github.com/jeroen/jsonlite
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Simple and Robust JSON Parser and Generator for R
+  description: |
+    A reasonably fast JSON parser and generator, optimized for statistical data
+    and the web. Offers simple, flexible tools for working with JSON in R, and
+    is particularly powerful for building pipelines and interacting with a web
+    API. The implementation is based on the mapping described in the vignette
+    (Ooms, 2014). In addition to converting JSON data from/to R objects,
+    'jsonlite' contains functions to stream, validate, and prettify JSON data.
+    The unit tests included with the package verify that all edge cases are
+    encoded and decoded consistently for use with dynamic data in systems and
+    applications.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
