@@ -3,8 +3,8 @@ context:
   version: 2.0.5
 
 package:
-  name: r-${{ name | lower }}
-  version: ${{ version | replace('-', '_') }}
+  name: r-${{ name }}
+  version: ${{ version }}
 
 source:
   url:
@@ -15,7 +15,7 @@ source:
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }} 
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -33,13 +33,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://r-forge.r-project.org/projects/rmetrics/
@@ -51,17 +54,20 @@ about:
   - LICENSE
   summary: "Toolbox for Pseudo and Quasi Random Number Generation and Random\nGenerator Tests"
   description: |-
-    Provides (1) pseudo random generators - general linear congruential generators,
-    multiple recursive generators and generalized feedback shift register (SF-Mersenne Twister
-    algorithm (<doi:10.1007/978-3-540-74496-2_36>) and WELL (<doi:10.1145/1132973.1132974>)
-    generators); (2) quasi random generators - the Torus algorithm, the
-    Sobol sequence, the Halton sequence (including the Van der Corput sequence) and (3) some
-    generator tests - the gap test, the serial test, the poker test, see, e.g.,
-    Gentle (2003) <doi:10.1007/b97336>.
-    Take a look at the Distribution task view of types and tests of random number generators.
-    The package can be provided without the 'rngWELL' dependency on demand.
-    Package in Memoriam of Diethelm and Barbara Wuertz.
+    Provides (1) pseudo random generators - general linear congruential
+    generators, multiple recursive generators and generalized feedback shift
+    register (SF-Mersenne Twister algorithm
+    (<doi:10.1007/978-3-540-74496-2_36>) and WELL
+    (<doi:10.1145/1132973.1132974>) generators); (2) quasi random generators -
+    the Torus algorithm, the Sobol sequence, the Halton sequence (including
+    the Van der Corput sequence) and (3) some generator tests - the gap test,
+    the serial test, the poker test, see, e.g., Gentle (2003)
+    <doi:10.1007/b97336>. Take a look at the Distribution task view of types
+    and tests of random number generators. The package can be provided without
+    the 'rngWELL' dependency on demand. Package in Memoriam of Diethelm and
+    Barbara Wuertz.
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
