@@ -1,0 +1,41 @@
+# Backport LLVM PR #222559 (05e74e7b5e065d05e33efd264e6f42d9cd40f06c).
+diff --git a/llvm/tools/opt/opt.cpp b/llvm/tools/opt/opt.cpp
+--- a/llvm/tools/opt/opt.cpp
++++ b/llvm/tools/opt/opt.cpp
+@@ -12,6 +12,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "llvm/ADT/ArrayRef.h"
++#include "llvm/Support/InitLLVM.h"
+ #include <functional>
+ 
+ using namespace llvm;
+@@ -24,4 +25,7 @@ extern "C" int
+ optMain(int argc, char **argv,
+         ArrayRef<std::function<void(PassBuilder &)>> PassBuilderCallbacks);
+ 
+-int main(int argc, char **argv) { return optMain(argc, argv, {}); }
++int main(int argc, char **argv) {
++  InitLLVM X(argc, argv);
++  return optMain(argc, argv, {});
++}
+diff --git a/llvm/tools/opt/optdriver.cpp b/llvm/tools/opt/optdriver.cpp
+--- a/llvm/tools/opt/optdriver.cpp
++++ b/llvm/tools/opt/optdriver.cpp
+@@ -44,7 +44,6 @@
+ #include "llvm/Support/Debug.h"
+ #include "llvm/Support/ErrorHandling.h"
+ #include "llvm/Support/FileSystem.h"
+-#include "llvm/Support/InitLLVM.h"
+ #include "llvm/Support/PluginLoader.h"
+ #include "llvm/Support/SourceMgr.h"
+ #include "llvm/Support/SystemUtils.h"
+@@ -401,8 +400,6 @@ static bool shouldForceLegacyPM() {
+ extern "C" int
+ optMain(int argc, char **argv,
+         ArrayRef<std::function<void(PassBuilder &)>> PassBuilderCallbacks) {
+-  InitLLVM X(argc, argv);
+-
+   // Enable debug stream buffering.
+   EnableDebugBuffering = true;
+ 

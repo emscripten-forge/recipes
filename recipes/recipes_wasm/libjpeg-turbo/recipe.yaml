@@ -1,0 +1,48 @@
+context:
+  version: 3.2.0
+  name: libjpeg-turbo
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/libjpeg-turbo/libjpeg-turbo/archive/${{ version }}.tar.gz
+  sha256: 980dd81f425082aa6d7c9e47fef27554ce7a9ffc8e2f6e863b97d263c5c50858
+
+build:
+  number: 1
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  - yasm
+
+tests:
+- package_contents:
+    files:
+    - include/jpeglib.h
+    - include/turbojpeg.h
+    - lib/libjpeg.a
+    - lib/libturbojpeg.a
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://www.libjpeg-turbo.org/
+  repository: https://github.com/libjpeg-turbo/libjpeg-turbo
+  license: IJG AND BSD-3-Clause AND Zlib
+  license_file: LICENSE.md
+  summary: IJG JPEG compliant runtime library with SIMD and other optimizations
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+
