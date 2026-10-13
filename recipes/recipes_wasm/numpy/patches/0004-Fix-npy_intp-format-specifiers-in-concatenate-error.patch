@@ -1,0 +1,36 @@
+From 5e36ee8d338da1f444c852a0ad6ad6d993a65df5 Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Thu, 8 Oct 2026 12:00:00 +0100
+Subject: [PATCH] Fix npy_intp format specifiers in concatenate shape mismatch
+ error
+
+PyArray_ConcatenateArrays passes the npy_intp dimension sizes
+shape[idim] and arr_shape[idim] to PyErr_Format with %d. npy_intp is
+64-bit on wasm64 (and other LP64/LLP64 targets), so this is undefined
+behaviour. On wasm64 varargs are packed at their natural size, so each
+64-bit size is read as two 32-bit halves and all subsequent arguments
+are misread, giving e.g. "the array at index 0 has size 1 and the
+array at index 0 has size 1". This fails
+TestConcatenate::test_exceptions.
+
+Use %zd, as already used elsewhere in this file for Py_ssize_t.
+---
+ numpy/_core/src/multiarray/multiarraymodule.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/numpy/_core/src/multiarray/multiarraymodule.c b/numpy/_core/src/multiarray/multiarraymodule.c
+index 543c197..48c7a5c 100644
+--- a/numpy/_core/src/multiarray/multiarraymodule.c
++++ b/numpy/_core/src/multiarray/multiarraymodule.c
+@@ -442,7 +442,7 @@ PyArray_ConcatenateArrays(int narrays, PyArrayObject **arrays, int axis,
+                              "all the input array dimensions except for the "
+                              "concatenation axis must match exactly, but "
+                              "along dimension %d, the array at index %d has "
+-                             "size %d and the array at index %d has size %d",
++                             "size %zd and the array at index %d has size %zd",
+                              idim, 0, shape[idim], iarrays, arr_shape[idim]);
+                 return NULL;
+             }
+-- 
+2.54.0 (Apple Git-157)
+
