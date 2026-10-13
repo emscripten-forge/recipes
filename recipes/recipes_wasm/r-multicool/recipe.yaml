@@ -3,8 +3,8 @@ context:
   version: 1.0.1
 
 package:
-  name: r-${{ name | lower }}
-  version: ${{ version | replace('-', '_') }}
+  name: r-${{ name }}
+  version: ${{ version }}
 
 source:
   url:
@@ -15,7 +15,7 @@ source:
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -33,16 +33,19 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
-  homepage: https://github.com/jmcurran/multicool
+  homepage: https://cran.r-project.org/package=${{ name }}
   documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
   repository: https://github.com/jmcurran/multicool
   license: GPL-2.0-only
@@ -50,9 +53,23 @@ about:
   license_file:
   - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Permutations of Multisets in Cool-Lex Order
-  description: |-
-    A set of tools to permute multisets without loops or hash tables and to generate integer partitions. The permutation functions are based on C code from Aaron Williams. Cool-lex order is similar to colexicographical order. The algorithm is described in Williams, A. Loopless Generation of Multiset Permutations by Prefix Shifts. SODA 2009, Symposium on Discrete Algorithms, New York, United States. The permutation code is distributed without restrictions. The code for stable and efficient computation of multinomial coefficients comes from Dave Barber. The code can be download from <http://tamivox.org/dave/multinomial/index.html> and is distributed without conditions. The package also generates the integer partitions of a positive, non-zero integer n. The C++ code for this is based on Python code from Jerome Kelleher which can be found here <https://jeromekelleher.net/category/combinatorics.html>. The C++ code and Python code are distributed without conditions.
+  description: |
+    A set of tools to permute multisets without loops or hash tables and to
+    generate integer partitions. The permutation functions are based on C code
+    from Aaron Williams. Cool-lex order is similar to colexicographical order.
+    The algorithm is described in Williams, A. Loopless Generation of Multiset
+    Permutations by Prefix Shifts. SODA 2009, Symposium on Discrete Algorithms,
+    New York, United States. The permutation code is distributed without
+    restrictions. The code for stable and efficient computation of multinomial
+    coefficients comes from Dave Barber. The code can be download from
+    <http://tamivox.org/dave/multinomial/index.html> and is distributed without
+    conditions. The package also generates the integer partitions of a
+    positive, non-zero integer n. The C++ code for this is based on Python code
+    from Jerome Kelleher which can be found here
+    <https://jeromekelleher.net/category/combinatorics.html>. The C++ code and
+    Python code are distributed without conditions.
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
