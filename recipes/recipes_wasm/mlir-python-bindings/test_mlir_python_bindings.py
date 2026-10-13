@@ -6,7 +6,10 @@ import numpy as np
 
 from mlir.ir import Context, Module
 from mlir.passmanager import PassManager
-from mlir.runtime.np_to_memref import get_ranked_memref_descriptor
+from mlir.runtime.np_to_memref import (
+    get_ranked_memref_descriptor,
+    ranked_memref_to_numpy,
+)
 from mlir.wasm_execution_engine import (
     WasmExecutionEngine,
     target_index_bitwidth,
@@ -56,6 +59,26 @@ def test_target_configuration_is_consistent():
     extension_suffix = sysconfig.get_config_var("EXT_SUFFIX")
     assert extension_suffix.endswith("-emscripten.so")
     assert f"wasm{pointer_bits}" in extension_suffix
+
+
+def test_numpy_memref_explicit_index_width():
+    arrays = [
+        np.arange(8, dtype=np.float32),
+        np.arange(24, dtype=np.float32).reshape(4, 6)[::2, ::-2],
+    ]
+    for index_bits, index_type in ((32, ctypes.c_int32), (64, ctypes.c_int64)):
+        for array in arrays:
+            descriptor = get_ranked_memref_descriptor(
+                array, index_bitwidth=index_bits
+            )
+            assert descriptor.shape._type_ is index_type
+            assert list(descriptor.shape) == list(array.shape)
+            assert list(descriptor.strides) == [
+                stride // array.itemsize for stride in array.strides
+            ]
+            np.testing.assert_array_equal(
+                ranked_memref_to_numpy(ctypes.pointer(descriptor)), array
+            )
 
 
 def test_import_parse_and_translate():
