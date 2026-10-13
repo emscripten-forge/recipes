@@ -1,19 +1,21 @@
 context:
-  name: r-bit64
+  name: bit64
   version: 4.8.6
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/r-lib/${{ name[2:] }}/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 50174252e2c6676d8ef20f7995b26d3331033b16a48641199652a5ccaf043f91
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: a5fcec17ba772a561a7375ca8fd966bdd5f20dd4e89b4dae07d7da933d554b45
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.x on conda-forge
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -30,15 +32,37 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://bit64.r-lib.org/
   repository: https://github.com/r-lib/bit64
   license: GPL-2.0-only
   license_family: GPL2
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: S3 Class for Vectors of 64bit Integers
+  description: |
+    Package 'bit64' provides serializable S3 atomic 64bit (signed) integers.
+    These are useful for handling database keys and exact counting in +-2^63.
+    WARNING: do not use them as replacement for 32bit integers, integer64 are
+    not supported for subscripting by R-core and they have different semantics
+    when combined with double, e.g. integer64 + double => integer64. Class
+    integer64 can be used in vectors, matrices, arrays and data.frames. Methods
+    are available for coercion from and to logicals, integers, doubles,
+    characters and factors as well as many elementwise and summary functions.
+    Many fast algorithmic operations such as 'match' and 'order' support inter-
+    active data exploration and manipulation and optionally leverage caching.
 
 extra:
   recipe-maintainers:
