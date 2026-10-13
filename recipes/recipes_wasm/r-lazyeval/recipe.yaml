@@ -1,21 +1,21 @@
 context:
+  name: lazyeval
   version: 0.2.3
-  name: r-lazyeval
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: c65db1997b195a7bb0ab3afbb834345ea277b428b2736eeded4242629e86adcb
 
 build:
-  number: 3
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -32,14 +32,25 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://CRAN.R-project.org/package=lazyeval
   repository: https://github.com/hadley/lazyeval
   license: GPL-3.0-only
   license_family: GPL3
-  license_file: GPL-3
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
   summary: An alternative to non-standard evaluation (NSE) for R
   description: |
     An alternative approach to non-standard evaluation using formulas. Provides a
