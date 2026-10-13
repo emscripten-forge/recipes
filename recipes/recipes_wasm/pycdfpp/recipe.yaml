@@ -1,0 +1,59 @@
+context:
+  name: pycdfpp
+  version: 0.16.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/SciQLop/CDFpp/archive/v${{ version }}.tar.gz
+  sha256: 97a2dacad3ca2e6d4b462d3d27d26ae7af6dc5001f30d2dd512275549a62d99b
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - meson-python
+  - ninja >=1.8.2
+  - pip >=24.0
+  - python
+  host:
+  - python-dev
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - numpy
+  files:
+    recipe:
+    - test_pycdfpp.py
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/SciQLop/CDFpp
+  license: MIT
+  license_file: COPYING
+  summary: A modern C++ header only cdf library with Python bindings
+
+extra:
+  recipe-maintainers:
+  - AlexisJeandet
