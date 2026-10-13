@@ -10,6 +10,7 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: b0deb0e2aff784e511545193e5583fc2df3a98bc877287280f19341661769530
 
 build:
@@ -27,13 +28,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_xfun.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_xfun.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=${{ name }}
