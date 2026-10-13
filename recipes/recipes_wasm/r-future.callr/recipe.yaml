@@ -3,8 +3,8 @@ context:
   version: 1.0.1
 
 package:
-  name: r-${{ name | lower }}
-  version: ${{ version | replace('-', '_') }}
+  name: r-${{ name }}
+  version: ${{ version }}
 
 source:
   url:
@@ -12,11 +12,13 @@ source:
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: dd57db107e5dcbbe95b432ce79f29afb3bec7c075a13f80e37d9a661bdb57d86
-  # path: /Users/thorstenbeier/src/future.callr
+  patches:
+  - patches/0001-Remove-non-supported-functionality.patch
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -30,25 +32,33 @@ requirements:
   - r-future >= 1.58.0
 
 tests:
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://future.callr.futureverse.org
   documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
   repository: https://github.com/futureverse/future.callr
   license: Apache-2.0
-  license_file:
-  - LICENSE
+  license_file: LICENSE.md
   summary: A Future API for Parallel Processing using 'callr'
-  description: |-
-    Implementation of the Future API <doi:10.32614/RJ-2021-048> on top of the 'callr' package.  This allows you to process futures, as defined by the 'future' package, in parallel out of the box, on your local (Linux, macOS, Windows, ...) machine.  Contrary to backends relying on the 'parallel' package (e.g. 'future::multisession') and socket connections, the 'callr' backend provided here can run more than 125 parallel R processes.
+  description: |
+    Implementation of the Future API <doi:10.32614/RJ-2021-048> on top of the
+    'callr' package.  This allows you to process futures, as defined by the
+    'future' package, in parallel out of the box, on your local (Linux, macOS,
+    Windows, ...) machine.  Contrary to backends relying on the 'parallel'
+    package (e.g. 'future::multisession') and socket connections, the 'callr'
+    backend provided here can run more than 125 parallel R processes.
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
