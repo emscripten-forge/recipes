@@ -89,9 +89,9 @@ test_7 <- function() {
                matrix(rnorm(100, mean=1, sd=0.3), ncol=2))
     cl <- cclust(x,2)
     plot(x, col=predict(cl))
-    points(cl@centers, pch="x", cex=2, col=3) 
+    points(cl@centers, pch="x", cex=2, col=3)
 
-    ## a 3-dimensional example 
+    ## a 3-dimensional example
     x <- rbind(matrix(rnorm(150, sd=0.3), ncol=3),
                matrix(rnorm(150, mean=2, sd=0.3), ncol=3),
                matrix(rnorm(150, mean=4, sd=0.3), ncol=3))
@@ -230,14 +230,14 @@ test_14 <- function() {
     data("Nclus")
     plot(Nclus)
 
-    ## try kmeans 
+    ## try kmeans
     cl1 <- kcca(Nclus, k=4)
     cl1
 
     image(cl1)
     points(Nclus)
 
-    ## A barplot of the centroids 
+    ## A barplot of the centroids
     barplot(cl1)
 
 
@@ -284,7 +284,7 @@ test_17 <- function() {
      p
      summary(p)
      propBarchart(x, iris$Species, byvar=TRUE)
- 
+
      x <- iris[,-5]
      x <- cbind(x, Noise=rnorm(150, mean=3))
      groupBWplot(x, iris$Species)
@@ -391,8 +391,10 @@ test_22 <- function() {
 
 test_23 <- function() {
     data("Nclus")
-    cl25 <- stepFlexclust(Nclus, k=2:5)
+    cl25 <- stepFlexclust(Nclus, k=2:5, multicore=FALSE)
     slsaplot(cl25)
+
+    library(clue) # required for relabel
     cl25 <- relabel(cl25)
     slsaplot(cl25)
 }
@@ -400,7 +402,7 @@ test_23 <- function() {
 test_24 <- function() {
     data("Nclus")
     cl3 <- kcca(Nclus, k = 3)
-    slsw.cl3 <- slswFlexclust(Nclus, cl3, nsamp = 20)
+    slsw.cl3 <- slswFlexclust(Nclus, cl3, nsamp = 20, multicore=FALSE)
     plot(Nclus, col = clusters(cl3))
     plot(slsw.cl3)
     densityplot(slsw.cl3)
