@@ -1,12 +1,8 @@
-# Set up the cross file
-sed "s|@(PYTHON)|${PYTHON}|g" $MESON_CROSS_FILE > $SRC_DIR/emscripten.meson.cross
-cat $SRC_DIR/emscripten.meson.cross
-
 
 # mpl expects lib/libqhull_r.a and not lib/libqhullstatic_r.a
 cp $PREFIX/lib/libqhullstatic_r.a $PREFIX/lib/libqhull_r.a
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
-    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
+    -Csetup-args="--cross-file=$MESON_CROSS_PYTHON_FILE" \
     -Csetup-args="-Dsystem-freetype=true" \
     -Csetup-args="-Dsystem-libraqm=true" \
     -Csetup-args="-Dsystem-qhull=true" \
