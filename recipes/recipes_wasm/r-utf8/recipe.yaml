@@ -1,6 +1,6 @@
 context:
-  name: xfun
-  version: '0.61'
+  name: utf8
+  version: 1.2.6
 
 package:
   name: r-${{ name }}
@@ -10,7 +10,8 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
-  sha256: b0deb0e2aff784e511545193e5583fc2df3a98bc877287280f19341661769530
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 4589f8b72291329e70b7f3a8c20f2feb4e7764eebad2e6976bc9a3eee7686ce9
 
 build:
   number: 0
@@ -27,24 +28,27 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_xfun.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_xfun.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
-  homepage: https://cran.r-project.org/package=${{ name }}
-  documentation: https://git.yihui.org/xfun/
-  repository: https://github.com/yihui/xfun
-  license: MIT
+  homepage: https://ptrckprry.com/r-utf8/
+  repository: https://github.com/patperry/r-utf8
+  license: Apache-2.0
+  license_family: Apache
   license_file: LICENSE
-  summary: Miscellaneous R functions
+  summary: Unicode Text Processing
   description: |
-    Miscellaneous functions commonly used in other packages maintained by
-    'Yihui Xie'.
+    Process and print 'UTF-8' encoded international text (Unicode). Input,
+    validate, normalize, encode, format, and display.
 
 extra:
   recipe-maintainers:

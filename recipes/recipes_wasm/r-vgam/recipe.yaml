@@ -12,10 +12,13 @@ source:
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 87820cf3141ecb5d16e1f9b16df6fa97358abcb9df063fd4673ab33c6983248f
+  patches:
+  - if: target_platform == "emscripten-wasm64"
+    then:
+    - patches/0001-Avoid-NINT-to-work-around-wasm64-lround-codegen.patch
 
 build:
   number: 0
-  # skip: ${{ r_base == '4.6.1' }} ONLY IF NEEDED
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -31,13 +34,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://www.stat.auckland.ac.nz/~yee/VGAM/
@@ -73,3 +79,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
