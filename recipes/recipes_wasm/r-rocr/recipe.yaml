@@ -15,7 +15,7 @@ source:
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }} 
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -30,15 +30,16 @@ requirements:
   - r-gplots
 
 tests:
-
-
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://ipa-tys.github.io/ROCR/
@@ -69,3 +70,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
