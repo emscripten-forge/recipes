@@ -1,0 +1,49 @@
+#!/bin/bash
+set -ex
+
+PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+
+# Patch InChI for emscripten compatibility
+sed -i.bak 's/defined(__APPLE__) &&//' External/INCHI-API/src/INCHI_BASE/src/util.c || true
+
+mkdir build && cd build
+
+emcmake cmake .. \
+  -DCMAKE_INSTALL_PREFIX=${PREFIX} \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DRDK_BUILD_PYTHON_WRAPPERS=ON \
+  -DRDK_BUILD_FREETYPE_SUPPORT=ON \
+  -DRDK_BUILD_INCHI_SUPPORT=ON \
+  -DRDK_BUILD_COORDGEN_SUPPORT=ON \
+  -DRDK_BUILD_CPP_TESTS=OFF \
+  -DRDK_INSTALL_INTREE=OFF \
+  -DRDK_USE_BOOST_SERIALIZATION=OFF \
+  -DRDK_USE_BOOST_IOSTREAMS=OFF \
+  -DRDK_OPTIMIZE_POPCNT=OFF \
+  -DRDK_BUILD_THREADSAFE_SSS=OFF \
+  -DRDK_BUILD_DESCRIPTORS3D=OFF \
+  -DRDK_TEST_MULTITHREADED=OFF \
+  -DRDK_BUILD_MAEPARSER_SUPPORT=OFF \
+  -DRDK_BUILD_SLN_SUPPORT=OFF \
+  -DRDK_BUILD_AVALON_SUPPORT=OFF \
+  -DRDK_BUILD_CAIRO_SUPPORT=OFF \
+  -DRDK_BUILD_YAEHMOP_SUPPORT=OFF \
+  -DRDK_BUILD_XYZ2MOL_SUPPORT=OFF \
+  -DRDK_BUILD_PGSQL=OFF \
+  -DRDK_INSTALL_STATIC_LIBS=ON \
+  -DBoost_INCLUDE_DIR=${PREFIX}/include \
+  -DBoost_LIBRARY_DIR=${PREFIX}/lib \
+  -DFREETYPE_INCLUDE_DIRS=${PREFIX}/include/freetype2 \
+  -DFREETYPE_LIBRARY=${PREFIX}/lib/libfreetype.a \
+  -DEIGEN3_INCLUDE_DIR=${PREFIX}/include/eigen3 \
+  -DPYTHON_EXECUTABLE=${BUILD_PREFIX}/bin/python \
+  -DPYTHON_INCLUDE_DIR=${PREFIX}/include/python${PYTHON_VERSION} \
+  -DPYTHON_LIBRARY=${PREFIX}/lib/libpython${PYTHON_VERSION}.a \
+  -DPYTHON_NUMPY_INCLUDE_PATH=$(python -c "import numpy; print(numpy.get_include())") \
+  -DBoost_PYTHON_LIBRARY=${PREFIX}/lib/libboost_python${PYTHON_VERSION//./}.a \
+  -DCMAKE_CXX_FLAGS="${SIDE_MODULE_CXXFLAGS} -fexceptions -DBOOST_SP_DISABLE_THREADS=1" \
+  -DCMAKE_C_FLAGS="${SIDE_MODULE_CFLAGS} -fexceptions" \
+  -DCMAKE_SHARED_LINKER_FLAGS="${SIDE_MODULE_LDFLAGS}"
+
+emmake make -j${CPU_COUNT:-3}
+emmake make install
