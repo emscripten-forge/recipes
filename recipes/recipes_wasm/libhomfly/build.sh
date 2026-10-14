@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-emcmake cmake -S . -B build \
-    -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-    -DCMAKE_PREFIX_PATH="${PREFIX}" \
-    -DCMAKE_C_FLAGS="-O2" \
-    -DBUILD_SHARED_LIBS=OFF
+emconfigure ./configure \
+    --build=i686-pc-linux-gnu \
+    --host=$HOST \
+    --disable-shared \
+    --enable-static \
+    --prefix="${PREFIX}" \
+    CPPFLAGS="-I${PREFIX}/include" \
+    CFLAGS="-O2 -I${PREFIX}/include" \
+    LDFLAGS="-L${PREFIX}/lib"
 
-cmake --build build --parallel 8
-cmake --install build
+emmake make -j8
+emmake make install
