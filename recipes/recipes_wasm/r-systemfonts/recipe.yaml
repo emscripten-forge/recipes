@@ -1,22 +1,23 @@
 context:
+  name: systemfonts
   version: 1.3.2
-  name: r-systemfonts
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/systemfonts_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/systemfonts_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 828a1780e540bd05107cd0a1ddfac6727de8aef1d6d82b43591dabaf753dd135
   patches:
   - patches/0001-Honor-Emscripten-target-when-cross-compiling-on-macOS.patch
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -47,14 +48,17 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/systemfonts/libs/systemfonts.so
-- script: RTESTER_MOUNT_FONTS=1 run_r_test test-systemfonts.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - RTESTER_MOUNT_FONTS=1 run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test-systemfonts.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://systemfonts.r-lib.org
