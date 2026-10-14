@@ -1,21 +1,21 @@
 context:
-  name: r-lmtest
+  name: lmtest
   version: 0.9-40
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 64400d4d6cc635316531042971f1783539686e9015c76f5741c07304fa14d997
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -34,20 +34,24 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test test_lmtest.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_lmtest.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=lmtest
   license: GPL-2.0-or-later
   license_family: GPL
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Testing Linear Regression Models
   description: |
     A collection of tests, data sets, and examples for diagnostic checking in

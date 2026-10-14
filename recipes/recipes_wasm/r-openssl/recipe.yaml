@@ -1,47 +1,50 @@
 context:
-  name: r-openssl
+  name: openssl
   version: 2.4.2
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 1fc030ad0a008472eac7f086666a7623bdbe6d27c5fdb07b5510f56545d2f4e7
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base ==${{ r_base }}
   - ${{ compiler('c') }}
+  - pkg-config
   - r-askpass
   host:
   - r-base ==${{ r_base }}
   - r-askpass
-  - openssl
+  - libopenssl-static >=4.0
   run:
   - r-askpass
-  - openssl
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test test_openssl.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_openssl.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://jeroen.r-universe.dev/openssl
