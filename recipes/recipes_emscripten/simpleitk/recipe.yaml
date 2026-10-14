@@ -1,0 +1,63 @@
+context:
+  name: SimpleITK
+  version: "2.5.3"
+
+package:
+  name: simpleitk
+  version: ${{ version }}
+
+source:
+- url: https://github.com/SimpleITK/SimpleITK/releases/download/v${{ version }}/SimpleITK-${{ version }}.tar.gz
+  sha256: 1ef3642b0695c8eb0a0193fefe7677c57bce94a86d6b01f48f58b2291b4ca935
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - swig >=4.0.0
+  - cross-python_${{ target_platform }}
+  - python
+  host:
+  - python
+  - pip
+  - libitk
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_simpleitk.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: http://www.simpleitk.org
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Simplified interface to the Insight Toolkit for image registration and segmentation
+  description: |
+    SimpleITK is a simplified layer built on top of ITK (Insight Segmentation and
+    Registration Toolkit). It provides bindings for multiple programming languages
+    including Python, Java, C#, R, Lua, Tcl, and Ruby.
+  repository: https://github.com/SimpleITK/SimpleITK
+
+extra:
+  recipe-maintainers:
+  - Copilot
