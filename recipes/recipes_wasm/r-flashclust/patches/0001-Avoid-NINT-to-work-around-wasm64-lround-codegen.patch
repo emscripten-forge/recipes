@@ -1,0 +1,25 @@
+From b259ca02f55d7512bd57e34ae8e8266c0b69524a Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 12 Oct 2026 13:42:31 +0200
+Subject: [PATCH] Avoid NINT to work around wasm64 lround codegen issue
+
+---
+ src/hc.f | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/hc.f b/src/hc.f
+index 77ac412..81f4abf 100644
+--- a/src/hc.f
++++ b/src/hc.f
+@@ -269,7 +269,7 @@ C  This hopefully prevents overflow errors when I^2 is greater than
+ C  2^31.
+       IF (N.GT.32768) THEN 
+          XI = DBLE(I)
+-         IOFFSET=J+NINT( (XI-1)*N - (XI*(XI+1))/2)
++         IOFFSET=J+INT(ANINT( (XI-1)*N - (XI*(XI+1))/2))
+       ELSE
+          IOFFSET=J+(I-1)*N-(I*(I+1))/2
+       ENDIF
+-- 
+2.56.0
+

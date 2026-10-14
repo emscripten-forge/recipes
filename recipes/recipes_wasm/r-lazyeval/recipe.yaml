@@ -1,0 +1,62 @@
+context:
+  name: lazyeval
+  version: 0.2.3
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: c65db1997b195a7bb0ab3afbb834345ea277b428b2736eeded4242629e86adcb
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rlang
+  host:
+  - r-base ==${{ r_base }}
+  - r-rlang
+  run:
+  - r-rlang
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://CRAN.R-project.org/package=lazyeval
+  repository: https://github.com/hadley/lazyeval
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: An alternative to non-standard evaluation (NSE) for R
+  description: |
+    An alternative approach to non-standard evaluation using formulas. Provides a
+    full implementation of LISP style 'quasiquotation', making it easier to
+    generate code with other code.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

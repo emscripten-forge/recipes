@@ -1,0 +1,45 @@
+context:
+  name: libnlopt
+  version: 2.11.0
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+- url: https://github.com/stevengj/nlopt/archive/v${{ version }}.tar.gz
+  sha256: 53e552d83e9294d67db37f0f4a23f15933a9ef698485301a18b98b40004cf0de
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - make
+
+tests:
+- package_contents:
+    files:
+    - include/nlopt.h
+    - lib/libnlopt.a
+    - lib/pkgconfig/nlopt.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://nlopt.readthedocs.io/en/latest/
+  repository: https://github.com/stevengj/nlopt
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Nonlinear optimization library
+  description: |
+    Library for nonlinear optimization, wrapping many algorithms for global and
+    local, constrained or unconstrained, optimization.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
