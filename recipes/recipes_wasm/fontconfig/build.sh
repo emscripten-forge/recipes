@@ -2,8 +2,6 @@
 
 set -ex
 
-sed -i "s|@(PYTHON)|${PYTHON}|g" "${MESON_CROSS_FILE}"
-
 
 meson_setup_args=(
     -Dtests=disabled
