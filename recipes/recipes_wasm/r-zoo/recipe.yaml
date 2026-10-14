@@ -1,21 +1,22 @@
 context:
-  version: 1.9-1
   name: zoo
+  version: 1.9-1
 
 package:
   name: r-${{ name }}
-  version: ${{ version | replace("-", "_") }}
+  version: ${{ version | replace('-', '_') }}
 
 source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: a2d998726a9b528efd20af449099e4b2df53887a0d10f48ac9ba63992b3a053a
 
 build:
   number: 0
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
-  skip: ${{ r_base == '4.6.1' }}
 
 requirements:
   build:
@@ -32,13 +33,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_zoo.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: http://zoo.R-Forge.R-project.org/
@@ -48,10 +52,13 @@ about:
   summary: |
     S3 Infrastructure for Regular and Irregular Time Series (Z's Ordered Observations)
   description: |
-    An S3 class with methods for totally ordered indexed observations. It is particularly aimed at irregular time
-    series of numeric vectors/matrices and factors. zoo's key design goals are independence of a particular 
-    index/date/time class and consistency with ts and base R by providing methods to extend standard generics.
+    An S3 class with methods for totally ordered indexed observations. It is
+    particularly aimed at irregular time series of numeric vectors/matrices and
+    factors. zoo's key design goals are independence of a particular
+    index/date/time class and consistency with ts and base R by providing
+    methods to extend standard generics.
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
