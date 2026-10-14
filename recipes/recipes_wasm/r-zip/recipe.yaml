@@ -1,15 +1,16 @@
 context:
-  name: r-zip
+  name: zip
   version: 3.0.2
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 5bf37e5ad4cf4cc3d191b4479e7b53336afd9250e5b9f10272e7b4a4b5cc88b7
 
 build:
@@ -30,23 +31,30 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test test-r-zip.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test-r-zip.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://r-lib.github.io/zip/
   repository: https://github.com/r-lib/zip
-  summary: Cross-Platform 'zip' Compression Library. A replacement for the 'zip' function, that does not require any 
-    additional external tools on any platform.
+  summary: Cross-Platform 'zip' Compression
+  description: |
+    Cross-Platform 'zip' Compression Library. A replacement for the 'zip'
+    function, that does not require any additional external tools on any
+    platform.
   license: MIT
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
   - rgaiacs
+  - IsabelParedes
