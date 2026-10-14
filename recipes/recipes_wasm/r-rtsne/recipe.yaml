@@ -1,22 +1,22 @@
 context:
-  name: r-rtsne
+  name: Rtsne
   version: "0.17"
-  ccname: Rtsne
 
 package:
-  name: ${{ name }}
+  name: r-${{ name | lower }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 3aae6814d6c6d406785145f07374135652f2b26a58690dfd4bfbc8365dc5590b
 
 build:
   number: 0
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
-  skip: ${{ r_base == '4.6.0' }}
 
 requirements:
   build:
@@ -34,22 +34,31 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ ccname }}/libs/${{ ccname }}.so
-- script: run_r_test test_rtsne.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_rtsne.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=Rtsne
   repository: https://github.com/jkrijthe/Rtsne
   license: LicenseRef-FOSS
   license_file: LICENSE
-  summary: T-Distributed Stochastic Neighbor Embedding using Barnes-Hut Implementation
+  summary: |
+    T-Distributed Stochastic Neighbor Embedding using Barnes-Hut Implementation
+  description: |
+    An R wrapper around the fast T-distributed Stochastic Neighbor Embedding
+    implementation by Van der Maaten (see <https://github.com/lvdmaaten/bhtsne/>
+    for more information on the original implementation).
 
 extra:
   recipe-maintainers:
   - anutosh491
+  - IsabelParedes
