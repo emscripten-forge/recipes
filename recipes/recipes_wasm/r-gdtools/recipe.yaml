@@ -1,20 +1,22 @@
 context:
+  name: gdtools
   version: 0.5.1
-  name: r-gdtools
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/gdtools_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/gdtools_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 94c15014fcfa7a83de863b7d690a98a05a8cb929dcb056af8f304632dc4441e7
+
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
-  script: build.sh
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -34,7 +36,7 @@ requirements:
   - freetype-static
   - libpng-static
   - pixman-static
-  - zlib-static
+  - libzlib-static
   - r-fontquiver >=0.2.0
   - r-htmltools
   - r-rcpp >=0.12.12
@@ -48,14 +50,17 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/gdtools/libs/gdtools.so
-- script: RTESTER_MOUNT_FONTS=1 run_r_test test-gdtools.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - RTESTER_MOUNT_FONTS=1 run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test-gdtools.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://davidgohel.github.io/gdtools/
