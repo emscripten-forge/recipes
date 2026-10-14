@@ -1,14 +1,14 @@
 context:
   name: ncurses
-  version: '6_4_20240330'
+  version: 6_6
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
   url: https://github.com/ThomasDickey/${{ name }}-snapshots/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: e0f669ca923dfee33de25ede9de619a15671a07cdf9e530d742b22988e96ac1f
+  sha256: 5109f372b0e80f59603808947f6fc63c8fd4146768ebfa13982459946113effd
 
 build:
   number: 0
@@ -20,18 +20,21 @@ requirements:
   - pkg-config
   - make
   - libtool
-  - coreutils
-  - ncurses <6.5
 
 tests:
 - script:
   - test -f ${PREFIX}/lib/libncurses.a
   - test -f ${PREFIX}/include/ncurses/curses.h
   - test -f ${PREFIX}/share/terminfo/x/xterm-256color
+  - test ! -f ${PREFIX}/share/terminfo/78/xterm-256color
   - node ${PREFIX}/bin/clear -V -T $TERM   # This should print the ncurses version
   requirements:
     build:
     - nodejs
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.gnu.org/software/ncurses/
@@ -51,3 +54,4 @@ about:
 extra:
   recipe-maintainers:
   - IsabelParedes
+  - ianthomas23
