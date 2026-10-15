@@ -1,0 +1,48 @@
+context:
+  name: libgd
+  version: 2.3.3
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/libgd/libgd/releases/download/gd-${{ version }}/libgd-${{ version }}.tar.xz
+  sha256: 3fe822ece20796060af63b7c60acb151e5844204d289da0ce08f8fdf131e5a61
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - libtool
+  - m4
+  - make
+  - gnuconfig
+  host:
+  - libpng-static
+  - zlib-static
+  run:
+  - ${{ pin_compatible('libpng-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+tests:
+- package_contents:
+    files:
+    - include/gd.h
+    - lib/libgd.a
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: GD
+  license_file: COPYING
+  summary: |
+    Dynamic graphics generation tool.
+  homepage: https://github.com/libgd/libgd
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
