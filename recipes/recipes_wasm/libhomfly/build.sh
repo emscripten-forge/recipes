@@ -12,4 +12,3 @@ emconfigure ./configure \
     LDFLAGS="-L${PREFIX}/lib"
 
 emmake make -j8
-emmake make install

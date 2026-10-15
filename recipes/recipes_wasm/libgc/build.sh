@@ -24,8 +24,19 @@ emmake make -j8
 # show all built files
 ls
 
-# run all test executables with node
-find . -name "*.js" -exec node {} \;
+
+
+# iterate over all *.js files in a for loop
+for js_file in $(find . -name "*.js"); do
+    echo "Running $js_file"
+    node "$js_file"
+    # get return code
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        echo "Test $js_file failed with return code $ret"
+        exit $ret
+    fi
+done
 
 # note from DerThorsten
 # tests seem to fail...
