@@ -164,7 +164,7 @@ sed -i '/_NAUTY_check_version()/d' \
   ../../cmake/FindNauty.cmake
 
 echo \
-  "list(APPEND NORMALIZ_LIBRARIES \"$PREFIX/lib/libcocoa.a\")" \
+  "list(APPEND NORMALIZ_LIBRARIES \"$PREFIX/lib/libcocoa.a\" \"$PREFIX/lib/libeanticxx.a\" \"$PREFIX/lib/libeantic.a\")" \
   >> ../../cmake/FindNormaliz.cmake
 
 echo \
