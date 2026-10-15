@@ -2,7 +2,7 @@
 
 We provide openjdk21 and openjdk8 packages in emscripten-forge that allows running unmodified `.jar` executable and java applet serverlessly.
 
-### openjdk21 recipe documentation:
+## openjdk21 recipe documentation:
 
 Create one environment with the JVM, and one with the Emscripten toolchain:
 
@@ -36,7 +36,7 @@ PATH=$PWD/emenv/bin:$PATH ./javaenv/bin/openjdk21-wasm-link -o out/multifilejar.
 | `--opt LEVEL` | emcc optimisation level for the link (default `-O2`). |
 | `--` | Pass everything after it to emcc. |
 
-### Hosting the page
+#### Hosting the page
 
 For this openjdk21 recipe, `SharedArrayBuffer` is needed. It must be served with these two headers:
 
@@ -62,7 +62,7 @@ If you link to `.js` instead of `.html`, no service worker is added. Your page
 must then send the headers itself. None of this applies to
 programs linked with `--node`.
 
-### openjdk8 recipe documentation:
+## openjdk8 recipe documentation:
 
 `openjdk8` runs Java applets in the browser. It can also run plain Java desktop
 programs.
