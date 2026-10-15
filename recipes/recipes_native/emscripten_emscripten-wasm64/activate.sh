@@ -9,3 +9,5 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_WASM_64_ACTIVATED+x} ]; then
     export EMCC_CFLAGS="${EMCC_CFLAGS} -m64"
 
 fi
+
+export HOST="wasm64-unknown-emscripten" 
