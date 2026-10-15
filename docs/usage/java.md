@@ -19,7 +19,7 @@ PATH=$PWD/emenv/bin:$PATH ./javaenv/bin/openjdk21-wasm-link -o out/app.html --ap
 ```
 
 Packing a multi-file jar or a directory is supported, for example
-```
+```bash
 PATH=$PWD/emenv/bin:$PATH ./javaenv/bin/openjdk21-wasm-link -o out/multifilejar.html --app .
 ./multifilejardir --arg -jar --arg /app/multifilejardir/jarsdir/jarexecutable.jar
 ```
