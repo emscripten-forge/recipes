@@ -13,6 +13,8 @@ if [[ "$target_platform" == "emscripten-wasm32" ]]; then
 
 elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
        export LDFLAGS="${LDFLAGS} -m64"
+       export CFLAGS="${CFLAGS} -m64"
+       export CXXFLAGS="${CXXFLAGS} -m64"
 else
     echo "Unsupported target_platform: $target_platform"
     exit 1
