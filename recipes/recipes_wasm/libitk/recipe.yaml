@@ -1,0 +1,91 @@
+context:
+  name: libitk
+  version: "5.4.7"
+  major_minor: ${{ version[0:3] }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/InsightSoftwareConsortium/ITK/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c953ad7957c481dbb17cfebf03fc61e5252b2be7ccf6757d1234b48ac99914f8
+  patches:
+  - patches/0001-emscripten-synchronous-thread-logger.patch
+  - patches/0002-emscripten-drop-process-object-thread-id.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - libzlib-static
+  - libpng-static
+  - jpeg-static
+  - libtiff-static
+  - libexpat-static
+  - libexpat-dev
+  run:
+  - ${{ pin_compatible('libzlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libpng-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('jpeg-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libtiff-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libexpat-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    files:
+    - include/ITK-${{ major_minor }}/itkImage.h
+    - include/ITK-${{ major_minor }}/itkNumericTraits.h
+    - lib/libITKCommon-${{ major_minor }}.a
+    - lib/libITKIOImageBase-${{ major_minor }}.a
+    - lib/libITKIOPNG-${{ major_minor }}.a
+    - lib/libITKIOTIFF-${{ major_minor }}.a
+    - lib/libITKIOJPEG-${{ major_minor }}.a
+    - lib/libITKIOGDCM-${{ major_minor }}.a
+    - lib/libITKIOHDF5-${{ major_minor }}.a
+    - lib/cmake/ITK-${{ major_minor }}/ITKConfig.cmake
+    - lib/cmake/ITK-${{ major_minor }}/UseITK.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - nodejs
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+# No --allow-pthread: patches/0001 and patches/0002 remove the std::thread and
+# std::this_thread uses that left pthread symbols in libITKCommon.
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://www.itk.org/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Insight Toolkit (ITK) — multidimensional image analysis toolkit
+  description: |
+    The Insight Toolkit (ITK) is an open-source, cross-platform toolkit for
+    N-dimensional scientific image processing, segmentation and registration.
+    Built as static libraries for the emscripten-wasm32 and emscripten-wasm64
+    platforms, with system zlib/libpng/libjpeg/libtiff/libexpat and ITK's
+    vendored Eigen, HDF5, GDCM and OpenJPEG.
+  documentation: https://docs.itk.org/
+  repository: https://github.com/InsightSoftwareConsortium/ITK
+
+extra:
+  recipe-maintainers:
+  - Copilot
