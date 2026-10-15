@@ -1,15 +1,16 @@
 context:
-  name: r-usethis
+  name: usethis
   version: 3.2.1
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 45bc39d35b0cc2ef7dfe03c488a05c0bac62b498a3d16f745b757e4fba772b77
   patches:
   - patches/0001-Remove-dependency-of-curl.patch
@@ -17,7 +18,7 @@ source:
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   noarch: generic
   script: $R CMD INSTALL $R_ARGS .
 
@@ -80,26 +81,32 @@ requirements:
   - r-yaml
 
 tests:
+# Pure R / noarch package, no shared library
 - package_contents:
     files:
-    - lib/R/library/${{ name[2:] }}/DESCRIPTION
-- script: run_r_test
+    - lib/R/library/${{ name }}/DESCRIPTION
+- script:
+  - run_r_test test_${{ name }}.R
   files:
     recipe:
-    - test-r-usethis.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
 
 about:
   homepage: https://usethis.r-lib.org
+  repository: https://github.com/r-lib/usethis
   license: MIT
-  summary: Automate package and project setup tasks that are otherwise performed manually. This
-    includes setting up unit testing, test coverage, continuous integration, Git, 'GitHub',
-    licenses, 'Rcpp', 'RStudio' projects, and more.
   license_family: MIT
   license_file: LICENSE
+  summary: Automate Package and Project Setup
+  description: |
+    Automate package and project setup tasks that are otherwise performed
+    manually. This includes setting up unit testing, test coverage, continuous
+    integration, Git, 'GitHub', licenses, 'Rcpp', 'RStudio' projects, and more.
 
 extra:
   recipe-maintainers:
   - rgaiacs
+  - IsabelParedes
