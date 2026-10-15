@@ -1,0 +1,73 @@
+context:
+  name: ggml
+  version: 0.26.0
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ggml-org/ggml/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3db46896650440531f03fd5b6f29b4dbf4f5b0a4157e6f4be4786a12d8545971
+  patches:
+  - patches/0001-add-emscripten-webgpu-interface-options.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    include:
+    - ggml.h
+    - ggml-backend.h
+    - ggml-cpu.h
+    - ggml-webgpu.h
+    lib:
+    - libggml.a
+    - libggml-base.a
+    - libggml-cpu.a
+    - libggml-webgpu.a
+    files:
+    - lib/cmake/ggml/ggml-config.cmake
+    - lib/pkgconfig/ggml.pc
+
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - nodejs
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/ggml-org/ggml
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Tensor library for machine learning, with the CPU and WebGPU backends
+  description: |
+    Tensor library for machine learning.
+  documentation: https://github.com/ggml-org/ggml/tree/master/docs
+  repository: https://github.com/ggml-org/ggml
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

@@ -1,0 +1,64 @@
+context:
+  name: RcppTOML
+  version: 0.2.3
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 2ed594253c562bef7065e67d791197f61b221e545206a1b3598d46868cf5926f
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  - r-rcpp >=0.11.5
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp >=0.11.5
+  run:
+  - r-rcpp >=0.11.5
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://dirk.eddelbuettel.com/code/rcpp.toml.html
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  license_family: GPL
+  summary: Rcpp Bindings to Parser for "Tom's Obvious Markup Language"
+  description: |
+    The configuration format defined by 'TOML' (which expands to "Tom's Obvious
+    Markup Language") specifies an excellent format (described at
+    <https://toml.io/en/>) suitable for both human editing as well as the common
+    uses of a machine-readable format. This package uses 'Rcpp' to connect the
+    'cpptoml' parser written by Chase Geigle (in C++11) to R.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes
