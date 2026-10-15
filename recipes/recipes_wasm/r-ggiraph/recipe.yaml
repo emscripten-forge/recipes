@@ -1,21 +1,22 @@
 context:
+  name: ggiraph
   version: 0.9.6
-  name: r-ggiraph
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/ggiraph_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/ggiraph_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 715f1ef27f0e3ab7775c90684ce8932aa0739ba2a2103713eb0a20eac1b7b645
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
-  script: build.sh
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -37,7 +38,7 @@ requirements:
   host:
   - r-base ==${{ r_base }}
   - libpng-static
-  - zlib-static
+  - libzlib-static
   - r-cli
   - r-dplyr
   - r-gdtools >=0.5.0
@@ -51,6 +52,8 @@ requirements:
   - r-s7 >=0.2.0
   - r-systemfonts >=1.3.1
   - r-vctrs
+  # Nested dep
+  - r-haven
   run:
   - r-cli
   - r-dplyr
@@ -69,17 +72,19 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/ggiraph/libs/ggiraph.so
-- script: RTESTER_MOUNT_FONTS=1 run_r_test test-ggiraph.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - RTESTER_MOUNT_FONTS=1 run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test-ggiraph.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
     run:
     - r-ggformula >=1.0.1
-    - zlib-static
 
 about:
   homepage: https://davidgohel.github.io/ggiraph/
@@ -88,6 +93,7 @@ about:
   license_file:
   - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
   summary: Make ggplot2 graphics interactive
+  description: Create interactive 'ggplot2' graphics using 'htmlwidgets'.
 
 extra:
   recipe-maintainers:
