@@ -1,0 +1,65 @@
+context:
+  version: 10.8.12
+
+package:
+  name: passagemath-polymake
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-polymake/passagemath_polymake-${{ version }}.tar.gz
+  sha256: f1c5040d8484cebf7eb2185171db07dda784d85ebdf46efff7f72de5a51a7082
+
+build:
+  script: |
+    export PATH="$BUILD_PREFIX/bin:$PATH"
+    ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python
+  - polymake
+  run:
+  - python
+  - polymake
+  - passagemath-categories
+  - passagemath-environment
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_polymake.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Polyhedral geometry with polymake'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to polymake.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_polymake.py
+  recipe-maintainers:
+  - mkoeppe
