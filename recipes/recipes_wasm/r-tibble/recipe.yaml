@@ -13,7 +13,7 @@ source:
   sha256: fb309f8a1939021b237c7e85ff7ad6e8ff5acd57a6230d220a452094b492b28f
 
 build:
-  number: 4
+  number: 0
   # Dependencies not yet available for R 4.6.0 on conda-forge
   skip: ${{ r_base == '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
@@ -38,11 +38,7 @@ requirements:
   - r-pkgconfig
   - r-rlang
   - r-vctrs
-  # NOTE: these are only needed so that rattler-build can build all R packages
-  # in the correct order.
-  # nested dependencies or r-vctrs
   - r-glue
-  # nested dependencies of r-pillar
   - r-ellipsis
   - r-utf8
   run:
@@ -59,6 +55,10 @@ tests:
     lib:
     - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
 
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   homepage: https://tibble.tidyverse.org/
   license: MIT
