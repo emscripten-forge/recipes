@@ -1,0 +1,762 @@
+From 734a08bb25dfbd5908a4a00a82055344a254d393 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 15 Oct 2026 19:04:35 +0200
+Subject: [PATCH] Disable multi-threading
+
+---
+ R/vroom.R                           |  11 +-
+ src/altrep.cc                       |   1 -
+ src/delimited_index.cc              | 210 ++++++++--------------------
+ src/delimited_index_connection.cc   |  74 ++++------
+ src/fixed_width_index_connection.cc |  53 +++----
+ src/parallel.h                      |  57 +-------
+ src/vroom_write.cc                  | 108 +++-----------
+ 7 files changed, 132 insertions(+), 382 deletions(-)
+
+diff --git a/R/vroom.R b/R/vroom.R
+index 600b1c0..00321c8 100644
+--- a/R/vroom.R
++++ b/R/vroom.R
+@@ -457,16 +457,7 @@ guess_delim <- function(lines, delims = c(",", "\t", " ", "|", ":", ";")) {
+ cached <- new.env(parent = emptyenv())
+ 
+ vroom_threads <- function() {
+-  res <- as.integer(
+-    Sys.getenv(
+-      "VROOM_THREADS",
+-      cached$num_threads <- cached$num_threads %||% parallel::detectCores()
+-    )
+-  )
+-  if (is.na(res) || res <= 0) {
+-    res <- 1
+-  }
+-  res
++  1L
+ }
+ 
+ #' Show which column types are using Altrep
+diff --git a/src/altrep.cc b/src/altrep.cc
+index 606aa1b..1cb3b60 100644
+--- a/src/altrep.cc
++++ b/src/altrep.cc
+@@ -12,7 +12,6 @@
+ 
+ #include <cpp11/sexp.hpp>
+ #include <sstream>
+-#include <thread>
+ 
+ [[cpp11::register]] void force_materialization(SEXP x) {
+   // Note: vroom_lgl has no ALTREP implementation, so not included
+diff --git a/src/delimited_index.cc b/src/delimited_index.cc
+index 250943d..3089e5c 100644
+--- a/src/delimited_index.cc
++++ b/src/delimited_index.cc
+@@ -1,7 +1,5 @@
+ #include "delimited_index.h"
+ 
+-#include "parallel.h"
+-
+ #include "multi_progress.h"
+ #include <exception>
+ #include <fstream>
+@@ -100,22 +98,12 @@ delimited_index::delimited_index(
+ 
+   delim_len_ = delim_.length();
+ 
+-  size_t first_nl, second_nl;
++  size_t first_nl;
+   newline_type nl;
+   std::tie(first_nl, nl) = find_next_newline(
+       mmap_, start, comment_, skip_empty_rows, has_quoted_newlines, quote);
+ 
+-  std::tie(second_nl, std::ignore) = find_next_newline(
+-      mmap_,
+-      first_nl + 1,
+-      comment,
+-      skip_empty_rows,
+-      has_quoted_newlines,
+-      quote);
+-
+-  size_t one_row_size = second_nl - first_nl;
+-  size_t guessed_rows =
+-      one_row_size > 0 ? (file_size - first_nl) / (one_row_size * 1.1) : 0;
++  (void)use_threads;
+ 
+   std::unique_ptr<multi_progress> pb = nullptr;
+ 
+@@ -131,154 +119,76 @@ delimited_index::delimited_index(
+ 
+   bool nmax_set = n_max != static_cast<size_t>(-1);
+ 
++  num_threads = 1;
+   if (nmax_set) {
+     n_max = n_max + has_header_;
+-    num_threads = 1;
+   }
+ 
+-  // We want at least 10 lines per batch, otherwise threads aren't really
+-  // useful
+-  size_t batch_size = file_size / num_threads;
+-  size_t line_size = second_nl - first_nl;
++  idx_ = std::vector<idx_t>(num_threads + 1);
+ 
+-  if (batch_size < line_size * 10) {
+-    num_threads = 1;
++  // Index the first row
++  size_t num_delims = 0;
++  csv_state state = RECORD_START;
++  size_t lines_read = index_region(
++      mmap_,
++      idx_[0],
++      delim_.c_str(),
++      nl,
++      quote,
++      comment_,
++      skip_empty_rows,
++      state,
++      start,
++      first_nl + 1,
++      0,
++      n_max,
++      num_delims,
++      0,
++      errors,
++      pb,
++      num_threads,
++      -1);
++  if (idx_[0].size() > 0) {
++    columns_ = idx_[0].size() - 1;
+   }
+ 
+-start_indexing:
+-
+-  try {
+-
+-    idx_ = std::vector<idx_t>(num_threads + 1);
+-
+-    // Index the first row
+-    size_t num_delims = 0;
+-    csv_state state = RECORD_START;
+-    size_t lines_read = index_region(
+-        mmap_,
+-        idx_[0],
+-        delim_.c_str(),
+-        nl,
+-        quote,
+-        comment_,
+-        skip_empty_rows,
+-        state,
+-        start,
+-        first_nl + 1,
+-        0,
+-        n_max,
+-        num_delims,
+-        0,
+-        errors,
+-        pb,
+-        num_threads,
+-        -1);
+-    if (idx_[0].size() > 0) {
+-      columns_ = idx_[0].size() - 1;
+-    }
+-
+-    std::vector<std::future<void>> threads;
+-
+-    if (num_threads == 1) {
+-      threads.emplace_back(std::async(std::launch::async, [&] {
+-        n_max = n_max > lines_read ? n_max - lines_read : 0;
+-        index_region(
+-            mmap_,
+-            idx_[1],
+-            delim_.c_str(),
+-            nl,
+-            quote,
+-            comment_,
+-            skip_empty_rows,
+-            state,
+-            first_nl + 1,
+-            file_size,
+-            0,
+-            n_max,
+-            num_delims,
+-            columns_,
+-            errors,
+-            pb,
+-            num_threads,
+-            file_size / 100);
+-      }));
+-    } else {
+-      threads = parallel_for(
+-          file_size - first_nl,
+-          [&](size_t start, size_t end, size_t id) {
+-            newline_type nl;
+-            idx_[id + 1].reserve((guessed_rows / num_threads) * columns_);
+-            std::tie(start, nl) = find_next_newline(
+-                mmap_,
+-                first_nl + start,
+-                comment,
+-                skip_empty_rows,
+-                /* has_quote */ false,
+-                quote);
+-            ++start;
+-            std::tie(end, std::ignore) = find_next_newline(
+-                mmap_,
+-                first_nl + end,
+-                comment,
+-                skip_empty_rows,
+-                /* has_quote */ false,
+-                quote);
+-            ++end;
+-            size_t num_delims = 0;
+-            csv_state state = RECORD_START;
+-            index_region(
+-                mmap_,
+-                idx_[id + 1],
+-                delim_.c_str(),
+-                nl,
+-                quote,
+-                comment_,
+-                skip_empty_rows,
+-                state,
+-                start,
+-                end,
+-                0,
+-                n_max,
+-                num_delims,
+-                columns_,
+-                errors,
+-                pb,
+-                num_threads,
+-                file_size / 100);
+-          },
+-          num_threads,
+-          use_threads,
+-          false);
+-    }
++  n_max = n_max > lines_read ? n_max - lines_read : 0;
++  index_region(
++      mmap_,
++      idx_[1],
++      delim_.c_str(),
++      nl,
++      quote,
++      comment_,
++      skip_empty_rows,
++      state,
++      first_nl + 1,
++      file_size,
++      0,
++      n_max,
++      num_delims,
++      columns_,
++      errors,
++      pb,
++      num_threads,
++      file_size / 100);
+ 
+-    if (progress_) {
++  if (progress_) {
+ #ifndef VROOM_STANDALONE
+-      pb->display_progress();
++    pb->display_progress();
+ #endif
+-    }
++  }
+ 
+-    for (auto& t : threads) {
+-      t.get();
++  // If we finish indexing a file and we're in QUOTED_FIELD, warn about an
++  // unclosed quote.
++  if (state == QUOTED_FIELD) {
++    errors->add_parse_error(
++        file_size, num_delims, "closing quote", "end of file");
++    // Finalize the current record so we don't lose all data
++    if (columns_ > 0) {
++      resolve_columns(file_size, num_delims, columns_, idx_[1], errors);
+     }
+-
+-    // If we finish indexing a file and we're in QUOTED_FIELD, warn about an
+-    // unclosed quote. This only applies to single-threaded indexing, where
+-    // state flows through the entire file. Multi-threaded indexing throws
+-    // newline_error as soon as a newline is seen inside QUOTED_FIELD.
+-    if (num_threads == 1 && state == QUOTED_FIELD) {
+-      errors->add_parse_error(
+-          file_size, num_delims, "closing quote", "end of file");
+-      // Finalize the current record so we don't lose all data
+-      if (columns_ > 0) {
+-        resolve_columns(file_size, num_delims, columns_, idx_[1], errors);
+-      }
+-      idx_[1].push_back(file_size);
+-    }
+-
+-  } catch (newline_error& e) {
+-    num_threads = 1;
+-    errors->clear();
+-    goto start_indexing;
++    idx_[1].push_back(file_size);
+   }
+   size_t total_size = std::accumulate(
+       idx_.begin(), idx_.end(), std::size_t{0}, [](size_t sum, const idx_t& v) {
+diff --git a/src/delimited_index_connection.cc b/src/delimited_index_connection.cc
+index ef88ee3..fad62e7 100644
+--- a/src/delimited_index_connection.cc
++++ b/src/delimited_index_connection.cc
+@@ -4,9 +4,7 @@
+ 
+ #include "connection.h"
+ 
+-#include <atomic>
+ #include <fstream>
+-#include <future> // std::async, std::future
+ #include <numeric>
+ #include <sstream>
+ 
+@@ -173,54 +171,42 @@ delimited_index_connection::delimited_index_connection(
+       sz);
+ 
+   size_t total_read = 0;
+-  std::future<void> parse_fut;
+-  std::future<void> write_fut;
+   // We don't actually want any progress bar, so just pass a dummy one.
+ 
+-  std::atomic<bool> write_error(false);
++  bool write_error = false;
+ 
+   while (sz > 0) {
+-    if (parse_fut.valid()) {
+-      parse_fut.wait();
+-    }
+     n_max = n_max > lines_read ? n_max - lines_read : 0;
+ 
+     if (n_max > 0) {
+-      parse_fut = std::async([&, i, sz, first_nl, total_read] {
+-        lines_read = index_region(
+-            buf[i],
+-            idx_[1],
+-            delim_.c_str(),
+-            nl,
+-            quote,
+-            comment_,
+-            skip_empty_rows,
+-            state,
+-            first_nl + 1,
+-            sz,
+-            total_read,
+-            n_max,
+-            num_delims,
+-            columns_,
+-            errors,
+-            empty_pb,
+-            1,
+-            -1);
+-      });
++      lines_read = index_region(
++          buf[i],
++          idx_[1],
++          delim_.c_str(),
++          nl,
++          quote,
++          comment_,
++          skip_empty_rows,
++          state,
++          first_nl + 1,
++          sz,
++          total_read,
++          n_max,
++          num_delims,
++          columns_,
++          errors,
++          empty_pb,
++          1,
++          -1);
+     }
+ 
+-    if (write_fut.valid()) {
+-      write_fut.wait();
+-      if (n_max == 0) {
+-        break;
+-      }
++    size_t written = std::fwrite(buf[i].data(), sizeof(char), sz, out);
++    if (written != sz) {
++      write_error = true;
++    }
++    if (n_max == 0) {
++      break;
+     }
+-    write_fut = std::async([&, i, sz] {
+-      size_t written = std::fwrite(buf[i].data(), sizeof(char), sz, out);
+-      if (written != sz) {
+-        write_error.store(true);
+-      }
+-    });
+ 
+     if (progress_) {
+       pb->tick(sz);
+@@ -239,12 +225,6 @@ delimited_index_connection::delimited_index_connection(
+ 
+     // SPDLOG_DEBUG("first_nl_loc: {0} size: {1}", first_nl, sz);
+   }
+-  if (parse_fut.valid()) {
+-    parse_fut.wait();
+-  }
+-  if (write_fut.valid()) {
+-    write_fut.wait();
+-  }
+ 
+   // If we finish indexing a connection and we're in QUOTED_FIELD, warn about
+   // an unclosed quote
+@@ -262,7 +242,7 @@ delimited_index_connection::delimited_index_connection(
+   }
+ 
+   // Check for write errors before closing
+-  bool had_write_error = write_error.load() || std::ferror(out);
++  bool had_write_error = write_error || std::ferror(out);
+   std::fclose(out);
+ 
+   if (had_write_error) {
+diff --git a/src/fixed_width_index_connection.cc b/src/fixed_width_index_connection.cc
+index 5110ffd..6216cc0 100644
+--- a/src/fixed_width_index_connection.cc
++++ b/src/fixed_width_index_connection.cc
+@@ -6,9 +6,7 @@
+ #include "r_utils.h"
+ #include "unicode_fopen.h"
+ #include <array>
+-#include <atomic>
+ #include <fstream>
+-#include <future> // std::async, std::future
+ #include <sstream>
+ #include <utility>
+ 
+@@ -95,49 +93,37 @@ fixed_width_index_connection::fixed_width_index_connection(
+   }
+ 
+   size_t total_read = 0;
+-  std::future<void> parse_fut;
+-  std::future<void> write_fut;
+   size_t lines_read = 0;
+   size_t lines_remaining = n_max;
+   std::unique_ptr<RProgress::RProgress> empty_pb = nullptr;
+ 
+-  std::atomic<bool> write_error(false);
++  bool write_error = false;
+ 
+   if (n_max > 0) {
+     newlines_.push_back(start - 1);
+   }
+ 
+   while (sz > 0) {
+-    if (parse_fut.valid()) {
+-      parse_fut.wait();
+-    }
+     if (lines_read >= lines_remaining) {
+       break;
+     }
+     lines_remaining -= lines_read;
+ 
+-    parse_fut = std::async([&, i, start, total_read, sz] {
+-      lines_read = index_region(
+-          buf[i],
+-          newlines_,
+-          start,
+-          sz,
+-          total_read,
+-          comment,
+-          skip_empty_rows,
+-          lines_remaining,
+-          empty_pb);
+-    });
+-
+-    if (write_fut.valid()) {
+-      write_fut.wait();
++    lines_read = index_region(
++        buf[i],
++        newlines_,
++        start,
++        sz,
++        total_read,
++        comment,
++        skip_empty_rows,
++        lines_remaining,
++        empty_pb);
++
++    size_t written = std::fwrite(buf[i].data(), sizeof(char), sz, out);
++    if (written != sz) {
++      write_error = true;
+     }
+-    write_fut = std::async([&, i, sz] {
+-      size_t written = std::fwrite(buf[i].data(), sizeof(char), sz, out);
+-      if (written != sz) {
+-        write_error.store(true);
+-      }
+-    });
+ 
+     if (progress) {
+       pb->tick(sz);
+@@ -156,19 +142,12 @@ fixed_width_index_connection::fixed_width_index_connection(
+     SPDLOG_DEBUG("first_nl_loc: {0} size: {1}", start, sz);
+   }
+ 
+-  if (parse_fut.valid()) {
+-    parse_fut.wait();
+-  }
+-  if (write_fut.valid()) {
+-    write_fut.wait();
+-  }
+-
+   if (should_close) {
+     cpp11::package("base")["close"](in);
+   }
+ 
+   // Check for write errors before closing
+-  bool had_write_error = write_error.load() || std::ferror(out);
++  bool had_write_error = write_error || std::ferror(out);
+   std::fclose(out);
+ 
+   if (had_write_error) {
+diff --git a/src/parallel.h b/src/parallel.h
+index 3deddc3..90d8a13 100644
+--- a/src/parallel.h
++++ b/src/parallel.h
+@@ -1,9 +1,7 @@
+ #pragma once
+ 
+-#include <algorithm>
+ #include <functional>
+ #include <future>
+-#include <thread>
+ #include <vector>
+ 
+ // adapted from https://stackoverflow.com/a/49188371/2055486
+@@ -17,7 +15,7 @@
+ ///     for(int i = start; i < end; ++i)
+ ///         computation(i);
+ /// @endcode
+-/// @param use_threads : enable / disable threads.
++/// @param use_threads : enable / disable threads (ignored; always serial).
+ ///
+ ///
+ static std::vector<std::future<void>> parallel_for(
+@@ -27,54 +25,11 @@ static std::vector<std::future<void>> parallel_for(
+     bool use_threads = true,
+     bool cleanup = true) {
+ 
+-#if !defined __APPLE__ && defined _LIBCPP_VERSION
+-  nb_threads = 1;
+-#endif
++  (void)nb_threads;
++  (void)use_threads;
++  (void)cleanup;
+ 
+-  if (nb_threads == 1) {
+-    use_threads = false;
+-  }
++  functor(0, nb_elements, 0);
+ 
+-  size_t batch_size = nb_elements / nb_threads;
+-
+-  size_t batch_remainder = nb_elements % nb_threads;
+-
+-  auto my_threads = std::vector<std::future<void>>(nb_threads);
+-
+-  if (use_threads) {
+-    // Multithread execution
+-    for (size_t i = 0; i < (nb_threads - 1); ++i) {
+-      size_t start = i * batch_size;
+-      my_threads[i] =
+-          std::async(std::launch::async, functor, start, start + batch_size, i);
+-    }
+-
+-    // Last batch includes the remainder
+-    size_t start = (nb_threads - 1) * batch_size;
+-    my_threads[nb_threads - 1] = std::async(
+-        std::launch::async,
+-        functor,
+-        start,
+-        start + batch_size + batch_remainder,
+-        nb_threads - 1);
+-  } else {
+-    // Single thread execution (for easy debugging)
+-    for (size_t i = 0; i < (nb_threads - 1); ++i) {
+-      size_t start = i * batch_size;
+-      functor(start, start + batch_size, i);
+-    }
+-    // Last batch includes the remainder
+-    size_t start = (nb_threads - 1) * batch_size;
+-    functor(start, start + batch_size + batch_remainder, nb_threads - 1);
+-
+-    return std::vector<std::future<void>>();
+-  }
+-
+-  // Wait for the other thread to finish their task
+-  if (use_threads && cleanup) {
+-    for (auto& t : my_threads) {
+-      t.get();
+-    }
+-  }
+-  return my_threads;
++  return std::vector<std::future<void>>();
+ }
+diff --git a/src/vroom_write.cc b/src/vroom_write.cc
+index 4658892..1e3f563 100644
+--- a/src/vroom_write.cc
++++ b/src/vroom_write.cc
+@@ -1,7 +1,5 @@
+ #include "grisu3.h"
+-#include <array>
+ #include <functional>
+-#include <future>
+ #include <iterator>
+ 
+ #include <cpp11/R.hpp>
+@@ -332,17 +330,11 @@ void vroom_write_out(
+     bool progress,
+     size_t buf_lines) {
+ 
++  (void)num_threads;
++
+   size_t begin = 0;
+   size_t num_rows = Rf_xlength(input[0]);
+ 
+-  std::array<std::vector<std::future<std::vector<char>>>, 2> futures;
+-  futures[0].resize(num_threads);
+-  futures[1].resize(num_threads);
+-
+-  std::future<size_t> write_fut;
+-
+-  int idx = 0;
+-
+   auto types = get_types(input);
+   auto ptrs = get_ptrs(input);
+ 
+@@ -363,50 +355,19 @@ void vroom_write_out(
+   }
+ 
+   while (begin < num_rows) {
+-    size_t t = 0;
+-    while (t < num_threads && begin < num_rows) {
+-      auto num_lines = std::min(buf_lines, num_rows - begin);
+-      auto end = begin + num_lines;
+-      futures[idx][t++] = std::async(
+-          fill_buf,
+-          std::cref(input),
+-          delim,
+-          eol,
+-          na_str,
+-          options,
+-          types,
+-          ptrs,
+-          begin,
+-          end);
+-      begin += num_lines;
+-    }
+-
+-    if (write_fut.valid()) {
+-      auto sz = write_fut.get();
+-      if (progress) {
+-        pb->tick(sz);
+-      }
++    auto num_lines = std::min(buf_lines, num_rows - begin);
++    auto end = begin + num_lines;
++    auto buf = fill_buf(
++        input, delim, eol, na_str, options, types, ptrs, begin, end);
++    write_buf(buf, out);
++    if (progress) {
++      pb->tick(buf.size());
+     }
+-
+-    write_fut = std::async([&, idx, t] {
+-      size_t sz = 0;
+-      for (size_t i = 0; i < t; ++i) {
+-        auto buf = futures[idx][i].get();
+-        write_buf(buf, out);
+-        sz += buf.size();
+-      }
+-      return sz;
+-    });
+-
+-    idx = (idx + 1) % 2;
++    begin += num_lines;
+   }
+ 
+-  // Wait for the last writing to finish
+-  if (write_fut.valid()) {
+-    static_cast<void>(write_fut.get());
+-    if (progress) {
+-      pb->update(1);
+-    }
++  if (progress) {
++    pb->update(1);
+   }
+ }
+ 
+@@ -473,6 +434,8 @@ void vroom_write_out(
+     strcpy(mode, "ab");
+   }
+ 
++  (void)num_threads;
++
+   size_t begin = 0;
+   size_t num_rows = Rf_xlength(input[0]);
+ 
+@@ -485,14 +448,6 @@ void vroom_write_out(
+ 
+   bool should_close = should_open;
+ 
+-  std::array<std::vector<std::future<std::vector<char>>>, 2> futures;
+-  futures[0].resize(num_threads);
+-  futures[1].resize(num_threads);
+-
+-  std::future<size_t> write_fut;
+-
+-  int idx = 0;
+-
+   auto types = get_types(input);
+   auto ptrs = get_ptrs(input);
+ 
+@@ -508,34 +463,15 @@ void vroom_write_out(
+   }
+ 
+   while (begin < num_rows) {
+-    size_t t = 0;
+-    while (t < num_threads && begin < num_rows) {
+-      auto num_lines = std::min(buf_lines, num_rows - begin);
+-      auto end = begin + num_lines;
+-      futures[idx][t++] = std::async(
+-          fill_buf,
+-          std::cref(input),
+-          delim,
+-          eol,
+-          na_str,
+-          options,
+-          types,
+-          ptrs,
+-          begin,
+-          end);
+-      begin += num_lines;
+-    }
+-
+-    for (size_t i = 0; i < t; ++i) {
+-      auto buf = futures[idx][i].get();
+-      write_buf_con(buf, con_, is_stdout);
+-      auto sz = buf.size();
+-      if (progress) {
+-        pb->tick(sz);
+-      }
++    auto num_lines = std::min(buf_lines, num_rows - begin);
++    auto end = begin + num_lines;
++    auto buf = fill_buf(
++        input, delim, eol, na_str, options, types, ptrs, begin, end);
++    write_buf_con(buf, con_, is_stdout);
++    if (progress) {
++      pb->tick(buf.size());
+     }
+-
+-    idx = (idx + 1) % 2;
++    begin += num_lines;
+   }
+ 
+   if (progress) {
+-- 
+2.56.0
+

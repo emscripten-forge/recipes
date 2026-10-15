@@ -1,21 +1,23 @@
 context:
+  name: vroom
   version: 1.7.1
-  name: r-vroom
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 7d64f6227fdac3ee64c506654bb1d919e407f92fc2d0d5a2398dbb83001e8790
+  patches:
+  - patches/0001-Disable-multi-threading.patch
 
 build:
-  number: 3
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -72,7 +74,17 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://vroom.r-lib.org/
