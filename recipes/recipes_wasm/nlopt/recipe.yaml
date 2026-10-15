@@ -24,9 +24,10 @@ outputs:
       skip_pyc_compilation:
       - '**/*.py'
 
+
   requirements:
     build:
-    - cross-python_emscripten-wasm32
+    - cross-python_${{ target_platform }}
     - python
     - swig
     - pip
@@ -34,7 +35,7 @@ outputs:
     - cmake
     host:
     - numpy
-    - python
+    - python-dev
     run:
     - numpy
 
@@ -49,8 +50,34 @@ outputs:
       run:
       - pytester-run
 
-# libnlopt lives separately
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+- package:
+    name: libnlopt-static
+    version: ${{ version }}
 
+  build:
+    script: build_static.sh
+
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+
+  tests:
+  - package_contents:
+      files:
+      - include/nlopt.h
+      - lib/libnlopt.a
+      - lib/pkgconfig/nlopt.pc
+
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 about:
   homepage: https://nlopt.readthedocs.io/en/latest/
   repository: https://github.com/stevengj/nlopt
