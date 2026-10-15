@@ -10,6 +10,9 @@ package:
 source:
   url: https://github.com/InsightSoftwareConsortium/ITK/archive/refs/tags/v${{ version }}.tar.gz
   sha256: c953ad7957c481dbb17cfebf03fc61e5252b2be7ccf6757d1234b48ac99914f8
+  patches:
+  - patches/0001-emscripten-synchronous-thread-logger.patch
+  - patches/0002-emscripten-drop-process-object-thread-id.patch
 
 build:
   number: 0
@@ -61,6 +64,8 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+# No --allow-pthread: patches/0001 and patches/0002 remove the std::thread and
+# std::this_thread uses that left pthread symbols in libITKCommon.
 - script: generic-testing
   requirements:
     build:
