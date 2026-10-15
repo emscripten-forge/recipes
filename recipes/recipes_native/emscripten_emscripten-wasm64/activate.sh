@@ -7,7 +7,8 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_WASM_64_ACTIVATED+x} ]; then
 
     # these flags are passed to emcc, so every package built with emcc gets them
     export EMCC_CFLAGS="${EMCC_CFLAGS} -m64"
-
+    export HOST="wasm64-unknown-emscripten" 
+    export CFLAGS="${CFLAGS} -m64"
+    export CXXFLAGS="${CXXFLAGS} -m64"
+    export LDFLAGS="${LDFLAGS} -m64"
 fi
-
-export HOST="wasm64-unknown-emscripten" 
