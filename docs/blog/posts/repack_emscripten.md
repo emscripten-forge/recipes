@@ -1,12 +1,7 @@
----
-date: 2024-05-24
-category:
-    - rust
-    
-authors:
-    - derthorsten
-    - wolfv
----
+```{post} 2024-05-24
+:author: derthorsten, wolfv
+:category: rust
+```
 
 # Emscripten is now a proper package
 

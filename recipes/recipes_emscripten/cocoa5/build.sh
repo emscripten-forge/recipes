@@ -17,7 +17,7 @@ chmod +x configuration/readline-check-cxxflags.sh
 sed -i.bak 's/ret\[i\]=a.vectormultiply(b.column(i));/assert(false);/g' "${PREFIX}/include/gfanlib_matrix.h"
 
 sed -i.bak 's|GSL_LDLIBS=`pkgconf --libs gsl`|GSL_LDLIBS="-lgsl-symlink -L'"${PREFIX}"'/lib -lgslcblas"|g' configure
-sed -i.bak 's|NORMALIZ_LDLIBS=-lnormaliz-symlink|NORMALIZ_LDLIBS="-lnormaliz-symlink -L'"${PREFIX}"'/lib -lnauty -lflint -lmpfr"|g' configure
+sed -i.bak 's|NORMALIZ_LDLIBS=-lnormaliz-symlink|NORMALIZ_LDLIBS="-lnormaliz-symlink -L'"${PREFIX}"'/lib -leanticxx -leantic -lnauty -lflint -lmpfr"|g' configure
 
 sed -i.bak 's/( --with-libntl )/( --with-libntl=* )/g' configure
 sed -i.bak 's@NTL_LIB="/usr/local/lib/libntl.a".*@NTL_LIB=`echo "$option" | cut -f 2- -d=` ;;@g' configure
