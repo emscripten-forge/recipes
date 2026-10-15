@@ -1,20 +1,20 @@
 context:
-  name: r-glmnet
+  name: glmnet
   version: '5.1'
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: a6c23c906806f89a451de30b202e5bf088577f4da260d0b7f8887a7df3f22778
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.x on conda-forge
   skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
@@ -48,23 +48,41 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test test_glmnet.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_glmnet.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://glmnet.stanford.edu
   repository: https://github.com/cran/glmnet
   license: GPL-2.0-only
   license_family: GPL2
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Lasso and Elastic-Net Regularized Generalized Linear Models
+  description: |
+    Extremely efficient procedures for fitting the entire lasso or elastic-net
+    regularization path for linear regression, logistic and multinomial
+    regression models, Poisson regression, Cox model, multiple-response
+    Gaussian, and the grouped multinomial regression; see
+    <doi:10.18637/jss.v033.i01> and <doi:10.18637/jss.v039.i05>. There are two
+    new and important additions. The family argument can be a GLM family object,
+    which opens the door to any programmed family (<doi:10.18637/jss.v106.i01>).
+    This comes with a modest computational cost, so when the built-in families
+    suffice, they should be used instead. The other novelty is the relax option,
+    which refits each of the active sets in the path unpenalized. The algorithm
+    uses cyclical coordinate descent in a path-wise fashion, as described in the
+    papers cited.
 
 extra:
   recipe-maintainers:
   - anutosh491
+  - IsabelParedes
