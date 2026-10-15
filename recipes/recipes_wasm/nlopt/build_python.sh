@@ -10,7 +10,7 @@ export CXXFLAGS="${CXXFLAGS} -fPIC -I${NUMPY_INCLUDE_DIR}"
 
 # Specific variables for cross-compilation
 if [[ "$target_platform" == "emscripten-wasm32" ]]; then
-
+    echo "Building for emscripten-wasm32"
 elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
        export LDFLAGS="${LDFLAGS} -m64"
        export CFLAGS="${CFLAGS} -m64"
