@@ -1,21 +1,21 @@
 context:
-  name: r-forecast
+  name: forecast
   version: 9.0.2
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 86dadffb846903b83fa6471d4e33d29e37435cc492641963a5b1daa925150653
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -72,14 +72,17 @@ requirements:
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
-- script: run_r_test test_forecast.R
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_forecast.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=forecast
@@ -87,7 +90,8 @@ about:
   documentation: https://pkg.robjhyndman.com/forecast/
   license: GPL-2.0-or-later
   license_family: GPL
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: Forecasting Functions for Time Series and Linear Models
   description: |
     Methods and tools for displaying and analysing univariate time series
