@@ -6,7 +6,10 @@ import numpy as np
 
 from mlir.ir import Context, Module
 from mlir.passmanager import PassManager
-from mlir.runtime.np_to_memref import get_ranked_memref_descriptor
+from mlir.runtime.np_to_memref import (
+    get_ranked_memref_descriptor,
+    ranked_memref_to_numpy,
+)
 from mlir.wasm_execution_engine import (
     WasmExecutionEngine,
     target_index_bitwidth,
@@ -58,6 +61,26 @@ def test_target_configuration_is_consistent():
     assert f"wasm{pointer_bits}" in extension_suffix
 
 
+def test_numpy_memref_explicit_index_width():
+    arrays = [
+        np.arange(8, dtype=np.float32),
+        np.arange(24, dtype=np.float32).reshape(4, 6)[::2, ::-2],
+    ]
+    for index_bits, index_type in ((32, ctypes.c_int32), (64, ctypes.c_int64)):
+        for array in arrays:
+            descriptor = get_ranked_memref_descriptor(
+                array, index_bitwidth=index_bits
+            )
+            assert descriptor.shape._type_ is index_type
+            assert list(descriptor.shape) == list(array.shape)
+            assert list(descriptor.strides) == [
+                stride // array.itemsize for stride in array.strides
+            ]
+            np.testing.assert_array_equal(
+                ranked_memref_to_numpy(ctypes.pointer(descriptor)), array
+            )
+
+
 def test_import_parse_and_translate():
     with Context():
         module = Module.parse(
@@ -99,3 +122,47 @@ def test_numpy_memref_execution_and_repeated_linking():
             "scale_by_three", ctypes.pointer(second_descriptor)
         )
         assert second_array.tolist() == [12.0]
+
+
+def test_symbol_lookup_is_scoped_to_module():
+    for opt_level in (0, 3):
+        with Context():
+            engines = [
+                WasmExecutionEngine(
+                    _lower_to_llvm(_scale_module("scale_same_name", factor)),
+                    opt_level=opt_level,
+                )
+                for factor in (2.0, 3.0)
+            ]
+
+        for engine, expected in (
+            (engines[0], 10.0), (engines[1], 15.0), (engines[0], 10.0)
+        ):
+            array = np.array([5.0], dtype=np.float32)
+            descriptor = get_ranked_memref_descriptor(array)
+            engine.invoke("scale_same_name", ctypes.pointer(descriptor))
+            assert array.tolist() == [expected]
+
+
+def test_numpy_rank_zero_memref():
+    for dtype in (np.float32, np.float16, np.complex64):
+        storage = np.arange(4, dtype=dtype)
+        scalar = storage[2:3].reshape(())
+        descriptor = get_ranked_memref_descriptor(scalar)
+        result = ranked_memref_to_numpy(ctypes.pointer(descriptor))
+        assert result.shape == ()
+        assert result.dtype == scalar.dtype
+        np.testing.assert_array_equal(result, scalar)
+        assert np.shares_memory(result, storage)
+        result[...] = 9
+        assert storage[2] == 9
+
+        descriptor.aligned = storage.ctypes.data_as(type(descriptor.aligned))
+        descriptor.offset = 1
+        result = ranked_memref_to_numpy(ctypes.pointer(descriptor))
+        np.testing.assert_array_equal(result, storage[1])
+        assert result.shape == ()
+        assert result.dtype == scalar.dtype
+        assert np.shares_memory(result, storage)
+        result[...] = 7
+        assert storage[1] == 7

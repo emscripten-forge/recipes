@@ -1,0 +1,67 @@
+context:
+  name: isoband
+  version: 0.3.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: fe8d3d58ca75bbee32f389152ac0058818f3f76f09c9867949531de7abc424ac
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - r-cli
+  - r-rlang
+  - r-cpp11
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli
+  - r-rlang
+  - r-cpp11
+  run:
+  - r-cli
+  - r-rlang
+  - r-cpp11
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://isoband.r-lib.org/
+  repository: https://github.com/r-lib/isoband/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: An R package to generate contour lines and polygons.
+  description: |
+    A fast C++ implementation to generate contour lines (isolines) and contour
+    polygons (isobands) from regularly spaced grids containing elevation data.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

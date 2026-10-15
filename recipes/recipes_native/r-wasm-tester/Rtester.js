@@ -94,6 +94,7 @@ const executableName = useRpy ? "RPY" : "R";
 let glue = nodeFs.readFileSync(path.join(rExecDir, executableName), "utf8");
 const envLiteral = JSON.stringify({
   R_HOME: wasmRHome,
+  TZ: "UTC",
   ...(useRpy ? { PYTHONHOME: "/" } : {}),
 });
 glue = glue.replace("var ENV={};", `var ENV=${envLiteral};`);
