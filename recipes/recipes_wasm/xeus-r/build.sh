@@ -2,14 +2,9 @@
 
 set -eux
 
-rm $PREFIX/lib/libz.so* || true
-
 export CFLAGS="-fPIC"
 export CXXFLAGS="-fPIC"
 export LDFLAGS="-L$PREFIX/lib"
-unset DEBUG_CFLAGS
-unset DEBUG_CXXFLAGS
-unset LDFLAGS_LD
 
 # Install r-hera
 $R CMD INSTALL $R_ARGS hera
@@ -27,13 +22,7 @@ if [[ "$R_MAIN_MODULE_STATIC_LIBPYTHON" == "1" ]]; then
     export CMAKE_ARGS="$CMAKE_ARGS -DXEUS_R_LINK_LIBPYTHON=ON"
 else
     export CMAKE_ARGS="$CMAKE_ARGS -DXEUS_R_LINK_LIBPYTHON=OFF"
-fi  
-
-
-# Remove shared libs to force static linking of dependencies 
-rm $PREFIX/lib/libcrypto.so* || true
-rm $PREFIX/lib/libssl.so* || true
-rm $PREFIX/lib/libz.so* || true
+fi
 
 
 # Configure step with Emscripten's emcmake
