@@ -11,7 +11,7 @@ source:
   sha256: 803f5044b13602d58ea378576dd75aa759f52116a0232608e8fdada4da33752e
 
 build:
-  number: 2
+  number: 0
   script: ${PYTHON} -m pip install . ${PIP_ARGS}
 
   files:
@@ -20,13 +20,12 @@ build:
 requirements:
   build:
   - ${{ compiler("c") }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - pip
   - cython
   host:
-  - python
-
+  - python-dev
 tests:
 - script: pytester
   files:
@@ -38,6 +37,10 @@ tests:
     run:
     - pytester-run
 
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   homepage: https://sourceforge.net/projects/ruamel-yaml-clib/
   repository: https://sourceforge.net/p/ruamel-yaml-clib/code/
