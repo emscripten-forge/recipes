@@ -1,0 +1,273 @@
+From: emscripten-forge
+Subject: Hooks for cooperative (single-threaded) runtimes
+
+* X11WasmSetHooks(): a host scheduler can block in XNextEvent, XPeekEvent,
+  XIfEvent, XPeekIfEvent, XMaskEvent and XWindowEvent until input arrives
+  (wait_event), learn about queued events (event_queued) and give the
+  display a pollable connection number.  Without hooks nothing changes.
+* XkbKeycodeToKeysym is declared like XKBlib.h declares it (KeyCode when
+  NeedWidePrototypes is 0).
+---
+diff --git a/include/X11/XlibWasm.h b/include/X11/XlibWasm.h
+index 5d6c17c..5e73d0c 100644
+--- a/include/X11/XlibWasm.h
++++ b/include/X11/XlibWasm.h
+@@ -67,7 +67,13 @@ EXTERN int XSetAccessControl(Display *d, int mode);
+ EXTERN char **XListExtensions(Display *d, int *i);
+ EXTERN Colormap *XListInstalledColormaps(Display *d, Window w, int *i);
+ EXTERN KeySym XKeycodeToKeysym(Display *d, unsigned int k, int i);
+-EXTERN KeySym XkbKeycodeToKeysym(Display *d, unsigned int k, int g, int i);
++EXTERN KeySym XkbKeycodeToKeysym(Display *d,
++#if NeedWidePrototypes
++	unsigned int k,
++#else
++	KeyCode k,
++#endif
++	int g, int i);
+ EXTERN KeySym XStringToKeysym(_Xconst char *c);
+ EXTERN Window XRootWindow(Display *d, int i);
+ EXTERN int XConnectionNumber(Display *d);
+diff --git a/include/X11Wasm/Hooks.h b/include/X11Wasm/Hooks.h
+new file mode 100644
+index 0000000..6e832cf
+--- /dev/null
++++ b/include/X11Wasm/Hooks.h
+@@ -0,0 +1,37 @@
++/*
++ * Hooks.h --
++ *
++ *	Runtime hooks that let a host integrate x11.wasm with its own
++ *	scheduler.  With no hooks installed x11.wasm behaves as before:
++ *	blocking calls such as XNextEvent() return immediately when the
++ *	event queue is empty.
++ */
++
++#ifndef _X11WASM_HOOKS_H
++#define _X11WASM_HOOKS_H
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++typedef struct X11WasmHooks {
++    /* Called (from any context, including JS event handlers) after an
++     * event has been appended to the event queue. */
++    void (*event_queued)(void);
++    /* Called by blocking Xlib calls (XNextEvent, XIfEvent, XMaskEvent,
++     * XWindowEvent, XPeekEvent, XPeekIfEvent) when no matching event is
++     * queued.  Should block until new events may be available or the
++     * timeout (milliseconds, -1 = forever) expires; return 0 to make the
++     * caller re-check the queue, non-zero to make it return at once. */
++    int (*wait_event)(int timeout_ms);
++    /* Value reported by ConnectionNumber()/XConnectionNumber(). */
++    int connection_fd;
++} X11WasmHooks;
++
++void X11WasmSetHooks(const X11WasmHooks *hooks);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* _X11WASM_HOOKS_H */
+diff --git a/ninja/x11wasm.ninja b/ninja/x11wasm.ninja
+index 3f09863..93f139d 100644
+--- a/ninja/x11wasm.ninja
++++ b/ninja/x11wasm.ninja
+@@ -70,7 +70,8 @@ build $x11wasm_xlib_common_deps: phony $
+   $x11wasm_root/include/X11/keysym.h $
+   $x11wasm_root/include/X11/keysymdef.h $
+   $x11wasm_root/include/X11Wasm/Browser.h $
+-  $x11wasm_root/include/X11Wasm/Runtime.h
++  $x11wasm_root/include/X11Wasm/Runtime.h $
++  $x11wasm_root/include/X11Wasm/Hooks.h
+ 
+ build $x11wasm_xlib_objects: phony $
+   $x11wasm_builddir/Alloc.o $
+diff --git a/src/libX11/Event.c b/src/libX11/Event.c
+index 9e5affc..e095871 100644
+--- a/src/libX11/Event.c
++++ b/src/libX11/Event.c
+@@ -325,6 +325,54 @@ BrowserUserQueuedEvent(
+ 	    ? 1 : 0;
+ }
+ 
++
++/*
++ * Runtime hooks (see X11Wasm/Hooks.h).  They let a host with a real
++ * scheduler (for example cooperative threads) block in XNextEvent() and
++ * friends instead of returning immediately with no event.
++ */
++static X11WasmHooks browserHooks;
++
++void
++X11WasmSetHooks(
++    const X11WasmHooks *hooks)
++{
++    if (hooks != NULL) {
++	browserHooks = *hooks;
++    } else {
++	memset(&browserHooks, 0, sizeof(browserHooks));
++    }
++    if (browserDisplayInitialized) {
++	browserDisplay.display.fd = browserHooks.connection_fd;
++    }
++}
++
++int
++X11WasmHookConnectionFd(void)
++{
++    return browserHooks.connection_fd;
++}
++
++void
++X11WasmHookEventQueued(void)
++{
++    if (browserHooks.event_queued != NULL) {
++	browserHooks.event_queued();
++    }
++}
++
++/* Returns 1 if the caller should re-check the queue, 0 to give up. */
++static int
++BrowserWaitForEvent(
++    Display *display)
++{
++    if (browserHooks.wait_event == NULL) {
++	return 0;
++    }
++    (void)XFlush(display);
++    return browserHooks.wait_event(-1) == 0;
++}
++
+ static int
+ BrowserTakeQueuedEventAfterPump(
+     Display *display,
+@@ -398,7 +446,12 @@ XPeekEvent(
+     Display *display,
+     XEvent *event)
+ {
+-    (void)BrowserTakeQueuedEventAfterPump(display, NULL, NULL, 0, event);
++    if (display == NULL) {
++	display = X11WasmGetDisplay(NULL);
++    }
++    while (!BrowserTakeQueuedEventAfterPump(display, NULL, NULL, 0, event)
++	    && BrowserWaitForEvent(display)) {
++    }
+     return Success;
+ }
+ 
+@@ -411,7 +464,9 @@ XNextEvent(
+ 	display = X11WasmGetDisplay(NULL);
+     }
+     BrowserInitDisplay();
+-    (void)BrowserPopEventAfterPump(display, event);
++    while (!BrowserPopEventAfterPump(display, event)
++	    && BrowserWaitForEvent(display)) {
++    }
+     return Success;
+ }
+ 
+@@ -425,8 +480,13 @@ XMaskEvent(
+ 
+     match[0] = (long)None;
+     match[1] = mask;
+-    (void)BrowserTakeQueuedEventAfterPump(display, BrowserWindowMaskQueuedEvent,
+-	    (XPointer)match, 1, event);
++    if (display == NULL) {
++	display = X11WasmGetDisplay(NULL);
++    }
++    while (!BrowserTakeQueuedEventAfterPump(display,
++	    BrowserWindowMaskQueuedEvent, (XPointer)match, 1, event)
++	    && BrowserWaitForEvent(display)) {
++    }
+     return Success;
+ }
+ 
+@@ -503,8 +563,13 @@ XIfEvent(
+ 
+     userPredicate.predicate = predicate;
+     userPredicate.arg = arg;
+-    (void)BrowserTakeQueuedEventAfterPump(display, BrowserUserQueuedEvent,
+-	    (XPointer)&userPredicate, 1, event);
++    if (display == NULL) {
++	display = X11WasmGetDisplay(NULL);
++    }
++    while (!BrowserTakeQueuedEventAfterPump(display, BrowserUserQueuedEvent,
++	    (XPointer)&userPredicate, 1, event)
++	    && BrowserWaitForEvent(display)) {
++    }
+     return Success;
+ }
+ 
+@@ -534,8 +599,13 @@ XPeekIfEvent(
+ 
+     userPredicate.predicate = predicate;
+     userPredicate.arg = arg;
+-    (void)BrowserTakeQueuedEventAfterPump(display, BrowserUserQueuedEvent,
+-	    (XPointer)&userPredicate, 0, event);
++    if (display == NULL) {
++	display = X11WasmGetDisplay(NULL);
++    }
++    while (!BrowserTakeQueuedEventAfterPump(display, BrowserUserQueuedEvent,
++	    (XPointer)&userPredicate, 0, event)
++	    && BrowserWaitForEvent(display)) {
++    }
+     return Success;
+ }
+ 
+@@ -555,6 +625,7 @@ XPutBackEvent(
+     eventQueue[eventQueueHead].internal = 0;
+     eventQueueCount++;
+     BrowserUpdateQueueLength();
++    X11WasmHookEventQueued();
+     return Success;
+ }
+ 
+@@ -569,7 +640,9 @@ XWindowEvent(
+ 	display = X11WasmGetDisplay(NULL);
+     }
+     BrowserInitDisplay();
+-    (void)BrowserPopMatchingEventAfterPump(display, window, mask, event);
++    while (!BrowserPopMatchingEventAfterPump(display, window, mask, event)
++	    && BrowserWaitForEvent(display)) {
++    }
+     return Success;
+ }
+ 
+diff --git a/src/libX11/OpenDis.c b/src/libX11/OpenDis.c
+index a0d3a6a..b42de52 100644
+--- a/src/libX11/OpenDis.c
++++ b/src/libX11/OpenDis.c
+@@ -130,7 +130,7 @@ BrowserInitDisplay(void)
+     state->screen.backing_store = NotUseful;
+     state->screen.save_unders = False;
+ 
+-    state->display.fd = 0;
++    state->display.fd = X11WasmHookConnectionFd();
+     state->display.proto_major_version = X_PROTOCOL;
+     state->display.proto_minor_version = X_PROTOCOL_REVISION;
+     state->display.vendor = (char *)"x11.wasm";
+@@ -316,6 +316,7 @@ BrowserQueueEventInternal(
+     eventQueue[tail].internal = internal;
+     eventQueueCount++;
+     BrowserUpdateQueueLength();
++    X11WasmHookEventQueued();
+     return 1;
+ }
+ 
+diff --git a/src/libX11/XlibInt.h b/src/libX11/XlibInt.h
+index 1c0a8c2..63aa845 100644
+--- a/src/libX11/XlibInt.h
++++ b/src/libX11/XlibInt.h
+@@ -42,6 +42,10 @@
+ #define X11_WASM_COMPOSITION_UPDATE 2
+ #define X11_WASM_COMPOSITION_END 3
+ #define X11_WASM_IME_CONTROL_STATE	((unsigned int)0x80000000U)
++#include <X11Wasm/Hooks.h>
++int X11WasmHookConnectionFd(void);
++void X11WasmHookEventQueued(void);
++
+ #define X11_WASM_MIN_KEYCODE 8
+ #define X11_WASM_MAX_KEYCODE 255
+ #define X11_WASM_SYNTHETIC_KEYCODE_START 128

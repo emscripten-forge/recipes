@@ -1,0 +1,62 @@
+context:
+  name: yarl
+  version: 1.25.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 03dd38de09bc213e9a8b29761eec33ee1d5318dac0e49d8af36e4d27830e23a7
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+  files:
+    exclude:
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler('cxx')}}
+  - cross-python_emscripten-wasm32
+  - python
+  - cython
+  - expandvars
+  host:
+  - python-dev
+  run:
+  - multidict
+  - idna
+  - propcache
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_yarl.py
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/aio-libs/yarl
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Yet another URL library
+  documentation: http://yarl.readthedocs.io
+  repository: https://github.com/aio-libs/yarl
