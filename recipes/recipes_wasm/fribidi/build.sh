@@ -3,7 +3,6 @@
 set -ex
 
 export CFLAGS="$CFLAGS -fPIC"
-export LDFLAGS="$LDFLAGS -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=1MB"
 
 meson_setup_args=(
     -Ddocs=false
@@ -16,6 +15,6 @@ meson setup builddir \
     --prefix=$PREFIX \
     --buildtype=release \
     --prefer-static \
-    --cross-file=$RECIPE_DIR/emscripten.meson.cross
+    --cross-file=$MESON_CROSS_FILE
 
 meson install -C builddir
