@@ -1,0 +1,53 @@
+context:
+  version: 23.1.2
+  build_number: 0
+
+package:
+  name: clangd
+  version: ${{ version }}
+
+source:
+  # llvmorg-23.1.2: 85ac560262434c9ccfc0c183ec22d4138ed647fb
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
+  sha256: 75788d759e6987a910975b902f554dc77c08b076b945b2cebde54116d8e831ca
+
+build:
+  number: ${{ build_number }}
+  string: h${{ hash }}_${{ build_number }}_threads
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake >=4.3.3,<4.4
+  - make
+  - llvm-tblgen ==${{ version }}
+
+tests:
+- package_contents:
+    files:
+      exists:
+      - bin/clangd.js
+      - bin/clangd.wasm
+      not_exists:
+      - '**/*.a'
+      - '**/*.so*'
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: LICENSE.TXT
+  homepage: https://clangd.llvm.org
+  summary: Clang language server for WebAssembly, with pthread support.
+
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
+  recipe-maintainers:
+  - anutosh491

@@ -1,0 +1,93 @@
+context:
+  name: lme4
+  version: 2.0-6
+
+package:
+  name: r-${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 3e503bc10626ad62804c80a82237147b1296d93c18d88946554c29075af917f7
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-mass
+  - r-matrix
+  - r-rdpack
+  - r-boot
+  - r-minqa
+  - r-nlme
+  - r-nloptr
+  - r-reformulas
+  - r-rlang
+  - r-rcpp
+  - r-rcppeigen
+  host:
+  - r-base ==${{ r_base }}
+  - r-mass
+  - r-matrix
+  - r-rdpack
+  - r-boot
+  - r-minqa
+  - r-nlme
+  - r-nloptr
+  - r-reformulas
+  - r-rlang
+  - r-rcpp
+  - r-rcppeigen
+  run:
+  - r-mass
+  - r-matrix
+  - r-rdpack
+  - r-boot
+  - r-minqa
+  - r-nlme
+  - r-nloptr
+  - r-reformulas
+  - r-rlang
+  - r-rcpp
+  - r-rcppeigen
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://cran.r-project.org/package=lme4
+  repository: https://github.com/lme4/lme4/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Linear Mixed-Effects Models using 'Eigen' and S4
+  description: |
+    Fit linear and generalized linear mixed-effects models. The models and their
+    components are represented using S4 classes and methods. The core
+    computational algorithms are implemented using the 'Eigen' C++ library for
+    numerical linear algebra and 'RcppEigen' "glue".
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

@@ -1,0 +1,54 @@
+context:
+  name: plink
+  version: 2.4.9
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: faa9988597499a758da00e96d77ba971d27e13415bf79b49e4baa2d5fa7a79dd
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  - sphinx
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_plink.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/3-manifolds/PLink
+  license: GPL-2.0-or-later
+  license_file: gpl-2.0.txt
+  summary: A full featured Tk-based knot and link editor
+  description: |
+    PLink is a link editor for SnapPy.  The editor itself needs Tk, which is
+    not available in the browser, but SnapPy imports plink.LinkManager
+    unconditionally, so the non-GUI part of the package is useful on its own.
+  repository: https://github.com/3-manifolds/PLink
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

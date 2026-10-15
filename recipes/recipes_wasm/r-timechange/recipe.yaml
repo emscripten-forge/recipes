@@ -1,0 +1,65 @@
+context:
+  name: timechange
+  version: 0.4.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 6dc8ff9d339d3c4cff7ddf3800383f3e94f41c021f6c7bacccf971e187f73feb
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-cpp11
+  host:
+  - r-base ==${{ r_base }}
+  - r-cpp11
+  run:
+  - r-cpp11
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://cran.r-project.org/package=timechange
+  repository: https://github.com/vspinu/timechange/
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Efficient Manipulation of Date-Times
+  description: |
+    Efficient routines for manipulation of date-time objects while accounting
+    for time-zones and daylight saving times. The package includes utilities for
+    updating of date-time components (year, month, day etc.), modification of
+    time-zones, rounding of date-times, period addition and subtraction etc.
+    Parts of the 'CCTZ' source code, released under the Apache 2.0 License, are
+    included in this package.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

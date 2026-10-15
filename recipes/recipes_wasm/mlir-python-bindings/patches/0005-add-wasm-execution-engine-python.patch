@@ -1,9 +1,9 @@
 diff --git a/mlir/python/mlir/wasm_execution_engine.py b/mlir/python/mlir/wasm_execution_engine.py
 new file mode 100644
-index 000000000000..00060e06074d
+index 000000000000..3d4d8eeb1370
 --- /dev/null
 +++ b/mlir/python/mlir/wasm_execution_engine.py
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,184 @@
 +# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 +# See https://llvm.org/LICENSE.txt for license information.
 +# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -33,6 +33,7 @@ index 000000000000..00060e06074d
 +"""
 +
 +import ctypes
++import os
 +import random
 +import string
 +import sys
@@ -94,7 +95,7 @@ index 000000000000..00060e06074d
 +        contains only LLVM dialect ops. If no ``llvm.target_triple`` attribute
 +        is present, the execution engine uses the current process target.
 +    opt_level:
-+        Optimisation level passed to the LLVM WebAssembly code generator.
++        LLVM IR and WebAssembly code generation optimization level.
 +        Must be in ``[0, 3]``.
 +    module_name:
 +        Base name used for the generated ``.o`` / ``.wasm`` files.
@@ -133,15 +134,17 @@ index 000000000000..00060e06074d
 +        binary_fn = f"{module_name}.wasm"
 +        _mlirWasmExecutionEngine.link_load_module(object_fn, binary_fn)
 +        self._module_name = module_name
++        self._library = ctypes.CDLL(
++            os.path.join(os.path.dirname(object_fn), os.path.basename(binary_fn))
++        )
 +
 +    # ------------------------------------------------------------------
 +    # Symbol lookup
 +    # ------------------------------------------------------------------
 +
-+    @staticmethod
-+    def lookup(name: str, return_type=None, argtypes=()):
++    def lookup(self, name: str, return_type=None, argtypes=()):
 +        """Return a ctypes callable for *name* (looked up as
-+        ``_mlir_ciface_<name>`` in the global symbol table).
++        ``_mlir_ciface_<name>`` in this module).
 +
 +        Parameters
 +        ----------
@@ -164,15 +167,16 @@ index 000000000000..00060e06074d
 +                "Functions named 'main' are not supported on wasm; rename "
 +                "the function or use a different entry point."
 +            )
-+        addr = _mlirWasmExecutionEngine.get_symbol_address(
-+            "_mlir_ciface_" + name
-+        )
-+        if not addr:
++        try:
++            func = self._library["_mlir_ciface_" + name]
++        except AttributeError as error:
 +            raise RuntimeError(
 +                f"mlir.wasm_execution_engine: unknown function {name!r} "
 +                "(symbol '_mlir_ciface_" + name + "' not found)"
-+            )
-+        return ctypes.CFUNCTYPE(return_type, *argtypes)(addr)
++            ) from error
++        func.restype = return_type
++        func.argtypes = tuple(argtypes)
++        return func
 +
 +    def invoke(self, name: str, *ctypes_args):
 +        """Invoke *name* with a list of ctypes pointer arguments.
