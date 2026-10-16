@@ -1,7 +1,7 @@
 context:
   version: 4.0.6
   name: pyjs
-  build_number: 2
+  build_number: 3
 
 source:
   git: https://github.com/DerThorsten/pyjs/
@@ -27,7 +27,7 @@ outputs:
     - pybind11
 
 
-- package:  
+- package:
     name: libpyjs-static
     version: ${{ version }}
   inherit: pyjs-build
@@ -36,7 +36,7 @@ outputs:
     script: echo "nothing to do here, we take all content from the pyjs-build package"
     files:
       exclude:
-      - "**/*.py"
+      - '**/*.py'
   requirements:
     build:
     - ${{ compiler("c") }}
@@ -50,18 +50,18 @@ outputs:
     - ${{ pin_compatible("libpython-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
 
   tests:
-    - package_contents:
-        strict: false
-        files:
-          - lib/libpyjs.a
-          - include/pyjs/export_js_module.hpp
-          - lib_js/pyjs/pyjs_runtime_browser.js 
-          - lib_js/pyjs/pyjs_runtime_browser.wasm
-          - lib/cmake/pyjs/pyjsConfig.cmake 
+  - package_contents:
+      strict: false
+      files:
+      - lib/libpyjs.a
+      - include/pyjs/export_js_module.hpp
+      - lib_js/pyjs/pyjs_runtime_browser.js
+      - lib_js/pyjs/pyjs_runtime_browser.wasm
+      - lib/cmake/pyjs/pyjsConfig.cmake
 
 
 
-- package:  
+- package:
     name: pyjs # the run-time package
     version: ${{ version }}
   inherit: pyjs-build
@@ -70,22 +70,22 @@ outputs:
     script: echo "nothing to do here, we take all content from the pyjs-build package"
     files:
       include:
-      - "**/*.py"
-      
+      - '**/*.py'
+
 
   requirements:
     run:
     - python
-  
+
   tests:
-    - package_contents:
-        strict: false
-        files:
-          - lib/python*/site-packages/pyjs/core.py 
-- package:  
+  - package_contents:
+      strict: false
+      files:
+      - lib/python*/site-packages/pyjs/core.py
+- package:
     name: pyjs-dev
     version: ${{ version }}
-  
+
   requirements:
     run:
     - ${{pin_subpackage("pyjs", exact=True) }}
@@ -119,13 +119,13 @@ outputs:
 
     requirements:
       build:
-        - nodejs
-        - microsoft::playwright >= 1.58.0
-        - pyjs_code_runner >= 3.2.0
+      - nodejs
+      - microsoft::playwright >= 1.58.0
+      - pyjs_code_runner >= 3.2.0
       run:
-        - python
-        - pytest
-        
+      - python
+      - pytest
+
 
     files:
       source:
