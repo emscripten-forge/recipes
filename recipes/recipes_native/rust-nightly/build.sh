@@ -41,6 +41,8 @@ unset EM_FORGE_OPTFLAGS EM_FORGE_DBGFLAGS EM_FORGE_LDFLAGS_BASE \
       EM_FORGE_CFLAGS_BASE EM_FORGE_SIDE_MODULE_LDFLAGS EM_FORGE_SIDE_MODULE_CFLAGS
 unset CC CXX AR RANLIB
 
+export LD_LIBRARY_PATH="${BUILD_PREFIX}/lib:${PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+
 # Map the conda platform onto a Rust host triple (this is a native build).
 case "${target_platform}" in
   linux-64)    host_triple="x86_64-unknown-linux-gnu" ;;

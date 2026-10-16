@@ -20,8 +20,13 @@ build:
 
 requirements:
   build:
-  - ${{ compiler("c") }}
-  - ${{ compiler("cxx") }}
+  - if: osx
+    then:
+      - clang ==${{ llvm_version }}
+      - clangxx ==${{ llvm_version }}
+    else:
+      - ${{ compiler("c") }}
+      - ${{ compiler("cxx") }}
   - cmake
   - ninja
   - python >=3.13
