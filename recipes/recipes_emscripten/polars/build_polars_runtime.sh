@@ -2,12 +2,12 @@
 
 set -euxo pipefail
 
-cd $PKG_NAME
+cd "${PKG_NAME}"
 
-export CARGO_PROFILE_RELEASE_STRIP=symbols
-export RUSTFLAGS="${RUSTFLAGS} -C link-arg=--no-entry"
+export CARGO_PROFILE_RELEASE_STRIP="symbols"
+export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=--no-entry"
 # Deactivate warnings as there are too many (probably created by deactivated features)
-export RUSTFLAGS="-A warnings"
+export RUSTFLAGS="${RUSTFLAGS:-} -A warnings"
 
 # FIXME should be fixed in emscripten-forge but we currenty need this step
 rustup target add wasm32-unknown-emscripten
@@ -18,8 +18,10 @@ rustup target add wasm32-unknown-emscripten
 # see https://github.com/pola-rs/polars/blob/main/.github/workflows/test-pyodide.yml
 FEATURES="csv|ipc|ipc_streaming|parquet|async|scan_lines|json|extract_jsonpath|catalog|cloud|polars_cloud|tokio|clipboard|decompress|new_streaming"
 sed -i 's/serde_json = { workspace = true, optional = true }/serde_json = { workspace = true }/' crates/polars-python/Cargo.toml
-sed -i 's/"serde_json", //' crates/polars-python/Cargo.toml
+sed -E -i 's/"(dep:)?serde_json",//' crates/polars-python/Cargo.toml
 sed -E -i "/^  \"(${FEATURES})\",$/d" crates/polars-python/Cargo.toml py-polars/runtime/polars-runtime-32/Cargo.toml
+# tokio "net" pulls mio, which does not support wasm; polars does not use it
+sed -E -i '/^tokio = /s/"net", //' crates/polars-async/Cargo.toml crates/polars-core/Cargo.toml
 
 "${PYTHON}" -m pip install --no-deps --no-build-isolation . -vv
 
