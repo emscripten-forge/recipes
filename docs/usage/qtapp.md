@@ -1,18 +1,19 @@
-# Experimental Qt runner (`/qtapp/`)
+# Experimental Qt runner
 
-!!! warning "Experimental"
+```{admonition} Experimental
 
-    The purpose of this page is to demonstrate that packaging certain
-    Qt applications for the browser via emscripten-forge is
-    manageable. Expect rough edges; contributions welcome. Work on
-    continued enhancements is ongoing.
+The purpose of this page is to demonstrate that packaging certain
+Qt applications for the browser via emscripten-forge is
+manageable. Expect rough edges; contributions welcome. Work on
+continued enhancements is ongoing.
+```
 
 A small in-browser runner for Qt6-wasm packages published to the
 [emscripten-forge-4x-experimental](https://prefix.dev/channels/emscripten-forge-4x-experimental)
 channel. Given the URL of a `.tar.bz2` package (or a locally-picked file),
 it fetches, unpacks, and boots the Qt app entirely client-side.
 
-**Try it**: [/qtapp/](/qtapp/)
+**Try it**: <a href="../qtapp/">/qtapp/</a>
 
 ## Available apps
 
@@ -20,15 +21,18 @@ Currently on the
 [emscripten-forge-4x-experimental](https://prefix.dev/channels/emscripten-forge-4x-experimental)
 channel:
 
-- **[qt-calculator](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqt-calculator-experimental-6.11.2-hc780342_1.tar.bz2)** —
+- **<a href="../qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqt-calculator-experimental-6.11.2-hc780342_1.tar.bz2">qt-calculator</a>** —
   Qt's own upstream calculator example
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/qt-calculator-experimental)).
-- **[qhexedit2](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqhexedit2-experimental-0.9.0-hc780342_0.tar.bz2)** —
+- **<a href="../qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqhexedit2-experimental-0.9.0-hc780342_0.tar.bz2">qhexedit2</a>** —
   QHexEdit2 hex editor: open a file, view/edit bytes in hex + ASCII, save via browser download
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/qhexedit2-experimental)).
-- **[sqlitebrowser](/qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fsqlitebrowser-experimental-3.13.99-h8b281d3_3.tar.bz2)** —
+- **<a href="../qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fsqlitebrowser-experimental-3.13.99-h8b281d3_3.tar.bz2">sqlitebrowser</a>** —
   DB Browser for SQLite: create tables, run queries, download `.sqlite` files
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/sqlitebrowser-experimental)).
+- **<a href="../qtapp/?pkg=https%3A%2F%2Fprefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fregina-7.4.1-h99d6908_1.tar.bz2">regina</a>** -
+  Regina is a software package for low-dimensional topologists, with a focus on 3-manifold and 4-manifold triangulations, knots and links, normal surfaces, and angle structures
+  ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/regina)).
 
 The exact `.tar.bz2` filename changes on each rebuild (build-hash suffix);
 browse the [channel index](https://prefix.dev/channels/emscripten-forge-4x-experimental)

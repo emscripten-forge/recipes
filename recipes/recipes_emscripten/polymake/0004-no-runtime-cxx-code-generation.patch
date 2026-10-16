@@ -1,0 +1,35 @@
+--- a/perllib/Polymake/Core/CPlusPlusGenerator.pm	2026-09-18 22:17:19.480106691 +0000
++++ b/perllib/Polymake/Core/CPlusPlusGenerator.pm	2026-09-18 22:18:21.877172357 +0000
+@@ -752,13 +752,31 @@
+ sub application { $_[0]->perApp->application }
+ sub shared_modules { $_[0]->perApp->shared_modules }
+ 
++# WebAssembly/Emscripten build: polymake normally reacts to a missing template
++# instantiation by generating C++ wrapper code, compiling it with the C++ compiler
++# recorded at configuration time and dlopen'ing the result.  Inside a wasm runtime
++# there is neither a compiler nor dynamic loading, so the only instantiations
++# available are the ones baked in at build time.  Fail with an explicit message
++# instead of running into a confusing compiler-not-found or dlopen error.
++sub no_code_generation {
++   my ($lacking) = @_;
++   die <<".";
++polymake was built for WebAssembly and cannot generate C++ code at runtime.
++The requested operation needs a template instantiation which is not part of the
++precompiled wrapper set: $lacking
++Please use a native polymake installation for this computation, or add the
++required instantiation to the wrapper sources and rebuild the package.
++.
++}
++
+ sub generate_lacking_type {
+    my ($self, $lacking) = @_;
+-   load_shared_module(build_temp_shared_module($self, $lacking));
++   no_code_generation($lacking);
+ }
+ 
+ sub generate_lacking_function {
+    my ($self, $lacking) = @_;
++   no_code_generation($lacking);
+    my $so_name = build_temp_shared_module($self, $lacking);
+    my $embedded_items_key = $self->application->name;
+    if (is_object($lacking->extension) && $lacking->extension->is_bundled) {
