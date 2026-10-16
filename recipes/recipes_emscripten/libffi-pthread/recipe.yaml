@@ -1,48 +1,49 @@
 context:
   name: libffi-pthread
-  version: 3.4.6
+  version: 3.4.7
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  - url: https://github.com/libffi/libffi/releases/download/v${{ version }}/libffi-${{ version }}.tar.gz
-    sha256: b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
-    patches:
+- url: https://github.com/libffi/libffi/releases/download/v${{ version }}/libffi-${{ version }}.tar.gz
+  sha256: 138607dee268bdecf374adf9144c00e839e38541f75f24a1fcf18b78fda48b2d
+  patches:
       # 64-bit values are read and written through a DataView: OpenJDK Zero
       # passes jlong/jdouble arguments that are only 4-byte aligned
-      - patches/libffi-wasm32-unaligned-64bit.patch
+  - patches/libffi-wasm32-unaligned-64bit.patch
 
 build:
   number: 0
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - make
+  - ${{ compiler('c') }}
+  - make
 
 tests:
-  - package_contents:
-      files:
-        - include/libffi-pthread/ffi.h
-        - include/libffi-pthread/ffitarget.h
-        - lib/libffi-pthread/libffi.a
-        - lib/pkgconfig/libffi-pthread.pc
-        - share/licenses/libffi-pthread/LICENSE
+- package_contents:
+    files:
+    - include/libffi-pthread/ffi.h
+    - include/libffi-pthread/ffitarget.h
+    - lib/libffi-pthread/libffi.a
+    - lib/pkgconfig/libffi-pthread.pc
+    - share/licenses/libffi-pthread/LICENSE
   # links into a shared-memory (-pthread) program through the pkg-config file
   # and calls with unaligned 64-bit values, on the main thread and a pthread
-  - script:
-      - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
-      - emcc -O2 -DTEST_PTHREAD $(pkg-config --cflags libffi-pthread) test_ffi.c $(pkg-config --libs libffi-pthread) -sWASM_BIGINT -sPTHREAD_POOL_SIZE=1 -sEXIT_RUNTIME=1 -o test_ffi.js
-      - node test_ffi.js
-    requirements:
-      build:
-        - ${{ compiler('c') }}
-        - pkg-config
-    files:
-      recipe:
-        - test_ffi.c
+- script:
+  - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+  - emcc -O2 -DTEST_PTHREAD $(pkg-config --cflags libffi-pthread) test_ffi.c $(pkg-config --libs libffi-pthread) 
+    -sWASM_BIGINT -sPTHREAD_POOL_SIZE=1 -sEXIT_RUNTIME=1 -o test_ffi.js
+  - node test_ffi.js
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - pkg-config
+  files:
+    recipe:
+    - test_ffi.c
 
 about:
   homepage: https://sourceware.org/libffi/
@@ -57,4 +58,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - wangyenshu
+  - wangyenshu
