@@ -4,28 +4,30 @@ We provide `openjdk21` and `openjdk8` packages in emscripten-forge that allow ru
 
 ## openjdk21 recipe documentation:
 
-Create one environment with the JVM, and one with the Emscripten toolchain:
+Create one environment with the tools (`openjdk21-wasm-link` and the Emscripten
+toolchain it uses), and one with the JVM:
 
 ```bash
 CH="-c https://repo.prefix.dev/emscripten-forge-4x -c conda-forge"
-micromamba create -y -p ./javaenv --platform emscripten-wasm32 $CH openjdk21
-micromamba create -y -p ./emenv $CH emscripten_emscripten-wasm32=4.0.9
+micromamba create -y -n env_tools $CH openjdk-tools
+micromamba activate env_tools
+micromamba create -y -p ./env_wasm --platform emscripten-wasm32 $CH openjdk21
 ```
 
 Link your application into a page:
 
 ```bash
-PATH=$PWD/emenv/bin:$PATH ./javaenv/bin/openjdk21-wasm-link -o out/app.html --app path/to/app.jar --arg -jar --arg /app/app.jar
+openjdk21-wasm-link --prefix ./env_wasm -o out/app.html --app path/to/app.jar --arg -jar --arg /app/app.jar
 ```
 
 Packing a multi-file jar or a directory is supported, for example
 ```bash
-PATH=$PWD/emenv/bin:$PATH ./javaenv/bin/openjdk21-wasm-link -o out/multifilejar.html --app .
-./multifilejardir --arg -jar --arg /app/multifilejardir/jarsdir/jarexecutable.jar
+openjdk21-wasm-link --prefix ./env_wasm -o out/multifilejar.html --app ./multifilejardir --arg -jar --arg /app/multifilejardir/jarsdir/jarexecutable.jar
 ```
 
 | Option | Description |
 |---|---|
+| `--prefix DIR` | The emscripten-wasm32 environment with `openjdk21`. **Required.** |
 | `-o FILE` | Output file, `.html` or `.js`. **Required.** |
 | `--app SRC[@DEST]` | Copy a host file or directory into the virtual file system (default `DEST`: `/app/<basename>`). Repeatable. |
 | `--arg ARG` | Default Java command-line argument. Repeatable. Under node, command-line arguments override these; in the browser, `?args=a,b` in the page URL overrides them. |
@@ -51,7 +53,7 @@ You don't need to configure them yourself:
   reloads the page. This makes the page work on static hosts such as GitHub
   Pages. Keep `coi-serviceworker.js` in the same directory as the page.
 - For local testing, `serve.py` sends the headers directly:
-  `python3 javaenv/share/openjdk21-wasm/serve.py out 8000`.
+  `python3 $CONDA_PREFIX/share/openjdk-tools/serve.py out 8000` (in `env_tools`).
 
 Either way, the page must be served over HTTPS or from `localhost`; browsers
 ignore these headers on other plain-http addresses. Opening the file directly
@@ -101,5 +103,10 @@ files the program needs:
       files: { '/app/Main.class': 'Main.class' } // VM path: URL to fetch
     })
 
-Outside the browser, `bin/openjdk8-java` runs Java programs under Node.js 24 or
-later, with headless AWT, like the `java` command.
+Outside the browser, `openjdk8-java` from the `openjdk-tools` package (see the
+openjdk21 section) runs Java programs under Node.js 24 or later, with headless
+AWT, like the `java` command. Point it at the `openjdk8` environment:
+
+```bash
+OPENJDK8_WASM_HOME=./jdk8env/share/openjdk8-wasm openjdk8-java -cp classes Main
+```
