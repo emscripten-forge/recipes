@@ -3,7 +3,6 @@ set -euxo pipefail
 
 OPENBLAS_LIB="${PREFIX}/lib/libopenblas.a"
 
-export CXXFLAGS="${CXXFLAGS:-} -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
 export LDFLAGS="${LDFLAGS:-} -s INITIAL_HEAP=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4GB"
 
 emcmake cmake . \
