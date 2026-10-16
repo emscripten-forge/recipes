@@ -1,0 +1,31 @@
+change-id = "ignore"
+
+[build]
+target = ["@HOST_TRIPLE@", "wasm32-unknown-emscripten", "wasm64-unknown-emscripten"]
+submodules = false
+docs = false
+extended = false
+jobs = @CPU_COUNT@
+
+[llvm]
+# Reuse the conda-forge LLVM instead of building LLVM from source.
+download-ci-llvm = false
+link-shared = true
+assertions = true
+
+[target.@HOST_TRIPLE@]
+# llvmdev is a build dependency, so its llvm-config lives in the build prefix;
+# `llvm` (host/run) supplies the shared library rustc links against.
+llvm-config = "@BUILD_PREFIX@/bin/llvm-config"
+
+[rust]
+debug-assertions = false
+debug-logging = false
+incremental = false
+backtrace-on-ice = false
+frame-pointers = false
+download-rustc = false
+
+[install]
+prefix = "@PREFIX@"
+sysconfdir = "@PREFIX@/etc"

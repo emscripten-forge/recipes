@@ -1,0 +1,66 @@
+context:
+  name: maturin
+  version: 1.15.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/maturin/maturin-${{ version }}.tar.gz
+  sha256: 94b26cc8e8aba61a5f2099715fe640e18c5f678e9a500408b38761263954228a
+  patches:
+  - patches/0001-support-wasm64-unknown-emscripten.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - rust-nightly
+  - python >=3.13
+  - pip
+  - setuptools
+  - setuptools-rust >=1.4.0
+  - wheel
+  host:
+  - python
+  - pip
+  - setuptools
+  - setuptools-rust >=1.4.0
+  - wheel
+  - openssl
+  - pkg-config
+  run:
+  - python
+  - tomli >=1.1.0
+
+tests:
+- script:
+  - maturin --version
+  - bash ./test_wasm64_wheel.sh
+  files:
+    recipe:
+    - test_wasm64_wheel.sh
+  requirements:
+    run:
+    - rust-nightly
+    - emscripten-core
+
+about:
+  homepage: https://www.maturin.rs
+  repository: https://github.com/PyO3/maturin
+  license: MIT
+  license_family: MIT
+  license_file:
+  - license-mit
+  summary: >-
+    Build and publish crates with pyo3, rust-cpython and cffi bindings as well as
+    rust binaries as python packages.
+extra:
+  recipe-maintainers:
+    - IsabelParedes
+    - Alex-PLACET

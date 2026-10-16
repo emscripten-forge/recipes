@@ -1,0 +1,29 @@
+diff --git a/Tools/build/generate-build-details.py b/Tools/build/generate-build-details.py
+--- a/Tools/build/generate-build-details.py
++++ b/Tools/build/generate-build-details.py
+@@ -99,9 +99,14 @@ def generate_data(schema_version: str) -> collections.defaultdict:
+     # regardless.
+     #
+     # We only want to set abi.extension_suffix and stable_abi_suffix if
+-    # extension modules are supported.
+-    if has_dynamic_library:
+-        data['abi']['extension_suffix'] = sysconfig.get_config_var('EXT_SUFFIX')
++    # extension modules are supported. Whether libpython is linked dynamically
++    # (has_dynamic_library) is not the right question: EXT_SUFFIX is set whenever
++    # extensions can be built, including for a static libpython such as the wasm
++    # cross build. PEP 739 requires the field in that case, and tools that read
++    # build-details.json (maturin) fail on a missing extension_suffix.
++    extension_suffix = sysconfig.get_config_var('EXT_SUFFIX')
++    if extension_suffix:
++        data['abi']['extension_suffix'] = extension_suffix
+ 
+         # EXTENSION_SUFFIXES has been constant for a long time, and currently we
+         # don't have a better information source to find the stable ABI suffix.
+@@ -110,6 +115,7 @@ def generate_data(schema_version: str) -> collections.defaultdict:
+                 data['abi']['stable_abi_suffix'] = suffix
+                 break
+ 
++    if has_dynamic_library:
+         data['libpython']['dynamic'] = os.path.join(LIBDIR, LDLIBRARY)
+         # FIXME: Not sure if windows has a different dll for the stable ABI, and
+         #        even if it does, currently we don't have a way to get its name.
