@@ -19,7 +19,7 @@ EMSDK_LLVM_BIN="$(em-config LLVM_ROOT)"
 WASM_NATIVE_DIR="$PREFIX/lib/wasm-native"
 JDK_IMAGE_DIR="$PREFIX/jdk-wasm"
 KIT_DIR="$PREFIX/share/openjdk21-wasm"
-mkdir -p "$WASM_NATIVE_DIR" "$KIT_DIR" "$PREFIX/bin"
+mkdir -p "$WASM_NATIVE_DIR" "$KIT_DIR"
 
 # Everything ends up in one shared-memory (pthreads) module, so every object,
 # including third-party ones, must be compiled with atomics + bulk-memory.
@@ -209,10 +209,9 @@ cp "$SRC_DIR/kit/LICENSE-DejaVu" "$JDK_IMAGE_DIR/lib/fonts/LICENSE-DejaVu"
 cp "$SRC_DIR/kit/fontconfig.properties" "$JDK_IMAGE_DIR/lib/fontconfig.properties"
 
 # ---------------------------------------------------------------------------
-# 6. link kit: launcher, symbol-table generator, link script, page shell
+# 6. link kit: launcher and page shell, for openjdk21-wasm-link (openjdk-tools)
 # ---------------------------------------------------------------------------
-cp "$SRC_DIR"/kit/{jvm-main.c,gen-symbols.sh,shell.html,serve.py,x11-display-share.c,coi-serviceworker.js} "$KIT_DIR/"
+cp "$SRC_DIR"/kit/{jvm-main.c,shell.html,x11-display-share.c,coi-serviceworker.js} "$KIT_DIR/"
 mkdir -p "$KIT_DIR/include"
 cp src/java.base/share/native/include/jni.h \
    src/java.base/unix/native/include/jni_md.h "$KIT_DIR/include/"
-install -m 755 "$SRC_DIR/kit/openjdk21-wasm-link" "$PREFIX/bin/openjdk21-wasm-link"

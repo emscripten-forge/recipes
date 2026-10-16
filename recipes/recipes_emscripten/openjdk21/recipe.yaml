@@ -20,17 +20,14 @@ source:
       - patches/0003-java-base-natives-for-the-linux-class-library.patch
       # jdk.attach off, jdk.net / jdk.management natives on
       - patches/0004-jdk-modules-for-emscripten.patch
-  # link kit: launcher, symbol-table generator, link script, page shell,
-  # fontconfig.properties
+  # link kit: launcher, page shell, fontconfig.properties (the link script
+  # itself is in openjdk-tools)
   - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ kit_version }}.tar.gz
     sha256: 2ef032b39bc720960d1dfade80bcf0cc292ad4f1f315a6c019dbcf7d13c6a13c
     target_directory: kit
-    patches:
-      # link libffi from the libffi-pthread package, not lib/wasm-native
-      - patches/0005-kit-link-libffi-pthread.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -81,13 +78,13 @@ tests:
         - lib/wasm-native/libfontmanager.a
         - lib/wasm-native/libmanagement_ext.a
         - share/openjdk21-wasm/jvm-main.c
-        - bin/openjdk21-wasm-link
   - script:
       - bash test_jvm.sh
     requirements:
       build:
         - ${{ compiler('c') }}
         - openjdk 21.*
+        - openjdk-tools
     files:
       recipe:
         - test_jvm.sh
@@ -103,8 +100,8 @@ about:
     font rendering with DejaVu fonts, image I/O, colour management, JMX
     management, JVMTI, and the Serial, Parallel, G1 and Epsilon collectors.
 
-    bin/openjdk21-wasm-link links a program for the browser or node:
-      openjdk21-wasm-link -o app.html --app app.jar --arg -jar --arg /app/app.jar
+    openjdk21-wasm-link (from openjdk-tools) links a program for the browser or node:
+      openjdk21-wasm-link --prefix path/to/env_wasm -o app.html --app app.jar --arg -jar --arg /app/app.jar
   license: GPL-2.0-only WITH Classpath-exception-2.0 AND MIT AND Bitstream-Vera
   license_file:
     - LICENSE

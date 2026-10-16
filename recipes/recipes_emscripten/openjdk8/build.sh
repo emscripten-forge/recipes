@@ -88,11 +88,9 @@ bash "${SUPPORT}/stage-jre.sh" "${BUILD_DIR}" "${OUT}" "${SRC_DIR}/_jre"
 python3 "${SUPPORT}/pack-jre.py" "${SRC_DIR}/_jre" "${OUT}/openjdk8-jre" --gzip
 
 DEST="${PREFIX}/share/openjdk8-wasm"
-mkdir -p "${DEST}" "${PREFIX}/bin"
+mkdir -p "${DEST}"
 install -m 644 "${OUT}/openjdk8.js" "${OUT}/openjdk8.wasm" "${OUT}/openjdk8-jre.json" "${OUT}/openjdk8-jre.data.gz" \
                "${SUPPORT}/web/openjdk8-web.js" "${DEST}/"
-
-install -m 755 "${SUPPORT}/node/openjdk8-java" "${PREFIX}/bin/openjdk8-java"
 
 for f in LICENSE ASSEMBLY_EXCEPTION THIRD_PARTY_README; do
   install -m 644 "${SRC_DIR}/${f}" "${DEST}/${f}"

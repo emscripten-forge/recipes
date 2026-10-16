@@ -1,0 +1,64 @@
+context:
+  name: openjdk-tools
+  version: "0.1.0"
+  support_version: "0.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # openjdk21-wasm-link, its symbol-table generator, serve.py
+  - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 2ef032b39bc720960d1dfade80bcf0cc292ad4f1f315a6c019dbcf7d13c6a13c
+    target_directory: kit
+    patches:
+      # link libffi from the libffi-pthread package, not lib/wasm-native
+      - patches/0001-link-libffi-pthread.patch
+      # --prefix: the emscripten-wasm32 environment with openjdk21
+      - patches/0002-link-prefix-option.patch
+  # openjdk8-java, which runs openjdk8 under Node.js
+  - url: https://github.com/wangyenshu/openjdk8-support/archive/refs/tags/v${{ support_version }}.tar.gz
+    sha256: 37d3100137e676381815655f9cfe4401d08de87041548b16d8b610e8ca1dcd77
+    target_directory: support
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    # openjdk21-wasm-link links with the emscripten openjdk21 was built with
+    - emscripten_emscripten-wasm32 4.0.9.*
+    - python
+    # openjdk8-java needs WebAssembly JSPI
+    - nodejs >=24
+
+tests:
+  - script:
+      - openjdk21-wasm-link --help
+      - test -f $PREFIX/share/openjdk-tools/gen-symbols.sh
+      - test -f $PREFIX/share/openjdk-tools/serve.py
+      - test -x $PREFIX/bin/openjdk8-java
+
+about:
+  homepage: https://github.com/wangyenshu/openjdk21-kit
+  summary: Host tools for the emscripten-wasm32 openjdk21 and openjdk8 packages
+  description: |
+    Tools that run on the build machine (linux, osx) for the emscripten-wasm32
+    openjdk21 and openjdk8 packages, which are installed in their own
+    environment:
+
+      openjdk21-wasm-link --prefix path/to/env_wasm -o app.html --app app.jar --arg -jar --arg /app/app.jar
+      OPENJDK8_WASM_HOME=path/to/env_wasm/share/openjdk8-wasm openjdk8-java -cp classes Main
+
+    share/openjdk-tools/serve.py serves a directory with the cross-origin
+    isolation headers openjdk21 pages need.
+  license: GPL-2.0-only WITH Classpath-exception-2.0
+  license_file:
+    - kit/LICENSE
+    - support/LICENSE
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

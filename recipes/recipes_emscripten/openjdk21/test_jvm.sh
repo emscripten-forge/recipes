@@ -6,13 +6,14 @@
 set -euxo pipefail
 unset JAVA_TOOL_OPTIONS || true
 
-LINK="$PREFIX/bin/openjdk21-wasm-link"
+# openjdk21-wasm-link comes from openjdk-tools (test requirement)
+LINK=(openjdk21-wasm-link --prefix "$PREFIX")
 JAVAC="$(command -v javac || echo "$BUILD_PREFIX/lib/jvm/bin/javac")"
 
 mkdir -p classes out
 "$JAVAC" --release 21 -d classes tests/Hello.java tests/GcStress.java tests/SwingDemo.java
 
-"$LINK" --node -o out/node/jvm.js --app classes@/app/classes --app tests/Hi.java@/app/src/Hi.java
+"${LINK[@]}" --node -o out/node/jvm.js --app classes@/app/classes --app tests/Hi.java@/app/src/Hi.java
 
 node out/node/jvm.js -version
 
@@ -31,7 +32,7 @@ node out/node/jvm.js /app/src/Hi.java x | tee hi.log
 grep -q 'compiled in wasm: Point\[x=4, y=16\] args=x' hi.log
 
 # browser build with the X11 toolkit
-"$LINK" -o out/web/swing.html --app classes@/app/classes \
+"${LINK[@]}" -o out/web/swing.html --app classes@/app/classes \
   --arg -cp --arg /app/classes --arg SwingDemo
 test -s out/web/swing.wasm
 test -s out/web/swing.html
