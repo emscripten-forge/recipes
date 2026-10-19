@@ -677,7 +677,7 @@ fi
 mkdir -p "$PWD/usr-dist/common/bin"
 touch "$PWD/usr-dist/common/bin/M2"
 
-mkdir -p "${PREFIX}/bin/macaulay2-vanilla"
+mkdir -p "${PREFIX}/bin/macaulay2"
 
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
@@ -703,8 +703,8 @@ cp "$M2_BINARY_DIR/M2-binary.js" \
 cp "$M2_BINARY_DIR/M2-binary.wasm" \
   "${PREFIX}/bin/M2-binary.wasm"
 
-cp -a "$SRC_DIR"/web/* "$PREFIX/bin/macaulay2-vanilla/"
-cp "${PREFIX}/bin/M2-binary.js" "${PREFIX}/bin/macaulay2-vanilla/M2-binary.js"
-cp "${PREFIX}/bin/M2-binary.wasm" "${PREFIX}/bin/macaulay2-vanilla/M2-binary.wasm"
-cp "${PREFIX}/bin/M2.data" "${PREFIX}/bin/macaulay2-vanilla/M2.data"
-cp "${PREFIX}/bin/M2.data.js" "${PREFIX}/bin/macaulay2-vanilla/M2.data.js"
+cp -a "$SRC_DIR"/web/* "$PREFIX/bin/macaulay2/"
+cp "${PREFIX}/bin/M2-binary.js" "${PREFIX}/bin/macaulay2/M2-binary.js"
+cp "${PREFIX}/bin/M2-binary.wasm" "${PREFIX}/bin/macaulay2/M2-binary.wasm"
+cp "${PREFIX}/bin/M2.data" "${PREFIX}/bin/macaulay2/M2.data"
+cp "${PREFIX}/bin/M2.data.js" "${PREFIX}/bin/macaulay2/M2.data.js"
