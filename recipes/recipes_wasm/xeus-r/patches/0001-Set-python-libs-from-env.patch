@@ -1,0 +1,41 @@
+From 889dfb485615116519aaf9d7a98ed61ad293951b Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 15 Oct 2026 14:56:19 +0200
+Subject: [PATCH] Set python libs from env
+
+---
+ CMakeLists.txt | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e5087a7..db0e4f3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -275,19 +275,12 @@ macro(xeus_r_create_target target_name linkage output_name)
+     if (EMSCRIPTEN)
+         link_directories(${R_HOME}/lib)
+         if(XEUS_R_LINK_LIBPYTHON)
+-            SET(EXTRA_LIBS 
+-                ${CMAKE_INSTALL_PREFIX}/lib/libbz2.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libz.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libsqlite3.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libffi.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libzstd.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libssl.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libcrypto.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/liblzma.a
+-                ${CMAKE_INSTALL_PREFIX}/lib/libpython3.13.a
+-            )
++            if(NOT DEFINED ENV{RPY_LIBS} OR "$ENV{RPY_LIBS}" STREQUAL "")
++                message(FATAL_ERROR "XEUS_R_LINK_LIBPYTHON is ON but RPY_LIBS is not set in the environment")
++            endif()
++            separate_arguments(EXTRA_LIBS UNIX_COMMAND "$ENV{RPY_LIBS}")
+         else()
+-            SET(EXTRA_LIBS "")
++            set(EXTRA_LIBS "")
+         endif()
+ 
+         target_link_libraries(${target_name} PUBLIC ${XEUS_R_XEUS_TARGET} 
+-- 
+2.56.0
+
