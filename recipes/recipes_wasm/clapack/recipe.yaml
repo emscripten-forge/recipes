@@ -1,0 +1,82 @@
+context:
+  name: clapack
+  version: 3.2.1
+
+source:
+- url: https://www.netlib.org/clapack/clapack-${{ version }}-CMAKE.tgz
+  sha256: 0b3f782bc24845d85f36bafbff0f2f1384dc72df730fda4e7924ec1a70baca5a
+  patches:
+  - patches/0001-add-missing-import.patch
+  - patches/0002-fix-arith-h.patch
+  - patches/0003-lapack-install-make.patch
+  - patches/0004-fix-f2clibs-build.patch
+  - patches/0005-remove-redundant-symbols.patch
+  - patches/0006-correct-return-types.patch
+- path: make.inc
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: clapack-build
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - make
+    - sed
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Headers
+- package:
+    name: clapack-dev
+    version: ${{ version }}
+  inherit: clapack-build
+  build:
+    files:
+      exclude:
+      - lib/*.so
+  tests:
+  - package_contents:
+      files:
+      - include/clapack.h
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# Shared library
+- package:
+    name: clapack
+    version: ${{ version }}
+  inherit: clapack-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('clapack-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('clapack', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/clapack_all.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+about:
+  homepage: https://www.netlib.org/clapack
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: C-language version of the standard LAPACK (Linear Algebra Package) software library
