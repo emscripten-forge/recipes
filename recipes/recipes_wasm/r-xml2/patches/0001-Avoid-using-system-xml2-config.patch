@@ -1,0 +1,46 @@
+From bcc1b9116c4ffc7ae97e9bf64225d2cb9c113951 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 14 Oct 2026 14:24:43 +0200
+Subject: [PATCH] Avoid using system xml2-config
+
+---
+ configure | 15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/configure b/configure
+index 8813709..c1ff6d9 100755
+--- a/configure
++++ b/configure
+@@ -19,11 +19,11 @@ if [ "$INCLUDE_DIR" ] || [ "$LIB_DIR" ]; then
+   PKG_CFLAGS="-I$INCLUDE_DIR $PKG_CFLAGS"
+   PKG_LIBS="-L$LIB_DIR $PKG_LIBS"
+ else
+-  # Use xml2-config if available
+-  xml2-config --version >/dev/null 2>&1
++  # Use pkg-config if available
++  pkg-config --version >/dev/null 2>&1
+   if [ $? -eq 0 ]; then
+-    PKGCONFIG_CFLAGS=`xml2-config --cflags`
+-    PKGCONFIG_LIBS=`xml2-config --libs`
++    PKGCONFIG_CFLAGS=`pkg-config --cflags $PKG_CONFIG_NAME`
++    PKGCONFIG_LIBS=`pkg-config --libs $PKG_CONFIG_NAME`
+ 
+     # Avoid shared libxml2 on MacOS because this reveals bugs in R.app
+     # https://github.com/r-lib/xml2/issues/471
+@@ -33,13 +33,6 @@ else
+       curl -sfL "https://autobrew.github.io/scripts/libxml2" > autobrew
+       . ./autobrew
+     fi
+-
+-  else
+-    pkg-config --version >/dev/null 2>&1
+-    if [ $? -eq 0 ]; then
+-      PKGCONFIG_CFLAGS=`pkg-config --cflags $PKG_CONFIG_NAME`
+-      PKGCONFIG_LIBS=`pkg-config --libs $PKG_CONFIG_NAME`
+-    fi
+   fi
+ 
+   if [ "$PKGCONFIG_CFLAGS" ] || [ "$PKGCONFIG_LIBS" ]; then
+-- 
+2.56.0
+
