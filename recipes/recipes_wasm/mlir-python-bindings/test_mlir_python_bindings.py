@@ -122,3 +122,47 @@ def test_numpy_memref_execution_and_repeated_linking():
             "scale_by_three", ctypes.pointer(second_descriptor)
         )
         assert second_array.tolist() == [12.0]
+
+
+def test_symbol_lookup_is_scoped_to_module():
+    for opt_level in (0, 3):
+        with Context():
+            engines = [
+                WasmExecutionEngine(
+                    _lower_to_llvm(_scale_module("scale_same_name", factor)),
+                    opt_level=opt_level,
+                )
+                for factor in (2.0, 3.0)
+            ]
+
+        for engine, expected in (
+            (engines[0], 10.0), (engines[1], 15.0), (engines[0], 10.0)
+        ):
+            array = np.array([5.0], dtype=np.float32)
+            descriptor = get_ranked_memref_descriptor(array)
+            engine.invoke("scale_same_name", ctypes.pointer(descriptor))
+            assert array.tolist() == [expected]
+
+
+def test_numpy_rank_zero_memref():
+    for dtype in (np.float32, np.float16, np.complex64):
+        storage = np.arange(4, dtype=dtype)
+        scalar = storage[2:3].reshape(())
+        descriptor = get_ranked_memref_descriptor(scalar)
+        result = ranked_memref_to_numpy(ctypes.pointer(descriptor))
+        assert result.shape == ()
+        assert result.dtype == scalar.dtype
+        np.testing.assert_array_equal(result, scalar)
+        assert np.shares_memory(result, storage)
+        result[...] = 9
+        assert storage[2] == 9
+
+        descriptor.aligned = storage.ctypes.data_as(type(descriptor.aligned))
+        descriptor.offset = 1
+        result = ranked_memref_to_numpy(ctypes.pointer(descriptor))
+        np.testing.assert_array_equal(result, storage[1])
+        assert result.shape == ()
+        assert result.dtype == scalar.dtype
+        assert np.shares_memory(result, storage)
+        result[...] = 7
+        assert storage[1] == 7
