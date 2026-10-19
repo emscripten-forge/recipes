@@ -1,0 +1,60 @@
+context:
+  name: warp
+  version: 0.2.3
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: bdf3404b90ea5d1754242d87512b9d44c9a5825207d0010a956354266bda112a
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://CRAN.R-project.org/package=warp
+  repository: https://github.com/DavisVaughan/warp
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Group Dates
+  description: |
+    Tooling to group dates by a variety of periods including: yearly, monthly,
+    by second, by week of the month, and more. The groups are defined in such a
+    way that they also represent the distance between dates in terms of the
+    period. This extracts valuable information that can be used in further
+    calculations that rely on a specific temporal spacing between observations.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes
