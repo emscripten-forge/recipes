@@ -115,3 +115,20 @@ export CMAKE_ARGS="${CMAKE_ARGS} \
   echo "CTYPES_INIT_FILE: $CTYPES_INIT_FILE"
   sed 's/_sys.platform == "darwin"/False/g' "$CTYPES_INIT_FILE" > "$CTYPES_INIT_FILE.tmp" && mv "$CTYPES_INIT_FILE.tmp" "$CTYPES_INIT_FILE"
 fi
+
+
+################################################################################################
+# Meson cross python
+################################################################################################
+
+if [[ "$target_platform" == "emscripten-wasm32" ]]; then
+  export RAW_MESON_CROSS_FILE=$BUILD_PREFIX/etc/crosspython_wasm32.meson.cross
+elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
+  export RAW_MESON_CROSS_FILE=$BUILD_PREFIX/etc/crosspython_wasm64.meson.cross
+else
+  echo "Unsupported target_platform: $target_platform"
+  exit 1
+fi
+
+sed "s|@(PYTHON)|${PYTHON}|g" $RAW_MESON_CROSS_FILE > $BUILD_PREFIX/etc/crosspython.meson.cross
+export MESON_CROSS_PYTHON_FILE=$BUILD_PREFIX/etc/crosspython.meson.cross
