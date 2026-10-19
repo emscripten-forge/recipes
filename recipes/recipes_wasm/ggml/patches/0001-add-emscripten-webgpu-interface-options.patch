@@ -1,0 +1,44 @@
+diff --git a/cmake/ggml-config.cmake.in b/cmake/ggml-config.cmake.in
+index a28e49e..3a76b59 100644
+--- a/cmake/ggml-config.cmake.in
++++ b/cmake/ggml-config.cmake.in
+@@ -213,4 +213,39 @@ if(NOT TARGET ggml::ggml)
+ 
+ endif()
+ 
++# Emscripten interface options.
++#
++# The targets created above are plain IMPORTED libraries, so they do not carry
++# the flags that ggml's Emscripten builds use. In particular, the WebGPU
++# backend needs the Emscripten WebGPU port (emdawnwebgpu) at both compile and
++# link time, plus the async exception flags it was built with. Without these,
++# downstream consumers fail to link with undefined wgpu* symbols.
++if (EMSCRIPTEN)
++    set(_GGML_WASM_COMMON_OPTIONS
++        -msimd128
++        --use-port=emdawnwebgpu
++        -fwasm-exceptions)
++
++    set(_GGML_WASM_LINK_ONLY_OPTIONS -sALLOW_MEMORY_GROWTH=1)
++
++    if (GGML_WEBGPU)
++        list(APPEND _GGML_WASM_LINK_ONLY_OPTIONS -sJSPI)
++    endif()
++
++    foreach (_ggml_target ggml::ggml ggml::ggml-base ggml::ggml-cpu ggml::ggml-webgpu)
++        if (TARGET ${_ggml_target})
++            set_property(TARGET ${_ggml_target} APPEND PROPERTY
++                INTERFACE_COMPILE_OPTIONS ${_GGML_WASM_COMMON_OPTIONS})
++            set_property(TARGET ${_ggml_target} APPEND PROPERTY
++                INTERFACE_LINK_OPTIONS
++                    ${_GGML_WASM_COMMON_OPTIONS} ${_GGML_WASM_LINK_ONLY_OPTIONS})
++        endif()
++    endforeach ()
++
++    unset(_ggml_target)
++    unset(_GGML_WASM_COMMON_OPTIONS)
++    unset(_GGML_WASM_LINK_ONLY_OPTIONS)
++endif ()
++
++
+ check_required_components(ggml)
