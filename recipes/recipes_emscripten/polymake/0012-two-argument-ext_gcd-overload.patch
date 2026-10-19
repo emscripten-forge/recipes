@@ -1,0 +1,27 @@
+--- a/include/core/polymake/PolynomialImpl.h	2026-09-23 13:45:17.944200262 +0000
++++ b/include/core/polymake/PolynomialImpl.h	2026-09-23 13:45:17.922064847 +0000
+@@ -57,7 +57,23 @@
+ template <typename Coefficient, typename Exponent>
+ ExtGCD< UniPolynomial<Coefficient, Exponent> >
+ ext_gcd(const UniPolynomial<Coefficient, Exponent>& a, const UniPolynomial<Coefficient, Exponent>& b,
+-        bool normalize_gcd=true);
++        bool normalize_gcd);
++
++// clang 21 forgets the default argument of this primary template as soon as an
++// explicit specialization of it has been declared -- which Polynomial.h does for
++// UniPolynomial<Rational, Int> when polymake is built with FLINT.  The two-argument
++// call is then rejected, but only in an unevaluated operand, and silently: the
++// enclosing "using result_type = decltype(...)" in perl/wrappers.h is dropped
++// without a diagnostic, so the whole FunctionWrapper loses its members and the
++// generated wrapper code fails with a misleading "no member named 'add__me'".
++// Spelling the two-argument form out as its own overload avoids the default
++// argument altogether and is correct on every compiler.
++template <typename Coefficient, typename Exponent>
++ExtGCD< UniPolynomial<Coefficient, Exponent> >
++ext_gcd(const UniPolynomial<Coefficient, Exponent>& a, const UniPolynomial<Coefficient, Exponent>& b)
++{
++   return ext_gcd(a, b, true);
++}
+ 
+ template <typename Coefficient, typename Exponent>
+ UniPolynomial<Coefficient, Exponent>

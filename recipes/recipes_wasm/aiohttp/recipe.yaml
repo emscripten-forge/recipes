@@ -1,0 +1,68 @@
+context:
+  name: aiohttp
+  version: 3.14.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5558a7f5a05af9ecf744af91e5baefc436f93c9333e656c27ec253f9a6bbe178
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/*.pxi'
+    - '**/__pycache__/**'
+    - '**/*.pyx'
+    - '**/*.pxd'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('cxx')}}
+  - cross-python_${{ target_platform }}
+  - python
+  host:
+  - python-dev
+  run:
+  - aiosignal
+  - aiohappyeyeballs
+  - async-timeout
+  - attrs
+  - charset-normalizer
+  - frozenlist
+  - multidict
+  - yarl
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_aiohttp.py
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  summary: Async http client/server framework (asyncio)
+  homepage: https://github.com/aio-libs/aiohttp
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  maintainers:
+  - IsabelParedes
