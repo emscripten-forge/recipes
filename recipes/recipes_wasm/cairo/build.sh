@@ -2,9 +2,6 @@
 
 set -ex
 
-sed -i "s|@(PYTHON)|${PYTHON}|g" "${MESON_CROSS_FILE}"
-
-
 export CFLAGS="${CFLAGS} -DCAIRO_NO_MUTEX=1"
 
 meson_config_args=(
