@@ -61,14 +61,18 @@ emmake make install
 cp Singular/all.lib Singular/LIB/
 
 mkdir -p "${PREFIX}/bin/singular"
-cp Singular/Singular "${PREFIX}/bin/singular/Singular.js"
-cp Singular/Singular.wasm "${PREFIX}/bin/singular/"
+cp Singular/Singular "${PREFIX}/bin/Singular.js"
+cp Singular/Singular.wasm "${PREFIX}/bin/"
 
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-  "${PREFIX}/bin/singular/Singular.data" \
+  "${PREFIX}/bin/Singular.data" \
   --preload "${SRC_DIR}/Singular/LIB@/LIB" \
   --preload "${SRC_DIR}/doc@/info" \
-  --js-output="${PREFIX}/bin/singular/Singular.data.js"
+  --js-output="${PREFIX}/bin/Singular.data.js"
 
 cp -r "web"/* "${PREFIX}/bin/singular/"
+cp "${PREFIX}/bin/Singular.js" "${PREFIX}/bin/singular/Singular.js"
+cp "${PREFIX}/bin/Singular.wasm" "${PREFIX}/bin/singular/Singular.wasm"
+cp "${PREFIX}/bin/Singular.data" "${PREFIX}/bin/singular/Singular.data"
+cp "${PREFIX}/bin/Singular.data.js" "${PREFIX}/bin/singular/Singular.data.js"
