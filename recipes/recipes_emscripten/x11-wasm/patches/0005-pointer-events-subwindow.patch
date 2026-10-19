@@ -1,0 +1,34 @@
+From: emscripten-forge
+Subject: Pointer events report the child window under the pointer
+
+ButtonPress, ButtonRelease and MotionNotify events always had subwindow
+None.  X sets it to the child of the event window that contains the
+pointer.  Drag-and-drop sources (OpenJDK AWT's XDnD/Motif DnD) grab the
+pointer on the root window and take the top-level under the pointer from
+the motion events' subwindow, so they never found a drop target.
+---
+diff --git a/src/libX11/BrowserBind.c b/src/libX11/BrowserBind.c
+index c1bad8b..83cfd88 100644
+--- a/src/libX11/BrowserBind.c
++++ b/src/libX11/BrowserBind.c
+@@ -567,6 +567,20 @@ BrowserQueuePointerEventFieldsWithState(
+ 	    event.xbutton.y = y;
+ 	}
+     }
++    {
++	/* subwindow: the child of the event window that contains the
++	 * pointer (drag-and-drop sources grab the pointer on the root
++	 * window and find the top-level under it this way) */
++	X11WasmResource *childPtr = BrowserFindTopVisibleChildAt(
++		BrowserWindowResource(target), x, y);
++	Window child = (childPtr != NULL) ? (Window)childPtr->id : None;
++
++	if (type == MotionNotify) {
++	    event.xmotion.subwindow = child;
++	} else {
++	    event.xbutton.subwindow = child;
++	}
++    }
+     if (type == ButtonPress) {
+ 	browserDisplay.pointerCaptureWindow = captureTarget;
+ 	BrowserSyncPointerState();
