@@ -14,6 +14,7 @@ export r_cv_have_lzma=yes
 export r_cv_have_pcre2utf=yes
 export r_cv_size_max=yes
 export r_cv_has_pangocairo=no # Fails locally, problem with pkg-config
+export r_cv_func_log1p_works=yes # Skipped when cross-compiling
 
 # Not supported
 export ac_cv_have_decl_getrusage=no
@@ -24,6 +25,7 @@ export ac_cv_have_decl_umask=no
 export ac_cv_have_decl_sched_getaffinity=no
 export ac_cv_have_decl_sched_setaffinity=no
 
+# TODO: review. SIDE_MODULE is no longer used
 # SIDE_MODULE + pthread is experimental, and pthread_kill is not implemented
 export r_cv_search_pthread_kill=no
 

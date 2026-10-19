@@ -1,0 +1,57 @@
+context:
+  name: lattice
+  version: 0.23-1
+
+package:
+  name: r-${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 34e9b2fc023582c4246959b543c331233c62118efd922bcc1ba72b4888adc590
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://lattice.r-forge.r-project.org/
+  repository: https://github.com/deepayan/lattice/
+  license: GPL-2.0-or-later
+  license_file: LICENSE.note
+  license_family: GPL3
+  summary: Trellis Graphics for R
+  description: |
+    A powerful and elegant high-level data visualization system inspired by
+    Trellis graphics, with an emphasis on multivariate data. Lattice is
+    sufficient for typical graphics needs, and is also flexible enough to handle
+    most nonstandard requirements. See ?Lattice for an introduction.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

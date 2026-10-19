@@ -1,0 +1,100 @@
+context:
+  name: quanteda
+  version: 4.5.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: caf592519d51f1a19694fb112e8455814526a3f7b25f6befb7337e76fcacf6c2
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  - r-matrix >=1.5_0
+  - r-rcpp >=0.12.12
+  - r-snowballc
+  - r-fastmatch
+  - r-jsonlite
+  - r-lifecycle
+  - r-magrittr
+  - r-stopwords
+  - r-stringi
+  - r-xml2
+  - r-yaml
+  # Workaround minor limitation of rattler-build
+  - r-usethis
+  host:
+  - libflang-rt-static
+  - r-base ==${{ r_base }}
+  - r-matrix >=1.5_0
+  - r-rcpp >=0.12.12
+  - r-snowballc
+  - r-fastmatch
+  - r-jsonlite
+  - r-lifecycle
+  - r-magrittr
+  - r-stopwords
+  - r-stringi
+  - r-xml2
+  - r-yaml
+  run:
+  - r-matrix >=1.5_0
+  - r-rcpp >=0.12.12
+  - r-snowballc
+  - r-fastmatch
+  - r-jsonlite
+  - r-lifecycle
+  - r-magrittr
+  - r-stopwords
+  - r-stringi
+  - r-xml2
+  - r-yaml
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://quanteda.io
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Quantitative Analysis of Textual Data
+  description: |
+    A fast, flexible, and comprehensive framework for quantitative text analysis
+    in R.  Provides functionality for corpus management, creating and
+    manipulating tokens and n-grams, exploring keywords in context, forming and
+    manipulating sparse matrices of documents by features and feature
+    co-occurrences, analyzing keywords, computing feature similarities and
+    distances, applying content dictionaries, applying supervised and
+    unsupervised machine learning, visually representing text and text analyses,
+    and more.
+
+extra:
+  recipe-maintainers:
+  - rgaiacs
+  - IsabelParedes
