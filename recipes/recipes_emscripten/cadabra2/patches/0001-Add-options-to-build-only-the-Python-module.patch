@@ -1,10 +1,10 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 442146c..bea5e83 100644
+index 44039c3..25a163b 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -169,8 +169,30 @@ endif()
+@@ -169,8 +169,32 @@ endif()
  # Switch between GTK4 and GTK3.
- option(USE_GTK4 "Build for GTK4 (instead of GTK3)" OFF)
+ option(USE_GTK4 "Build for GTK4 (instead of GTK3)" ON)
  
 -# Include packaging logic.
 -include(cmake/packaging.cmake)
@@ -13,7 +13,9 @@ index 442146c..bea5e83 100644
 +# and all GUI components. This is what is needed to use Cadabra from
 +# an existing Python interpreter (e.g. for WebAssembly/Pyodide-like
 +# environments), and it avoids the dependencies on glibmm, sqlite,
-+# openssl and the compiled Boost libraries.
++# openssl and the compiled Boost libraries. Unlike PYPI_WHEEL, this
++# keeps the regular site-packages install layout and does not build
++# the Jupyter integration.
 +option(CADABRA_PYTHON_MODULE_ONLY "Only build the cadabra2 Python module and the cdb packages" OFF)
 +
 +# Build the compiled 'cdb' packages (cdb.core._component, cdb.utils._algorithm)
@@ -35,7 +37,7 @@ index 442146c..bea5e83 100644
  
  #---------------------------------------------------------------------------
  # User options and other notifications
-@@ -235,6 +257,11 @@ endif()
+@@ -250,6 +274,11 @@ endif()
  
  include(CheckIPOSupported)
  check_ipo_supported(RESULT IPO_SUPPORTED OUTPUT error)
@@ -47,55 +49,50 @@ index 442146c..bea5e83 100644
  if( IPO_SUPPORTED )
      message(STATUS "IPO / LTO enabled")
  else()
-@@ -507,7 +534,9 @@ if(ENABLE_PY_JUPYTER)
+@@ -533,7 +562,7 @@ if(ENABLE_PY_JUPYTER)
  endif()
  
  # Core/packages
--add_subdirectory(client_server)
-+if(NOT CADABRA_PYTHON_MODULE_ONLY)
-+  add_subdirectory(client_server)
-+endif()
+-if(NOT PYPI_WHEEL)
++if(NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY)
+   add_subdirectory(client_server)
+ endif()
  add_subdirectory(core)
- 
- # Frontend
-@@ -525,7 +554,9 @@ if(BUILD_TESTS)
+@@ -553,7 +582,7 @@ if(BUILD_TESTS)
    add_subdirectory(tests)
  endif()
  
--add_subdirectory(web2 EXCLUDE_FROM_ALL)
-+if(NOT CADABRA_PYTHON_MODULE_ONLY)
-+  add_subdirectory(web2 EXCLUDE_FROM_ALL)
-+endif()
+-if(NOT PYPI_WHEEL)
++if(NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY)
+   add_subdirectory(web2 EXCLUDE_FROM_ALL)
+ endif()
  
- # Generate the core/Config.hh file; this needs to come as late as possible
- # in this CMakeLists.txt to ensure that all variables have been set.
 diff --git a/core/CMakeLists.txt b/core/CMakeLists.txt
-index 7f497a3..85c74f3 100644
+index c677bc4..1dd1ffa 100644
 --- a/core/CMakeLists.txt
 +++ b/core/CMakeLists.txt
-@@ -34,6 +34,13 @@ configure_file(
+@@ -34,12 +34,19 @@ configure_file(
  #   # so no linking takes place
  #   set(Boost_USE_STATIC_LIBS   ON)
  # endif()
 +if(CADABRA_PYTHON_MODULE_ONLY)
-+  # The Python module itself only uses header-only Boost libraries,
-+  # and does not need glibmm.
++  # The Python module itself only uses header-only Boost libraries.
 +  find_path(Boost_INCLUDE_DIRS NAMES boost/version.hpp REQUIRED)
 +  set(Boost_LIBRARIES "")
 +  message(STATUS "Boost headers found in ${Boost_INCLUDE_DIRS}")
 +else()
- find_package(Boost 1.71.0 COMPONENTS system filesystem REQUIRED)
+ find_package(Boost 1.71.0 COMPONENTS filesystem REQUIRED)
  message(STATUS "Boost version ${Boost_VERSION}")
- 
-@@ -43,6 +50,7 @@ if(USE_GTK4)
- else()
-   find_package(GLIBMM3  REQUIRED)
- endif()
 +endif()
  
- # GMPXX
- # In order to distribute as a PyPl wheel, we need to link
-@@ -330,6 +338,15 @@ if(mimalloc_FOUND)
+ # Find glibmm (for base64); only the command-line tools need it,
+ # and those are not part of a PyPI wheel build.
+-if(NOT PYPI_WHEEL)
++if(NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY)
+   if(USE_GTK4)
+     find_package(GLIBMM4  REQUIRED)
+   else()
+@@ -330,6 +337,15 @@ if(mimalloc_FOUND)
    target_link_libraries(cadabra2 PUBLIC mimalloc)
  endif()
  
@@ -111,52 +108,57 @@ index 7f497a3..85c74f3 100644
  if(IPO_SUPPORTED)
    message(STATUS "IPO / LTO for cadabra2 enabled")     
    set_property(TARGET cadabra2 PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-@@ -364,6 +381,7 @@ if(MATHEMATICA_FOUND)
-    target_link_libraries(cadabra2 PRIVATE ${Mathematica_WSTP_LIBRARIES})
+@@ -365,7 +381,7 @@ if(MATHEMATICA_FOUND)
  endif()
  
-+if(NOT CADABRA_PYTHON_MODULE_ONLY)
+ # The command-line tools and C++ tests are not part of a PyPI wheel.
+-if(NOT PYPI_WHEEL)
++if(NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY)
+ 
  # cadabra2 CLI
  add_executable(cadabra2-cli
-    cadabra2-cli.cc
-@@ -504,6 +522,8 @@ else()
+@@ -506,7 +522,7 @@ else()
+   )
  endif()
  
+-endif() # NOT PYPI_WHEEL
++endif() # NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY
  
-+endif() # NOT CADABRA_PYTHON_MODULE_ONLY
-+
+ 
  # Profiling mode
- if(CMAKE_BUILD_TYPE STREQUAL "Profile")
-   find_library(GPERFTOOLS_PROFILER profiler REQUIRED)
-@@ -556,6 +576,7 @@ if(WIN32)
+@@ -561,7 +577,7 @@ if(WIN32)
    install(DIRECTORY ${WINPYTHON} DESTINATION lib)
  endif()
  
-+if(NOT CADABRA_PYTHON_MODULE_ONLY)
+-if(NOT PYPI_WHEEL)
++if(NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY)
  install(TARGETS cadabra2-cli DESTINATION ${CDB_BIN_PATH})
  install(TARGETS cdb-nbtool DESTINATION ${CDB_BIN_PATH})
  message(STATUS "Triple-check binary install path ${CMAKE_INSTALL_PREFIX}/${CDB_BIN_PATH}")
-@@ -574,6 +595,7 @@ if(NOT WIN32)
+@@ -580,7 +596,7 @@ if(NOT WIN32)
      )
     ")
  endif()
-+endif() # NOT CADABRA_PYTHON_MODULE_ONLY
+-endif() # NOT PYPI_WHEEL
++endif() # NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY
  install(
-    FILES 
+    FILES
        "${PROJECT_BINARY_DIR}/packages/cadabra2_defaults.py" 
-@@ -590,6 +612,7 @@ install(
+@@ -597,7 +613,7 @@ install(
  #     ${CDB_BIN_PATH}
  # )
  
-+if(NOT CADABRA_PYTHON_MODULE_ONLY)
+-if(NOT PYPI_WHEEL)
++if(NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY)
  # cadabra2python
  install(
    TARGETS 
-@@ -638,6 +661,7 @@ if(NOT WIN32)
+@@ -646,7 +662,7 @@ if(NOT WIN32)
      share/man/man1
      )
  endif()
-+endif() # NOT CADABRA_PYTHON_MODULE_ONLY
+-endif() # NOT PYPI_WHEEL
++endif() # NOT PYPI_WHEEL AND NOT CADABRA_PYTHON_MODULE_ONLY
  
  # if(APPIMAGE_MODE)
  #   # Install sympy. Matplotlib would be nice, but that pulls in blas and fortran and zillions of other things,
