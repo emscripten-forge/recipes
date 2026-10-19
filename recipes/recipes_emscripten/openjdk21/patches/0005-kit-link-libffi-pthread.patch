@@ -1,0 +1,20 @@
+From: emscripten-forge
+Subject: openjdk21-wasm-link: link libffi from the libffi-pthread package
+
+libffi is no longer built by the openjdk21 recipe and copied to
+lib/wasm-native/libffi.a; it comes from the libffi-pthread package (a run
+dependency), which installs it as lib/libffi-pthread/libffi.a.
+---
+diff --git a/openjdk21-wasm-link b/openjdk21-wasm-link
+index 5b18589..cf787dd 100644
+--- a/openjdk21-wasm-link
++++ b/openjdk21-wasm-link
+@@ -190,7 +190,7 @@ fi
+ 
+ em++ "${flags[@]}" "$work/jvm-main.o" "$work/symbols.o" \
+   -Wl,--whole-archive "${whole[@]}" -Wl,--no-whole-archive \
+-  "${rest[@]}" "$NATIVE/libffi.a" \
++  "${rest[@]}" "$PREFIX_DIR/lib/libffi-pthread/libffi.a" \
+   ${x11[@]+"${x11[@]}"} \
+   "${files[@]}" \
+   ${extra[@]+"${extra[@]}"} \

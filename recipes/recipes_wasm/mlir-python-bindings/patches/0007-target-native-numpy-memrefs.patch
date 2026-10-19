@@ -1,5 +1,5 @@
 diff --git a/mlir/python/mlir/runtime/np_to_memref.py b/mlir/python/mlir/runtime/np_to_memref.py
-index d65ba51afdb9..a463afde844d 100644
+index d65ba51afdb9..c21889c1dc06 100644
 --- a/mlir/python/mlir/runtime/np_to_memref.py
 +++ b/mlir/python/mlir/runtime/np_to_memref.py
 @@ -99,29 +99,48 @@ def to_numpy(array):
@@ -94,7 +94,8 @@ index d65ba51afdb9..a463afde844d 100644
      x.aligned = nparray.ctypes.data_as(ctypes.POINTER(ctp))
 -    x.offset = ctypes.c_longlong(0)
 +    x.offset = index_ctype(0)
-     x.shape = nparray.ctypes.shape
+-    x.shape = nparray.ctypes.shape
++    x.shape = (index_ctype * nparray.ndim)(*nparray.shape)
  
      # Numpy uses byte quantities to express strides, MLIR OTOH uses the
      # torch abstraction which specifies strides in terms of elements.
