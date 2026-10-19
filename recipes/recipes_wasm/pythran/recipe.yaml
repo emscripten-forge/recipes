@@ -1,0 +1,71 @@
+context:
+  version: 0.19.0
+
+package:
+  name: pythran
+  version: ${{ version }}
+
+source:
+  url: https://github.com/serge-sans-paille/pythran/archive/refs/tags/${{ version}}.tar.gz
+  sha256: c4a716d775d4cc1821fecd44278df79115a0e2bf140f823b7e4990c700b9e7ae
+  patches:
+    # this is necessary to fix a problem with mutable global
+    # [wasm-validator error in module] unexpected true: Imported global cannot be mutable
+    # https://github.com/emscripten-core/emscripten/issues/14460
+  - patches/0001-remove-strip-all.patch
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy >=1.25
+  - ${{ compiler('cxx') }}
+  - pip
+  host:
+  - python-dev
+  - numpy >=1.25
+  run:
+  - python >=3.11
+  - numpy >=1.25
+  - decorator
+  - gast 0.5.*
+  - ply >=3.4
+  - beniget 0.4.*
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pythran.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: A claimless Python to C++ converter
+  description: |
+    Pythran is an ahead of time compiler for a subset of the Python language,
+    with a focus on scientific computing. It takes a Python module annotated
+    with a few interface description and turns it into a native Python module
+    with the same interface, but (hopefully) faster.
+  homepage: http://github.com/serge-sans-paille/pythran
