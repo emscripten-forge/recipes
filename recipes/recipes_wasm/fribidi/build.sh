@@ -3,6 +3,8 @@
 set -ex
 
 export CFLAGS="$CFLAGS -fPIC"
+export CFLAGS="$CFLAGS -fPIC"
+export LDFLAGS="$LDFLAGS -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=8MB"
 
 meson_setup_args=(
     -Ddocs=false
