@@ -1,0 +1,19 @@
+diff --git a/include/private/gcconfig.h b/include/private/gcconfig.h
+index 86821a4c..90798a8f 100644
+--- a/include/private/gcconfig.h
++++ b/include/private/gcconfig.h
+@@ -2620,10 +2620,11 @@ extern char **environ;
+ 
+ #ifdef WEBASSEMBLY
+ #  define MACH_TYPE "WEBASSEMBLY"
+-#  if defined(__wasm64__) && !defined(CPPCHECK)
+-#    error 64-bit WebAssembly is not yet supported
++#  if defined(__wasm64__) || defined(__LP64__)
++#    define CPP_WORDSZ 64
++#  else
++#    define CPP_WORDSZ 32
+ #  endif
+-#  define CPP_WORDSZ 32
+ /*
+  * Emscripten does emulate `mmap` and `munmap`, but those should not be
+  * used in the collector, since WebAssembly lacks the native support of

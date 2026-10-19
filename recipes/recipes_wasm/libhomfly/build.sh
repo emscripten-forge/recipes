@@ -3,7 +3,7 @@ set -euxo pipefail
 
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
-    --host=wasm32-unknown-emscripten \
+    --host=$HOST \
     --disable-shared \
     --enable-static \
     --prefix="${PREFIX}" \
@@ -12,4 +12,3 @@ emconfigure ./configure \
     LDFLAGS="-L${PREFIX}/lib"
 
 emmake make -j8
-emmake make install
