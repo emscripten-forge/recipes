@@ -1,7 +1,9 @@
 context:
   name: r-base
   version: 4.6.1
-  build_number: 1
+
+build:
+  number: 4
 
 source:
   url: https://cran.r-project.org/src/base/R-4/R-${{ version }}.tar.gz
@@ -25,9 +27,6 @@ source:
   - if: target_platform == "emscripten-wasm64"
     then:
     - patches/0017-Avoid-NINT-IDNINT-in-Lapack-wasm64.patch
-
-build:
-  number: ${{ build_number }}
 
 #-------------------------------------------------------------------------------
 # STAGING: runs build.sh once; r-base and r-py inherit from here.
@@ -107,7 +106,10 @@ outputs:
     - font-ttf-dejavu >=2.37
     - font-ttf-dejavu-sans-mono >=2.37
     run_exports:
-    - ${{ pin_subpackage('r-base', upper_bound='x.x') }}
+      weak:
+      - ${{ pin_subpackage('r-base', lower_bound='x.x', upper_bound='x.x') }}
+      noarch:
+      - ${{ pin_subpackage('r-base', lower_bound='x.x', upper_bound='x.x') }}
 
   tests:
   - package_contents:

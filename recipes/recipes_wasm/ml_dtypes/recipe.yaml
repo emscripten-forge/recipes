@@ -1,0 +1,64 @@
+context:
+  name: ml_dtypes
+  version: 0.6.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5e60251d32ced5598972e4d5e06a2f044341f9291402551a3f6f0ec44f9299b0
+
+build:
+  number: 1
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - numpy >=2.3
+  - pip
+  - scikit-build-core
+  - cmake >=4.3.3
+  - make
+  host:
+  - python
+  - libpython-static
+  - numpy >=2.3
+  run:
+  - python
+  - numpy >=2.3
+
+tests:
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+- script: pytester
+  files:
+    recipe:
+    - test_ml_dtypes.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/jax-ml/ml_dtypes
+  summary: NumPy dtype extensions used in machine learning
+  license: Apache-2.0 AND MPL-2.0
+  license_file:
+  - LICENSE
+  - LICENSE.eigen
+
+extra:
+  recipe-maintainers:
+  - anutosh491
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true

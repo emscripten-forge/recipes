@@ -1,9 +1,9 @@
 diff --git a/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
 new file mode 100644
-index 000000000000..550c9d987d37
+index 000000000000..68aaaeef5cab
 --- /dev/null
 +++ b/mlir/lib/CAPI/ExecutionEngine/WasmExecutionEngine.cpp
-@@ -0,0 +1,251 @@
+@@ -0,0 +1,260 @@
 +//===- WasmExecutionEngine.cpp - MLIR Wasm Execution Engine ---------------===//
 +//
 +// Part of the LLVM Project, under the Apache License v2.0 with LLVM
@@ -24,7 +24,7 @@ index 000000000000..550c9d987d37
 +//       v
 +//   llvm::Module (IR)
 +//       |
-+//       | TargetMachine::addPassesToEmitFile  (WebAssembly, PIC, -Ox)
++//       | makeOptimizingTransformer + TargetMachine::addPassesToEmitFile
 +//       v
 +//   <moduleName>.o  (WebAssembly object file in MEMFS)
 +//       |
@@ -43,6 +43,7 @@ index 000000000000..550c9d987d37
 +#include "mlir-c/WasmExecutionEngine.h"
 +#include "mlir/CAPI/IR.h"
 +#include "mlir/CAPI/Support.h"
++#include "mlir/ExecutionEngine/OptUtils.h"
 +#include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 +#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 +#include "mlir/Target/LLVMIR/ModuleTranslation.h"
@@ -51,6 +52,7 @@ index 000000000000..550c9d987d37
 +#include "llvm/IR/LegacyPassManager.h"
 +#include "llvm/IR/Module.h"
 +#include "llvm/MC/TargetRegistry.h"
++#include "llvm/Support/Error.h"
 +#include "llvm/Support/FileSystem.h"
 +#include "llvm/Support/Path.h"
 +#include "llvm/Support/TargetSelect.h"
@@ -141,6 +143,13 @@ index 000000000000..550c9d987d37
 +  assert(optLevel >= 0 && optLevel <= 3 && "optLevel must be in [0,3]");
 +  targetMachine->setOptLevel(static_cast<llvm::CodeGenOptLevel>(optLevel));
 +  llvmModule->setDataLayout(targetMachine->createDataLayout());
++
++  auto optimize = mlir::makeOptimizingTransformer(
++      optLevel, /*sizeLevel=*/0, targetMachine.get());
++  if (auto error = optimize(llvmModule.get()))
++    llvm::report_fatal_error(
++        llvm::Twine("mlirWasmCompileModule: LLVM optimization failed: ") +
++        llvm::toString(std::move(error)));
 +
 +  std::string nameStr(moduleName.data, moduleName.length);
 +
