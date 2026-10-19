@@ -7,7 +7,7 @@ source:
   sha256: a569ee9c59eabb197a0d5047046d757ee14c86fb2d4a734555b633cb5584ad25
 
 build:
-  number: 0
+  number: 1
 
 outputs:
 
@@ -18,12 +18,16 @@ outputs:
     - ${{ compiler('c') }}
     - cmake
     - make
+    - pkg-config
     host:
     # Both zlib flavours are needed at build time: the static pass links
     # libz.a into libxml2.a; the shared pass links libz.so into libxml2.so.
     # Runtime deps are declared per-output below.
     - libzlib
     - libzlib-static
+    ignore_run_exports:
+      from_package:
+      - libzlib
   build:
     script: build.sh
 
