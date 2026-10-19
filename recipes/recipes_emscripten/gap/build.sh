@@ -88,6 +88,8 @@ cp native-build/build/c_*.c native-build/build/ffdata.* src/
 emmake make -j${CPU_COUNT} LDFLAGS="-lidbfs.js -lworkerfs.js -s ASYNCIFY=1 -sASYNCIFY_STACK_SIZE=16mb -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
 emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
+mkdir -p "${PREFIX}/bin/gap"
+
 cp gap.js "$PREFIX/bin/gap/"
 cp gap.wasm "$PREFIX/bin/gap/"
 
