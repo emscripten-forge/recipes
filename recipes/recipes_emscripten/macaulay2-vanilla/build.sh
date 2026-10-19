@@ -164,7 +164,7 @@ sed -i '/_NAUTY_check_version()/d' \
   ../../cmake/FindNauty.cmake
 
 echo \
-  "list(APPEND NORMALIZ_LIBRARIES \"$PREFIX/lib/libcocoa.a\")" \
+  "list(APPEND NORMALIZ_LIBRARIES \"$PREFIX/lib/libcocoa.a\" \"$PREFIX/lib/libeanticxx.a\" \"$PREFIX/lib/libeantic.a\")" \
   >> ../../cmake/FindNormaliz.cmake
 
 echo \
@@ -214,6 +214,19 @@ if(EMSCRIPTEN)
   )
 endif()
 EOF
+
+# The help databases are made below by M2 running under Node, where system()
+# works but pipes ("!command") do not: emscripten has no fork(). Run the two
+# commands that are piped while documentation and packages load through
+# system() and a temporary file instead: "M2 --help" in the documentation of
+# Macaulay2Doc, and the version check of findProgram (normaliz, msolve).
+sed -i \
+  's@M2Usage := get("!" | commandLine#0 | " --help");@M2Usage := (f := temporaryFileName(); run(format(prefixDirectory | currentLayout#"bin" | "M2-binary") | " --help > " | format f); get f);@' \
+  ../../Macaulay2/packages/Macaulay2Doc/ov_getting_started.m2
+
+sed -i \
+  's@get("!" | pathToTry |$@(cmd -> (run(cmd | " > " | (out := temporaryFileName())); get out))(pathToTry |@' \
+  ../../Macaulay2/m2/programs.m2
 
 # Adapt the interpreter to single-threaded wasm and replace constructor behavior with explicit initialization.
 sed -i \
@@ -573,6 +586,68 @@ sed -i \
   "$M2_BINARY_JS"
 
 emmake make M2-core
+
+# Help databases. Without them, help loads the documentation from the package
+# sources at run time, which fails in the browser. For each package, write
+# the raw documentation database that installPackage would write (the
+# examples run when help shows them, and no HTML is made), in the layout of
+# /m2: lib/Macaulay2/PKG/cache/rawdocumentation-dcba-4.db, plus the directory
+# share/doc/Macaulay2/PKG/, without which help ignores the database. gdbm
+# files depend on the architecture, so this wasm32 M2 makes them, under Node.
+cat > "$M2_BINARY_DIR/M2-binary" << 'EOF'
+#!/bin/sh
+exec node --max-old-space-size=4096 "$(dirname "$0")/M2-binary.js" "$@"
+EOF
+# Packages that look for these programs as they load: stand-ins, as nothing runs them here.
+cat > "$M2_BINARY_DIR/normaliz" << 'EOF'
+#!/bin/sh
+case "$1" in --version) echo "Normaliz 3.11.1";; esac
+EOF
+cat > "$M2_BINARY_DIR/msolve" << 'EOF'
+#!/bin/sh
+case "$1" in -V) echo "0.9.0";; esac
+EOF
+chmod +x "$M2_BINARY_DIR/M2-binary" "$M2_BINARY_DIR/normaliz" "$M2_BINARY_DIR/msolve"
+
+cat > "$PWD/help-database.m2" << 'EOF'
+debug Core
+pkg := loadPackage(PKG, LoadDocumentation => true, DebuggingMode => true, Reload => true);
+use pkg;
+currentPackage = pkg;
+rawDoc := pkg#"raw documentation";
+-- the nodes of installPackage
+fkeys := unique apply(nonnull join(
+    apply(pairs pkg.Dictionary, (name, sym) ->
+	if not match("\\$", name) then makeDocumentTag(sym, Package => pkg)),
+    apply(values rawDoc, rawdoc -> rawdoc.DocumentTag),
+    {makeDocumentTag(pkg#"pkgname", Package => pkg)}), format);
+makeDirectory databaseDirectory(Layout#1, PREFIX, PKG);
+docdir := PREFIX | replace("PKG", PKG, Layout#1#"packagedoc");
+makeDirectory docdir;
+docdir | ".keep" << close;
+db := openDatabaseOut databaseFilename(Layout#1, PREFIX, PKG);
+scan(fkeys, fkey -> if rawDoc#?fkey then
+    db#fkey = evaluateWithPackage(getpkg "Text", rawDoc#fkey, toExternalString));
+close db;
+EOF
+
+# These need dynamic linking (libffi), which this build does not have, to load.
+NO_HELP_DATABASE=" ForeignFunctions RInterface Padic "
+FAILED=""
+while IFS= read -r package; do
+    if ! "$M2_BINARY_DIR/M2" --webapp -q --stop --silent --no-preload --no-threads \
+         -e "PKG = \"$package\"; PREFIX = \"$PWD/usr-dist/common/\"" \
+         "$PWD/help-database.m2" -e "exit 0" > "help-database-$package.log" 2>&1; then
+        echo "no help database for $package:"
+        tail -n 20 "help-database-$package.log"
+        [[ "$NO_HELP_DATABASE" == *" $package "* ]] || FAILED="$FAILED $package"
+    fi
+done < <(grep -v '^#' ../../Macaulay2/packages/=distributed-packages | grep -v '^[[:space:]]*$')
+rm -f "$M2_BINARY_DIR/normaliz" "$M2_BINARY_DIR/msolve"
+if [[ -n "$FAILED" ]]; then
+    echo "ERROR: failed to write the help databases of:$FAILED" >&2
+    exit 1
+fi
 
 # Bundle all packages into M2.data.
 mkdir -p "$PWD/usr-dist/common/share/Macaulay2"
