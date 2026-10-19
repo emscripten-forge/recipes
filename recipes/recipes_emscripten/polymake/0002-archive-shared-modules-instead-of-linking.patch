@@ -1,0 +1,24 @@
+--- a/support/rules.ninja	2026-09-18 22:17:19.460448372 +0000
++++ b/support/rules.ninja	2026-09-18 22:17:50.593173073 +0000
+@@ -80,9 +80,19 @@
+   description = AR $out
+ 
+ # link a shared module
++#
++# WebAssembly/Emscripten build: the target perl is a static interpreter
++# (usedl='undef', dlsrc='dl_none.xs', dlext='none'), so nothing can ever be
++# dlopen'ed at runtime.  Every "shared module" -- the per-application client
++# libraries, the Polymake::Ext glue and the callable library -- is therefore
++# archived instead of linked, and build.sh performs one final link of all of
++# them into a single wasm executable.  The file names keep their original
++# extension so that the rest of the build system and support/install.pl need
++# no further changes; the final link pulls them in with --whole-archive, which
++# is essential because polymake registers its clients from static constructors.
+ rule sharedmod
+-  command = ${CCWRAPPER} ${CXX} ${LDsharedFLAGS} ${ARCHFLAGS} -o $out $in ${LDmodeFLAGS} ${LDextraFLAGS} ${LIBSextra} ${LDFLAGS} ${LIBS}
+-  description = LINK $out
++  command = ${CCWRAPPER} ${AR} -rcs $out $in
++  description = AR $out
+ 
+ # link a test executable
+ rule testexe

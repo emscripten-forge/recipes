@@ -1,0 +1,92 @@
+context:
+  name: readr
+  version: 2.2.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 8025d797c183e12ad5ebe4af891dbcb5a8e9bd53aa4765006eb25a07f9a9f473
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - r-cli
+  - r-clipr
+  - r-crayon
+  - r-hms
+  - r-lifecycle
+  - r-r6
+  - r-rlang
+  - r-tibble
+  - r-vroom
+  - r-cpp11
+  - r-tzdb
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli
+  - r-clipr
+  - r-crayon
+  - r-hms
+  - r-lifecycle
+  - r-r6
+  - r-rlang
+  - r-tibble
+  - r-vroom
+  - r-cpp11
+  - r-tzdb
+  run:
+  - r-cli
+  - r-clipr
+  - r-crayon
+  - r-hms
+  - r-lifecycle
+  - r-r6
+  - r-rlang
+  - r-tibble
+  - r-vroom
+  - r-cpp11
+  - r-tzdb
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://readr.tidyverse.org
+  repository: https://github.com/tidyverse/readr
+  license: MIT
+  license_file: LICENSE
+  summary: Read flat files (csv, tsv, fwf) into R
+  description: |
+    The goal of 'readr' is to provide a fast and friendly way to read
+    rectangular data (like 'csv', 'tsv', and 'fwf'). It is designed to flexibly
+    parse many types of data found in the wild, while still cleanly failing when
+    data unexpectedly changes.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

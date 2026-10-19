@@ -1,5 +1,0 @@
-#!/bin/bash
-
-
-CMAKE_ARGS="-DCMAKE_PROJECT_INCLUDE=$RECIPE_DIR/overwriteProp.cmake -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON"
-${PYTHON} -m pip install .
