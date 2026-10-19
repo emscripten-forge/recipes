@@ -1,0 +1,384 @@
+From 72d59b12e953caa8dfb5c559222640cd2e631109 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 15 Oct 2026 18:31:19 +0200
+Subject: [PATCH] Disable multi-threading
+
+---
+ DESCRIPTION                                   |   2 +-
+ .../bicop/implementation/class.ipp            |   1 +
+ .../bicop/implementation/fit_controls.ipp     |   6 +-
+ .../vinecopulib/misc/tools_interface.hpp      |  16 ++-
+ .../include/vinecopulib/misc/tools_thread.hpp | 116 +++---------------
+ src/RcppExports.cpp                           |   2 +
+ src/vinecopulib-interface.cpp                 |  14 +++
+ 7 files changed, 51 insertions(+), 106 deletions(-)
+
+diff --git a/DESCRIPTION b/DESCRIPTION
+index 9093efc..9dfa3d8 100644
+--- a/DESCRIPTION
++++ b/DESCRIPTION
+@@ -24,7 +24,7 @@ Depends: R (>= 3.0.2)
+ Imports: assertthat, graphics, grDevices, kde1d (>= 1.1.0), lattice,
+         Rcpp (>= 0.12.12), stats, utils
+ Suggests: igraph, ggplot2, ggraph, testthat
+-LinkingTo: BH, Rcpp, RcppEigen, RcppThread (>= 2.1.2), wdm (>= 0.2.6),
++LinkingTo: BH, Rcpp, RcppEigen, wdm (>= 0.2.6),
+         kde1d (>= 1.1.0)
+ BugReports: https://github.com/vinecopulib/rvinecopulib/issues
+ URL: https://vinecopulib.github.io/rvinecopulib/
+diff --git a/inst/include/vinecopulib/bicop/implementation/class.ipp b/inst/include/vinecopulib/bicop/implementation/class.ipp
+index 03acf8a..225f14a 100644
+--- a/inst/include/vinecopulib/bicop/implementation/class.ipp
++++ b/inst/include/vinecopulib/bicop/implementation/class.ipp
+@@ -11,6 +11,7 @@
+ #include <vinecopulib/misc/tools_serialization.hpp>
+ #include <vinecopulib/misc/tools_stats.hpp>
+ #include <vinecopulib/misc/tools_stl.hpp>
++#include <vinecopulib/misc/tools_batch.hpp>
+ 
+ //! Tools for bivariate and vine copula modeling
+ namespace vinecopulib {
+diff --git a/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp b/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp
+index 16e7114..92895f8 100644
+--- a/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp
++++ b/inst/include/vinecopulib/bicop/implementation/fit_controls.ipp
+@@ -321,7 +321,11 @@ FitControlsBicop::process_num_threads(size_t num_threads)
+     num_threads = 0;
+ 
+   // don't use more threads than supported by the system
+-  size_t max_threads = std::thread::hardware_concurrency();
++  #ifndef __EMSCRIPTEN__
++    size_t max_threads = std::thread::hardware_concurrency();
++  #else
++    size_t max_threads = 1;
++  #endif
+   num_threads = std::min(num_threads, max_threads);
+ 
+   return num_threads;
+diff --git a/inst/include/vinecopulib/misc/tools_interface.hpp b/inst/include/vinecopulib/misc/tools_interface.hpp
+index 4fd3c6a..acde81c 100644
+--- a/inst/include/vinecopulib/misc/tools_interface.hpp
++++ b/inst/include/vinecopulib/misc/tools_interface.hpp
+@@ -11,6 +11,7 @@
+ #define INTERFACED_FROM_R
+ 
+ // interface specific headers
++#ifndef __EMSCRIPTEN__
+ #ifdef INTERFACED_FROM_R
+ #include <RcppThread.h>
+ #define cout Rcout
+@@ -20,8 +21,13 @@ static RcppThread::RPrinter Rcout = RcppThread::RPrinter();
+ #else
+ #include <iostream>
+ #endif
++#else
++#include <iostream>
++#endif
++
+ 
+ // parallel backend
++#ifndef __EMSCRIPTEN__
+ #include <vinecopulib/misc/tools_batch.hpp>
+ #ifdef INTERFACED_FROM_R
+ namespace vinecopulib {
+@@ -32,6 +38,10 @@ typedef RcppThread::ThreadPool ThreadPool;
+ #else
+ #include <vinecopulib/misc/tools_thread.hpp>
+ #endif
++#else
++#include <vinecopulib/misc/tools_batch.hpp>
++#include <vinecopulib/misc/tools_thread.hpp>
++#endif
+ 
+ namespace vinecopulib {
+ 
+@@ -41,8 +51,10 @@ inline void
+ check_user_interrupt(bool do_check = true)
+ {
+   if (do_check) {
+-#ifdef INTERFACED_FROM_R
+-    RcppThread::checkUserInterrupt();
++#ifndef __EMSCRIPTEN__
++  #ifdef INTERFACED_FROM_R
++      RcppThread::checkUserInterrupt();
++  #endif
+ #endif
+   }
+ }
+diff --git a/inst/include/vinecopulib/misc/tools_thread.hpp b/inst/include/vinecopulib/misc/tools_thread.hpp
+index e42ffac..27bf9bf 100644
+--- a/inst/include/vinecopulib/misc/tools_thread.hpp
++++ b/inst/include/vinecopulib/misc/tools_thread.hpp
+@@ -6,18 +6,15 @@
+ 
+ #pragma once
+ 
+-#include <atomic>
+-#include <condition_variable>
+-#include <future>
++#include <exception>
++#include <functional>
+ #include <queue>
+-#include <thread>
+-#include <vector>
+ 
+ namespace vinecopulib {
+ 
+ namespace tools_thread {
+ 
+-//! Implemenation of the thread pool pattern based on `std::sthread`.
++//! Serial ThreadPool stub for Emscripten (no native threads).
+ class ThreadPool
+ {
+ public:
+@@ -54,13 +51,8 @@ private:
+   bool wait_for_wake_up_event();
+   void rethrow_exceptions();
+ 
+-  std::vector<std::thread> workers_;       // worker threads in the pool
+-  std::queue<std::function<void()>> jobs_; // the task que
++  std::queue<std::function<void()>> jobs_;
+ 
+-  // variables for synchronization between workers
+-  std::mutex m_tasks_;
+-  std::condition_variable cv_tasks_;
+-  std::condition_variable cv_busy_;
+   size_t num_busy_{ 0 };
+   bool stopped_{ false };
+   std::exception_ptr error_ptr_;
+@@ -68,7 +60,6 @@ private:
+ 
+ //! constructs a thread pool with as many workers as there are cores.
+ inline ThreadPool::ThreadPool()
+-  : ThreadPool(std::thread::hardware_concurrency())
+ {}
+ 
+ //! constructs a thread pool with `nThreads` threads.
+@@ -76,8 +67,7 @@ inline ThreadPool::ThreadPool()
+ //!    work pushed to the pool will be done in the main thread.
+ inline ThreadPool::ThreadPool(size_t nWorkers)
+ {
+-  for (size_t w = 0; w < nWorkers; ++w)
+-    this->start_worker();
++  (void)nWorkers;
+ }
+ 
+ //! destructor joins all threads if possible.
+@@ -101,18 +91,7 @@ template<class F, class... Args>
+ void
+ ThreadPool::push(F&& f, Args&&... args)
+ {
+-  if (workers_.size() == 0) {
+-    f(args...); // if there are no workers, do the job in the main thread
+-    return;
+-  } else {
+-    // must hold lock while modifying the shared queue
+-    std::lock_guard<std::mutex> lk(m_tasks_);
+-    if (stopped_)
+-      throw std::runtime_error("cannot push to joined thread pool");
+-    jobs_.emplace([f, args...] { f(args...); });
+-  }
+-  // signal a waiting worker that there's a new job
+-  cv_tasks_.notify_one();
++  f(args...);
+ }
+ 
+ //! maps a function on a list of items, possibly running tasks in parallel.
+@@ -132,19 +111,11 @@ ThreadPool::map(F&& f, I&& items)
+ inline void
+ ThreadPool::wait()
+ {
+-  while (true) {
+-    if (wait_for_wake_up_event()) {
+-      if (!this->all_jobs_done()) {
+-        this->clear(); // cancel all remaining jobs
+-        continue;      // wait for currently running jobs
+-      }
+-      if (this->has_errored() || this->all_jobs_done())
+-        break;
+-    }
+-    std::this_thread::yield();
++  while (!jobs_.empty()) {
++    auto job = std::move(jobs_.front());
++    jobs_.pop();
++    this->do_job(std::move(job));
+   }
+-
+-  this->rethrow_exceptions();
+ }
+ 
+ //! waits for all jobs to finish and joins all threads.
+@@ -160,44 +131,13 @@ ThreadPool::join()
+ inline void
+ ThreadPool::clear()
+ {
+-  // must hold lock while modifying job queue
+-  std::lock_guard<std::mutex> lk(m_tasks_);
+   std::queue<std::function<void()>>().swap(jobs_);
+-  cv_tasks_.notify_all();
+ }
+ 
+ //! spawns a worker thread waiting for jobs to arrive.
+ inline void
+ ThreadPool::start_worker()
+ {
+-  workers_.emplace_back([this] {
+-    std::function<void()> job;
+-    // observe thread pool; only stop after all jobs are done
+-    while ((!stopped_) | (!jobs_.empty())) {
+-      // must hold a lock while modifying shared variables
+-      std::unique_lock<std::mutex> lk(m_tasks_);
+-
+-      // thread should wait when there is no job
+-      cv_tasks_.wait(lk, [this] { return stopped_ || !jobs_.empty(); });
+-
+-      // queue can be empty if thread pool is stopped
+-      if (jobs_.empty())
+-        continue;
+-
+-      // take job from the queue
+-      job = std::move(jobs_.front());
+-      jobs_.pop();
+-
+-      // lock can be released before starting work, but must signal
+-      // that thread will be busy before (!) to avoid premature breaks
+-      this->announce_busy();
+-      lk.unlock();
+-
+-      this->do_job(std::move(job));
+-      this->announce_idle();
+-      std::this_thread::yield();
+-    }
+-  });
+ }
+ 
+ //! executes a job safely and let's pool know when it's busy.
+@@ -205,54 +145,32 @@ ThreadPool::start_worker()
+ inline void
+ ThreadPool::do_job(std::function<void()>&& job)
+ {
+-  try {
+-    job();
+-  } catch (...) {
+-    std::lock_guard<std::mutex> lk(m_tasks_);
+-    error_ptr_ = std::current_exception();
+-  }
++  job();
+ }
+ 
+ //! signals that a worker is busy (must be called why locking m_tasks_).
+ inline void
+ ThreadPool::announce_busy()
+ {
+-  ++num_busy_;
+-  cv_busy_.notify_one();
+ }
+ 
+ //! signals that a worker is idle.
+ inline void
+ ThreadPool::announce_idle()
+ {
+-  {
+-    std::lock_guard<std::mutex> lk(m_tasks_);
+-    --num_busy_;
+-  }
+-  cv_busy_.notify_one();
+ }
+ 
+ //! signals threads that no more new work is coming.
+ inline void
+ ThreadPool::announce_stop()
+ {
+-  {
+-    std::unique_lock<std::mutex> lk(m_tasks_);
+-    stopped_ = true;
+-  }
+-  cv_tasks_.notify_all();
++  stopped_ = true;
+ }
+ 
+ //! joins worker threads if possible.
+ inline void
+ ThreadPool::join_workers()
+ {
+-  if (workers_.size() > 0) {
+-    for (auto& worker : workers_) {
+-      if (worker.joinable())
+-        worker.join();
+-    }
+-  }
+ }
+ 
+ //! checks if an error occured.
+@@ -266,20 +184,14 @@ ThreadPool::has_errored()
+ inline bool
+ ThreadPool::all_jobs_done()
+ {
+-  return (num_busy_ == 0) && jobs_.empty();
++  return jobs_.empty();
+ }
+ 
+ //! checks whether `wait()` needs to wake up
+ inline bool
+ ThreadPool::wait_for_wake_up_event()
+ {
+-  static auto timeout = std::chrono::milliseconds(250);
+-  auto wake_up_event_occured = [this] {
+-    return this->all_jobs_done() || this->has_errored();
+-  };
+-  std::unique_lock<std::mutex> lk(m_tasks_);
+-  cv_busy_.wait_for(lk, timeout, wake_up_event_occured);
+-  return wake_up_event_occured();
++  return this->all_jobs_done() || this->has_errored();
+ }
+ 
+ //! rethrows exceptions (exceptions from workers are caught and stored; the
+diff --git a/src/RcppExports.cpp b/src/RcppExports.cpp
+index b2dac5e..aa3171d 100644
+--- a/src/RcppExports.cpp
++++ b/src/RcppExports.cpp
+@@ -2,7 +2,9 @@
+ // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
+ 
+ #include <RcppEigen.h>
++#ifndef __EMSCRIPTEN__
+ #include <RcppThread.h>
++#endif
+ #include <Rcpp.h>
+ 
+ using namespace Rcpp;
+diff --git a/src/vinecopulib-interface.cpp b/src/vinecopulib-interface.cpp
+index 9590d67..71754dd 100644
+--- a/src/vinecopulib-interface.cpp
++++ b/src/vinecopulib-interface.cpp
+@@ -309,6 +309,7 @@ std::vector<Rcpp::List> fit_margins_cpp(const Eigen::MatrixXd& data,
+   size_t d = data.cols();
+   std::vector<kde1d::Kde1d> fits_cpp(d);
+   num_threads = (num_threads > 1) ? num_threads : 0;
++  #ifndef __EMSCRIPTEN__
+   RcppThread::parallelFor(0,
+                           d,
+                           [&](const size_t& k) {
+@@ -323,6 +324,19 @@ std::vector<Rcpp::List> fit_margins_cpp(const Eigen::MatrixXd& data,
+                             fits_cpp[k].fit(data.col(k), weights);
+                           },
+                           num_threads);
++  #else
++  for (size_t k = 0; k < d; ++k) {
++    fits_cpp[k] = kde1d::Kde1d(
++      xmin(k),
++      xmax(k),
++      type.at(k),
++      mult(k),
++      bw(k),
++      deg(k)
++    );
++    fits_cpp[k].fit(data.col(k), weights);
++  }
++  #endif
+ 
+   // we can't do the following in parallel because it calls R API
+   std::vector<Rcpp::List> fits_r(d);
+-- 
+2.56.0
+
