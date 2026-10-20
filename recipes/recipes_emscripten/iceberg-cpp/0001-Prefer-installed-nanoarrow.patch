@@ -1,0 +1,22 @@
+diff --git a/cmake_modules/IcebergThirdpartyToolchain.cmake b/cmake_modules/IcebergThirdpartyToolchain.cmake
+index 4649b8d..9d95027 100644
+--- a/cmake_modules/IcebergThirdpartyToolchain.cmake
++++ b/cmake_modules/IcebergThirdpartyToolchain.cmake
+@@ -261,6 +261,15 @@ function(resolve_nanoarrow_dependency)
+   else()
+     set(NANOARROW_URL
+        "https://dlcdn.apache.org/arrow/apache-arrow-nanoarrow-0.7.0/apache-arrow-nanoarrow-0.7.0.tar.gz"
+    )
+   endif()
++
++  find_package(nanoarrow CONFIG QUIET)
++  if(nanoarrow_FOUND)
++    set(NANOARROW_VENDORED FALSE)
++    list(APPEND ICEBERG_SYSTEM_DEPENDENCIES nanoarrow)
++    set(ICEBERG_SYSTEM_DEPENDENCIES ${ICEBERG_SYSTEM_DEPENDENCIES} PARENT_SCOPE)
++    set(NANOARROW_VENDORED ${NANOARROW_VENDORED} PARENT_SCOPE)
++    return()
++  endif()
+ 
+   fetchcontent_declare(nanoarrow
+                        ${FC_DECLARE_COMMON_OPTIONS}

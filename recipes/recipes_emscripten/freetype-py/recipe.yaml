@@ -1,0 +1,53 @@
+context:
+  name: freetype-py
+  version: "2.5.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: cfe2686a174d0dd3d71a9d8ee9bf6a2c23f5872385cf8ce9f24af83d076e2fbd
+  patches:
+  - emscripten-library-path.patch
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps ${{ PIP_ARGS }}
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  host:
+  - python
+  - pip
+  - setuptools
+  - freetype-shared
+  run:
+  - python
+  - freetype-shared
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_freetype_py.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/rougier/freetype-py
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Freetype Python bindings
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

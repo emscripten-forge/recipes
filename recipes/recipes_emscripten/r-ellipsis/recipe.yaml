@@ -15,8 +15,9 @@ source:
 # TODO: remove from emscripten-forge once the noarch version is available on
 # conda-forge
 build:
-  number: 1
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 3
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
   noarch: generic
   script: $R CMD INSTALL $R_ARGS .
 
@@ -25,6 +26,7 @@ requirements:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - r-rlang
   host:
+  - r-base ==${{ r_base }}
   - r-rlang
   run:
   - r-rlang

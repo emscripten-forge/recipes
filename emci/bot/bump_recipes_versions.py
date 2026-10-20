@@ -101,7 +101,10 @@ def update_recipe_version(recipe_file, new_version, new_sha256, is_rattler):
     context['version'] = new_version
 
     # reset build number
-    recipe['build']['number'] = 0
+    if 'build_number' in context:
+        context['build_number'] = 0
+    else:
+        recipe['build']['number'] = 0
 
     # update sha256 in source
     source = recipe['source']
@@ -167,6 +170,9 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
                     break
         elif 'tests' not in recipe:
             automerge = False
+
+    if target_pr_branch_name != "main":
+        automerge = False
 
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
 
@@ -327,7 +333,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         skip_recipes = [
             'python', 'python_abi', 'libpython',
             'sqlite', 'robotics-toolbox-python',
-            'libffi'
+            'libffi', 'r-base-4.5.3'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 

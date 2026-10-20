@@ -1,0 +1,17 @@
+diff --git a/ext/POSIX/POSIX.xs b/ext/POSIX/POSIX.xs
+index 33381c2..7668670 100644
+--- a/ext/POSIX/POSIX.xs
++++ b/ext/POSIX/POSIX.xs
+@@ -3034,6 +3034,12 @@ sigpending(sigset)
+     CODE:
+ #ifdef __amigaos4__
+ 	RETVAL = not_here("sigpending");
++#elif defined(__EMSCRIPTEN__)
++	/* Emscripten's libc declares sigsuspend() but provides no
++	 * implementation for it (undefined symbol at link time).
++	 * sigpending() itself does link and work fine here, so only
++	 * the sigsuspend alias needs to raise at runtime instead. */
++	RETVAL = ix ? not_here("sigsuspend") : sigpending(sigset);
+ #else
+ 	RETVAL = ix ? sigsuspend(sigset) : sigpending(sigset);
+ #endif

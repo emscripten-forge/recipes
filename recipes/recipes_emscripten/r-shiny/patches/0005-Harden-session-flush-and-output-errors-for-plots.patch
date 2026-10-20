@@ -1,0 +1,214 @@
+From da85d088f9b6e6e6c43594c1487bf63ef491d634 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 4 Sep 2026 12:46:59 +0200
+Subject: [PATCH 5/6] Harden session flush and output errors for plots
+
+---
+ R/conditions.R | 20 ++++++++++++++++-
+ R/shiny.R      | 60 +++++++++++++++++++++++++++++++++++++++++++++-----
+ R/utils.R      | 25 ++++++++++++++++-----
+ 3 files changed, 92 insertions(+), 13 deletions(-)
+
+diff --git a/R/conditions.R b/R/conditions.R
+index 46c4cc9..38432d6 100644
+--- a/R/conditions.R
++++ b/R/conditions.R
+@@ -205,6 +205,10 @@ getCallCategories <- function(calls) {
+ #' @rdname stacktrace
+ #' @export
+ captureStackTraces <- function(expr) {
++  # Chromium wasm workers have a shallow JS stack; deep stack capture overflows.
++  if (isWasmPlotHost()) {
++    return(force(expr))
++  }
+   with_promise_domain(
+     createStackTracePromiseDomain(),
+     expr
+@@ -397,7 +401,21 @@ printError <- function(cond,
+   warning(call. = FALSE, immediate. = TRUE, sprintf("Error in %s: %s",
+     getCallNames(list(conditionCall(cond))), conditionMessage(cond)))
+ 
+-  printStackTrace(cond, full = full, offset = offset)
++  # On wasm hosts, skip stack traces: they are already omitted in captureStackTraces(),
++  # and printStackTrace() can prevent defineOutput's catch handler from returning
++  # try-error so errors never reach the client (see .safePrintOutputError).
++  if (!isWasmPlotHost()) {
++    printStackTrace(cond, full = full, offset = offset)
++  }
++}
++
++#' Print an output error without aborting error handling on wasm hosts.
++#' @noRd
++.safePrintOutputError <- function(cond) {
++  if (!isTRUE(getOption("show.error.messages"))) {
++    return(invisible())
++  }
++  tryCatch(printError(cond), error = function(e) invisible())
+ }
+ 
+ #' @rdname stacktrace
+diff --git a/R/shiny.R b/R/shiny.R
+index 1cbebd2..86e9153 100644
+--- a/R/shiny.R
++++ b/R/shiny.R
+@@ -485,7 +485,7 @@ ShinySession <- R6Class(
+     cycleStartActionQueue = 'fastqueue', # A list of actions to perform to start a cycle
+     .outputs = list(),          # Keeps track of all the output observer objects
+     .outputOptions = list(),     # Options for each of the output observer objects
+-    progressKeys = 'character',
++    progressKeys = character(0),
+     showcase   = FALSE,
+     fileUploadContext = 'FileUploadContext',
+     .input      = 'ANY', # Internal ReactiveValues object for normal input sent from client
+@@ -973,6 +973,7 @@ ShinySession <- R6Class(
+       self$token <- createUniqueId(16)
+       private$.outputs <- list()
+       private$.outputOptions <- list()
++      private$progressKeys <- character(0)
+ 
+       # Copy app-level options
+       self$options <- getCurrentAppState()$options
+@@ -1477,7 +1478,7 @@ ShinySession <- R6Class(
+               },
+               catch = function(cond) {
+                 if (inherits(cond, "shiny.custom.error")) {
+-                  if (isTRUE(getOption("show.error.messages"))) printError(cond)
++                  .safePrintOutputError(cond)
+                   structure(list(), class = "try-error", condition = cond)
+                 } else if (inherits(cond, "shiny.output.cancel")) {
+                   structure(list(), class = "cancel-output")
+@@ -1495,11 +1496,14 @@ ShinySession <- R6Class(
+                   # the code below can send the error to the browser.
+                   structure(list(), class = "try-error", condition = cond)
+                 } else {
+-                  if (isTRUE(getOption("show.error.messages"))) printError(cond)
++                  .safePrintOutputError(cond)
+                   if (getOption("shiny.sanitize.errors", FALSE)) {
+                     cond <- sanitized_error()
+                   }
+-                  self$unhandledError(cond, close = FALSE)
++                  tryCatch(
++                    self$unhandledError(cond, close = FALSE),
++                    error = function(e) invisible()
++                  )
+                   invisible(structure(list(), class = "try-error", condition = cond))
+                 }
+               }
+@@ -1540,6 +1544,12 @@ ShinySession <- R6Class(
+               private$sendMessage(recalculating = list(
+                 name = name, status = 'recalculated'
+               ))
++              # Client leaves progress after recalculated; allow the next
++              # invalidation to send progress again (Chrome wasm refreshes can
++              # re-enter before flushOutput clears progressKeys).
++              if (name %in% private$progressKeys) {
++                private$progressKeys <- setdiff(private$progressKeys, name)
++              }
+ 
+               if (inherits(value, "cancel-output")) {
+                 return()
+@@ -1591,6 +1601,34 @@ ShinySession <- R6Class(
+       if (private$busyCount > 0)
+         return()
+ 
++      # Drop bogus keys (legacy R6 default was the string "character").
++      if (identical(private$progressKeys, "character")) {
++        private$progressKeys <- character(0)
++      }
++      out_names <- names(private$.outputs)
++      private$progressKeys <- intersect(private$progressKeys, out_names)
++
++      # Do not complete a flush while real outputs marked in-progress
++      # (progressKeys) lack a value/error — e.g. wasm plot promise still pending.
++      # Hidden/suspended outputs are invalidated but won't run until shown; don't
++      # block the flush waiting for them.
++      if (length(private$progressKeys) > 0) {
++        pending_keys <- private$progressKeys
++        pending_keys <- pending_keys[!vapply(
++          pending_keys, private$shouldSuspend, logical(1), USE.NAMES = FALSE
++        )]
++        if (length(pending_keys) > 0) {
++          awaiting <- !vapply(pending_keys, function(k) {
++            private$invalidatedOutputValues$containsKey(k) ||
++              private$invalidatedOutputErrors$containsKey(k)
++          }, logical(1), USE.NAMES = FALSE)
++          if (length(awaiting) > 0 && any(awaiting)) {
++            appsNeedingFlush$set(self$token, self)
++            return(invisible())
++          }
++        }
++      }
++
+       appsNeedingFlush$remove(self$token)
+ 
+       if (self$isClosed())
+@@ -1687,11 +1725,21 @@ ShinySession <- R6Class(
+       if (self$closed)
+         return()
+ 
+-      if (!id %in% private$progressKeys) {
++      # Legacy R6 default was the string "character", not character(0).
++      if (identical(private$progressKeys, "character")) {
++        private$progressKeys <- character(0)
++      }
++
++      already <- id %in% private$progressKeys
++      if (!already) {
+         private$progressKeys <- c(private$progressKeys, id)
+       }
+ 
+-      self$sendProgress('binding', list(id = id, persistent = persistent))
++      # Non-persistent progress while already running violates the client
++      # output state machine (e.g. wasm plot deferred across invalidations).
++      if (!already || isTRUE(persistent)) {
++        self$sendProgress('binding', list(id = id, persistent = persistent))
++      }
+     },
+     sendProgress = function(type, message) {
+       private$sendMessage(
+diff --git a/R/utils.R b/R/utils.R
+index e64ab20..456c4a7 100644
+--- a/R/utils.R
++++ b/R/utils.R
+@@ -481,11 +481,23 @@ assignNestedList <- function(x = list(), idx, value) {
+ # option (e.g. we can set options(shiny.error = recover))
+ #' @include conditions.R
+ shinyCallingHandlers <- function(expr) {
+-  withCallingHandlers(captureStackTraces(expr),
+-    error = function(e) {
+-      # Don't intercept shiny.silent.error (i.e. validation errors)
+-      if (cnd_inherits(e, "shiny.silent.error"))
+-        return()
++  # Evaluate inside withCallingHandlers so sync errors are still intercepted.
++  # On wasm, skip captureStackTraces nesting (shallow Chromium JS stack).
++  if (isWasmPlotHost()) {
++    withCallingHandlers(force(expr),
++      error = function(e) {
++        if (cnd_inherits(e, "shiny.silent.error"))
++          return()
++
++        handle <- getOption('shiny.error')
++        if (is.function(handle)) handle()
++      }
++    )
++  } else {
++    withCallingHandlers(captureStackTraces(expr),
++      error = function(e) {
++        if (cnd_inherits(e, "shiny.silent.error"))
++          return()
+ 
+         handle <- getOption('shiny.error')
+         if (is.function(handle)) handle()
+@@ -1605,7 +1617,8 @@ hybrid_chain <- function(expr, ..., catch = NULL, finally = NULL,
+ 
+             valueWithVisible(result)
+           }
+-        })
++        }
++        if (isWasmPlotHost()) runExpr() else captureStackTraces(runExpr())
+       },
+       error = function(e) {
+         if (!is.null(catch))
+-- 
+2.55.0
+

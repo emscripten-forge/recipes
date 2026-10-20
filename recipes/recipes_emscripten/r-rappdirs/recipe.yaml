@@ -1,0 +1,47 @@
+context:
+  version: 0.3.4
+  name: r-rappdirs
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+    - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+    
+  sha256: 2320ebc9ef3b1a32a1e63f94a6ce2c1c34d66782221a6531e786804f681abc66
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://github.com/hadley/rappdirs https://github.com/ActiveState/appdirs
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: An easy way to determine which directories on the users computer you should use to save data, caches and logs. A port of Python's 'Appdirs'
+extra:
+  recipe-maintainers:
+    - DerThorsten

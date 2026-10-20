@@ -1,0 +1,38 @@
+Qt-wasm ships QtNetwork without SSL (no QNetworkAccessManager::sslErrors
+signal, QSslError methods stubbed) and without QNetworkProxyFactory's
+system-proxy detection. RemoteNetwork.cpp doesn't compile against that.
+
+The class exists to power DB Browser's "sync to dbhub.io" and "check for
+updates" features, neither of which is meaningful in a browser tab
+(users can navigate to dbhub.io themselves). Stub every method out on
+emscripten so the class still exists for the callers in Application.cpp
+and MainWindow.cpp but does nothing.
+
+--- a/src/RemoteNetwork.cpp
++++ b/src/RemoteNetwork.cpp
+@@ -1,3 +1,20 @@
++#ifdef __EMSCRIPTEN__
++
++#include "RemoteNetwork.h"
++
++#include <QtNetwork/QNetworkAccessManager>
++#include <QtNetwork/QNetworkReply>
++#include <QUrl>
++
++RemoteNetwork::RemoteNetwork() : m_manager(nullptr) {}
++RemoteNetwork::~RemoteNetwork() = default;
++void RemoteNetwork::reloadSettings() {}
++void RemoteNetwork::fetch(const QUrl&, RequestType, std::function<void(QByteArray)>, bool, bool) {}
++bool RemoteNetwork::handleReply(QNetworkReply*) { return false; }
++void RemoteNetwork::gotReply(QNetworkReply*) {}
++void RemoteNetwork::gotError(QNetworkReply*, const QList<QSslError>&) {}
++
++#else
+ #include <QApplication>
+ #include <QtNetwork/QNetworkAccessManager>
+ #include <QMessageBox>
+@@ -165,3 +182,4 @@ bool RemoteNetwork::handleReply(QNetworkReply* reply)
+
+     return true;
+ }
++#endif

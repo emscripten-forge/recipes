@@ -1,5 +1,5 @@
 context:
-  version: 1.1.1
+  version: 1.1.1-1.1
   name: r-Rcpp
 
 package:
@@ -10,17 +10,18 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: da0c616a71c82150397259516b2ea7558dbd31a5b4a217423ec9666b3a0fcfb7
+  sha256: 32e5d5fee4080c8ca315f31b74c3eaa6367a1900e92e860e00390c9565f5fbe1
 
 build:
-  number: 2
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('cxx') }}
+  host:
+  - r-base ==${{ r_base }}
 
 tests:
 - package_contents:
@@ -34,8 +35,10 @@ about:
   license_file: GPL-2
   summary: Seamless R and C++ Integration
   description: |
-    Executes arbitrary R or C functions some time after the current time, after
-    the R execution stack has emptied. The functions are scheduled in an event loop.
+    The 'Rcpp' package provides R functions as well as C++ classes which offer a
+    seamless integration of R and C++. Many R data types and objects can be
+    mapped back and forth to C++ equivalents which facilitates both writing of
+    new code as well as easier integration of third-party libraries.
 
 extra:
   recipe-maintainers:

@@ -1,25 +1,15 @@
-#!/bin/bash
-
 # Set up the cross file
-# Note: the include folder is moved to `$BUILD_PREFIX` by the cross-python activation script
-export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
-
-# write out the cross file
-sed "s|@(NUMPY_INCLUDE_DIR)|${NUMPY_INCLUDE_DIR}|g" $RECIPE_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.cross.temp
-sed "s|@(PYTHON)|${PYTHON}|g" $SRC_DIR/emscripten.meson.cross.temp > $SRC_DIR/emscripten.meson.cross
-rm $SRC_DIR/emscripten.meson.cross.temp
-
+sed "s|@(PYTHON)|${PYTHON}|g" $RECIPE_DIR/emscripten.meson.cross > $SRC_DIR/emscripten.meson.cross
 cat $SRC_DIR/emscripten.meson.cross
-
-export CFLAGS="$CFLAGS -sWASM_BIGINT -fwasm-exceptions"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -fwasm-exceptions"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT -fwasm-exceptions"
 
 ${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
     -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
     -Csetup-args="-Dsystem-freetype=true" \
+    -Csetup-args="-Dsystem-libraqm=true" \
     -Csetup-args="-Dsystem-qhull=true" \
-    -Csetup-args="-Dmacosx=false"
+    -Csetup-args="-Dmacosx=false" \
+    -Ccompile-args="-v" \
+    -Cbuilddir=builddir
 
 export MATPLOTLIB_LOCATION=$PREFIX/lib/python$PY_VER/site-packages/matplotlib
 

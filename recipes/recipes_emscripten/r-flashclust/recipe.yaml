@@ -1,0 +1,49 @@
+context:
+  name: r-flashclust
+  version: "1.1-4"
+  ccname: flashClust
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  sha256: 4ea74236921a05457bedeb7415323d4ca5479dcfa56f8ba5489de604c33db4e9
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+- script: run_r_test test_flashclust.R
+  files:
+    recipe:
+    - test_flashclust.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=flashClust
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  summary: Implementation of optimal hierarchical clustering
+
+extra:
+  recipe-maintainers:
+  - anutosh491

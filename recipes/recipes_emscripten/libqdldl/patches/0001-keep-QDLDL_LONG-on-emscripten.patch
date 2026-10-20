@@ -1,0 +1,19 @@
+From: Julien Jerphanion <git@jjerphan.xyz>
+Date: Mon, 3 Aug 2026 00:00:00 +0000
+Subject: [PATCH] Keep QDLDL_LONG on Emscripten
+
+wasm32 has 32-bit pointers, but long long indices are required for
+compatibility with qdldl-python AMD (DLONG).
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -56,7 +56,8 @@
+ # Use long integers for indexing
+ option( QDLDL_LONG "Use long integers (64bit) for indexing" ON )
+ 
+-if( NOT (CMAKE_SIZEOF_VOID_P EQUAL 8) )
++# Keep QDLDL_LONG on Emscripten (wasm32) so indices match qdldl-python AMD/DLONG.
++if( NOT (CMAKE_SIZEOF_VOID_P EQUAL 8) AND NOT EMSCRIPTEN )
+ 	message(STATUS "Disabling long integers (64bit) on 32bit machine")
+ 	set(QDLDL_LONG OFF)
+ endif()

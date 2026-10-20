@@ -1,0 +1,68 @@
+context:
+  version: 4.2.9
+
+package:
+  name: jasper
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jasper-software/jasper/releases/download/version-${{ version }}/jasper-${{ version }}.tar.gz
+  sha256: f71cf643937a5fcaedcfeb30a22ba406912948ad4413148214df280afc425454
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - ninja
+  host:
+  - jpeg
+  run:
+  - jpeg
+
+tests:
+- package_contents:
+    include:
+    - jasper/jasper.h
+    - jasper/jas_config.h
+    - jasper/jas_image.h
+    - jasper/jas_init.h
+    lib:
+    - libjasper.a
+    files:
+    - lib/pkgconfig/jasper.pc
+    - lib/cmake/JasPer/JasPerConfig.cmake
+    - lib/cmake/JasPer/JasPerConfigVersion.cmake
+    - lib/cmake/JasPer/JasPerTargets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://jasper-software.github.io/jasper
+  license: JasPer-2.0
+  license_file: LICENSE.txt
+  summary: A software-based reference implementation of the JPEG-2000 codec
+  description: |
+    JasPer is a collection of software providing high-performance image
+    processing and coding capabilities. The software includes a library,
+    libjasper, that implements the JPEG-2000 standard (ISO/IEC 15444-1),
+    as well as a collection of command-line tools for image conversion,
+    comparison, and information extraction.
+  documentation: https://jasper-software.github.io/jasper-manual
+  repository: https://github.com/jasper-software/jasper
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

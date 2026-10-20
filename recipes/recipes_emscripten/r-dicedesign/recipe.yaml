@@ -1,0 +1,48 @@
+context:
+  version: 1.10
+  name: r-dicedesign
+  ccname: DiceDesign
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ ccname }}_${{ version }}.tar.gz
+  sha256: 06543b207b8c1732bda575b9f60ca4ec004f896676e04200af8b222f8933c73d
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }} 
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}  
+  
+  host:
+  - r-base ==${{ r_base }}
+  
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ ccname }}/libs/${{ ccname }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: http://dice.emse.fr/
+  license: GPL-3.0-only
+  license_file: GPL3
+  summary:  Space-Filling Designs and Uniformity Criteria.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten

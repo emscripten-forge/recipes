@@ -1,0 +1,108 @@
+diff --git a/mlir/python/mlir/runtime/np_to_memref.py b/mlir/python/mlir/runtime/np_to_memref.py
+index 8cca1e7ad4a9..bc8607239da0 100644
+--- a/mlir/python/mlir/runtime/np_to_memref.py
++++ b/mlir/python/mlir/runtime/np_to_memref.py
+@@ -80,29 +80,47 @@ def to_numpy(array):
+     return array
+ 
+ 
+-def make_nd_memref_descriptor(rank, dtype):
++def _index_ctype(index_bitwidth):
++    """Returns the ctypes integer type matching a memref's lowered index
++    bitwidth (i.e. the `index-bitwidth` option passed to
++    `finalize-memref-to-llvm` / `convert-func-to-llvm`). Defaults to 64-bit,
++    matching MLIR's default index type on native targets; pass 32 for
++    targets such as wasm32 where the descriptor's offset/shape/strides
++    fields are lowered to i32."""
++    if index_bitwidth == 32:
++        return ctypes.c_int32
++    if index_bitwidth == 64:
++        return ctypes.c_longlong
++    raise ValueError(f"unsupported index_bitwidth: {index_bitwidth!r} (expected 32 or 64)")
++
++
++def make_nd_memref_descriptor(rank, dtype, index_bitwidth=64):
++    index_ctype = _index_ctype(index_bitwidth)
++
+     class MemRefDescriptor(ctypes.Structure):
+         """Builds an empty descriptor for the given rank/dtype, where rank>0."""
+ 
+         _fields_ = [
+             ("allocated", ctypes.c_longlong),
+             ("aligned", ctypes.POINTER(dtype)),
+-            ("offset", ctypes.c_longlong),
+-            ("shape", ctypes.c_longlong * rank),
+-            ("strides", ctypes.c_longlong * rank),
++            ("offset", index_ctype),
++            ("shape", index_ctype * rank),
++            ("strides", index_ctype * rank),
+         ]
+ 
+     return MemRefDescriptor
+ 
+ 
+-def make_zero_d_memref_descriptor(dtype):
++def make_zero_d_memref_descriptor(dtype, index_bitwidth=64):
++    index_ctype = _index_ctype(index_bitwidth)
++
+     class MemRefDescriptor(ctypes.Structure):
+         """Builds an empty descriptor for the given dtype, where rank=0."""
+ 
+         _fields_ = [
+             ("allocated", ctypes.c_longlong),
+             ("aligned", ctypes.POINTER(dtype)),
+-            ("offset", ctypes.c_longlong),
++            ("offset", index_ctype),
+         ]
+ 
+     return MemRefDescriptor
+@@ -114,34 +132,40 @@ class UnrankedMemRefDescriptor(ctypes.Structure):
+     _fields_ = [("rank", ctypes.c_longlong), ("descriptor", ctypes.c_void_p)]
+ 
+ 
+-def get_ranked_memref_descriptor(nparray):
+-    """Returns a ranked memref descriptor for the given numpy array."""
++def get_ranked_memref_descriptor(nparray, index_bitwidth=64):
++    """Returns a ranked memref descriptor for the given numpy array.
++
++    `index_bitwidth` must match the `index-bitwidth` used when lowering the
++    consuming MLIR module to LLVM (e.g. 32 for wasm32 targets); it controls
++    the width of the descriptor's offset/shape/strides fields.
++    """
++    index_ctype = _index_ctype(index_bitwidth)
+     ctp = as_ctype(nparray.dtype)
+     if nparray.ndim == 0:
+-        x = make_zero_d_memref_descriptor(ctp)()
++        x = make_zero_d_memref_descriptor(ctp, index_bitwidth)()
+         x.allocated = nparray.ctypes.data
+         x.aligned = nparray.ctypes.data_as(ctypes.POINTER(ctp))
+-        x.offset = ctypes.c_longlong(0)
++        x.offset = index_ctype(0)
+         return x
+ 
+-    x = make_nd_memref_descriptor(nparray.ndim, ctp)()
++    x = make_nd_memref_descriptor(nparray.ndim, ctp, index_bitwidth)()
+     x.allocated = nparray.ctypes.data
+     x.aligned = nparray.ctypes.data_as(ctypes.POINTER(ctp))
+-    x.offset = ctypes.c_longlong(0)
++    x.offset = index_ctype(0)
+     x.shape = nparray.ctypes.shape
+ 
+     # Numpy uses byte quantities to express strides, MLIR OTOH uses the
+     # torch abstraction which specifies strides in terms of elements.
+-    strides_ctype_t = ctypes.c_longlong * nparray.ndim
++    strides_ctype_t = index_ctype * nparray.ndim
+     x.strides = strides_ctype_t(*[x // nparray.itemsize for x in nparray.strides])
+     return x
+ 
+ 
+-def get_unranked_memref_descriptor(nparray):
++def get_unranked_memref_descriptor(nparray, index_bitwidth=64):
+     """Returns a generic/unranked memref descriptor for the given numpy array."""
+     d = UnrankedMemRefDescriptor()
+     d.rank = nparray.ndim
+-    x = get_ranked_memref_descriptor(nparray)
++    x = get_ranked_memref_descriptor(nparray, index_bitwidth)
+     d.descriptor = ctypes.cast(ctypes.pointer(x), ctypes.c_void_p)
+     return d
+ 

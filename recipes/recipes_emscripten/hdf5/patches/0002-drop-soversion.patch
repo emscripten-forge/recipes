@@ -1,0 +1,81 @@
+Skip VERSION/SOVERSION under emscripten so every NEEDED entry records the bare
+"libhdf5.so" and the runtime loader doesn't double load libhdf5 because of
+different names for the same library. This is tested by the associated dimscale
+test in h5py.
+
+Mechanism (see also https://github.com/emscripten-forge/recipes/pull/6007):
+
+h5py depends on libhdf5_hl (-lhdf5_hl) and on libhdf5 (-lhdf5). But libhdf5_hl
+itself also depends on libhdf5, albeit with the *versioned* instead of just the
+bare name. On emscripten, with VERSION/SOVERSION stamped on libhdf5, libhdf5_hl
+records NEEDED = libhdf5.so.310.5.1 while consumers that link with bare -lhdf5
+(e.g. h5py's Cython extensions) record NEEDED = libhdf5.so. In contrast to
+native, names are *not* harmonized to major version at link time, and also not
+resolved to realpaths to deduplicate symlinks. We may therefore end up with
+instance A of libhdf5 loaded to satisfy libhdf5_hl and instance B loaded to
+satisfy h5py's Cython extensions. 
+
+However, in wasm partial deduplication still happens. After load, a global
+"GOT" symbol table is built that contains all symbols in one name space. In the
+case of duplicate symbols, the first symbol added wins, and others with the
+same name are ignored with duplicate symbol warnings. Practically, this means
+for each duplicate symbol, only one library's instance is accessible through
+the GOT table.
+
+But this doesn't concern *static* variables that aren't exported and don't go
+through the GOT table. Those static variable can, in principle, influence
+global state at load time and lead to incoherent state if two instances of the
+same library are loaded.
+
+The second escape hatch is dlopen as used by CPython. When emscripten
+instantiates a dlopen'd side module, or any side module pulled in transitively,
+it resolves that module's *function imports* against the specific dependency
+named in its own NEEDED list, not through the global GOT. So even though the
+GOT-first-wins rule points every libhdf5 symbol at instance A, the h5py Cython
+.so (whose NEEDED lists both libhdf5.so and libhdf5_hl.so) has its direct calls
+into libhdf5 bound to instance B, while libhdf5_hl (itself NEEDING
+libhdf5.so.310.5.1) has its calls into libhdf5 bound to instance A. A single
+dlopen of one h5py .so therefore ends up reaching different libhdf5 instances.
+
+In the presence of instance-wide state, this makes problems. In this case,
+H5CX_head_g, the head pointer of HDF5's API-context stack, is a static in
+H5CX.c. It has no external name and therefore no GOT slot: every intra-libhdf5
+reference to it compiles to a direct data reference into that instance's
+separate memory. So each libhdf5 instance has its own H5CX_head_g.
+
+And because of dlopen, inside a single Python call chain, execution alternates
+between instances. A public API call entered via instance B pushes onto B's
+H5CX_head_g. That code then calls into HDF5's cache layer via calls that go
+through the global GOT, which resolves them to instance A (first-wins). A's
+H5C_protect then reads instance A's H5CX_head_g which is empty, because the
+corresponding push was on B. HDF5 detects the tag mismatch and reports "ring
+type mismatch occurred for cache entry."
+
+We traced this by adding print statements to H5CX__push_common, H5CX_pop and
+H5CX_get_tag with printfs of &H5CX_head_g and *H5CX_head_g, then running h5py's
+dimscale test. The log shows two distinct &H5CX_head_g addresses, an
+interleaved push-on-B / read-on-A sequence at the failure point, and the empty
+stack that produces the bad tag. We also used a minimal reproducer linked in
+the above PR to test link behavior directly locally.
+
+The final fix is simple, skipping SOVERSION so both consumers record the same
+NEEDED string sidesteps the whole thing. A more general fix would be nice but
+it's unclear how it should look like at the moment.
+
+
+--- a/config/cmake/HDF5Macros.cmake
++++ b/config/cmake/HDF5Macros.cmake
+@@ -22,10 +22,10 @@
+     else ()
+       set (LIBHDF_VERSION ${HDF5_${libpackage}_PACKAGE_SOVERSION_MAJOR})
+     endif ()
+-    set_target_properties (${libtarget} PROPERTIES VERSION ${PACKAGE_SOVERSION})
++    if (NOT EMSCRIPTEN)
++      set_target_properties (${libtarget} PROPERTIES VERSION ${PACKAGE_SOVERSION})
++    endif ()
+     if (WIN32)
+         set (${LIB_OUT_NAME} "${LIB_OUT_NAME}-${LIBHDF_VERSION}")
+-    else ()
++    elseif (NOT EMSCRIPTEN)
+         set_target_properties (${libtarget} PROPERTIES SOVERSION ${LIBHDF_VERSION})
+     endif ()

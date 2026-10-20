@@ -33,6 +33,7 @@ cd build && emcmake cmake .. \
 -DCMAKE_BUILD_TYPE=Release \
 -DBUILD_SHARED_LIBS=True \
 -DBUILD_APPS=OFF \
+-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON \
 -DCMAKE_C_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_CXX_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC  -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_SHARED_LINKER_FLAGS="-sSIDE_MODULE=1 -sWASM_BIGINT" \
@@ -40,7 +41,7 @@ cd build && emcmake cmake .. \
 -DGDAL_USE_INTERNAL_LIBS=OFF \
 \
 -DPROJ_INCLUDE_DIR=$PREFIX/include \
--DPROJ_LIBRARY=$PREFIX/lib/libproj.a \
+-DPROJ_LIBRARY=$PREFIX/lib/libproj.so \
 \
 -DGDAL_USE_ICONV=ON \
 -DIconv_INCLUDE_DIR=$PREFIX/include \
@@ -52,7 +53,7 @@ cd build && emcmake cmake .. \
 \
 -DGDAL_USE_GEOS=ON \
 -DGEOS_INCLUDE_DIR=$PREFIX/include \
--DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.a \
+-DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.so \
 \
 -DGDAL_USE_ZLIB=ON \
 -DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
@@ -123,3 +124,9 @@ echo "Deduped static libraries written back to: $FILE"
 
 emmake make -j 8
 emmake make install
+
+# GDAL installs bash-completion scripts under share/bash-completion/completions/
+# with a `.py` extension (they are actually shell scripts). rattler-build's
+# Python bytecode post-processing tries to compile them and emits parser
+# warnings. bash-completion is useless in a WebAssembly target anyway.
+rm -rf "$PREFIX/share/bash-completion"

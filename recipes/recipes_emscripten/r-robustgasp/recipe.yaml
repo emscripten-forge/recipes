@@ -1,0 +1,68 @@
+context:
+  name: RobustGaSP
+  version: 0.6.8
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: d49148d65713a60c65549d87cc9d3e07cdeb0f6c4fc14551c78c2809e594b062
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-rcpp >= 0.12.3
+  - r-rcppeigen
+  - r-nloptr >= 1.0.4
+  host:
+  - r-base ==${{ r_base }}
+  - r-rcpp >= 0.12.3
+  - r-rcppeigen
+  - r-nloptr >= 1.0.4
+  run:
+  - r-rcpp >= 0.12.3
+  - r-nloptr >= 1.0.4
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-only
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
+  summary: Robust Gaussian Stochastic Process Emulation
+  description: |-
+    Robust parameter estimation and prediction of Gaussian stochastic
+    process emulators. It allows for robust parameter estimation and prediction using
+    Gaussian stochastic process emulator. It also implements the parallel partial
+    Gaussian stochastic process emulator for computer model with massive outputs
+    See the reference: Mengyang Gu and Jim Berger, 2016, Annals of Applied Statistics;
+    Mengyang Gu, Xiaojing Wang and Jim Berger, 2018, Annals of Statistics.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

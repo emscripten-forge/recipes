@@ -1,0 +1,55 @@
+context:
+  version: 1.2
+
+package:
+  name: quirc
+  version: ${{ version }}
+
+source:
+  url: https://github.com/dlbeer/quirc/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 73c12ea33d337ec38fb81218c7674f57dba7ec0570bddd5c7f7a977c0deb64c5
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+
+tests:
+- package_contents:
+    include:
+    - quirc.h
+    lib:
+    - libquirc.a
+    files:
+    - lib/cmake/quirc/quircConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/dlbeer/quirc
+  license: ISC
+  license_family: BSD
+  license_file: LICENSE
+  summary: QR code decoder library
+  description: |
+    Quirc is a lightweight QR code decoder library for extracting and
+    decoding QR codes from images. It is fast, robust, and designed for
+    embedded systems with no external dependencies.
+  documentation: https://github.com/dlbeer/quirc
+  repository: https://github.com/dlbeer/quirc
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

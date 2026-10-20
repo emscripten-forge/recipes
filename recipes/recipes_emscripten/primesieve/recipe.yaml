@@ -1,0 +1,42 @@
+context:
+  name: primesieve
+  version: '12.16'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/kimwalisch/primesieve/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 753530ec2b4cbf3b62808b0661ab00e0382d47bded8a57c4fe41a6a4409f7c94
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - ${{ compiler('cxx') }}
+  run_exports:
+  - ${{ pin_subpackage('primesieve', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/libprimesieve.a
+    - include/primesieve.h
+    - bin/primesieve.js
+    - bin/primesieve.wasm
+
+about:
+  homepage: https://github.com/kimwalisch/primesieve
+  license: BSD-2-Clause
+  license_file: COPYING
+  summary: Fast prime number generator
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

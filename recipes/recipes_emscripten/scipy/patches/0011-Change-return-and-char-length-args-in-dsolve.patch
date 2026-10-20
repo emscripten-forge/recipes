@@ -1,0 +1,3441 @@
+From 6243cb05791aad90484a5243ad5ca9cde853693b Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 8 Dec 2025 17:08:15 +0000
+Subject: [PATCH 11/15] Change return and char length args in dsolve
+
+---
+ .../linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/cgsrfs.c       | 164 ++++++++---------
+ .../linalg/_dsolve/SuperLU/SRC/cgstrs.c       |   6 +-
+ .../linalg/_dsolve/SuperLU/SRC/clacon2.c      |  78 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c  |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/csnode_bmod.c  |   4 +-
+ .../linalg/_dsolve/SuperLU/SRC/csp_blas2.c    |  14 +-
+ .../linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/dgsrfs.c       | 164 ++++++++---------
+ .../linalg/_dsolve/SuperLU/SRC/dgstrs.c       |   6 +-
+ .../linalg/_dsolve/SuperLU/SRC/dlacon2.c      |  78 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c  |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c  |   4 +-
+ .../linalg/_dsolve/SuperLU/SRC/dsp_blas2.c    |  10 +-
+ .../linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/sgsrfs.c       | 166 +++++++++---------
+ .../linalg/_dsolve/SuperLU/SRC/sgstrs.c       |   6 +-
+ .../linalg/_dsolve/SuperLU/SRC/slacon2.c      |  78 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/slu_cdefs.h    |  44 ++---
+ .../linalg/_dsolve/SuperLU/SRC/slu_ddefs.h    |  44 ++---
+ .../linalg/_dsolve/SuperLU/SRC/slu_sdefs.h    |  44 ++---
+ .../linalg/_dsolve/SuperLU/SRC/slu_zdefs.h    |  44 ++---
+ .../linalg/_dsolve/SuperLU/SRC/spanel_bmod.c  |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c  |   4 +-
+ .../linalg/_dsolve/SuperLU/SRC/ssp_blas2.c    |  10 +-
+ .../linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/zgsrfs.c       | 164 ++++++++---------
+ .../linalg/_dsolve/SuperLU/SRC/zgstrs.c       |   6 +-
+ .../linalg/_dsolve/SuperLU/SRC/zlacon2.c      |  78 ++++----
+ .../linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c  |   8 +-
+ .../linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c  |   4 +-
+ .../linalg/_dsolve/SuperLU/SRC/zsp_blas2.c    |  14 +-
+ 32 files changed, 649 insertions(+), 649 deletions(-)
+
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c
+index fcab94f197..52f85dd9e9 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ccolumn_bmod.c
+@@ -231,7 +231,7 @@ ccolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		ctrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -242,7 +242,7 @@ ccolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		cgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		clsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -331,7 +331,7 @@ ccolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	ctrsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -341,7 +341,7 @@ ccolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	cgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	clsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c
+index 4d632a2b5b..8fe9472076 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgsrfs.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,7 +11,7 @@ at the top-level directory.
+ 
+ /*! @file cgsrfs.c
+  * \brief Improves computed solution to a system of inear equations
+- * 
++ *
+  * <pre>
+  * -- SuperLU routine (version 5.1) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+@@ -32,45 +32,45 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
+  *
+- *   CGSRFS improves the computed solution to a system of linear   
+- *   equations and provides error bounds and backward error estimates for 
+- *   the solution.   
++ *   CGSRFS improves the computed solution to a system of linear
++ *   equations and provides error bounds and backward error estimates for
++ *   the solution.
+  *
+  *   If equilibration was performed, the system becomes:
+  *           (diag(R)*A_original*diag(C)) * X = diag(R)*B_original.
+  *
+  *   See supermatrix.h for the definition of 'SuperMatrix' structure.
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  * trans   (input) trans_t
+  *          Specifies the form of the system of equations:
+  *          = NOTRANS: A * X = B  (No transpose)
+  *          = TRANS:   A'* X = B  (Transpose)
+  *          = CONJ:    A**H * X = B  (Conjugate transpose)
+- *   
++ *
+  *   A       (input) SuperMatrix*
+  *           The original matrix A in the system, or the scaled A if
+  *           equilibration was done. The type of A can be:
+  *           Stype = SLU_NC, Dtype = SLU_C, Mtype = SLU_GE.
+- *    
++ *
+  *   L       (input) SuperMatrix*
+  *	     The factor L from the factorization Pr*A*Pc=L*U. Use
+- *           compressed row subscripts storage for supernodes, 
++ *           compressed row subscripts storage for supernodes,
+  *           i.e., L has types: Stype = SLU_SC, Dtype = SLU_C, Mtype = SLU_TRLU.
+- * 
++ *
+  *   U       (input) SuperMatrix*
+  *           The factor U from the factorization Pr*A*Pc=L*U as computed by
+- *           cgstrf(). Use column-wise storage scheme, 
++ *           cgstrf(). Use column-wise storage scheme,
+  *           i.e., U has types: Stype = SLU_NC, Dtype = SLU_C, Mtype = SLU_TRU.
+  *
+  *   perm_c  (input) int*, dimension (A->ncol)
+- *	     Column permutation vector, which defines the 
+- *           permutation matrix Pc; perm_c[i] = j means column i of A is 
++ *	     Column permutation vector, which defines the
++ *           permutation matrix Pc; perm_c[i] = j means column i of A is
+  *           in position j in A*Pc.
+  *
+  *   perm_r  (input) int*, dimension (A->nrow)
+@@ -82,14 +82,14 @@ at the top-level directory.
+  *           = 'R': Row equilibration, i.e., A was premultiplied by diag(R).
+  *           = 'C': Column equilibration, i.e., A was postmultiplied by
+  *                  diag(C).
+- *           = 'B': Both row and column equilibration, i.e., A was replaced 
++ *           = 'B': Both row and column equilibration, i.e., A was replaced
+  *                  by diag(R)*A*diag(C).
+  *
+  *   R       (input) float*, dimension (A->nrow)
+  *           The row scale factors for A.
+  *           If equed = 'R' or 'B', A is premultiplied by diag(R).
+  *           If equed = 'N' or 'C', R is not accessed.
+- * 
++ *
+  *   C       (input) float*, dimension (A->ncol)
+  *           The column scale factors for A.
+  *           If equed = 'C' or 'B', A is postmultiplied by diag(C).
+@@ -107,33 +107,33 @@ at the top-level directory.
+  *           if *equed = 'C' or 'B', X should be premultiplied by diag(C)
+  *               in order to obtain the solution to the original system.
+  *
+- *   FERR    (output) float*, dimension (B->ncol)   
+- *           The estimated forward error bound for each solution vector   
+- *           X(j) (the j-th column of the solution matrix X).   
+- *           If XTRUE is the true solution corresponding to X(j), FERR(j) 
+- *           is an estimated upper bound for the magnitude of the largest 
+- *           element in (X(j) - XTRUE) divided by the magnitude of the   
+- *           largest element in X(j).  The estimate is as reliable as   
+- *           the estimate for RCOND, and is almost always a slight   
++ *   FERR    (output) float*, dimension (B->ncol)
++ *           The estimated forward error bound for each solution vector
++ *           X(j) (the j-th column of the solution matrix X).
++ *           If XTRUE is the true solution corresponding to X(j), FERR(j)
++ *           is an estimated upper bound for the magnitude of the largest
++ *           element in (X(j) - XTRUE) divided by the magnitude of the
++ *           largest element in X(j).  The estimate is as reliable as
++ *           the estimate for RCOND, and is almost always a slight
+  *           overestimate of the true error.
+  *
+- *   BERR    (output) float*, dimension (B->ncol)   
+- *           The componentwise relative backward error of each solution   
+- *           vector X(j) (i.e., the smallest relative change in   
++ *   BERR    (output) float*, dimension (B->ncol)
++ *           The componentwise relative backward error of each solution
++ *           vector X(j) (i.e., the smallest relative change in
+  *           any element of A or B that makes X(j) an exact solution).
+  *
+  *   stat     (output) SuperLUStat_t*
+  *            Record the statistics on runtime and floating-point operation count.
+  *            See util.h for the definition of 'SuperLUStat_t'.
+  *
+- *   info    (output) int*   
+- *           = 0:  successful exit   
+- *            < 0:  if INFO = -i, the i-th argument had an illegal value   
++ *   info    (output) int*
++ *           = 0:  successful exit
++ *            < 0:  if INFO = -i, the i-th argument had an illegal value
+  *
+- *    Internal Parameters   
+- *    ===================   
++ *    Internal Parameters
++ *    ===================
+  *
+- *    ITMAX is the maximum number of steps of iterative refinement.   
++ *    ITMAX is the maximum number of steps of iterative refinement.
+  *
+  * </pre>
+  */
+@@ -146,12 +146,12 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 
+ #define ITMAX 5
+-    
++
+     /* Table of constant values */
+     slu_blasint    ione = 1, nrow = A->nrow;
+     singlecomplex ndone = {-1., 0.};
+     singlecomplex done = {1., 0.};
+-    
++
+     /* Local variables */
+     NCformat *Astore;
+     singlecomplex   *Aval;
+@@ -181,7 +181,7 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     ldb    = Bstore->lda;
+     ldx    = Xstore->lda;
+     nrhs   = B->ncol;
+-    
++
+     /* Test the input parameters */
+     *info = 0;
+     notran = (trans == NOTRANS);
+@@ -218,14 +218,14 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+     rowequ = strncmp(equed, "R", 1)==0 || strncmp(equed, "B", 1)==0;
+     colequ = strncmp(equed, "C", 1)==0 || strncmp(equed, "B", 1)==0;
+-    
++
+     /* Allocate working space */
+     work = singlecomplexMalloc(2*A->nrow);
+     rwork = (float *) SUPERLU_MALLOC( A->nrow * sizeof(float) );
+     iwork = int32Malloc(A->nrow);
+-    if ( !work || !rwork || !iwork ) 
++    if ( !work || !rwork || !iwork )
+         ABORT("Malloc fails for work/rwork/iwork.");
+-    
++
+     if ( notran ) {
+ 	*(unsigned char *)transc = 'N';
+         transt = TRANS;
+@@ -235,7 +235,7 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     } else if ( trans == CONJ ) {
+ 	*(unsigned char *)transc = 'C';
+ 	transt = NOTRANS;
+-    }    
++    }
+ 
+     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
+     nz     = A->ncol + 1;
+@@ -251,12 +251,12 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     for (i = 0; i < A->nrow; ++i) iwork[i] = 0;
+     if ( notran ) {
+ 	for (k = 0; k < A->ncol; ++k)
+-	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i) 
++	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i)
+ 		++iwork[Astore->rowind[i]];
+     } else {
+ 	for (k = 0; k < A->ncol; ++k)
+ 	    iwork[k] = Astore->colptr[k+1] - Astore->colptr[k];
+-    }	
++    }
+ 
+     /* Copy one column of RHS B into Bjcol. */
+     Bjcol.Stype = B->Stype;
+@@ -269,7 +269,7 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     Bjcol_store = Bjcol.Store;
+     Bjcol_store->lda = ldb;
+     Bjcol_store->nzval = work; /* address aliasing */
+-	
++
+     /* Do for each right hand side ... */
+     for (j = 0; j < nrhs; ++j) {
+ 	count = 0;
+@@ -279,9 +279,9 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 	while (1) { /* Loop until stopping criterion is satisfied. */
+ 
+-	    /* Compute residual R = B - op(A) * X,   
++	    /* Compute residual R = B - op(A) * X,
+ 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
+-	    
++
+ #ifdef _CRAY
+ 	    CCOPY(&nrow, Bptr, &ione, work, &ione);
+ #else
+@@ -289,15 +289,15 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ #endif
+ 	    sp_cgemv(transc, ndone, A, Xptr, ione, done, work, ione);
+ 
+-	    /* Compute componentwise relative backward error from formula 
+-	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )   
++	    /* Compute componentwise relative backward error from formula
++	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )
+ 	       where abs(Z) is the componentwise absolute value of the matrix
+ 	       or vector Z.  If the i-th component of the denominator is less
+-	       than SAFE2, then SAFE1 is added to the i-th component of the   
++	       than SAFE2, then SAFE1 is added to the i-th component of the
+ 	       numerator before dividing. */
+ 
+ 	    for (i = 0; i < A->nrow; ++i) rwork[i] = c_abs1( &Bptr[i] );
+-	    
++
+ 	    /* Compute abs(op(A))*abs(X) + abs(B). */
+ 	    if ( notran ) {
+ 		for (k = 0; k < A->ncol; ++k) {
+@@ -322,21 +322,21 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+                 } else if ( rwork[i] != 0.0 ) {
+ 		    s = SUPERLU_MAX( s, (c_abs1(&work[i]) + safe1) / rwork[i] );
+                 }
+-                /* If rwork[i] is exactly 0.0, then we know the true 
++                /* If rwork[i] is exactly 0.0, then we know the true
+                    residual also must be exactly 0.0. */
+ 	    }
+ 	    berr[j] = s;
+ 
+-	    /* Test stopping criterion. Continue iterating if   
+-	       1) The residual BERR(J) is larger than machine epsilon, and   
+-	       2) BERR(J) decreased by at least a factor of 2 during the   
+-	          last iteration, and   
++	    /* Test stopping criterion. Continue iterating if
++	       1) The residual BERR(J) is larger than machine epsilon, and
++	       2) BERR(J) decreased by at least a factor of 2 during the
++	          last iteration, and
+ 	       3) At most ITMAX iterations tried. */
+ 
+ 	    if (berr[j] > eps && berr[j] * 2. <= lstres && count < ITMAX) {
+ 		/* Update solution and try again. */
+ 		cgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ #ifdef _CRAY
+ 		CAXPY(&nrow, &done, work, &ione,
+ 		       &Xmat[j*ldx], &ione);
+@@ -349,32 +349,32 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    } else {
+ 		break;
+ 	    }
+-        
++
+ 	} /* end while */
+ 
+ 	stat->RefineSteps = count;
+ 
+ 	/* Bound error from formula:
+-	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*   
+-	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)   
+-          where   
+-            norm(Z) is the magnitude of the largest component of Z   
+-            inv(op(A)) is the inverse of op(A)   
++	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*
++	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)
++          where
++            norm(Z) is the magnitude of the largest component of Z
++            inv(op(A)) is the inverse of op(A)
+             abs(Z) is the componentwise absolute value of the matrix or
+-	       vector Z   
+-            NZ is the maximum number of nonzeros in any row of A, plus 1   
+-            EPS is machine epsilon   
++	       vector Z
++            NZ is the maximum number of nonzeros in any row of A, plus 1
++            EPS is machine epsilon
+ 
+-          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))   
+-          is incremented by SAFE1 if the i-th component of   
+-          abs(op(A))*abs(X) + abs(B) is less than SAFE2.   
++          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))
++          is incremented by SAFE1 if the i-th component of
++          abs(op(A))*abs(X) + abs(B) is less than SAFE2.
+ 
+-          Use CLACON2 to estimate the infinity-norm of the matrix   
+-             inv(op(A)) * diag(W),   
++          Use CLACON2 to estimate the infinity-norm of the matrix
++             inv(op(A)) * diag(W),
+           where W = abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) */
+-	
++
+ 	for (i = 0; i < A->nrow; ++i) rwork[i] = c_abs1( &Bptr[i] );
+-	
++
+ 	/* Compute abs(op(A))*abs(X) + abs(B). */
+ 	if ( notran ) {
+ 	    for (k = 0; k < A->ncol; ++k) {
+@@ -393,7 +393,7 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		rwork[k] += s;
+ 	    }
+ 	}
+-	
++
+ 	for (i = 0; i < A->nrow; ++i)
+ 	    if (rwork[i] > safe2)
+ 		rwork[i] = c_abs(&work[i]) + (iwork[i]+1)*eps*rwork[i];
+@@ -418,7 +418,7 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+                     }
+ 
+ 		cgstrs (transt, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		for (i = 0; i < A->nrow; ++i) {
+ 		    cs_mult(&work[i], &work[i], rwork[i]);
+ 	 	}
+@@ -427,19 +427,19 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		for (i = 0; i < A->nrow; ++i) {
+ 		    cs_mult(&work[i], &work[i], rwork[i]);
+ 		}
+-		
++
+ 		cgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		if ( notran && colequ )
+ 		    for (i = 0; i < A->ncol; ++i) {
+ 		        cs_mult(&work[i], &work[i], C[i]);
+ 		    }
+ 		else if ( !notran && rowequ )
+ 		    for (i = 0; i < A->ncol; ++i) {
+-		        cs_mult(&work[i], &work[i], R[i]);  
++		        cs_mult(&work[i], &work[i], R[i]);
+ 		    }
+ 	    }
+-	    
++
+ 	} while ( kase != 0 );
+ 
+ 	/* Normalize error. */
+@@ -458,7 +458,7 @@ cgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    ferr[j] /= lstres;
+ 
+     } /* for each RHS j ... */
+-    
++
+     SUPERLU_FREE(work);
+     SUPERLU_FREE(rwork);
+     SUPERLU_FREE(iwork);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c
+index afb3338c93..4ee48c2b68 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cgstrs.c
+@@ -194,11 +194,11 @@ cgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		ctrsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		cgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -265,7 +265,7 @@ cgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		ctrsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c
+index 125df1bac3..845008a0a8 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/clacon2.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -26,12 +26,12 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
++ *
++ *   CLACON2 estimates the 1-norm of a square matrix A.
++ *   Reverse communication is used for evaluating matrix-vector products.
+  *
+- *   CLACON2 estimates the 1-norm of a square matrix A.   
+- *   Reverse communication is used for evaluating matrix-vector products. 
+- * 
+  *   This is a thread safe version of CLACON, which uses the array ISAVE
+  *   in place of a STATIC variables, as follows:
+  *
+@@ -41,48 +41,48 @@ at the top-level directory.
+  *      iter     isave[2]
+  *
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  *   N      (input) INT
+- *          The order of the matrix.  N >= 1.   
++ *          The order of the matrix.  N >= 1.
+  *
+- *   V      (workspace) SINGLE COMPLEX PRECISION array, dimension (N)   
+- *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)   
+- *          (W is not returned).   
++ *   V      (workspace) SINGLE COMPLEX PRECISION array, dimension (N)
++ *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)
++ *          (W is not returned).
+  *
+- *   X      (input/output) SINGLE COMPLEX PRECISION array, dimension (N)   
+- *          On an intermediate return, X should be overwritten by   
+- *                A * X,   if KASE=1,   
++ *   X      (input/output) SINGLE COMPLEX PRECISION array, dimension (N)
++ *          On an intermediate return, X should be overwritten by
++ *                A * X,   if KASE=1,
+  *                A' * X,  if KASE=2,
+  *          where A' is the conjugate transpose of A,
+- *         and CLACON must be re-called with all the other parameters   
+- *          unchanged.   
++ *         and CLACON must be re-called with all the other parameters
++ *          unchanged.
+  *
+  *
+- *   EST    (output) FLOAT PRECISION   
+- *          An estimate (a lower bound) for norm(A).   
++ *   EST    (output) FLOAT PRECISION
++ *          An estimate (a lower bound) for norm(A).
+  *
+  *   KASE   (input/output) INT
+- *          On the initial call to CLACON, KASE should be 0.   
+- *          On an intermediate return, KASE will be 1 or 2, indicating   
+- *          whether X should be overwritten by A * X  or A' * X.   
+- *          On the final return from CLACON, KASE will again be 0.   
++ *          On the initial call to CLACON, KASE should be 0.
++ *          On an intermediate return, KASE will be 1 or 2, indicating
++ *          whether X should be overwritten by A * X  or A' * X.
++ *          On the final return from CLACON, KASE will again be 0.
+  *
+  *   isave  (input/output) int [3]
+  *          ISAVE is INTEGER array, dimension (3)
+  *          ISAVE is used to save variables between calls to CLACON2
+  *
+- *   Further Details   
+- *   ===============   
++ *   Further Details
++ *   ===============
+  *
+- *   Contributed by Nick Higham, University of Manchester.   
+- *   Originally named CONEST, dated March 16, 1988.   
++ *   Contributed by Nick Higham, University of Manchester.
++ *   Originally named CONEST, dated March 16, 1988.
+  *
+- *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of 
+- *   a real or complex matrix, with applications to condition estimation", 
+- *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.   
+- *   ===================================================================== 
++ *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of
++ *   a real or complex matrix, with applications to condition estimation",
++ *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.
++ *   =====================================================================
+  * </pre>
+  */
+ 
+@@ -97,7 +97,7 @@ clacon2_(int *n, singlecomplex *v, singlecomplex *x, float *est, int *kase, int
+ 
+     /* System generated locals */
+     float d__1;
+-    
++
+     /* Local variables */
+     int jlast;
+     float altsgn, estold;
+@@ -129,7 +129,7 @@ clacon2_(int *n, singlecomplex *v, singlecomplex *x, float *est, int *kase, int
+ 	case 5:  goto L140;
+     }
+ 
+-    /*     ................ ENTRY   (isave[0] == 1)   
++    /*     ................ ENTRY   (isave[0] == 1)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY A*X. */
+   L20:
+     if (*n == 1) {
+@@ -154,7 +154,7 @@ clacon2_(int *n, singlecomplex *v, singlecomplex *x, float *est, int *kase, int
+     isave[0] = 2;  /* jump = 2; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 2)   
++    /*     ................ ENTRY   (isave[0] == 2)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY TRANSPOSE(A)*X. */
+ L40:
+     isave[1] = icmax1_slu(n, &x[0], &c__1_int);  /* j */
+@@ -169,7 +169,7 @@ L50:
+     isave[0] = 3;  /* jump = 3; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 3)   
++    /*     ................ ENTRY   (isave[0] == 3)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L70:
+ #ifdef _CRAY
+@@ -221,8 +221,8 @@ L120:
+     *kase = 1;
+     isave[0] = 5;  /* jump = 5; */
+     return 0;
+-    
+-    /*     ................ ENTRY   (isave[0] = 5)   
++
++    /*     ................ ENTRY   (isave[0] = 5)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L140:
+     temp = scsum1_slu(n, x, &c__1_int) / (float)(*n * 3) * 2.;
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c
+index ffbeff18a5..7499b8e13e 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/cpanel_bmod.c
+@@ -243,7 +243,7 @@ cpanel_bmod (
+ 		   }
+ #endif
+ 		    ctrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    clsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -290,7 +290,7 @@ cpanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    cgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    cmatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -442,7 +442,7 @@ cpanel_bmod (
+ 		   }
+ #endif
+ 		    ctrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -454,7 +454,7 @@ cpanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    cgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    clsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c
+index bc9ca483bd..8f2fd216f3 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csnode_bmod.c
+@@ -112,9 +112,9 @@ csnode_bmod (
+        }
+ #endif
+ 	ctrsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	cgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	clsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c
+index 2586ffb566..5919db10ae 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/csp_blas2.c
+@@ -165,10 +165,10 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    ctrsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    cgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    clsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -215,7 +215,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    ctrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    cusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -270,7 +270,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    ctrsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -307,7 +307,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    ctrsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+@@ -349,7 +349,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+                     ctrsv_("L", trans, "U", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -388,7 +388,7 @@ sp_ctrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+                     ctrsv_("U", trans, "N", &nsupc, &Lval[luptr], &nsupr,
+-                               &x[fsupc], &incx);
++                               &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+   		}
+   	    } /* for k ... */
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c
+index 4819fed5fa..26dc79adfe 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dcolumn_bmod.c
+@@ -218,7 +218,7 @@ dcolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		dtrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -229,7 +229,7 @@ dcolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		dgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		dlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -318,7 +318,7 @@ dcolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	dtrsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -328,7 +328,7 @@ dcolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	dgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	dlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c
+index f3d7dbbc9f..a5321792fd 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgsrfs.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,7 +11,7 @@ at the top-level directory.
+ 
+ /*! @file dgsrfs.c
+  * \brief Improves computed solution to a system of inear equations
+- * 
++ *
+  * <pre>
+  * -- SuperLU routine (version 5.1) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+@@ -32,45 +32,45 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
+  *
+- *   DGSRFS improves the computed solution to a system of linear   
+- *   equations and provides error bounds and backward error estimates for 
+- *   the solution.   
++ *   DGSRFS improves the computed solution to a system of linear
++ *   equations and provides error bounds and backward error estimates for
++ *   the solution.
+  *
+  *   If equilibration was performed, the system becomes:
+  *           (diag(R)*A_original*diag(C)) * X = diag(R)*B_original.
+  *
+  *   See supermatrix.h for the definition of 'SuperMatrix' structure.
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  * trans   (input) trans_t
+  *          Specifies the form of the system of equations:
+  *          = NOTRANS: A * X = B  (No transpose)
+  *          = TRANS:   A'* X = B  (Transpose)
+  *          = CONJ:    A**H * X = B  (Conjugate transpose)
+- *   
++ *
+  *   A       (input) SuperMatrix*
+  *           The original matrix A in the system, or the scaled A if
+  *           equilibration was done. The type of A can be:
+  *           Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_GE.
+- *    
++ *
+  *   L       (input) SuperMatrix*
+  *	     The factor L from the factorization Pr*A*Pc=L*U. Use
+- *           compressed row subscripts storage for supernodes, 
++ *           compressed row subscripts storage for supernodes,
+  *           i.e., L has types: Stype = SLU_SC, Dtype = SLU_D, Mtype = SLU_TRLU.
+- * 
++ *
+  *   U       (input) SuperMatrix*
+  *           The factor U from the factorization Pr*A*Pc=L*U as computed by
+- *           dgstrf(). Use column-wise storage scheme, 
++ *           dgstrf(). Use column-wise storage scheme,
+  *           i.e., U has types: Stype = SLU_NC, Dtype = SLU_D, Mtype = SLU_TRU.
+  *
+  *   perm_c  (input) int*, dimension (A->ncol)
+- *	     Column permutation vector, which defines the 
+- *           permutation matrix Pc; perm_c[i] = j means column i of A is 
++ *	     Column permutation vector, which defines the
++ *           permutation matrix Pc; perm_c[i] = j means column i of A is
+  *           in position j in A*Pc.
+  *
+  *   perm_r  (input) int*, dimension (A->nrow)
+@@ -82,14 +82,14 @@ at the top-level directory.
+  *           = 'R': Row equilibration, i.e., A was premultiplied by diag(R).
+  *           = 'C': Column equilibration, i.e., A was postmultiplied by
+  *                  diag(C).
+- *           = 'B': Both row and column equilibration, i.e., A was replaced 
++ *           = 'B': Both row and column equilibration, i.e., A was replaced
+  *                  by diag(R)*A*diag(C).
+  *
+  *   R       (input) double*, dimension (A->nrow)
+  *           The row scale factors for A.
+  *           If equed = 'R' or 'B', A is premultiplied by diag(R).
+  *           If equed = 'N' or 'C', R is not accessed.
+- * 
++ *
+  *   C       (input) double*, dimension (A->ncol)
+  *           The column scale factors for A.
+  *           If equed = 'C' or 'B', A is postmultiplied by diag(C).
+@@ -107,33 +107,33 @@ at the top-level directory.
+  *           if *equed = 'C' or 'B', X should be premultiplied by diag(C)
+  *               in order to obtain the solution to the original system.
+  *
+- *   FERR    (output) double*, dimension (B->ncol)   
+- *           The estimated forward error bound for each solution vector   
+- *           X(j) (the j-th column of the solution matrix X).   
+- *           If XTRUE is the true solution corresponding to X(j), FERR(j) 
+- *           is an estimated upper bound for the magnitude of the largest 
+- *           element in (X(j) - XTRUE) divided by the magnitude of the   
+- *           largest element in X(j).  The estimate is as reliable as   
+- *           the estimate for RCOND, and is almost always a slight   
++ *   FERR    (output) double*, dimension (B->ncol)
++ *           The estimated forward error bound for each solution vector
++ *           X(j) (the j-th column of the solution matrix X).
++ *           If XTRUE is the true solution corresponding to X(j), FERR(j)
++ *           is an estimated upper bound for the magnitude of the largest
++ *           element in (X(j) - XTRUE) divided by the magnitude of the
++ *           largest element in X(j).  The estimate is as reliable as
++ *           the estimate for RCOND, and is almost always a slight
+  *           overestimate of the true error.
+  *
+- *   BERR    (output) double*, dimension (B->ncol)   
+- *           The componentwise relative backward error of each solution   
+- *           vector X(j) (i.e., the smallest relative change in   
++ *   BERR    (output) double*, dimension (B->ncol)
++ *           The componentwise relative backward error of each solution
++ *           vector X(j) (i.e., the smallest relative change in
+  *           any element of A or B that makes X(j) an exact solution).
+  *
+  *   stat     (output) SuperLUStat_t*
+  *            Record the statistics on runtime and floating-point operation count.
+  *            See util.h for the definition of 'SuperLUStat_t'.
+  *
+- *   info    (output) int*   
+- *           = 0:  successful exit   
+- *            < 0:  if INFO = -i, the i-th argument had an illegal value   
++ *   info    (output) int*
++ *           = 0:  successful exit
++ *            < 0:  if INFO = -i, the i-th argument had an illegal value
+  *
+- *    Internal Parameters   
+- *    ===================   
++ *    Internal Parameters
++ *    ===================
+  *
+- *    ITMAX is the maximum number of steps of iterative refinement.   
++ *    ITMAX is the maximum number of steps of iterative refinement.
+  *
+  * </pre>
+  */
+@@ -146,12 +146,12 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 
+ #define ITMAX 5
+-    
++
+     /* Table of constant values */
+     slu_blasint    ione = 1, nrow = A->nrow;
+     double ndone = -1.;
+     double done = 1.;
+-    
++
+     /* Local variables */
+     NCformat *Astore;
+     double   *Aval;
+@@ -181,7 +181,7 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     ldb    = Bstore->lda;
+     ldx    = Xstore->lda;
+     nrhs   = B->ncol;
+-    
++
+     /* Test the input parameters */
+     *info = 0;
+     notran = (trans == NOTRANS);
+@@ -223,9 +223,9 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     work = doubleMalloc(2*A->nrow);
+     rwork = (double *) SUPERLU_MALLOC( A->nrow * sizeof(double) );
+     iwork = int32Malloc(2*A->nrow);
+-    if ( !work || !rwork || !iwork ) 
++    if ( !work || !rwork || !iwork )
+         ABORT("Malloc fails for work/rwork/iwork.");
+-    
++
+     if ( notran ) {
+ 	*(unsigned char *)transc = 'N';
+         transt = TRANS;
+@@ -235,7 +235,7 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     } else if ( trans == CONJ ) {
+ 	*(unsigned char *)transc = 'C';
+ 	transt = NOTRANS;
+-    }    
++    }
+ 
+     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
+     nz     = A->ncol + 1;
+@@ -251,12 +251,12 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     for (i = 0; i < A->nrow; ++i) iwork[i] = 0;
+     if ( notran ) {
+ 	for (k = 0; k < A->ncol; ++k)
+-	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i) 
++	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i)
+ 		++iwork[Astore->rowind[i]];
+     } else {
+ 	for (k = 0; k < A->ncol; ++k)
+ 	    iwork[k] = Astore->colptr[k+1] - Astore->colptr[k];
+-    }	
++    }
+ 
+     /* Copy one column of RHS B into Bjcol. */
+     Bjcol.Stype = B->Stype;
+@@ -269,7 +269,7 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     Bjcol_store = Bjcol.Store;
+     Bjcol_store->lda = ldb;
+     Bjcol_store->nzval = work; /* address aliasing */
+-	
++
+     /* Do for each right hand side ... */
+     for (j = 0; j < nrhs; ++j) {
+ 	count = 0;
+@@ -279,9 +279,9 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 	while (1) { /* Loop until stopping criterion is satisfied. */
+ 
+-	    /* Compute residual R = B - op(A) * X,   
++	    /* Compute residual R = B - op(A) * X,
+ 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
+-	    
++
+ #ifdef _CRAY
+ 	    SCOPY(&nrow, Bptr, &ione, work, &ione);
+ #else
+@@ -289,15 +289,15 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ #endif
+ 	    sp_dgemv(transc, ndone, A, Xptr, ione, done, work, ione);
+ 
+-	    /* Compute componentwise relative backward error from formula 
+-	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )   
++	    /* Compute componentwise relative backward error from formula
++	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )
+ 	       where abs(Z) is the componentwise absolute value of the matrix
+ 	       or vector Z.  If the i-th component of the denominator is less
+-	       than SAFE2, then SAFE1 is added to the i-th component of the   
++	       than SAFE2, then SAFE1 is added to the i-th component of the
+ 	       numerator before dividing. */
+ 
+ 	    for (i = 0; i < A->nrow; ++i) rwork[i] = fabs( Bptr[i] );
+-	    
++
+ 	    /* Compute abs(op(A))*abs(X) + abs(B). */
+ 	    if ( notran ) {
+ 		for (k = 0; k < A->ncol; ++k) {
+@@ -324,21 +324,21 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+                        spuriously zero residuals (underflow). */
+ 		    s = SUPERLU_MAX( s, (safe1 + fabs(work[i])) / rwork[i] );
+                 }
+-                /* If rwork[i] is exactly 0.0, then we know the true 
++                /* If rwork[i] is exactly 0.0, then we know the true
+                    residual also must be exactly 0.0. */
+ 	    }
+ 	    berr[j] = s;
+ 
+-	    /* Test stopping criterion. Continue iterating if   
+-	       1) The residual BERR(J) is larger than machine epsilon, and   
+-	       2) BERR(J) decreased by at least a factor of 2 during the   
+-	          last iteration, and   
++	    /* Test stopping criterion. Continue iterating if
++	       1) The residual BERR(J) is larger than machine epsilon, and
++	       2) BERR(J) decreased by at least a factor of 2 during the
++	          last iteration, and
+ 	       3) At most ITMAX iterations tried. */
+ 
+ 	    if (berr[j] > eps && berr[j] * 2. <= lstres && count < ITMAX) {
+ 		/* Update solution and try again. */
+ 		dgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ #ifdef _CRAY
+ 		SAXPY(&nrow, &done, work, &ione,
+ 		       &Xmat[j*ldx], &ione);
+@@ -351,32 +351,32 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    } else {
+ 		break;
+ 	    }
+-        
++
+ 	} /* end while */
+ 
+ 	stat->RefineSteps = count;
+ 
+ 	/* Bound error from formula:
+-	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*   
+-	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)   
+-          where   
+-            norm(Z) is the magnitude of the largest component of Z   
+-            inv(op(A)) is the inverse of op(A)   
++	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*
++	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)
++          where
++            norm(Z) is the magnitude of the largest component of Z
++            inv(op(A)) is the inverse of op(A)
+             abs(Z) is the componentwise absolute value of the matrix or
+-	       vector Z   
+-            NZ is the maximum number of nonzeros in any row of A, plus 1   
+-            EPS is machine epsilon   
++	       vector Z
++            NZ is the maximum number of nonzeros in any row of A, plus 1
++            EPS is machine epsilon
+ 
+-          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))   
+-          is incremented by SAFE1 if the i-th component of   
+-          abs(op(A))*abs(X) + abs(B) is less than SAFE2.   
++          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))
++          is incremented by SAFE1 if the i-th component of
++          abs(op(A))*abs(X) + abs(B) is less than SAFE2.
+ 
+-          Use DLACON2 to estimate the infinity-norm of the matrix   
+-             inv(op(A)) * diag(W),   
++          Use DLACON2 to estimate the infinity-norm of the matrix
++             inv(op(A)) * diag(W),
+           where W = abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) */
+-	
++
+ 	for (i = 0; i < A->nrow; ++i) rwork[i] = fabs( Bptr[i] );
+-	
++
+ 	/* Compute abs(op(A))*abs(X) + abs(B). */
+ 	if ( notran ) {
+ 	    for (k = 0; k < A->ncol; ++k) {
+@@ -395,7 +395,7 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		rwork[k] += s;
+ 	    }
+ 	}
+-	
++
+ 	for (i = 0; i < A->nrow; ++i)
+ 	    if (rwork[i] > safe2)
+ 		rwork[i] = fabs(work[i]) + (iwork[i]+1)*eps*rwork[i];
+@@ -416,22 +416,22 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		    for (i = 0; i < A->ncol; ++i) work[i] *= C[i];
+ 		else if ( !notran && rowequ )
+ 		    for (i = 0; i < A->nrow; ++i) work[i] *= R[i];
+-		
++
+ 		dgstrs (transt, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		for (i = 0; i < A->nrow; ++i) work[i] *= rwork[i];
+ 	    } else {
+ 		/* Multiply by (diag(C) or diag(R))*inv(op(A))*diag(W). */
+ 		for (i = 0; i < A->nrow; ++i) work[i] *= rwork[i];
+-		
++
+ 		dgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		if ( notran && colequ )
+ 		    for (i = 0; i < A->ncol; ++i) work[i] *= C[i];
+ 		else if ( !notran && rowequ )
+-		    for (i = 0; i < A->ncol; ++i) work[i] *= R[i];  
++		    for (i = 0; i < A->ncol; ++i) work[i] *= R[i];
+ 	    }
+-	    
++
+ 	} while ( kase != 0 );
+ 
+ 
+@@ -451,7 +451,7 @@ dgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    ferr[j] /= lstres;
+ 
+     } /* for each RHS j ... */
+-    
++
+     SUPERLU_FREE(work);
+     SUPERLU_FREE(rwork);
+     SUPERLU_FREE(iwork);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c
+index 8a2082dda2..9b27f51fcc 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dgstrs.c
+@@ -192,11 +192,11 @@ dgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		dtrsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		dgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -261,7 +261,7 @@ dgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		dtrsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c
+index 028662f0d6..5d7c24d5d4 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dlacon2.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -25,12 +25,12 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
++ *
++ *   DLACON2 estimates the 1-norm of a square matrix A.
++ *   Reverse communication is used for evaluating matrix-vector products.
+  *
+- *   DLACON2 estimates the 1-norm of a square matrix A.   
+- *   Reverse communication is used for evaluating matrix-vector products. 
+- * 
+  *   This is a thread safe version of CLACON, which uses the array ISAVE
+  *   in place of a STATIC variables, as follows:
+  *
+@@ -40,48 +40,48 @@ at the top-level directory.
+  *      iter     isave[2]
+  *
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  *   N      (input) INT
+- *          The order of the matrix.  N >= 1.   
++ *          The order of the matrix.  N >= 1.
+  *
+- *   V      (workspace) DOUBLE PRECISION array, dimension (N)   
+- *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)   
+- *          (W is not returned).   
++ *   V      (workspace) DOUBLE PRECISION array, dimension (N)
++ *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)
++ *          (W is not returned).
+  *
+- *   X      (input/output) DOUBLE PRECISION array, dimension (N)   
+- *          On an intermediate return, X should be overwritten by   
+- *                A * X,   if KASE=1,   
++ *   X      (input/output) DOUBLE PRECISION array, dimension (N)
++ *          On an intermediate return, X should be overwritten by
++ *                A * X,   if KASE=1,
+  *                A' * X,  if KASE=2,
+- *         and DLACON must be re-called with all the other parameters   
+- *          unchanged.   
++ *         and DLACON must be re-called with all the other parameters
++ *          unchanged.
+  *
+  *   ISGN   (workspace) INT array, dimension (N)
+  *
+- *   EST    (output) DOUBLE PRECISION   
+- *          An estimate (a lower bound) for norm(A).   
++ *   EST    (output) DOUBLE PRECISION
++ *          An estimate (a lower bound) for norm(A).
+  *
+  *   KASE   (input/output) INT
+- *          On the initial call to DLACON, KASE should be 0.   
+- *          On an intermediate return, KASE will be 1 or 2, indicating   
+- *          whether X should be overwritten by A * X  or A' * X.   
+- *          On the final return from DLACON, KASE will again be 0.   
++ *          On the initial call to DLACON, KASE should be 0.
++ *          On an intermediate return, KASE will be 1 or 2, indicating
++ *          whether X should be overwritten by A * X  or A' * X.
++ *          On the final return from DLACON, KASE will again be 0.
+  *
+  *   isave  (input/output) int [3]
+  *          ISAVE is INTEGER array, dimension (3)
+  *          ISAVE is used to save variables between calls to DLACON2
+  *
+- *   Further Details   
+- *   ===============   
++ *   Further Details
++ *   ===============
+  *
+- *   Contributed by Nick Higham, University of Manchester.   
+- *   Originally named CONEST, dated March 16, 1988.   
++ *   Contributed by Nick Higham, University of Manchester.
++ *   Originally named CONEST, dated March 16, 1988.
+  *
+- *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of 
+- *   a real or complex matrix, with applications to condition estimation", 
+- *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.   
+- *   ===================================================================== 
++ *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of
++ *   a real or complex matrix, with applications to condition estimation",
++ *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.
++ *   =====================================================================
+  * </pre>
+  */
+ 
+@@ -92,7 +92,7 @@ dlacon2_(int *n, double *v, double *x, int *isgn, double *est, int *kase, int is
+     slu_blasint c__1 = 1;
+     double      zero = 0.0;
+     double      one = 1.0;
+-    
++
+     /* Local variables */
+     int jlast;
+     double altsgn, estold;
+@@ -130,7 +130,7 @@ dlacon2_(int *n, double *v, double *x, int *isgn, double *est, int *kase, int is
+ 	case 5:  goto L140;
+     }
+ 
+-    /*     ................ ENTRY   (isave[0] == 1)   
++    /*     ................ ENTRY   (isave[0] == 1)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY A*X. */
+   L20:
+     if (*n == 1) {
+@@ -153,7 +153,7 @@ dlacon2_(int *n, double *v, double *x, int *isgn, double *est, int *kase, int is
+     isave[0] = 2;  /* jump = 2; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 2)   
++    /*     ................ ENTRY   (isave[0] == 2)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY TRANSPOSE(A)*X. */
+ L40:
+ #ifdef _CRAY
+@@ -172,7 +172,7 @@ L50:
+     isave[0] = 3;  /* jump = 3; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 3)   
++    /*     ................ ENTRY   (isave[0] == 3)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L70:
+ #ifdef _CRAY
+@@ -231,8 +231,8 @@ L120:
+     *kase = 1;
+     isave[0] = 5;  /* jump = 5; */
+     return 0;
+-    
+-    /*     ................ ENTRY   (isave[0] = 5)   
++
++    /*     ................ ENTRY   (isave[0] = 5)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L140:
+ #ifdef _CRAY
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c
+index 210619c661..604caa1954 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dpanel_bmod.c
+@@ -229,7 +229,7 @@ dpanel_bmod (
+ 		   }
+ #endif
+ 		    dtrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    dlsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -276,7 +276,7 @@ dpanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    dgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    dmatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -414,7 +414,7 @@ dpanel_bmod (
+ 		   }
+ #endif
+ 		    dtrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -426,7 +426,7 @@ dpanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    dgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    dlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c
+index 62bd196347..47aba9840a 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsnode_bmod.c
+@@ -111,9 +111,9 @@ dsnode_bmod (
+        }
+ #endif
+ 	dtrsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	dgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	dlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c
+index 6bd4abfee7..318f0849f1 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/dsp_blas2.c
+@@ -161,10 +161,10 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    dtrsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    dgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    dlsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -209,7 +209,7 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    dtrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    dusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -262,7 +262,7 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    dtrsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -297,7 +297,7 @@ sp_dtrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    dtrsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c
+index ef3d067369..33ad1d0d7d 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/scolumn_bmod.c
+@@ -218,7 +218,7 @@ scolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		strsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -229,7 +229,7 @@ scolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		sgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		slsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -318,7 +318,7 @@ scolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	strsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -328,7 +328,7 @@ scolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	sgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	slsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c
+index f06b44d300..a881305a99 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgsrfs.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,7 +11,7 @@ at the top-level directory.
+ 
+ /*! @file sgsrfs.c
+  * \brief Improves computed solution to a system of inear equations
+- * 
++ *
+  * <pre>
+  * -- SuperLU routine (version 5.1) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+@@ -32,45 +32,45 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
+  *
+- *   SGSRFS improves the computed solution to a system of linear   
+- *   equations and provides error bounds and backward error estimates for 
+- *   the solution.   
++ *   SGSRFS improves the computed solution to a system of linear
++ *   equations and provides error bounds and backward error estimates for
++ *   the solution.
+  *
+  *   If equilibration was performed, the system becomes:
+  *           (diag(R)*A_original*diag(C)) * X = diag(R)*B_original.
+  *
+  *   See supermatrix.h for the definition of 'SuperMatrix' structure.
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  * trans   (input) trans_t
+  *          Specifies the form of the system of equations:
+  *          = NOTRANS: A * X = B  (No transpose)
+  *          = TRANS:   A'* X = B  (Transpose)
+  *          = CONJ:    A**H * X = B  (Conjugate transpose)
+- *   
++ *
+  *   A       (input) SuperMatrix*
+  *           The original matrix A in the system, or the scaled A if
+  *           equilibration was done. The type of A can be:
+  *           Stype = SLU_NC, Dtype = SLU_S, Mtype = SLU_GE.
+- *    
++ *
+  *   L       (input) SuperMatrix*
+  *	     The factor L from the factorization Pr*A*Pc=L*U. Use
+- *           compressed row subscripts storage for supernodes, 
++ *           compressed row subscripts storage for supernodes,
+  *           i.e., L has types: Stype = SLU_SC, Dtype = SLU_S, Mtype = SLU_TRLU.
+- * 
++ *
+  *   U       (input) SuperMatrix*
+  *           The factor U from the factorization Pr*A*Pc=L*U as computed by
+- *           sgstrf(). Use column-wise storage scheme, 
++ *           sgstrf(). Use column-wise storage scheme,
+  *           i.e., U has types: Stype = SLU_NC, Dtype = SLU_S, Mtype = SLU_TRU.
+  *
+  *   perm_c  (input) int*, dimension (A->ncol)
+- *	     Column permutation vector, which defines the 
+- *           permutation matrix Pc; perm_c[i] = j means column i of A is 
++ *	     Column permutation vector, which defines the
++ *           permutation matrix Pc; perm_c[i] = j means column i of A is
+  *           in position j in A*Pc.
+  *
+  *   perm_r  (input) int*, dimension (A->nrow)
+@@ -82,14 +82,14 @@ at the top-level directory.
+  *           = 'R': Row equilibration, i.e., A was premultiplied by diag(R).
+  *           = 'C': Column equilibration, i.e., A was postmultiplied by
+  *                  diag(C).
+- *           = 'B': Both row and column equilibration, i.e., A was replaced 
++ *           = 'B': Both row and column equilibration, i.e., A was replaced
+  *                  by diag(R)*A*diag(C).
+  *
+  *   R       (input) float*, dimension (A->nrow)
+  *           The row scale factors for A.
+  *           If equed = 'R' or 'B', A is premultiplied by diag(R).
+  *           If equed = 'N' or 'C', R is not accessed.
+- * 
++ *
+  *   C       (input) float*, dimension (A->ncol)
+  *           The column scale factors for A.
+  *           If equed = 'C' or 'B', A is postmultiplied by diag(C).
+@@ -107,33 +107,33 @@ at the top-level directory.
+  *           if *equed = 'C' or 'B', X should be premultiplied by diag(C)
+  *               in order to obtain the solution to the original system.
+  *
+- *   FERR    (output) float*, dimension (B->ncol)   
+- *           The estimated forward error bound for each solution vector   
+- *           X(j) (the j-th column of the solution matrix X).   
+- *           If XTRUE is the true solution corresponding to X(j), FERR(j) 
+- *           is an estimated upper bound for the magnitude of the largest 
+- *           element in (X(j) - XTRUE) divided by the magnitude of the   
+- *           largest element in X(j).  The estimate is as reliable as   
+- *           the estimate for RCOND, and is almost always a slight   
++ *   FERR    (output) float*, dimension (B->ncol)
++ *           The estimated forward error bound for each solution vector
++ *           X(j) (the j-th column of the solution matrix X).
++ *           If XTRUE is the true solution corresponding to X(j), FERR(j)
++ *           is an estimated upper bound for the magnitude of the largest
++ *           element in (X(j) - XTRUE) divided by the magnitude of the
++ *           largest element in X(j).  The estimate is as reliable as
++ *           the estimate for RCOND, and is almost always a slight
+  *           overestimate of the true error.
+  *
+- *   BERR    (output) float*, dimension (B->ncol)   
+- *           The componentwise relative backward error of each solution   
+- *           vector X(j) (i.e., the smallest relative change in   
++ *   BERR    (output) float*, dimension (B->ncol)
++ *           The componentwise relative backward error of each solution
++ *           vector X(j) (i.e., the smallest relative change in
+  *           any element of A or B that makes X(j) an exact solution).
+  *
+  *   stat     (output) SuperLUStat_t*
+  *            Record the statistics on runtime and floating-point operation count.
+  *            See util.h for the definition of 'SuperLUStat_t'.
+  *
+- *   info    (output) int*   
+- *           = 0:  successful exit   
+- *            < 0:  if INFO = -i, the i-th argument had an illegal value   
++ *   info    (output) int*
++ *           = 0:  successful exit
++ *            < 0:  if INFO = -i, the i-th argument had an illegal value
+  *
+- *    Internal Parameters   
+- *    ===================   
++ *    Internal Parameters
++ *    ===================
+  *
+- *    ITMAX is the maximum number of steps of iterative refinement.   
++ *    ITMAX is the maximum number of steps of iterative refinement.
+  *
+  * </pre>
+  */
+@@ -146,12 +146,12 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 
+ #define ITMAX 5
+-    
++
+     /* Table of constant values */
+     slu_blasint    ione = 1, nrow = A->nrow;
+     float ndone = -1.;
+     float done = 1.;
+-    
++
+     /* Local variables */
+     NCformat *Astore;
+     float   *Aval;
+@@ -181,7 +181,7 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     ldb    = Bstore->lda;
+     ldx    = Xstore->lda;
+     nrhs   = B->ncol;
+-    
++
+     /* Test the input parameters */
+     *info = 0;
+     notran = (trans == NOTRANS);
+@@ -218,14 +218,14 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+     rowequ = strncmp(equed, "R", 1)==0 || strncmp(equed, "B", 1)==0;
+     colequ = strncmp(equed, "C", 1)==0 || strncmp(equed, "B", 1)==0;
+-    
++
+     /* Allocate working space */
+     work = floatMalloc(2*A->nrow);
+     rwork = (float *) SUPERLU_MALLOC( A->nrow * sizeof(float) );
+     iwork = int32Malloc(2*A->nrow);
+-    if ( !work || !rwork || !iwork ) 
++    if ( !work || !rwork || !iwork )
+         ABORT("Malloc fails for work/rwork/iwork.");
+-    
++
+     if ( notran ) {
+ 	*(unsigned char *)transc = 'N';
+         transt = TRANS;
+@@ -235,7 +235,7 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     } else if ( trans == CONJ ) {
+ 	*(unsigned char *)transc = 'C';
+ 	transt = NOTRANS;
+-    }    
++    }
+ 
+     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
+     nz     = A->ncol + 1;
+@@ -251,12 +251,12 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     for (i = 0; i < A->nrow; ++i) iwork[i] = 0;
+     if ( notran ) {
+ 	for (k = 0; k < A->ncol; ++k)
+-	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i) 
++	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i)
+ 		++iwork[Astore->rowind[i]];
+     } else {
+ 	for (k = 0; k < A->ncol; ++k)
+ 	    iwork[k] = Astore->colptr[k+1] - Astore->colptr[k];
+-    }	
++    }
+ 
+     /* Copy one column of RHS B into Bjcol. */
+     Bjcol.Stype = B->Stype;
+@@ -269,7 +269,7 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     Bjcol_store = Bjcol.Store;
+     Bjcol_store->lda = ldb;
+     Bjcol_store->nzval = work; /* address aliasing */
+-	
++
+     /* Do for each right hand side ... */
+     for (j = 0; j < nrhs; ++j) {
+ 	count = 0;
+@@ -279,9 +279,9 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 	while (1) { /* Loop until stopping criterion is satisfied. */
+ 
+-	    /* Compute residual R = B - op(A) * X,   
++	    /* Compute residual R = B - op(A) * X,
+ 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
+-	    
++
+ #ifdef _CRAY
+ 	    SCOPY(&nrow, Bptr, &ione, work, &ione);
+ #else
+@@ -289,15 +289,15 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ #endif
+ 	    sp_sgemv(transc, ndone, A, Xptr, ione, done, work, ione);
+ 
+-	    /* Compute componentwise relative backward error from formula 
+-	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )   
++	    /* Compute componentwise relative backward error from formula
++	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )
+ 	       where abs(Z) is the componentwise absolute value of the matrix
+ 	       or vector Z.  If the i-th component of the denominator is less
+-	       than SAFE2, then SAFE1 is added to the i-th component of the   
++	       than SAFE2, then SAFE1 is added to the i-th component of the
+ 	       numerator before dividing. */
+ 
+ 	    for (i = 0; i < A->nrow; ++i) rwork[i] = fabs( Bptr[i] );
+-	    
++
+ 	    /* Compute abs(op(A))*abs(X) + abs(B). */
+ 	    if ( notran ) {
+ 		for (k = 0; k < A->ncol; ++k) {
+@@ -324,21 +324,21 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+                        spuriously zero residuals (underflow). */
+ 		    s = SUPERLU_MAX( s, (safe1 + fabs(work[i])) / rwork[i] );
+                 }
+-                /* If rwork[i] is exactly 0.0, then we know the true 
++                /* If rwork[i] is exactly 0.0, then we know the true
+                    residual also must be exactly 0.0. */
+ 	    }
+ 	    berr[j] = s;
+ 
+-	    /* Test stopping criterion. Continue iterating if   
+-	       1) The residual BERR(J) is larger than machine epsilon, and   
+-	       2) BERR(J) decreased by at least a factor of 2 during the   
+-	          last iteration, and   
++	    /* Test stopping criterion. Continue iterating if
++	       1) The residual BERR(J) is larger than machine epsilon, and
++	       2) BERR(J) decreased by at least a factor of 2 during the
++	          last iteration, and
+ 	       3) At most ITMAX iterations tried. */
+ 
+ 	    if (berr[j] > eps && berr[j] * 2. <= lstres && count < ITMAX) {
+ 		/* Update solution and try again. */
+ 		sgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ #ifdef _CRAY
+ 		SAXPY(&nrow, &done, work, &ione,
+ 		       &Xmat[j*ldx], &ione);
+@@ -351,32 +351,32 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    } else {
+ 		break;
+ 	    }
+-        
++
+ 	} /* end while */
+ 
+ 	stat->RefineSteps = count;
+ 
+ 	/* Bound error from formula:
+-	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*   
+-	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)   
+-          where   
+-            norm(Z) is the magnitude of the largest component of Z   
+-            inv(op(A)) is the inverse of op(A)   
++	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*
++	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)
++          where
++            norm(Z) is the magnitude of the largest component of Z
++            inv(op(A)) is the inverse of op(A)
+             abs(Z) is the componentwise absolute value of the matrix or
+-	       vector Z   
+-            NZ is the maximum number of nonzeros in any row of A, plus 1   
+-            EPS is machine epsilon   
++	       vector Z
++            NZ is the maximum number of nonzeros in any row of A, plus 1
++            EPS is machine epsilon
+ 
+-          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))   
+-          is incremented by SAFE1 if the i-th component of   
+-          abs(op(A))*abs(X) + abs(B) is less than SAFE2.   
++          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))
++          is incremented by SAFE1 if the i-th component of
++          abs(op(A))*abs(X) + abs(B) is less than SAFE2.
+ 
+-          Use SLACON2 to estimate the infinity-norm of the matrix   
+-             inv(op(A)) * diag(W),   
++          Use SLACON2 to estimate the infinity-norm of the matrix
++             inv(op(A)) * diag(W),
+           where W = abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) */
+-	
++
+ 	for (i = 0; i < A->nrow; ++i) rwork[i] = fabs( Bptr[i] );
+-	
++
+ 	/* Compute abs(op(A))*abs(X) + abs(B). */
+ 	if ( notran ) {
+ 	    for (k = 0; k < A->ncol; ++k) {
+@@ -395,7 +395,7 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		rwork[k] += s;
+ 	    }
+ 	}
+-	
++
+ 	for (i = 0; i < A->nrow; ++i)
+ 	    if (rwork[i] > safe2)
+ 		rwork[i] = fabs(work[i]) + (iwork[i]+1)*eps*rwork[i];
+@@ -416,22 +416,22 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		    for (i = 0; i < A->ncol; ++i) work[i] *= C[i];
+ 		else if ( !notran && rowequ )
+ 		    for (i = 0; i < A->nrow; ++i) work[i] *= R[i];
+-		
++
+ 		sgstrs (transt, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		for (i = 0; i < A->nrow; ++i) work[i] *= rwork[i];
+ 	    } else {
+ 		/* Multiply by (diag(C) or diag(R))*inv(op(A))*diag(W). */
+ 		for (i = 0; i < A->nrow; ++i) work[i] *= rwork[i];
+-		
++
+ 		sgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		if ( notran && colequ )
+ 		    for (i = 0; i < A->ncol; ++i) work[i] *= C[i];
+ 		else if ( !notran && rowequ )
+-		    for (i = 0; i < A->ncol; ++i) work[i] *= R[i];  
++		    for (i = 0; i < A->ncol; ++i) work[i] *= R[i];
+ 	    }
+-	    
++
+ 	} while ( kase != 0 );
+ 
+ 
+@@ -451,7 +451,7 @@ sgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    ferr[j] /= lstres;
+ 
+     } /* for each RHS j ... */
+-    
++
+     SUPERLU_FREE(work);
+     SUPERLU_FREE(rwork);
+     SUPERLU_FREE(iwork);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c
+index ccf91997ff..748542fa3a 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/sgstrs.c
+@@ -192,11 +192,11 @@ sgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		strsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		sgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -261,7 +261,7 @@ sgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		strsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c
+index 536b5520e8..849a5c765b 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slacon2.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -25,12 +25,12 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
++ *
++ *   SLACON2 estimates the 1-norm of a square matrix A.
++ *   Reverse communication is used for evaluating matrix-vector products.
+  *
+- *   SLACON2 estimates the 1-norm of a square matrix A.   
+- *   Reverse communication is used for evaluating matrix-vector products. 
+- * 
+  *   This is a thread safe version of CLACON, which uses the array ISAVE
+  *   in place of a STATIC variables, as follows:
+  *
+@@ -40,48 +40,48 @@ at the top-level directory.
+  *      iter     isave[2]
+  *
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  *   N      (input) INT
+- *          The order of the matrix.  N >= 1.   
++ *          The order of the matrix.  N >= 1.
+  *
+- *   V      (workspace) FLOAT PRECISION array, dimension (N)   
+- *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)   
+- *          (W is not returned).   
++ *   V      (workspace) FLOAT PRECISION array, dimension (N)
++ *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)
++ *          (W is not returned).
+  *
+- *   X      (input/output) FLOAT PRECISION array, dimension (N)   
+- *          On an intermediate return, X should be overwritten by   
+- *                A * X,   if KASE=1,   
++ *   X      (input/output) FLOAT PRECISION array, dimension (N)
++ *          On an intermediate return, X should be overwritten by
++ *                A * X,   if KASE=1,
+  *                A' * X,  if KASE=2,
+- *         and SLACON must be re-called with all the other parameters   
+- *          unchanged.   
++ *         and SLACON must be re-called with all the other parameters
++ *          unchanged.
+  *
+  *   ISGN   (workspace) INT array, dimension (N)
+  *
+- *   EST    (output) FLOAT PRECISION   
+- *          An estimate (a lower bound) for norm(A).   
++ *   EST    (output) FLOAT PRECISION
++ *          An estimate (a lower bound) for norm(A).
+  *
+  *   KASE   (input/output) INT
+- *          On the initial call to SLACON, KASE should be 0.   
+- *          On an intermediate return, KASE will be 1 or 2, indicating   
+- *          whether X should be overwritten by A * X  or A' * X.   
+- *          On the final return from SLACON, KASE will again be 0.   
++ *          On the initial call to SLACON, KASE should be 0.
++ *          On an intermediate return, KASE will be 1 or 2, indicating
++ *          whether X should be overwritten by A * X  or A' * X.
++ *          On the final return from SLACON, KASE will again be 0.
+  *
+  *   isave  (input/output) int [3]
+  *          ISAVE is INTEGER array, dimension (3)
+  *          ISAVE is used to save variables between calls to SLACON2
+  *
+- *   Further Details   
+- *   ===============   
++ *   Further Details
++ *   ===============
+  *
+- *   Contributed by Nick Higham, University of Manchester.   
+- *   Originally named CONEST, dated March 16, 1988.   
++ *   Contributed by Nick Higham, University of Manchester.
++ *   Originally named CONEST, dated March 16, 1988.
+  *
+- *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of 
+- *   a real or complex matrix, with applications to condition estimation", 
+- *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.   
+- *   ===================================================================== 
++ *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of
++ *   a real or complex matrix, with applications to condition estimation",
++ *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.
++ *   =====================================================================
+  * </pre>
+  */
+ 
+@@ -92,7 +92,7 @@ slacon2_(int *n, float *v, float *x, int *isgn, float *est, int *kase, int isave
+     slu_blasint c__1 = 1;
+     float      zero = 0.0;
+     float      one = 1.0;
+-    
++
+     /* Local variables */
+     int jlast;
+     float altsgn, estold;
+@@ -130,7 +130,7 @@ slacon2_(int *n, float *v, float *x, int *isgn, float *est, int *kase, int isave
+ 	case 5:  goto L140;
+     }
+ 
+-    /*     ................ ENTRY   (isave[0] == 1)   
++    /*     ................ ENTRY   (isave[0] == 1)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY A*X. */
+   L20:
+     if (*n == 1) {
+@@ -153,7 +153,7 @@ slacon2_(int *n, float *v, float *x, int *isgn, float *est, int *kase, int isave
+     isave[0] = 2;  /* jump = 2; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 2)   
++    /*     ................ ENTRY   (isave[0] == 2)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY TRANSPOSE(A)*X. */
+ L40:
+ #ifdef _CRAY
+@@ -172,7 +172,7 @@ L50:
+     isave[0] = 3;  /* jump = 3; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 3)   
++    /*     ................ ENTRY   (isave[0] == 3)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L70:
+ #ifdef _CRAY
+@@ -231,8 +231,8 @@ L120:
+     *kase = 1;
+     isave[0] = 5;  /* jump = 5; */
+     return 0;
+-    
+-    /*     ................ ENTRY   (isave[0] = 5)   
++
++    /*     ................ ENTRY   (isave[0] = 5)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L140:
+ #ifdef _CRAY
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
+index 2c25c81d89..80121ccb3b 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_cdefs.h
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,27 +11,27 @@ at the top-level directory.
+ 
+ /*! @file slu_cdefs.h
+  * \brief Header file for real operations
+- * 
+- * <pre> 
++ *
++ * <pre>
+  * -- SuperLU routine (version 7.0.0) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+  * and Lawrence Berkeley National Lab.
+  * November, 2010
+  * August 2024
+- * 
++ *
+  * Global data structures used in LU factorization -
+- * 
++ *
+  *   nsuper: \#supernodes = nsuper + 1, numbered [0, nsuper].
+  *   (xsup,supno): supno[i] is the supernode no to which i belongs;
+  *	xsup(s) points to the beginning of the s-th supernode.
+  *	e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
+  *	        xsup 0 1 2 4 7 12
+- *	Note: dfs will be performed on supernode rep. relative to the new 
++ *	Note: dfs will be performed on supernode rep. relative to the new
+  *	      row pivoting ordering
+  *
+  *   (xlsub,lsub): lsub[*] contains the compressed subscript of
+  *	rectangular supernodes; xlsub[j] points to the starting
+- *	location of the j-th column in lsub[*]. Note that xlsub 
++ *	location of the j-th column in lsub[*]. Note that xlsub
+  *	is indexed by column.
+  *	Storage: original row subscripts
+  *
+@@ -140,7 +140,7 @@ extern void
+ cCreate_Dense_Matrix(SuperMatrix *, int, int, singlecomplex *, int,
+ 		     Stype_t, Dtype_t, Mtype_t);
+ extern void
+-cCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, singlecomplex *, 
++cCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, singlecomplex *,
+ 		         int_t *, int_t *, int_t *, int *, int *,
+ 			 Stype_t, Dtype_t, Mtype_t);
+ extern void
+@@ -148,7 +148,7 @@ cCopy_Dense_Matrix(int, int, singlecomplex *, int, singlecomplex *, int);
+ 
+ extern void    callocateA (int, int_t, singlecomplex **, int_t **, int_t **);
+ extern void    cgstrf (superlu_options_t*, SuperMatrix*,
+-                       int, int, int*, void *, int_t, int *, int *, 
++                       int, int, int*, void *, int_t, int *, int *,
+                        SuperMatrix *, SuperMatrix *, GlobalLU_t *,
+ 		       SuperLUStat_t*, int_t *info);
+ extern int_t   csnode_dfs (const int, const int, const int_t *, const int_t *,
+@@ -167,8 +167,8 @@ extern int     ccolumn_bmod (const int, const int, singlecomplex *,
+ 			   singlecomplex *, int *, int *, int,
+                            GlobalLU_t *, SuperLUStat_t*);
+ extern int     ccopy_to_ucol (int, int, int *, int *, int *,
+-                              singlecomplex *, GlobalLU_t *);         
+-extern int     cpivotL (const int, const double, int *, int *, 
++                              singlecomplex *, GlobalLU_t *);
++extern int     cpivotL (const int, const double, int *, int *,
+                          int *, int *, int *, GlobalLU_t *, SuperLUStat_t*);
+ extern void    cpruneL (const int, const int *, const int, const int,
+ 			  const int *, const int *, int_t *, GlobalLU_t *);
+@@ -198,7 +198,7 @@ extern int     ilu_cpivotL (const int, const double, int *, int *, int, int *,
+ 			    int *, int *, int *, double, milu_t,
+                             singlecomplex, GlobalLU_t *, SuperLUStat_t*);
+ extern int     ilu_cdrop_row (superlu_options_t *, int, int, double,
+-                              int, int *, double *, GlobalLU_t *, 
++                              int, int *, double *, GlobalLU_t *,
+                               float *, float *, int);
+ 
+ 
+@@ -208,12 +208,12 @@ extern void    cgsequ (SuperMatrix *, float *, float *, float *,
+ 			float *, float *, int *);
+ extern void    claqgs (SuperMatrix *, float *, float *, float,
+                         float, float, char *);
+-extern void    cgscon (char *, SuperMatrix *, SuperMatrix *, 
++extern void    cgscon (char *, SuperMatrix *, SuperMatrix *,
+ 		         float, float *, SuperLUStat_t*, int *);
+-extern float   cPivotGrowth(int, SuperMatrix *, int *, 
++extern float   cPivotGrowth(int, SuperMatrix *, int *,
+                             SuperMatrix *, SuperMatrix *);
+ extern void    cgsrfs (trans_t, SuperMatrix *, SuperMatrix *,
+-                       SuperMatrix *, int *, int *, char *, float *, 
++                       SuperMatrix *, int *, int *, char *, float *,
+                        float *, SuperMatrix *, SuperMatrix *,
+                        float *, float *, SuperLUStat_t*, int *);
+ 
+@@ -223,7 +223,7 @@ extern int     sp_cgemv (char *, singlecomplex, SuperMatrix *, singlecomplex *,
+ 			int, singlecomplex, singlecomplex *, int);
+ 
+ extern int     sp_cgemm (char *, char *, int, int, int, singlecomplex,
+-			SuperMatrix *, singlecomplex *, int, singlecomplex, 
++			SuperMatrix *, singlecomplex *, int, singlecomplex,
+ 			singlecomplex *, int);
+ extern         float smach(char *);   /* from C99 standard, in float.h */
+ 
+@@ -268,13 +268,13 @@ extern void ccopy_(slu_blasint *, singlecomplex *, slu_blasint *, singlecomplex
+ extern void caxpy_(slu_blasint *, singlecomplex *, singlecomplex *, slu_blasint *, singlecomplex *, slu_blasint *);
+ extern void cgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
+                   const singlecomplex*, const singlecomplex*, const slu_blasint*, const singlecomplex*,
+-		  const slu_blasint*, const singlecomplex*, singlecomplex*, const slu_blasint*);
++		  const slu_blasint*, const singlecomplex*, singlecomplex*, const slu_blasint*, int, int);
+ extern void ctrsv_(char*, char*, char*, slu_blasint*, singlecomplex*, slu_blasint*,
+-                  singlecomplex*, slu_blasint*);
++                  singlecomplex*, slu_blasint*, int, int, int);
+ extern void ctrsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
+-                  singlecomplex*, singlecomplex*, slu_blasint*, singlecomplex*, slu_blasint*);
++                  singlecomplex*, singlecomplex*, slu_blasint*, singlecomplex*, slu_blasint*, int, int, int, int);
+ extern void cgemv_(char *, slu_blasint *, slu_blasint *, singlecomplex *, singlecomplex *a, slu_blasint *,
+-                  singlecomplex *, slu_blasint *, singlecomplex *, singlecomplex *, slu_blasint *);
++                  singlecomplex *, slu_blasint *, singlecomplex *, singlecomplex *, slu_blasint *, int);
+ 
+ extern void cusolve(int, int, singlecomplex*, singlecomplex*);
+ extern void clsolve(int, int, singlecomplex*, singlecomplex*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
+index 27762382c9..a25a351032 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_ddefs.h
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,27 +11,27 @@ at the top-level directory.
+ 
+ /*! @file slu_ddefs.h
+  * \brief Header file for real operations
+- * 
+- * <pre> 
++ *
++ * <pre>
+  * -- SuperLU routine (version 7.0.0) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+  * and Lawrence Berkeley National Lab.
+  * November, 2010
+  * August 2024
+- * 
++ *
+  * Global data structures used in LU factorization -
+- * 
++ *
+  *   nsuper: \#supernodes = nsuper + 1, numbered [0, nsuper].
+  *   (xsup,supno): supno[i] is the supernode no to which i belongs;
+  *	xsup(s) points to the beginning of the s-th supernode.
+  *	e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
+  *	        xsup 0 1 2 4 7 12
+- *	Note: dfs will be performed on supernode rep. relative to the new 
++ *	Note: dfs will be performed on supernode rep. relative to the new
+  *	      row pivoting ordering
+  *
+  *   (xlsub,lsub): lsub[*] contains the compressed subscript of
+  *	rectangular supernodes; xlsub[j] points to the starting
+- *	location of the j-th column in lsub[*]. Note that xlsub 
++ *	location of the j-th column in lsub[*]. Note that xlsub
+  *	is indexed by column.
+  *	Storage: original row subscripts
+  *
+@@ -139,7 +139,7 @@ extern void
+ dCreate_Dense_Matrix(SuperMatrix *, int, int, double *, int,
+ 		     Stype_t, Dtype_t, Mtype_t);
+ extern void
+-dCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, double *, 
++dCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, double *,
+ 		         int_t *, int_t *, int_t *, int *, int *,
+ 			 Stype_t, Dtype_t, Mtype_t);
+ extern void
+@@ -147,7 +147,7 @@ dCopy_Dense_Matrix(int, int, double *, int, double *, int);
+ 
+ extern void    dallocateA (int, int_t, double **, int_t **, int_t **);
+ extern void    dgstrf (superlu_options_t*, SuperMatrix*,
+-                       int, int, int*, void *, int_t, int *, int *, 
++                       int, int, int*, void *, int_t, int *, int *,
+                        SuperMatrix *, SuperMatrix *, GlobalLU_t *,
+ 		       SuperLUStat_t*, int_t *info);
+ extern int_t   dsnode_dfs (const int, const int, const int_t *, const int_t *,
+@@ -166,8 +166,8 @@ extern int     dcolumn_bmod (const int, const int, double *,
+ 			   double *, int *, int *, int,
+                            GlobalLU_t *, SuperLUStat_t*);
+ extern int     dcopy_to_ucol (int, int, int *, int *, int *,
+-                              double *, GlobalLU_t *);         
+-extern int     dpivotL (const int, const double, int *, int *, 
++                              double *, GlobalLU_t *);
++extern int     dpivotL (const int, const double, int *, int *,
+                          int *, int *, int *, GlobalLU_t *, SuperLUStat_t*);
+ extern void    dpruneL (const int, const int *, const int, const int,
+ 			  const int *, const int *, int_t *, GlobalLU_t *);
+@@ -197,7 +197,7 @@ extern int     ilu_dpivotL (const int, const double, int *, int *, int, int *,
+ 			    int *, int *, int *, double, milu_t,
+                             double, GlobalLU_t *, SuperLUStat_t*);
+ extern int     ilu_ddrop_row (superlu_options_t *, int, int, double,
+-                              int, int *, double *, GlobalLU_t *, 
++                              int, int *, double *, GlobalLU_t *,
+                               double *, double *, int);
+ 
+ 
+@@ -207,12 +207,12 @@ extern void    dgsequ (SuperMatrix *, double *, double *, double *,
+ 			double *, double *, int *);
+ extern void    dlaqgs (SuperMatrix *, double *, double *, double,
+                         double, double, char *);
+-extern void    dgscon (char *, SuperMatrix *, SuperMatrix *, 
++extern void    dgscon (char *, SuperMatrix *, SuperMatrix *,
+ 		         double, double *, SuperLUStat_t*, int *);
+-extern double   dPivotGrowth(int, SuperMatrix *, int *, 
++extern double   dPivotGrowth(int, SuperMatrix *, int *,
+                             SuperMatrix *, SuperMatrix *);
+ extern void    dgsrfs (trans_t, SuperMatrix *, SuperMatrix *,
+-                       SuperMatrix *, int *, int *, char *, double *, 
++                       SuperMatrix *, int *, int *, char *, double *,
+                        double *, SuperMatrix *, SuperMatrix *,
+                        double *, double *, SuperLUStat_t*, int *);
+ 
+@@ -222,7 +222,7 @@ extern int     sp_dgemv (char *, double, SuperMatrix *, double *,
+ 			int, double, double *, int);
+ 
+ extern int     sp_dgemm (char *, char *, int, int, int, double,
+-			SuperMatrix *, double *, int, double, 
++			SuperMatrix *, double *, int, double,
+ 			double *, int);
+ extern         double dmach(char *);   /* from C99 standard, in float.h */
+ 
+@@ -265,13 +265,13 @@ extern void dcopy_(slu_blasint *, double *, slu_blasint *, double *, slu_blasint
+ extern void daxpy_(slu_blasint *, double *, double *, slu_blasint *, double *, slu_blasint *);
+ extern void dgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
+                   const double*, const double*, const slu_blasint*, const double*,
+-		  const slu_blasint*, const double*, double*, const slu_blasint*);
++		  const slu_blasint*, const double*, double*, const slu_blasint*, int, int);
+ extern void dtrsv_(char*, char*, char*, slu_blasint*, double*, slu_blasint*,
+-                  double*, slu_blasint*);
++                  double*, slu_blasint*, int, int, int);
+ extern void dtrsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
+-                  double*, double*, slu_blasint*, double*, slu_blasint*);
++                  double*, double*, slu_blasint*, double*, slu_blasint*, int, int, int, int);
+ extern void dgemv_(char *, slu_blasint *, slu_blasint *, double *, double *a, slu_blasint *,
+-                  double *, slu_blasint *, double *, double *, slu_blasint *);
++                  double *, slu_blasint *, double *, double *, slu_blasint *, int);
+ 
+ extern void dusolve(int, int, double*, double*);
+ extern void dlsolve(int, int, double*, double*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
+index e0d5c6c612..c6a2dcd7de 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_sdefs.h
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,27 +11,27 @@ at the top-level directory.
+ 
+ /*! @file slu_sdefs.h
+  * \brief Header file for real operations
+- * 
+- * <pre> 
++ *
++ * <pre>
+  * -- SuperLU routine (version 7.0.0) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+  * and Lawrence Berkeley National Lab.
+  * November, 2010
+  * August 2024
+- * 
++ *
+  * Global data structures used in LU factorization -
+- * 
++ *
+  *   nsuper: \#supernodes = nsuper + 1, numbered [0, nsuper].
+  *   (xsup,supno): supno[i] is the supernode no to which i belongs;
+  *	xsup(s) points to the beginning of the s-th supernode.
+  *	e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
+  *	        xsup 0 1 2 4 7 12
+- *	Note: dfs will be performed on supernode rep. relative to the new 
++ *	Note: dfs will be performed on supernode rep. relative to the new
+  *	      row pivoting ordering
+  *
+  *   (xlsub,lsub): lsub[*] contains the compressed subscript of
+  *	rectangular supernodes; xlsub[j] points to the starting
+- *	location of the j-th column in lsub[*]. Note that xlsub 
++ *	location of the j-th column in lsub[*]. Note that xlsub
+  *	is indexed by column.
+  *	Storage: original row subscripts
+  *
+@@ -139,7 +139,7 @@ extern void
+ sCreate_Dense_Matrix(SuperMatrix *, int, int, float *, int,
+ 		     Stype_t, Dtype_t, Mtype_t);
+ extern void
+-sCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, float *, 
++sCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, float *,
+ 		         int_t *, int_t *, int_t *, int *, int *,
+ 			 Stype_t, Dtype_t, Mtype_t);
+ extern void
+@@ -147,7 +147,7 @@ sCopy_Dense_Matrix(int, int, float *, int, float *, int);
+ 
+ extern void    sallocateA (int, int_t, float **, int_t **, int_t **);
+ extern void    sgstrf (superlu_options_t*, SuperMatrix*,
+-                       int, int, int*, void *, int_t, int *, int *, 
++                       int, int, int*, void *, int_t, int *, int *,
+                        SuperMatrix *, SuperMatrix *, GlobalLU_t *,
+ 		       SuperLUStat_t*, int_t *info);
+ extern int_t   ssnode_dfs (const int, const int, const int_t *, const int_t *,
+@@ -166,8 +166,8 @@ extern int     scolumn_bmod (const int, const int, float *,
+ 			   float *, int *, int *, int,
+                            GlobalLU_t *, SuperLUStat_t*);
+ extern int     scopy_to_ucol (int, int, int *, int *, int *,
+-                              float *, GlobalLU_t *);         
+-extern int     spivotL (const int, const double, int *, int *, 
++                              float *, GlobalLU_t *);
++extern int     spivotL (const int, const double, int *, int *,
+                          int *, int *, int *, GlobalLU_t *, SuperLUStat_t*);
+ extern void    spruneL (const int, const int *, const int, const int,
+ 			  const int *, const int *, int_t *, GlobalLU_t *);
+@@ -197,7 +197,7 @@ extern int     ilu_spivotL (const int, const double, int *, int *, int, int *,
+ 			    int *, int *, int *, double, milu_t,
+                             float, GlobalLU_t *, SuperLUStat_t*);
+ extern int     ilu_sdrop_row (superlu_options_t *, int, int, double,
+-                              int, int *, double *, GlobalLU_t *, 
++                              int, int *, double *, GlobalLU_t *,
+                               float *, float *, int);
+ 
+ 
+@@ -207,12 +207,12 @@ extern void    sgsequ (SuperMatrix *, float *, float *, float *,
+ 			float *, float *, int *);
+ extern void    slaqgs (SuperMatrix *, float *, float *, float,
+                         float, float, char *);
+-extern void    sgscon (char *, SuperMatrix *, SuperMatrix *, 
++extern void    sgscon (char *, SuperMatrix *, SuperMatrix *,
+ 		         float, float *, SuperLUStat_t*, int *);
+-extern float   sPivotGrowth(int, SuperMatrix *, int *, 
++extern float   sPivotGrowth(int, SuperMatrix *, int *,
+                             SuperMatrix *, SuperMatrix *);
+ extern void    sgsrfs (trans_t, SuperMatrix *, SuperMatrix *,
+-                       SuperMatrix *, int *, int *, char *, float *, 
++                       SuperMatrix *, int *, int *, char *, float *,
+                        float *, SuperMatrix *, SuperMatrix *,
+                        float *, float *, SuperLUStat_t*, int *);
+ 
+@@ -222,7 +222,7 @@ extern int     sp_sgemv (char *, float, SuperMatrix *, float *,
+ 			int, float, float *, int);
+ 
+ extern int     sp_sgemm (char *, char *, int, int, int, float,
+-			SuperMatrix *, float *, int, float, 
++			SuperMatrix *, float *, int, float,
+ 			float *, int);
+ extern         float smach(char *);   /* from C99 standard, in float.h */
+ 
+@@ -265,13 +265,13 @@ extern void scopy_(slu_blasint *, float *, slu_blasint *, float *, slu_blasint *
+ extern void saxpy_(slu_blasint *, float *, float *, slu_blasint *, float *, slu_blasint *);
+ extern void sgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
+                   const float*, const float*, const slu_blasint*, const float*,
+-		  const slu_blasint*, const float*, float*, const slu_blasint*);
++		  const slu_blasint*, const float*, float*, const slu_blasint*, int, int);
+ extern void strsv_(char*, char*, char*, slu_blasint*, float*, slu_blasint*,
+-                  float*, slu_blasint*);
++                  float*, slu_blasint*, int, int, int);
+ extern void strsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
+-                  float*, float*, slu_blasint*, float*, slu_blasint*);
++                  float*, float*, slu_blasint*, float*, slu_blasint*, int, int, int, int);
+ extern void sgemv_(char *, slu_blasint *, slu_blasint *, float *, float *a, slu_blasint *,
+-                  float *, slu_blasint *, float *, float *, slu_blasint *);
++                  float *, slu_blasint *, float *, float *, slu_blasint *, int);
+ 
+ extern void susolve(int, int, float*, float*);
+ extern void slsolve(int, int, float*, float*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
+index cb65506594..0e7a37fe5d 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_zdefs.h
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,27 +11,27 @@ at the top-level directory.
+ 
+ /*! @file slu_zdefs.h
+  * \brief Header file for real operations
+- * 
+- * <pre> 
++ *
++ * <pre>
+  * -- SuperLU routine (version 7.0.0) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+  * and Lawrence Berkeley National Lab.
+  * November, 2010
+  * August 2024
+- * 
++ *
+  * Global data structures used in LU factorization -
+- * 
++ *
+  *   nsuper: \#supernodes = nsuper + 1, numbered [0, nsuper].
+  *   (xsup,supno): supno[i] is the supernode no to which i belongs;
+  *	xsup(s) points to the beginning of the s-th supernode.
+  *	e.g.   supno 0 1 2 2 3 3 3 4 4 4 4 4   (n=12)
+  *	        xsup 0 1 2 4 7 12
+- *	Note: dfs will be performed on supernode rep. relative to the new 
++ *	Note: dfs will be performed on supernode rep. relative to the new
+  *	      row pivoting ordering
+  *
+  *   (xlsub,lsub): lsub[*] contains the compressed subscript of
+  *	rectangular supernodes; xlsub[j] points to the starting
+- *	location of the j-th column in lsub[*]. Note that xlsub 
++ *	location of the j-th column in lsub[*]. Note that xlsub
+  *	is indexed by column.
+  *	Storage: original row subscripts
+  *
+@@ -140,7 +140,7 @@ extern void
+ zCreate_Dense_Matrix(SuperMatrix *, int, int, doublecomplex *, int,
+ 		     Stype_t, Dtype_t, Mtype_t);
+ extern void
+-zCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, doublecomplex *, 
++zCreate_SuperNode_Matrix(SuperMatrix *, int, int, int_t, doublecomplex *,
+ 		         int_t *, int_t *, int_t *, int *, int *,
+ 			 Stype_t, Dtype_t, Mtype_t);
+ extern void
+@@ -148,7 +148,7 @@ zCopy_Dense_Matrix(int, int, doublecomplex *, int, doublecomplex *, int);
+ 
+ extern void    zallocateA (int, int_t, doublecomplex **, int_t **, int_t **);
+ extern void    zgstrf (superlu_options_t*, SuperMatrix*,
+-                       int, int, int*, void *, int_t, int *, int *, 
++                       int, int, int*, void *, int_t, int *, int *,
+                        SuperMatrix *, SuperMatrix *, GlobalLU_t *,
+ 		       SuperLUStat_t*, int_t *info);
+ extern int_t   zsnode_dfs (const int, const int, const int_t *, const int_t *,
+@@ -167,8 +167,8 @@ extern int     zcolumn_bmod (const int, const int, doublecomplex *,
+ 			   doublecomplex *, int *, int *, int,
+                            GlobalLU_t *, SuperLUStat_t*);
+ extern int     zcopy_to_ucol (int, int, int *, int *, int *,
+-                              doublecomplex *, GlobalLU_t *);         
+-extern int     zpivotL (const int, const double, int *, int *, 
++                              doublecomplex *, GlobalLU_t *);
++extern int     zpivotL (const int, const double, int *, int *,
+                          int *, int *, int *, GlobalLU_t *, SuperLUStat_t*);
+ extern void    zpruneL (const int, const int *, const int, const int,
+ 			  const int *, const int *, int_t *, GlobalLU_t *);
+@@ -198,7 +198,7 @@ extern int     ilu_zpivotL (const int, const double, int *, int *, int, int *,
+ 			    int *, int *, int *, double, milu_t,
+                             doublecomplex, GlobalLU_t *, SuperLUStat_t*);
+ extern int     ilu_zdrop_row (superlu_options_t *, int, int, double,
+-                              int, int *, double *, GlobalLU_t *, 
++                              int, int *, double *, GlobalLU_t *,
+                               double *, double *, int);
+ 
+ 
+@@ -208,12 +208,12 @@ extern void    zgsequ (SuperMatrix *, double *, double *, double *,
+ 			double *, double *, int *);
+ extern void    zlaqgs (SuperMatrix *, double *, double *, double,
+                         double, double, char *);
+-extern void    zgscon (char *, SuperMatrix *, SuperMatrix *, 
++extern void    zgscon (char *, SuperMatrix *, SuperMatrix *,
+ 		         double, double *, SuperLUStat_t*, int *);
+-extern double   zPivotGrowth(int, SuperMatrix *, int *, 
++extern double   zPivotGrowth(int, SuperMatrix *, int *,
+                             SuperMatrix *, SuperMatrix *);
+ extern void    zgsrfs (trans_t, SuperMatrix *, SuperMatrix *,
+-                       SuperMatrix *, int *, int *, char *, double *, 
++                       SuperMatrix *, int *, int *, char *, double *,
+                        double *, SuperMatrix *, SuperMatrix *,
+                        double *, double *, SuperLUStat_t*, int *);
+ 
+@@ -223,7 +223,7 @@ extern int     sp_zgemv (char *, doublecomplex, SuperMatrix *, doublecomplex *,
+ 			int, doublecomplex, doublecomplex *, int);
+ 
+ extern int     sp_zgemm (char *, char *, int, int, int, doublecomplex,
+-			SuperMatrix *, doublecomplex *, int, doublecomplex, 
++			SuperMatrix *, doublecomplex *, int, doublecomplex,
+ 			doublecomplex *, int);
+ extern         double dmach(char *);   /* from C99 standard, in float.h */
+ 
+@@ -268,13 +268,13 @@ extern void zcopy_(slu_blasint *, doublecomplex *, slu_blasint *, doublecomplex
+ extern void zaxpy_(slu_blasint *, doublecomplex *, doublecomplex *, slu_blasint *, doublecomplex *, slu_blasint *);
+ extern void zgemm_(const char*, const char*, const slu_blasint*, const slu_blasint*, const slu_blasint*,
+                   const doublecomplex*, const doublecomplex*, const slu_blasint*, const doublecomplex*,
+-		  const slu_blasint*, const doublecomplex*, doublecomplex*, const slu_blasint*);
++		  const slu_blasint*, const doublecomplex*, doublecomplex*, const slu_blasint*, int, int);
+ extern void ztrsv_(char*, char*, char*, slu_blasint*, doublecomplex*, slu_blasint*,
+-                  doublecomplex*, slu_blasint*);
++                  doublecomplex*, slu_blasint*, int, int, int);
+ extern void ztrsm_(char*, char*, char*, char*, slu_blasint*, slu_blasint*,
+-                  doublecomplex*, doublecomplex*, slu_blasint*, doublecomplex*, slu_blasint*);
++                  doublecomplex*, doublecomplex*, slu_blasint*, doublecomplex*, slu_blasint*, int, int, int, int);
+ extern void zgemv_(char *, slu_blasint *, slu_blasint *, doublecomplex *, doublecomplex *a, slu_blasint *,
+-                  doublecomplex *, slu_blasint *, doublecomplex *, doublecomplex *, slu_blasint *);
++                  doublecomplex *, slu_blasint *, doublecomplex *, doublecomplex *, slu_blasint *, int);
+ 
+ extern void zusolve(int, int, doublecomplex*, doublecomplex*);
+ extern void zlsolve(int, int, doublecomplex*, doublecomplex*);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c
+index 0655609791..a250ae4b50 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/spanel_bmod.c
+@@ -229,7 +229,7 @@ spanel_bmod (
+ 		   }
+ #endif
+ 		    strsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    slsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -276,7 +276,7 @@ spanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    sgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    smatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -414,7 +414,7 @@ spanel_bmod (
+ 		   }
+ #endif
+ 		    strsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -426,7 +426,7 @@ spanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    sgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    slsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c
+index 367b6bf7ea..46ba72a553 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssnode_bmod.c
+@@ -111,9 +111,9 @@ ssnode_bmod (
+        }
+ #endif
+ 	strsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	sgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	slsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c
+index 1654927e0d..904f01e816 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/ssp_blas2.c
+@@ -161,10 +161,10 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    strsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    sgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    slsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -209,7 +209,7 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    strsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    susolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -262,7 +262,7 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    strsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -297,7 +297,7 @@ sp_strsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    strsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c
+index eec32462ec..87d1fb9ff4 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zcolumn_bmod.c
+@@ -233,7 +233,7 @@ zcolumn_bmod (
+ 		       &nsupr, tempv, &incx );
+ #else		
+ 		ztrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-		       &nsupr, tempv, &incx );
++		       &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif		
+  		luptr += segsze;  /* Dense matrix-vector */
+ 		tempv1 = &tempv[segsze];
+@@ -244,7 +244,7 @@ zcolumn_bmod (
+ 		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		zgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-		       &nsupr, tempv, &incx, &beta, tempv1, &incy );
++		       &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		zlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+@@ -333,7 +333,7 @@ zcolumn_bmod (
+ 	       &nsupr, &lusup[ufirst], &incx );
+ #else
+ 	ztrsv_( "L", "N", "U", &nsupc, &lusup[luptr], 
+-	       &nsupr, &lusup[ufirst], &incx );
++	       &nsupr, &lusup[ufirst], &incx, 1, 1, 1 );
+ #endif
+ 	
+ 	alpha = none; beta = one; /* y := beta*y + alpha*A*x */
+@@ -343,7 +343,7 @@ zcolumn_bmod (
+ 	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
+ #else
+ 	zgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr,
+-	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++	       &lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	zlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c
+index 37479ef7a8..3bb6e14e5b 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgsrfs.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -11,7 +11,7 @@ at the top-level directory.
+ 
+ /*! @file zgsrfs.c
+  * \brief Improves computed solution to a system of inear equations
+- * 
++ *
+  * <pre>
+  * -- SuperLU routine (version 5.1) --
+  * Univ. of California Berkeley, Xerox Palo Alto Research Center,
+@@ -32,45 +32,45 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
+  *
+- *   ZGSRFS improves the computed solution to a system of linear   
+- *   equations and provides error bounds and backward error estimates for 
+- *   the solution.   
++ *   ZGSRFS improves the computed solution to a system of linear
++ *   equations and provides error bounds and backward error estimates for
++ *   the solution.
+  *
+  *   If equilibration was performed, the system becomes:
+  *           (diag(R)*A_original*diag(C)) * X = diag(R)*B_original.
+  *
+  *   See supermatrix.h for the definition of 'SuperMatrix' structure.
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  * trans   (input) trans_t
+  *          Specifies the form of the system of equations:
+  *          = NOTRANS: A * X = B  (No transpose)
+  *          = TRANS:   A'* X = B  (Transpose)
+  *          = CONJ:    A**H * X = B  (Conjugate transpose)
+- *   
++ *
+  *   A       (input) SuperMatrix*
+  *           The original matrix A in the system, or the scaled A if
+  *           equilibration was done. The type of A can be:
+  *           Stype = SLU_NC, Dtype = SLU_Z, Mtype = SLU_GE.
+- *    
++ *
+  *   L       (input) SuperMatrix*
+  *	     The factor L from the factorization Pr*A*Pc=L*U. Use
+- *           compressed row subscripts storage for supernodes, 
++ *           compressed row subscripts storage for supernodes,
+  *           i.e., L has types: Stype = SLU_SC, Dtype = SLU_Z, Mtype = SLU_TRLU.
+- * 
++ *
+  *   U       (input) SuperMatrix*
+  *           The factor U from the factorization Pr*A*Pc=L*U as computed by
+- *           zgstrf(). Use column-wise storage scheme, 
++ *           zgstrf(). Use column-wise storage scheme,
+  *           i.e., U has types: Stype = SLU_NC, Dtype = SLU_Z, Mtype = SLU_TRU.
+  *
+  *   perm_c  (input) int*, dimension (A->ncol)
+- *	     Column permutation vector, which defines the 
+- *           permutation matrix Pc; perm_c[i] = j means column i of A is 
++ *	     Column permutation vector, which defines the
++ *           permutation matrix Pc; perm_c[i] = j means column i of A is
+  *           in position j in A*Pc.
+  *
+  *   perm_r  (input) int*, dimension (A->nrow)
+@@ -82,14 +82,14 @@ at the top-level directory.
+  *           = 'R': Row equilibration, i.e., A was premultiplied by diag(R).
+  *           = 'C': Column equilibration, i.e., A was postmultiplied by
+  *                  diag(C).
+- *           = 'B': Both row and column equilibration, i.e., A was replaced 
++ *           = 'B': Both row and column equilibration, i.e., A was replaced
+  *                  by diag(R)*A*diag(C).
+  *
+  *   R       (input) double*, dimension (A->nrow)
+  *           The row scale factors for A.
+  *           If equed = 'R' or 'B', A is premultiplied by diag(R).
+  *           If equed = 'N' or 'C', R is not accessed.
+- * 
++ *
+  *   C       (input) double*, dimension (A->ncol)
+  *           The column scale factors for A.
+  *           If equed = 'C' or 'B', A is postmultiplied by diag(C).
+@@ -107,33 +107,33 @@ at the top-level directory.
+  *           if *equed = 'C' or 'B', X should be premultiplied by diag(C)
+  *               in order to obtain the solution to the original system.
+  *
+- *   FERR    (output) double*, dimension (B->ncol)   
+- *           The estimated forward error bound for each solution vector   
+- *           X(j) (the j-th column of the solution matrix X).   
+- *           If XTRUE is the true solution corresponding to X(j), FERR(j) 
+- *           is an estimated upper bound for the magnitude of the largest 
+- *           element in (X(j) - XTRUE) divided by the magnitude of the   
+- *           largest element in X(j).  The estimate is as reliable as   
+- *           the estimate for RCOND, and is almost always a slight   
++ *   FERR    (output) double*, dimension (B->ncol)
++ *           The estimated forward error bound for each solution vector
++ *           X(j) (the j-th column of the solution matrix X).
++ *           If XTRUE is the true solution corresponding to X(j), FERR(j)
++ *           is an estimated upper bound for the magnitude of the largest
++ *           element in (X(j) - XTRUE) divided by the magnitude of the
++ *           largest element in X(j).  The estimate is as reliable as
++ *           the estimate for RCOND, and is almost always a slight
+  *           overestimate of the true error.
+  *
+- *   BERR    (output) double*, dimension (B->ncol)   
+- *           The componentwise relative backward error of each solution   
+- *           vector X(j) (i.e., the smallest relative change in   
++ *   BERR    (output) double*, dimension (B->ncol)
++ *           The componentwise relative backward error of each solution
++ *           vector X(j) (i.e., the smallest relative change in
+  *           any element of A or B that makes X(j) an exact solution).
+  *
+  *   stat     (output) SuperLUStat_t*
+  *            Record the statistics on runtime and floating-point operation count.
+  *            See util.h for the definition of 'SuperLUStat_t'.
+  *
+- *   info    (output) int*   
+- *           = 0:  successful exit   
+- *            < 0:  if INFO = -i, the i-th argument had an illegal value   
++ *   info    (output) int*
++ *           = 0:  successful exit
++ *            < 0:  if INFO = -i, the i-th argument had an illegal value
+  *
+- *    Internal Parameters   
+- *    ===================   
++ *    Internal Parameters
++ *    ===================
+  *
+- *    ITMAX is the maximum number of steps of iterative refinement.   
++ *    ITMAX is the maximum number of steps of iterative refinement.
+  *
+  * </pre>
+  */
+@@ -146,12 +146,12 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 
+ #define ITMAX 5
+-    
++
+     /* Table of constant values */
+     slu_blasint    ione = 1, nrow = A->nrow;
+     doublecomplex ndone = {-1., 0.};
+     doublecomplex done = {1., 0.};
+-    
++
+     /* Local variables */
+     NCformat *Astore;
+     doublecomplex   *Aval;
+@@ -181,7 +181,7 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     ldb    = Bstore->lda;
+     ldx    = Xstore->lda;
+     nrhs   = B->ncol;
+-    
++
+     /* Test the input parameters */
+     *info = 0;
+     notran = (trans == NOTRANS);
+@@ -218,14 +218,14 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+     rowequ = strncmp(equed, "R", 1)==0 || strncmp(equed, "B", 1)==0;
+     colequ = strncmp(equed, "C", 1)==0 || strncmp(equed, "B", 1)==0;
+-    
++
+     /* Allocate working space */
+     work = doublecomplexMalloc(2*A->nrow);
+     rwork = (double *) SUPERLU_MALLOC( A->nrow * sizeof(double) );
+     iwork = int32Malloc(A->nrow);
+-    if ( !work || !rwork || !iwork ) 
++    if ( !work || !rwork || !iwork )
+         ABORT("Malloc fails for work/rwork/iwork.");
+-    
++
+     if ( notran ) {
+ 	*(unsigned char *)transc = 'N';
+         transt = TRANS;
+@@ -235,7 +235,7 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     } else if ( trans == CONJ ) {
+ 	*(unsigned char *)transc = 'C';
+ 	transt = NOTRANS;
+-    }    
++    }
+ 
+     /* NZ = maximum number of nonzero elements in each row of A, plus 1 */
+     nz     = A->ncol + 1;
+@@ -251,12 +251,12 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     for (i = 0; i < A->nrow; ++i) iwork[i] = 0;
+     if ( notran ) {
+ 	for (k = 0; k < A->ncol; ++k)
+-	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i) 
++	    for (i = Astore->colptr[k]; i < Astore->colptr[k+1]; ++i)
+ 		++iwork[Astore->rowind[i]];
+     } else {
+ 	for (k = 0; k < A->ncol; ++k)
+ 	    iwork[k] = Astore->colptr[k+1] - Astore->colptr[k];
+-    }	
++    }
+ 
+     /* Copy one column of RHS B into Bjcol. */
+     Bjcol.Stype = B->Stype;
+@@ -269,7 +269,7 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+     Bjcol_store = Bjcol.Store;
+     Bjcol_store->lda = ldb;
+     Bjcol_store->nzval = work; /* address aliasing */
+-	
++
+     /* Do for each right hand side ... */
+     for (j = 0; j < nrhs; ++j) {
+ 	count = 0;
+@@ -279,9 +279,9 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 
+ 	while (1) { /* Loop until stopping criterion is satisfied. */
+ 
+-	    /* Compute residual R = B - op(A) * X,   
++	    /* Compute residual R = B - op(A) * X,
+ 	       where op(A) = A, A**T, or A**H, depending on TRANS. */
+-	    
++
+ #ifdef _CRAY
+ 	    CCOPY(&nrow, Bptr, &ione, work, &ione);
+ #else
+@@ -289,15 +289,15 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ #endif
+ 	    sp_zgemv(transc, ndone, A, Xptr, ione, done, work, ione);
+ 
+-	    /* Compute componentwise relative backward error from formula 
+-	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )   
++	    /* Compute componentwise relative backward error from formula
++	       max(i) ( abs(R(i)) / ( abs(op(A))*abs(X) + abs(B) )(i) )
+ 	       where abs(Z) is the componentwise absolute value of the matrix
+ 	       or vector Z.  If the i-th component of the denominator is less
+-	       than SAFE2, then SAFE1 is added to the i-th component of the   
++	       than SAFE2, then SAFE1 is added to the i-th component of the
+ 	       numerator before dividing. */
+ 
+ 	    for (i = 0; i < A->nrow; ++i) rwork[i] = z_abs1( &Bptr[i] );
+-	    
++
+ 	    /* Compute abs(op(A))*abs(X) + abs(B). */
+ 	    if ( notran ) {
+ 		for (k = 0; k < A->ncol; ++k) {
+@@ -322,21 +322,21 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+                 } else if ( rwork[i] != 0.0 ) {
+ 		    s = SUPERLU_MAX( s, (z_abs1(&work[i]) + safe1) / rwork[i] );
+                 }
+-                /* If rwork[i] is exactly 0.0, then we know the true 
++                /* If rwork[i] is exactly 0.0, then we know the true
+                    residual also must be exactly 0.0. */
+ 	    }
+ 	    berr[j] = s;
+ 
+-	    /* Test stopping criterion. Continue iterating if   
+-	       1) The residual BERR(J) is larger than machine epsilon, and   
+-	       2) BERR(J) decreased by at least a factor of 2 during the   
+-	          last iteration, and   
++	    /* Test stopping criterion. Continue iterating if
++	       1) The residual BERR(J) is larger than machine epsilon, and
++	       2) BERR(J) decreased by at least a factor of 2 during the
++	          last iteration, and
+ 	       3) At most ITMAX iterations tried. */
+ 
+ 	    if (berr[j] > eps && berr[j] * 2. <= lstres && count < ITMAX) {
+ 		/* Update solution and try again. */
+ 		zgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ #ifdef _CRAY
+ 		CAXPY(&nrow, &done, work, &ione,
+ 		       &Xmat[j*ldx], &ione);
+@@ -349,32 +349,32 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    } else {
+ 		break;
+ 	    }
+-        
++
+ 	} /* end while */
+ 
+ 	stat->RefineSteps = count;
+ 
+ 	/* Bound error from formula:
+-	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*   
+-	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)   
+-          where   
+-            norm(Z) is the magnitude of the largest component of Z   
+-            inv(op(A)) is the inverse of op(A)   
++	   norm(X - XTRUE) / norm(X) .le. FERR = norm( abs(inv(op(A)))*
++	   ( abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) / norm(X)
++          where
++            norm(Z) is the magnitude of the largest component of Z
++            inv(op(A)) is the inverse of op(A)
+             abs(Z) is the componentwise absolute value of the matrix or
+-	       vector Z   
+-            NZ is the maximum number of nonzeros in any row of A, plus 1   
+-            EPS is machine epsilon   
++	       vector Z
++            NZ is the maximum number of nonzeros in any row of A, plus 1
++            EPS is machine epsilon
+ 
+-          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))   
+-          is incremented by SAFE1 if the i-th component of   
+-          abs(op(A))*abs(X) + abs(B) is less than SAFE2.   
++          The i-th component of abs(R)+NZ*EPS*(abs(op(A))*abs(X)+abs(B))
++          is incremented by SAFE1 if the i-th component of
++          abs(op(A))*abs(X) + abs(B) is less than SAFE2.
+ 
+-          Use ZLACON2 to estimate the infinity-norm of the matrix   
+-             inv(op(A)) * diag(W),   
++          Use ZLACON2 to estimate the infinity-norm of the matrix
++             inv(op(A)) * diag(W),
+           where W = abs(R) + NZ*EPS*( abs(op(A))*abs(X)+abs(B) ))) */
+-	
++
+ 	for (i = 0; i < A->nrow; ++i) rwork[i] = z_abs1( &Bptr[i] );
+-	
++
+ 	/* Compute abs(op(A))*abs(X) + abs(B). */
+ 	if ( notran ) {
+ 	    for (k = 0; k < A->ncol; ++k) {
+@@ -393,7 +393,7 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		rwork[k] += s;
+ 	    }
+ 	}
+-	
++
+ 	for (i = 0; i < A->nrow; ++i)
+ 	    if (rwork[i] > safe2)
+ 		rwork[i] = z_abs(&work[i]) + (iwork[i]+1)*eps*rwork[i];
+@@ -418,7 +418,7 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+                     }
+ 
+ 		zgstrs (transt, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		for (i = 0; i < A->nrow; ++i) {
+ 		    zd_mult(&work[i], &work[i], rwork[i]);
+ 	 	}
+@@ -427,19 +427,19 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 		for (i = 0; i < A->nrow; ++i) {
+ 		    zd_mult(&work[i], &work[i], rwork[i]);
+ 		}
+-		
++
+ 		zgstrs (trans, L, U, perm_c, perm_r, &Bjcol, stat, info);
+-		
++
+ 		if ( notran && colequ )
+ 		    for (i = 0; i < A->ncol; ++i) {
+ 		        zd_mult(&work[i], &work[i], C[i]);
+ 		    }
+ 		else if ( !notran && rowequ )
+ 		    for (i = 0; i < A->ncol; ++i) {
+-		        zd_mult(&work[i], &work[i], R[i]);  
++		        zd_mult(&work[i], &work[i], R[i]);
+ 		    }
+ 	    }
+-	    
++
+ 	} while ( kase != 0 );
+ 
+ 	/* Normalize error. */
+@@ -458,7 +458,7 @@ zgsrfs(trans_t trans, SuperMatrix *A, SuperMatrix *L, SuperMatrix *U,
+ 	    ferr[j] /= lstres;
+ 
+     } /* for each RHS j ... */
+-    
++
+     SUPERLU_FREE(work);
+     SUPERLU_FREE(rwork);
+     SUPERLU_FREE(iwork);
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c
+index e708d619f5..16f0bb9367 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zgstrs.c
+@@ -194,11 +194,11 @@ zgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 			&beta, &work[0], &n );
+ #else
+ 		ztrsm_("L", "L", "N", "U", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ 		
+ 		zgemm_( "N", "N", &nrow, &nrhs, &nsupc, &alpha, 
+ 			&Lval[luptr+nsupc], &nsupr, &Bmat[fsupc], &ldb, 
+-			&beta, &work[0], &n );
++			&beta, &work[0], &n, 1, 1 );
+ #endif
+ 		for (j = 0; j < nrhs; j++) {
+ 		    rhs_work = &Bmat[(size_t)j * (size_t)ldb];
+@@ -265,7 +265,7 @@ zgstrs (trans_t trans, SuperMatrix *L, SuperMatrix *U,
+ 		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
+ #else
+ 		ztrsm_("L", "U", "N", "N", &nsupc, &nrhs, &alpha,
+-		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb);
++		       &Lval[luptr], &nsupr, &Bmat[fsupc], &ldb, 1, 1, 1, 1 );
+ #endif
+ #else		
+ 		for (j = 0; j < nrhs; j++)
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c
+index da761c0e45..59f124e6f0 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zlacon2.c
+@@ -1,9 +1,9 @@
+ /*! \file
+ Copyright (c) 2003, The Regents of the University of California, through
+-Lawrence Berkeley National Laboratory (subject to receipt of any required 
+-approvals from U.S. Dept. of Energy) 
++Lawrence Berkeley National Laboratory (subject to receipt of any required
++approvals from U.S. Dept. of Energy)
+ 
+-All rights reserved. 
++All rights reserved.
+ 
+ The source code is distributed under BSD license, see the file License.txt
+ at the top-level directory.
+@@ -26,12 +26,12 @@ at the top-level directory.
+ /*! \brief
+  *
+  * <pre>
+- *   Purpose   
+- *   =======   
++ *   Purpose
++ *   =======
++ *
++ *   ZLACON2 estimates the 1-norm of a square matrix A.
++ *   Reverse communication is used for evaluating matrix-vector products.
+  *
+- *   ZLACON2 estimates the 1-norm of a square matrix A.   
+- *   Reverse communication is used for evaluating matrix-vector products. 
+- * 
+  *   This is a thread safe version of CLACON, which uses the array ISAVE
+  *   in place of a STATIC variables, as follows:
+  *
+@@ -41,48 +41,48 @@ at the top-level directory.
+  *      iter     isave[2]
+  *
+  *
+- *   Arguments   
+- *   =========   
++ *   Arguments
++ *   =========
+  *
+  *   N      (input) INT
+- *          The order of the matrix.  N >= 1.   
++ *          The order of the matrix.  N >= 1.
+  *
+- *   V      (workspace) DOUBLE COMPLEX PRECISION array, dimension (N)   
+- *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)   
+- *          (W is not returned).   
++ *   V      (workspace) DOUBLE COMPLEX PRECISION array, dimension (N)
++ *          On the final return, V = A*W,  where  EST = norm(V)/norm(W)
++ *          (W is not returned).
+  *
+- *   X      (input/output) DOUBLE COMPLEX PRECISION array, dimension (N)   
+- *          On an intermediate return, X should be overwritten by   
+- *                A * X,   if KASE=1,   
++ *   X      (input/output) DOUBLE COMPLEX PRECISION array, dimension (N)
++ *          On an intermediate return, X should be overwritten by
++ *                A * X,   if KASE=1,
+  *                A' * X,  if KASE=2,
+  *          where A' is the conjugate transpose of A,
+- *         and ZLACON must be re-called with all the other parameters   
+- *          unchanged.   
++ *         and ZLACON must be re-called with all the other parameters
++ *          unchanged.
+  *
+  *
+- *   EST    (output) DOUBLE PRECISION   
+- *          An estimate (a lower bound) for norm(A).   
++ *   EST    (output) DOUBLE PRECISION
++ *          An estimate (a lower bound) for norm(A).
+  *
+  *   KASE   (input/output) INT
+- *          On the initial call to ZLACON, KASE should be 0.   
+- *          On an intermediate return, KASE will be 1 or 2, indicating   
+- *          whether X should be overwritten by A * X  or A' * X.   
+- *          On the final return from ZLACON, KASE will again be 0.   
++ *          On the initial call to ZLACON, KASE should be 0.
++ *          On an intermediate return, KASE will be 1 or 2, indicating
++ *          whether X should be overwritten by A * X  or A' * X.
++ *          On the final return from ZLACON, KASE will again be 0.
+  *
+  *   isave  (input/output) int [3]
+  *          ISAVE is INTEGER array, dimension (3)
+  *          ISAVE is used to save variables between calls to ZLACON2
+  *
+- *   Further Details   
+- *   ===============   
++ *   Further Details
++ *   ===============
+  *
+- *   Contributed by Nick Higham, University of Manchester.   
+- *   Originally named CONEST, dated March 16, 1988.   
++ *   Contributed by Nick Higham, University of Manchester.
++ *   Originally named CONEST, dated March 16, 1988.
+  *
+- *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of 
+- *   a real or complex matrix, with applications to condition estimation", 
+- *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.   
+- *   ===================================================================== 
++ *   Reference: N.J. Higham, "FORTRAN codes for estimating the one-norm of
++ *   a real or complex matrix, with applications to condition estimation",
++ *   ACM Trans. Math. Soft., vol. 14, no. 4, pp. 381-396, December 1988.
++ *   =====================================================================
+  * </pre>
+  */
+ 
+@@ -97,7 +97,7 @@ zlacon2_(int *n, doublecomplex *v, doublecomplex *x, double *est, int *kase, int
+ 
+     /* System generated locals */
+     double d__1;
+-    
++
+     /* Local variables */
+     int jlast;
+     double altsgn, estold;
+@@ -129,7 +129,7 @@ zlacon2_(int *n, doublecomplex *v, doublecomplex *x, double *est, int *kase, int
+ 	case 5:  goto L140;
+     }
+ 
+-    /*     ................ ENTRY   (isave[0] == 1)   
++    /*     ................ ENTRY   (isave[0] == 1)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY A*X. */
+   L20:
+     if (*n == 1) {
+@@ -154,7 +154,7 @@ zlacon2_(int *n, doublecomplex *v, doublecomplex *x, double *est, int *kase, int
+     isave[0] = 2;  /* jump = 2; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 2)   
++    /*     ................ ENTRY   (isave[0] == 2)
+ 	   FIRST ITERATION.  X HAS BEEN OVERWRITTEN BY TRANSPOSE(A)*X. */
+ L40:
+     isave[1] = izmax1_slu(n, &x[0], &c__1_int);  /* j */
+@@ -169,7 +169,7 @@ L50:
+     isave[0] = 3;  /* jump = 3; */
+     return 0;
+ 
+-    /*     ................ ENTRY   (isave[0] == 3)   
++    /*     ................ ENTRY   (isave[0] == 3)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L70:
+ #ifdef _CRAY
+@@ -221,8 +221,8 @@ L120:
+     *kase = 1;
+     isave[0] = 5;  /* jump = 5; */
+     return 0;
+-    
+-    /*     ................ ENTRY   (isave[0] = 5)   
++
++    /*     ................ ENTRY   (isave[0] = 5)
+ 	   X HAS BEEN OVERWRITTEN BY A*X. */
+ L140:
+     temp = dzsum1_slu(n, x, &c__1_int) / (double)(*n * 3) * 2.;
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c
+index 0395cde808..d6e017582f 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zpanel_bmod.c
+@@ -243,7 +243,7 @@ zpanel_bmod (
+ 		   }
+ #endif
+ 		    ztrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, TriTmp, &incx );
++			   &nsupr, TriTmp, &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    zlsolve ( nsupr, segsze, &lusup[luptr], TriTmp );
+@@ -290,7 +290,7 @@ zpanel_bmod (
+ 			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
+ #else
+ 		    zgemv_("N", &block_nrow, &segsze, &alpha, &lusup[luptr1], 
+-			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy);
++			   &nsupr, TriTmp, &incx, &beta, MatvecTmp, &incy, 1 );
+ #endif
+ #else
+ 		    zmatvec(nsupr, block_nrow, segsze, &lusup[luptr1],
+@@ -442,7 +442,7 @@ zpanel_bmod (
+ 		   }
+ #endif
+ 		    ztrsv_( "L", "N", "U", &segsze, &lusup[luptr], 
+-			   &nsupr, tempv, &incx );
++			   &nsupr, tempv, &incx, 1, 1, 1 );
+ #endif
+ 		    
+ 		    luptr += segsze;	/* Dense matrix-vector */
+@@ -454,7 +454,7 @@ zpanel_bmod (
+ 			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
+ #else
+ 		    zgemv_( "N", &nrow, &segsze, &alpha, &lusup[luptr], 
+-			   &nsupr, tempv, &incx, &beta, tempv1, &incy );
++			   &nsupr, tempv, &incx, &beta, tempv1, &incy, 1 );
+ #endif
+ #else
+ 		    zlsolve ( nsupr, segsze, &lusup[luptr], tempv );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c
+index 1a7b6f549f..3ec69e3675 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsnode_bmod.c
+@@ -112,9 +112,9 @@ zsnode_bmod (
+        }
+ #endif
+ 	ztrsv_( "L", "N", "U", &nsupc, &lusup[luptr], &nsupr, 
+-	      &lusup[ufirst], &incx );
++	      &lusup[ufirst], &incx, 1, 1, 1 );
+ 	zgemv_( "N", &nrow, &nsupc, &alpha, &lusup[luptr+nsupc], &nsupr, 
+-		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy );
++		&lusup[ufirst], &incx, &beta, &lusup[ufirst+nsupc], &incy, 1 );
+ #endif
+ #else
+ 	zlsolve ( nsupr, nsupc, &lusup[luptr], &lusup[ufirst] );
+diff --git a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c
+index bf81e315ec..fef5943491 100644
+--- a/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c
++++ b/scipy/sparse/linalg/_dsolve/SuperLU/SRC/zsp_blas2.c
+@@ -165,10 +165,10 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
+ #else
+ 		    ztrsv_("L", "N", "U", &nsupc, &Lval[luptr], &nsupr,
+-		       	&x[fsupc], &incx);
++		       	&x[fsupc], &incx, 1, 1, 1 );
+ 		
+ 		    zgemv_("N", &nrow, &nsupc, &alpha, &Lval[luptr+nsupc], 
+-		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy);
++		       	&nsupr, &x[fsupc], &incx, &beta, &work[0], &incy, 1 );
+ #endif
+ #else
+ 		    zlsolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc]);
+@@ -215,7 +215,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 		       &x[fsupc], &incx);
+ #else
+ 		    ztrsv_("U", "N", "N", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ #else		
+ 		    zusolve ( nsupr, nsupc, &Lval[luptr], &x[fsupc] );
+@@ -270,7 +270,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+ 		    ztrsv_("L", "T", "U", &nsupc, &Lval[luptr], &nsupr,
+-			&x[fsupc], &incx);
++			&x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -307,7 +307,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+ 		    ztrsv_("U", "T", "N", &nsupc, &Lval[luptr], &nsupr,
+-			    &x[fsupc], &incx);
++			    &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    } /* for k ... */
+@@ -349,7 +349,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			&x[fsupc], &incx);
+ #else
+                     ztrsv_("L", trans, "U", &nsupc, &Lval[luptr], &nsupr,
+-                           &x[fsupc], &incx);
++                           &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+ 		}
+ 	    }
+@@ -388,7 +388,7 @@ sp_ztrsv(char *uplo, char *trans, char *diag, SuperMatrix *L,
+ 			    &x[fsupc], &incx);
+ #else
+                     ztrsv_("U", trans, "N", &nsupc, &Lval[luptr], &nsupr,
+-                               &x[fsupc], &incx);
++                               &x[fsupc], &incx, 1, 1, 1 );
+ #endif
+   		}
+   	    } /* for k ... */
+-- 
+2.53.0
+

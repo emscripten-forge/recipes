@@ -1,0 +1,75 @@
+context:
+  name: pytensor-base
+  version: 3.2.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/pytensor/pytensor-${{ version }}.tar.gz
+  sha256: 91b5d38c9d0162165544b29cbf2ae029427cab0a1c773ac42f687e41a86f6c67
+  patches:
+  - patches/0001-skip-c-code-loading-on-emscripten.patch
+  - patches/0003-avoid-setuptools-import-on-emscripten.patch
+  - patches/0004-use-target-sized-numba-indices.patch
+  - patches/0005-disable-numba-disk-cache-on-emscripten.patch
+
+build:
+  number: 2
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/tests/**'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - numpy
+  - versioneer
+  host:
+  - python
+  - numpy
+  - scipy
+  run:
+  - python
+  - numpy
+  - scipy
+  - numba 0.66.*
+  - filelock
+  - etuples
+  - logical-unification
+  - minikanren
+  - cons
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pytensor_base.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/pymc-devs/pytensor
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Optimizing compiler for evaluating mathematical expressions on CPUs and GPUs
+  documentation: https://pytensor.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+  - mmesch

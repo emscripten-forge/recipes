@@ -1,0 +1,71 @@
+context:
+  name: ROCR
+  version: 1.0-12
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 21903bd977e2cf6382f016bbef3d14b5a77305b9d0dc2041b0f26a76938c95fb
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }} 
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-gplots
+  host:
+  - r-base ==${{ r_base }}
+  - r-gplots
+  run:
+  - r-gplots
+
+tests:
+
+
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://ipa-tys.github.io/ROCR/
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Visualizing the Performance of Scoring Classifiers
+  description: |-
+    ROC graphs, sensitivity/specificity curves, lift charts,
+    and precision/recall plots are popular examples of trade-off
+    visualizations for specific pairs of performance measures. ROCR is a
+    flexible tool for creating cutoff-parameterized 2D performance curves
+    by freely combining two from over 25 performance measures (new
+    performance measures can be added using a standard interface).
+    Curves from different cross-validation or bootstrapping runs can be
+    averaged by different methods, and standard deviations, standard
+    errors or box plots can be used to visualize the variability across
+    the runs. The parameterization can be visualized by printing cutoff
+    values at the corresponding curve positions, or by coloring the
+    curve according to cutoff. All components of a performance plot can
+    be quickly adjusted using a flexible parameter dispatching
+    mechanism. Despite its flexibility, ROCR is easy to use, with only
+    three commands and reasonable default values for all optional
+    parameters.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

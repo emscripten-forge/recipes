@@ -1,0 +1,65 @@
+context:
+  version: "143465ab2f924f7729a8ca5313a12fb83a106d6d"
+
+package:
+  name: minja
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ochafik/minja/archive/${{ version }}.tar.gz
+  sha256: 8f9951345f77d4474826b9b4fedcd7ea3bd521d7c086cd78233e7ecdfec8bc87
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - nlohmann_json
+  - nlohmann_json-abi
+  run:
+  - nlohmann_json
+
+tests:
+- package_contents:
+    include:
+    - minja/minja.hpp
+    - minja/chat-template.hpp
+    files:
+    - lib/cmake/minja/minjaConfig.cmake
+    - lib/cmake/minja/minjaTargets.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/ochafik/minja
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A minimalistic C++ Jinja2 templating engine for LLM chat templates
+  description: |
+    Minja is a minimalistic C++ reimplementation of the Jinja2 templating
+    engine, specifically designed for LLM (Large Language Model) chat
+    templates. It implements only the Jinja2 features actually used by
+    major LLM chat templates, keeping the codebase small and maintainable
+    (~2,500 lines of C++). Used by llama.cpp, GPT4All, and Docker Model
+    Runner.
+  documentation: https://github.com/ochafik/minja
+  repository: https://github.com/ochafik/minja
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

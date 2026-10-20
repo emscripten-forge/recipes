@@ -14,7 +14,7 @@ export PROJ_DIR=$PREFIX
 
 # if version is not set, the python build script
 # tries to call the proj binary to get the version
-export PROJ_VERSION="9.7.1"
+export PROJ_VERSION="9.8.1"
 
 ${PYTHON} -m pip install -vv .
 

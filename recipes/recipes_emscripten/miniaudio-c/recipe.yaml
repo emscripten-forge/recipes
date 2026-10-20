@@ -1,0 +1,57 @@
+context:
+  version: 0.11.25
+
+package:
+  name: miniaudio-c
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mackron/miniaudio/archive/refs/tags/${{ version }}.tar.gz
+  sha256: b900edcffe979816e2560a0580b9b1216d674b4f17fbadeca8f777a7f8ab0274
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    include:
+    - miniaudio/miniaudio.h
+    files:
+    - lib/libminiaudio.a
+    - lib/pkgconfig/miniaudio.pc
+    - lib/cmake/miniaudio/miniaudioConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://miniaud.io/
+  license: MIT-0 OR Unlicense
+  license_file: LICENSE
+  summary: A single file audio playback and capture library written in C.
+  description: |
+    miniaudio is a single-header audio playback and capture library
+    written in C. It has no external dependencies except the C standard
+    library. It supports all major platforms including Windows, macOS,
+    Linux, Android, iOS, and Web (Emscripten).
+  documentation: https://miniaud.io/docs/manual/
+  repository: https://github.com/mackron/miniaudio
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

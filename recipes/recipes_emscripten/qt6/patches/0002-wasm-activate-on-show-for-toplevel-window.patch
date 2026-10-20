@@ -1,0 +1,33 @@
+QWasmWindow::setVisible(true) makes the window's DOM node visible but
+never requests window activation. As a result a re-shown non-modal
+QDialog (e.g. `dialog->show()` for a widget hidden with `dialog->hide()`)
+appears with the "inactive" decoration class, doesn't receive keyboard
+focus, and can't be interacted with.
+
+Request activation on show for QDialog windows that accept focus. The
+`focusWindow() != window()` gate makes it a no-op for already-active
+windows, so it doesn't interfere with the initial show cycle. Restricted
+to Qt::Dialog so we don't touch tooltips/popups (which have their own
+grab-based handling) or WA_ShowWithoutActivating background windows
+(which are top-level Qt::Window with focus opted out at the widget layer
+and are hard to distinguish at the platform layer).
+
+--- a/src/plugins/platforms/wasm/qwasmwindow.cpp
++++ b/src/plugins/platforms/wasm/qwasmwindow.cpp
+@@ -498,6 +498,16 @@ void QWasmWindow::setVisible(bool visible)
+ #if QT_CONFIG(accessibility)
+         QWasmAccessibility::onShowWindow(window());
+ #endif
++        // A re-shown non-modal QDialog otherwise appears "inactive"
++        // (dimmed, no keyboard focus) because show() on an already-created
++        // dialog widget doesn't trigger a fresh activation cycle on wasm.
++        // Force activation when a Dialog transitions to visible and Qt
++        // doesn't already consider it the active window.
++        const bool acceptsFocus = (window()->flags() & Qt::WindowDoesNotAcceptFocus)
++                                  != Qt::WindowDoesNotAcceptFocus;
++        if (window()->type() == Qt::Dialog && acceptsFocus
++            && QGuiApplication::focusWindow() != window())
++            window()->requestActivate();
+     }
+ }
+

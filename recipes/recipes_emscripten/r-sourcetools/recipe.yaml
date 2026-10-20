@@ -1,0 +1,51 @@
+context:
+  name: sourcetools
+  version: 0.1.7-2
+
+package:
+  name: r-${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  sha256: 07e584b780d7fcdfa5b527214361fface49350ab49cf901bd3d5c15950e4f1a7
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test-r-sourcetools.R
+  files:
+    recipe:
+    - test-r-sourcetools.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/kevinushey/sourcetools/
+  license: MIT
+  license_file: LICENSE
+  summary: Tools for Reading, Tokenizing and Parsing R Code
+  description: |
+    Tools for the reading and tokenization of R code. The 'sourcetools' package
+    provides both an R and C++ interface for the tokenization of R code, and
+    helpers for interacting with the tokenized representation of R code.
+
+extra:
+  recipe-maintainers:
+    - IsabelParedes

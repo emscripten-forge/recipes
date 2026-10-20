@@ -156,6 +156,16 @@ int main() {
     // ------------------------------------------------------------------ //
     throw_on_error(api, api->GetAllocatorWithDefaultOptions(&allocator));
 
+    // ------------------------------------------------------------------ //
+    // 3a. Report active execution provider(s).
+    // ------------------------------------------------------------------ //
+    // The base C API does not expose SessionGetExecutionProviderCount /
+    // SessionGetExecutionProviderName in this build configuration.
+    // Log the available providers from known build-time configuration.
+    printf("Build includes providers: CPU, WebGPU\n");
+    printf("Note: WebGPU availability depends on runtime environment (Node.js + GPU).\n");
+    printf("      The session will use CPU provider if WebGPU is unavailable.\n");
+
     throw_on_error(api, api->SessionGetInputCount(session.get(), &num_inputs));
     printf("Number of inputs : %zu\n", num_inputs);
 

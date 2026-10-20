@@ -1,0 +1,15 @@
+diff --git a/pytensor/link/c/exceptions.py b/pytensor/link/c/exceptions.py
+--- a/pytensor/link/c/exceptions.py
++++ b/pytensor/link/c/exceptions.py
+@@ -1,4 +1,10 @@
+-from setuptools.errors import CompileError as BaseCompileError
++import sys
++
++if sys.platform != "emscripten":
++    from setuptools.errors import CompileError as BaseCompileError
++else:
++    class BaseCompileError(Exception):
++        """Fallback for emscripten where setuptools is unavailable."""
+ 
+ 
+ class MissingGXX(Exception):

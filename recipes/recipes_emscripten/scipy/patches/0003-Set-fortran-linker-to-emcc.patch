@@ -1,0 +1,82 @@
+From a73bc499176c836f3d79f3b6486e1ce277c016bc Mon Sep 17 00:00:00 2001
+From: Ian Thomas <ianthomas23@gmail.com>
+Date: Mon, 22 Jun 2026 12:47:41 +0100
+Subject: [PATCH 03/15] Set fortran linker to emcc
+
+---
+ scipy/linalg/meson.build |  2 +-
+ scipy/meson.build        | 10 +++++-----
+ scipy/odr/meson.build    |  2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/scipy/linalg/meson.build b/scipy/linalg/meson.build
+index d4b1a1c706..c70b9957a7 100644
+--- a/scipy/linalg/meson.build
++++ b/scipy/linalg/meson.build
+@@ -56,7 +56,7 @@ linalg_cython_gen = generator(cython,
+   output : '@BASENAME@.c',
+   depends : [_cython_tree, __init__py, cython_blas_pxd])#, cython_linalg])
+ 
+-link_language_blas_lapack = 'fortran'
++link_language_blas_lapack = 'c'
+ if get_option('_without-fortran')
+   link_language_blas_lapack = 'c'
+ endif
+diff --git a/scipy/meson.build b/scipy/meson.build
+index 7344a5fbf5..cf49eb2190 100644
+--- a/scipy/meson.build
++++ b/scipy/meson.build
+@@ -247,7 +247,7 @@ endif
+ # We are therefore certain that we're only linking to a single BLAS library.
+ # Option (3) is the special case, which requires two blas_dep/lapack_dep
+ # objects, with some different defines added to `compile_args`.
+-# 
++#
+ # Also note that lapack_dep includes blas_dep, so there is no need to
+ # explicitly depend on blas_dep if an extension module already uses lapack_dep.
+ 
+@@ -289,8 +289,8 @@ if blas_name == 'openblas' or blas_name == 'auto'
+   blas = dependency('scipy-openblas', method: 'pkg-config', required: false)
+   if blas.found()
+     blas_name = 'scipy-openblas'
+-  else  
+-    # Try any other OpenBLAS. 
++  else
++    # Try any other OpenBLAS.
+     # pkg-config uses a lower-case name while CMake uses a capitalized name,
+     # so try that too to make the fallback detection with CMake work
+     blas = dependency(['openblas', 'OpenBLAS'])
+@@ -421,7 +421,7 @@ if use_ilp64 and not cython_blas_ilp64
+       gnu_symbol_visibility: 'hidden',
+     )
+   endif
+-  
++
+   blas_lp64_dep = declare_dependency(
+     dependencies: [blas, cblas],
+     link_with: [g77_abi_wrappers_lp64],
+@@ -792,7 +792,7 @@ configure_file(
+ # subdirs with the most heavy builds should come first (that parallelizes a
+ # little better).
+ #
+-subdir('_build_utils')  
++subdir('_build_utils')
+ subdir('_external')
+ subdir('_lib')
+ subdir('linalg')
+diff --git a/scipy/odr/meson.build b/scipy/odr/meson.build
+index dfab04da7c..004e1afaa0 100644
+--- a/scipy/odr/meson.build
++++ b/scipy/odr/meson.build
+@@ -16,7 +16,7 @@ py3.extension_module('__odrpack',
+   link_args: version_link_args,
+   dependencies: [blas_lp64_dep, np_dep],
+   install: true,
+-  link_language: 'fortran',
++  link_language: 'c',
+   subdir: 'scipy/odr'
+ )
+ 
+-- 
+2.53.0
+

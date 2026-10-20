@@ -16,11 +16,11 @@ Signed-off-by: Julien Jerphanion <git@jjerphan.xyz>
  2 files changed, 10 insertions(+), 13 deletions(-)
 
 diff --git a/pyogrio/__init__.py b/pyogrio/__init__.py
-index 17db833..9bc18b1 100644
+index 3429486..b5f7615 100644
 --- a/pyogrio/__init__.py
 +++ b/pyogrio/__init__.py
 @@ -1,5 +1,12 @@
- """Vectorized vector I/O using OGR."""
+ """Bulk-oriented vector I/O using OGR."""
  
 +import os
 +
@@ -33,13 +33,13 @@ index 17db833..9bc18b1 100644
      # we try importing shapely, to ensure it is imported (and it can load its
      # own GEOS copy) before we load GDAL and its linked GEOS
 diff --git a/pyogrio/_ogr.pyx b/pyogrio/_ogr.pyx
-index 2109125..e58ee53 100644
+index c0b7976..49b9a63 100644
 --- a/pyogrio/_ogr.pyx
 +++ b/pyogrio/_ogr.pyx
-@@ -159,10 +159,9 @@ def get_gdal_data_path():
-     """
-     Get the path to the directory GDAL uses to read data files.
-     """
+@@ -368,10 +368,9 @@ def has_gdal_data():
+ 
+ def get_gdal_data_path():
+     """Get the path to the directory GDAL uses to read data files."""
 -    cdef const char *path_c = CPLFindFile("gdal", "header.dxf")
 -    if path_c != NULL:
 -        return get_string(path_c).replace("header.dxf", "")
@@ -50,7 +50,7 @@ index 2109125..e58ee53 100644
  
  
  def has_proj_data():
-@@ -204,10 +203,6 @@ def init_gdal_data():
+@@ -414,10 +413,6 @@ def init_gdal_data():
      wheel_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "gdal_data"))
      if os.path.exists(wheel_path):
          set_gdal_config_options({"GDAL_DATA": wheel_path})
@@ -61,7 +61,7 @@ index 2109125..e58ee53 100644
          return
  
      # GDAL correctly found data files from GDAL_DATA or compiled-in paths
-@@ -217,11 +212,6 @@ def init_gdal_data():
+@@ -427,11 +422,6 @@ def init_gdal_data():
      wk_path = os.path.join(sys.prefix, "share", "gdal")
      if os.path.exists(wk_path):
          set_gdal_config_options({"GDAL_DATA": wk_path})
@@ -75,4 +75,3 @@ index 2109125..e58ee53 100644
      warnings.warn(
 -- 
 2.52.0
-

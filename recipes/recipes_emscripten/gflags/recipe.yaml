@@ -1,0 +1,59 @@
+context:
+  name: gflags
+  version: 2.3.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/gflags/gflags/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 1b5e0648d7b94021895086e65479b4eaca7935eecfffd7dd9512eb576181c53d
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/gflags/gflags.h
+    - lib/libgflags.a
+    - lib/libgflags_nothreads.a
+    - lib/cmake/gflags/gflags-config.cmake
+    - lib/cmake/gflags/gflags-targets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/gflags/gflags
+  license: BSD-3-Clause
+  license_file: COPYING.txt
+  summary: Commandline flags library for C++
+  description: |
+    gflags is a C++ library that implements processing of commandline flags.
+    This package provides the static libraries, headers, and CMake package
+    files for emscripten-wasm32 consumers.
+  documentation: https://gflags.github.io/gflags/
+  repository: https://github.com/gflags/gflags
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

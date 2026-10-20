@@ -1,0 +1,39 @@
+From e3f968d8bd0f81a934c3a8f4a18fc05b2fd2cdf6 Mon Sep 17 00:00:00 2001
+From: Adam Ehlers Nyholm Thomsen <aen@atp.dk>
+Date: Thu, 14 Dec 2023 11:43:33 +0100
+Subject: [PATCH 4/4] Do not pass CMAKE_GENERATOR as variable
+
+From my reading of the documentation:
+https://cmake.org/cmake/help/latest/variable/CMAKE_GENERATOR.html this
+should only be passed via the -G option, interactively in cmake-gui or
+as an environment variable.
+
+If CMAKE_GENERATOR is passed as a variable definition (via. -D) and the
+-G option is used as well then cmake gives an error about conflicting
+change of generator, as if it expects the CMAKE_GENERATOR variable
+definition to specify the generator given a prior cmake run.
+---
+ setup.py | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/setup.py b/setup.py
+index 198287f..1026b2a 100644
+--- a/setup.py
++++ b/setup.py
+@@ -36,15 +36,9 @@ class get_pybind_include(object):
+ prefix = os.environ["LIBRARY_PREFIX"] if system() == 'Windows' else os.environ["PREFIX"]
+ 
+ cmake_args = []
+-# What variables from the environment do we wish to pass on to cmake as variables?
+-cmake_env_vars = ('CMAKE_GENERATOR', 'CMAKE_GENERATOR_PLATFORM', 'CMAKE_OSX_ARCHITECTURES')
+-for cmake_env_var in cmake_env_vars:
+-    cmake_var = os.environ.get(cmake_env_var)
+-    if cmake_var:
+-        cmake_args.extend([f'-D{cmake_env_var}={cmake_var}'])
+ 
+ # Add parameters to cmake_args and define_macros
+-cmake_args += ["-DQDLDL_UNITTESTS=OFF", "-GNinja", f'-DCMAKE_INSTALL_PREFIX={prefix}', '-DCMAKE_BUILD_TYPE=Release']
++cmake_args = ["-DQDLDL_UNITTESTS=OFF", "-GNinja", f'-DCMAKE_INSTALL_PREFIX={prefix}', '-DCMAKE_BUILD_TYPE=Release']
+ cmake_build_flags = []
+ lib_subdir = []
+ 

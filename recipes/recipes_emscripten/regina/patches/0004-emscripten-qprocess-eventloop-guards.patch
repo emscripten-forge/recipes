@@ -1,0 +1,203 @@
+--- a/qtui/src/eventids.h	2026-09-13 16:21:39.311240034 +0000
++++ b/qtui/src/eventids.h	2026-09-13 16:24:14.039734208 +0000
+@@ -36,16 +36,19 @@
+ #define __EVENTIDS_H
+ 
+ #include "reginaqt.h"
++#include <QEvent>
+ 
+ // Note that QEvent::User is 1000.
+-
+-enum {
+-    // PacketUI:
+-    EVT_TREE_CHILD_ADDED = 2200,
+-
+-    // ReginaMain:
+-    EVT_PLUG_PACKET_MENU = 3001
+-};
++//
++// These are given proper QEvent::Type-typed constexpr values (rather than
++// a plain anonymous enum) so that they can be compared against
++// QEvent::type() results without relying on an implicit int<->enum
++// conversion, which some compilers (including the Emscripten-bundled
++// Clang) are stricter about than others.
++constexpr QEvent::Type EVT_TREE_CHILD_ADDED =
++    static_cast<QEvent::Type>(2200); // PacketUI
++constexpr QEvent::Type EVT_PLUG_PACKET_MENU =
++    static_cast<QEvent::Type>(3001); // ReginaMain
+ 
+ #endif
+ 
+--- a/qtui/src/packets/groupwidget.cpp	2026-09-13 16:21:39.317973804 +0000
++++ b/qtui/src/packets/groupwidget.cpp	2026-09-13 16:27:21.239685244 +0000
+@@ -33,7 +33,14 @@
+ #include "utilities/stringutils.h"
+ 
+ // UI includes:
++#ifndef Q_OS_WASM
++// GAPRunner shells out to an external GAP process via QProcess, and shows
++// it in a modal dialog (QDialog::exec(), i.e. a nested event loop).
++// Neither spawning external processes nor nested event loops are
++// supported by Qt for WebAssembly, so this whole feature is compiled out
++// for that platform; see the guarded switch case in simplify() below.
+ #include "gaprunner.h"
++#endif
+ #include "groupwidget.h"
+ #include "reginaprefset.h"
+ #include "reginasupport.h"
+@@ -171,6 +178,7 @@
+         // Regina is the default if all else fails, so this will come last.
+         case ReginaPrefSet::GroupSimplification::GAP:
+             {
++#ifndef Q_OS_WASM
+                 // Can we actually run GAP?
+                 QString useExec = verifyGAPExec();
+                 if (useExec.isNull())
+@@ -198,6 +206,18 @@
+                                 "(such as Regina's own algorithms) instead."));
+                     }
+                 }
++#else
++                // GAP integration relies on QProcess (spawning an external
++                // process) and a modal QDialog::exec() (a nested event
++                // loop); neither is supported by Qt for WebAssembly.
++                ReginaSupport::sorry(this,
++                    tr("GAP simplification is not available in this "
++                        "browser-based build of Regina."),
++                    tr("This build cannot launch external programs such "
++                        "as GAP.  Please use Regina's own simplification "
++                        "algorithm instead (see the <i>Tools</i> section "
++                        "in Regina's settings)."));
++#endif
+             }
+             break;
+         default: /* use regina */
+--- a/qtui/src/packets/tri3algebra.cpp	2026-09-13 16:21:39.320121093 +0000
++++ b/qtui/src/packets/tri3algebra.cpp	2026-09-13 16:27:30.165207794 +0000
+@@ -38,7 +38,9 @@
+ 
+ // UI includes:
+ #include "columnlayout.h"
++#ifndef Q_OS_WASM
+ #include "gaprunner.h"
++#endif
+ #include "groupwidget.h"
+ #include "tri3algebra.h"
+ #include "reginaprefset.h"
+--- a/qtui/src/reginaprefset.cpp	2026-09-13 16:21:39.322331206 +0000
++++ b/qtui/src/reginaprefset.cpp	2026-09-13 16:28:11.280827129 +0000
+@@ -37,7 +37,9 @@
+ 
+ #include "reginaprefset.h"
+ #include "reginasupport.h"
++#ifndef Q_OS_WASM
+ #include "shortrunner.h"
++#endif
+ 
+ #include <fstream>
+ #include <thread>
+--- a/qtui/src/packets/CMakeLists.txt	2026-09-13 16:21:39.318492123 +0000
++++ b/qtui/src/packets/CMakeLists.txt	2026-09-13 16:27:43.641768162 +0000
+@@ -11,7 +11,6 @@
+   filtercomb.cpp
+   filtercreator.cpp
+   filterprop.cpp
+-  gaprunner.cpp
+   generictriui.cpp
+   groupwidget.cpp
+   hypercompatui.cpp
+@@ -65,6 +64,14 @@
+   tri4ui.cpp
+   )
+ 
++IF (NOT EMSCRIPTEN)
++  # gaprunner.cpp uses QProcess (spawning an external "gap" process) and a
++  # modal QDialog::exec(); neither is supported by Qt for WebAssembly.
++  # groupwidget.cpp and tri3algebra.cpp guard their own references to it
++  # with #ifndef Q_OS_WASM.
++  LIST(APPEND FILES gaprunner.cpp)
++ENDIF (NOT EMSCRIPTEN)
++
+ FOREACH( FILE ${FILES} )
+   SET( SOURCES ${SOURCES} packets/${FILE})
+ ENDFOREACH(FILE)
+--- a/qtui/src/CMakeLists.txt	2026-09-13 16:21:39.312282189 +0000
++++ b/qtui/src/CMakeLists.txt	2026-09-14 04:01:10.514610591 +0000
+@@ -42,13 +42,35 @@
+     # Assume that pkg-config is telling us the truth.
+     # Note, however, that the graphviz plugins often live in a
+     # subdirectory graphviz/ beneath the main library path.
+-    SET(LINK_LIBS ${LINK_LIBS} ${LIBGVC_LIBRARIES})
+-    IF(LIBGVC_DYNAMIC_PLUGINS)
+-      LINK_DIRECTORIES("${LIBGVC_LIBDIR}")
+-    ELSE(LIBGVC_DYNAMIC_PLUGINS)
+-      SET(LINK_LIBS ${LINK_LIBS} gvplugin_core gvplugin_dot_layout gvplugin_neato_layout)
+-      LINK_DIRECTORIES("${LIBGVC_LIBDIR}" "${LIBGVC_LIBDIR}/graphviz")
+-    ENDIF(LIBGVC_DYNAMIC_PLUGINS)
++    IF (EMSCRIPTEN)
++      # The Emscripten/WASM graphviz package in this channel builds only
++      # static (.a) archives, never shared libraries. libgvc.pc's own
++      # Libs: field (just "gvc cgraph cdt") is written as if for a shared
++      # build, where libgvc.so's *own* recorded dependencies transitively
++      # pull in libcommon.so/libdotgen.so/libpathplan.so/etc. automatically.
++      # None of that transitive resolution happens for static archives:
++      # every archive that defines a symbol referenced by another one has
++      # to be listed explicitly on the link line. Several of these
++      # archives reference each other in both directions (e.g. gvc <->
++      # common <-> dotgen), so wrap them in --start-group/--end-group so
++      # wasm-ld (LLVM's lld, which supports this GNU ld option) re-scans
++      # them as needed instead of giving up after one left-to-right pass.
++      # (gvpr, cgraph++ and gvc++ are omitted as regina uses none of them.)
++      SET(LINK_LIBS ${LINK_LIBS}
++        -Wl,--start-group
++        gvc cgraph cdt gvplugin_core gvplugin_dot_layout
++        common dotgen pathplan xdot label pack ortho util
++        -Wl,--end-group)
++      LINK_DIRECTORIES("${LIBGVC_LIBRARY_DIRS}" "${LIBGVC_LIBRARY_DIRS}/graphviz")
++    ELSE (EMSCRIPTEN)
++      SET(LINK_LIBS ${LINK_LIBS} ${LIBGVC_LIBRARIES})
++      IF(LIBGVC_DYNAMIC_PLUGINS)
++        LINK_DIRECTORIES("${LIBGVC_LIBDIR}")
++      ELSE(LIBGVC_DYNAMIC_PLUGINS)
++        SET(LINK_LIBS ${LINK_LIBS} gvplugin_core gvplugin_dot_layout gvplugin_neato_layout)
++        LINK_DIRECTORIES("${LIBGVC_LIBDIR}" "${LIBGVC_LIBDIR}/graphviz")
++      ENDIF(LIBGVC_DYNAMIC_PLUGINS)
++    ENDIF (EMSCRIPTEN)
+ 
+     # Ubuntu focal (20.04 LTS) has an error where the graphviz plugins
+     # fail to link due to missing __XXX_finite symbols from the math
+@@ -99,9 +121,17 @@
+   reginaprefset.cpp
+   reginasupport.cpp
+   sharedtempfile.cpp
+-  shortrunner.cpp
+   )
+ 
++IF (NOT EMSCRIPTEN)
++  # shortrunner.cpp uses QProcess::waitForFinished(), which spins a local
++  # event loop; Qt for WebAssembly does not support nested/blocking event
++  # loops of this kind, and in any case Regina's WASM build never has an
++  # external command-line tool to shell out to.  reginaprefset.cpp guards
++  # its (unused) include of shortrunner.h accordingly.
++  SET(SOURCES ${SOURCES} shortrunner.cpp)
++ENDIF (NOT EMSCRIPTEN)
++
+ if (APPLE)
+   set(REGINA_APP_NAME Regina)
+ 
+@@ -156,6 +186,15 @@
+     PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+ endif ()
+ 
++if (EMSCRIPTEN)
++  # A plain ADD_EXECUTABLE() under Emscripten produces "regina-gui.js" plus
++  # a matching "regina-gui.wasm", but no HTML host page. Asking for a
++  # ".html" suffix makes Emscripten emit a ready-to-open
++  # "regina-gui.html" (which still comes with its own "regina-gui.js" and
++  # "regina-gui.wasm" side files) using Emscripten's default HTML shell.
++  set_target_properties(${REGINA_APP_NAME} PROPERTIES SUFFIX ".html")
++endif (EMSCRIPTEN)
++
+ INSTALL(TARGETS ${REGINA_APP_NAME} DESTINATION "${CMAKE_INSTALL_FULL_BINDIR}" COMPONENT Runtime)
+ 
+ # TODO: Use COMPONENT Runtime/Development throughout all install targets.

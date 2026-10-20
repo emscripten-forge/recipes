@@ -1,0 +1,89 @@
+context:
+  name: r-lme4
+  version: 2.0-1
+
+package:
+  name: ${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: a34b75c1ef05d7c023d9d86c9d644381a4098de5b3008f9256b89b3a380917a4
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-mass
+  - r-matrix
+  - r-rdpack
+  - r-boot
+  - r-minqa
+  - r-nlme
+  - r-nloptr
+  - r-reformulas
+  - r-rlang
+  - r-rcpp
+  - r-rcppeigen
+  host:
+  - r-base ==${{ r_base }}
+  - r-mass
+  - r-matrix
+  - r-rdpack
+  - r-boot
+  - r-minqa
+  - r-nlme
+  - r-nloptr
+  - r-reformulas
+  - r-rlang
+  - r-rcpp
+  - r-rcppeigen
+  run:
+  - r-mass
+  - r-matrix
+  - r-rdpack
+  - r-boot
+  - r-minqa
+  - r-nlme
+  - r-nloptr
+  - r-reformulas
+  - r-rlang
+  - r-rcpp
+  - r-rcppeigen
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test test_lme4.R
+  files:
+    recipe:
+    - test_lme4.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=lme4
+  repository: https://github.com/lme4/lme4/
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: GPL-2
+  summary: Linear Mixed-Effects Models using 'Eigen' and S4
+  description: |
+    Fit linear and generalized linear mixed-effects models. The models and their
+    components are represented using S4 classes and methods. The core
+    computational algorithms are implemented using the 'Eigen' C++ library for
+    numerical linear algebra and 'RcppEigen' "glue".
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

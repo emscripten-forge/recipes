@@ -3,8 +3,6 @@ cd build
 
 export LDFLAGS="-sNODERAWFS=1 -sUSE_ZLIB=1 -sFORCE_FILESYSTEM=1"
 
-cp ${RECIPE_DIR}/settings/* ../src/
-
 emcmake cmake .. \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
     -DH5_HAVE_GETPWUID=OFF \
@@ -21,13 +19,11 @@ emcmake cmake .. \
     -DHDF5_BUILD_EXAMPLES=OFF \
     -DHDF5_BUILD_TOOLS=OFF \
     -DHDF5_BUILD_UTILS=OFF \
+    -DHDF5_BUILD_HL_LIB=ON \
     -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
     -DHDF5_ENABLE_ROS3_VFD=OFF \
     -DZLIB_INCLUDE_DIR=${PREFIX}/include \
     -DZLIB_LIBRARY=${PREFIX}/lib/libz.a
-
-cp ${RECIPE_DIR}/settings/* ../src/
-cp ${RECIPE_DIR}/settings/* src/
 
 emmake make -j 4
 emmake make install

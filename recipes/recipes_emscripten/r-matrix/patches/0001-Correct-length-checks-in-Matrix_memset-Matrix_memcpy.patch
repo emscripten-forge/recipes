@@ -1,0 +1,114 @@
+From 8e7426fd105a0fb9341b8c0dd28491c3f3a9ed07 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 3 Jun 2026 15:06:09 +0200
+Subject: [PATCH] Correct length checks in Matrix_memset/Matrix_memcpy
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+On platforms where SIZE_MAX < R_XLEN_T_MAX (e.g. wasm32/emscripten, typical
+32-bit size_t), Matrix_memset and Matrix_memcpy cast SIZE_MAX to R_xlen_t
+for comparison:
+
+    if (length <= S_M)   /* S_M = (R_xlen_t) SIZE_MAX */
+
+When R_xlen_t is signed, S_M is 0xFFFFFFFF, which compares as -1. Any
+ordinary length (e.g. 6 for a 2×3 matrix) fails `length <= S_M` and wrongly
+enters the "huge length" chunked memset path, causing out-of-bounds writes
+and crashes in sparse_as_dense / as(x, "matrix").
+
+Use an unsigned-friendly fast-path test instead:
+
+    if ((size_t) length <= SIZE_MAX)
+
+For the rare huge-length path, compare and subtract with chunk_xlen where
+S_M would be negative (PTRDIFF_MAX), not raw S_M.
+
+Also fix inner chunked loops in Matrix_memset to decrement by N (element
+chunks) rather than d (bytes), matching the intended loop structure.
+
+Fixes wasm crashes in R_sparse_as_dense and sparse.model.matrix for small
+matrices.
+---
+ src/utils.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/src/utils.c b/src/utils.c
+index 03a7b34..634dacd 100644
+--- a/src/utils.c
++++ b/src/utils.c
+@@ -28,8 +28,9 @@ void *Matrix_memset(void *dest, int ch, R_xlen_t length, size_t size)
+ 		size_t N = SIZE_MAX / size;
+ 
+ #if (SIZE_MAX < R_XLEN_T_MAX)
+-		R_xlen_t S_M = (R_xlen_t) SIZE_MAX;
+-		if (length <= S_M) {
++		R_xlen_t S_M = (R_xlen_t) SIZE_MAX; // S_M=-1 (overflows size_t)
++		R_xlen_t chunk_xlen = (S_M < 0) ? PTRDIFF_MAX : S_M;
++		if ((size_t) length <= SIZE_MAX) {
+ #endif
+ 
+ 			/* 'length' is representable as size_t : */
+@@ -42,7 +43,7 @@ void *Matrix_memset(void *dest, int ch, R_xlen_t length, size_t size)
+ 				while (n > N) {
+ 					memset(dest_, ch, d);
+ 					dest_ += d;
+-					n -= d;
++					n -= N;
+ 				}
+ 				memset(dest_, ch, n * size);
+ 			}
+@@ -53,21 +54,21 @@ void *Matrix_memset(void *dest, int ch, R_xlen_t length, size_t size)
+ 			/* 'length' would overflow size_t : */
+ 
+ 			size_t n, d = N * size;
+-			while (length > S_M) {
++			while (length > chunk_xlen) {
+ 				n = SIZE_MAX;
+ 				while (n > N) {
+ 					memset(dest_, ch, d);
+ 					dest_ += d;
+-					n -= d;
++					n -= N;
+ 				}
+ 				memset(dest_, ch, n * size);
+-				length -= S_M;
++				length -= chunk_xlen;
+ 			}
+ 			n = (size_t) length;
+ 			while (n > N) {
+ 				memset(dest_, ch, d);
+ 				dest_ += d;
+-				n -= d;
++				n -= N;
+ 			}
+ 			memset(dest_, ch, n * size);
+ 
+@@ -93,7 +94,8 @@ void *Matrix_memcpy(void *dest, const void *src, R_xlen_t length, size_t size)
+ 
+ #if (SIZE_MAX < R_XLEN_T_MAX)
+ 		R_xlen_t S_M = (R_xlen_t) SIZE_MAX;
+-		if (length <= S_M) {
++		R_xlen_t chunk_xlen = (S_M < 0) ? PTRDIFF_MAX : S_M;
++		if ((size_t) length <= SIZE_MAX) {
+ #endif
+ 
+ 			/* 'length' is representable as size_t : */
+@@ -118,7 +120,7 @@ void *Matrix_memcpy(void *dest, const void *src, R_xlen_t length, size_t size)
+ 			/* 'length' would overflow size_t : */
+ 
+ 			size_t n, d = N * size;
+-			while (length > S_M) {
++			while (length > chunk_xlen) {
+ 				n = SIZE_MAX;
+ 				while (n > N) {
+ 					memcpy(dest_, src_, d);
+@@ -127,7 +129,7 @@ void *Matrix_memcpy(void *dest, const void *src, R_xlen_t length, size_t size)
+ 					n -= d;
+ 				}
+ 				memcpy(dest_, src_, n * size);
+-				length -= S_M;
++				length -= chunk_xlen;
+ 			}
+ 			n = (size_t) length;
+ 			while (n > N) {

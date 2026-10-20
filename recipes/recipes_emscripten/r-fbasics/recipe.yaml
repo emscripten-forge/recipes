@@ -1,0 +1,79 @@
+context:
+  name: fBasics
+  version: '4052.98'
+
+package:
+  name: r-${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: d2af0b19cfc964838f0c8d0f0a0a4416f61c14a733d80c501ca990c264210edd
+
+build:
+  number: 0
+  skip: ${{ r_base == '4.6.1' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-timedate
+  - r-timeseries >= 4021.105
+  - r-mass
+  - r-spatial
+  - r-gss
+  - r-stabledist
+  host:
+  - r-base ==${{ r_base }}
+  - r-timedate
+  - r-timeseries >= 4021.105
+  - r-mass
+  - r-spatial
+  - r-gss
+  - r-stabledist
+  - libflang
+  run:
+  - r-timedate
+  - r-timeseries >= 4021.105
+  - r-mass
+  - r-spatial
+  - r-gss
+  - r-stabledist
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://geobosh.github.io/fBasicsDoc/ (doc)
+  documentation: https://cran.r-project.org/web/packages/${{ name }}/refman/${{ name }}.html
+  repository: https://cran.r-project.org/package=${{ name }}
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  summary: Rmetrics - Markets and Basic Statistics
+  description: |-
+    Provides a collection of functions to
+    explore and to investigate basic properties of financial returns
+    and related quantities.
+    The covered fields include techniques of explorative data analysis
+    and the investigation of distributional properties, including
+    parameter estimation and hypothesis testing. Even more there are
+    several utility functions for data handling and management.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

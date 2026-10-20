@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: emscripten-forge patcher <patch@emscripten-forge>
+Date: Tue, 23 Jun 2026 00:00:00 +0000
+Subject: [PATCH] Remove annoy static library to fix duplicate PyInit_annoylib on Emscripten/wasm32
+
+annoymodule.cc is compiled twice under the current meson.build:
+
+  1. Into the intermediate static library libannoycore.a (via annoy_static)
+  2. Directly into the annoylib extension module (via its 'sources' list)
+
+When the extension module links against libannoycore.a (via 'link_with'),
+the Emscripten/wasm32 toolchain reports a hard linker error:
+
+  wasm-ld: error: duplicate symbol: PyInit_annoylib
+  >>> defined in libannoycore.a(annoymodule.cc.o)
+  >>> defined in annoylib.cpython-312-wasm32-emscripten.so(annoymodule.cc.o)
+
+Root cause: annoymodule.cc is the Python module entry point
+(PyInit_annoylib).  It must appear in exactly one translation unit
+that becomes the final .so.  Placing it in a static library and also
+compiling it directly into the extension produces two definitions of
+the same symbol, which POSIX linkers silently discard but Emscripten's
+wasm-ld treats as a hard error.
+
+Fix: remove the annoy_core_sources list and the annoy_static
+static_library() definition entirely; set 'link_with' to an empty list
+in the extension metadata.  annoymodule.cc is already compiled directly
+into the extension via its 'sources' entry, so the static library was
+entirely redundant.
+
+This change is safe on all other targets: native and GHCR builds are
+unaffected because the extension never needed the static library to
+resolve any symbols that were not already being compiled in via sources.
+
+Affected files
+  scikitplot/cexternals/_annoy/meson.build  (linker error)
+---
+ scikitplot/cexternals/_annoy/meson.build | 19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
+
+diff --git a/scikitplot/cexternals/_annoy/meson.build b/scikitplot/cexternals/_annoy/meson.build
+--- a/scikitplot/cexternals/_annoy/meson.build
++++ b/scikitplot/cexternals/_annoy/meson.build
+@@ -222,22 +222,6 @@
+ message('Final compile args: ' + ' '.join(extra_compile_args))
+ message('Final link args: ' + ' '.join(extra_link_args))
+ 
+-annoy_core_sources = [
+-  # 'src/annoyluamodule.cc',  # (Lua binding)
+-  'src/annoymodule.cc',  # (Python binding)
+-]
+-
+-annoy_static = static_library(
+-  'annoycore',
+-  annoy_core_sources,
+-  include_directories: inc_dir_annoy,
+-  dependencies: dep_list,
+-  cpp_args: cython_cpp_flags + extra_compile_args,
+-  link_args: extra_link_args,
+-  install: false
+-  # install_dir: np_dir / 'random/lib',
+-)
+-
+ ######################################################################
+ ## extension metadata
+ ######################################################################
+@@ -263,10 +247,7 @@
+       inc_dir_py,
+     ],
+     'dependencies': dep_list,                     # External libraries and dependencies
+-    'link_with': [                                # Link with the created static library
+-      # version_link_args
+-      annoy_static,
+-    ],
++    'link_with': [],                              # No static library: avoids duplicate PyInit_annoylib on Emscripten/wasm32
+     'override_options': [
+       # 'cython_language=c',                        # Ensure Cython knows to generate C code
+       'cython_language=cpp',                        # Ensure Cython knows to generate C code
+-- 
+2.53.0

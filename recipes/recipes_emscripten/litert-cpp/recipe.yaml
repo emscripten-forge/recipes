@@ -1,0 +1,90 @@
+context:
+  name: litert-cpp
+  version: 2.1.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/google-ai-edge/LiteRT/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 7d0313c4851deb18af6f5f2dbc002bf01293583b87b819b0949ee33dcfe2d91b
+  patches:
+  - patches/0001-gate-npu-vendor-fetches.patch
+  - patches/0002-fix-runtime-cmake-feature-gating.patch
+  - patches/0003-complete-runtime-cmake-feature-gating.patch
+- target_directory: third_party/tensorflow
+  url: https://github.com/tensorflow/tensorflow/archive/refs/tags/v2.21.0-rc0.tar.gz
+  sha256: 91b2c2d12f0ebd78d84e5e1401269d0e6e36db5b74e19cc929e0f012b380af39
+
+build:
+  number: 0
+  script:
+    file: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - python
+  - flatbuffers
+  host:
+  - libabseil
+  - flatbuffers
+  - eigen
+  - cpuinfo
+  run:
+  - libabseil
+  - flatbuffers
+
+tests:
+- package_contents:
+    files:
+    - include/litert/build_common/build_config.h
+    - include/litert/c/litert_webgpu_types.h
+    - include/litert/cc/litert_tensor_buffer.h
+    - include/litert/cc/options/litert_gpu_options.h
+    - lib/liblitert_c_api.a
+    - lib/liblitert_cc_api.a
+    - lib/liblitert_cc_internal.a
+    - lib/liblitert_core.a
+    - lib/liblitert_core_model.a
+    - lib/liblitert_logging.a
+    - lib/liblitert_runtime.a
+    - lib/libtensorflow-lite.a
+    - lib/cmake/litert/litertConfig.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - nodejs
+    - libabseil
+    - flatbuffers
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://ai.google.dev/edge/litert
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: LiteRT C++ static SDK for emscripten-wasm32
+  description: |
+    LiteRT is Google's on-device inference runtime and the successor to
+    TensorFlow Lite. This package provides a C++-oriented static SDK surface
+    for emscripten-wasm32 builds, including the LiteRT C and C++ headers,
+    static libraries, and WebGPU-facing API types used by downstream consumers.
+    Upstream native GPU acceleration is delivered through platform-specific
+    accelerator binaries; this recipe packages the in-tree C++ SDK surface.
+  documentation: https://github.com/google-ai-edge/LiteRT/blob/main/g3doc/instructions/CMAKE_BUILD_INSTRUCTIONS.md
+  repository: https://github.com/google-ai-edge/LiteRT
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

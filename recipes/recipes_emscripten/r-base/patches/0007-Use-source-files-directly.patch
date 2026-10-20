@@ -1,0 +1,94 @@
+From 7dd68205dc74ca1fcb4ff397eace91201cfe2d38 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 27 May 2026 19:02:03 +0200
+Subject: [PATCH 07/12] Use source files directly
+
+---
+ share/make/basepkg.mk         | 19 ++++++++++++++-----
+ src/library/Makefile.in       |  4 +++-
+ src/library/tools/Makefile.in |  5 ++++-
+ 3 files changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/share/make/basepkg.mk b/share/make/basepkg.mk
+index c0a69c8..cf1bdd2 100644
+--- a/share/make/basepkg.mk
++++ b/share/make/basepkg.mk
+@@ -1,5 +1,6 @@
+ ## ${R_HOME}/share/make/basepkg.mk
+ 
++toolsdir = $(srcdir)/../tools
+ 
+ .PHONY: front instdirs mkR mkR1 mkR2 mkRbase mkdesc mkdesc2 mkdemos mkdemos2 \
+   mkexec mkman mkpo mksrc mksrc-win mksrc-win2 mkRsimple mklazy mklazycomp \
+@@ -86,11 +87,17 @@ mkRbase:
+ mkdesc:
+ 	@if test -f DESCRIPTION; then \
+ 	  if test "$(PKG_BUILT_STAMP)" != ""; then \
+-	    $(ECHO) "tools:::.install_package_description('.', '$(top_builddir)/library/${pkg}', '$(PKG_BUILT_STAMP)')" | \
++	  	(cat $(toolsdir)/R/admin.R; \
++		 cat $(toolsdir)/R/QC.R; \
++		 cat $(toolsdir)/R/utils.R; \
++	    $(ECHO) ".install_package_description('.', '$(top_builddir)/library/${pkg}', '$(PKG_BUILT_STAMP)')") | \
+ 	    R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null ; \
+ 	  else \
+-	  $(ECHO) "tools:::.install_package_description('.', '$(top_builddir)/library/${pkg}')" | \
+-	  R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null ; \
++	  	(cat $(toolsdir)/R/admin.R; \
++		 cat $(toolsdir)/R/QC.R; \
++		 cat $(toolsdir)/R/utils.R; \
++	  	$(ECHO) ".install_package_description('.', '$(top_builddir)/library/${pkg}')") | \
++	  	R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null ; \
+ 	  fi; \
+ 	fi
+ 
+@@ -127,7 +134,8 @@ mkexec:
+ ## only used if byte-compilation is disabled
+ mklazy:
+ 	@$(INSTALL_DATA) all.R $(top_builddir)/library/$(pkg)/R/$(pkg)
+-	@$(ECHO) "tools:::makeLazyLoading(\"$(pkg)\")" | \
++	@(cat $(toolsdir)/R/makeLazyLoad.R; \
++	  $(ECHO) "makeLazyLoading(\"$(pkg)\")") | \
+ 	  R_DEFAULT_PACKAGES=$(DEFPKGS) LC_ALL=C $(R_EXE) > /dev/null
+ 
+ mklazycomp: $(top_builddir)/library/$(pkg)/R/$(pkg).rdb
+@@ -148,7 +156,8 @@ mksrc-win2:
+ 
+ sysdata: $(srcdir)/R/sysdata.rda
+ 	@$(ECHO) "installing 'sysdata.rda'"
+-	@$(ECHO) "tools:::sysdata2LazyLoadDB(\"$(srcdir)/R/sysdata.rda\",\"$(top_builddir)/library/$(pkg)/R\")" | \
++	@(cat $(toolsdir)/R/makeLazyLoad.R; \
++	  $(ECHO) "sysdata2LazyLoadDB(\"$(srcdir)/R/sysdata.rda\",\"$(top_builddir)/library/$(pkg)/R\")") | \
+ 	  R_DEFAULT_PACKAGES=NULL LC_ALL=C $(R_EXE)
+ 
+ 
+diff --git a/src/library/Makefile.in b/src/library/Makefile.in
+index 8f4748c..bc387f2 100644
+--- a/src/library/Makefile.in
++++ b/src/library/Makefile.in
+@@ -129,7 +129,9 @@ install: installdirs
+ 	  (cd $(top_builddir)/library; \
+ 	    $(TAR) -cf - . | (cd "$(DESTDIR)$(rhome)/library"; $(TAR) -xmof -))
+ 	@$(ECHO) "  building HTML index ..."
+-	@$(ECHO) "utils:::make.packages.html(.Library, verbose=FALSE, docdir=\"$(DESTDIR)${rdocdir}\")" | \
++	@(cat $(srcdir)/utils/R/linkhtml.R; \
++	  cat $(srcdir)/utils/R/indices.R; \
++	  $(ECHO) "make.packages.html(.Library, verbose=FALSE, docdir=\"$(DESTDIR)${rdocdir}\")") | \
+           R_DEFAULT_PACKAGES=NULL LC_ALL=C ${R_EXE} >/dev/null
+ installdirs:
+ 	@$(MKINSTALLDIRS) "$(DESTDIR)$(rhome)/library"
+diff --git a/src/library/tools/Makefile.in b/src/library/tools/Makefile.in
+index 7274513..e57e18f 100644
+--- a/src/library/tools/Makefile.in
++++ b/src/library/tools/Makefile.in
+@@ -45,7 +45,10 @@ all: Makefile DESCRIPTION
+ 	  fi \
+ 	fi
+ 	@$(MAKE) sysdata
+-	@$(ECHO) "tools:::.install_package_description('.', '"$(top_builddir)/library/${pkg}"')" | \
++	@(cat $(srcdir)/R/admin.R; \
++	  cat $(srcdir)/R/QC.R; \
++	  cat $(srcdir)/R/utils.R; \
++	  $(ECHO) ".install_package_description('.', '"$(top_builddir)/library/${pkg}"')") | \
+ 	  R_DEFAULT_PACKAGES=NULL $(R_EXE) > /dev/null
+ 
+ mkR: mkR1

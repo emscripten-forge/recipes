@@ -1,31 +1,40 @@
 context:
-  version: 2.1-2
-  name: r-colorspace
+  version: 2.1-4
+  name: colorspace
 
 package:
-  name: ${{ name }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
   url:
-  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
-  sha256: ec71499d33ef5d72b7fb3359b8320639e06e413abad61a070201178a254b153e
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 3bb168c19772bc3f11d15933da008d96505376eab31cb5b3106392a322e9c62c
 
 build:
-  number: 5
-  string: r${{ r_abi_build_tag }}_h${{ hash }}_${{ build_number }}
+  number: 0
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base_${{ target_platform }} ==${{ r_base }}
   - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
 
 tests:
 - package_contents:
     lib:
-    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script: run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
 
 about:
   homepage: http://colorspace.R-Forge.R-project.org

@@ -7,6 +7,22 @@ def test_import():
     print("scipy.__version__:", scipy.__version__)
 
 
+def _assert_openblas(pkg, cfg):
+    # Meson CONFIG _cleanup() drops falsey values, so "found" is absent when
+    # BLAS was not found and name is "auto". OpenBLAS builds record the name
+    # as "openblas" or "scipy-openblas" (NumPy's pkg-config alias).
+    deps = cfg["Build Dependencies"]
+    for kind in ("blas", "lapack"):
+        dep = deps.get(kind) or {}
+        name = str(dep.get("name") or "").lower()
+        assert "openblas" in name, f"{pkg} {kind} is not OpenBLAS: {dep!r}"
+        if "found" in dep:
+            assert dep["found"] is True, (pkg, kind, dep)
+        obcfg = dep.get("openblas configuration")
+        if obcfg is not None:
+            assert obcfg != "unknown", (pkg, kind, dep)
+
+
 def test_config():
     import scipy
     c = scipy.show_config(mode="dicts")
@@ -19,6 +35,13 @@ def test_config():
 
     assert c["Compilers"]["fortran"]["name"] == "llvm-flang"
     assert c["Compilers"]["fortran"]["version"] == "20.1.7"
+
+
+def test_openblas_build_config():
+    import scipy
+
+    _assert_openblas("numpy", np.show_config(mode="dicts"))
+    _assert_openblas("scipy", scipy.show_config(mode="dicts"))
 
 
 def test_cholesky():
@@ -84,6 +107,16 @@ def test_linalg():
     assert_allclose(Ainv, [[-2, 1], [1.5, -0.5]])
 
 
+def test_schur():
+    from scipy.linalg import schur
+    for A in (
+        np.array([[1.0, 2.0], [3.0, 4.0]]),
+        np.array([[1.0, 2.0j], [3.0j, 4.0]]),
+    ):
+        T, Z = schur(A)
+        assert_allclose(Z @ T @ Z.conj().T, A)
+
+
 def test_lsoda():
     import scipy.integrate as integrate
     def exponential_decay(t, y):
@@ -113,7 +146,13 @@ def test_sparse():
         [0, 5, 0],
         [-0.526315789, 0, 0.526315789]
     ])
-    soln = scipy.sparse.linalg.spsolve(A, [1.1, 0.2, -0.3])
+    b = np.array([1.1, 0.2, -0.3])
+    soln = scipy.sparse.linalg.spsolve(A, b)
+    assert_allclose(soln, [1.173684211, 1, -0.736842105])
+
+    # Repeat using superlu
+    lu = scipy.sparse.linalg.splu(A)
+    soln = lu.solve(b)
     assert_allclose(soln, [1.173684211, 1, -0.736842105])
 
 

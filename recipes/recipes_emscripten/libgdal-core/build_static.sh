@@ -127,3 +127,9 @@ cd build && emcmake cmake .. \
 
 emmake make -j 8
 emmake make install
+
+# GDAL installs bash-completion scripts under share/bash-completion/completions/
+# with a `.py` extension (they are actually shell scripts). rattler-build's
+# Python bytecode post-processing tries to compile them and emits parser
+# warnings. bash-completion is useless in a WebAssembly target anyway.
+rm -rf "$PREFIX/share/bash-completion"

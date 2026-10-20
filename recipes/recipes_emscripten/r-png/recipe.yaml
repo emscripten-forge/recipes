@@ -1,0 +1,50 @@
+context:
+  version: 0.1-9
+  name: r-png
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 0b8502363c6f5c73cf284dee4fd1416f5adf4115b6ae9a1e09531c143b978589
+
+build:
+  number: 0
+
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  host:
+  - r-base ==${{ r_base }}
+  - libpng
+  - zlib
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: http://www.rforge.net/png/
+  license: GPL-2.0-only OR GPL-3.0-only
+  license_family: GPL3
+  license_file: GPL-3
+  summary: |
+    PNG: Read and write PNG images
+
+extra:
+  recipe-maintainers:
+    - DerThorsten

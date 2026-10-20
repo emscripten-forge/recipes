@@ -1,0 +1,62 @@
+context:
+  version: 131.2.0
+
+package:
+  name: kissfft
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mborgerding/kissfft/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 205a8f6a448ef12b091f8ac6a514b5091bb5f6b0b543431ed75f673116cf5cbf
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - make
+
+tests:
+- package_contents:
+    lib:
+    - libkissfft-float.a
+    include:
+    - kissfft/kiss_fft.h
+    - kissfft/kissfft.hh
+    - kissfft/kiss_fftnd.h
+    - kissfft/kiss_fftndr.h
+    - kissfft/kiss_fftr.h
+    files:
+    - lib/cmake/kissfft/kissfft-config.cmake
+    - lib/cmake/kissfft/kissfft-config-version.cmake
+    - lib/cmake/kissfft/kissfft-float-static-targets.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://github.com/mborgerding/kissfft
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: COPYING
+  summary: A mixed-radix Fast Fourier Transform based on "Keep It Simple, Stupid"
+  description: |
+    KISS FFT is a small, simple, reasonably efficient mixed-radix FFT library
+    that can use fixed or floating point data types. It has no dependencies
+    beyond the standard C math library and compiles to ~18KB.
+  documentation: https://github.com/mborgerding/kissfft
+  repository: https://github.com/mborgerding/kissfft
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

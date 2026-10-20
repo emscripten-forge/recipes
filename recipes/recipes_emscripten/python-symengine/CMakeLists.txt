@@ -19,7 +19,8 @@
 # THE SOFTWARE.
 
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 if (POLICY CMP0057)
   cmake_policy(SET CMP0057 NEW) # needed for llvm >= 16
@@ -37,6 +38,15 @@ set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "-s SIDE_MODULE=1")
 set(CMAKE_PREFIX_PATH ${SymEngine_DIR} ${CMAKE_PREFIX_PATH})
 
 include(GNUInstallDirs)
+
+# SymEngineConfig.cmake pulls Boost in through find_dependency(). Our boost
+# packages ship the headers under $PREFIX, but the emscripten find-root keeps
+# FindBoost from seeing them (and CI has no system Boost to fall back on), so
+# point it at the prefix explicitly.
+if(DEFINED ENV{PREFIX})
+  set(BOOST_ROOT "$ENV{PREFIX}")
+  set(Boost_NO_SYSTEM_PATHS TRUE)
+endif()
 
 find_package(SymEngine 0.8.1 REQUIRED CONFIG
              PATH_SUFFIXES lib/cmake/symengine cmake/symengine CMake/)

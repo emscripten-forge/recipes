@@ -1,0 +1,56 @@
+context:
+  name: c-ares
+  version: 1.34.8
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/c-ares/c-ares/releases/download/v${{ version }}/c-ares-${{ version }}.tar.gz
+  sha256: c222b6d681096f9444d2c4863d2c1174019e27cacca0a4a5c114d36dd7d7bf78
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/ares.h
+    - include/ares_dns.h
+    - lib/libcares.a
+    - lib/cmake/c-ares/c-ares-config.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://c-ares.org/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.md
+  summary: A C library for asynchronous DNS requests
+  description: |
+    c-ares is a C library that performs DNS requests asynchronously.
+    It is a modern replacement for the resolver library in libc and is
+    used by projects like cURL, Node.js, and gRPC for DNS resolution.
+  repository: https://github.com/c-ares/c-ares
+
+extra:
+  recipe-maintainers:
+  - Copilot

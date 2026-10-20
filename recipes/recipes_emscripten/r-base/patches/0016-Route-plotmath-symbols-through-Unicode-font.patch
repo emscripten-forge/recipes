@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Blake <adam@ablake.dev>
+Date: Thu, 19 Jun 2026 00:00:00 +0000
+Subject: [PATCH] Route plotmath symbols through Unicode under emscripten
+
+The cairo device's Type-1 symbol path assumes the Adobe Symbol font. Under
+emscripten there is no pango, and the cairo FreeType path cannot render the
+Adobe Symbol encoding, so plotmath Greek and math symbols render as tofu.
+Route them through Unicode instead, as pango-enabled builds already do.
+---
+--- a/src/library/grDevices/R/cairo.R
++++ b/src/library/grDevices/R/cairo.R
+@@ -96,6 +96,9 @@
+ }
+ 
+ symbolType1support <- function() {
++    ## wasm cairo uses the FreeType path, which cannot render the Adobe
++    ## Symbol Type-1 encoding; use Unicode symbols instead.
++    if (grepl("emscripten", R.version$os)) return(FALSE)
+     pangoVersion <- grSoftVersion()["pango"]
+     pangoVersion == "" ||
+         comparePangoVersion(pangoVersion, "1.44") < 0

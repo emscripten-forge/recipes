@@ -1,13 +1,23 @@
 context:
   name: flang_emscripten-wasm32
-  version: 20.1.7
+  version: 22.1.6
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
+source:
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-${{ version }}.tar.gz
+  sha256: ba534c6835a5b9c2162c806e269799fe41fca952a3c25baff1afcff23841ec2b
+  patches:
+    # from https://github.com/serge-sans-paille/llvm-project/tree/feature/flang-wasm
+    - patches/0001-Minimal-WASM-support-for-flang.patch
+    - patches/0002-Deactivate-quadmath-float128-support.patch
+    - patches/0003-Specialize-Flang-to-target-WASM.patch
+    - patches/0004-Fix-wasm32-assumed-size-dummy-array-indexing.patch
+
 build:
-  number: 4
+  number: 0
 
 requirements:
   build:
@@ -16,18 +26,20 @@ requirements:
     - cmake
     - ninja
   host:
-    - zstd
-  run:
-    - emscripten_emscripten-wasm32
-    - libllvm20 ==${{ version }}
-  run_exports:
-    strong:
-      - emscripten-abi >=3.1.73,<3.1.74.0a0
+    - clangdev ==${{ version }}
+    - compiler-rt ==${{ version }}
+    - lit ==${{ version }}
+    - llvmdev ==${{ version }}
+    - mlir ==${{ version }}
+    - zlib
+    # for required run-exports
+    - llvm ==${{ version }}
+    - libclang-cpp ==${{ version }}
 
 tests:
 - package_contents:
-    lib:
-    - libFortranRuntime_emscripten-wasm32.a
+    files:
+    - bin/flang
 
 about:
   homepage: https://flang.llvm.org

@@ -1,0 +1,48 @@
+context:
+  name: r-leaps
+  version: "3.2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/leaps_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/leaps_${{ version }}.tar.gz
+  sha256: a0d6bebb676e5cdc0ecf3e3a07163ce0d60b6fe72a083d91f0413e11a8a96fad
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+
+tests:
+- package_contents:
+    lib:
+    - R/library/leaps/libs/leaps.so
+- script: run_r_test test_leaps.R
+  files:
+    recipe:
+    - test_leaps.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://cran.r-project.org/package=leaps
+  license: GPL-2.0-or-later
+  license_file: GPL-2
+  summary: Regression Subset Selection
+
+extra:
+  recipe-maintainers:
+  - anutosh491

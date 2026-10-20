@@ -1,0 +1,60 @@
+diff --git a/ffi/wasmlinker.cpp b/ffi/wasmlinker.cpp
+new file mode 100644
+index 00000000..deaf70ca
+--- /dev/null
++++ b/ffi/wasmlinker.cpp
+@@ -0,0 +1,54 @@
++// Only compiled when targeting Emscripten (wasm32-unknown-emscripten).
++// Exposes LLVMPY_WasmLinkSharedModule which calls LLD in-process — no
++// subprocess or wasm-ld binary is needed at runtime.
++
++#ifdef __EMSCRIPTEN__
++
++#include "core.h"
++#include <lld/Common/Driver.h>
++#include <llvm/Support/raw_ostream.h>
++#include <cstring>
++#include <string>
++
++LLD_HAS_DRIVER(wasm)
++
++extern "C" {
++
++/*
++ * LLVMPY_WasmLinkSharedModule
++ *
++ * Link one or more WASM object files into a WASM shared side-module using
++ * LLD's re-entrant library entry point (no subprocess).
++ *
++ * args     – argv array for wasm-ld (first element is the program name)
++ * num_args – length of args
++ * out_error – set to an allocated error string on failure (caller must free
++ *             with LLVMPY_DisposeString); NULL on success
++ *
++ * Returns 0 on success, 1 on failure.
++ */
++API_EXPORT(int)
++LLVMPY_WasmLinkSharedModule(const char **args, int num_args,
++                             char **out_error) {
++    std::string err_str;
++    llvm::raw_string_ostream err_os(err_str);
++
++    llvm::ArrayRef<const char *> args_ref(args, static_cast<size_t>(num_args));
++    const lld::DriverDef wasm_driver = {lld::Flavor::Wasm, &lld::wasm::link};
++    const llvm::ArrayRef<lld::DriverDef> drivers(&wasm_driver, 1);
++    const lld::Result result =
++        lld::lldMain(args_ref, llvm::outs(), err_os, drivers);
++
++    if (result.retCode != 0 || !result.canRunAgain) {
++        if (!result.canRunAgain)
++            err_os << "LLD could not safely reset its linker state";
++        *out_error = strdup(err_os.str().c_str());
++        return 1;
++    }
++    *out_error = nullptr;
++    return 0;
++}
++
++} // extern "C"
++
++#endif // __EMSCRIPTEN__

@@ -1,0 +1,54 @@
+context:
+  name: flatcc
+  version: "896db54787e8b730a6be482c69324751f3f5f117"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/dvidelabs/flatcc/archive/${{ version }}.tar.gz
+  sha256: 1bbc825f3039484e5bd46dce408b9dc392e86172b480c335c8f765110cc3f9ff
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+
+tests:
+  - package_contents:
+      files:
+        - bin/flatcc.js
+        - bin/flatcc.wasm
+        - include/flatcc/flatcc_builder.h
+        - lib/libflatcc.a
+        - lib/libflatccrt.a
+  - script:
+      - build_tests.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+    files:
+      recipe:
+        - build_tests.sh
+        - tests/
+
+about:
+  homepage: https://github.com/dvidelabs/flatcc
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: FlatBuffers compiler and C runtime library
+  description: |
+    flatcc is a FlatBuffers compiler and runtime library for C. This package
+    provides the emscripten-wasm32 static libraries, headers, and wasm CLI.
+  repository: https://github.com/dvidelabs/flatcc
+
+extra:
+  recipe-maintainers:
+    - Alex-PLACET

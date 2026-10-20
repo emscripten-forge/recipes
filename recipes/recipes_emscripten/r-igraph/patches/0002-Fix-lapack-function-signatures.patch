@@ -1,0 +1,142 @@
+From 8968781c4ee4d9dc98c19aea6304adb0659c3930 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Mon, 1 Jun 2026 13:40:10 +0200
+Subject: [PATCH 2/2] Fix lapack function signatures
+
+---
+ src/vendor/cigraph/src/linalg/lapack.c        | 22 ++++++++++------
+ .../cigraph/src/linalg/lapack_internal.h      | 25 +++++++++++--------
+ 2 files changed, 29 insertions(+), 18 deletions(-)
+
+diff --git a/src/vendor/cigraph/src/linalg/lapack.c b/src/vendor/cigraph/src/linalg/lapack.c
+index ed5d64c..8ff153b 100644
+--- a/src/vendor/cigraph/src/linalg/lapack.c
++++ b/src/vendor/cigraph/src/linalg/lapack.c
+@@ -225,7 +225,7 @@ igraph_error_t igraph_lapack_dgetrs(igraph_bool_t transpose, const igraph_matrix
+     IGRAPH_CHECK(igraph_vector_int_copy_to_fortran(ipiv, &vipiv));
+ 
+     igraphdgetrs_(&trans, &n, &nrhs, VECTOR(a->data), &lda, VECTOR(vipiv),
+-                  VECTOR(b->data), &ldb, &info);
++                  VECTOR(b->data), &ldb, &info, /*trans_len=*/ 1);
+ 
+     igraph_vector_fortran_int_destroy(&vipiv);
+     IGRAPH_FINALLY_CLEAN(1);
+@@ -514,7 +514,8 @@ igraph_error_t igraph_lapack_dsyevr(const igraph_matrix_t *A,
+     igraphdsyevr_(&jobz, &range, &uplo, &n, &MATRIX(Acopy, 0, 0), &lda,
+                   &vl, &vu, &il, &iu, &abstol, &m, VECTOR(*myvalues),
+                   vectors ? &MATRIX(*vectors, 0, 0) : 0, &ldz, VECTOR(mysupport),
+-                  VECTOR(work), &lwork, VECTOR(iwork), &liwork, &info);
++                  VECTOR(work), &lwork, VECTOR(iwork), &liwork, &info,
++                  /*jobz_len=*/ 1, /*range_len=*/ 1, /*uplo_len=*/ 1);
+ 
+     if (info != 0) {
+         IGRAPH_ERROR("Invalid argument to dsyevr in workspace query.", IGRAPH_EINVAL);
+@@ -528,7 +529,8 @@ igraph_error_t igraph_lapack_dsyevr(const igraph_matrix_t *A,
+     igraphdsyevr_(&jobz, &range, &uplo, &n, &MATRIX(Acopy, 0, 0), &lda,
+                   &vl, &vu, &il, &iu, &abstol, &m, VECTOR(*myvalues),
+                   vectors ? &MATRIX(*vectors, 0, 0) : 0, &ldz, VECTOR(mysupport),
+-                  VECTOR(work), &lwork, VECTOR(iwork), &liwork, &info);
++                  VECTOR(work), &lwork, VECTOR(iwork), &liwork, &info,
++                  /*jobz_len=*/ 1, /*range_len=*/ 1, /*uplo_len=*/ 1);
+ 
+     if (info != 0) {
+         IGRAPH_ERROR("Invalid argument to dsyevr in calculation.", IGRAPH_EINVAL);
+@@ -672,7 +674,8 @@ igraph_error_t igraph_lapack_dgeev(const igraph_matrix_t *A,
+                  VECTOR(*myreal), VECTOR(*myimag),
+                  vectorsleft  ? &MATRIX(*vectorsleft, 0, 0) : &dummy, &ldvl,
+                  vectorsright ? &MATRIX(*vectorsright, 0, 0) : &dummy, &ldvr,
+-                 VECTOR(work), &lwork, info);
++                 VECTOR(work), &lwork, info,
++                 /*jobvl_len=*/ 1, /*jobvr_len=*/ 1);
+ 
+     lwork = (int) VECTOR(work)[0];
+     IGRAPH_CHECK(igraph_vector_resize(&work, lwork));
+@@ -681,7 +684,8 @@ igraph_error_t igraph_lapack_dgeev(const igraph_matrix_t *A,
+                  VECTOR(*myreal), VECTOR(*myimag),
+                  vectorsleft  ? &MATRIX(*vectorsleft, 0, 0) : &dummy, &ldvl,
+                  vectorsright ? &MATRIX(*vectorsright, 0, 0) : &dummy, &ldvr,
+-                 VECTOR(work), &lwork, info);
++                 VECTOR(work), &lwork, info,
++                 /*jobvl_len=*/ 1, /*jobvr_len=*/ 1);
+ 
+     if (*info < 0) {
+         IGRAPH_ERROR("Cannot calculate eigenvalues (dgeev).", IGRAPH_ELAPACK);
+@@ -938,7 +942,9 @@ igraph_error_t igraph_lapack_dgeevx(igraph_lapack_dgeevx_balance_t balance,
+                   ilo, ihi, VECTOR(*myscale), abnrm,
+                   rconde ? VECTOR(*rconde) : &dummy,
+                   rcondv ? VECTOR(*rcondv) : &dummy,
+-                  VECTOR(work), &lwork, VECTOR(iwork), info);
++                  VECTOR(work), &lwork, VECTOR(iwork), info,
++                  /*balanc_len=*/ 1, /*jobvl_len=*/ 1, /*jobvr_len=*/ 1,
++                  /*sense_len=*/ 1);
+ 
+     lwork = (int) VECTOR(work)[0];
+     IGRAPH_CHECK(igraph_vector_resize(&work, lwork));
+@@ -950,7 +956,9 @@ igraph_error_t igraph_lapack_dgeevx(igraph_lapack_dgeevx_balance_t balance,
+                   ilo, ihi, VECTOR(*myscale), abnrm,
+                   rconde ? VECTOR(*rconde) : &dummy,
+                   rcondv ? VECTOR(*rcondv) : &dummy,
+-                  VECTOR(work), &lwork, VECTOR(iwork), info);
++                  VECTOR(work), &lwork, VECTOR(iwork), info,
++                  /*balanc_len=*/ 1, /*jobvl_len=*/ 1, /*jobvr_len=*/ 1,
++                  /*sense_len=*/ 1);
+ 
+     if (*info < 0) {
+         IGRAPH_ERROR("Cannot calculate eigenvalues (dgeev).", IGRAPH_ELAPACK);
+diff --git a/src/vendor/cigraph/src/linalg/lapack_internal.h b/src/vendor/cigraph/src/linalg/lapack_internal.h
+index b95885d..7b7333d 100644
+--- a/src/vendor/cigraph/src/linalg/lapack_internal.h
++++ b/src/vendor/cigraph/src/linalg/lapack_internal.h
+@@ -144,38 +144,41 @@ __BEGIN_DECLS
+     #define igraph_dlamc5_  dlamc5_
+ #endif
+ 
+-int igraphdgetrf_(int *m, int *n, double *a, int *lda, int *ipiv,
++void igraphdgetrf_(int *m, int *n, double *a, int *lda, int *ipiv,
+                   int *info);
+-int igraphdgetrs_(char *trans, int *n, int *nrhs, double *a,
++void igraphdgetrs_(char *trans, int *n, int *nrhs, double *a,
+                   int *lda, int *ipiv, double *b, int *ldb,
+-                  int *info);
+-int igraphdgesv_(int *n, int *nrhs, double *a, int *lda,
++                  int *info, long int trans_len);
++void igraphdgesv_(int *n, int *nrhs, double *a, int *lda,
+                  int *ipiv, double *b, int *ldb, int *info);
+ 
+ double igraphdlapy2_(double *x, double *y);
+ 
+-int igraphdsyevr_(char *jobz, char *range, char *uplo, int *n,
++void igraphdsyevr_(char *jobz, char *range, char *uplo, int *n,
+                   double *a, int *lda, double *vl,
+                   double *vu, int * il, int *iu,
+                   double *abstol, int *m, double *w,
+                   double *z, int *ldz, int *isuppz,
+                   double *work, int *lwork, int *iwork,
+-                  int *liwork, int *info);
++                  int *liwork, int *info, long int jobz_len,
++                  long int range_len, long int uplo_len);
+ 
+-int igraphdgeev_(char *jobvl, char *jobvr, int *n, double *a,
++void igraphdgeev_(char *jobvl, char *jobvr, int *n, double *a,
+                  int *lda, double *wr, double *wi,
+                  double *vl, int *ldvl, double *vr, int *ldvr,
+-                 double *work, int *lwork, int *info);
++                 double *work, int *lwork, int *info, long int jobvl_len,
++                 long int jobvr_len);
+ 
+-int igraphdgeevx_(char *balanc, char *jobvl, char *jobvr, char *sense,
++void igraphdgeevx_(char *balanc, char *jobvl, char *jobvr, char *sense,
+                   int *n, double *a, int *lda, double *wr,
+                   double *wi, double *vl, int *ldvl,
+                   double *vr, int *ldvr, int *ilo, int *ihi,
+                   double *scale, double *abnrm,
+                   double *rconde, double *rcondv,
+-                  double *work, int *lwork, int *iwork, int *info);
++                  double *work, int *lwork, int *iwork, int *info, long int balanc_len,
++                  long int jobvl_len, long int jobvr_len, long int sense_len);
+ 
+-int igraphdgehrd_(int *n, int *ilo, int *ihi, double *A, int *lda,
++void igraphdgehrd_(int *n, int *ilo, int *ihi, double *A, int *lda,
+                   double *tau, double *work, int *lwork,
+                   int *info);
+ 

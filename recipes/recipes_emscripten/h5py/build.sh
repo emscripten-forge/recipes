@@ -1,11 +1,4 @@
 
-# add ad-hoc code to load the shared libs
-tmp_file="$(mktemp)"
-printf 'import ctypes;ctypes.CDLL("/lib/libhdf5.so");ctypes.CDLL("/lib/libhdf5_hl.so")\n' > "$tmp_file"
-cat "h5py/__init__.py" >> "$tmp_file"
-mv "$tmp_file" "h5py/__init__.py"
-
-
 # remove the emcc symlink in the $BUILD_PREFIX/bin
 rm $BUILD_PREFIX/bin/emcc
 
@@ -30,7 +23,7 @@ export H5PY_DIRECT_VFD='0'
 export HDF5_MPI=OFF
 
 # Explitly set HDF5 version
-export HDF5_VERSION=1.12.3
+export HDF5_VERSION=1.14.6
 
 ${PYTHON} -m pip install . -vvv
 

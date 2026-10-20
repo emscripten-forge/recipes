@@ -1,0 +1,35 @@
+Skip VERSION/SOVERSION under emscripten so libproj.so has no version suffix.
+
+Based on what we have inferred so far (deeper research may still be needed):
+wasm appears to have no SONAME equivalent of ELF's DT_SONAME, so a shared
+library cannot declare a canonical name independent of its filename. wasm-ld
+seems to record the input filename it resolved via -l<name> / -L<path> search
+into the consumer's dylink.0 NEEDED list. When SOVERSION is stamped, CMake
+produces libproj.so.25 and consumers linking through that symlink chain end
+up with NEEDED "libproj.so.25", while consumers linked by bare -lproj may
+record NEEDED "libproj.so". Emscripten's runtime module registry (LDSO in
+library_dylink.js) appears to key side modules by NEEDED string with no path
+normalization or version dedup, so the two strings load two copies of the
+same library.
+
+Skipping SOVERSION on emscripten forces one canonical name across the graph.
+
+--- a/src/lib_proj.cmake
++++ b/src/lib_proj.cmake
+@@ -555,9 +555,11 @@
+     INSTALL_NAME_DIR ${PROJ_INSTALL_NAME_DIR}
+     CLEAN_DIRECT_OUTPUT 1)
+ else()
+-  set_target_properties(proj
+-    PROPERTIES
+-    VERSION "${PROJ_BUILD_VERSION}"
+-    SOVERSION "${PROJ_SOVERSION}"
+-    CLEAN_DIRECT_OUTPUT 1)
++  if(NOT EMSCRIPTEN)
++    set_target_properties(proj
++      PROPERTIES
++      VERSION "${PROJ_BUILD_VERSION}"
++      SOVERSION "${PROJ_SOVERSION}"
++      CLEAN_DIRECT_OUTPUT 1)
++  endif()
+ endif()

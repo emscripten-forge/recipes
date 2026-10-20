@@ -1,0 +1,72 @@
+context:
+  version: 0.7.4
+  name: r-clock
+
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 13763c5da610f2db016d2af16d83aecc76b411738aabd750188222a28a2397ca
+
+build:
+  number: 0
+  script: $R CMD INSTALL $R_ARGS .
+  skip: ${{ r_base == '4.6.0' }} 
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('c') }}  
+  - r-cli >=3.6.4
+  - r-cpp11 >=0.5.2
+  - r-lifecycle >=1.0.4
+  - r-rlang >=1.1.5
+  - r-tzdb >=0.5.0
+  - r-vctrs >=0.6.5
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli >=3.6.4
+  - r-cpp11 >=0.5.2
+  - r-lifecycle >=1.0.4
+  - r-rlang >=1.1.5
+  - r-tzdb >=0.5.0
+  - r-vctrs >=0.6.5
+  run:
+  - r-cli >=3.6.4
+  - r-cpp11 >=0.5.2
+  - r-lifecycle >=1.0.4
+  - r-rlang >=1.1.5
+  - r-tzdb >=0.5.0
+  - r-vctrs >=0.6.5
+  
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}.so
+- script: run_r_test 
+  files:
+    recipe:
+    - test_import.R
+  requirements:
+    build:
+    - r-wasm-tester
+about:
+  homepage: https://cran.r-project.org/package=clock
+  license: MIT
+  license_file: LICENSE
+  summary:  |
+    Provides a comprehensive library for date-time manipulations 
+    using a new family of orthogonal date-time classes 
+    (durations, time points, zoned-times, and calendars) that partition responsibilities 
+    so that the complexities of time zones are only considered when they are really needed. 
+    Capabilities include: date-time parsing, formatting, arithmetic, 
+    extraction and updating of components, and rounding.
+
+extra:
+  recipe-maintainers:
+    - DerThorsten

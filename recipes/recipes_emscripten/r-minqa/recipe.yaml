@@ -1,0 +1,57 @@
+context:
+  name: r-minqa
+  version: 1.2.8
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name[2:] }}_${{ version }}.tar.gz
+  sha256: 5941e4b9b01978fc6d9fe24e6ca60cca66883fe9fa6ff3cbfa32aa1ac9db5467
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base == '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base_${{ target_platform }} ==${{ r_base }}
+  - ${{ compiler('cxx') }}
+  - ${{ compiler('fortran') }}
+  - r-rcpp
+  host:
+  - libflang
+  - r-base ==${{ r_base }}
+  - r-rcpp
+  run:
+  - r-rcpp
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name[2:] }}/libs/${{ name[2:] }}
+- script: run_r_test test_minqa.R
+  files:
+    recipe:
+    - test_minqa.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: http://optimizer.r-forge.r-project.org/
+  license: GPL-2.0-only
+  license_file: GPL-2
+  summary: Derivative-Free Optimization Algorithms by Quadratic Approximation
+  description: |
+    Derivative-free optimization by quadratic approximation based on an
+    interface to Fortran implementations by M. J. D. Powell.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

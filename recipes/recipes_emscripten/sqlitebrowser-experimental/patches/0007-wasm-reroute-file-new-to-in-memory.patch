@@ -1,0 +1,23 @@
+"File > New Database" on wasm triggers a browser save-file dialog that
+downloads an empty file and hands DB Browser a filename it can't
+actually write back to, leaving the app in a "no database file opened"
+state. DB Browser already has a fileNewInMemoryDatabase() action that
+works correctly here — reroute fileNew() to it on wasm so both menu
+entries behave the same and the user can't fall into the broken path.
+
+--- a/src/MainWindow.cpp
++++ b/src/MainWindow.cpp
+@@ -600,6 +600,13 @@ void MainWindow::activateFields(bool enable)
+
+ void MainWindow::fileNew()
+ {
++#ifdef __EMSCRIPTEN__
++    // Reroute to in-memory: the desktop "pick a filename, sqlite3 creates it"
++    // flow doesn't work in the browser because save-file-picker returns a
++    // one-shot download handle, not a writable filesystem path.
++    fileNewInMemoryDatabase(/* open_create_dialog */ true);
++    return;
++#endif
+     QString fileName = FileDialog::getSaveFileName(
+                            CreateDatabaseFile,
+                            this,
