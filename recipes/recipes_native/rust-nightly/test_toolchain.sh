@@ -23,7 +23,9 @@ test -x "${SYSROOT}/lib/rustlib/${HOST}/bin/gcc-ld/wasm-ld"
 
 # Link a cdylib for the new target with the package's own defaults: this
 # exercises the wasm64 std, the linker, and the target's link arguments.
-SMOKE_SRC="$(cd "$(dirname "$0")" && pwd)/tests/smoke.rs"
+# rattler-build runs the test with the recipe test files as the working
+# directory, so this is a plain relative path; $0 is its generated wrapper.
+SMOKE_SRC=tests/smoke.rs
 
 rustc --crate-type=cdylib -O "${SMOKE_SRC}" \
     --target wasm64-unknown-emscripten -Cpanic=abort -o /tmp/smoke.wasm
