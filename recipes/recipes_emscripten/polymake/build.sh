@@ -178,6 +178,8 @@ rm -f "${INSTALL_ARCH}/shared"
 rm -f "${INSTALL_ARCH}"/lib/*
 rm -rf "${INSTALL_ARCH}/perlx"
 
+mkdir -p "${PREFIX}/bin/polymake"
+
 # Pack polymake rules, Perl libraries, and Singular resources into the WASM filesystem image.
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
     "${PREFIX}/bin/polymake/polymake.data" \
@@ -206,8 +208,6 @@ em++ -c "${RECIPE_DIR}/polymake_wasm_main.cc" -o polymake_wasm_main.o \
     -DPOLYMAKE_WASM_PERL5LIB="\"${WASM_PERL5LIB}\"" \
     ${POLYMAKE_CXXFLAGS} \
     -I"${PREFIX}/include"
-
-mkdir -p "${PREFIX}/bin/polymake"
 
 # Keep all application objects: their static constructors register polymake clients before main().
 em++ -o "${PREFIX}/bin/polymake/polymake.js" \
