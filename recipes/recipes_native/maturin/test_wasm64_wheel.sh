@@ -18,7 +18,7 @@ cp -r "${TESTS_DIR}/pyo3test" "${TESTS_DIR}/sysconfig" "${WORK}/"
 cd pyo3test
 PYO3_CROSS=1 \
 PYO3_CROSS_LIB_DIR="${WORK}/sysconfig" \
-PYO3_CROSS_PYTHON_VERSION=3.13 \
+PYO3_CROSS_PYTHON_VERSION=3.14 \
 PYO3_CROSS_PYTHON_IMPLEMENTATION=CPython \
 maturin build --release --target wasm64-unknown-emscripten
 
