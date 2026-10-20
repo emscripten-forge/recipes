@@ -57,6 +57,11 @@ sed -i \
   's|mathicgb mathic memtailor||g' \
   ../../Macaulay2/e/CMakeLists.txt
 
+# pzinn's fork links CoCoALib by bare name (-lcocoa); point it at the packaged static library.
+sed -i \
+  "s|PUBLIC cocoa)|PUBLIC $PREFIX/lib/libcocoa.a)|" \
+  ../../Macaulay2/e/CMakeLists.txt
+
 sed -i '/quadmath/d' \
   ../../Macaulay2/d/CMakeLists.txt
 
@@ -395,7 +400,9 @@ M2_D_ORDER=(
   errio
   parse
   expr
+  basic
   stdio
+  util
   stdiop
   err
   gmp1
@@ -404,9 +411,7 @@ M2_D_ORDER=(
   lex
   parser
   binding
-  basic
   common
-  util
   convertr
   struct
   classes
