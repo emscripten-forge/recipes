@@ -28,19 +28,24 @@ build:
 requirements:
   build:
   - ${{ compiler("c") }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - setuptools
   - pip
   - cython
+  - pkg-config
   host:
-  - python
-  - libxml2-static >=2.15
-  - libxslt
+  - python-dev
+  - libiconv-static
+  - libxml2-static
+  - libxslt-static
   - zlib-static
-  - libiconv-static >=1.18
   run:
   - python
+  - ${{ pin_compatible("libiconv-static", lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible("libxml2-static", lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible("libxslt-static", lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible("zlib-static", lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - script: pytester
@@ -52,6 +57,10 @@ tests:
     - pytester
     run:
     - pytester-run
+- script: generic-testing --allow-pthread  # statically linked libxml2 exports xmlInitThreads/xmlCleanupThreads as ABI stubs even with LIBXML2_WITH_THREADS=OFF; no actual pthread activity.
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
