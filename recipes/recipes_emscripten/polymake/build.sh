@@ -178,17 +178,17 @@ rm -f "${INSTALL_ARCH}/shared"
 rm -f "${INSTALL_ARCH}"/lib/*
 rm -rf "${INSTALL_ARCH}/perlx"
 
-mkdir -p "${PREFIX}/bin/polymake"
+mkdir -p "${PREFIX}/bin/polymake-wasm"
 
 # Pack polymake rules, Perl libraries, and Singular resources into the WASM filesystem image.
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-    "${PREFIX}/bin/polymake/polymake.data" \
+    "${PREFIX}/bin/polymake-wasm/polymake.data" \
     --preload "${INSTALL_TOP}@/polymake/share" \
     --preload "${INSTALL_ARCH}@/polymake/lib" \
     --preload "${PREFIX}/lib/perl5@/polymake/perl5" \
     --preload "${PREFIX}/share/singular@/polymake/singular" \
     --exclude '*/pod/*' '*.pod' '*/demo/*' '*.a' \
-    --js-output="${PREFIX}/bin/polymake/polymake.data.js"
+    --js-output="${PREFIX}/bin/polymake-wasm/polymake.data.js"
 
 # Recreate the target Perl search path inside the mounted WASM filesystem.
 WASM_PERL5LIB=""
@@ -210,7 +210,7 @@ em++ -c "${RECIPE_DIR}/polymake_wasm_main.cc" -o polymake_wasm_main.o \
     -I"${PREFIX}/include"
 
 # Keep all application objects: their static constructors register polymake clients before main().
-em++ -o "${PREFIX}/bin/polymake/polymake.js" \
+em++ -o "${PREFIX}/bin/polymake-wasm/polymake.js" \
     polymake_wasm_main.o \
     -Wl,--whole-archive \
     "${APP_ARCHIVES[@]}" \
@@ -239,4 +239,4 @@ LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"
 mkdir -p "${LICENSE_DIR}"
 install -Dm644 "${SRC_DIR}/COPYING" "${LICENSE_DIR}/COPYING"
 
-cp -a "$SRC_DIR"/web/* "$PREFIX/bin/polymake/"
+cp -a "$SRC_DIR"/web/* "$PREFIX/bin/polymake-wasm/"
