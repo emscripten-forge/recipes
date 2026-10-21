@@ -11,18 +11,18 @@ toolchain it uses), and one with the JVM:
 CH="-c https://repo.prefix.dev/emscripten-forge-4x -c conda-forge"
 micromamba create -y -n env_tools $CH openjdk-tools
 micromamba activate env_tools
-micromamba create -y -p ./env_wasm --platform emscripten-wasm32 $CH openjdk21
+micromamba create -y -p ./jdk21env --platform emscripten-wasm32 $CH openjdk21
 ```
 
 Link your application into a page:
 
 ```bash
-openjdk21-wasm-link --prefix ./env_wasm -o out/app.html --app path/to/app.jar --arg -jar --arg /app/app.jar
+openjdk21-wasm-link --prefix ./jdk21env -o out/app.html --app path/to/app.jar --arg -jar --arg /app/app.jar
 ```
 
 Packing a multi-file jar or a directory is supported, for example
 ```bash
-openjdk21-wasm-link --prefix ./env_wasm -o out/multifilejar.html --app ./multifilejardir --arg -jar --arg /app/multifilejardir/jarsdir/jarexecutable.jar
+openjdk21-wasm-link --prefix ./jdk21env -o out/multifilejar.html --app ./multifilejardir --arg -jar --arg /app/multifilejardir/jarsdir/jarexecutable.jar
 ```
 
 | Option | Description |
@@ -73,7 +73,7 @@ The `openjdk21` package also contains the runtime already linked, like
 these files into one directory on your web server:
 
 ```bash
-ls env_wasm/share/openjdk21-wasm/
+ls jdk21env/share/openjdk21-wasm/
 # openjdk21-web.js  openjdk21.js  openjdk21.wasm  openjdk21-jre.json
 # openjdk21-jre.data.gz  coi-serviceworker.js  ...
 ```
@@ -106,7 +106,7 @@ and `module.closeStdin()` on the module the returned promise gives).
 Node.js, like the `java` command (headless AWT; the host's files are visible):
 
 ```bash
-OPENJDK21_WASM_HOME=./env_wasm/share/openjdk21-wasm openjdk21-java -cp classes Main
+OPENJDK21_WASM_HOME=./jdk21env/share/openjdk21-wasm openjdk21-java -cp classes Main
 ```
 
 ## openjdk8 recipe documentation:
