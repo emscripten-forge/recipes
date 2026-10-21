@@ -1,4 +1,4 @@
-# JAVA
+# JAVA 
 
 We provide `openjdk21` and `openjdk8` packages in emscripten-forge that allow running unmodified `.jar` executables and java applets in the browser, without a Java server.
 
