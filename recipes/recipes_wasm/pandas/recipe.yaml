@@ -1,0 +1,74 @@
+context:
+  name: pandas
+  version: 3.0.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/pandas-dev/pandas/releases/download/v${{ version }}/pandas-${{ version }}.tar.gz
+  sha256: 66b07ef7315a31bfe1089cd3d71a7de781c9dca986762d0b4fe7c0ef17465d10
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy
+  - cython
+  - pip
+  - versioneer
+  - tomli
+  - meson-python
+  - pkg-config
+  host:
+  - python-dev
+  - numpy
+  run:
+  - numpy
+  - python-dateutil
+  - pytz
+  - python-tzdata
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_pandas.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: http://pandas.pydata.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: |
+    Powerful data structures for data analysis, time series, and statistics
+  documentation: https://pandas.pydata.org/docs/
+  repository: https://github.com/pandas-dev/pandas
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
