@@ -1,7 +1,8 @@
 context:
   name: openjdk8
   version: "jdk8u504-ga"
-  support_version: "0.1.0"
+  support_version: "0.2.0"
+  icedtea_web_version: "1.8.8"
 
 package:
   name: ${{ name }}
@@ -27,10 +28,15 @@ source:
       # its wide KeyCode narrowed in the modifier map XToolkit reads
       - patches/0006-awt-x11wasm-struct-layouts-and-keycode.patch
   # build support: compiler wrapper, browser runtime, link and JRE staging
-  # scripts, launcher and applet loader
+  # scripts, launcher, applet and Web Start loader
   - url: https://github.com/wangyenshu/openjdk8-support/archive/refs/tags/v${{ support_version }}.tar.gz
-    sha256: 37d3100137e676381815655f9cfe4401d08de87041548b16d8b610e8ca1dcd77
+    sha256: 0fd7ea5cc51819e5d0a3d59de68a5030870c8e925ebcf88367726eaa16179403
     target_directory: support
+  # Java Web Start: IcedTea-Web's NetX (javaws), built by
+  # support/javaws/build-javaws.sh into openjdk8-javaws.jar
+  - url: https://github.com/AdoptOpenJDK/IcedTea-Web/archive/refs/tags/icedtea-web-${{ icedtea_web_version }}.tar.gz
+    sha256: f4203a605a3c9c50acdcc6eef4a366b9fdd36d95edcd76bcbfede01107cb5fe6
+    target_directory: icedtea-web
 
 build:
   number: 1
@@ -84,11 +90,14 @@ tests:
         - share/openjdk8-wasm/openjdk8-jre.json
         - share/openjdk8-wasm/openjdk8-jre.data.gz
         - share/openjdk8-wasm/openjdk8-web.js
+        - share/openjdk8-wasm/openjdk8-javaws.jar
 
 about:
   homepage: https://openjdk.org/projects/jdk8u/
   repository: https://github.com/openjdk/jdk8u
-  license: GPL-2.0-only WITH Classpath-exception-2.0 AND Bitstream-Vera AND MIT
+  # OpenJDK; DejaVu fonts; support code; IcedTea-Web (openjdk8-javaws.jar:
+  # NetX is LGPL-2.1+, newer files GPL-2.0 with the Classpath exception)
+  license: GPL-2.0-only WITH Classpath-exception-2.0 AND Bitstream-Vera AND MIT AND LGPL-2.1-or-later
   license_file:
     - LICENSE
     - ASSEMBLY_EXCEPTION
@@ -100,6 +109,9 @@ about:
     # libffi (libffi-jspi), linked into openjdk8.wasm; build.sh copies it
     # from the host prefix
     - libffi-jspi/LICENSE
+    # IcedTea-Web (openjdk8-javaws.jar)
+    - icedtea-web/LICENSE
+    - icedtea-web/COPYING
   summary: OpenJDK 8 Java runtime for WebAssembly, with AWT/Swing and applets in the browser
   description: |
     The OpenJDK 8 Java runtime (HotSpot Zero interpreter and the complete
@@ -115,11 +127,17 @@ about:
     with WebAssembly JSPI is needed (Chrome/Edge 137 or later), but no
     SharedArrayBuffer or cross-origin isolation.
 
+    Java Web Start: following a link to a .jnlp file on such a page (or
+    calling OpenJDK8.runJNLP(url)) runs the application with IcedTea-Web's
+    javaws, share/openjdk8-wasm/openjdk8-javaws.jar, which is only fetched
+    then. Its security dialogs work as on the desktop.
+
     openjdk8-java (from openjdk-tools) runs Java programs under Node.js 25 or
-    later (headless AWT), like the java command.
+    later (headless AWT), like the java command, and openjdk8-javaws runs
+    JNLP files.
 
     Installed files: share/openjdk8-wasm/{openjdk8.js, openjdk8.wasm, openjdk8-jre.json,
-    openjdk8-jre.data.gz, openjdk8-web.js}.
+    openjdk8-jre.data.gz, openjdk8-web.js, openjdk8-javaws.jar}.
     Not included: the JDK tools (javac, ...), JIT compilers, debugging
     (JDWP), process creation, sockets other than http(s) via fetch.
 

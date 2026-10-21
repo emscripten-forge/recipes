@@ -31,6 +31,15 @@ grep -q 'ALL TESTS PASSED' hello.log
 node out/node/jvm.js /app/src/Hi.java x | tee hi.log
 grep -q 'compiled in wasm: Point\[x=4, y=16\] args=x' hi.log
 
+# the prelinked runtime module (share/openjdk21-wasm/openjdk21.js), under
+# node through openjdk21-java (from openjdk-tools)
+export OPENJDK21_WASM_HOME="$PREFIX/share/openjdk21-wasm"
+openjdk21-java -version
+openjdk21-java -cp classes Hello | tee hello-module.log
+grep -q 'ALL TESTS PASSED' hello-module.log
+openjdk21-java tests/Hi.java y | tee hi-module.log
+grep -q 'compiled in wasm: Point\[x=4, y=16\] args=y' hi-module.log
+
 # browser build with the X11 toolkit
 "${LINK[@]}" -o out/web/swing.html --app classes@/app/classes \
   --arg -cp --arg /app/classes --arg SwingDemo
