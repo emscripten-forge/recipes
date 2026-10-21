@@ -1,6 +1,6 @@
 context:
   version: "21.0.10"
-  kit_version: "0.1.0"
+  kit_version: "0.2.0"
 
 package:
   name: openjdk21
@@ -20,10 +20,11 @@ source:
       - patches/0003-java-base-natives-for-the-linux-class-library.patch
       # jdk.attach off, jdk.net / jdk.management natives on
       - patches/0004-jdk-modules-for-emscripten.patch
-  # link kit: launcher, page shell, fontconfig.properties (the link script
-  # itself is in openjdk-tools)
+  # link kit: launcher, page shell, fontconfig.properties, web loader (the
+  # link script itself is installed by openjdk-tools; here it links the
+  # runtime module)
   - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ kit_version }}.tar.gz
-    sha256: 2ef032b39bc720960d1dfade80bcf0cc292ad4f1f315a6c019dbcf7d13c6a13c
+    sha256: 91cad383112766564615c91617f9511a04d627d0269d17ee85c36034c5c940e3
     target_directory: kit
 
 build:
@@ -78,6 +79,12 @@ tests:
         - lib/wasm-native/libfontmanager.a
         - lib/wasm-native/libmanagement_ext.a
         - share/openjdk21-wasm/jvm-main.c
+        - share/openjdk21-wasm/openjdk21.js
+        - share/openjdk21-wasm/openjdk21.wasm
+        - share/openjdk21-wasm/openjdk21-jre.json
+        - share/openjdk21-wasm/openjdk21-jre.data.gz
+        - share/openjdk21-wasm/openjdk21-web.js
+        - share/openjdk21-wasm/coi-serviceworker.js
   - script:
       - bash test_jvm.sh
     requirements:
@@ -102,6 +109,15 @@ about:
 
     openjdk21-wasm-link (from openjdk-tools) links a program for the browser or node:
       openjdk21-wasm-link --prefix path/to/env_wasm -o app.html --app app.jar --arg -jar --arg /app/app.jar
+
+    The runtime is also included linked, like openjdk8's, in
+    share/openjdk21-wasm/{openjdk21.js, openjdk21.wasm, openjdk21-jre.json,
+    openjdk21-jre.data.gz, openjdk21-web.js, coi-serviceworker.js}: copy these
+    to a web server and start Java with OpenJDK21.run({ args, files, root })
+    from openjdk21-web.js. Java threads are Web Workers sharing memory, so the
+    page must be cross-origin isolated; coi-serviceworker.js arranges that on
+    servers that do not send the headers. openjdk21-java (from openjdk-tools)
+    runs the same runtime under node.
   license: GPL-2.0-only WITH Classpath-exception-2.0 AND MIT AND Bitstream-Vera
   license_file:
     - LICENSE

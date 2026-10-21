@@ -215,3 +215,18 @@ cp "$SRC_DIR"/kit/{jvm-main.c,shell.html,x11-display-share.c,coi-serviceworker.j
 mkdir -p "$KIT_DIR/include"
 cp src/java.base/share/native/include/jni.h \
    src/java.base/unix/native/include/jni_md.h "$KIT_DIR/include/"
+
+# ---------------------------------------------------------------------------
+# 7. web bundle, like openjdk8's: the runtime linked once as a module
+#    (openjdk21.js/openjdk21.wasm) and the JDK image it loads into its file
+#    system (openjdk21-jre.json/openjdk21-jre.data.gz), for openjdk21-web.js
+#    in pages (with coi-serviceworker.js, copied above) and openjdk21-java
+#    under node. Linked from the archives installed above.
+# ---------------------------------------------------------------------------
+WEB_OUT="$SRC_DIR/_web"
+rm -rf "$WEB_OUT" && mkdir -p "$WEB_OUT"
+bash "$SRC_DIR/kit/openjdk21-wasm-link" --prefix "$PREFIX" --module -o "$WEB_OUT/openjdk21.js"
+bash "$SRC_DIR/kit/stage-jre.sh" "$JDK_IMAGE_DIR" "$SRC_DIR/_web_jre"
+python3 "$SRC_DIR/kit/pack-jre.py" "$SRC_DIR/_web_jre" "$WEB_OUT/openjdk21-jre" --root /java --gzip
+install -m 644 "$WEB_OUT"/openjdk21.{js,wasm} "$WEB_OUT"/openjdk21-jre.{json,data.gz} \
+               "$SRC_DIR/kit/web/openjdk21-web.js" "$KIT_DIR/"
