@@ -76,3 +76,15 @@ cp "${PREFIX}/bin/Singular.js" "${PREFIX}/bin/singular/Singular.js"
 cp "${PREFIX}/bin/Singular.wasm" "${PREFIX}/bin/singular/Singular.wasm"
 cp "${PREFIX}/bin/Singular.data" "${PREFIX}/bin/singular/Singular.data"
 cp "${PREFIX}/bin/Singular.data.js" "${PREFIX}/bin/singular/Singular.data.js"
+
+# Manual for `help` (singular.info, singular.idx), built from doc/ without
+# running the examples. libparse runs under node; the trailing "1;" lets perl
+# load its output when the last help checksum is 0.
+emmake make -C Singular libparse LDFLAGS="-L${PREFIX}/lib -sNODERAWFS=1"
+printf '#!/bin/sh\nnode "%s/Singular/libparse" "$@" && echo "1;"\n' "${SRC_DIR}" > Singular/libparse-node
+chmod +x Singular/libparse-node
+make -C doc -f Makefile-docbuild singular.idx LIBPARSE="${SRC_DIR}/Singular/libparse-node" \
+  DOC2TEX_EXAMPLE_EXCLUSIONS=-no_ex TEXI2HTML_OPTS="-init_file t2h_singular.init -short_ext -subdir html"
+mkdir -p "${PREFIX}/share/info" "${PREFIX}/share/singular"
+cp doc/singular.info "${PREFIX}/share/info/"
+cp doc/singular.idx "${PREFIX}/share/singular/"
