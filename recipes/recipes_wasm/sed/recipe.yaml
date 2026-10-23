@@ -1,0 +1,46 @@
+context:
+  name: sed
+  version: '4.10'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.xz
+  sha256: b8e72182b2ec96a3574e2998c47b7aaa64cc20ce000d8e9ac313cc07cecf28c7
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - make
+
+tests:
+- package_contents:
+    files:
+    - bin/sed.js
+    - bin/sed.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/sed.js --version | head -1)
+    if [[ ! "$OUTPUT" =~ "(GNU sed) ${{ version }}" ]]; then
+      echo "Incorrect output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-3.0-only
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+  - ianthomas23

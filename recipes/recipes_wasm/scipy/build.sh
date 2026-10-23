@@ -17,4 +17,4 @@ ${PYTHON} -m pip install . ${PIP_ARGS} --no-build-isolation \
     -Csetup-args="-Duse-pythran=false" \
     -Cbuild-dir="_build" \
     -Ccompile-args="--verbose" \
-    -Cinstall-args="--tags=runtime,python-runtime,tests"
+    -Cinstall-args="--tags=runtime,python-runtime,devel,tests"

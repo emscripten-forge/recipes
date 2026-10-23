@@ -1,0 +1,103 @@
+context:
+  version: 0.11.2
+  name: xeus-r
+  build_variant_prefix: ${{ "static_libpython_r" if r_main_module_static_libpython == "1" else "r" }}
+  r_build_string: ${{ r_base | version_to_buildstring }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/xeus-r/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 48ac9c46800f46b8263e3f27c53eb1568a35297fb61a8abbb359ce548493025a
+  patches:
+  - patches/0001-Set-python-libs-from-env.patch
+
+build:
+  number: 0
+  # Dependencies not yet available for R 4.6.0 on conda-forge
+  skip: ${{ r_base >= '4.6.0' }}
+  # Explicit build strings so downstream recipes can require the static-libpython version
+  # variant, e.g. `xeus-r * *static_libpython*`.
+  string: ${{ build_variant_prefix ~ r_build_string ~ "h" ~ (hash ~ "_" ~ build_number) }}
+
+  # Pass the variant into build.sh (not inferred from the script by rattler-build).
+  script:
+    file: build.sh
+    env:
+      R_MAIN_MODULE_STATIC_LIBPYTHON: ${{ r_main_module_static_libpython }}
+
+
+  variant:
+    # Ensure rattler-build includes this key in the variant matrix.
+    use_keys:
+    - r_main_module_static_libpython
+    # Deprioritize the static-libpython variant so the default build stays
+    # preferred by the solver (via down_prioritize_variant / track_features).
+    down_prioritize_variant: ${{ 1 if r_main_module_static_libpython == "1" else 0 }}
+
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - make
+  # Dependencies to build hera
+  - cross-r-base ==${{ r_base }}
+  - r-cli
+  - r-evaluate
+  - r-glue
+  - r-IRdisplay
+  - r-R6
+  - r-repr
+  - pkg-config
+  host:
+  - r-base ==${{ r_base }}
+  - nlohmann_json
+  - nlohmann_json-abi
+  - xeus >=6,<7
+  - xeus-lite-static >=5,<6
+  - pcre2-static
+  - libzlib-static
+  - libflang-rt-static
+  - liblzma-static
+  - libbzip2-static
+  - libiconv-static
+  - if: r_main_module_static_libpython == "1"
+    then:
+    - python-dev
+  run:
+  - if: r_main_module_static_libpython == "1"
+    then:
+    - python
+    - r-main-module-abi * *static_libpython*
+    else:
+    - r-main-module-abi *vanilla*
+  - r-cli
+  - r-evaluate
+  - r-glue
+  - r-IRdisplay
+  - r-jsonlite
+  - r-R6
+  - r-repr
+  - r-rlang
+
+tests:
+- package_contents:
+    files:
+    - bin/xr.js
+    - bin/xr.wasm
+
+about:
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: Jupyter kernel for the R programming language
+  homepage: https://github.com/jupyter-xeus/xeus-r
+  documentation: https://xeus-r.readthedocs.io
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491
