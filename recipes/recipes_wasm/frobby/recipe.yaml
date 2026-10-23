@@ -1,0 +1,85 @@
+context:
+  name: frobby
+  version: 0.9.9
+
+
+
+source:
+  url: https://github.com/Macaulay2/frobby/releases/download/v${{ version }}/frobby_v${{ version }}.tar.gz
+  sha256: 4c072c2ee208d853b7173921d45cc7d39297cf3f7fd9c8e7da8e482da3b51aa3
+
+build:
+  number: 0
+
+outputs:
+
+  - package: 
+      name: libfrobby-static
+      version: ${{ version }}
+    
+    requirements:
+      build:
+      - autoconf
+      - automake
+      - libtool
+      - make
+      - ${{ compiler('cxx') }}
+      host:
+      - gmp-static
+      run:
+      - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+    build:
+      script: build_lib.sh
+      files:
+        include:
+        - lib/libfrobby.a
+        - include/frobby.h
+    tests:
+    - package_contents:
+        files:
+        - lib/libfrobby.a
+        - include/frobby.h
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
+
+
+  - package:
+      name: frobby
+      version: ${{ version }}
+    build:
+      script: build_bin.sh
+      files:
+        exclude:
+        - lib/libfrobby.a
+        - include/frobby.h
+    requirements:
+      build:
+      - autoconf
+      - automake
+      - libtool
+      - make
+      - ${{ compiler('cxx') }}
+      host:
+      - gmp-static
+    tests:
+    - package_contents:
+        files:
+        - bin/frobby.wasm
+
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
+
+  
+about:
+  homepage: https://github.com/Macaulay2/frobby
+  license: GPL-2.0-only
+  license_file: COPYING
+  summary: Frobby is a software system and project for computations with monomial ideals.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
