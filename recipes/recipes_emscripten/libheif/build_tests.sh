@@ -6,6 +6,11 @@ export CFLAGS="$CFLAGS $EM_FORGE_CFLAGS_BASE -I${PREFIX}/include"
 export CXXFLAGS="$CXXFLAGS $EM_FORGE_CFLAGS_BASE -I${PREFIX}/include"
 export LDFLAGS="$LDFLAGS $EM_FORGE_LDFLAGS_BASE"
 
+# flags for embind (ie  -lembind)
+
+export LDFLAGS="$LDFLAGS -lembind"
+
+
 emcmake cmake -S tests -B build_tests \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
