@@ -16,7 +16,7 @@ source:
   target_directory: llvm-project
 
 build:
-  number: 0
+  number: 1
 
 outputs:
 - package:
@@ -92,7 +92,15 @@ outputs:
   - package_contents:
       site_packages:
       - jax
-  # TODO: Re-enable pytester after Emscripten's RTLD_GLOBAL promotion fix.
+  - script: pytester --mode worker
+    files:
+      recipe:
+      - test_jax.py
+    requirements:
+      build:
+      - pytester >=1.6.2
+      run:
+      - pytester-run
 
 about:
   homepage: https://github.com/jax-ml/jax
