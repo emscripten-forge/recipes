@@ -18,29 +18,41 @@ export CONFIG_LDFLAGS="\
     -sALLOW_MEMORY_GROWTH=1 \
     -sEXIT_RUNTIME=1 \
     -sEXPORTED_RUNTIME_METHODS=FS,ENV,PROXYFS,TTY \
+    -sEXPORTED_FUNCTIONS=_main,_raise \
     -sFORCE_FILESYSTEM=1 \
     -sMODULARIZE=1 \
     -sLZ4 \
     -lproxyfs.js \
     "
 
+# Specify both --build and --host so that configure runs in cross-compiling
+# mode, as conftest programs built with -sMODULARIZE=1 exit successfully
+# without running main(). The vim_cv_* values are the results of configure
+# checks that cannot be run when cross-compiling (see src/INSTALLx.txt).
 emconfigure ./configure \
+    --build=$BUILD \
+    --host=$HOST \
     --disable-nls \
     --disable-xattr \
-    --host=wasm32-unknown-emscripten \
     --with-compiledby=emscripten-forge \
     --with-features=normal \
     --with-tlib=tinfo \
     CFLAGS="$CFLAGS $CONFIG_CFLAGS" \
     LDFLAGS="$LDFLAGS $CONFIG_LDFLAGS" \
-    ac_cv_sizeof_int=4 \
-    ac_cv_sizeof_long=8 \
-    ac_cv_sizeof_off_t=4 \
-    ac_cv_sizeof_time_t=4 \
-    ac_cv_func_ftruncate=no
+    ac_cv_func_ftruncate=no \
+    vim_cv_getcwd_broken=no \
+    vim_cv_memmove_handles_overlap=yes \
+    vim_cv_stat_ignores_slash=yes \
+    vim_cv_terminfo=yes \
+    vim_cv_tgetent=zero \
+    vim_cv_timer_create_works=no \
+    vim_cv_toupper_broken=no \
+    vim_cv_uname_output=emscripten \
+    vim_cv_uname_r_output=unknown \
+    vim_cv_uname_m_output=$ARCH
 
 # Use /etc/vimrc for system vimrc file and turn some features on and off.
-sed -ri "s/.*(#define SYS_VIMRC_FILE\s.*)/\1/" src/feature.h
+sed -E -i.bak "s/.*(#define SYS_VIMRC_FILE[[:space:]].*)/\1/" src/feature.h && rm src/feature.h.bak
 echo "syntax on" > $VIMRC
 echo "set termguicolors" >> $VIMRC
 echo "set nobackup" >> $VIMRC
@@ -53,6 +65,7 @@ DESTDIR=$PWD make -C src installruntime
 emmake make EXEEXT=.js -j4 LDFLAGS=" \
     $LDFLAGS \
     $CONFIG_LDFLAGS \
+    --js-library $RECIPE_DIR/sync_poll_timeout.js \
     --preload-file $PWD/usr/local/share/vim/vim92@/usr/local/share/vim/vim92 \
     --exclude-file $PWD/usr/local/share/vim/vim92/lang \
     --exclude-file $PWD/usr/local/share/vim/vim92/doc \
