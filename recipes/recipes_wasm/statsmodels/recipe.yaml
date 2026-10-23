@@ -26,7 +26,7 @@ requirements:
   build:
   - ${{ compiler('c') }}
   - cython >=3.0.13
-  - cross-python_emscripten-wasm32
+  - cross-python_${{target_platform}}
   - python
   - meson-python
   - numpy
@@ -35,7 +35,7 @@ requirements:
   - pkg-config
   - setuptools_scm
   host:
-  - python
+  - python-dev
     # Do not add any constraint on numpy here to use global pinning
   - numpy
   - scipy >=1.13
@@ -50,21 +50,19 @@ requirements:
   - packaging
 
 tests:
-- script:
-  - echo "FIXME:"
-# The tests for v0.14.6 pass, they have been tested with xeus-python.
-# The following fails because of issues with the test environment.
-# See https://github.com/emscripten-forge/recipes/issues/4364
-
-# - script: pytester
-#   files:
-#     recipe:
-#     - test_statsmodels.py
-#   requirements:
-#     build:
-#     - pytester
-#     run:
-#     - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+- script: pytester
+  files:
+    recipe:
+    - test_statsmodels.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
 
 about:
   license: BSD-3-Clause
