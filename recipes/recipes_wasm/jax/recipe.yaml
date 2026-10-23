@@ -28,7 +28,7 @@ outputs:
     build:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
-    - python 3.14.*
+    - python ${{ python }}
     - pip
     - setuptools
     - wheel
@@ -37,7 +37,6 @@ outputs:
     - llvmdev ==${{ llvm_version }}
     - mlir ==${{ llvm_version }}
     host:
-    - python
     - python-dev
     - numpy >=2.1
     - llvm-static ==${{ llvm_version }}
@@ -45,7 +44,7 @@ outputs:
     - lld-static ==${{ llvm_version }}
     - mlir-python-bindings ==${{ llvm_version }}
     run:
-    - python
+    - python ${{ python }}
     - numpy >=2.0
     - scipy >=1.14
     - ml_dtypes >=0.5.0
@@ -93,15 +92,7 @@ outputs:
   - package_contents:
       site_packages:
       - jax
-  - script: pytester
-    files:
-      recipe:
-      - test_jax.py
-    requirements:
-      build:
-      - pytester
-      run:
-      - pytester-run
+  # TODO: Re-enable pytester after Emscripten's RTLD_GLOBAL promotion fix.
 
 about:
   homepage: https://github.com/jax-ml/jax
