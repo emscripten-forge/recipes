@@ -1,0 +1,87 @@
+context:
+  name: haven
+  version: 2.5.5
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 9482cd9c3760e1838acf687235317fed97fa6bf79219d3216f0ea447d4b1c9a5
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  - r-cli
+  - r-forcats
+  - r-hms
+  - r-lifecycle
+  - r-readr
+  - r-rlang
+  - r-tibble
+  - r-tidyselect
+  - r-vctrs
+  - r-cpp11
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli
+  - r-forcats
+  - r-hms
+  - r-lifecycle
+  - r-readr
+  - r-rlang
+  - r-tibble
+  - r-tidyselect
+  - r-vctrs
+  - r-cpp11
+  - libzlib-static
+  run:
+  - r-cli
+  - r-forcats
+  - r-hms
+  - r-lifecycle
+  - r-readr
+  - r-rlang
+  - r-tibble
+  - r-tidyselect
+  - r-vctrs
+  - r-cpp11
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://haven.tidyverse.org/
+  repository: https://github.com/tidyverse/haven
+  license: MIT
+  license_file: LICENSE
+  summary: Import and Export 'SPSS', 'Stata' and 'SAS' Files
+  description: |
+    Import foreign statistical formats into R via the embedded 'ReadStat' C
+    library, <https://github.com/WizardMac/ReadStat>.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

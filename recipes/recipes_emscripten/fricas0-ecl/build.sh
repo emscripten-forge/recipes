@@ -59,13 +59,13 @@ emconfigure ./configure \
 emmake make -j8 EXEEXT=".html"
 emmake make install
 
-mkdir -p "${PREFIX}/bin"
-cp build/bin/ecl.js build/bin/ecl.wasm build/bin/ecl.html "${PREFIX}/bin/"
+mkdir -p "${PREFIX}/bin/fricas0"
+cp build/bin/ecl.js build/bin/ecl.wasm build/bin/ecl.html "${PREFIX}/bin/fricas0/"
 
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-  "${PREFIX}/bin/ecl.data" \
+  "${PREFIX}/bin/fricas0/ecl.data" \
   --preload "${SRC_DIR}/fricas0-data@/fricas0-data" \
-  --js-output="${PREFIX}/bin/ecl.data.js"
+  --js-output="${PREFIX}/bin/fricas0/ecl.data.js"
 
-cp -r "web"/* "${PREFIX}/bin/"
+cp -r "web"/* "${PREFIX}/bin/fricas0/"
