@@ -1,0 +1,66 @@
+context:
+  version: 9.12.0
+
+package:
+  name: ipython
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/i/ipython/ipython-${{ version }}.tar.gz
+  sha256: 01daa83f504b693ba523b5a407246cabde4eb4513285a3c6acaff11a66735ee4
+  patches:
+  - patches/0001-Patch-asyncio-tornado.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - pip
+  host:
+  - python-dev
+  run:
+  - python
+  - backcall
+  - decorator
+  - matplotlib-inline
+  - pickleshare
+  - prompt-toolkit >=2.0.0,<3.1.0,!=3.0.0,!=3.0.1
+  - pygments >=2.4.0
+  - stack_data
+  - traitlets >=5
+  - pexpect
+  - typing_extensions
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_ipython.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'IPython: Productive Interactive Computing'
+  description: |
+    IPython provides a rich architecture for interactive computing with
+    a powerful interactive shell, a kernel for Jupyter, high performance
+    tools for parallel computing, and more.
+  homepage: https://ipython.org
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

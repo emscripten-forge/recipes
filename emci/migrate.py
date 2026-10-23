@@ -75,7 +75,7 @@ def migrate_recipe_yaml(recipe):
         for req in iter_requirements(output):
            if 'host' in req:
                 req['host'] = replace_in_list(req['host'], "python", "python-dev")
-
+                req['host'] = replace_in_list(req['host'], "openblas", "openblas-dev")
 
     # add generic testing block to each output's tests section
     for output in iter_outputs(recipe, include_staging_outputs=False):
@@ -255,35 +255,21 @@ def cluster_recipes(filtered_to_migrate_dir, output_dir, target_platform, pkg_to
             # extract all the pkgs that this recipe needs
             # (since we do not resolve run, this is a approximation)
             finalized_dependencies = rendered_recipe["finalized_dependencies"]
-            host = finalized_dependencies.get("host", [])
-            assert host is not None
-            assert 'resolved' in host
-            for dep in host['resolved']:
-                assert 'name' in dep
-                info["needs"].add(dep['name'])
-               
+            host = finalized_dependencies.get("host", {})
+            if host is not None and 'resolved' in host:
+                for dep in host['resolved']:
+                    assert 'name' in dep
+                    info["needs"].add(dep['name'])
 
-            run = finalized_dependencies.get("run", [])
-            assert run is not None
-            assert 'depends' in run
-            for dep in run['depends']:
-                if 'spec' in dep:
-                    spec = dep['spec']
-                    info["needs"].add(spec_to_name(spec))
-                # not at all sure about this
-                # python is in soucce for bitarray
-                # 
-                # depends:
-                # - source: python
-                # - spec: emscripten-abi >=6,<7.0a0
-                #   from: build
-                #   run_export: cross-python_emscripten-wasm32
-                # - spec: emscripten-abi ==6.0.8
-                #   from: build
-                #   run_export: emscripten_emscripten-wasm32
-                if 'source' in dep:
-                    source = dep['source']
-                    info["needs"].add(spec_to_name(source))
+            run = finalized_dependencies.get("run", {})
+            if run is not None and 'depends' in run:
+                for dep in run['depends']:
+                    if 'spec' in dep:
+                        spec = dep['spec']
+                        info["needs"].add(spec_to_name(spec))
+                    if 'source' in dep:
+                        source = dep['source']
+                        info["needs"].add(spec_to_name(source))
 
     
     print("-----\nrecipe_info")

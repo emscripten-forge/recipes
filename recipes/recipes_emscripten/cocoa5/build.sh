@@ -17,7 +17,7 @@ chmod +x configuration/readline-check-cxxflags.sh
 sed -i.bak 's/ret\[i\]=a.vectormultiply(b.column(i));/assert(false);/g' "${PREFIX}/include/gfanlib_matrix.h"
 
 sed -i.bak 's|GSL_LDLIBS=`pkgconf --libs gsl`|GSL_LDLIBS="-lgsl-symlink -L'"${PREFIX}"'/lib -lgslcblas"|g' configure
-sed -i.bak 's|NORMALIZ_LDLIBS=-lnormaliz-symlink|NORMALIZ_LDLIBS="-lnormaliz-symlink -L'"${PREFIX}"'/lib -lnauty -lflint -lmpfr"|g' configure
+sed -i.bak 's|NORMALIZ_LDLIBS=-lnormaliz-symlink|NORMALIZ_LDLIBS="-lnormaliz-symlink -L'"${PREFIX}"'/lib -leanticxx -leantic -lnauty -lflint -lmpfr"|g' configure
 
 sed -i.bak 's/( --with-libntl )/( --with-libntl=* )/g' configure
 sed -i.bak 's@NTL_LIB="/usr/local/lib/libntl.a".*@NTL_LIB=`echo "$option" | cut -f 2- -d=` ;;@g' configure
@@ -56,19 +56,19 @@ emmake make -j8 library
 emmake make -j8 cocoa5 LDFLAGS="$USER_LDFLAGS"
 emmake make install
 
-mkdir -p "${PREFIX}/bin"
-cp src/CoCoA-5/CoCoAInterpreter "${PREFIX}/bin/CoCoAInterpreter.js"
-cp src/CoCoA-5/CoCoAInterpreter.wasm "${PREFIX}/bin/"
+mkdir -p "${PREFIX}/bin/cocoa5"
+cp src/CoCoA-5/CoCoAInterpreter "${PREFIX}/bin/cocoa5/CoCoAInterpreter.js"
+cp src/CoCoA-5/CoCoAInterpreter.wasm "${PREFIX}/bin/cocoa5/"
 
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-  "${PREFIX}/bin/CoCoAInterpreter.data" \
+  "${PREFIX}/bin/cocoa5/CoCoAInterpreter.data" \
   --preload "${SRC_DIR}/src/CoCoA-5/packages@/src/CoCoA-5/packages" \
   --preload "${SRC_DIR}/src/CoCoA-5/tests@/src/CoCoA-5/tests" \
   --preload "${SRC_DIR}/src/CoCoA-5/CoCoAManual@/src/CoCoA-5/CoCoAManual" \
-  --js-output="${PREFIX}/bin/CoCoAInterpreter.data.js"
+  --js-output="${PREFIX}/bin/cocoa5/CoCoAInterpreter.data.js"
 
-cp -r "web"/* "${PREFIX}/bin/"
+cp -r "web"/* "${PREFIX}/bin/cocoa5/"
 
 rm -rf "${PREFIX}/include/CoCoA"
 mv "${PREFIX}/include/CoCoA-"* "${PREFIX}/include/CoCoA"
