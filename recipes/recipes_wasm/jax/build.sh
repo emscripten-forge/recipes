@@ -35,6 +35,7 @@ if [[ "$PKG_NAME" == jaxlib ]]; then
         --override_module=xla="$SRC_DIR/xla" \
         --enable_platform_specific_config=false \
         --incompatible_enable_cc_toolchain_resolution \
+        --@rules_ml_toolchain//common:enable_hermetic_cc=False \
         --features=wasm_exceptions \
         --repo_env=USE_HERMETIC_CC_TOOLCHAIN=0 \
         --repo_env=APPLE_SUPPORT_LAYERING_CHECK_BETA=0 \
