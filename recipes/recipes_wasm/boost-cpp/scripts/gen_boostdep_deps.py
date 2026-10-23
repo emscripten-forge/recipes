@@ -13,7 +13,8 @@ vendored JSON, so recipe builds stay hermetic.
 
 Keys are boostdep's own module names (--list-modules minus the 'headers'
 pseudo-module, e.g. 'numeric~conversion'); gen_boost_deps.py maps them to
-package names and include paths.
+package names (compiled modules get a '-static' suffix, header-only modules
+do not) and include paths.
 
   modules    boostdep's module universe == our package set
   deps       module -> direct header deps (--no-track-sources: what header
