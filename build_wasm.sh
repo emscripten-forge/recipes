@@ -27,7 +27,8 @@ if [ "$BUILD_WASM32" = true ]; then
         -c conda-forge \
         --target-platform emscripten-wasm32 \
         -m variant.yaml \
-        --recipe $RECIPE_DIR
+        --recipe $RECIPE_DIR \
+        --skip-existing=local
 fi
 
 
@@ -39,5 +40,6 @@ if [ "$BUILD_WASM64" = true ]; then
         -c conda-forge \
         --target-platform emscripten-wasm64 \
         -m variant.yaml \
-        --recipe $RECIPE_DIR
+        --recipe $RECIPE_DIR \
+        --skip-existing=local
 fi

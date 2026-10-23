@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate the boost-cpp multi-output recipe (one conda package per Boost module).
+"""Generate the boost-cpp multi-output recipe (one conda package per Boost
+module; compiled modules are named boost-<module>-static).
 
 Usage:
   gen_boost_deps.py <boost-root> [out-dir]
@@ -57,9 +58,15 @@ EXTRA_RUN: dict[ModuleKey, list[str]] = {"iostreams": ["zlib", "bzip2"]}  # cond
 
 
 def pkg_of(key: ModuleKey) -> PkgName:
-    """conda package name for a boostdep module key ('numeric~interval' ->
-    boost-numeric_interval)."""
+    """Base conda package name for a boostdep module key ('numeric~interval'
+    -> boost-numeric_interval), before the compiled-module suffix."""
     return f"boost-{key.replace('~', '_')}"
+
+
+def pkg_name(key: ModuleKey, compiled: set[ModuleKey]) -> PkgName:
+    """Conda package name for a module: compiled modules ship static archives
+    and get a '-static' suffix, header-only modules do not."""
+    return pkg_of(key) + ("-static" if key in compiled else "")
 
 
 def pin(dep: PkgName) -> str:
@@ -345,7 +352,7 @@ def header_probe(claims: list[Claim], boost_dir: Path | None = None) -> str | No
 
 
 def test_extra_reqs(tests_dir: Path, owner: dict[str, ModuleKey], key: ModuleKey,
-                    test_base: str) -> list[PkgName]:
+                    test_base: str, compiled: set[ModuleKey]) -> list[PkgName]:
     """Test TUs may include headers of modules beyond the package's own
     shipped-header deps (e.g. test_array uses boost/functional/hash.hpp from
     boost-container_hash): scan the test file and return the owners of its
@@ -353,12 +360,12 @@ def test_extra_reqs(tests_dir: Path, owner: dict[str, ModuleKey], key: ModuleKey
     f = tests_dir / f"test_{test_base}.cpp"
     if not f.is_file():
         return []
-    pkg = pkg_of(key)
+    pkg = pkg_name(key, compiled)
     extra: set[PkgName] = set()
     for target in iter_includes(f.read_text(errors="ignore")):
         dep = owner_of(owner, target)
-        if dep is not None and pkg_of(dep) != pkg:
-            extra.add(pkg_of(dep))
+        if dep is not None and pkg_name(dep, compiled) != pkg:
+            extra.add(pkg_name(dep, compiled))
     return sorted(extra)
 
 
@@ -396,12 +403,12 @@ def main(argv: list[str] | None = None) -> int:
     # ---------------- data out ----------------
     data: dict[str, object] = {"_modules": compiled, "_header_only": header_only}
     for m in compiled:
-        data[m] = {"direct": sorted(pkg_of(d) for d in deps[m]),
+        data[m] = {"direct": sorted(pkg_name(d, compiled) for d in deps[m]),
                    "compiled_direct": sorted(d for d in bd_buildable[m] if d in compiled),
                    "link_closure": link[m],
                    "files": claims[m]}
     for k in header_only:
-        data[k] = {"deps": sorted(pkg_of(d) for d in deps[k]), "files": claims[k]}
+        data[k] = {"deps": sorted(pkg_name(d, compiled) for d in deps[k]), "files": claims[k]}
     (out_dir / "deps.json").write_text(json.dumps(data, indent=2))
 
     edges: dict[ModuleKey, set[ModuleKey]] = {}
@@ -414,8 +421,9 @@ def main(argv: list[str] | None = None) -> int:
     # ---------------- YAML emission ----------------
     def compiled_block(m: ModuleKey) -> dict[str, object]:
         libs = LIB_FILES.get(m, [f"lib/libboost_{m}.a"])
-        reqs = sorted({pkg_of(d) for d in deps[m] if (m, d) not in broken}
-                      | {pkg_of(d) for d in bd_buildable[m] if d in compiled}
+        pkg = pkg_name(m, compiled)
+        reqs = sorted({pkg_name(d, compiled) for d in deps[m] if (m, d) not in broken}
+                      | {pkg_name(d, compiled) for d in bd_buildable[m] if d in compiled}
                       | set(EXTRA_RUN.get(m, [])))
         script = cfg_call(m, "compiled", [archive_of(m)],
                           [archive_of(d) for d in link[m] if d != m]
@@ -424,19 +432,19 @@ def main(argv: list[str] | None = None) -> int:
         probe = header_probe(claims[m])
         if probe:  # contents test probes the shipped headers too
             contents["include"] = [probe]
-        extra = test_extra_reqs(tests_dir, owner, m, m)
-        return {**pkg_head(f"boost-{m}", script, libs + claims[m] + [cfg_path(m)]),
+        extra = test_extra_reqs(tests_dir, owner, m, m, compiled)
+        return {**pkg_head(pkg, script, libs + claims[m] + [cfg_path(m)]),
                 "requirements": {"run": [pin(d) for d in reqs] or None,
-                                 "run_exports": [pin(f"boost-{m}")]},
+                                 "run_exports": [pin(pkg)]},
                 "tests": [{"package_contents": contents}, script_test(m, extra)]}
 
     def ho_block(k: ModuleKey) -> dict[str, object]:
-        pkg = pkg_of(k)
+        pkg = pkg_name(k, compiled)
         base = pkg.removeprefix("boost-")
-        reqs = sorted(pkg_of(d) for d in deps[k] if (k, d) not in broken)
+        reqs = sorted(pkg_name(d, compiled) for d in deps[k] if (k, d) not in broken)
         if (tests_dir / f"test_{base}.cpp").is_file():
             tests: list[dict[str, object]] = [
-                script_test(base, test_extra_reqs(tests_dir, owner, k, base))]
+                script_test(base, test_extra_reqs(tests_dir, owner, k, base, compiled))]
         else:
             probe = header_probe(claims[k], boost_dir)
             assert probe, f"{pkg}: no probe header in claims {claims[k]}"
@@ -456,8 +464,8 @@ def main(argv: list[str] | None = None) -> int:
     header = "# >>> generated by scripts/gen_boost_deps.py - do not edit by hand"
     footer = "# <<< generated"
     blocks = [compiled_block(k) if k in compiled else ho_block(k) for k in order] \
-        + [meta_block("boost-headers", sorted(pkg_of(k) for k in header_only)),
-           meta_block("boost-cpp", sorted(pkg_of(m) for m in modules))]
+        + [meta_block("boost-headers", sorted(pkg_name(k, compiled) for k in header_only)),
+           meta_block("boost-cpp", sorted(pkg_name(m, compiled) for m in modules))]
     generated = emit_outputs(blocks)
     (out_dir / "recipe_outputs.yaml").write_text(
         header + "\n" + generated + footer + "\n")
