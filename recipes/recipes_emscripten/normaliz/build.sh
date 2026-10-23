@@ -16,6 +16,8 @@ emconfigure ./configure \
     --with-flint="${PREFIX}" \
     --with-cocoalib="${PREFIX}" \
     --with-nauty="${PREFIX}" \
+    --with-e-antic="${PREFIX}" \
+    LIBS="-lflint -lmpfr -lgmpxx -lgmp" \
     --prefix="${PREFIX}"
 
 emmake make -j8
