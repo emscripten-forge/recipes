@@ -1,0 +1,174 @@
+context:
+  version: 2.15.0a0
+  llvm_version: 23.1.2
+  commit: dfc3da9a94d56e82df5e0ac35872c0108969ac5e
+
+source:
+- git: https://github.com/anutosh491/pytorch.git
+  rev: ${{ commit }}
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: pytorch-build
+  build:
+    script:
+      file: build.sh
+      env:
+        PYTORCH_BUILD_VERSION: ${{ version }}
+        PYTORCH_BUILD_NUMBER: '0'
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - numpy
+    - pip
+    - scikit-build-core >=1.0
+    - packaging >=24.2
+    - pyyaml
+    - typing_extensions >=4.10
+    - cmake >=4.3.3
+    - make
+    - git
+    # Match the bundled protobuf used for the target library.
+    - libprotobuf ==3.21.12
+    host:
+    - python-dev
+    - numpy
+    - openblas-dev
+    - openblas
+    - llvm-static ==${{ llvm_version }}[build_number='>=4']
+    - clangdev-static ==${{ llvm_version }}[build_number='>=5']
+    - lld-static ==${{ llvm_version }}[build_number='>=5']
+    # The Python output applies its own NumPy ABI pin.
+    ignore_run_exports:
+      from_package:
+      - numpy
+
+- package:
+    name: libtorch
+    version: ${{ version }}
+  inherit: pytorch-build
+  build:
+    files:
+      include:
+      - lib/libc10.so
+      - lib/libshm.so
+      - lib/libtorch.so
+      - lib/libtorch_cpu.so
+      - include/**
+      - share/cmake/**
+  requirements:
+    host:
+    - openblas
+    run_exports:
+    - ${{ pin_subpackage('libtorch', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/libc10.so
+        - lib/libtorch_cpu.so
+        - include/ATen/ATen.h
+        - include/torch/csrc/api/include/torch/torch.h
+        - share/cmake/Torch/TorchConfig.cmake
+        not_exists:
+        - '**/*.a'
+        - '**/*.so.*'
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: cmake -S cmake_test -B test-build -DCMAKE_PREFIX_PATH="$PREFIX"
+    files:
+      recipe:
+      - cmake_test/CMakeLists.txt
+    requirements:
+      build:
+      - cmake
+
+- package:
+    name: pytorch
+    version: ${{ version }}
+  inherit: pytorch-build
+  build:
+    files:
+      include:
+      - lib/python*/site-packages/torch/**
+      - lib/python*/site-packages/torchgen/**
+      - lib/python*/site-packages/functorch/**
+      - lib/python*/site-packages/torch-*.dist-info/**
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    host:
+    - python
+    - numpy
+    run:
+    - ${{ pin_subpackage('libtorch', exact=True) }}
+    - python
+    - numpy
+    - filelock
+    - typing_extensions >=4.10
+    - setuptools >=77.0.3
+    - sympy >=1.13.3
+    - networkx >=2.5.1
+    - jinja2
+    - fsspec >=0.8.5
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/python*/site-packages/torch/__init__.py
+        - lib/python*/site-packages/torch/_C*.so
+        - lib/python*/site-packages/torch/lib/libtorch_python.so
+        - lib/python*/site-packages/torch/_inductor/wasm/torch_inductor_compiler.so
+        - lib/python*/site-packages/torch/_inductor/wasm/sysroot/include/c++/v1/vector
+        - lib/python*/site-packages/torch/_inductor/wasm/sysroot/include/python*/Python.h
+        - lib/python*/site-packages/torch/_inductor/wasm/sysroot/lib/clang/23/include/stddef.h
+        not_exists:
+        - '**/*.a'
+        - '**/*.so.*'
+        - lib/python*/site-packages/torch/bin/torch_shm_manager
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_pytorch.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+about:
+  homepage: https://pytorch.org
+  repository: https://github.com/pytorch/pytorch
+  documentation: https://pytorch.org/docs
+  license: BSD-3-Clause AND BSD-2-Clause AND Apache-2.0 AND Apache-2.0 WITH LLVM-exception AND BSL-1.0 AND MIT
+  license_file:
+  - LICENSE
+  - third_party/**/LICENSE
+  - third_party/**/LICENSE.txt
+  - third_party/**/LICENSE.rst
+  - recipe-licenses/*
+  summary: PyTorch CPU tensors, automatic differentiation and Inductor for WebAssembly
+
+extra:
+  recipe-maintainers:
+  - anutosh491
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
