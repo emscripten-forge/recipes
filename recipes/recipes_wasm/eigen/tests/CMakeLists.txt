@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Eigen3 REQUIRED CONFIG)
 
 find_library(OPENBLAS_LIBRARY NAMES openblas REQUIRED)
-find_library(FLANG_RUNTIME_LIBRARY NAMES flang_rt.runtime REQUIRED)
 
 add_executable(test_eigen_lapack test_eigen_lapack.cc)
 
@@ -19,11 +18,11 @@ target_compile_options(test_eigen_lapack PRIVATE -fwasm-exceptions -msimd128)
 target_link_libraries(test_eigen_lapack PRIVATE
     Eigen3::Eigen
     ${OPENBLAS_LIBRARY}
-    ${FLANG_RUNTIME_LIBRARY}
 )
 
 if(EMSCRIPTEN)
     target_link_options(test_eigen_lapack PRIVATE
+        -sMAIN_MODULE=2
         -fwasm-exceptions -sSUPPORT_LONGJMP=wasm -msimd128
         -sALLOW_MEMORY_GROWTH=1
         -sSTACK_SIZE=8MB

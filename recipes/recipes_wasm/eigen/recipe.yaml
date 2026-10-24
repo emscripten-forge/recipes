@@ -10,7 +10,7 @@ source:
   sha256: e9c326dc8c05cd1e044c71f30f1b2e34a6161a3b6ecf445d56b53ff1669e3dec
 
 build:
-  number: 0
+  number: 1
   noarch: generic
 
 requirements:
@@ -18,8 +18,6 @@ requirements:
   - ${{ compiler("cxx") }}
   - cmake
   - ninja
-  run:
-  - openblas-static
 
 tests:
 - package_contents:
@@ -32,6 +30,10 @@ tests:
     - include/eigen3/signature_of_eigen3_matrix_library
     - share/eigen3/cmake/Eigen3Config.cmake
     - share/eigen3/cmake/Eigen3Targets.cmake
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 - script:
   - bash build_tests.sh
   requirements:
@@ -40,6 +42,9 @@ tests:
     - cmake
     - ninja
     - nodejs
+    run:
+    - openblas-dev
+    - openblas
   files:
     recipe:
     - build_tests.sh
@@ -61,3 +66,7 @@ extra:
   recipe-maintainers:
   - Alex-PLACET
   - traversaro
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
