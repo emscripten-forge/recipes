@@ -12,7 +12,7 @@ source:
 
 
 build:
-  number: 1
+  number: 2
   noarch: python
   script:  build.sh
   python:
@@ -20,8 +20,9 @@ build:
         - generic-testing = generic_testing.__main__:main
 requirements:
   host:
-    - python
+    - python =${{ python_min }}
   run:
+    - python >=${{ python_min }}
     - llvm-tools
 
 tests:
@@ -29,6 +30,10 @@ tests:
       files:
       - site-packages/generic_testing/__init__.py
       - site-packages/generic_testing/__main__.py
+  - script: python test_check_lib.py
+    files:
+      recipe:
+      - test_check_lib.py
  
 
 about:
