@@ -1,7 +1,8 @@
 #!/bin/bash
 set -ex
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# test files are copied into the working directory of the test run
+SCRIPT_DIR="$PWD"
 
 # Compile the test together with the rebound source files (static build).
 # The .so side module cannot be statically linked by wasm-ld, so we

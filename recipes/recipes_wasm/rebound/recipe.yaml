@@ -10,6 +10,7 @@ source:
   - patches/0002-load-librebound-from-prefix.patch
   - patches/0003-fix-pyodide-import.patch
   - patches/0004-remove-emscripten-sleep.patch
+  - patches/0005-fix-restype-typo.patch
 
 build:
   number: 0
@@ -69,6 +70,10 @@ outputs:
       recipe:
       - build_tests.sh
       - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: rebound
@@ -91,10 +96,10 @@ outputs:
     - wheel
     - pip
     host:
-    - python
+    - python-dev
     run:
     - python
-    - librebound
+    - ${{ pin_subpackage('librebound', exact=True) }}
   tests:
   - script: pytester
     files:
@@ -106,6 +111,10 @@ outputs:
       run:
       - pytester-run
       - librebound
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   homepage: https://github.com/hannorein/rebound
