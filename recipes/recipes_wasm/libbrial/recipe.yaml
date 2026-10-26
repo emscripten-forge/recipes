@@ -3,7 +3,7 @@ context:
   version: 1.2.15
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -24,14 +24,20 @@ requirements:
   - pkg-config
   - autoconf-archive
   host:
-  - m4ri
-  - boost-cpp
+  - m4ri-static
+  - boost-headers
+  run:
+  - ${{ pin_compatible('m4ri-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
     files:
     - lib/libbrial.a
     - include/polybori.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/BRiAl/BRiAl
