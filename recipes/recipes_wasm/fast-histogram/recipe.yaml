@@ -11,7 +11,7 @@ source:
   sha256: 390973b98af22bda85c29dcf6f008ba0d626321e9bd3f5a9d7a43e5690ea69ea
 
 build:
-  number: 2
+  number: 0
   script: ${{ PYTHON }} -m pip install . --no-deps -vvv
 
   files:
@@ -25,14 +25,14 @@ build:
     - '**/*.py'
 requirements:
   build:
+  - pip
   - ${{ compiler("cxx") }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - numpy
   host:
-  - python
+  - python-dev
   - setuptools
-  - pip
   - setuptools-scm
   - wheel
   - numpy
@@ -50,6 +50,10 @@ tests:
   files:
     recipe:
     - test_fast_histogram.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/astrofrog/fast-histogram
