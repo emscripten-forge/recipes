@@ -9,6 +9,10 @@ touch cwebx/ctanglex cwebx/cweavex
 
 WASM_LDFLAGS="-s TOTAL_STACK=32mb -s INITIAL_MEMORY=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4gb -s FORCE_FILESYSTEM=1"
 
+# Generate the bison parser serially first: under -j the Makefile runs bison
+# twice concurrently and can compile lexer.w before parser.tab.h exists.
+(cd sources/interpreter && bison -d parser.y)
+
 make -j${CPU_COUNT} readline=false \
     CXX="${CXX} -DNREADLINE" \
     CXXFLAVOR="-O3 -DNDEBUG" \
