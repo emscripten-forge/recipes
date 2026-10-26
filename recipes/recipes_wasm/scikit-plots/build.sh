@@ -19,18 +19,15 @@ set -Eeuox pipefail
 
 # otherwise "cython" is not properly executable
 echo "add shebang to cython file"
-sed -i '1i#!/usr/bin/env python' "$BUILD_PREFIX/bin/cython"
+{ echo '#!/usr/bin/env python'; cat "$BUILD_PREFIX/bin/cython"; } > cython.tmp
+mv cython.tmp "$BUILD_PREFIX/bin/cython"
+chmod +x "$BUILD_PREFIX/bin/cython"
 
 # TODO: fix into main repo cause error cython redefinition
-sed -i '/^__version__: Final\[str\] = "1\.0\.1"$/d' scikitplot/memmap/_memmap/mem_map.pyx
+sed -i.bak '/^__version__: Final\[str\] = "1\.0\.1"$/d' scikitplot/memmap/_memmap/mem_map.pyx
+rm -f scikitplot/memmap/_memmap/mem_map.pyx.bak
 
-# Cross file lives in SRC_DIR (writable, per-build copy) -- the upstream
-# template intentionally omits a python= entry in [binaries] so we can
-# append the build-time interpreter path here. The pip install below
-# MUST point at this same SRC_DIR copy, not the RECIPE_DIR original,
-# or meson never sees the python= line we just added.
-cp "$RECIPE_DIR/emscripten.meson.cross" "$SRC_DIR/emscripten.meson.cross"
-echo "python = '${PYTHON}'" >> "$SRC_DIR/emscripten.meson.cross"
+# Use the toolchain-provided meson cross file (handles wasm32 and wasm64).
 
 # Meson finds numpy_config via pkg_config and numpy.pc
 export PKG_CONFIG_PATH="$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/lib/pkgconfig"
@@ -40,7 +37,7 @@ export PKG_CONFIG_PATH="$PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/li
 # space-separated arguments that pip needs to see as separate words.
 # python -m build --sdist -Csetup-args=-Dallow-noblas=true -Csetup-args=-Dcpu-baseline=none -Csetup-args=-Dcpu-dispatch=none
 ${PYTHON} -m pip install . --no-build-isolation --no-cache-dir -vvv ${PIP_ARGS:-} \
-    -Csetup-args="--cross-file=$SRC_DIR/emscripten.meson.cross" \
+    -Csetup-args="--cross-file=$MESON_CROSS_PYTHON_FILE" \
     -Csetup-args="-Dcpu-baseline=none" \
     -Csetup-args="-Dcpu-dispatch=none" \
     -Ccompile-args="--verbose"
