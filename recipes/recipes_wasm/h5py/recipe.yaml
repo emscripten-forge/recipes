@@ -1,0 +1,59 @@
+context:
+  name: h5py
+  version: 3.16.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a0dbaad796840ccaa67a4c144a0d0c8080073c34c76d5a6941d6818678ef2738
+  patches:
+  - patches/configure.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('cxx') }}
+  - python
+  - pkgconfig
+  - cython
+  - pip
+  - setuptools
+  - numpy
+  host:
+  - numpy
+  - hdf5
+  - python-dev
+  run:
+  - numpy
+  - hdf5
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_h5py.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://www.h5py.org/
+  license: BSD-3-Clause
+  license_file: licenses/license.txt
+  summary: python bindings to hdf5
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

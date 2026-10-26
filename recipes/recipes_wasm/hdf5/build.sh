@@ -1,7 +1,7 @@
 mkdir build
 cd build
 
-export LDFLAGS="-sNODERAWFS=1 -sUSE_ZLIB=1 -sFORCE_FILESYSTEM=1"
+export LDFLAGS="$LDFLAGS -sNODERAWFS=1 -sUSE_ZLIB=1 -sFORCE_FILESYSTEM=1"
 
 emcmake cmake .. \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
@@ -14,7 +14,7 @@ emcmake cmake .. \
     -DBUILD_TESTING=OFF \
     -DCMAKE_C_FLAGS="-fPIC -Wno-incompatible-pointer-types-discards-qualifiers" \
     -DCMAKE_CXX_FLAGS="-fPIC -Wno-incompatible-pointer-types-discards-qualifiers" \
-    -DCMAKE_SHARED_LINKER_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -s NODERAWFS=1 -sFORCE_FILESYSTEM=1" \
+    -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS} ${EM_FORGE_SIDE_MODULE_LDFLAGS}" \
     -DHDF5_BUILD_EXAMPLES=OFF \
     -DHDF5_BUILD_TOOLS=OFF \
     -DHDF5_BUILD_UTILS=OFF \

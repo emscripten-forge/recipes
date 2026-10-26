@@ -1,0 +1,72 @@
+context:
+  version: 5.0.1
+
+package:
+  name: eigen
+  version: ${{ version }}
+
+source:
+  url: https://gitlab.com/libeigen/eigen/-/archive/${{ version }}/eigen-${{ version }}.tar.gz
+  sha256: e9c326dc8c05cd1e044c71f30f1b2e34a6161a3b6ecf445d56b53ff1669e3dec
+
+build:
+  number: 1
+  noarch: generic
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/eigen3/Eigen/Core
+    - include/eigen3/Eigen/Version
+    - include/eigen3/Eigen/src/Core/util/Macros.h
+    - include/eigen3/Eigen/src/Core/util/Meta.h
+    - include/eigen3/Eigen/src/plugins/CommonCwiseUnaryOps.inc
+    - include/eigen3/signature_of_eigen3_matrix_library
+    - share/eigen3/cmake/Eigen3Config.cmake
+    - share/eigen3/cmake/Eigen3Targets.cmake
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - nodejs
+    run:
+    - openblas-dev
+    - openblas
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+about:
+  homepage: https://eigen.tuxfamily.org/
+  license: MPL-2.0
+  license_family: MPL
+  license_file: COPYING.MPL2
+  summary: C++ template library for linear algebra
+  description: |
+    Eigen is a C++ template library for linear algebra: matrices, vectors,
+    numerical solvers and related algorithms.
+  documentation: https://eigen.tuxfamily.org/dox/
+  repository: https://gitlab.com/libeigen/eigen
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
+  - traversaro
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
