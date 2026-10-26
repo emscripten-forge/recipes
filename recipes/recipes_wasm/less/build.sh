@@ -25,8 +25,6 @@ export LDFLAGS="\
     -lproxyfs.js \
     "
 
-emmake make -f Makefile.aut all
-
 # The ac_cv_lib overrides below are to avoid configure failing to check them on wasm64.
 emconfigure ./configure \
     --build=$BUILD \
@@ -36,7 +34,7 @@ emconfigure ./configure \
     ac_cv_lib_ncurses_initscr=yes \
 
 # Build less but not lessecho and lesskey.
-emmake make less.js EXEEXT=.js -j${CPU_COUNT} LDFLAGS="
+emmake make less.js EXE=.js -j${CPU_COUNT} LDFLAGS="
     $LDFLAGS \
     --preload-file $XTERM_256COLOR@/usr/local/share/terminfo/x/xterm-256color \
     "

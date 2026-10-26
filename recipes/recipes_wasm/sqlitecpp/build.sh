@@ -1,0 +1,20 @@
+
+mkdir build
+cd build
+
+export CFLAGS="$CFLAGS -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS  -fwasm-exceptions"
+# Configure step
+cmake ${CMAKE_ARGS} ..             \
+    -GNinja                        \
+    -DCMAKE_BUILD_TYPE=Release     \
+    -DCMAKE_PREFIX_PATH=$PREFIX    \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DSQLITECPP_USE_STACK_PROTECTION=OFF \
+    -DSQLITECPP_RUN_CPPLINT=OFF \
+    -DSQLITECPP_RUN_CPPCHECK=OFF \
+    -DSQLITECPP_INTERNAL_SQLITE=OFF 
+
+# Build step
+ninja install

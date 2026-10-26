@@ -1,0 +1,39 @@
+context:
+  name: raygui
+  version: '5.0'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/raysan5/raygui/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 0f194c4a5e837c0930aca0b6315db45d00f76fa0052d841eea94598d390c39d6
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+
+tests:
+- package_contents:
+    files:
+    - include/raygui.h
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/raysan5/raygui
+  license: Zlib
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
