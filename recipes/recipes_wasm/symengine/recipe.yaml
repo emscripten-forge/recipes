@@ -3,8 +3,7 @@ context:
   version: 0.14.0
 
 build:
-  # 1 would collide with the pre-split symengine artifact (same dep hash)
-  number: 3
+  number: 0
 
 outputs:
   - staging:
@@ -19,7 +18,7 @@ outputs:
       host:
       - boost-mpl
       - boost-multiprecision
-      - boost-random
+      - boost-random-static
       - boost-type_traits
       - boost-variant
     source:
@@ -42,6 +41,10 @@ outputs:
     - package_contents:
         files:
         - lib/libsymengine.so
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
 
   - package:
       name: ${{ name }}-dev
@@ -57,7 +60,7 @@ outputs:
       - ${{ pin_subpackage('symengine', exact=True) }}
       - boost-mpl
       - boost-multiprecision
-      - boost-random
+      - boost-random-static
       - boost-type_traits
       - boost-variant
     tests:
@@ -65,6 +68,10 @@ outputs:
         files:
         - include/symengine/mp_class.h
         - lib/cmake/symengine/SymEngineConfig.cmake
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
 
 about:
   homepage: https://symengine.org/
