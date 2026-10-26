@@ -9,6 +9,8 @@ package:
 source:
   url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 11bc5f94828cba1bd983de81f05f3e3526c1322632d2994dda5b9bcef9e7e9f9
+  patches:
+  - patches/0001-disable-openmp.patch
 
 build:
   number: 0
@@ -22,7 +24,7 @@ requirements:
     - meson-python
     - pip
   host:
-    - python
+    - python-dev
     - scikit-learn >=1.8.0
   run:
     - python
@@ -38,6 +40,10 @@ tests:
     - pytester
     run:
     - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: MIT
