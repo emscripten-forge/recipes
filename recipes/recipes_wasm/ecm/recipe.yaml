@@ -3,7 +3,7 @@ context:
   version: 7.0.7
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -21,7 +21,9 @@ requirements:
   - make
   - ${{ compiler('cxx') }}
   host:
-  - gmp
+  - gmp-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
@@ -30,6 +32,10 @@ tests:
     - include/ecm.h
     - bin/ecm
     - bin/ecm.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://gitlab.inria.fr/zimmerma/ecm
