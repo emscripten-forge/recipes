@@ -1,14 +1,14 @@
 context:
   version: 6.9.13-47
 package:
-  name: imagemagick
+  name: imagemagick-static
   version: ${{ version | replace("-","_") }}
 
 source:
-  url: https://github.com/ImageMagick/ImageMagick6/archive/refs/tags/${{ version}}.tar.gz
+  url: https://github.com/ImageMagick/ImageMagick6/archive/refs/tags/6.9.13-47.tar.gz
   sha256: cc690a3b9ae8a29aa096d90328a6e8c0da07140ae7740bffb4f2046fb9e0b632
 build:
-  number: 1
+  number: 0
 
   files:
     exclude:
@@ -25,14 +25,24 @@ requirements:
   - libjpeg-turbo-static
   - libbzip2-static
   - libxml2-static
-  - openjpeg
   - zlib-static
+  run:
+  - ${{ pin_compatible('libtiff-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libpng-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libjpeg-turbo-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libbzip2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libxml2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
     files:
     - lib/libMagick++-6.Q16.a
     - include/ImageMagick-6/Magick++.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.imagemagick.org/
