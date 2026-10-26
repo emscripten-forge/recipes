@@ -2,6 +2,10 @@
 #!/bin/bash
 set -e
 
+# xsimd's test_power.cpp guards SSE-only code with the legacy EMSCRIPTEN macro,
+# which current emscripten no longer defines (only __EMSCRIPTEN__)
+export CXXFLAGS="${CXXFLAGS} -DEMSCRIPTEN"
+
 # Configure step
 mkdir -p build
 cd build

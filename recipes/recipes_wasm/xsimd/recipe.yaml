@@ -18,18 +18,25 @@ requirements:
   - ${{ compiler('cxx') }}
   - cmake
   - ninja
-  host:
-  - python
 
 tests:
+- package_contents:
+    include:
+    - xsimd/xsimd.hpp
+    files:
+    - share/cmake/xsimd/xsimdConfig.cmake
 - script: |
     echo "install playwright"
     playwright install
     python ${PREFIX}/bin/test_wasm_playwright.py ${PREFIX}/bin
-
   requirements:
     build:
-    - microsoft::playwright
+    - playwright
+    - playwright-python
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/xtensor-stack/xsimd
