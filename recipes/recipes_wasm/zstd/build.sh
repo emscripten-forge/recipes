@@ -14,7 +14,7 @@ meson setup \
   -Ddefault_library=static \
   --prefix=$PREFIX \
   --wrap-mode=nofallback \
-  --cross-file=$RECIPE_DIR/emscripten.meson.cross \
+  --cross-file=$MESON_CROSS_FILE \
   builddir
 
 cd builddir

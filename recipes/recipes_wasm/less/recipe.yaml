@@ -1,0 +1,51 @@
+context:
+  name: less
+  version: 710
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d1008fb78dcae1323ddab664bcb352a61f022b1b131bd8018548e021d975ec7a
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - make
+  - autoconf
+  host:
+  - ncurses-static
+  - pcre2-static
+
+tests:
+- package_contents:
+    files:
+    - bin/less.data
+    - bin/less.js
+    - bin/less.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/less.js --version | head -1 | cut -c -9)
+    if [[ "$OUTPUT" != "less ${{ version }} " ]]; then
+      echo "Unexpected output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-3.0-only
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+  - ianthomas23

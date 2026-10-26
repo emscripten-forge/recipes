@@ -1,0 +1,68 @@
+context:
+  version: 3.54.1.0
+
+package:
+  name: apsw
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/a/apsw/apsw-${{ version }}.tar.gz
+  sha256: d9fd64ed76dc0f3d2265d4aeedb74d678c2ac7dffbd4e8ba05bf9a87aa7c34d3
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python-dev
+  - libsqlite-static
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_apsw.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/rogerbinns/apsw
+  license: any-OSI
+  license_file: LICENSE
+  summary: Another Python SQLite Wrapper
+  description: |
+    APSW provides an SQLite 3 wrapper that provides the thinnest layer over
+    SQLite 3 possible. Everything you can do from the C API to SQLite 3, you
+    can do from Python. Although APSW's API looks vaguely similar to Python's
+    built-in sqlite3 module, it is not intended to be a drop-in replacement.
+  documentation: https://rogerbinns.github.io/apsw/
+  repository: https://github.com/rogerbinns/apsw
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
