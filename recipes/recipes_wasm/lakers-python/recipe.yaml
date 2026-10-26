@@ -9,8 +9,6 @@ package:
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace('-','_') }}-${{ version }}.tar.gz
   sha256: bc4dbe014161e4023a95affa93b9f3648f218acb6b1d99a5bc98dd7f676c5d56
-  patches:
-  - patches/0001-Fix-examples-path.patch
 
 build:
   number: 0
@@ -32,8 +30,7 @@ requirements:
   - rust-nightly
   - maturin
   host:
-  - python
-  - cffi
+  - python-dev
   run:
   - cffi
 
@@ -47,6 +44,10 @@ tests:
   files:
     recipe:
     - test_import_lakers.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   summary: Python wrapper for the lakers crate (EDHOC implementation in Rust)
