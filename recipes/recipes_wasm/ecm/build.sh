@@ -3,9 +3,12 @@ set -euxo pipefail
 
 autoreconf -vfi
 
-CPPFLAGS="-I${PREFIX}/include" \
-LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=c++11" \
+export CPPFLAGS="-I${PREFIX}/include"
+# THREAD_SAFE_GT=0 keeps schoen_strass.c from using pthread TLS.
+# It goes into CFLAGS because configure overwrites CPPFLAGS for --with-gmp.
+export CFLAGS="-O2 -DTHREAD_SAFE_GT=0"
+export LDFLAGS="-L${PREFIX}/lib"
+export CXXFLAGS="-std=c++11"
 
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
