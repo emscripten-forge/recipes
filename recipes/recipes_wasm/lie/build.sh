@@ -1,13 +1,14 @@
 #!/bin/bash
 set -ex
 
-sed -i 's/Lie\.exe/lie.js/g' Makefile
+sed -i.bak 's/Lie\.exe/lie.js/g' Makefile
 
-sed -i 's|^\([[:space:]]*\)\./lie\.js|\1node ./lie.js|g' Makefile
-sed -i 's|^\([[:space:]]*\)\./infoind|\1node ./infoind|g' Makefile
-sed -i 's|^\([[:space:]]*\)\./learnind|\1node ./learnind|g' Makefile
+sed -i.bak 's|^\([[:space:]]*\)\./lie\.js|\1node ./lie.js|g' Makefile
+sed -i.bak 's|^\([[:space:]]*\)\./infoind|\1node ./infoind|g' Makefile
+sed -i.bak 's|^\([[:space:]]*\)\./learnind|\1node ./learnind|g' Makefile
 
-sed -i '/Printf("%s",prompt_string);/a \    fflush(stdout);' getl.c
+sed -i.bak 's/Printf("%s",prompt_string);/Printf("%s",prompt_string); fflush(stdout);/' getl.c
+rm -f Makefile.bak getl.c.bak
 
 make noreadline CC="${CC} -s NODERAWFS=1" CFLAGS="${CFLAGS} -O3"
 
