@@ -21,7 +21,7 @@ if [ ! -x "${emmake_cmd}" ]; then
   emmake_cmd="$(command -v emmake)"
 fi
 
-"${emcmake_cmd}" cmake -S . -B build \
+"${emcmake_cmd}" cmake -S . -B _build \
   -GNinja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
@@ -29,7 +29,7 @@ fi
   -DBUILD_SHARED_LIBS=OFF \
   -DBUILD_STATIC_LIBS=ON \
   -DBUILD_TESTING=OFF \
-  -DBUILD_gflags_LIB=ON \
+  -DBUILD_gflags_LIB=OFF \
   -DBUILD_gflags_nothreads_LIB=ON \
   -DINSTALL_HEADERS=ON \
   -DINSTALL_SHARED_LIBS=OFF \
@@ -37,5 +37,5 @@ fi
   -DREGISTER_BUILD_DIR=OFF \
   -DREGISTER_INSTALL_PREFIX=OFF
 
-"${emmake_cmd}" ninja -C build -j"${CPU_COUNT}"
-"${emmake_cmd}" ninja -C build install
+"${emmake_cmd}" ninja -C _build -j"${CPU_COUNT}"
+"${emmake_cmd}" ninja -C _build install
