@@ -1,0 +1,51 @@
+context:
+  version: '2.19'
+  name: lcms2
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mm2/Little-CMS/releases/download/lcms${{ version }}/lcms2-${{ version }}.tar.gz
+  sha256: 49e7e134e4299733dd0eda434fa468997a28ab3d33fa397c642b03644f552216
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - make
+  host:
+  - libjpeg-turbo-static
+  - libtiff-static
+  run:
+  - ${{pin_compatible('libjpeg-turbo-static', lower_bound='x.x', upper_bound='x.x')}}
+  - ${{pin_compatible('libtiff-static', lower_bound='x.x', upper_bound='x.x')}}
+tests:
+- package_contents:
+    lib:
+    - liblcms2.a
+    include:
+    - lcms2.h
+    - lcms2_plugin.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: http://www.littlecms.com/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Open Source Color Management Engine
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
