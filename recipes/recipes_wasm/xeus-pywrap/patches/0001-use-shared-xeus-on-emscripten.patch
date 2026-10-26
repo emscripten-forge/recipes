@@ -1,0 +1,21 @@
+--- a/CMakeLists.txt	2026-10-26 10:43:40
++++ b/CMakeLists.txt	2026-10-26 10:44:54
+@@ -58,7 +58,7 @@
+     SET(XEUS_PYWRAP_BUILD_STATIC ON)
+     SET(XEUS_PYWRAP_BUILD_SHARED OFF)
+     SET(XEUS_PYWRAP_BUILD_EXECUTABLE OFF)
+-    SET(XEUS_PYWRAP_USE_SHARED_XEUS OFF)
++    SET(XEUS_PYWRAP_USE_SHARED_XEUS ON) # xeus is a shared side module on emscripten-forge 6x
+     SET(XEUS_PYWRAP_USE_SHARED_XEUS_PYWRAP OFF)
+     SET(XEUS_PYWRAP_BUILD_TESTS OFF)
+ endif()
+@@ -333,6 +333,9 @@
+         ${CMAKE_INSTALL_PREFIX}/lib/libcrypto.a
+         ${CMAKE_INSTALL_PREFIX}/lib/liblzma.a
+     )
++    # python >= 3.14 ships some of its static deps (expat, mpdec, hacl) separately
++    file(GLOB PYTHON_EXTRA_STATIC_LIBS ${CMAKE_INSTALL_PREFIX}/lib/python3*/static/*.a)
++    list(APPEND PYTHON_UTIL_LIBS ${PYTHON_EXTRA_STATIC_LIBS})
+     find_package(zlib REQUIRED)
+ 
+     include(WasmBuildOptions)
