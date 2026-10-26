@@ -12,7 +12,7 @@ export CXXFLAGS="-std=c++11"
 
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
-    --host=wasm32-unknown-emscripten \
+    --host=${HOST} \
     --with-gmp="${PREFIX}" \
     --disable-shared \
     --prefix="${PREFIX}"
