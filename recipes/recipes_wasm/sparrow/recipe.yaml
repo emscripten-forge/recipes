@@ -2,7 +2,7 @@ context:
   version: 2.4.0
 
 package:
-  name: sparrow
+  name: sparrow-static
   version: ${{ version }}
 
 source:
@@ -23,11 +23,12 @@ requirements:
   host:
   - howardhinnant_date-static
   run:
-  - howardhinnant_date-static
+  - ${{ pin_compatible('howardhinnant_date-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
     files:
+    - lib/libsparrow.a
     - include/sparrow/buffer/buffer.hpp
     - include/sparrow/config/sparrow_version.hpp
     - share/cmake/sparrow/sparrowConfig.cmake
@@ -44,6 +45,10 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   summary: C++20 idiomatic APIs for the Apache Arrow Columnar Format
