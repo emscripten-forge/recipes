@@ -10,23 +10,23 @@ source:
   sha256: 90a7d416c9949af1ff04bf0d858b8315d6c151b377e2dccae2bd0cd663562823
 
 build:
-  script: ${{ PYTHON }} -m pip install .
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   noarch: python
   number: 0
 
 requirements:
   build:
-  - python
-  - crossenv >=1.2
-  - cross-python_emscripten-wasm32
-  - ${{ compiler("c") }}
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
   - pip
+  - setuptools
+  - wheel
   - passagemath-abi == ${{ version }}
   host:
   - python
-  - setuptools
-  - wheel
-  - pip
   run:
   - python
   - setuptools
@@ -43,6 +43,11 @@ tests:
     - pytester
     run:
     - pytester-run
+
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   summary: 'passagemath: Build system of the Sage library'

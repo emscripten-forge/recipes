@@ -14,22 +14,21 @@ outputs:
     version: ${{ version }}
 
   build:
-    script: ${{ PYTHON }} -m pip install .
+    # pure-python noarch package: install with the native build python
+    # (cross-python cannot be activated for target_platform=noarch)
+    script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
     noarch: python
 
   requirements:
     build:
-    - python
-    - crossenv >=1.2
-    - cross-python_emscripten-wasm32
-    - ${{ compiler("c") }}
+    # same python version as the (emscripten) host python, so pip installs
+    # into the matching lib/pythonX.Y/site-packages
+    - python ${{ python_min }}.*
     - pip
-    - passagemath-abi == ${{ version }}
-    host:
-    - python
     - setuptools
     - wheel
-    - pip
+    host:
+    - python
     run:
     - python
     - packaging
@@ -46,6 +45,10 @@ outputs:
       - pytester
       run:
       - pytester-run
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: passagemath-abi
