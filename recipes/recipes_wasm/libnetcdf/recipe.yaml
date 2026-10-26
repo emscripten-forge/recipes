@@ -3,7 +3,7 @@ context:
   version: 4.10.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -15,26 +15,24 @@ source:
   - patches/skip-daos-emscripten.patch
 
 build:
-  number: 1
+  number: 0
 
   files:
     exclude:
     - share/man/man1/**
 requirements:
   build:
-  - python
-  - cross-python_${{ target_platform }}
   - ${{ compiler('c') }}
-  - pip
   - m4
   - make
   host:
-  - python
   - libxml2-static >=2.15
   - hdf5
   - zlib-static
   run:
-  - python
+  - ${{ pin_compatible('hdf5', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libxml2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
@@ -42,6 +40,10 @@ tests:
     - include/netcdf.h
     - lib/libnetcdf.a
     - lib/pkgconfig/netcdf.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.unidata.ucar.edu/software/netcdf/
