@@ -3,7 +3,7 @@ context:
   version: 2.1.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -13,7 +13,7 @@ source:
   - patches/flint-3.6.patch
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
@@ -26,16 +26,22 @@ requirements:
   - ${{ compiler('cxx') }}
   - pkg-config
   host:
-  - gmp
-  - boost-cpp
+  - gmp-static
+  - boost-headers
   - libflint-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
     files:
     - lib/libeantic.a
     - include/e-antic/e-antic.h
-
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://flatsurf.github.io/e-antic/
