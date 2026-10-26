@@ -1,3 +1,6 @@
+export CFLAGS="${CFLAGS} -I${PREFIX}/include"
+export CXXFLAGS="${CXXFLAGS} -I${PREFIX}/include"
+
 mkdir build
 cd build
 mkdir -p $PREFIX
@@ -8,7 +11,9 @@ cmake ${CMAKE_ARGS} ..                    \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}    \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX} \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON  \
-    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_BUILD_TYPE=Release            \
+    -DSHARED=OFF                          \
+    -DTESTS=OFF
 
 ninja install
 

@@ -13,7 +13,7 @@ source:
   - patches/shared.patch
 
 build:
-  number: 3
+  number: 0
 
 requirements:
   build:
@@ -23,14 +23,18 @@ requirements:
   - xtensor
   run:
   - xtensor
-  - openblas=0.3.26
+  - openblas
 
 tests:
-- script:
-  - if: unix or emscripten
-    then:
-    - test -f ${PREFIX}/include/xtensor-blas/xblas.hpp
-    - test -f ${PREFIX}/lib/cmake/xtensor-blas/xtensor-blasConfig.cmake
+- package_contents:
+    include:
+    - xtensor-blas/xblas.hpp
+    files:
+    - lib/cmake/xtensor-blas/xtensor-blasConfig.cmake
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/xtensor-stack/xtensor-blas
