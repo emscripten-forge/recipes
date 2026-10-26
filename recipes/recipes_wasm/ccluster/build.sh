@@ -9,7 +9,8 @@ emconfigure ./configure \
     --prefix="${PREFIX}" \
     --with-gmp="${PREFIX}" \
     --with-mpfr="${PREFIX}" \
-    --with-flint="${PREFIX}"
+    --with-flint="${PREFIX}" \
+    --disable-pthread
 
 emmake make static -j8
 emmake make install CCLUSTER_SHARED=0 CCLUSTER_STATIC=1
