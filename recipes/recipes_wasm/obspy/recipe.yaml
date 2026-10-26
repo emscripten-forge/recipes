@@ -1,0 +1,86 @@
+context:
+  name: obspy
+  version: 1.5.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/obspy/obspy-${{ version }}.tar.gz
+  sha256: 95990a0b052b6d436b91cb6ee9f1f27ce302cc553818006ec88ed03c272e8c54
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/*.ini'
+    - '**/test/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  - setuptools
+  - cython
+  - python
+  - numpy
+  - pip
+  host:
+  - python-dev
+  - jinja2
+  - markupsafe
+  - numpy
+  run:
+  - numpy >=1.20
+  - scipy
+  - matplotlib >=3.3
+  - lxml
+  - sqlalchemy >=1.4
+  - decorator
+  - requests
+  - setuptools<82
+  - jaraco.text
+  - platformdirs
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester >= 0.9.0
+    run:
+    - pytester-run >= 0.9.0
+  files:
+    recipe:
+    - test_obspy.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/obspy/obspy
+  license: LGPL-3.0-only
+  license_file: obspy/LICENSE.txt
+  summary: |
+    ObsPy is an open-source project dedicated to provide a Python framework for
+    processing seismological data.
+  description: |
+    ObsPy is an open-source project dedicated to provide a Python framework for
+    processing seismological data. It provides parsers for common file formats,
+    clients to access data centers and seismological signal processing routines
+    which allow the manipulation of seismological time series (see Beyreuther et
+    al. 2010, Megies et al. 2011, Krischer et al. 2015).
+  documentation: https://docs.obspy.org/
+  repository: https://github.com/obspy/obspy
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

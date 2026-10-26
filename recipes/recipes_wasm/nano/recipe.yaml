@@ -1,0 +1,51 @@
+context:
+  name: nano
+  version: 9.3
+  major_version: ${{ version | split('.') | first }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://www.nano-editor.org/dist/v${{ major_version }}/nano-${{ version }}.tar.xz
+  sha256: a9affc52c9596ee0682bcdd4ceb3c0b235eb221d83d733dfd9b0dff45897cb0d
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - pkg-config
+    - texinfo
+  host:
+    - ncurses-static
+
+tests:
+- package_contents:
+    files:
+    - bin/nano.data
+    - bin/nano.js
+    - bin/nano.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/nano.js --version | head -1)
+    if [[ ! "$OUTPUT" =~ "GNU nano, version ${{ version }}" ]]; then
+      echo "Incorrect output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - ianthomas23

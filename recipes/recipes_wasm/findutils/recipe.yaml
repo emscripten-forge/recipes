@@ -1,0 +1,46 @@
+context:
+  name: findutils
+  version: 4.11.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.xz
+  sha256: bfd19cb06cc71f3352d567e90284d8cdac02ac89774bbeadf0b533b0c11432fd
+
+build:
+  number: 1
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - make
+  - autoconf
+
+tests:
+- script:
+  - test -f $PREFIX/bin/find.js
+  - test -f $PREFIX/bin/find.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/find.js --version | head -1)
+    if [[ "$OUTPUT" != "find (GNU findutils) ${{ version }}" ]]; then
+      echo "Unexpected output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized >= 0.1.2
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+  - ianthomas23
