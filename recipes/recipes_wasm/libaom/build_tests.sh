@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# test files are copied into the working directory of the test run
+SCRIPT_DIR="$PWD"
 BUILD_DIR="$SCRIPT_DIR/_build_tests"
 
 rm -rf "$BUILD_DIR"
