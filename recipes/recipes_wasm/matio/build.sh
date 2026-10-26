@@ -1,4 +1,4 @@
-emcmake cmake \
+emcmake cmake ${CMAKE_ARGS} \
     -Bbuild \
     -DCMAKE_INSTALL_LIBDIR=${PREFIX}/lib \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
