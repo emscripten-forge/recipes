@@ -3,7 +3,7 @@ context:
   name: libraw
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -20,12 +20,19 @@ build:
 requirements:
   build:
   - ${{ compiler("cxx") }}
-  - cmake
+  - autoconf
+  - automake
+  - libtool
+  - pkg-config
   - make
   host:
   - zlib-static
-  - lcms2
+  - lcms2-static
   - libjpeg-turbo-static
+  run:
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('lcms2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libjpeg-turbo-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
@@ -35,6 +42,10 @@ tests:
     - lib/libraw_r.a
     - lib/pkgconfig/libraw.pc
     - lib/pkgconfig/libraw_r.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.libraw.org/

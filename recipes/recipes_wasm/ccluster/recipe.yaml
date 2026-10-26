@@ -3,7 +3,7 @@ context:
   version: 1.1.8
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -21,11 +21,19 @@ requirements:
     - gmp-static
     - mpfr-static
     - libflint-static
+  run:
+    - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
     files:
     - lib/libccluster.a
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   repository: https://github.com/rimbach/Ccluster
