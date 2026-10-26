@@ -9,7 +9,7 @@ export CPPFLAGS="${CPPFLAGS} -I${PREFIX}/include"
 export LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
 
 emconfigure ./configure --prefix="${PREFIX}" \
-    --host=wasm32-unknown-emscripten \
+    --host=$HOST \
     --disable-openmp \
     --disable-examples \
     --enable-static \
