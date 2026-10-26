@@ -8,6 +8,8 @@ package:
 source:
   url: https://github.com/jupyter-xeus/xeus-haskell/archive/refs/tags/v${{ version }}.tar.gz
   sha256: a2ec33edb675d04ea9e206a923aabf39e1e7e58d3b35f4471752ff320e64457f
+  patches:
+  - patches/0001-use-shared-xeus.patch
 
 build:
   number: 0
@@ -22,13 +24,17 @@ requirements:
   - nlohmann_json
   - nlohmann_json-abi
   - xeus
-  - xeus-lite
+  - xeus-lite-static
 
 tests:
 - package_contents:
     files:
     - bin/xhaskell.wasm
     - bin/xhaskell.js
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: Apache-2.0
