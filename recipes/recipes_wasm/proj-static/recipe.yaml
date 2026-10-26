@@ -24,16 +24,24 @@ requirements:
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
   - requests
+  - sqlite
   host:
-  - sqlitecpp
+  - libsqlite-static
   - libtiff-static
   run:
-  - sqlitecpp
-  - libtiff-static
+  - ${{ pin_compatible('libsqlite-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libtiff-static', lower_bound='x', upper_bound='x') }}
 
 tests:
-- script:
-  - test -f ${PREFIX}/include/proj.h
+- package_contents:
+    lib:
+    - libproj.a
+    include:
+    - proj.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://proj.org/
