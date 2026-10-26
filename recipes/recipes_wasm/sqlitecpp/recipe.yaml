@@ -1,0 +1,46 @@
+context:
+  name: sqlitecpp
+  version: 3.4.0
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/SRombauts/SQLiteCpp/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9910ad8bc0a821856bd6d9fa7cb0b457883108f2b803700256b451077ed6dc05
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - libsqlite-static
+  run:
+  - ${{ pin_compatible('libsqlite-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libSQLiteCpp.a
+    include:
+    - SQLiteCpp/SQLiteCpp.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: xvega
+  homepage: https://github.com/SRombauts/SQLiteCpp
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
