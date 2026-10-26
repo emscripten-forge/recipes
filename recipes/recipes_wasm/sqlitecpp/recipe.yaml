@@ -3,7 +3,7 @@ context:
   version: 3.4.0
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -18,13 +18,21 @@ requirements:
   - ${{ compiler("cxx") }}
   - cmake
   - ninja
+  host:
+  - libsqlite-static
+  run:
+  - ${{ pin_compatible('libsqlite-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
-    files:
-    - include/sqlite3.h
-    - lib/libsqlite3.a
-    - lib/libSQLiteCpp.a
+    lib:
+    - libSQLiteCpp.a
+    include:
+    - SQLiteCpp/SQLiteCpp.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: MIT
