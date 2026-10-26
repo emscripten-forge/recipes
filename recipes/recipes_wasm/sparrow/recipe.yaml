@@ -1,9 +1,6 @@
 context:
-  version: 2.4.0
-
-package:
   name: sparrow
-  version: ${{ version }}
+  version: 2.4.0
 
 source:
   url: https://github.com/man-group/sparrow/archive/${{ version }}.tar.gz
@@ -12,45 +9,120 @@ source:
 build:
   number: 0
 
-  files:
-    exclude:
-    - '**/tests/**'
-requirements:
-  run_exports:
-  - ${{ pin_subpackage('sparrow', upper_bound='x.x') }}
-  build:
-  - ${{ compiler("cxx") }}
-  - cmake
-  - make
-  host:
-  - howardhinnant_date-static
-  run:
-  - ${{ pin_compatible('howardhinnant_date-static', lower_bound='x.x', upper_bound='x.x') }}
+outputs:
 
-tests:
-- package_contents:
-    files:
-    - lib/libsparrow.so
-    - include/sparrow/buffer/buffer.hpp
-    - include/sparrow/config/sparrow_version.hpp
-    - share/cmake/sparrow/sparrowConfig.cmake
-    - share/cmake/sparrow/sparrowConfigVersion.cmake
-    - share/cmake/sparrow/sparrowTargets.cmake
-- script:
-  - build_tests.sh
+# Two separate builds so that each package ships the CMake config for its
+# own library flavour (sparrow::sparrow points at the .a or the .so).
+- staging:
+    name: sparrow-static-build
   requirements:
     build:
     - ${{ compiler("cxx") }}
     - cmake
     - make
-  files:
-    recipe:
-    - build_tests.sh
-    - tests/
-- script: generic-testing
+    host:
+    - howardhinnant_date-static
+  build:
+    script:
+      env:
+        SPARROW_BUILD_SHARED: "OFF"
+      file: build.sh
+- staging:
+    name: sparrow-shared-build
   requirements:
     build:
-    - generic-testing
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - howardhinnant_date-static
+  build:
+    script:
+      env:
+        SPARROW_BUILD_SHARED: "ON"
+      file: build.sh
+
+#==============================================================================#
+
+- package:
+    name: sparrow-static
+    version: ${{ version }}
+  inherit: sparrow-static-build
+  build:
+    files:
+      exclude:
+      - '**/tests/**'
+  requirements:
+    host:
+    - howardhinnant_date-static
+    run:
+    - ${{ pin_compatible('howardhinnant_date-static', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libsparrow.a
+      - include/sparrow/buffer/buffer.hpp
+      - include/sparrow/config/sparrow_version.hpp
+      - share/cmake/sparrow/sparrowConfig.cmake
+      - share/cmake/sparrow/sparrowConfigVersion.cmake
+      - share/cmake/sparrow/sparrowTargets.cmake
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: sparrow
+    version: ${{ version }}
+  inherit: sparrow-shared-build
+  build:
+    files:
+      exclude:
+      - '**/tests/**'
+  requirements:
+    host:
+    - howardhinnant_date-static
+    run:
+    - ${{ pin_compatible('howardhinnant_date-static', lower_bound='x.x', upper_bound='x.x') }}
+    run_exports:
+    - ${{ pin_subpackage('sparrow', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libsparrow.so
+      - include/sparrow/buffer/buffer.hpp
+      - include/sparrow/config/sparrow_version.hpp
+      - share/cmake/sparrow/sparrowConfig.cmake
+      - share/cmake/sparrow/sparrowConfigVersion.cmake
+      - share/cmake/sparrow/sparrowTargets.cmake
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   summary: C++20 idiomatic APIs for the Apache Arrow Columnar Format
