@@ -1,5 +1,5 @@
 context:
-  version: 0.1.1
+  version: 0.1.2
 
 package:
   name: xeus-pywrap
@@ -7,42 +7,42 @@ package:
 
 source:
   url: https://github.com/DerThorsten/xeus-pywrap/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 6be2c4b922ef3c0cb0e4de82a04119490e05f5b60d08f9638f5ac27b22479f0d
-
+  sha256: bfe2aa21c3b5597d9f608e3207bed08846a98d051fb423d6fc9595c500639093
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
   - ${{ compiler("cxx") }}
+  - cross-python_${{target_platform}}
   - cmake >=4
   - ninja
-  - python
   host:
-  - python
-  - libpython
+  - python-dev
   - nlohmann_json
   - nlohmann_json-abi
   - xeus
-  - xeus-lite >=5.0.0
+  - xeus-lite-static >=5.0.0
   - pybind11<3
   - pybind11_json
   - xtl
-  - pyjs >=4.0.4
-  - zstd-static
-  - openssl < 4
+  - pyjs-dev
   run:
   - python
-  - pyjs-rt >=4.0.4
+  - pyjs >=4.0.6
 
 tests:
 - package_contents:
     files:
     - bin/xpywrap.wasm
     - bin/xpywrap.js
-    - lib/python3.13/site-packages/xpywrap/__init__.py
-
+    - lib/python3.14/site-packages/xpywrap/__init__.py
+- script:
+  - generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   license: BSD-3-Clause
   license_family: BSD-3
