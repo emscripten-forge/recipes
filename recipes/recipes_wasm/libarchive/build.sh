@@ -8,10 +8,13 @@ mkdir -p _build
 cd _build
 
 autoreconf -fiv ..
+# pthread.h only enables a mutex around libarchive's fallback arc4random;
+# without threads (6x default) that lock is unnecessary
 emconfigure ../configure \
+  ac_cv_header_pthread_h=no \
   --prefix=${PREFIX} \
   --build="x86_64-conda-linux-gnu" \
-  --host="wasm32-unknown-emscripten" \
+  --host="${HOST}" \
   --disable-shared \
   --enable-static \
   --with-bz2lib \
