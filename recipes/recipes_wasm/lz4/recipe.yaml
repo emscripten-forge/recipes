@@ -11,7 +11,7 @@ source:
   sha256: 5f0b9e53c1e82e88c10d7c180069363980136b9d7a8306c4dca4f760d60c39f0
 
 build:
-  number: 2
+  number: 0
 
   files:
     exclude:
@@ -24,18 +24,17 @@ build:
 requirements:
   build:
   - ${{ compiler('c') }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - setuptools
   - setuptools_scm
   - pkgconfig
   - pip
   host:
-  - python
-  - lz4-c >=1.10
+  - python-dev
+  - lz4-c-static >=1.10
   run:
   - python
-  - lz4-c >=1.10
 
 tests:
 - script: pytester
@@ -47,6 +46,10 @@ tests:
     - pytester
     run:
     - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/python-lz4/python-lz4
