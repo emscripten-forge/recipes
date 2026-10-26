@@ -2,12 +2,12 @@ context:
   version: 1.4
 
 package:
-  name: cmr
+  name: cmr-static
   version: ${{ version }}
 
 source:
   url: https://github.com/discopt/cmr/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 956a6114d7ee2d3176376660ab1221306da9b2f6de985825d8e60c9cbdf41c17
+  sha256: b3cf5e29a47d413ba3b43dc1380a5125ddd760b33a31085b771313a0d30d1515
 
 build:
   number: 0
@@ -17,12 +17,21 @@ requirements:
   - ${{ compiler("cxx") }}
   - cmake
   - ninja
+  host:
   - gmp-static
-  - gtest
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
 
 tests:
-- script:
-  - test -d ${PREFIX}/include/cmr
+- package_contents:
+    lib:
+    - libcmr.a
+    include:
+    - cmr/matrix.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: MIT
