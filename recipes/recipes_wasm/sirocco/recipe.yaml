@@ -3,7 +3,7 @@ context:
   version: 2.1.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
   
 source:
@@ -24,14 +24,21 @@ requirements:
   - pkg-config
   - autoconf-archive
   host:
-  - mpfr
+  - mpfr-static
   - gmp-static
+  run:
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
 
 tests:
   - package_contents:
       files:
         - lib/libsirocco.a
         - include/sirocco.h
+  - script: generic-testing
+    requirements:
+      build:
+        - generic-testing
 
 about:
   homepage: https://github.com/miguelmarco/SIROCCO2
