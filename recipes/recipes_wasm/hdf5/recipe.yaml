@@ -1,0 +1,50 @@
+context:
+  version: 1.14.6
+  maj_min_ver: 1.14
+
+package:
+  name: hdf5
+  version: ${{ version }}
+
+source:
+  url: https://support.hdfgroup.org/releases/hdf5/v${{ maj_min_ver | replace(".", "_") }}/v${{ version | replace(".",
+    "_") }}/downloads/hdf5-${{ version }}.tar.gz
+  sha256: e4defbac30f50d64e1556374aa49e574417c9e72c6b1de7a4ff88c4b1bea6e9b
+  patches:
+  - patches/0001-fenv-fe-invalid-guard.patch
+  - patches/0002-drop-soversion.patch
+
+build:
+  number: 1
+
+requirements:
+  build:
+  - cmake
+  - make
+  - ${{ compiler("c") }}
+  host:
+  - zlib-static
+tests:
+- package_contents:
+    files:
+    - include/hdf5.h
+    - include/hdf5_hl.h
+    - lib/libhdf5.so
+    - lib/libhdf5_hl.so
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://www.hdfgroup.org/solutions/hdf5/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: COPYING
+  summary: HDF5 is a data model, library, and file format for storing and managing data
+  repository: https://github.com/HDFGroup/hdf5
+  documentation: https://portal.hdfgroup.org/display/HDF5/HDF5
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes

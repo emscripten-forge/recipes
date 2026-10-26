@@ -1,0 +1,96 @@
+--- a/Modules/Core/Common/src/itkThreadLogger.cxx
++++ b/Modules/Core/Common/src/itkThreadLogger.cxx
+@@ -26,24 +26,36 @@
+ {
+   m_Delay = 300; // ms
+   m_TerminationRequested = false;
++#if defined(__EMSCRIPTEN__)
++  // Emscripten builds have no thread support: ITK_USE_PTHREADS is forced to 0
++  // and the pthread stub cannot create threads.  This logger therefore logs
++  // synchronously, and every queuing method below defers to LoggerBase.
++#else
+   m_Thread = std::thread(&ThreadLogger::ThreadFunction, this);
++#endif
+ }
+ 
+ ThreadLogger::~ThreadLogger()
+ {
++#if !defined(__EMSCRIPTEN__)
+   if (m_Thread.joinable())
+   {
+     m_TerminationRequested = true;
+     m_Thread.join(); // waits for it to finish if necessary
+   }
++#endif
+ }
+ 
+ void
+ ThreadLogger::SetPriorityLevel(PriorityLevelEnum level)
+ {
++#if defined(__EMSCRIPTEN__)
++  this->Superclass::SetPriorityLevel(level);
++#else
+   const std::lock_guard<std::mutex> lockGuard(m_Mutex);
+   this->m_OperationQ.push(SET_PRIORITY_LEVEL);
+   this->m_LevelQ.push(level);
++#endif
+ }
+ 
+ Logger::PriorityLevelEnum
+@@ -57,10 +69,14 @@
+ void
+ ThreadLogger::SetLevelForFlushing(PriorityLevelEnum level)
+ {
++#if defined(__EMSCRIPTEN__)
++  this->Superclass::SetLevelForFlushing(level);
++#else
+   const std::lock_guard<std::mutex> lockGuard(m_Mutex);
+   this->m_LevelForFlushing = level;
+   this->m_OperationQ.push(SET_LEVEL_FOR_FLUSHING);
+   this->m_LevelQ.push(level);
++#endif
+ }
+ 
+ Logger::PriorityLevelEnum
+@@ -89,14 +105,21 @@
+ void
+ ThreadLogger::AddLogOutput(OutputType * output)
+ {
++#if defined(__EMSCRIPTEN__)
++  this->Superclass::AddLogOutput(output);
++#else
+   const std::lock_guard<std::mutex> lockGuard(m_Mutex);
+   this->m_OperationQ.push(ADD_LOG_OUTPUT);
+   this->m_OutputQ.push(output);
++#endif
+ }
+ 
+ void
+ ThreadLogger::Write(PriorityLevelEnum level, std::string const & content)
+ {
++#if defined(__EMSCRIPTEN__)
++  this->Superclass::Write(level, content);
++#else
+   const std::lock_guard<std::mutex> lockGuard(m_Mutex);
+   this->m_OperationQ.push(WRITE);
+   this->m_MessageQ.push(content);
+@@ -105,14 +128,19 @@
+   {
+     this->InternalFlush();
+   }
++#endif
+ }
+ 
+ void
+ ThreadLogger::Flush()
+ {
++#if defined(__EMSCRIPTEN__)
++  this->Superclass::Flush();
++#else
+   const std::lock_guard<std::mutex> lockGuard(m_Mutex);
+   this->m_OperationQ.push(FLUSH);
+   this->InternalFlush();
++#endif
+ }
+ 
+ void

@@ -1,0 +1,128 @@
+context:
+  name: openjdk8
+  version: "jdk8u504-ga"
+  support_version: "0.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/openjdk/jdk8u/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 406a990606b3452485b1554d0b9463fa0ef8e34c70cd1033b54ff12dd9a2f611
+    patches:
+      # configure: the wasm32-unknown-emscripten target (Zero VM)
+      - patches/0001-build-wasm32-emscripten-target.patch
+      # HotSpot Zero: Emscripten build flags, OS layer for a single-process,
+      # signal-free environment, cooperative threads (gthread-jspi)
+      - patches/0002-hotspot-zero-on-emscripten.patch
+      # clang may otherwise fold markOop lock-bit tests (monitors hang)
+      - patches/0003-hotspot-markoop-value-alignment.patch
+      # class library natives: built-in (statically linked) JNI libraries,
+      # NIO without epoll, console input, XAWT as the only toolkit
+      - patches/0004-jdk-native-libraries-on-emscripten.patch
+      # Java Sound: Direct Audio playback through Web Audio
+      - patches/0005-javasound-webaudio-direct-audio.patch
+      # AWT on x11.wasm: X11 structure layouts computed for its headers,
+      # its wide KeyCode narrowed in the modifier map XToolkit reads
+      - patches/0006-awt-x11wasm-struct-layouts-and-keycode.patch
+  # build support: compiler wrapper, browser runtime, link and JRE staging
+  # scripts, launcher and applet loader
+  - url: https://github.com/wangyenshu/openjdk8-support/archive/refs/tags/v${{ support_version }}.tar.gz
+    sha256: 37d3100137e676381815655f9cfe4401d08de87041548b16d8b610e8ca1dcd77
+    target_directory: support
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    # configure checks for a compiler for the build machine
+    - gcc
+    - gxx
+    # boot JDK: compiles the Java class library and runs the build tools
+    - openjdk 8.*
+    - make
+    - zip
+    - unzip
+    # DejaVu fonts, bundled in the JRE (lib/fonts)
+    - font-ttf-dejavu
+    # headers only (libcups is dlopen()ed, which fails in wasm)
+    - libcups
+    # (python comes with the Emscripten toolchain)
+  host:
+    - x11-wasm
+    - gthread-jspi
+    - freetype
+    - zlib
+    # headers only (the JDK loads fontconfig at run time when present)
+    - fontconfig
+    # Zero calls every JNI method through ffi_call; this variant's calls can
+    # block and switch green threads (JSPI). Not libffi-pthread: it calls
+    # through JavaScript (JSPI cannot suspend those frames) and needs
+    # stackSave, which this non-pthread module does not have.
+    - libffi-jspi
+  # everything is linked statically into openjdk8.wasm
+  ignore_run_exports:
+    by_name:
+      - freetype
+      - zlib
+      - libpng
+      - fontconfig
+      - expat
+      - x11-wasm
+      - gthread-jspi
+
+tests:
+  - package_contents:
+      files:
+        - share/openjdk8-wasm/openjdk8.js
+        - share/openjdk8-wasm/openjdk8.wasm
+        - share/openjdk8-wasm/openjdk8-jre.json
+        - share/openjdk8-wasm/openjdk8-jre.data.gz
+        - share/openjdk8-wasm/openjdk8-web.js
+
+about:
+  homepage: https://openjdk.org/projects/jdk8u/
+  repository: https://github.com/openjdk/jdk8u
+  license: GPL-2.0-only WITH Classpath-exception-2.0 AND Bitstream-Vera AND MIT
+  license_file:
+    - LICENSE
+    - ASSEMBLY_EXCEPTION
+    - THIRD_PARTY_README
+    # the build support code and browser runtime (openjdk8-support)
+    - support/LICENSE
+    # the bundled DejaVu fonts
+    - support/jre-overlay/lib/fonts/LICENSE-DejaVu.txt
+    # libffi (libffi-jspi), linked into openjdk8.wasm; build.sh copies it
+    # from the host prefix
+    - libffi-jspi/LICENSE
+  summary: OpenJDK 8 Java runtime for WebAssembly, with AWT/Swing and applets in the browser
+  description: |
+    The OpenJDK 8 Java runtime (HotSpot Zero interpreter and the complete
+    Java SE 8 class library) compiled to WebAssembly.
+
+    In the browser, AWT and Swing windows are drawn by x11.wasm (the XAWT
+    toolkit and the Java2D X11 pipeline with FreeType fonts), Java Sound
+    plays through Web Audio, http/https URLs are fetched with fetch(), and
+    netscape.javascript.JSObject (LiveConnect) calls into the page.
+    share/openjdk8-wasm/openjdk8-web.js starts the <applet>, <object> and <embed>
+    applets of a page in one Java VM, or runs a program with OpenJDK8.run().
+    Java threads are cooperative green threads (gthread-jspi), so a browser
+    with WebAssembly JSPI is needed (Chrome/Edge 137 or later), but no
+    SharedArrayBuffer or cross-origin isolation.
+
+    bin/openjdk8-java runs Java programs under Node.js 25 or later (headless
+    AWT), like the java command.
+
+    Installed files: share/openjdk8-wasm/{openjdk8.js, openjdk8.wasm, openjdk8-jre.json,
+    openjdk8-jre.data.gz, openjdk8-web.js}.
+    Not included: the JDK tools (javac, ...), JIT compilers, debugging
+    (JDWP), process creation, sockets other than http(s) via fetch.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

@@ -1,0 +1,54 @@
+context:
+  version: 2.5.1
+
+package:
+  name: wrapt
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/w/wrapt/wrapt-${{ version }}.tar.gz
+  sha256: f595bb0185aab3e9dc31950c95d914f56ea8278810c3b928f3426e12ed6d27bc
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_wrapt.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Module for decorators, wrappers and monkey patching
+
+  homepage: https://github.com/GrahamDumpleton/wrapt

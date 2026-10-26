@@ -1,0 +1,71 @@
+context:
+  name: vctrs
+  version: 0.7.3
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: b45078413e06ac624dddb7221a3a43908b405c8abec09822cb86638d30b0435b
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  - r-cli >=3.6.3
+  - r-glue
+  - r-rlang
+  - r-lifecycle >=1.0.4
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli >=3.6.3
+  - r-glue
+  - r-rlang
+  - r-lifecycle >=1.0.4
+  run:
+  - r-cli >=3.6.3
+  - r-glue
+  - r-rlang
+  - r-lifecycle >=1.0.4
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://vctrs.r-lib.org/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Vector helpers
+  description: |
+    Defines new notions of prototype and size that are used to provide tools for
+    consistent and well-founded type-coercion and size-recycling, and are in
+    turn connected to ideas of type- and size-stability useful for analysing
+    function interfaces.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

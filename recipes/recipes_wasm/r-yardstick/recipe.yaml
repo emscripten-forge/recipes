@@ -1,0 +1,89 @@
+context:
+  name: yardstick
+  version: 1.4.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: 579f2b3db310297ddd9413aa076fe4d0d74e4fbd87784a4597ac84718c74888b
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+  host:
+  - r-base ==${{ r_base }}
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+  run:
+  - r-cli
+  - r-dplyr >=1.1.0
+  - r-generics >=0.1.2
+  - r-hardhat
+  - r-lifecycle >=1.0.3
+  - r-rlang >=1.1.4
+  - r-tibble
+  - r-tidyselect >=1.2.0
+  - r-vctrs >=0.5.0
+  - r-withr
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://cran.r-project.org/package=${{ name }}
+  repository: https://github.com/tidymodels/yardstick
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Tidy Characterizations of Model Performance
+  description: |
+    Tidy tools for quantifying how well model fits to a data set such as
+    confusion matrices, class probability curve summaries, and regression
+    metrics (e.g., RMSE).
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes
