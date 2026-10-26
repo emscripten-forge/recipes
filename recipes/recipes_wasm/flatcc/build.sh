@@ -10,7 +10,8 @@ emcmake cmake -S . -B build \
   -DFLATCC_CXX_TEST=OFF \
   -DFLATCC_DEBUG_CLANG_SANITIZE=OFF \
   -DFLATCC_INSTALL=ON \
-  -DFLATCC_ALLOW_WERROR=OFF
+  -DFLATCC_ALLOW_WERROR=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 emmake ninja -C build -j"${CPU_COUNT}"
 emmake ninja -C build install
