@@ -10,7 +10,7 @@ LDFLAGS="-L${PREFIX}/lib" \
 CXXFLAGS="-std=c++11" \
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
-    --host=wasm32-unknown-emscripten \
+    --host=${HOST} \
     --disable-shared \
     --enable-static-link \
     --disable-threaded \
