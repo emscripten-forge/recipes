@@ -1,0 +1,44 @@
+context:
+  version: 1.4
+
+package:
+  name: cmr-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/discopt/cmr/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: b3cf5e29a47d413ba3b43dc1380a5125ddd760b33a31085b771313a0d30d1515
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - gmp-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libcmr.a
+    include:
+    - cmr/matrix.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Combinatorial matrix recognition
+  homepage: https://github.com/discopt/cmr
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
