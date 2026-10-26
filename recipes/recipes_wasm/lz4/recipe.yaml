@@ -1,0 +1,62 @@
+context:
+  name: lz4
+  version: 4.4.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5f0b9e53c1e82e88c10d7c180069363980136b9d7a8306c4dca4f760d60c39f0
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - setuptools
+  - setuptools_scm
+  - pkgconfig
+  - pip
+  host:
+  - python-dev
+  - lz4-c-static >=1.10
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_lz4.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/python-lz4/python-lz4
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: LZ4 Bindings for Python
+
+extra:
+  recipe-maintainers:
+  - davidbrochart
