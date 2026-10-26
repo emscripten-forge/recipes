@@ -1,9 +1,6 @@
 #!/bin/bash
 set -ex
 
-# The 6x toolchain builds without pthread support: disable configure's
-# AX_PTHREAD detection (the option is --without-threads, despite the help
-# text) and lcms2's pthread-based default mutex plugin.
 export CFLAGS="$CFLAGS -DCMS_NO_PTHREADS=1"
 
 emconfigure ./configure \
