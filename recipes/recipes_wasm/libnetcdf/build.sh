@@ -1,3 +1,6 @@
+export CPPFLAGS="${CPPFLAGS} -I${PREFIX}/include"
+export LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
+
 mkdir -p build
 cd build
 
