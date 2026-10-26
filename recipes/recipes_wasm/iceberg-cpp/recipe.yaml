@@ -3,7 +3,7 @@ context:
   version: 0.2.0
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -22,13 +22,13 @@ requirements:
     - cmake
     - ninja
   host:
-    - nanoarrow = 0.8.0
+    - nanoarrow-static
     - nlohmann_json
     - zlib-static
   run:
-    - nanoarrow = 0.8.0
+    - ${{ pin_compatible('nanoarrow-static', lower_bound='x.x', upper_bound='x.x') }}
     - nlohmann_json
-    - zlib-static
+    - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
   - package_contents:
@@ -50,6 +50,10 @@ tests:
       recipe:
         - build_tests.sh
         - tests/
+  - script: generic-testing
+    requirements:
+      build:
+        - generic-testing
 
 about:
   homepage: https://iceberg.apache.org/
