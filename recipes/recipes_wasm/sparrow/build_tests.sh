@@ -16,6 +16,9 @@ emcmake cmake ../tests/. \
 
 emmake make
 
+# node loads the shared libsparrow.so from next to the test binary
+cp "${PREFIX}/lib/libsparrow.so" .
+
 echo "Running simple test..."
 node test_simple.js
 
