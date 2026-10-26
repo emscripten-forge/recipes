@@ -3,7 +3,7 @@ context:
   name: lcms2
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -18,20 +18,26 @@ build:
     - share/man/man1/**
 requirements:
   build:
+  - ${{ compiler("c") }}
   - ${{ compiler("cxx") }}
-  - cmake
   - make
   host:
   - libjpeg-turbo-static
   - libtiff-static
-
+  run:
+  - ${{pin_compatible('libjpeg-turbo-static', lower_bound='x.x', upper_bound='x.x')}}
+  - ${{pin_compatible('libtiff-static', lower_bound='x.x', upper_bound='x.x')}}
 tests:
 - package_contents:
-    files:
-    - include/lcms2.h
-    - include/lcms2_plugin.h
-    - lib/liblcms2.a
-    - lib/liblcms2.so
+    lib:
+    - liblcms2.a
+    include:
+    - lcms2.h
+    - lcms2_plugin.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.littlecms.com/
@@ -43,4 +49,3 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-

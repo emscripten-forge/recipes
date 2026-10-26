@@ -1,7 +1,7 @@
 #!/bin/bash
 set -ex
 
-# Build and install dynamic library
+# Build and install static libraries
 mkdir -p build
 cd build
 
@@ -10,6 +10,7 @@ emcmake cmake ${CMAKE_ARGS} \
   -DCMAKE_INSTALL_PREFIX=$PREFIX \
   -DCMAKE_CXX_STANDARD=17 \
   -DBUILD_SHARED_LIBS=OFF \
+  -Dgtest_disable_pthreads=ON \
   -DCMAKE_INSTALL_LIBDIR=lib \
   -DCMAKE_BUILD_TYPE=Release \
   ..

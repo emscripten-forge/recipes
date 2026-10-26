@@ -3,7 +3,7 @@ context:
   version: 0.8.4
 
 package:
-  name: ${{ name|lower }}
+  name: ${{ name|lower }}-static
   version: ${{ version }}
 
 source:
@@ -13,19 +13,23 @@ source:
 build:
   number: 0
 
-  files:
-    exclude:
-    - share/man/man1/**
 requirements:
   build:
   - ${{ compiler('c') }}
-  - make
   - cmake
+  - ninja
 
 tests:
-- script:
-  - test -f ${PREFIX}/lib/libxxhash.a
-  - test -f ${PREFIX}/include/xxhash.h
+- package_contents:
+    lib:
+    - libxxhash.a
+    include:
+    - xxhash.h
+    - xxh3.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://www.xxhash.com/

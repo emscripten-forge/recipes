@@ -3,7 +3,7 @@ context:
   name: gtest
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -20,14 +20,20 @@ requirements:
   - ninja
   run_constraints:
   - gmock = ${{ version }}
-  run_exports:
-  - ${{ pin_subpackage('gtest', upper_bound='x.x.x') }}
 tests:
-- script:
-  - test -f $PREFIX/lib/libgtest.a
-  - test -f $PREFIX/lib/libgmock.a
-  - test -f $PREFIX/include/gtest/gtest.h
-  - test -f $PREFIX/include/gmock/gmock.h
+- package_contents:
+    lib:
+    - libgtest.a
+    - libgtest_main.a
+    - libgmock.a
+    - libgmock_main.a
+    include:
+    - gtest/gtest.h
+    - gmock/gmock.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/google/googletest
