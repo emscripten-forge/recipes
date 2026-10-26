@@ -11,6 +11,9 @@ emcmake cmake ${CMAKE_ARGS} \
     -DBUILD_TESTS=OFF \
     -DWITH_OPENMP=OFF \
     -DWITH_LSR_BINDINGS=OFF \
+    -DWITH_CR32S=OFF \
+    -DWITH_CR64S=OFF \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     ../
 
 # Build step
