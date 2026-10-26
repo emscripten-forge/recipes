@@ -3,7 +3,7 @@ context:
   version: 4.2.2
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -24,13 +24,13 @@ requirements:
   - libbzip2-static
   - liblzma-static
   - zstd-static
-  - openssl
+  - libopenssl-static
   run:
-  - zlib-static
-  - libbzip2-static
-  - liblzma-static
-  - zstd-static
-  - openssl
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libbzip2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('liblzma-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zstd-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libopenssl-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
@@ -67,6 +67,10 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/zlib-ng/minizip-ng
