@@ -9,6 +9,8 @@ package:
 source:
   url: https://pypi.io/packages/source/p/pyproj/pyproj-${{ version }}.tar.gz
   sha256: efa59725bba68bf97fa808b61302df32934acdceb6a5c92a8dd0e71dc266a876
+  patches:
+  - patches/0001-no-rpath-on-emscripten.patch
 
 build:
   number: 0
@@ -30,10 +32,11 @@ requirements:
   - python
   - cross-python_${{ target_platform }}
   - cython
+  - pkg-config
   - ${{ compiler('c') }}
   host:
-  - python
-  - proj == 9.8.1
+  - python-dev
+  - proj >=9.9
   run:
   - python
   - proj
@@ -49,7 +52,10 @@ tests:
   files:
     recipe:
     - test_pyproj.py
-
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/pyproj4/pyproj
