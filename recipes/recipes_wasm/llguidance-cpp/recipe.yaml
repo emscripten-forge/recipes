@@ -3,7 +3,7 @@ context:
   name: llguidance-cpp
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -39,6 +39,14 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+# A Rust staticlib bundles the whole Rust std, including std::thread and
+# std::sync (pthread_create, mutexes, condvars). llguidance itself is built
+# without rayon and never spawns threads (the C++ test program above links
+# it without -pthread and runs).
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/guidance-ai/llguidance
