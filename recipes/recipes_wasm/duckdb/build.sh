@@ -13,6 +13,7 @@ ${PYTHON} -m pip install . ${PIP_ARGS} \
   -Ccmake.define.BUILD_EXTENSIONS="parquet;json;autocomplete" \
   -Ccmake.define.BUILD_SHELL=OFF \
   -Ccmake.define.BUILD_UNITTESTS=OFF \
+  -Ccmake.define.DISABLE_THREADS=ON \
   -Ccmake.define.ENABLE_EXTENSION_AUTOLOADING=OFF \
   -Ccmake.define.ENABLE_EXTENSION_AUTOINSTALL=OFF \
   -Ccmake.define.CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
