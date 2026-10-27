@@ -2,6 +2,10 @@ import pyjs
 import pytest
 
 
+def test_import_spatialgeometry():
+    import spatialgeometry  # noqa: F401
+
+
 @pytest.mark.skipif(
     not pyjs.js.Function('return typeof importScripts === "function"')(),
     reason="requires browser, not node",
