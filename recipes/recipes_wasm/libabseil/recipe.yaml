@@ -3,7 +3,7 @@ context:
   name: libabseil
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -44,6 +44,13 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+# Abseil creates no threads. It calls the pthread mutex/condvar/TLS-key API
+# (absl::Mutex waiter, thread identity), which emscripten's non-threaded libc
+# provides as single-threaded stubs; nothing is compiled with -pthread.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/abseil/abseil-cpp

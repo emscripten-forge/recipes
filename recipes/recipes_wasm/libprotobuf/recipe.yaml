@@ -4,7 +4,7 @@ context:
   major_version: 7
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ major_version }}.${{ version }}
 
 source:
@@ -22,11 +22,11 @@ requirements:
   - cmake
   - ninja
   host:
-  - libabseil
+  - libabseil-static
   - zlib-static
   run:
-  - libabseil
-  - zlib-static
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
@@ -53,6 +53,10 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://protobuf.dev/
