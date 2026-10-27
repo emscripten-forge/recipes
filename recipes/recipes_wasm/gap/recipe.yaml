@@ -2,7 +2,7 @@ context:
   version: 4.16.1
 
 package:
-  name: gap
+  name: gap-static
   version: ${{ version }}
 
 source:
@@ -10,9 +10,9 @@ source:
   sha256: f53615fbdf6bd6e90520b36fad05890c8a6cfb848de81630cc69022fbd297d2f
 - git: https://github.com/wangyenshu/gap-web-assets.git
   target_directory: web
-  
+
 build:
-  number: 2
+  number: 0
   script: build.sh
 
 requirements:
@@ -25,8 +25,11 @@ requirements:
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
   host:
-  - gmp
+  - gmp-static
   - zlib-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
@@ -35,6 +38,10 @@ tests:
     - include/gap/gap.h
     - bin/gapwasm/gap.js
     - bin/gapwasm/gap.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://www.gap-system.org/

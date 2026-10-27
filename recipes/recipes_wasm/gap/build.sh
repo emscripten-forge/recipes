@@ -56,26 +56,39 @@ rm -f src/c_oper1.c src/c_type1.c src/ffdata.c src/ffdata.h
 
 # Run configure if we don't have a makefile, or someone configured this
 # GAP for standard building (emscripten builds will use 'emcc')
+if [[ "${target_platform}" == "emscripten-wasm64" ]]; then
+    GAP_ABI=64
+else
+    GAP_ABI=32
+fi
+
 if [[ ! -f GNUmakefile ]] || ! grep '/emcc' GNUmakefile > /dev/null; then
-    emconfigure ./configure --prefix="${PREFIX}" ABI=32 \
+    emconfigure ./configure --prefix="${PREFIX}" --host="${HOST}" ABI=${GAP_ABI} \
     --with-gmp=${PREFIX} \
     --with-zlib=${PREFIX} \
     LDFLAGS="-s ASYNCIFY=1 -O2"
 fi;
 
+# GAP unconditionally compiles/links with -pthread (only HPC-GAP uses threads).
+# On emscripten this adds the atomics feature / shared memory, so drop it.
+sed -i.bak 's/^PTHREAD_CFLAGS = .*/PTHREAD_CFLAGS =/' GNUmakefile
+sed -i.bak 's/^PTHREAD_LIBS = .*/PTHREAD_LIBS =/' GNUmakefile
+rm -f GNUmakefile.bak
+
 # Target the Linux/Unix block to redefine shared lib extensions to static
-sed -i 's/SHLIB_EXT=\.so/SHLIB_EXT=.a/' Makefile.rules
-sed -i 's/LIBGAP_FULL = libgap$(SHLIB_EXT)\.$(SHLIB_MAJOR)/LIBGAP_FULL = libgap.a/' Makefile.rules
+sed -i.bak 's/SHLIB_EXT=\.so/SHLIB_EXT=.a/' Makefile.rules
+sed -i.bak 's/LIBGAP_FULL = libgap$(SHLIB_EXT)\.$(SHLIB_MAJOR)/LIBGAP_FULL = libgap.a/' Makefile.rules
 
 # Swap the dynamic linker command for the static archiver
-sed -i 's/.*$(QUIET_LINK)$(LINK) -o $@ $(LINK_SHLIB_FLAGS).*/\t$(QUIET_LINK)$(AR) rcs $@ $(OBJS)/' Makefile.rules
+sed -i.bak 's/.*$(QUIET_LINK)$(LINK) -o $@ $(LINK_SHLIB_FLAGS).*/\t$(QUIET_LINK)$(AR) rcs $@ $(OBJS)/' Makefile.rules
 
 # Prevent a circular dependency from deleting the archive
-sed -i 's/libgap$(SHLIB_EXT): $(LIBGAP_FULL)/libgap_avoid_circular: $(LIBGAP_FULL)/' Makefile.rules
+sed -i.bak 's/libgap$(SHLIB_EXT): $(LIBGAP_FULL)/libgap_avoid_circular: $(LIBGAP_FULL)/' Makefile.rules
 
 # Remove symlink creation from the install step
-sed -i '/ln -sf $(LIBGAP_FULL) $(DESTDIR)$(libdir)\/libgap$(SHLIB_EXT)/d' Makefile.rules
-sed -i '/$(INSTALL_NAME_TOOL) -id/d' Makefile.rules
+sed -i.bak '/ln -sf $(LIBGAP_FULL) $(DESTDIR)$(libdir)\/libgap$(SHLIB_EXT)/d' Makefile.rules
+sed -i.bak '/$(INSTALL_NAME_TOOL) -id/d' Makefile.rules
+rm -f Makefile.rules.bak
 
 # Get full required packages
 emmake make bootstrap-pkg-full
@@ -84,8 +97,9 @@ emmake make bootstrap-pkg-full
 cp native-build/build/c_*.c native-build/build/ffdata.* src/
 
 # The EXEEXT is usually for windows, but here it lets us set GAP's extension,
-# which lets us produce a html page to run GAP in.
-emmake make -j${CPU_COUNT} LDFLAGS="-lidbfs.js -lworkerfs.js -s ASYNCIFY=1 -sASYNCIFY_STACK_SIZE=16mb -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
+# so emcc emits gap.js + gap.wasm (the html page comes from gap-web-assets;
+# emitting gap.html would run emcc's html minifier, which is broken in emsdk 6x).
+emmake make -j${CPU_COUNT} LDFLAGS="-lidbfs.js -lworkerfs.js -s ASYNCIFY=1 -sASYNCIFY_STACK_SIZE=16mb -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".js"
 emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
 mkdir -p "${PREFIX}/bin/gapwasm"
