@@ -3,11 +3,13 @@ context:
   version: 2.9.3
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
-  url: https://pallini.di.uniroma1.it/nauty${{ version | replace(".", "_") }}.tar.gz
+  url:
+  - https://users.cecs.anu.edu.au/~bdm/nauty/nauty${{ version | replace(".", "_") }}.tar.gz
+  - https://pallini.di.uniroma1.it/nauty${{ version | replace(".", "_") }}.tar.gz
   sha256: 9fc4edae04f88a0f5883985be3b39cf7f898fd6cc96e96b9ee25452743cc1b5b
 
 build:
@@ -19,7 +21,7 @@ requirements:
   - automake
   - libtool
   - make
-  - ${{ compiler('cxx') }}
+  - ${{ compiler('c') }}
 
 tests:
 - package_contents:
@@ -28,6 +30,10 @@ tests:
     - include/nauty.h
     - include/traces.h
     - bin/dreadnaut.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://pallini.di.uniroma1.it/

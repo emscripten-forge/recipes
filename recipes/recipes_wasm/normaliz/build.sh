@@ -9,9 +9,10 @@ export CXXFLAGS="-std=c++17 -fPIC -Wno-invalid-utf8 -Wno-unused-but-set-variable
 
 emconfigure ./configure \
     --build=i686-pc-linux-gnu \
-    --host=wasm32-unknown-emscripten \
+    --host=${HOST} \
     --disable-dependency-tracking \
     --disable-shared \
+    --disable-openmp \
     --with-gmp="${PREFIX}" \
     --with-flint="${PREFIX}" \
     --with-cocoalib="${PREFIX}" \
