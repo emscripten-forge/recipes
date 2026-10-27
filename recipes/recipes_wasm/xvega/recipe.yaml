@@ -3,7 +3,7 @@ context:
   version: 0.1.3
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -20,14 +20,21 @@ requirements:
   - ninja
   host:
   - nlohmann_json
-  - xproperty
+  # xvega 0.1.x needs the old xproperty API (< 0.13)
+  - xproperty 0.12.*
   run:
-  - xproperty
+  - xproperty 0.12.*
 
 tests:
-- script:
-  - test -f $PREFIX/lib/libxvega.a
-  - test -f $PREFIX/include/xvega/xvega.hpp
+- package_contents:
+    lib:
+    - libxvega.a
+    include:
+    - xvega/xvega.hpp
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
