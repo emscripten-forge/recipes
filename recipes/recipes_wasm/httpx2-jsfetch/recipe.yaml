@@ -12,10 +12,9 @@ source:
   sha256: f7bf811d90e05e6574b21ce9c021cbda0b75a1821cabb310dd85cf43da3ab7d7
 
 build:
-  number: 1
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  number: 0
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   noarch: python
-
   files:
     exclude:
     - '**/__pycache__/**'
@@ -26,11 +25,13 @@ build:
     - '**/*.py'
 requirements:
   build:
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
   - pip != 25.1
-  - cross-python_${{ target_platform }}
   - hatchling
   host:
-  - python =${{ python_min }}
+  - python
   run:
   - python >=${{ python_min }}
   - pyjs >=4.0.6
@@ -46,6 +47,10 @@ tests:
   files:
     recipe:
     - test_import_httpx2.py
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/davidbrochart/httpx2-jsfetch-emscripten-forge

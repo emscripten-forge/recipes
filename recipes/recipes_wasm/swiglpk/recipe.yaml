@@ -8,9 +8,12 @@ package:
 source:
 - url: https://github.com/biosustain/swiglpk/archive/refs/tags/${{ version }}.tar.gz
   sha256: ca326c6acb7514040c0059debf427d945ed7a6ec3f894494949fdba02d87f77e
+  patches:
+  # SWIG >= 4.2 no longer maps the Python 2 PyInt_* API to PyLong_*
+  - 0001-use-PyLong-instead-of-PyInt.patch
 
 build:
-  number: 2
+  number: 0
 
   files:
     exclude:
@@ -23,13 +26,15 @@ build:
 requirements:
   build:
   - ${{ compiler('c') }}
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - python
   - swig
   - pip
   host:
-  - python
+  - python-dev
   - glpk-static
+  run:
+  - python
 
 tests:
 - script: pytester
@@ -41,6 +46,10 @@ tests:
     - pytester
     run:
     - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/biosustain/swiglpk

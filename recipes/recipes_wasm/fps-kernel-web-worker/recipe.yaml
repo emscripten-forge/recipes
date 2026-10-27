@@ -12,7 +12,9 @@ source:
 
 build:
   number: 0
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   noarch: python
 
   files:
@@ -25,8 +27,10 @@ build:
     - '**/*.py'
 requirements:
   build:
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
   - pip != 25.1
-  - cross-python_${{ target_platform }}
   - uv-build
   host:
   - python
@@ -47,6 +51,10 @@ tests:
   files:
     recipe:
     - test_import_kernelwebworker.py
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/jupyter-server/jupyverse/tree/main/plugins/kernel_web_worker
