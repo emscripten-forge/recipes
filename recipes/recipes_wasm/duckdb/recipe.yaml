@@ -1,0 +1,77 @@
+context:
+  name: duckdb
+  version: 1.4.5
+
+package:
+  name: python-${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 783779bde612172b06c250b5f34f7fc29471833545f2894aadedbffbbcc49013
+  patches:
+  - patches/emscripten-python-target.patch
+  - patches/0002-thrift-TEnumIterator-operator-eq.patch
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+    - duckdb_build/**
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('cxx') }}
+  - pip
+  - setuptools
+  - setuptools-scm
+  - pybind11
+  - scikit-build-core
+  - cmake
+  - ninja
+  host:
+  - python-dev
+  - pybind11
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_duckdb.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://duckdb.org/
+  license: MIT
+  license_file: LICENSE
+  summary: DuckDB is an analytical in-process SQL database management system
+  description: |
+    DuckDB is an in-process SQL OLAP database management system.
+    It is designed to support analytical query workloads (OLAP) while
+    being embeddable in Python and other languages.
+  repository: https://github.com/duckdb/duckdb-python
+
+extra:
+  recipe-maintainers:
+  - wolfv
+  - IsabelParedes
