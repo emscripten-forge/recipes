@@ -12,7 +12,16 @@ source:
 
 build:
   number: 0
-  script: ${PYTHON} -m pip install . -vvv
+  noarch: python
+  # SG_PURE_WHEEL=1 is upstream's switch for the Pyodide/JupyterLite build:
+  # it skips the optional nanobind extension (never built for Emscripten
+  # anyway) and the pure-Python fallback spatialgeometry/scene.py is used.
+  # Install with the native build python (cross-python cannot be activated
+  # for target_platform=noarch).
+  script:
+  - export SG_PURE_WHEEL=1
+  - export CMAKE_ARGS="${CMAKE_ARGS} -Dnanobind_DIR=$(python -m nanobind --cmake_dir)"
+  - python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
 
   files:
     exclude:
@@ -24,15 +33,16 @@ build:
 
 requirements:
   build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - cross-python_${{ target_platform }}
-  - numpy
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
   - pip
   - scikit-build-core >=0.9
   - nanobind >=2
+  - cmake
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
   host:
-  - numpy
   - python
   run:
   - python
@@ -49,6 +59,10 @@ tests:
   files:
     recipe:
     - test_spatialgeometry.py
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   summary: A Shape and Geometry Package
