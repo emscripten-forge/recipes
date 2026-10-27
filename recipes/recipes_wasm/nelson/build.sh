@@ -4,14 +4,10 @@ cd build
 export CMAKE_PREFIX_PATH=$PREFIX
 export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX
 
-if [[ $target_platform == "emscripten-wasm32" ]]; then
-    export USE_WASM=ON
-else
-    export USE_WASM=OFF
-fi
-
-ls $PREFIX/lib
-echo "BUILDING"
+# nelson requests Eigen3 3.3 via find_package, but 6x ships Eigen 5 whose
+# config rejects that version; use nelson's env override instead.
+export EIGEN3_DIR=$PREFIX/share/eigen3/cmake
+export EIGEN3_INCLUDE_DIR=$PREFIX/include/eigen3
 
 # Configure step
 cmake ${CMAKE_ARGS} ..                                \
@@ -19,7 +15,8 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_BUILD_TYPE=Release                        \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DXEUS_NELSON_EMSCRIPTEN_WASM_BUILD=$USE_WASM     
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON              \
+    -DBUILD_SHARED_LIBS=OFF
 
 # Build step
 ninja

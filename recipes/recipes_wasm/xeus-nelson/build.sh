@@ -10,8 +10,7 @@ cmake ${CMAKE_ARGS} ..                                \
     -DCMAKE_BUILD_TYPE=Release                        \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON              \
-    -DBUILD_SHARED_LIBS=OFF
+    -DXEUS_NELSON_EMSCRIPTEN_WASM_BUILD=ON
 
 # Build step
 ninja
