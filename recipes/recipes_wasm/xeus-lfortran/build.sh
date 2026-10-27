@@ -31,3 +31,6 @@ emmake make -C build -j8 install
 
 cp build/src/lfortran/tests/test_lfortran.js "$PREFIX/bin/test_lfortran.js"
 cp build/src/lfortran/tests/test_lfortran.wasm "$PREFIX/bin/test_lfortran.wasm"
+
+# test_lfortran preloads the runtime .mod files from a side .data file
+cp build/src/lfortran/tests/test_lfortran.data "$PREFIX/bin/test_lfortran.data"
