@@ -1,0 +1,63 @@
+context:
+  version: 5.0.13
+
+package:
+  name: swiglpk
+  version: ${{ version }}
+
+source:
+- url: https://github.com/biosustain/swiglpk/archive/refs/tags/${{ version }}.tar.gz
+  sha256: ca326c6acb7514040c0059debf427d945ed7a6ec3f894494949fdba02d87f77e
+  patches:
+  # SWIG >= 4.2 no longer maps the Python 2 PyInt_* API to PyLong_*
+  - 0001-use-PyLong-instead-of-PyInt.patch
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - swig
+  - pip
+  host:
+  - python-dev
+  - glpk-static
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_swiglpk.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/biosustain/swiglpk
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Simple swig bindings for the GNU Linear Programming Kit
+  description: |
+    swiglpk is not a high-level wrapper for GLPK (take a look at optlang
+    if you are interested in a python-based mathematical programming language).
+    It just provides plain vanilla swig bindings to the underlying C library.
+  repository: https://github.com/biosustain/swiglpk

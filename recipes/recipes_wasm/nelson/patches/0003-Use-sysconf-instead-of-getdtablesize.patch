@@ -1,0 +1,15 @@
+getdtablesize() is no longer provided by emscripten 6; use the POSIX
+sysconf(_SC_OPEN_MAX) equivalent.
+
+diff -ru a/modules/engine/src/cpp/CloseAllFiles.cpp b/modules/engine/src/cpp/CloseAllFiles.cpp
+--- a/modules/engine/src/cpp/CloseAllFiles.cpp	2026-10-27 08:51:37
++++ b/modules/engine/src/cpp/CloseAllFiles.cpp	2026-10-27 08:51:37
+@@ -22,7 +22,7 @@
+     _fcloseall();
+ #else
+     FILE* stream = nullptr;
+-    int maxfd = getdtablesize();
++    int maxfd = static_cast<int>(sysconf(_SC_OPEN_MAX));
+     for (int fd = 0; fd < maxfd; fd++) {
+         stream = fdopen(fd, "r");
+         if (stream != nullptr) {
