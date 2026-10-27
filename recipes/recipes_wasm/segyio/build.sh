@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euxo pipefail
 
 mkdir build
 cd build
@@ -8,7 +9,7 @@ cd build
 # mkdir -p $BUILD_PREFIX/include/
 # cp -r $PREFIX/include/python3.13/ $BUILD_PREFIX/include/
 
-emcmake cmake .. \
+emcmake cmake ${CMAKE_ARGS} .. \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=ON \
