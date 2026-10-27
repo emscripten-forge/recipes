@@ -2,7 +2,7 @@ context:
   version: 0.3.0
 
 package:
-  name: nelson
+  name: nelson-static
   version: ${{ version }}
 
 source:
@@ -10,6 +10,8 @@ source:
   sha256: d9212109b54c677423ff1e3998c30d3dd9f165734b8fc40cc279dce961e0edd2
   patches:
   - patches/0001-Diff-enableTrivial-is-non-const.patch
+  - patches/0002-Eigen-5-cast-any-all-result-to-logical.patch
+  - patches/0003-Use-sysconf-instead-of-getdtablesize.patch
 
 build:
   number: 0
@@ -25,6 +27,17 @@ requirements:
   run:
   - eigen
 
+tests:
+- package_contents:
+    lib:
+    - libnlsCore.a
+    include:
+    - nelson/core/EvaluateCommand.hpp
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
 about:
   license: LGPL-3.0-only
   license_file: LICENSE
@@ -33,7 +46,3 @@ about:
 extra:
   recipe-maintainers:
   - JohanMabille
-tests:
-- script:
-  - test -f $PREFIX/include/nelson/core/EvaluateCommand.hpp
-  - test -f $PREFIX/lib/libnlsCore.a
