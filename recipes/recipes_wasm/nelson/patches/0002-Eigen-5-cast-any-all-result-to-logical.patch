@@ -1,0 +1,42 @@
+Eigen 5 no longer implicitly converts the bool result of any()/all() to
+nelson's logical (uint8) matrices; cast explicitly.
+
+diff -ru a/modules/operators/src/cpp/All.cpp b/modules/operators/src/cpp/All.cpp
+--- a/modules/operators/src/cpp/All.cpp	2026-10-27 08:40:56
++++ b/modules/operators/src/cpp/All.cpp	2026-10-27 08:40:56
+@@ -67,13 +67,13 @@
+                 = (logical*)ArrayOf::allocateArrayOf(NLS_LOGICAL, nA, stringVector(), false);
+             Eigen::Map<Eigen::Matrix<logical, Eigen::Dynamic, Eigen::Dynamic>> matC(
+                 logicalarray, 1, nA);
+-            matC = matA.colwise().all();
++            matC = matA.colwise().all().cast<logical>();
+             res = ArrayOf(NLS_LOGICAL, Dimensions(1, nA), logicalarray);
+         } else if (dim == 2) {
+             logical* logicalarray = (logical*)ArrayOf::allocateArrayOf(NLS_LOGICAL, mA);
+             Eigen::Map<Eigen::Matrix<logical, Eigen::Dynamic, Eigen::Dynamic>> matC(
+                 logicalarray, mA, 1);
+-            matC = matA.rowwise().all();
++            matC = matA.rowwise().all().cast<logical>();
+             res = ArrayOf(NLS_LOGICAL, Dimensions(mA, 1), logicalarray);
+         } else {
+             res = A;
+diff -ru a/modules/operators/src/cpp/Any.cpp b/modules/operators/src/cpp/Any.cpp
+--- a/modules/operators/src/cpp/Any.cpp	2026-10-27 08:40:56
++++ b/modules/operators/src/cpp/Any.cpp	2026-10-27 08:40:56
+@@ -55,14 +55,14 @@
+                 = (logical*)ArrayOf::allocateArrayOf(NLS_LOGICAL, nA, stringVector(), false);
+             Eigen::Map<Eigen::Matrix<logical, Eigen::Dynamic, Eigen::Dynamic>> matC(
+                 logicalarray, 1, nA);
+-            matC = matA.colwise().any();
++            matC = matA.colwise().any().cast<logical>();
+             res = ArrayOf(NLS_LOGICAL, Dimensions(1, nA), logicalarray);
+         } else if (dim == 2) {
+             logical* logicalarray
+                 = (logical*)ArrayOf::allocateArrayOf(NLS_LOGICAL, mA, stringVector(), false);
+             Eigen::Map<Eigen::Matrix<logical, Eigen::Dynamic, Eigen::Dynamic>> matC(
+                 logicalarray, mA, 1);
+-            matC = matA.rowwise().any();
++            matC = matA.rowwise().any().cast<logical>();
+             res = ArrayOf(NLS_LOGICAL, Dimensions(mA, 1), logicalarray);
+         } else {
+             res = A;

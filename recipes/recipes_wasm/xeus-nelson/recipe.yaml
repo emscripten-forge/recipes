@@ -8,6 +8,9 @@ package:
 source:
   url: https://github.com/jupyter-xeus/xeus-nelson/archive/refs/tags/${{ version }}.tar.gz
   sha256: d995449c828a52404540f5056e6e6b5e3bb27e7fab09658849ea611dfa0f336b
+  patches:
+  - patches/0001-use-shared-xeus.patch
+  - patches/0002-port-to-xeus-6.patch
 
 build:
   number: 0
@@ -18,11 +21,23 @@ requirements:
   - cmake
   - ninja
   host:
-  - nelson
+  - nelson-static
   - nlohmann_json
-  - xeus-lite
+  - nlohmann_json-abi
   - xeus
+  - xeus-lite-static
   - xtl
+
+tests:
+- package_contents:
+    files:
+    - bin/xnelson.wasm
+    - bin/xnelson.js
+    - share/jupyter/kernels/xnelson/kernel.json
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
@@ -35,7 +50,3 @@ extra:
   - DerThorsten
   - martinRenou
   - JohanMabille
-tests:
-- script:
-  - test -f $PREFIX/bin/xnelson.wasm
-  - test -f $PREFIX/bin/xnelson.js
