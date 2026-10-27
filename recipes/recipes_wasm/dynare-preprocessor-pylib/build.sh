@@ -1,18 +1,24 @@
 #!/bin/bash
-set -ex
+set -euxo pipefail
 
 export BOOST_ROOT=$PREFIX
 
+if [ "$target_platform" == "emscripten-wasm32" ]; then
+    WASM_CPU=wasm32
+elif [ "$target_platform" == "emscripten-wasm64" ]; then
+    WASM_CPU=wasm64
+fi
+
 # Generate Meson cross-file for emscripten
-cat << 'EOF' > emscripten.meson.cross
+cat << EOF > emscripten.meson.cross
 [properties]
 needs_exe_wrapper = true
 skip_sanity_check = true
 
 [host_machine]
 system = 'emscripten'
-cpu_family = 'wasm32'
-cpu = 'wasm32'
+cpu_family = '${WASM_CPU}'
+cpu = '${WASM_CPU}'
 endian = 'little'
 
 [binaries]
@@ -21,14 +27,12 @@ cpp = 'em++'
 ar = 'emar'
 ranlib = 'emranlib'
 pkgconfig = 'pkg-config'
-python = '$PYTHON'
+python = '${PYTHON}'
 EOF
 
-sed -i "s|'\$PYTHON'|'${PYTHON}'|g" emscripten.meson.cross
-
-export CFLAGS="$CFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
-export CXXFLAGS="$CXXFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
-export LDFLAGS="$LDFLAGS -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
+export CFLAGS="${CFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
+export CXXFLAGS="${CXXFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
+export LDFLAGS="${LDFLAGS:-} -sWASM_BIGINT -sSIDE_MODULE=1 -fwasm-exceptions"
 
 meson setup build_wasm \
     --prefix=$PREFIX \
