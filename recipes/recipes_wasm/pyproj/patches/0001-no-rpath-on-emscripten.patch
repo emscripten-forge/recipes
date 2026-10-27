@@ -1,0 +1,16 @@
+--- a/setup.py
++++ b/setup.py
+@@ -195,7 +195,12 @@
+         "include_dirs": include_dirs,
+         "library_dirs": library_dirs,
+         "runtime_library_dirs": (
+-            library_dirs if os.name != "nt" and sys.platform != "cygwin" else None
++            library_dirs
++            if os.name != "nt"
++            and sys.platform != "cygwin"
++            # emscripten-forge: wasm side modules have no rpath
++            and not os.environ.get("target_platform", "").startswith("emscripten")
++            else None
+         ),
+         "libraries": get_libraries(library_dirs),
+     }
