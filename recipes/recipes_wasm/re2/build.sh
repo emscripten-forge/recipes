@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -euxo pipefail
 
 mkdir build-cmake
 pushd build-cmake

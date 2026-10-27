@@ -3,7 +3,7 @@ context:
   version: 2025.11.05
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -21,7 +21,9 @@ requirements:
   - make
   - pkg-config
   host:
-  - libabseil
+  - libabseil-static
+  run:
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
@@ -29,6 +31,10 @@ tests:
     - include/re2/re2.h
     - lib/libre2.a
     - lib/pkgconfig/re2.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
