@@ -2,36 +2,68 @@ context:
   name: geos
   version: 3.15.0
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   url: https://download.osgeo.org/geos/geos-${{ version }}.tar.bz2
   sha256: d5e5192a686d065eaed082de14dd26244c5c8e02bff16b2c6cce3265f648e00e
 
 build:
-  number: 0
+  number: 1
 
-requirements:
+outputs:
+- package:
+    name: geos
+    version: ${{ version }}
   build:
-  - cmake
-  - make
-  - ninja
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  run_exports:
-  - ${{ pin_subpackage('geos', upper_bound='x.x') }}
-
-tests:
-- script:
-  - test -f ${PREFIX}/include/geos.h
-  - test -f ${PREFIX}/include/geos/algorithm/Area.h
-
-- script: generic-testing
+    script:
+      env:
+        BUILD_SHARED_LIBS: "ON"
+      file: build.sh
   requirements:
     build:
-    - generic-testing
+    - cmake
+    - make
+    - ninja
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    run_exports:
+    - ${{ pin_subpackage('geos', upper_bound='x.x') }}
+  tests:
+  - script:
+    - test -f ${PREFIX}/include/geos.h
+    - test -f ${PREFIX}/include/geos/algorithm/Area.h
+    - test -f ${PREFIX}/lib/libgeos.so
+    - test -f ${PREFIX}/lib/libgeos_c.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: geos-static
+    version: ${{ version }}
+  build:
+    script:
+      env:
+        BUILD_SHARED_LIBS: "OFF"
+      file: build.sh
+  requirements:
+    build:
+    - cmake
+    - make
+    - ninja
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  tests:
+  - script:
+    - test -f ${PREFIX}/include/geos.h
+    - test -f ${PREFIX}/include/geos/algorithm/Area.h
+    - test -f ${PREFIX}/lib/libgeos.a
+    - test -f ${PREFIX}/lib/libgeos_c.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
 about:
   homepage: https://libgeos.org/
   license: LGPL-2.1-only
@@ -48,3 +80,5 @@ about:
 extra:
   recipe-maintainers:
   - KGB99
+  - DerThorsten
+  - Alex-PLACET
