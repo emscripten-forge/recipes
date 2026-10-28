@@ -13,7 +13,7 @@ PY_SITE_REL="lib/python${PY_VER}/site-packages"
 # whereami.c does not know about Emscripten; the /proc/self/exe code path
 # compiles and fails gracefully at runtime (Cadabra only uses it to locate
 # optional data files).
-export CFLAGS="${CFLAGS} -DWAI_USE_PROC_SELF_EXE"
+export CFLAGS="${CFLAGS:-} -DWAI_USE_PROC_SELF_EXE"
 export CXXFLAGS="${CXXFLAGS:-} ${CFLAGS}"
 
 # cmake/version.cmake asks git for the commit that is reported as the build
@@ -59,5 +59,5 @@ ninja -j${CPU_COUNT}
 ninja install
 
 # Sanity check: the extension module must be a WebAssembly side module.
-MODULE=$(ls "${PREFIX}/${PY_SITE_REL}"/cadabra2.cpython-*-wasm32-emscripten.so)
+MODULE=$(ls "${PREFIX}/${PY_SITE_REL}"/cadabra2.cpython-*-emscripten.so)
 head -c 4 "${MODULE}" | od -An -c | grep -q 'a   s   m'

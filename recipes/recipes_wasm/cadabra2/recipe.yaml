@@ -35,25 +35,25 @@ requirements:
   - python
   - cross-python_${{ target_platform }}
   host:
-  - python
-  - gmp
+  - python-dev
+  - gmp-static
   # header-only parts of Boost used by the core (ublas, odeint, quadrature,
   # hash, demangle, version)
   - boost-config
   - boost-core
   - boost-container_hash
   - boost-functional
-  - boost-math
+  - boost-math-static
   - boost-numeric_ublas
   - boost-numeric_odeint
   ignore_run_exports:
     from_package:
-    - gmp
+    - gmp-static
     - boost-config
     - boost-core
     - boost-container_hash
     - boost-functional
-    - boost-math
+    - boost-math-static
     - boost-numeric_ublas
     - boost-numeric_odeint
   run:
@@ -73,7 +73,7 @@ tests:
     - cdb/core/_component.py
     - cdb/utils/_algorithm.py
     files:
-    - lib/python3.13/site-packages/cadabra2.cpython-313-wasm32-emscripten.so
+    - lib/python*/site-packages/cadabra2.cpython-*-emscripten.so
 - script:
   # Embed Cadabra's own regression tests (tests/*.cdb, normally run through
   # the cadabra2 REPL) into test_upstream_cdb.py so they run in the browser.
@@ -133,6 +133,10 @@ tests:
     - tests/trigonometric.cdb
     - tests/vary.cdb
     - tests/young.cdb
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://cadabra.science/

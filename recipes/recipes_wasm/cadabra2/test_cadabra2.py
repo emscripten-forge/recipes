@@ -13,7 +13,7 @@ def cdb():
 
 
 def test_import(cdb):
-    assert "wasm32-emscripten" in cdb.__file__
+    assert "-emscripten.so" in cdb.__file__
     for name in [
         "Ex",
         "ExNode",
