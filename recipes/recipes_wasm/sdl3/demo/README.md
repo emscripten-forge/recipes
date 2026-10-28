@@ -1,7 +1,10 @@
 # SDL3 WebAssembly demo
 
-This demo ships with the `sdl3-static` package so the library can be tested
-manually in a browser. It follows the
+This demo is kept with the recipe as a manual browser test and as a reference
+Emscripten application. It is **not installed into the `sdl3-static` package**;
+the recipe tests build it separately against the installed static library.
+
+It follows the
 [SDL Emscripten guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-emscripten.md):
 
 - It uses SDL3 main callbacks (`SDL_MAIN_USE_CALLBACKS`) instead of a blocking
@@ -10,18 +13,15 @@ manually in a browser. It follows the
 - Vsync is enabled so the browser's `requestAnimationFrame` drives the loop.
 - The build links with `-sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=1gb`.
 
-The installed package contains:
-
-```text
-share/sdl3-demo/sdl3-demo.html
-share/sdl3-demo/sdl3-demo.js
-share/sdl3-demo/sdl3-demo.wasm
-```
-
-Serve the directory with any static HTTP server, for example:
+To build it manually against an installed `sdl3-static` package:
 
 ```bash
-python -m http.server -d "$CONDA_PREFIX/share/sdl3-demo" 8000
+emcmake cmake -S demo -B build-demo -GNinja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
+
+emmake ninja -C build-demo
+python -m http.server -d build-demo 8000
 ```
 
 Then open <http://localhost:8000/sdl3-demo.html>.

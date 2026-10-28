@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-demo_dir="${PREFIX}/share/sdl3-demo"
+demo_js="${1:?usage: run_demo.sh <path-to-sdl3-demo.js>}"
+demo_js="$(realpath "$demo_js")"
 
 cat > run_demo.cjs <<'EOF'
 const fs = require("fs");
@@ -40,4 +41,4 @@ globalThis.__dirname = path.dirname(js_path);
 vm.runInThisContext(fs.readFileSync(js_path, "utf8"), { filename: js_path });
 EOF
 
-timeout 60 node run_demo.cjs "$demo_dir/sdl3-demo.js"
+timeout 60 node run_demo.cjs "$demo_js"

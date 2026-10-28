@@ -20,6 +20,3 @@ emcmake cmake -S . -B build -GNinja \
 
 emmake ninja -C build -j"${CPU_COUNT:-1}"
 emmake ninja -C build install
-
-# Build the browser demo against the just-installed SDL3 package.
-bash "$RECIPE_DIR/build_demo.sh"

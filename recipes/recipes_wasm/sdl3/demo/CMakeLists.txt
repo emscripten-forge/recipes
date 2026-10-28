@@ -11,11 +11,3 @@ target_link_options(sdl3-demo PRIVATE
     "SHELL:-sALLOW_MEMORY_GROWTH=1"
     "SHELL:-sMAXIMUM_MEMORY=1gb"
 )
-
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/sdl3-demo.html"
-    "${CMAKE_CURRENT_BINARY_DIR}/sdl3-demo.js"
-    "${CMAKE_CURRENT_BINARY_DIR}/sdl3-demo.wasm"
-    DESTINATION share/sdl3-demo
-)
-install(FILES README.md DESTINATION share/sdl3-demo)
