@@ -1,0 +1,46 @@
+context:
+  version: 0.2.11
+
+package:
+  name: xeus-ocaml
+  version: ${{ version }}
+
+source:
+  url: https://github.com/davy39/xeus-ocaml/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: eadda6defc49758208ed8fecdf65ee1961bc7bdc0046b5bd455c3e074feeb1cd
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake      >= 4.0.0
+  - ninja
+  - opam
+
+  host:
+  - nlohmann_json
+  - nlohmann_json-abi
+  - xeus
+  - xeus-lite-static
+
+build:
+  number: 0
+
+tests:
+- package_contents:
+    files:
+    - bin/xocaml.wasm
+    - bin/xocaml.js
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Ocaml kernel for Jupyter based on xeus
+  homepage: https://github.com/davy39/xeus-ocaml
+
+extra:
+  recipe-maintainers:
+  - Davy39

@@ -1,0 +1,48 @@
+context:
+  version: 0.10.0
+
+package:
+  name: xeus-sqlite
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/jupyter-xeus/xeus-sqlite/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 3e6287900697bb9afc2e0877a71db0cd7b9a71f27793f77eb2a2316adc855080
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - nlohmann_json >= 3.12
+  - xproperty 0.12.*
+  - cpp-tabulate
+  - xvega-static
+  - xvega-bindings
+  - xeus-lite-static
+  - xeus
+  - sqlitecpp-static
+
+tests:
+- script:
+  - test -f $PREFIX/bin/xsqlite.wasm
+  - test -f $PREFIX/bin/xsqlite.js
+  - test -f $PREFIX/share/jupyter/kernels/xsqlite/kernel.json
+  - generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-sqlite
+  homepage: https://github.com/jupyter-xeus/xeus-sqlite
+extra:
+  recipe-maintainers:
+  - DerThorsten

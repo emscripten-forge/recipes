@@ -71,13 +71,15 @@ index eebff4b..d764dc6 100644
  {
    if (! (linecount == 0 ? output_unique
           : !match ? output_first_repeated
-@@ -324,9 +326,9 @@ writeline (struct linebuffer const *line,
-     return;
- 
-   if (count_occurrences)
--    printf ("%7jd ", linecount + 1);
-+    fprintf (out, "%7jd ", linecount + 1);
- 
+@@ -339,11 +341,11 @@ writeline (struct linebuffer const *line,
+       while (end - p < 8)
+         *--p = ' ';
+       const idx_t nbytes = end - p;
+-      if (fwrite (p, sizeof (char), nbytes, stdout) != nbytes)
++      if (fwrite (p, sizeof (char), nbytes, out) != nbytes)
+         write_error ();
+     }
+
 -  if (fwrite (line->buffer, sizeof (char), line->length, stdout)
 +  if (fwrite (line->buffer, sizeof (char), line->length, out)
        != line->length)

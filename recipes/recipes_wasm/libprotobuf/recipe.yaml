@@ -1,0 +1,76 @@
+context:
+  name: libprotobuf
+  version: '36.2'
+  major_version: 7
+
+package:
+  name: ${{ name }}-static
+  version: ${{ major_version }}.${{ version }}
+
+source:
+  url: https://github.com/protocolbuffers/protobuf/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 7e7eaf580ec77f1a392ff1ab1013c13d3b04a6716f002f697f67f3c1113f0530
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  host:
+  - libabseil-static
+  - zlib-static
+  run:
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libprotobuf.a
+    - libprotobuf-lite.a
+    - libutf8_range.a
+    - libutf8_validity.a
+    include:
+    - google/protobuf/message.h
+    - google/protobuf/descriptor.h
+    - google/protobuf/descriptor.proto
+    files:
+    - lib/cmake/protobuf/protobufConfig.cmake
+    - lib/cmake/protobuf/protobufTargets.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://protobuf.dev/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Protocol Buffers C++ Libraries
+  description: |
+    Protocol Buffers are a language-neutral, platform-neutral extensible
+    mechanism for serializing structured data. This package provides the C++
+    runtime libraries: libprotobuf and libprotobuf-lite.
+  documentation: https://protobuf.dev/reference/cpp/
+  repository: https://github.com/protocolbuffers/protobuf
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
