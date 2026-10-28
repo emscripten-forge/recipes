@@ -1,0 +1,60 @@
+context:
+  name: dynare-preprocessor-pylib
+  version: 0.0.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/EconForge/dynare_preprocessor_pylib/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a3b0e13ae1917607427c0fd47f4e45e992a4715000df0fc2a02b8d8fb30851d1
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cross-python_${{ target_platform }}
+    - ${{ compiler("cxx") }}
+    - bison
+    - flex
+    - meson
+    - ninja
+    - pkg-config
+    - pip
+    - nanobind
+  host:
+    - python-dev
+    - nanobind
+    - boost-headers
+  run:
+    - python
+    - numpy
+
+tests:
+  - script: pytester
+    requirements:
+      build:
+        - pytester
+      run:
+        - pytester-run
+    files:
+      recipe:
+        - test_preproc.py
+  - script: generic-testing
+    requirements:
+      build:
+        - generic-testing
+
+about:
+  homepage: https://www.dynare.org/
+  summary: Dynare preprocessor and Python library
+  description: Preprocessor for Dynare economic models with Python nanobind bindings.
+  license: GPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - albop
+    - svillemot

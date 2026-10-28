@@ -1,0 +1,62 @@
+Port the interpreter to the xeus 6 API (shutdown/interrupt replies,
+create_info_reply without protocol_version/debugger).
+
+diff -ru a/include/xeus-nelson/xinterpreter.hpp b/include/xeus-nelson/xinterpreter.hpp
+--- a/include/xeus-nelson/xinterpreter.hpp	2026-10-27 09:08:11
++++ b/include/xeus-nelson/xinterpreter.hpp	2026-10-27 09:08:11
+@@ -71,7 +71,9 @@
+ 
+         nl::json kernel_info_request_impl() override;
+ 
+-        void shutdown_request_impl() override;
++        nl::json shutdown_request_impl(bool restart) override;
++
++        nl::json interrupt_request_impl() override;
+ 
+     private:
+ 
+diff -ru a/src/xinterpreter.cpp b/src/xinterpreter.cpp
+--- a/src/xinterpreter.cpp	2026-10-27 09:08:11
++++ b/src/xinterpreter.cpp	2026-10-27 09:08:17
+@@ -174,14 +174,19 @@
+          
+     }
+ 
+-    void interpreter::shutdown_request_impl()
++    nl::json interpreter::shutdown_request_impl(bool restart)
+     {
++        return xeus::create_shutdown_reply(restart);
+     }
+ 
++    nl::json interpreter::interrupt_request_impl()
++    {
++        return xeus::create_interrupt_reply();
++    }
++
+     nl::json interpreter::kernel_info_request_impl()
+     {
+ 
+-        const std::string  protocol_version = xeus::get_protocol_version();
+         const std::string  implementation = "xeus-nelson";
+         const std::string  implementation_version = XEUS_NELSON_VERSION;
+         const std::string  language_name = "Octave";
+@@ -211,11 +216,9 @@
+               "  Nelson ";
+         banner.append(language_version);
+ 
+-        const bool         debugger = false;
+         const nl::json     help_links = nl::json::array();
+ 
+         return xeus::create_info_reply(
+-            protocol_version,
+             implementation,
+             implementation_version,
+             language_name,
+@@ -226,7 +229,6 @@
+             language_codemirror_mode,
+             language_nbconvert_exporter,
+             banner,
+-            debugger,
+             help_links
+         );
+     }

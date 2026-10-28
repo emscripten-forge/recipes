@@ -1,0 +1,63 @@
+context:
+  name: eclib
+  version: '20250627'
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/JohnCremona/eclib/releases/download/${{ version }}/eclib-${{ version }}.tar.bz2
+  sha256: b88d4b52612e491c5415946d9e35f2062ca1015ee7fbbe0b61f158fa74cb4bc9
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - ${{ compiler("c") }}
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  - autoconf-archive
+  - sed
+  host:
+  - gmp-static
+  - ntl-static
+  - libflint-static
+  - pari-static
+  - mpfr-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('ntl-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('pari-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libec.a
+    include:
+    - eclib/interface.h
+    files:
+    - lib/pkgconfig/eclib.pc
+    - bin/mwrank
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/JohnCremona/eclib
+  license: GPL-2.0-only
+  license_file: COPYING
+  summary: The eclib package includes mwrank (for 2-descent on elliptic curves over Q) and modular symbol code used to
+    create the elliptic curve database.
+
+extra:
+  recipe-maintainers:
+  - mkoeppe

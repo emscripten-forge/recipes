@@ -1,0 +1,55 @@
+context:
+  name: libnetcdf
+  version: 4.10.1
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Unidata/netcdf-c/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 33c27231c478c3b35da7c7758fbdd02da1fe407abcb16ddfe195f69d164f930d
+  patches:
+  - patches/parallel-disable.patch
+  - patches/hdf5-parallel-disable.patch
+  - patches/skip-daos-emscripten.patch
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - m4
+  - make
+  host:
+  - libxml2-static >=2.15
+  - hdf5
+  - zlib-static
+  run:
+  # hdf5 is a shared library (libhdf5.so) without run_exports
+  - hdf5
+  - ${{ pin_compatible('libxml2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - include/netcdf.h
+    - lib/libnetcdf.a
+    - lib/pkgconfig/netcdf.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: http://www.unidata.ucar.edu/software/netcdf/
+  license: MIT
+  license_file: COPYRIGHT
+  summary: |
+    Libraries and data formats that support array-oriented scientific data.
+  repository: https://github.com/Unidata/netcdf-c

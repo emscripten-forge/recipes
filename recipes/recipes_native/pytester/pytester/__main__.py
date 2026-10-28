@@ -1,3 +1,4 @@
+import argparse
 import pyjs_code_runner
 import socket
 from contextlib import closing, contextmanager
@@ -24,6 +25,12 @@ def find_free_port():
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode", choices=("worker", "worker-preloaded", "main"),
+        help="Run one mode instead of all three (worker disables preloading).",
+    )
+    args = parser.parse_args()
     print("Running the main function")
     # get the conda env from the env var "PREFIX"
     prefix = os.environ["PREFIX"]
@@ -66,20 +73,21 @@ def main():
     
 
 
-    backends = [
-        (
+    backends = {
+        "worker": (
             BackendType.browser_worker,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=False)
         ),
-        (
+        "worker-preloaded": (
             BackendType.browser_worker,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True, preload_shared_libs=True)
         ),
-        (
+        "main": (
             BackendType.browser_main,
             lambda: dict(port=find_free_port(), slow_mo=1, headless=True),
         )
-    ]
+    }
+    backends = [backends[args.mode]] if args.mode else backends.values()
     print(
         "================================================================================"
     )
