@@ -49,6 +49,7 @@ emmake ninja -C build install
 
 if [ -f build/lib/libextension_evalue_util.a ]; then
     install -Dm644 build/lib/libextension_evalue_util.a "${PREFIX}/lib/libextension_evalue_util.a"
-    sed -i "s|\"$PWD/build/lib/libextension_evalue_util.a\"|\"\${_IMPORT_PREFIX}/lib/libextension_evalue_util.a\"|g" \
+    sed -i.bak "s|\"$PWD/build/lib/libextension_evalue_util.a\"|\"\${_IMPORT_PREFIX}/lib/libextension_evalue_util.a\"|g" \
         "${PREFIX}/lib/cmake/ExecuTorch/ExecuTorchTargets-release.cmake"
+    rm "${PREFIX}/lib/cmake/ExecuTorch/ExecuTorchTargets-release.cmake.bak"
 fi

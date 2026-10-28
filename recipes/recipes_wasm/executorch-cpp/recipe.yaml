@@ -3,7 +3,7 @@ context:
   version: 1.2.0
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -28,11 +28,15 @@ requirements:
     - pytorch
     - pyyaml
   host:
-    - flatcc
+    - flatcc-static
     - fxdiv
     - flatbuffers-static
-    - gflags
+    - gflags-static
     - nlohmann_json
+  run:
+    - ${{ pin_compatible('flatcc-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('flatbuffers-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('gflags-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
   - package_contents:
@@ -63,16 +67,20 @@ tests:
       recipe:
         - build_tests.sh
         - tests/
+  - script: generic-testing
+    requirements:
+      build:
+        - generic-testing
 
 about:
   homepage: https://pytorch.org/executorch/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: PyTorch ExecuTorch C++ runtime for emscripten-wasm32
+  summary: PyTorch ExecuTorch C++ runtime for emscripten
   description: |
     ExecuTorch is PyTorch's on-device inference runtime. This package provides
     the C++ runtime and core extensions as static libraries with CMake package
-    exports for emscripten-wasm32 consumers.
+    exports for emscripten consumers.
   documentation: https://docs.pytorch.org/executorch/main/using-executorch-building-from-source.html
   repository: https://github.com/pytorch/executorch
 
