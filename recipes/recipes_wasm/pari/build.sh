@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-CPPFLAGS="-I${PREFIX}/include" \
-LDFLAGS="-L${PREFIX}/lib" \
-CXXFLAGS="-std=c++11" \
+export CPPFLAGS="-I${PREFIX}/include"
+export LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
+export CXXFLAGS="${CXXFLAGS:-} -std=c++11"
 
 emconfigure ./Configure \
-    --host=wasm32-unknown-emscripten \
+    --host=${HOST} \
     --prefix="${PREFIX}" \
     --with-gmp="${PREFIX}" \
     --with-readline-lib="${PREFIX}/lib/libreadline.a" \
@@ -15,10 +15,11 @@ emconfigure ./Configure \
     --static \
     --graphic=none
 
-cd Oemscripten-wasm32-unknown
+cd O*-*
 
-emmake make all -j8
-emmake make install
+# The generated Makefile hard-codes RANLIB=ranlib, which can't index wasm objects
+emmake make all -j${CPU_COUNT:-4} RANLIB=emranlib
+emmake make install RANLIB=emranlib
 
 cp gp-sta.js "${PREFIX}/bin/"
 cp gp-sta.wasm "${PREFIX}/bin/"
