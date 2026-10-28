@@ -75,7 +75,7 @@ def migrate_recipe_yaml(recipe):
         for req in iter_requirements(output):
            if 'host' in req:
                 req['host'] = replace_in_list(req['host'], "python", "python-dev")
-
+                req['host'] = replace_in_list(req['host'], "openblas", "openblas-dev")
 
     # add generic testing block to each output's tests section
     for output in iter_outputs(recipe, include_staging_outputs=False):

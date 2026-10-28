@@ -1,0 +1,29 @@
+--- a/Modules/Core/Common/src/itkProcessObject.cxx
++++ b/Modules/Core/Common/src/itkProcessObject.cxx
+@@ -1167,10 +1167,16 @@
+     m_Progress = std::numeric_limits<uint32_t>::max();
+   }
+ 
++#if defined(__EMSCRIPTEN__)
++  // Emscripten builds are single threaded, so the progress event always is
++  // raised on the thread that started the update.
++  this->InvokeEvent(ProgressEvent());
++#else
+   if (std::this_thread::get_id() == this->m_UpdateThreadID)
+   {
+     this->InvokeEvent(ProgressEvent());
+   }
++#endif
+ }
+ 
+ 
+@@ -1646,7 +1652,9 @@
+    * inputs since they may lead back to the same data object.
+    */
+   m_Updating = true;
++#if !defined(__EMSCRIPTEN__)
+   m_UpdateThreadID = std::this_thread::get_id();
++#endif
+ 
+   if (m_Inputs.size() == 1)
+   {

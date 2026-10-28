@@ -1,0 +1,72 @@
+context:
+  version: 10.8.13
+
+package:
+  name: passagemath-cddlib
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-cddlib/passagemath_cddlib-${{ version }}.tar.gz
+  sha256: 5f8f40a478631186b2ba99c24e9a73c173b64460d63ab614cc7f7e573e607c65
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython<3.3
+  - cysignals
+  - pkgconfig
+  - passagemath-abi == ${{ version }}
+  host:
+  - python-dev
+  - cddlib-static
+  - gmp-static
+  run:
+  - python
+  - cysignals
+  - passagemath-environment
+  - passagemath-polyhedra
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_cddlib.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Polyhedral computation with cddlib'
+  description: |
+    Distribution of a part of the Sage library.
+    It provides an interface to cddlib, the library for polyhedral
+    representation conversion using the double description method.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_cddlib.py
+  recipe-maintainers:
+  - mkoeppe
