@@ -7,6 +7,14 @@ set -euxo pipefail
 # NANOFLANN_NO_THREADS stops the vendored nanoflann from using std::async.
 export CXXFLAGS="${CXXFLAGS:-} -DNANOFLANN_NO_THREADS"
 
+# igraph_int_t must be pointer sized (python-igraph asserts
+# sizeof(igraph_int_t) >= sizeof(Py_ssize_t)); AUTO picks 32 on wasm64.
+if [ "$target_platform" == "emscripten-wasm64" ]; then
+    IGRAPH_INTEGER_SIZE=64
+else
+    IGRAPH_INTEGER_SIZE=32
+fi
+
 emcmake cmake ${CMAKE_ARGS} -S . -B _build \
     -DCMAKE_BUILD_TYPE=Release          \
     -DCMAKE_PREFIX_PATH=$PREFIX         \
@@ -21,6 +29,7 @@ emcmake cmake ${CMAKE_ARGS} -S . -B _build \
     -DIGRAPH_OPENMP_SUPPORT=OFF         \
     -DIGRAPH_ENABLE_TLS=OFF             \
     -DIGRAPH_ENABLE_LTO=OFF             \
+    -DIGRAPH_INTEGER_SIZE=${IGRAPH_INTEGER_SIZE} \
     -DUSE_CCACHE=OFF                    \
     -DBUILD_SHARED_LIBS=OFF             \
     -DBUILD_TESTING=OFF                 \
