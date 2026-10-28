@@ -3,7 +3,7 @@ context:
   version: 1.15.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -15,16 +15,38 @@ build:
 
 requirements:
   build:
+  - ${{ compiler("c") }}
   - ${{ compiler("cxx") }}
   - cmake
   - make
 
 tests:
 - package_contents:
+    lib:
+    - libhighs.a
+    include:
+    - highs/Highs.h
     files:
     - bin/highs.js
-    - include/highs/Highs.h
-    - lib/libhighs.a
+    - bin/highs.wasm
+- script:
+  - bash test_highs.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - nodejs
+  files:
+    recipe:
+    - test_highs.sh
+    - test_highs.cpp
+# HighsTaskExecutor (the parallel scheduler) creates its workers with
+# std::thread, so libhighs.a references pthread_create. It starts
+# num_threads - 1 workers, and without pthreads hardware_concurrency() is 1,
+# so no thread is ever created (the test above solves an LP under node).
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   summary: Linear optimization software
