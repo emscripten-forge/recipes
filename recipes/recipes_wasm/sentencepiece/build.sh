@@ -52,6 +52,7 @@ find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true
 mkdir -p "${PREFIX}/lib/cmake/sentencepiece"
 
 cp "${RECIPE_DIR}/sentencepieceConfigVersion.cmake" "${PREFIX}/lib/cmake/sentencepiece/"
-sed -i "s/@PKG_VERSION@/${PKG_VERSION}/" "${PREFIX}/lib/cmake/sentencepiece/sentencepieceConfigVersion.cmake"
+sed -i.bak "s/@PKG_VERSION@/${PKG_VERSION}/" "${PREFIX}/lib/cmake/sentencepiece/sentencepieceConfigVersion.cmake"
+rm "${PREFIX}/lib/cmake/sentencepiece/sentencepieceConfigVersion.cmake.bak"
 cp "${RECIPE_DIR}/sentencepieceConfig.cmake" "${PREFIX}/lib/cmake/sentencepiece/"
 cp "${RECIPE_DIR}/sentencepieceTargets.cmake" "${PREFIX}/lib/cmake/sentencepiece/"
