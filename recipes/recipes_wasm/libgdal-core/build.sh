@@ -1,29 +1,15 @@
-export EMSCRIPTEN_SYSROOT=$(em-config CACHE)/sysroot
-export EMSCRIPTEN_INCLUDE=$EMSCRIPTEN_SYSROOT/include
-export EMSCRIPTEN_BIN=$EMSCRIPTEN_SYSROOT/bin
-export EMSCRIPTEN_LIB=$EMSCRIPTEN_SYSROOT/lib/wasm32-emscripten/pic
+set -ex
 
 export CFLAGS="$CFLAGS -fPIC"
 export LDFLAGS="$LDFLAGS  -fPIC"
 export CXXFLAGS="$CXXFLAGS -fPIC"
 
+# zlib, libjpeg, libpng and sqlite come from the host env as static libs
+# (sqlite is our own build since we need to enable column metadata)
 
-embuilder build zlib --pic
-embuilder build libjpeg --pic
-
-# embuilder build libpng-legacysjlj --pic.  # unfamiliar build target: libpng-legacysjlj
-#  lets use the normal one we have as proper recipe
-
-# embuilder build sqlite3 --pic # we use our own sqlite since we need to enable column metadata
-
-WASM_LIBRARY_DIR=$PREFIX/lib
-WASM_INCLUDE_DIR=$PREFIX/include
-
-
-ls -la $PREFIX/lib
-
-sed -i 's|check_function_exists(fseek64 HAVE_FSEEK64)|set(HAVE_FSEEK64 FALSE)|' cmake/helpers/configure.cmake
-sed -i 's|check_function_exists(ftell64 HAVE_FTELL64)|set(HAVE_FTELL64 FALSE)|' cmake/helpers/configure.cmake
+sed -i.bak 's|check_function_exists(fseek64 HAVE_FSEEK64)|set(HAVE_FSEEK64 FALSE)|' cmake/helpers/configure.cmake
+sed -i.bak 's|check_function_exists(ftell64 HAVE_FTELL64)|set(HAVE_FTELL64 FALSE)|' cmake/helpers/configure.cmake
+rm cmake/helpers/configure.cmake.bak
 
 
 mkdir -p build
@@ -36,9 +22,10 @@ cd build && emcmake cmake .. \
 -DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON \
 -DCMAKE_C_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
 -DCMAKE_CXX_FLAGS="${EM_FORGE_SIDE_MODULE_LDFLAGS} -fPIC  -Wno-deprecated-declarations -Wno-single-bit-bitfield-constant-conversion" \
--DCMAKE_SHARED_LINKER_FLAGS="-sSIDE_MODULE=1 -sWASM_BIGINT" \
+-DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS} -sSIDE_MODULE=1 -sWASM_BIGINT" \
 -DGDAL_USE_EXTERNAL_LIBS=OFF \
 -DGDAL_USE_INTERNAL_LIBS=OFF \
+-DGDAL_USE_CPL_MULTIPROC_PTHREAD=OFF \
 \
 -DPROJ_INCLUDE_DIR=$PREFIX/include \
 -DPROJ_LIBRARY=$PREFIX/lib/libproj.so \
@@ -56,16 +43,16 @@ cd build && emcmake cmake .. \
 -DGEOS_LIBRARY=$PREFIX/lib/libgeos_c.so \
 \
 -DGDAL_USE_ZLIB=ON \
--DZLIB_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
--DZLIB_LIBRARY=$EMSCRIPTEN_LIB/libz.a \
+-DZLIB_INCLUDE_DIR=$PREFIX/include \
+-DZLIB_LIBRARY=$PREFIX/lib/libz.a \
 \
 -DGDAL_USE_PNG=ON \
 -DPNG_PNG_INCLUDE_DIR=$PREFIX/include \
 -DPNG_LIBRARY_RELEASE=$PREFIX/lib/libpng.a \
 \
 -DGDAL_USE_JPEG=ON \
--DJPEG_INCLUDE_DIR=$EMSCRIPTEN_INCLUDE \
--DJPEG_LIBRARY_RELEASE=$EMSCRIPTEN_LIB/libjpeg.a \
+-DJPEG_INCLUDE_DIR=$PREFIX/include \
+-DJPEG_LIBRARY_RELEASE=$PREFIX/lib/libjpeg.a \
 \
 -DGDAL_USE_SQLITE3=ON \
 -DSQLite3_INCLUDE_DIR=$PREFIX/include \
@@ -90,12 +77,13 @@ cd build && emcmake cmake .. \
 # multiple times results in a duplicated symbol error.
 # I wasn't able to find a way to prevent CMake from emitting duplicated libraries.
 # This is a hack which removes all duplicated appearances of static libs at the final link time.
+# (plain string matching instead of associative arrays, which need bash >= 4)
 FILE="$(pwd)/CMakeFiles/GDAL.dir/linkLibs.rsp"
 
 # Read the entire file
 content=$(cat "$FILE")
 
-declare -A seen
+seen=" "
 result=()
 
 for entry in $content; do
@@ -107,8 +95,8 @@ if [[ "$path" == *.a ]]; then
     base=$(basename "$path")
 
     # Add only if not seen yet
-    if [[ -z "${seen[$base]+x}" ]]; then
-        seen[$base]=1
+    if [[ "$seen" != *" $base "* ]]; then
+        seen="$seen$base "
         result+=( "\"$path\"" )
     fi
 else

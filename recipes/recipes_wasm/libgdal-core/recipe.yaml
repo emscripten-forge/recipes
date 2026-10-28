@@ -29,12 +29,19 @@ outputs:
     - libiconv-static
     - geos
     - libpng-static
+    - zlib-static
+    - libjpeg-turbo-static
+    - libsqlite-static
     run_exports:
     - ${{ pin_subpackage(name, upper_bound='x.x') }}
   tests:
   - package_contents:
       files:
       - lib/libgdal.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: ${{ name }}-tests
@@ -60,7 +67,9 @@ outputs:
     files:
       recipe:
       - run_tests.sh
-
+    requirements:
+      build:
+      - nodejs
 - package:
     name: ${{ name }}-static
     version: ${{ version }}
@@ -77,10 +86,32 @@ outputs:
     - libiconv-static
     - geos-static
     - libpng-static
+    - zlib-static
+    - libjpeg-turbo-static
+    - libsqlite-static
+    run:
+    - ${{ pin_compatible('libtiff-static', lower_bound='x.x', upper_bound='x') }}
+    - ${{ pin_compatible('proj-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libiconv-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('geos-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libpng-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libjpeg-turbo-static', lower_bound='x.x', upper_bound='x') }}
+    - ${{ pin_compatible('libsqlite-static', lower_bound='x.x', upper_bound='x') }}
   tests:
   - package_contents:
       files:
       - lib/libgdal.a
+
+  # claude claims:
+  # CPL threading is disabled (GDAL_USE_CPL_MULTIPROC_PTHREAD=OFF), but a few
+  # optional code paths (viewshed, GeoPackage async RTree, raster tile
+  # algorithm) still use std::thread/std::async. Nothing is compiled with
+  # -pthread; those paths fail at runtime when used, as on 4x.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
 
 about:
   homepage: https://gdal.org/

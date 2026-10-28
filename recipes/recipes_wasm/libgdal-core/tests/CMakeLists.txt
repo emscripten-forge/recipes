@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(test_libgdal C)
+project(test_libgdal C CXX)
 
 set(GDAL_PREFIX "$ENV{PREFIX}")
 set(GDAL_LIBRARY "${GDAL_PREFIX}/lib/libgdal.so")
@@ -34,4 +34,5 @@ target_link_options(test_libgdal PRIVATE
     -sNODEJS_CATCH_REJECTION=0
     --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/pre.js
 )
-set_target_properties(test_libgdal PROPERTIES SUFFIX ".js")
+# link with em++ so the main module provides the libc++ symbols libgdal.so needs
+set_target_properties(test_libgdal PROPERTIES SUFFIX ".js" LINKER_LANGUAGE CXX)
