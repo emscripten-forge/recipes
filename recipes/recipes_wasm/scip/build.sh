@@ -1,12 +1,11 @@
+#!/bin/bash
+set -ex
+
 mkdir build
 cd build
-mkdir -p $PREFIX
-
-export CPPFLAGS="$CPPFLAGS -I$PREFIX/include"
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 
 # Configure step
-cmake ${CMAKE_ARGS} ..                          \
+emcmake cmake ${CMAKE_ARGS} ..                  \
     -GNinja                                     \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}          \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}       \
@@ -15,6 +14,8 @@ cmake ${CMAKE_ARGS} ..                          \
     -DCMAKE_BUILD_TYPE=Release                  \
     -DSHARED=OFF                                \
     -DREADLINE=OFF                              \
+    -DTPI=none                                  \
+    -DBUILD_TESTING=OFF                         \
     -DZLIB_LIBRARY="${PREFIX}/lib/libz.a"       \
     -DZLIB_INCLUDE_DIR="${PREFIX}/include"      \
     -DSTATIC_GMP=ON                             \
