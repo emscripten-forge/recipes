@@ -16,33 +16,38 @@ build:
 
 requirements:
   build:
-    - ${{ compiler('c') }}
+  - ${{ compiler('c') }}
 
 tests:
-  - package_contents:
-      include:
-        - gthread/gthread.h
-        - gthread/gthread_compat.h
-      files:
-        - lib/libgthread-jspi.a
-        - share/gthread-jspi/gthread-library.js
-        - lib/pkgconfig/gthread-jspi.pc
-  - script:
-      # threads, mutexes, condition variables, semaphores, TLS keys, sleeping
-      # and deep stacks switched mid-recursion
-      - export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
-      - emcc -O2 -include gthread_compat.h test/test_basic.c -o test_basic.js $(pkg-config --cflags --libs gthread-jspi) -sJSPI_EXPORTS=gt_thread_entry,main -sEXIT_RUNTIME=1
-      - node test_basic.js | tee test.log
-      - grep -q "GTHREAD TEST OK" test.log
+- package_contents:
+    include:
+    - gthread/gthread.h
+    - gthread/gthread_compat.h
     files:
-      source:
-        - test/test_basic.c
-    requirements:
-      build:
-        - emscripten_emscripten-wasm32 ==${{ c_compiler_version }}
-        - pkg-config
-        # JSPI (WebAssembly.Suspending) is enabled by default from Node.js 25
-        - nodejs >=25
+    - lib/libgthread-jspi.a
+    - share/gthread-jspi/gthread-library.js
+    - lib/pkgconfig/gthread-jspi.pc
+- script:
+  - export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+  - emcc -O2 -include gthread_compat.h test/test_basic.c -o test_basic.js $(pkg-config --cflags --libs gthread-jspi) -sJSPI_EXPORTS=gt_thread_entry,main
+    -sEXIT_RUNTIME=1
+  - node test_basic.js | tee test.log
+  - grep -q "GTHREAD TEST OK" test.log
+  files:
+    source:
+    - test/test_basic.c
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - pkg-config
+    - nodejs >=25
+# gthread's pthread-compatible gt_pthread_create reads the caller's
+# pthread_attr_t with pthread_attr_get*/set* (plain musl struct accessors,
+# no -pthread involved); no real threads are created, they are JSPI stacks
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/wangyenshu/gthread-jspi
@@ -62,4 +67,9 @@ about:
 
 extra:
   recipe-maintainers:
-    - wangyenshu
+  - wangyenshu
+  # gthread.c static_asserts a 32-bit layout; wasm32 only, like libffi-jspi
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: false
