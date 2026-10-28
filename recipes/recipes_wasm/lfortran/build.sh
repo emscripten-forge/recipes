@@ -17,10 +17,13 @@ emcmake cmake \
     .
 
 # Build step
-emmake make -j8
+emmake make -j${CPU_COUNT:-8}
 
 # Install step
 emmake make install
+
+# Ship only the static runtime (no mixed static + shared packages)
+rm -f $PREFIX/lib/liblfortran_runtime.so*
 
 cp src/lfortran/tests/test_lfortran.js $PREFIX/bin/test_lfortran.js
 cp src/lfortran/tests/test_lfortran.wasm $PREFIX/bin/test_lfortran.wasm

@@ -28,18 +28,22 @@ requirements:
   - ${{ compiler('cxx') }}
   - cmake
   - make
-  - zlib-static
-  - lfortran=${{ version }}
+  - lfortran ==${{ version }}
   host:
   - zlib-static
 
 tests:
 - script:
-  - test -f ${PREFIX}/lib/liblfortran_runtime.a
+  - test -f ${PREFIX}/lib/liblfortran_runtime_static.a
+  - test ! -e ${PREFIX}/lib/liblfortran_runtime.so
   - node ${PREFIX}/bin/test_lfortran.js
   requirements:
     build:
     - nodejs
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
