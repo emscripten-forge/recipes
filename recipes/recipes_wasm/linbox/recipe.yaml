@@ -3,7 +3,7 @@ context:
   version: 1.7.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -25,19 +25,32 @@ requirements:
   - autoconf-archive
   host:
   - gmp-static
-  - givaro
+  - givaro-static
   - fflas-ffpack
-  - libblas
+  - openblas
   - ntl-static
   - libflint-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('givaro-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('fflas-ffpack', lower_bound='x.x', upper_bound='x.x') }}
+  - openblas
+  - ${{ pin_compatible('ntl-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
-  - package_contents:
-      files:
-        - include/linbox/linbox-config.h
-        - lib/liblinbox.a
-        - lib/pkgconfig/linbox.pc
-        - bin/linbox-config
+- package_contents:
+    lib:
+    - liblinbox.a
+    include:
+    - linbox/linbox-config.h
+    files:
+    - lib/pkgconfig/linbox.pc
+    - bin/linbox-config
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://linbox-team.github.io/linbox

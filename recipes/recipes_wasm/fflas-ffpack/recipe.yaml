@@ -20,18 +20,31 @@ requirements:
   - libtool
   - make
   - pkg-config
+  - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
   host:
   - openblas
   - givaro-static
   - gmp-static
+  # header-only (no --enable-precompilation): users compile against these
+  run:
+  - openblas
+  - ${{ pin_compatible('givaro-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
+    include:
+    - fflas-ffpack/fflas-ffpack.h
+    - fflas-ffpack/fflas/fflas.h
+    - fflas-ffpack/ffpack/ffpack.h
+    - fflas-ffpack/config-blas.h
     files:
-    - include/fflas-ffpack/fflas-ffpack.h
-    - include/fflas-ffpack/fflas/fflas.h
-    - include/fflas-ffpack/ffpack/ffpack.h
+    - lib/pkgconfig/fflas-ffpack.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://linbox-team.github.io/fflas-ffpack/
