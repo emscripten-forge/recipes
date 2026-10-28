@@ -1,0 +1,357 @@
+context:
+  version: 26.0.0
+  name: arrow
+
+source:
+  url: https://github.com/apache/arrow/releases/download/apache-arrow-${{ version }}/apache-arrow-${{ version }}.tar.gz
+  sha256: b153ef472dd89ef4cb84867ca238f2a3a9347d8f4a78913d16ca2201606f0425
+  patches:
+  - patches/0003-Fix-xxhash-emscripten-extern-C-linkage.patch
+  - patches/0005-Include-FindPackageHandleStandardArgs-in-FindBrotliAlt.patch
+  # thrift-cpp-static has no thrift compiler
+  - patches/0006-FindThriftAlt-no-compiler-target-without-compiler.patch
+  # libarrow_python.so must carry all of Arrow for the Cython side modules
+  - patches/0007-pyarrow-whole-archive-arrow-on-emscripten.patch
+
+build:
+  number: 0
+
+outputs:
+
+# ============================================================================
+# Arrow C++ (static libraries), built once and split into packages below
+# ============================================================================
+- staging:
+    name: arrow-cpp-build
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - pkg-config
+    host:
+    - re2-static
+    - libabseil-static
+    - libutf8proc
+    - rapidjson
+    - nlohmann_json
+    - brotli-static
+    - zlib-static
+    - libbzip2-static
+    - lz4-c-static
+    - zstd-static
+    - thrift-cpp-static
+    - snappy-static
+    - boost-headers
+    # header-only, needed at build time for CpuInfo
+    - xsimd >=14.2
+  build:
+    script: build.sh
+
+- package:
+    name: arrow-cpp-static
+    version: ${{ version }}
+  inherit: arrow-cpp-build
+  build:
+    files:
+      include:
+      - lib/libarrow.a
+      # simdjson + uriparser, built by Arrow itself (no emscripten-forge packages)
+      - lib/libarrow_bundled_dependencies.a
+      - lib/cmake/Arrow/**
+      - lib/pkgconfig/arrow.pc
+      - lib/pkgconfig/arrow-csv.pc
+      - lib/pkgconfig/arrow-filesystem.pc
+      - lib/pkgconfig/arrow-json.pc
+      - include/arrow/**
+      exclude:
+      - include/arrow/acero/**
+      - include/arrow/compute/**
+      - include/arrow/dataset/**
+      - include/arrow/testing/**
+  requirements:
+    host:
+    - re2-static
+    - libabseil-static
+    - libutf8proc
+    - brotli-static
+    - zlib-static
+    - libbzip2-static
+    - lz4-c-static
+    - zstd-static
+    - snappy-static
+    run:
+    - ${{ pin_compatible('re2-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('libutf8proc', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('brotli-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libbzip2-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('lz4-c-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('zstd-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('snappy-static', lower_bound='x', upper_bound='x') }}
+    # arrow headers include rapidjson / nlohmann_json (header-only)
+    - rapidjson
+    - nlohmann_json
+  tests:
+  - package_contents:
+      lib:
+      - libarrow.a
+      - libarrow_bundled_dependencies.a
+      include:
+      - arrow/array.h
+  - script:
+    - bash build_tests.sh arrow-cpp
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/arrow-cpp/
+  # ARROW_ENABLE_THREADING=OFF removes the thread pool, but libarrow.a still
+  # references pthread_self / pthread_atfork (thread ids, fork handlers) and
+  # contains the std::thread of the signal StopSource (util/cancel.cc).
+  # pyarrow only registers that signal handler when is_threading_enabled(),
+  # which is false here, so no thread is ever started.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: arrow-cpp-compute-static
+    version: ${{ version }}
+  inherit: arrow-cpp-build
+  build:
+    files:
+      include:
+      - lib/libarrow_compute.a
+      - lib/cmake/ArrowCompute/**
+      - lib/pkgconfig/arrow-compute.pc
+      - include/arrow/compute/**
+  requirements:
+    run:
+    - ${{ pin_subpackage('arrow-cpp-static', exact=True) }}
+  tests:
+  - package_contents:
+      lib:
+      - libarrow_compute.a
+  - script:
+    - bash build_tests.sh arrow-cpp-compute
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/arrow-cpp-compute/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: arrow-cpp-acero-static
+    version: ${{ version }}
+  inherit: arrow-cpp-build
+  build:
+    files:
+      include:
+      - lib/libarrow_acero.a
+      - lib/cmake/ArrowAcero/**
+      - lib/pkgconfig/arrow-acero.pc
+      - include/arrow/acero/**
+  requirements:
+    run:
+    - ${{ pin_subpackage('arrow-cpp-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-compute-static', exact=True) }}
+  tests:
+  - package_contents:
+      lib:
+      - libarrow_acero.a
+  - script:
+    - bash build_tests.sh arrow-cpp-acero
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/arrow-cpp-acero/
+  # only pthread_self, from acero's ThreadIndexer (std::this_thread::get_id);
+  # no threads are created
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: arrow-cpp-parquet-static
+    version: ${{ version }}
+  inherit: arrow-cpp-build
+  build:
+    files:
+      include:
+      - lib/libparquet.a
+      - lib/cmake/Parquet/**
+      - lib/pkgconfig/parquet.pc
+      - include/parquet/**
+  requirements:
+    host:
+    - thrift-cpp-static
+    run:
+    - ${{ pin_subpackage('arrow-cpp-static', exact=True) }}
+    - ${{ pin_compatible('thrift-cpp-static', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      lib:
+      - libparquet.a
+  - script:
+    - bash build_tests.sh arrow-cpp-parquet
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/arrow-cpp-parquet/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: arrow-cpp-dataset-static
+    version: ${{ version }}
+  inherit: arrow-cpp-build
+  build:
+    files:
+      include:
+      - lib/libarrow_dataset.a
+      - lib/cmake/ArrowDataset/**
+      - lib/pkgconfig/arrow-dataset.pc
+      - include/arrow/dataset/**
+  requirements:
+    run:
+    - ${{ pin_subpackage('arrow-cpp-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-compute-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-acero-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-parquet-static', exact=True) }}
+  tests:
+  - package_contents:
+      lib:
+      - libarrow_dataset.a
+  - script:
+    - bash build_tests.sh arrow-cpp-dataset
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/arrow-cpp-dataset/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+# ============================================================================
+# Python bindings
+# ============================================================================
+- package:
+    name: pyarrow
+    version: ${{ version }}
+  build:
+    script: build_pyarrow.sh
+    files:
+      exclude:
+      - '**/*.pyc'
+      - '**/__pycache__/**'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cross-python_${{ target_platform }}
+    - python
+    - cython >=3.1
+    - scikit-build-core >=1.0
+    - setuptools-scm >=8
+    - libcst
+    - numpy >=2.0
+    - pip
+    # cmake/ninja from the env, otherwise scikit-build-core may pick a system cmake
+    - cmake
+    - ninja
+    host:
+    - python-dev
+    - numpy
+    - ${{ pin_subpackage('arrow-cpp-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-compute-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-acero-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-parquet-static', exact=True) }}
+    - ${{ pin_subpackage('arrow-cpp-dataset-static', exact=True) }}
+    ignore_run_exports:
+      by_name:
+      - arrow-cpp-static
+      - arrow-cpp-compute-static
+      - arrow-cpp-acero-static
+      - arrow-cpp-parquet-static
+      - arrow-cpp-dataset-static
+    run:
+    - python
+    - numpy
+    - cloudpickle
+    - fsspec
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_py_arrow.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  homepage: https://arrow.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: "Arrow: A cross-language development platform for in-memory analytics"
+  description: |
+    Apache Arrow is a cross-language development platform for in-memory analytics.
+    This recipe builds the Arrow C++ static libraries and the Python bindings (pyarrow).
+  license_family: APACHE
+
+extra:
+  recipe-maintainers:
+  - Klaim
+  - martinRenou
+  - DerThorsten
+  - Alex-PLACET
+  - IsabelParedes
