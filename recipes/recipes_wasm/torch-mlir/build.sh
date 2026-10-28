@@ -7,6 +7,7 @@ TARGET_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config
 emcmake cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+    -DBUILD_SHARED_LIBS=OFF \
     -DLLVM_DIR="${PREFIX}/lib/cmake/llvm" \
     -DMLIR_DIR="${PREFIX}/lib/cmake/mlir" \
     -DMLIR_TABLEGEN_EXE="${BUILD_PREFIX}/bin/mlir-tblgen" \
@@ -30,8 +31,14 @@ emcmake cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
     -DNB_SUFFIX="${TARGET_EXT_SUFFIX}" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
-emmake make -C build -j${CPU_COUNT:-4} TorchMLIRPythonModules
+emmake make -C build -j${CPU_COUNT:-4} TorchMLIRPythonModules TorchMLIRCAPI
 cmake --install build --component TorchMLIRPythonModules
+cmake --install build --component torch-mlir-headers
+
+for archive in build/lib/libTorchMLIR*.a; do
+    component=$(basename "${archive}" .a)
+    cmake --install build --component "${component#lib}"
+done
 
 mkdir -p "${SP_DIR}"
 mv "${PREFIX}/python_packages/torch_mlir/torch_mlir" "${SP_DIR}/torch_mlir"

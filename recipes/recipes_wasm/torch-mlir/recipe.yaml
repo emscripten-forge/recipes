@@ -1,71 +1,131 @@
 context:
-  version: 0.0.20260811
+  version: '20260811'
   revision: 069c69c4db19a1f0da4a4b80c7dbcc716d271aa9
   llvm_version: 23.1.2
 
-package:
-  name: torch-mlir
-  version: ${{ version }}
-
 source:
-  url: https://github.com/llvm/torch-mlir/archive/${{ revision }}.tar.gz
-  sha256: 851c4449658797bac60bc6817b5ee380b199bf988b36381b352547b2456e0e08
+  git: https://github.com/llvm/torch-mlir.git
+  rev: ${{ revision }}
+  submodules: false
   patches:
   - patches/optional-tests.patch
 
 build:
   number: 0
-  script: build.sh
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
 
-requirements:
+outputs:
+- staging:
+    name: torch-mlir-build
   build:
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - cmake >=4.3.3,<4.4
-  - make
-  - llvm-tblgen ==${{ llvm_version }}
-  - cross-python_${{ target_platform }}
-  - nanobind >=2.9,<3
-  host:
-  - python-dev
-  - llvm-static ==${{ llvm_version }}
-  - mlir-static ==${{ llvm_version }}
-  run:
-  - python
-  - numpy
-  - packaging
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake >=4.3.3,<4.4
+    - make
+    - llvm-tblgen ==${{ llvm_version }}
+    - cross-python_${{ target_platform }}
+    - nanobind >=2.9,<3
+    host:
+    - python-dev
+    - llvm-static ==${{ llvm_version }}
+    - mlir-static ==${{ llvm_version }}
 
-tests:
-- package_contents:
+- package:
+    name: torch-mlir-static
+    version: ${{ version }}
+  inherit: torch-mlir-build
+  build:
+    script: echo "Packaging Torch-MLIR static libraries and headers"
     files:
-    - lib/python*/site-packages/torch_mlir/__init__.py
-    - lib/python*/site-packages/torch_mlir/fx.py
-    - lib/python*/site-packages/torch_mlir/_mlir_libs/_torchMlir*.so
-    - lib/python*/site-packages/torch_mlir/_mlir_libs/libTorchMLIRAggregateCAPI.so
-- script: generic-testing
+      include:
+      - include/torch-mlir/**
+      - include/torch-mlir-c/**
+      - include/torch-mlir-dialects/**
+      - lib/libTorchMLIR*.a
   requirements:
-    build:
-    - generic-testing
-- script: pytester
-  files:
-    recipe:
-    - test_torch_mlir.py
-  requirements:
-    build:
-    - pytester
+    host:
+    - llvm-static ==${{ llvm_version }}
+    - mlir-static ==${{ llvm_version }}
     run:
-    - pytester-run
-    - pytorch
+    - ${{ pin_compatible('llvm-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('mlir-static', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - include/torch-mlir/Dialect/Torch/IR/TorchDialect.h
+        - include/torch-mlir/Dialect/Torch/IR/TorchOps.h.inc
+        - include/torch-mlir-c/Registration.h
+        - lib/libTorchMLIRCAPI.a
+        - lib/libTorchMLIRInitAll.a
+        - lib/libTorchMLIRTorchToLinalg.a
+        not_exists:
+        - '**/*.so*'
+        - lib/python*/**
+        - bin/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: torch-mlir
+    version: ${{ version }}
+  inherit: torch-mlir-build
+  build:
+    script: echo "Packaging Torch-MLIR Python bindings"
+    files:
+      include:
+      - lib/python*/site-packages/torch_mlir/**
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('torch-mlir', lower_bound='x', upper_bound='x') }}
+    run:
+    - python
+    - numpy
+    - packaging
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/python*/site-packages/torch_mlir/__init__.py
+        - lib/python*/site-packages/torch_mlir/fx.py
+        - lib/python*/site-packages/torch_mlir/_mlir_libs/_torchMlir*.so
+        - lib/python*/site-packages/torch_mlir/_mlir_libs/libTorchMLIRAggregateCAPI.so
+        not_exists:
+        - '**/*.a'
+        - include/**
+        - bin/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_torch_mlir.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+      - pytorch
 
 about:
   homepage: https://github.com/llvm/torch-mlir
   repository: https://github.com/llvm/torch-mlir
   license: Apache-2.0 WITH LLVM-exception AND BSD-3-Clause
   license_file: LICENSE
-  summary: Torch-MLIR Python bindings and Torch-to-Linalg lowering for WebAssembly
+  summary: Torch-MLIR libraries and Python bindings for WebAssembly
+  description: Snapshot from 11 August 2026, built against LLVM/MLIR 23.1.2.
 
 extra:
   ci:
