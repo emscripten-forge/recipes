@@ -11,9 +11,20 @@ set -euxo pipefail
 VARIANT="${PKG_NAME}"            # libffi-pthread
 STAGE="${SRC_DIR}/_stage"
 
+# Note: libffi < 3.5.2 only has a wasm32 port (src/wasm32, 32-bit pointers);
+# wasm64 support (src/wasm) arrived in libffi 3.5.2.
+if [[ "${target_platform}" == "emscripten-wasm32" ]]; then
+  FFI_HOST="wasm32-unknown-linux"
+elif [[ "${target_platform}" == "emscripten-wasm64" ]]; then
+  FFI_HOST="wasm64-unknown-linux"
+else
+  echo "Unsupported target_platform: ${target_platform}" >&2
+  exit 1
+fi
+
 # WASM_BIGINT must match -sWASM_BIGINT when the program is linked.
 emconfigure ./configure \
-  --host=wasm32-unknown-linux \
+  --host="${FFI_HOST}" \
   --prefix="${STAGE}" \
   --enable-static --disable-shared --disable-docs \
   --disable-multi-os-directory --disable-raw-api \
