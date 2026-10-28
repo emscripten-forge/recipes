@@ -1,0 +1,81 @@
+context:
+  version: 10.8.13
+
+package:
+  name: passagemath-cmr
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-cmr/passagemath_cmr-${{ version }}.tar.gz
+  sha256: e0c2030b26cd4b67f1e0db5d791d0b23d0f367e19615f4fb59f61e2151654166
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  number: 0
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython<3.3
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python-dev
+  - gmp-static
+  - mpfr-static
+  - mpc-static
+  - cmr-static
+  - numpy
+  - passagemath-graphs
+  - passagemath-modules
+  run:
+  - python
+  - gmpy2
+  - cysignals
+  - passagemath-graphs
+  - passagemath-modules
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_cmr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Combinatorial matrix recognition'
+  description: |
+    Distribution of a small part of the Sage library for use with passagemath-modules
+    and passagemath-graphs. It provides a Cython interface to the CMR library, which
+    implements recognition and decomposition algorithms for totally unimodular matrices,
+    network matrices, regular matroids, series-parallel matroids, etc.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_cmr.py
+  recipe-maintainers:
+  - mkoeppe

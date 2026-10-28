@@ -1,0 +1,52 @@
+context:
+  version: 0.5.0
+
+package:
+  name: xeus-nelson
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jupyter-xeus/xeus-nelson/archive/refs/tags/${{ version }}.tar.gz
+  sha256: d995449c828a52404540f5056e6e6b5e3bb27e7fab09658849ea611dfa0f336b
+  patches:
+  - patches/0001-use-shared-xeus.patch
+  - patches/0002-port-to-xeus-6.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - nelson-static
+  - nlohmann_json
+  - nlohmann_json-abi
+  - xeus
+  - xeus-lite-static
+  - xtl
+
+tests:
+- package_contents:
+    files:
+    - bin/xnelson.wasm
+    - bin/xnelson.js
+    - share/jupyter/kernels/xnelson/kernel.json
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD-3
+  license_file: LICENSE
+  summary: xeus-nelson
+  homepage: https://github.com/jupyter-xeus/xeus-nelson
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - martinRenou
+  - JohanMabille
