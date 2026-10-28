@@ -1,0 +1,36 @@
+From 2d2d1118d6a83dfe8adaee0d4aca27c9ee34fe46 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 15 Oct 2026 19:19:30 +0200
+Subject: [PATCH] Avoid NINT to work around wasm64 lround codegen
+
+---
+ src/qselect.f | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/qselect.f b/src/qselect.f
+index b72f81c..271f037 100644
+--- a/src/qselect.f
++++ b/src/qselect.f
+@@ -2,7 +2,7 @@ C Output from Public domain Ratfor, version 1.05
+       subroutine qselect(n,x,q)
+       integer n,k,l,r
+       double precision x(n),q
+-      k=nint(q*n)
++      k=int(anint(q*n))
+       l=1
+       r=n
+       call select(n,x,l,r,k)
+@@ -23,8 +23,8 @@ C Output from Public domain Ratfor, version 1.05
+       z=log(fm)
+       s=cs*exp(2*z/3)
+       d=cd*sqrt(z*s*(m-s)/fm)*sign(1,i-m/2)
+-      ll=max(l,nint(k-i*s/fm + d))
+-      rr=min(r,nint(k+(m-i)*s/fm + d))
++      ll=max(l,int(anint(k-i*s/fm + d)))
++      rr=min(r,int(anint(k+(m-i)*s/fm + d)))
+       call select(n,x,ll,rr,k)
+       endif
+       t=x(k)
+-- 
+2.56.0
+

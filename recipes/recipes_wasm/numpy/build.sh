@@ -27,11 +27,6 @@ pkg-config --cflags --libs openblas
 test -f "${PREFIX}/include/cblas.h"
 test -f "${PREFIX}/lib/libopenblas.so"
 
-# Add correct python to the meson cross file.
-cp $MESON_CROSS_FILE $SRC_DIR/emscripten.meson.cross
-sed -i "s|@(PYTHON)|${PYTHON}|g" $SRC_DIR/emscripten.meson.cross
-export MESON_CROSS_FILE=$SRC_DIR/emscripten.meson.cross
-
 export CFLAGS="$CFLAGS -Wno-return-type -Wno-implicit-function-declaration -msimd128 -fwasm-exceptions -s SUPPORT_LONGJMP"
 export LDFLAGS="$LDFLAGS  -fwasm-exceptions -s SUPPORT_LONGJMP"
 
@@ -48,5 +43,5 @@ MESON_ARGS="-Dhave_backtrace=false" ${PYTHON} -m pip install . -vvv --no-deps --
     -Csetup-args="-Dblas=openblas" \
     -Csetup-args="-Dlapack=openblas" \
     -Csetup-args="-Dallow-noblas=false" \
-    -Csetup-args="--cross-file=$MESON_CROSS_FILE" \
+    -Csetup-args="--cross-file=$MESON_CROSS_PYTHON_FILE" \
     -Cinstall-args="--tags=runtime,python-runtime,tests,devel"

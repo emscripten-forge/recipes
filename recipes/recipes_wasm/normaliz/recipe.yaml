@@ -1,0 +1,62 @@
+context:
+  name: normaliz
+  version: 3.11.1
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Normaliz/Normaliz/releases/download/v${{ version }}/normaliz-${{ version }}.tar.gz
+  sha256: 9a00d590f0fdcad847e2189696d2842d97ed896ed36c22421874a364047f76e8
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - cmake
+  - ${{ compiler("c") }}
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  host:
+  - gmp-static
+  - libeantic-static
+  - libflint-static
+  - cocoalib-static
+  - nauty-static
+  - boost-headers
+  - mpfr-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libeantic-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('cocoalib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('nauty-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/libnormaliz.a
+    - include/libnormaliz/libnormaliz.h
+    - bin/normaliz
+    - bin/normaliz.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://www.normaliz.uni-osnabrueck.de/
+  license: GPL-3.0-only
+  license_file: COPYING
+  summary: Normaliz is an open source tool for computations in affine monoids, vector configurations, lattice polytopes, and rational cones. 
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

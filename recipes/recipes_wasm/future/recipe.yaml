@@ -1,0 +1,53 @@
+context:
+  name: future
+  version: 1.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: bd2968309307861edae1458a4f8a4f3598c03be43b97521076aebf5d94c07b05
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - pip
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  host:
+  - python-dev
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_future.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://python-future.org
+  repository: https://github.com/PythonCharmers/python-future
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Clean single-source support for Python 3 and 2

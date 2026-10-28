@@ -1,0 +1,48 @@
+context:
+  version: 0.3.0
+
+package:
+  name: nelson-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Nelson-numerical-software/nelson-minimalist-core/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: d9212109b54c677423ff1e3998c30d3dd9f165734b8fc40cc279dce961e0edd2
+  patches:
+  - patches/0001-Diff-enableTrivial-is-non-const.patch
+  - patches/0002-Eigen-5-cast-any-all-result-to-logical.patch
+  - patches/0003-Use-sysconf-instead-of-getdtablesize.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  - pkg-config
+  host:
+  - eigen
+  run:
+  - eigen
+
+tests:
+- package_contents:
+    lib:
+    - libnlsCore.a
+    include:
+    - nelson/core/EvaluateCommand.hpp
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: nelson
+  homepage: https://github.com/Nelson-numerical-software/nelson-minimalist-core
+extra:
+  recipe-maintainers:
+  - JohanMabille

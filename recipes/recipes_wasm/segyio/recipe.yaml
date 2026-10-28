@@ -1,0 +1,64 @@
+context:
+  name: segyio
+  version: 1.9.13
+
+package:
+  name: segyio
+  version: ${{ version }}
+
+source:
+  # - url: https://github.com/equinor/segyio/archive/refs/tags/v${{ version }}.tar.gz
+  #   sha256: c68cd225e346c79ad1f70f86281d82dcc1520e137a6d74298d5732f94d71f04d
+  git: https://github.com/DerThorsten/segyio
+  branch: scikit_build_core
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - share/man/man1/**
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - cmake
+  - python
+  - pip
+  - setuptools_scm
+  - numpy
+  - scikit-build-core
+  host:
+  - numpy
+  - python-dev
+  run:
+  - python
+
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_segyio.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/equinor/segyio
+  license: LGPL-3.0-or-later
+  license_file: License.md
+  summary: Simple & fast IO for SEG-Y files
+  repository: https://github.com/equinor/segyio

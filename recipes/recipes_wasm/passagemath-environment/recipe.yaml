@@ -1,0 +1,81 @@
+context:
+  version: 10.8.13
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-environment/passagemath_environment-${{ version }}.tar.gz
+  sha256: 37a741d4d3f5b94103fc3c40c2e4520a141e8d5e25c87a88e94f01ea043ba5a2
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: passagemath-environment
+    version: ${{ version }}
+
+  build:
+    # pure-python noarch package: install with the native build python
+    # (cross-python cannot be activated for target_platform=noarch)
+    script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+    noarch: python
+
+  requirements:
+    build:
+    # same python version as the (emscripten) host python, so pip installs
+    # into the matching lib/pythonX.Y/site-packages
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+    host:
+    - python
+    run:
+    - python
+    - packaging
+    - platformdirs
+    - passagemath-abi == ${{ version }}
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_passagemath_environment.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: passagemath-abi
+    version: ${{ version }}
+
+  build:
+    noarch: generic
+    script: echo "passagemath-abi is built"
+  requirements:
+    run_exports:
+      strong:
+      - ${{ pin_subpackage('passagemath-abi', exact=True) }}
+  tests:
+  - script: echo "passagemath-abi is an empty package."
+
+about:
+  summary: 'passagemath: System and software environment'
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  description: |
+    Distribution of a small part of the Sage library.
+    It provides the connection to the system and software environment.
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_environment.py
+  recipe-maintainers:
+  - mkoeppe
