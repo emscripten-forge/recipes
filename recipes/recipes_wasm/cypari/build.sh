@@ -23,18 +23,19 @@ pushd "${PARI_SRC}"
 CPPFLAGS="-I${PREFIX}/include" \
 LDFLAGS="-L${PREFIX}/lib" \
 emconfigure ./Configure \
-    --host=wasm32-unknown-emscripten \
+    --host=${HOST} \
     --prefix="${LIBCACHE}/pari" \
     --with-gmp="${PREFIX}" \
     --static \
     --graphic=none \
     --without-readline
 
-pushd Oemscripten-wasm32-unknown
+pushd O*-*
 # Build and install the static library first: install-include has no
 # prerequisites, so under -j it can run before the generated headers
 # (mpinl.h, parimt.h) exist.
-emmake make -j"${CPU_COUNT:-2}" install-lib-sta
+# The generated Makefile hard-codes RANLIB=ranlib, which can't index wasm objects.
+emmake make -j"${CPU_COUNT:-2}" install-lib-sta RANLIB=emranlib
 emmake make install-include install-cfg
 # gphelp plus the .tex files it reads; autogen uses it for the docstrings.
 make install-doctex
