@@ -11,7 +11,10 @@ toolchain_path="${emscripten_root}/cmake/Modules/Platform/Emscripten.cmake"
 NUMPY_LIB="${PREFIX}/lib/python${PY_VER}/site-packages/numpy"
 SYSCONFIG_NAME="_sysconfigdata__emscripten_${target_platform#emscripten-}-emscripten"
 
-export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path} -DCMAKE_PROJECT_INCLUDE=${RECIPE_DIR}/cmake/overwriteProp.cmake"
+export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path}"
+# scikit-build-core strips on install by default; the host strip reorders the
+# wasm sections of the side modules ("need the dylink section to be first"),
+# hence -Cinstall.strip=false below
 export CMAKE_BUILD_PARALLEL_LEVEL="${CPU_COUNT:-4}"
 
 # python/CMakeLists.txt has an emscripten branch keyed on PYODIDE which
@@ -34,6 +37,7 @@ cd "${SRC_DIR}/python"
 "${PYTHON}" -m pip install . --no-deps --no-build-isolation -vvv \
   -Cbuild-dir="_build" \
   -Ccmake.define.CMAKE_PREFIX_PATH="${PREFIX}" \
+  -Cinstall.strip=false \
   -Ccmake.define.CMAKE_PLATFORM_NO_VERSIONED_SONAME=TRUE \
   -Ccmake.define.Python3_NumPy_INCLUDE_DIR="${NUMPY_LIB}/_core/include" \
   -Ccmake.define.Arrow_DIR="${PREFIX}/lib/cmake/Arrow" \
