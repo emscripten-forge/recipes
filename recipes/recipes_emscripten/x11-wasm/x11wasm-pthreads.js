@@ -8,18 +8,23 @@
 //
 // This installs Module.x11WasmCreateBackend, which the x11.wasm bridge uses to
 // build its backend:
-//   * the backend sees a module whose queue/resize/clipboard exports only
-//     record the call (copying any (pointer, length) string argument), and
+//   * the backend sees a module whose exports that change Xlib state (event
+//     queue, pointer state, window geometry, clipboard) only record the call
+//     (copying any (pointer, length) string argument) when they are called
+//     from a DOM event handler, and
 //   * every backend method the bridge invokes -- i.e. every proxied Xlib call,
 //     made while the calling worker is blocked waiting for it -- first replays
-//     the recorded calls.
+//     the recorded calls; calls the backend makes during such a method run at
+//     once.
 // So the queue is only touched by one side at a time. Xlib callers that poll
 // (XPending / XEventsQueued(QueuedAfterFlush)) end up in the bridge via
 // XFlush, which is what delivers pending input.
 (function () {
   "use strict";
 
-  var DEFERRED = /^_X11Wasm(Queue[A-Za-z]*|ResizeRoot|SetExternalClipboardText)$/;
+  var DEFERRED = new RegExp("^_X11Wasm(Queue[A-Za-z]*|ResizeRoot|SetExternalClipboardText|" +
+      "CancelPointerInput|ConfigureWindow|" +
+      "Manager(SetWindowState|ConfigureWindow|CloseWindow|ActivateWindow))$");
   // name -> index of the (pointer, byteLength) argument pair
   var STRING_ARG = {
     _X11WasmQueueCompositionEvent: 2,
@@ -28,6 +33,7 @@
 
   function createBackend(module) {
     var pending = [];
+    var depth = 0;   // > 0 while a proxied Xlib call runs a backend method
 
     var recordingModule = new Proxy(module, {
       get: function (target, prop) {
@@ -37,6 +43,9 @@
           return value;
         }
         return function () {
+          if (depth > 0) {
+            return value.apply(target, arguments);
+          }
           var args = Array.prototype.slice.call(arguments);
           var at = STRING_ARG[prop];
           if (at !== undefined) {
@@ -76,6 +85,7 @@
     var backend = globalThis.X11WasmDOM.createBackend({
       root: module.x11WasmRoot,
       module: recordingModule,
+      windowManager: module.x11WasmWindowManager === true,
     });
 
     return new Proxy(backend, {
@@ -85,8 +95,13 @@
           return value;
         }
         return function () {
-          replay();
-          return value.apply(target, arguments);
+          depth++;
+          try {
+            replay();
+            return value.apply(target, arguments);
+          } finally {
+            depth--;
+          }
         };
       },
     });
