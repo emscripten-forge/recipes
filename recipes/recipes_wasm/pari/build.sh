@@ -15,7 +15,7 @@ emconfigure ./Configure \
     --static \
     --graphic=none
 
-cd O*-*
+cd Oemscripten-wasm*
 
 # The generated Makefile hard-codes RANLIB=ranlib, which can't index wasm objects
 emmake make all -j${CPU_COUNT:-4} RANLIB=emranlib
