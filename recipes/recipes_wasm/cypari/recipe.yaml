@@ -48,9 +48,14 @@ requirements:
   # PARI's Configure and gphelp, which autogen calls, are perl scripts.
   - perl
   - make
+  # the git checkout of PARI has no pre-generated parser
+  - bison
   host:
-  - python
-  - gmp
+  - python-dev
+  - gmp-static
+  ignore_run_exports:
+    from_package:
+    - gmp-static
   run:
   - python
 
@@ -66,7 +71,11 @@ tests:
     - pytester-run
 - package_contents:
     files:
-    - lib/python*/site-packages/cypari/_pari.cpython-313-wasm32-emscripten.so
+    - lib/python*/site-packages/cypari/_pari.cpython-*-emscripten.so
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/3-manifolds/cypari
