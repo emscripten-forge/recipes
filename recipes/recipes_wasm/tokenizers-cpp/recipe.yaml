@@ -3,7 +3,7 @@ context:
   version: 0.1.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -19,17 +19,16 @@ requirements:
   build:
   - ${{ compiler('c') }}
   - ${{ compiler('cxx') }}
-  - cmake
-  - ninja
+  # no cmake here: rust-nightly pins libcurl 7, cmake 4 needs libcurl 8
   - rust-nightly
   - python
   host:
-  - sentencepiece
-  - libabseil
+  - sentencepiece-static
+  - libabseil-static
   - msgpack-cpp
   run:
-  - sentencepiece
-  - libabseil
+  - ${{ pin_compatible('sentencepiece-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
   - msgpack-cpp
 
 tests:
@@ -45,16 +44,26 @@ tests:
     - lib/cmake/tokenizers-cpp/tokenizers-cppConfigVersion.cmake
     - lib/cmake/tokenizers-cpp/tokenizers-cppTargets.cmake
 - script:
-  - build_tests.sh
+  - bash build_tests.sh
   requirements:
     build:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
+    - nodejs
   files:
     recipe:
     - build_tests.sh
     - tests/
+# libtokenizers_c.a is a Rust staticlib and bundles the whole Rust std,
+# including std::thread / std::sync (pthread_create, mutexes, condvars).
+# Only that archive trips the check (libtokenizers_cpp.a is clean); the
+# tokenizers crate is used without rayon and the node test above runs
+# without -pthread (same situation as llguidance-cpp).
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/mlc-ai/tokenizers-cpp
