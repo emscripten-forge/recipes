@@ -1,15 +1,15 @@
+#!/bin/bash
+set -ex
+
 mkdir build
 cd build
-mkdir -p $PREFIX
-
-export CPPFLAGS="$CPPFLAGS -I$PREFIX/include"
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
 
 # Configure step
-cmake ${CMAKE_ARGS} ..                          \
+emcmake cmake ${CMAKE_ARGS} ..                  \
     -GNinja                                     \
     -DCMAKE_PREFIX_PATH:PATH=${PREFIX}          \
     -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}       \
+    -DCMAKE_INSTALL_LIBDIR=lib                  \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON        \
     -DCMAKE_BUILD_TYPE=Release                  \
     -DSHARED=OFF                                \

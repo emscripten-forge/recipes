@@ -1,0 +1,55 @@
+context:
+  version: 10.1.0
+
+package:
+  name: scip-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipopt/scip/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 2a56b2fa179af35431ca7c3e12ecb7aad3cba8eb08011cacf2b813f8042c07c1
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - boost-headers
+  - gmp-static
+  - mpfr-static
+  - zlib-static
+  - soplex-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('soplex-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libscip.a
+    include:
+    - scip/scip.h
+    files:
+    - bin/scip.js
+    - bin/scip.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Mixed integer programming solver
+  homepage: https://github.com/scipopt/scip
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
