@@ -3,7 +3,7 @@ context:
   version: 0.2.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -11,7 +11,7 @@ source:
   sha256: c1a59e9259c9653ad0ade653dadff074cd31f0a6ff2a11316f67bee4189a8f1b
 
 build:
-  number: 1
+  number: 0
   script: build.sh
 
 requirements:
@@ -20,13 +20,14 @@ requirements:
   - ${{ compiler('cxx') }}
   - cmake
   - ninja
-  - libprotobuf
+  # protoc must match the libprotobuf-static runtime in host
+  - libprotobuf 7.36.*
   host:
-  - libabseil
-  - libprotobuf
+  - libabseil-static
+  - libprotobuf-static
   run:
-  - libabseil
-  - libprotobuf
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libprotobuf-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
@@ -49,6 +50,10 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/google/sentencepiece
