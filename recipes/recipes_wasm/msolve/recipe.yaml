@@ -3,7 +3,7 @@ context:
   version: 0.11.0
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -25,14 +25,23 @@ requirements:
   - autoconf-archive
   host:
   - gmp-static
-  - mpfr
+  - mpfr-static
   - libflint-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
 
 tests:
 - package_contents:
+    lib:
+    - libmsolve.a
     files:
-    - lib/libmsolve.a
     - include/msolve/msolve/msolve.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://msolve.lip6.fr/
