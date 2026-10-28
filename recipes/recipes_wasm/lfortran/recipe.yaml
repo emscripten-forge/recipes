@@ -76,18 +76,22 @@ outputs:
     name: lfortran-static
     version: ${{ version }}
   inherit: lfortran-build
+  # self-contained: ships its own copy of the runtime headers (like
+  # sparrow / sparrow-static) and does not depend on the shared lfortran
   build:
     files:
       include:
       - lib/liblfortran_runtime_static.a
-  requirements:
-    run:
-    # headers (ISO_Fortran_binding.h, lfortran_intrinsics.h) come from lfortran
-    - ${{ pin_subpackage('lfortran', exact=True) }}
+      - include/lfortran/**
   tests:
   - package_contents:
       lib:
       - liblfortran_runtime_static.a
+      include:
+      - lfortran/ISO_Fortran_binding.h
+      - lfortran/impure/lfortran_intrinsics.h
+  - script:
+    - test ! -e ${PREFIX}/lib/liblfortran_runtime.so
   - script: generic-testing
     requirements:
       build:
