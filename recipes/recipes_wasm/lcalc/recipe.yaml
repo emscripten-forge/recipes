@@ -3,7 +3,7 @@ context:
   version: 2.2.2
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -25,15 +25,23 @@ requirements:
   - autoconf-archive
   - gengetopt
   host:
-  - pari
+  - pari-static
   - gmp-static
+  run:
+  - ${{ pin_compatible('pari-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
+    lib:
+    - libLfunction.a
     files:
     - bin/lcalc
-    - lib/libLfunction.a
     - lib/pkgconfig/lcalc.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://gitlab.com/sagemath/lcalc

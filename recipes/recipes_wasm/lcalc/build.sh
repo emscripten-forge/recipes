@@ -5,10 +5,11 @@ autoreconf -vfi
 
 emconfigure ./configure \
     --prefix=$PREFIX \
+    --host=${HOST} \
     --with-pari \
     CPPFLAGS="-I$PREFIX/include" \
-    CXXFLAGS="-I$PREFIX/include" \
-    LDFLAGS="-L$PREFIX/lib" \
+    CXXFLAGS="${CXXFLAGS:-} -I$PREFIX/include" \
+    LDFLAGS="${LDFLAGS:-} -L$PREFIX/lib" \
     LIBS="-lgmp" \
     --disable-shared \
     --enable-static
