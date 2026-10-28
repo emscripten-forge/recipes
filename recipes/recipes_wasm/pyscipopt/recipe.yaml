@@ -1,0 +1,77 @@
+schema_version: 1
+
+context:
+  version: "6.2.1"
+
+package:
+  name: pyscipopt
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipopt/PySCIPOpt/archive/v${{ version }}.tar.gz
+  sha256: 9c511bd3dc6767f08c430c3be18af9e900d5bc939d9d1b44379dd0f760da167e
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/*.pyx'
+    - '**/*.pxd'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - setuptools
+  # cython 3.3 rejects `axis` being redeclared in matrix.pxi
+  - cython >=3,<3.3
+  - numpy
+  host:
+  - python-dev
+  - numpy
+  - scip-static
+  - soplex-static
+  - gmp-static
+  - mpfr-static
+  - zlib-static
+  ignore_run_exports:
+    from_package:
+    - scip-static
+    - soplex-static
+    - gmp-static
+    - mpfr-static
+    - zlib-static
+  run:
+  - python
+  - numpy >=1.16.0
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pyscipopt.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Interface from Python to the SCIP Optimization Suite
+  homepage: https://github.com/scipopt/PySCIPOpt
+  documentation: https://scipopt.github.io/PySCIPOpt/docs/html/
+  repository: https://github.com/scipopt/PySCIPOpt

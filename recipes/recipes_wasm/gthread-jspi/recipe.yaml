@@ -1,0 +1,72 @@
+context:
+  name: gthread-jspi
+  version: 0.1.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/wangyenshu/gthread-jspi/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: d2dd4d5fc20192ce71beceaa11ca3beb53571a71725a8888c7ee1f33f27bfea3
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+
+tests:
+- package_contents:
+    include:
+    - gthread/gthread.h
+    - gthread/gthread_compat.h
+    files:
+    - lib/libgthread-jspi.a
+    - share/gthread-jspi/gthread-library.js
+    - lib/pkgconfig/gthread-jspi.pc
+- script:
+  - export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+  - emcc -O2 -include gthread_compat.h test/test_basic.c -o test_basic.js $(pkg-config --cflags --libs gthread-jspi) -sJSPI_EXPORTS=gt_thread_entry,main
+    -sEXIT_RUNTIME=1
+  - node test_basic.js | tee test.log
+  - grep -q "GTHREAD TEST OK" test.log
+  files:
+    source:
+    - test/test_basic.c
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - pkg-config
+    - nodejs >=25
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/wangyenshu/gthread-jspi
+  license: MIT
+  license_file: LICENSE
+  summary: Cooperative POSIX threads for Emscripten programs, built on JSPI
+  description: |
+    gthread-jspi runs pthread-style threads inside one WebAssembly instance
+    (no SharedArrayBuffer, no workers, no cross-origin isolation).  Each
+    thread has its own C stack; threads switch at blocking calls (mutexes,
+    condition variables, sleep, I/O waits) by suspending WebAssembly with
+    JavaScript Promise Integration.  gthread_compat.h maps the pthread,
+    semaphore and sched_yield APIs onto gthreads when force-included
+    (-include gthread_compat.h).  JavaScript can wake threads waiting for
+    I/O with gt_io_notify(channel).  Link with $(pkg-config --libs
+    gthread-jspi) and list main in -sJSPI_EXPORTS if it blocks.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
+  # gthread.c static_asserts a 32-bit layout; wasm32 only, like libffi-jspi
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: false
