@@ -1,0 +1,80 @@
+context:
+  version: 10.8.13
+
+package:
+  name: passagemath-polyhedra
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-polyhedra/passagemath_polyhedra-${{ version }}.tar.gz
+  sha256: 95ba57aa17271373bf5f564f8e654f0cc63bcde65ace0bf21be5e0eef66019ac
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - passagemath-setup
+  - passagemath-environment
+  - cython<3.3
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  - numpy
+  - passagemath-abi == ${{ version }}
+  host:
+  - python-dev
+  - gmp-static
+  - mpfr-static
+  - mpc-static
+  - numpy
+  - passagemath-modules
+  run:
+  - python
+  - gmpy2
+  - memory-allocator
+  - cysignals
+  - passagemath-glpk
+  - passagemath-modules
+  - passagemath-ppl
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_polyhedra.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - passagemath-repl
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: 'passagemath: Convex polyhedra in arbitrary dimension, mixed integer linear optimization'
+  description: |
+    Distribution of a part of the Sage library for computations with convex polyhedra
+    in arbitrary dimension (in exact rational arithmetic), and linear and mixed integer
+    linear optimization (in floating point arithmetic).
+
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_polyhedra.py
+  recipe-maintainers:
+  - mkoeppe

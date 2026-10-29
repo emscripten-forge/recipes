@@ -1,0 +1,55 @@
+context:
+  version: 4.16.1
+
+package:
+  name: gap-static
+  version: ${{ version }}
+
+source:
+- url: https://github.com/gap-system/gap/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f53615fbdf6bd6e90520b36fad05890c8a6cfb848de81630cc69022fbd297d2f
+- git: https://github.com/wangyenshu/gap-web-assets.git
+  target_directory: web
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - python
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - gmp-static
+  - zlib-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/libgap.a
+    - include/gap/gap.h
+    - bin/gapwasm/gap.js
+    - bin/gapwasm/gap.wasm
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://www.gap-system.org/
+  license: GPL-2.0-only
+  license_file: LICENSE
+  summary: GAP is a system for computational discrete algebra, with particular emphasis on computational group theory.
+
+extra:
+  recipe-maintainers:
+  - mkoeppe
+  - wangyenshu

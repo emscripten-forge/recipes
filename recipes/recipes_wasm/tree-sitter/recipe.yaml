@@ -1,0 +1,62 @@
+context:
+  name: tree-sitter
+  version: 0.25.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name|replace('-','_') }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fe43c158555da46723b28b52e058ad444195afd1db3ca7720c59a254544e9c20
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_tree_sitter.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://tree-sitter.github.io/tree-sitter
+  repository: https://github.com/tree-sitter/py-tree-sitter
+  license: MIT
+  license_file: LICENSE
+  summary: Python bindings to the Tree-sitter parsing library
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
