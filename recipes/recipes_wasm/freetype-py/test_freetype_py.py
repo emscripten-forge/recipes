@@ -93,3 +93,31 @@ def test_render_text_to_bitmap(tmp_path):
     assert x == pen_x
     assert len(canvas) == canvas_width * height
     assert sum(canvas) > 0
+
+
+def test_long_arguments(tmp_path):
+    # calls whose C signatures use FT_Long / FT_ULong / FT_F26Dot6 / FT_Fixed
+    # (64-bit on wasm64)
+    font_path = tmp_path / "test.bdf"
+    font_path.write_text(_FONT)
+
+    # FT_New_Memory_Face (FT_Long size and face index)
+    face = freetype.Face(str(font_path))
+    memory_face = freetype.Face(open(font_path, "rb"))
+    assert memory_face.num_glyphs == face.num_glyphs
+
+    # FT_Set_Char_Size (FT_F26Dot6)
+    face.set_char_size(8 * 64, 8 * 64, 72, 72)
+
+    # FT_Get_Char_Index (FT_ULong), FT_Get_First_Char / FT_Get_Next_Char
+    # (FT_ULong results)
+    assert face.get_char_index("H") != 0
+    assert face.get_char_index(ord("i")) != 0
+    assert face.get_char_index("x") == 0
+    # get_chars() ends with a (0, 0) entry
+    chars = [chr(code) for code, gindex in face.get_chars() if gindex != 0]
+    assert chars == ["H", "i"]
+
+    # FT_MulFix / FT_Cos (FT_Long / FT_Fixed in and out)
+    assert freetype.raw.FT_MulFix(3 << 16, 2 << 16) == 6 << 16
+    assert freetype.raw.FT_Cos(0) == 1 << 16
