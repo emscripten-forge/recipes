@@ -10,6 +10,10 @@ package:
 source:
   url: https://github.com/lfortran/lfortran/releases/download/v${{ version }}/${{ source_name }}-${{ version }}.tar.gz
   sha256: 961d84f49d07951a279b7835e0f9864489a167a80a8c3c502a797fb6c61669c7
+  patches:
+  - patches/0001-link-shared-xeus.patch
+  - patches/0002-float128-treat-wasm64-like-wasm32.patch
+  - patches/0003-wasm64-cell-executor.patch
 
 build:
   number: 0
@@ -17,6 +21,11 @@ build:
   files:
     exclude:
     - share/man/man1/**
+    # the runtime is linked statically into xlfortran; don't ship the
+    # standalone shared+static runtime libs, headers and helper scripts
+    - lib/liblfortran_runtime*
+    - include/lfortran/**
+    - share/lfortran/**
     - '**/__pycache__/**'
     - '**/*.pyc'
   python:
@@ -31,21 +40,31 @@ requirements:
   - make
   - lfortran=${{ version }}
   host:
-  - xeus-lite
+  - xeus-lite-static
   - xeus
   - nlohmann_json
-  - llvm
+  - nlohmann_json-abi
+  - llvm-static
+  - lld-static
 
 tests:
+- package_contents:
+    files:
+    - bin/xlfortran.js
+    - bin/xlfortran.wasm
+    - share/jupyter/kernels/fortran/kernel.json
+    - share/jupyter/kernels/fortran/logo-svg.svg
 - script:
-  - test -f $PREFIX/bin/xlfortran.js
-  - test -f $PREFIX/bin/xlfortran.wasm
-  - test -f $PREFIX/share/jupyter/kernels/fortran/kernel.json
-  - test -f $PREFIX/share/jupyter/kernels/fortran/logo-svg.svg
-  - node ${PREFIX}/bin/test_lfortran.js
+  # test_lfortran loads libxeus.so and test_lfortran.data from its own directory
+  - cp ${PREFIX}/bin/test_lfortran.* ${PREFIX}/lib/libxeus.so .
+  - node test_lfortran.js
   requirements:
     build:
     - nodejs
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
