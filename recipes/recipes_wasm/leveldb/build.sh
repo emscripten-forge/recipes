@@ -1,12 +1,6 @@
 #!/bin/bash
 set -e
 
-# Patch CMakeLists.txt to skip Threads::Threads for Emscripten.
-# CMake's Threads target doesn't export correctly for emscripten-wasm32
-# and causes consumers to fail with "target was not found".
-sed -i 's/find_package(Threads REQUIRED)/if(NOT EMSCRIPTEN)\n  find_package(Threads REQUIRED)/' CMakeLists.txt
-sed -i 's/target_link_libraries(leveldb Threads::Threads)/target_link_libraries(leveldb Threads::Threads)\nendif()/' CMakeLists.txt
-
 mkdir build
 cd build
 
