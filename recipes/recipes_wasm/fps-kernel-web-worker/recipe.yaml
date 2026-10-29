@@ -1,0 +1,67 @@
+context:
+  name: fps-kernel-web-worker
+  version: 0.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fps_kernel_web_worker-${{ version }}.tar.gz
+  sha256: e8821815d4faea1f92b1ac089bb2abc01f9a42e40adff76e6d1b981eb776ff2d
+
+build:
+  number: 0
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+  noarch: python
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
+  - pip != 25.1
+  - uv-build
+  host:
+  - python
+  run:
+  - python
+  - anyio
+  - fps
+  - jupyverse-kernel >=0.1.0,<0.2.0
+  - pyjs >=4.0.5
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_kernelwebworker.py
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/jupyter-server/jupyverse/tree/main/plugins/kernel_web_worker
+  license: BSD-3-Clause
+  license_file: COPYING.md
+  summary: An FPS plugin for the kernel web worker API
+
+extra:
+  recipe-maintainers:
+  - davidbrochart

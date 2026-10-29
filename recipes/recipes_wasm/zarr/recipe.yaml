@@ -1,0 +1,68 @@
+context:
+  name: zarr
+  version: 3.1.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 01342f3e26a02ed5670db608a5576fbdb8d76acb5c280bd2d0082454b1ba6f79
+
+build:
+  number: 0
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+  noarch: python
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
+  - pip
+  - hatchling
+  - hatch-vcs
+  host:
+  - python
+  run:
+  - python
+  - numpy
+  - asciitree
+  - numcodecs
+  - typing-extensions
+  - donfig
+  - crc32c
+  - packaging
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_zarr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: An implementation of chunked, compressed, N-dimensional arrays for Python
+  homepage: https://github.com/zarr-developers/zarr-python
+  documentation: https://zarr.readthedocs.io/

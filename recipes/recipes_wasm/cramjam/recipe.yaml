@@ -1,0 +1,65 @@
+context:
+  name: cramjam
+  version: 2.14.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 050095380dc01a7f3dc2b8bcd9de2cbf4a208a8aab32301c760ea3c280d641bd
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - maturin
+  - toml
+  - rust-nightly
+  - ${{ compiler('cxx') }}
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cramjam.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/milesgranger/cramjam
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: python bindings to rust-implemented compression
+  description: |
+    Extremely thin Python bindings to de/compression algorithms in Rust.
+  documentation: https://docs.rs/cramjam
+
+extra:
+  recipe-maintainers:
+  - milesgranger
