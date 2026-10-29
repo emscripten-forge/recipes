@@ -1,6 +1,6 @@
 --- a/gfanlib_matrix.h
 +++ b/gfanlib_matrix.h
-@@ -118,10 +118,11 @@
+@@ -118,10 +118,16 @@
    friend Matrix operator*(const Matrix& a, const Matrix& b)
      {
        assert(a.width==b.height);
@@ -11,7 +11,12 @@
 +      Matrix ret(a.height,b.width);
 +      for(int i=0;i<a.height;i++)
 +        for(int j=0;j<b.width;j++)
-+          ret[i][j]=dot(a[i].toVector(),b.column(j));
++          {
++            typ s=typ();// value-initialized: also 0 for typ=int
++            for(int k=0;k<a.width;k++)
++              s+=a[i][k]*b[k][j];
++            ret[i][j]=s;
++          }
 +      return ret;
      }
    /*  template<class T>
