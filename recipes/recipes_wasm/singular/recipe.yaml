@@ -1,0 +1,148 @@
+context:
+  name: singular
+  version: 4.4.1p5
+
+source:
+- url: https://github.com/Singular/Singular/releases/download/Release-${{ version | replace(".", "-") }}/singular-${{ version }}.tar.gz
+  sha256: b2b328fb19e9f4396dca89ed69929b241f52d2d1b1cc605c17745130a6cd4943
+- git: https://github.com/wangyenshu/singular-web-assets.git
+  target_directory: web
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: singular-build
+  requirements:
+    build:
+    - autoconf
+    - automake
+    - libtool
+    - make
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - pkg-config
+    - autoconf-archive
+    - perl
+    - texinfo
+    - python
+    - nodejs
+    host:
+    - gmp-static
+    - ntl-static
+    - libflint-static
+    - mpfr-static
+    - cddlib-static
+    - normaliz-static
+    - memtailor-static
+    - mathic-static
+    - mathicgb
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# the Singular program (node / browser, JSPI) with its libraries (LIB) and the
+# manual, plus the web frontend in bin/singular
+- package:
+    name: singular
+    version: ${{ version }}
+  inherit: singular-build
+  build:
+    files:
+      include:
+      - bin/**
+      - share/**
+      - libexec/**
+  requirements:
+    ignore_run_exports:
+      by_name:
+      - gmp-static
+      - ntl-static
+      - libflint-static
+      - mpfr-static
+      - cddlib-static
+      - normaliz-static
+      - memtailor-static
+      - mathic-static
+      - mathicgb
+  tests:
+  - package_contents:
+      files:
+      - bin/Singular.js
+      - bin/Singular.wasm
+      - bin/Singular.data
+      - bin/Singular.data.js
+      - share/info/singular.info
+      - share/singular/singular.idx
+      - share/singular/LIB/standard.lib
+  - script: bash test_singular.sh
+    requirements:
+      build:
+      - nodejs
+    files:
+      recipe:
+      - test_singular.sh
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# libSingular and the libraries below it (libpolys, libfactory, libomalloc,
+# libsingular_resources), headers and pkg-config files
+- package:
+    name: singular-static
+    version: ${{ version }}
+  inherit: singular-build
+  build:
+    files:
+      include:
+      - lib/*.a
+      - lib/pkgconfig/**
+      - include/**
+  requirements:
+    host:
+    - gmp-static
+    - ntl-static
+    - libflint-static
+    - mpfr-static
+    - cddlib-static
+    - normaliz-static
+    - mathicgb
+    run:
+    - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('ntl-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+    - ${{ pin_compatible('cddlib-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('normaliz-static', lower_bound='x.x', upper_bound='x.x') }}
+    - mathicgb
+  tests:
+  - package_contents:
+      files:
+      - lib/libSingular.a
+      - lib/libfactory.a
+      - lib/libpolys.a
+      - lib/libomalloc.a
+      - include/singular/singularconfig.h
+      - include/singular/Singular/libsingular.h
+      - lib/pkgconfig/Singular.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+about:
+  homepage: http://www.singular.uni-kl.de/
+  license: GPL-2.0-only OR GPL-3.0-only
+  license_file: COPYING
+  summary: Singular is a computer algebra system for polynomial computations, with special emphasis on commutative and non-commutative algebra, algebraic geometry, and singularity theory.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
