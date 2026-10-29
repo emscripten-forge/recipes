@@ -5,6 +5,7 @@ NANOBIND_CMAKE_DIR=$("${BUILD_PREFIX}/bin/python3" -m nanobind --cmake_dir)
 TARGET_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 
 emcmake cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
+    -U 'PYTHON_*' -U PYTHONLIBS_FOUND \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DBUILD_SHARED_LIBS=OFF \
