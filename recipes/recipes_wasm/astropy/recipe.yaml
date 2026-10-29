@@ -31,14 +31,16 @@ outputs:
   requirements:
     build:
     - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
+    - cross-python_${{ target_platform }}
     - python
     - cython
     - numpy
     - pip
     - extension-helpers
+    # build-base.sh edits sources with `sed -i`
+    - sed
     host:
-    - python
+    - python-dev
     - jinja2
     - markupsafe
     - numpy
@@ -58,6 +60,10 @@ outputs:
     files:
       recipe:
       - test_astropy.py
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: ${{ name }}
@@ -66,10 +72,12 @@ outputs:
     noarch: python
   requirements:
     host:
-    - python
+    - python-dev
     run:
     - python
-    - ${{ pin_subpackage('astropy-base', exact=True) }}
+    # not exact=True: this noarch package is shared by the wasm32 and wasm64
+    # astropy-base builds, whose build strings differ
+    - ${{ pin_subpackage('astropy-base', upper_bound='x.x.x') }}
     - matplotlib-base >=3.8.0
     - scipy >=1.9.2
     - certifi >=2022.6.15.1
@@ -89,9 +97,9 @@ outputs:
     - mpmath >=1.2.1
     - fsspec >=2023.4.0
     - narwhals >=1.42.0
-    # fsspec optional deps
-    - aiohttp
-    - s3fs >=2023.4.0
+    # fsspec's optional remote backends (aiohttp, s3fs) are left out: the 6x
+    # aiohttp build's _http_parser can't be loaded (undefined llhttp
+    # callback wasm_on_message_begin), which breaks preloading in the tests
     - uncompresspy >=0.4.0
   tests:
   - script: pytester
@@ -103,6 +111,11 @@ outputs:
     files:
       recipe:
       - test_astropy.py
+  # noarch output: generic-testing needs a concrete target platform
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   homepage: https://www.astropy.org/
