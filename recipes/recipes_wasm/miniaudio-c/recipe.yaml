@@ -2,7 +2,7 @@ context:
   version: 0.11.25
 
 package:
-  name: miniaudio-c
+  name: miniaudio-c-static
   version: ${{ version }}
 
 source:
@@ -38,6 +38,14 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+# miniaudio's ma_thread/ma_mutex/ma_event wrappers call the pthread API, which
+# emscripten's non-threaded libc provides as single-threaded stubs. Nothing is
+# compiled with -pthread, and the Web Audio backend runs its callbacks without
+# a worker thread (MA_NO_THREADING would also require MA_NO_DEVICE_IO).
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://miniaud.io/
