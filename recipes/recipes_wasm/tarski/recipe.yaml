@@ -3,10 +3,6 @@ context:
   # conda versions cannot contain '-'; the upstream tag is 1.42-20260525
   version: 1.42_20260525
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   url: https://github.com/kovzol/tarski/archive/refs/tags/${{ version | replace('_', '-') }}.tar.gz
   sha256: 2dce575532151e22101ec015cef8cf759e1610383d573c4177f77cbe90e9dc8f
@@ -14,30 +10,70 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-  - autoconf
-  - automake
-  - libtool
-  - make
-  - pkg-config
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  host:
-  - libopenssl-static
-  - zlib-static
-
-tests:
-- package_contents:
-    files:
-    - bin/tarski.js
-    - bin/qepcad.wasm
-    - include/qepcad.h
-    - lib/qepcad.a
-- script: generic-testing
+outputs:
+- staging:
+    name: tarski-build
   requirements:
     build:
-    - generic-testing
+    - autoconf
+    - automake
+    - libtool
+    - make
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    host:
+    - libopenssl-static
+    - zlib-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# tarski / qepcad executables (+ the html/js frontend files)
+- package:
+    name: tarski
+    version: ${{ version }}
+  inherit: tarski-build
+  build:
+    files:
+      include:
+      - bin/
+  tests:
+  - package_contents:
+      files:
+      - bin/tarski.js
+      - bin/qepcad
+      - bin/qepcad.wasm
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# qepcad / saclib static libraries and the tarski, qepcad and saclib headers
+- package:
+    name: libtarski-static
+    version: ${{ version }}
+  inherit: tarski-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/*.a
+  tests:
+  - package_contents:
+      files:
+      - include/qepcad.h
+      - include/saclib.h
+      - lib/qepcad.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
 
 about:
   homepage: https://www.usna.edu/Users/cs/wcbrown/tarski/index.html
