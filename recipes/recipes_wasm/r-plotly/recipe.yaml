@@ -3,8 +3,8 @@ context:
   version: 4.12.1
 
 package:
-  name: r-${{ name | lower }}
-  version: ${{ version | replace('-', '_') }}
+  name: r-${{ name }}
+  version: ${{ version }}
 
 source:
   url:
@@ -12,11 +12,14 @@ source:
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 16c7d796ec788d5755b6e2ac601f504dc085a8e46689dbb0c153c2b3e4ac99f4
+  patches:
+  - patches/0001-Disable-downloads-and-processes.patch
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
- 
+  skip: ${{ r_base >= '4.6.0' }}
+  noarch: generic
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -84,7 +87,9 @@ requirements:
   - r-ggplot2 >= 3.0.0
 
 tests:
-
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/R/${{ name }}*
 - script: run_r_test test_${{ name }}.R
   files:
     recipe:
@@ -105,8 +110,11 @@ about:
   - LICENSE
   summary: Create Interactive Web Graphics via 'plotly.js'
   description: |-
-    Create interactive web graphics from 'ggplot2' graphs and/or a custom interface to the (MIT-licensed) JavaScript library 'plotly.js' inspired by the grammar of graphics.
+    Create interactive web graphics from 'ggplot2' graphs and/or a custom
+    interface to the (MIT-licensed) JavaScript library 'plotly.js' inspired by
+    the grammar of graphics.
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes

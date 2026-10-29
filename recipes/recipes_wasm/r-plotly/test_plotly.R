@@ -5,7 +5,7 @@ print('... plotly package loaded successfully')
 test_1 <- function() {
 
 
-    plot_ly(x = c(1, 2, 3, 4), y = c(1, 4, 9, 16)) %>%
+    plot_ly(x = c(1, 2, 3, 4), y = c(1, 4, 9, 16), type = "scatter", mode = "markers") %>%
       layout(title = TeX("\\text{Some mathjax: }\\alpha+\\beta x")) %>%
       config(mathjax = "cdn")
 }
@@ -30,7 +30,7 @@ test_3 <- function() {
 
     # it's a good idea to remove smooth transitions when there is
     # no relationship between objects in each view
-    plot_ly(mtcars, x = ~wt, y = ~mpg, frame = ~cyl) %>%
+    plot_ly(mtcars, x = ~wt, y = ~mpg, frame = ~cyl, type = "scatter", mode = "markers") %>%
       animation_opts(transition = 0)
 
     # works the same way with ggplotly
@@ -60,7 +60,7 @@ test_4 <- function() {
 test_5 <- function() {
 
 
-    p <- plot_ly(mtcars, x = ~wt, y = ~mpg, color = ~cyl)
+    p <- plot_ly(mtcars, x = ~wt, y = ~mpg, color = ~cyl, type = "scatter", mode = "markers")
 
     # pass any colorbar attribute -- 
     # https://plotly.com/r/reference/#scatter-marker-colorbar
@@ -86,7 +86,7 @@ test_6 <- function() {
 
     # enable mathjax
     # see more examples at https://plotly.com/r/LaTeX/
-    plot_ly(x = c(1, 2, 3, 4), y = c(1, 4, 9, 16)) %>%
+    plot_ly(x = c(1, 2, 3, 4), y = c(1, 4, 9, 16), type = "scatter", mode = "markers") %>%
       layout(title = TeX("\\text{Some mathjax: }\\alpha+\\beta x")) %>%
       config(mathjax = "cdn")
 
@@ -94,7 +94,7 @@ test_6 <- function() {
     # (e.g., modebar buttons)
     today <- Sys.Date()
     x <- seq.Date(today, today + 360, by = "day")
-    p <- plot_ly(x = x, y = rnorm(length(x))) %>%
+    p <- plot_ly(x = x, y = rnorm(length(x)), type = "scatter", mode = "lines") %>%
       add_lines()
 
     # japanese
@@ -128,14 +128,14 @@ test_7 <- function() {
 test_8 <- function() {
 
 
-    p <- plot_ly(mtcars, x = ~wt, y = ~cyl, color = ~cyl)
+    p <- plot_ly(mtcars, x = ~wt, y = ~cyl, color = ~cyl, type = "scatter", mode = "markers")
     hide_colorbar(p)
 }
 
 test_9 <- function() {
 
 
-    p <- plot_ly(mtcars, x = ~wt, y = ~cyl, color = ~factor(cyl))
+    p <- plot_ly(mtcars, x = ~wt, y = ~cyl, color = ~factor(cyl), type = "scatter", mode = "markers")
     hide_legend(p)
 }
 
