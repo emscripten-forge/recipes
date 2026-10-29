@@ -11,8 +11,11 @@ source:
   sha256: 01342f3e26a02ed5670db608a5576fbdb8d76acb5c280bd2d0082454b1ba6f79
 
 build:
-  number: 2
-  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  number: 0
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+  noarch: python
 
   files:
     exclude:
@@ -24,15 +27,16 @@ build:
     - '**/*.py'
 requirements:
   build:
-  - ${{ compiler('cxx') }}
-  - cross-python_${{ target_platform }}
-  - python
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
   - pip
   - hatchling
   - hatch-vcs
   host:
   - python
   run:
+  - python
   - numpy
   - asciitree
   - numcodecs
@@ -52,6 +56,10 @@ tests:
     run:
     - pytester-run
 
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   license: MIT
   license_file: LICENSE.txt
