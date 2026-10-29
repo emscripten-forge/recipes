@@ -8,11 +8,20 @@
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/intersections.h>
-#include <cassert>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+
+// assert() is compiled out in the Release build
+#define CHECK(cond)                                                          \
+    do {                                                                     \
+        if (!(cond)) {                                                       \
+            std::fprintf(stderr, "line %d: CHECK failed: %s\n", __LINE__, #cond); \
+            std::exit(1);                                                    \
+        }                                                                    \
+    } while (0)
 
 using K = CGAL::Exact_predicates_inexact_constructions_kernel;
 using DT = CGAL::Delaunay_triangulation_2<K>;
@@ -28,9 +37,9 @@ int main() {
         dt.insert(Point(0.0, 1.0));
         dt.insert(Point(1.0, 1.0));
         dt.insert(Point(0.5, 0.5));
-        assert(dt.number_of_vertices() == 5);
-        assert(dt.is_valid());
-        assert(dt.locate(Point(0.25, 0.25)) != DT::Face_handle());
+        CHECK(dt.number_of_vertices() == 5);
+        CHECK(dt.is_valid());
+        CHECK(dt.locate(Point(0.25, 0.25)) != DT::Face_handle());
     }
 
     // Cocircular points force CGAL onto the exact (GMP-backed) fallback path.
@@ -41,8 +50,8 @@ int main() {
         dt.insert(Point(-1.0,  0.0));
         dt.insert(Point( 0.0, -1.0));
         dt.insert(Point( 0.0,  0.0));
-        assert(dt.number_of_vertices() == 5);
-        assert(dt.is_valid());
+        CHECK(dt.number_of_vertices() == 5);
+        CHECK(dt.is_valid());
     }
 
     {
@@ -52,8 +61,8 @@ int main() {
         dt.insert(Point(0.0, 1.0));
         auto face = dt.finite_faces_begin();
         Point cc = dt.circumcenter(face);
-        assert(std::abs(cc.x() - 0.5) < 1e-12);
-        assert(std::abs(cc.y() - 0.5) < 1e-12);
+        CHECK(std::abs(cc.x() - 0.5) < 1e-12);
+        CHECK(std::abs(cc.y() - 0.5) < 1e-12);
     }
 
     // EPECK exact constructions need -fwasm-exceptions to catch
@@ -62,11 +71,11 @@ int main() {
         Epeck::Segment_2 a({0, 0}, {2, 2});
         Epeck::Segment_2 b({0, 2}, {2, 0});
         auto result = CGAL::intersection(a, b);
-        assert(result.has_value());
+        CHECK(result.has_value());
         const auto* p = std::get_if<Epeck::Point_2>(&*result);
-        assert(p != nullptr);
-        assert(CGAL::to_double(p->x()) == 1.0);
-        assert(CGAL::to_double(p->y()) == 1.0);
+        CHECK(p != nullptr);
+        CHECK(CGAL::to_double(p->x()) == 1.0);
+        CHECK(CGAL::to_double(p->y()) == 1.0);
     }
 
     {
@@ -80,8 +89,8 @@ int main() {
             pts.emplace_back(x, y);
         }
         dt.insert(pts.begin(), pts.end());
-        assert(dt.number_of_vertices() == 200);
-        assert(dt.is_valid());
+        CHECK(dt.number_of_vertices() == 200);
+        CHECK(dt.is_valid());
     }
 
     std::cout << "CGAL smoke test OK\n";
