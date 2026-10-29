@@ -2,7 +2,7 @@ context:
   version: 1.0.34
 
 package:
-  name: tkrzw
+  name: tkrzw-static
   version: ${{ version }}
 
 source:
@@ -14,7 +14,7 @@ source:
   - emscripten-2.patch
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
@@ -30,6 +30,22 @@ tests:
     - include/tkrzw_file.h
     - include/tkrzw_langc.h
     - lib/libtkrzw.a
+- script:
+  - em++ -std=c++17 test_tkrzw.cpp -o test_tkrzw.js -I${PREFIX}/include -L${PREFIX}/lib -ltkrzw -sALLOW_MEMORY_GROWTH -sNODERAWFS
+  - node test_tkrzw.js
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - nodejs
+  files:
+    recipe:
+    - test_tkrzw.cpp
+# Only AsyncDBM (through TaskQueue) starts std::threads; the regular DBMs
+# (exercised by the test above) don't. Nothing is compiled with -pthread.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://dbmx.net/tkrzw/
