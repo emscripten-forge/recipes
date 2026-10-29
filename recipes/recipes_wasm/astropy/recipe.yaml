@@ -37,6 +37,8 @@ outputs:
     - numpy
     - pip
     - extension-helpers
+    # build-base.sh edits sources with `sed -i`
+    - sed
     host:
     - python-dev
     - jinja2
@@ -93,9 +95,9 @@ outputs:
     - mpmath >=1.2.1
     - fsspec >=2023.4.0
     - narwhals >=1.42.0
-    # fsspec optional deps
-    - aiohttp
-    - s3fs >=2023.4.0
+    # fsspec's optional remote backends (aiohttp, s3fs) are left out: the 6x
+    # aiohttp build's _http_parser can't be loaded (undefined llhttp
+    # callback wasm_on_message_begin), which breaks preloading in the tests
     - uncompresspy >=0.4.0
   tests:
   - script: pytester
@@ -107,7 +109,8 @@ outputs:
     files:
       recipe:
       - test_astropy.py
-  - script: generic-testing
+  # noarch output: generic-testing needs a concrete target platform
+  - script: target_platform=${{ host_platform }} generic-testing
     requirements:
       build:
       - generic-testing
