@@ -33,12 +33,12 @@ emcmake cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
 emmake make -C build -j${CPU_COUNT:-4} TorchMLIRPythonModules TorchMLIRCAPI
-cmake --install build --component TorchMLIRPythonModules
-cmake --install build --component torch-mlir-headers
+emmake make -C build -j${CPU_COUNT:-4} \
+    install-TorchMLIRPythonModules install-torch-mlir-headers
 
 for archive in build/lib/libTorchMLIR*.a; do
     component=$(basename "${archive}" .a)
-    cmake --install build --component "${component#lib}"
+    emmake make -C build "install-${component#lib}"
 done
 
 mkdir -p "${SP_DIR}"
