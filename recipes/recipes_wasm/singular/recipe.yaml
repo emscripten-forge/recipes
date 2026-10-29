@@ -130,7 +130,11 @@ outputs:
       - include/singular/singularconfig.h
       - include/singular/Singular/libsingular.h
       - lib/pkgconfig/Singular.pc
-  - script: generic-testing
+  # libSingular.a contains Singular's bundled gfanlib, whose mixedVolume()
+  # traverser uses std::thread; threads only start for nthreads > 0 (default
+  # 0, same as the gfanlib package). Configured with --disable-pthreads,
+  # nothing is compiled with -pthread.
+  - script: generic-testing --allow-pthread
     requirements:
       build:
       - generic-testing
