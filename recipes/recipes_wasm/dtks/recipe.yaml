@@ -11,7 +11,7 @@ source:
   sha256: cf86bd419231e2f976fcfbd0a7fbee308e77f7cc29b20c55e7cfc384c84a9d11
 
 build:
-  number: 2
+  number: 0
 
   files:
     exclude:
@@ -24,16 +24,14 @@ build:
 requirements:
   build:
   - ${{ compiler("cxx") }}
-  - cross-python_emscripten-wasm32
-  - cmake>=4.0
-  - ninja
-  - numpy
+  - cross-python_${{ target_platform }}
+  - cmake >=4.0
+  - make
   - nanobind
-  - scikit-build-core
   - python
   - pip
   host:
-  - python
+  - python-dev
   - numpy
   run:
   - python
@@ -49,6 +47,10 @@ tests:
     - pytester
     run:
     - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: MIT
