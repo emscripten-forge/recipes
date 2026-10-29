@@ -19,7 +19,7 @@ requirements:
   build:
   - python
   - crossenv >=1.2
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - ${{ compiler("c") }}
   - ${{ compiler("cxx") }}
   - pip
@@ -31,16 +31,18 @@ requirements:
   - numpy
   - passagemath-abi == ${{ version }}
   host:
-  - python
+  - python-dev
   - gmp-static
-  - mpfr
-  - mpc
+  - mpfr-static
+  - mpc-static
   - givaro-static
   - fflas-ffpack
-  - linbox
+  - linbox-static
   - libflint-static
   - gsl-static
-  - openblas
+  # openblas-dev has the headers and openblas.pc (sage_setup looks up the
+  # cblas module with pkg-config); its run_exports pin openblas
+  - openblas-dev
   - numpy
   - cysignals
   - memory-allocator
@@ -51,6 +53,7 @@ requirements:
   - python
   - cysignals
   - memory-allocator
+  - openblas
   - passagemath-categories
   - passagemath-iml
   - passagemath-m4ri-m4rie
@@ -67,6 +70,10 @@ tests:
     - pytester-run
     - passagemath-modules
     - passagemath-repl
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: GPL-2.0-or-later
