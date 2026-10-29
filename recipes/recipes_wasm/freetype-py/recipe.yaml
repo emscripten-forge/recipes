@@ -1,6 +1,6 @@
 context:
   name: freetype-py
-  version: "2.5.1"
+  version: 2.5.1
 
 package:
   name: ${{ name }}
@@ -11,6 +11,10 @@ source:
   sha256: cfe2686a174d0dd3d71a9d8ee9bf6a2c23f5872385cf8ce9f24af83d076e2fbd
   patches:
   - emscripten-library-path.patch
+  # ctypes prototypes for the functions with C long (FT_Long, FT_ULong,
+  # FT_Fixed, FT_Pos) arguments / results: without them ctypes passes C ints,
+  # which traps on wasm64 (long is 64-bit there)
+  - 0002-ctypes-prototypes-for-long-arguments.patch
 
 build:
   number: 0
@@ -23,7 +27,7 @@ requirements:
   - pip
   - setuptools
   host:
-  - python
+  - python-dev
   - pip
   - setuptools
   - freetype
@@ -32,16 +36,29 @@ requirements:
   - freetype
 
 tests:
-- script: pytester
+- script:
+  # pytester only ships test_*.py files: embed the fonts in test_fontdata.py
+  - python make_test_fontdata.py
+  - pytester
   files:
     recipe:
     - test_freetype_py.py
+    - make_test_fontdata.py
+    # fonts shipped in the sdist
+    source:
+    - examples/Vera.ttf
+    - examples/VeraMono.ttf
+    - examples/SourceSansVariable-Roman.otf
   requirements:
     build:
     - pytester
     run:
     - pytester-run
 
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
   homepage: https://github.com/rougier/freetype-py
   license: BSD-3-Clause
