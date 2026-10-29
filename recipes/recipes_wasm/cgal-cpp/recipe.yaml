@@ -25,9 +25,14 @@ requirements:
   - cmake
   - ninja
   host:
-  - boost-cpp
+  - boost-headers
   - gmp-static
   - mpfr-static
+  # CGAL::CGAL links gmp/mpfr and needs the boost headers
+  run:
+  - boost-headers
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
 
 
 tests:
@@ -41,12 +46,16 @@ tests:
     build:
     - ${{ compiler('cxx') }}
     - cmake
-    - ninja
+    - make
     - nodejs
   files:
     recipe:
     - build_tests.sh
     - tests/
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://www.cgal.org/
