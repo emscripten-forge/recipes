@@ -6,13 +6,16 @@ package:
   name: ${{ name }}
   version: ${{ version }}
 
+# build.sh copies the moc and cdshealpix Rust crates from Cargo.lock out of
+# the cargo registry, adds an emscripten fallback for show_with_default_app
+# (only defined for linux/macos/windows) to both and uses them through
+# [patch.crates-io]
 source:
-- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 4e89785c36aedd075fed2f5b909a26e0b72505603809eb56e654cbf1951191ed
 
 build:
   number: 0
-  script: ${PYTHON} -m pip install . -vvv
 
   files:
     exclude:
@@ -27,14 +30,20 @@ build:
 
 requirements:
   build:
+  - python
   - cross-python_${{ target_platform }}
+  - pip
   - setuptools-rust
   - rust-nightly
   - maturin
+  - ${{ compiler('cxx') }}
   host:
-  - python
+  - python-dev
   run:
+  - python
+  - numpy
   - astropy
+  - cdshealpix
 
 tests:
 - script: pytester
@@ -46,6 +55,10 @@ tests:
   files:
     recipe:
     - test_import_mocpy.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/cds-astro/mocpy/

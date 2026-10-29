@@ -6,13 +6,15 @@ package:
   name: ${{ name }}
   version: ${{ version }}
 
+# build.sh copies the cdshealpix Rust crate from Cargo.lock out of the cargo
+# registry, adds an emscripten fallback for show_with_default_app (only
+# defined for linux/macos/windows) and uses it through [patch.crates-io]
 source:
-- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: e305aa6e7f515bd743affdfe6f514741e60a873ffbfd2fa2949cbe3f72e6e371
 
 build:
   number: 0
-  script: ${PYTHON} -m pip install . -vvv
 
   files:
     exclude:
@@ -27,13 +29,18 @@ build:
 
 requirements:
   build:
+  - python
   - cross-python_${{ target_platform }}
+  - pip
   - setuptools-rust
   - rust-nightly
   - maturin
+  - ${{ compiler('cxx') }}
   host:
-  - python
+  - python-dev
   run:
+  - python
+  - numpy
   - astropy
 
 tests:
@@ -46,6 +53,10 @@ tests:
   files:
     recipe:
     - test_import_cdshealpix.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/cds-astro/cds-healpix-python/
