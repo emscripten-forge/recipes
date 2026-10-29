@@ -4,7 +4,8 @@ set -x
 mkdir -p src/bin/asset_dir
 cp -v $BUILD_PREFIX/share/lfortran/lib/*.mod src/bin/asset_dir
 
-emcmake cmake \
+# CMAKE_ARGS gives an unversioned liblfortran_runtime.so (no soname symlinks)
+emcmake cmake ${CMAKE_ARGS} \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS_DEBUG="-Wall -Wextra -fexceptions" \
     -DCMAKE_CXX_FLAGS_RELEASE="-Wall -Wextra -fexceptions" \
@@ -17,7 +18,7 @@ emcmake cmake \
     .
 
 # Build step
-emmake make -j8
+emmake make -j${CPU_COUNT:-8}
 
 # Install step
 emmake make install
