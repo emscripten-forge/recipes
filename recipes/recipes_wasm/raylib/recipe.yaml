@@ -1,0 +1,53 @@
+context:
+  name: raylib
+  version: 5.5
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/raysan5/raylib/archive/refs/tags/${{ version }}.tar.gz
+  sha256: aea98ecf5bc5c5e0b789a76de0083a21a70457050ea4cc2aec7566935f5e258e
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+
+tests:
+- package_contents:
+    files:
+    - include/raylib.h
+    - include/raymath.h
+    - lib/libraylib.a
+# image / color / math API under node (no window or GL context needed)
+- script:
+  - emcc test_raylib.c -o test_raylib.js -I${PREFIX}/include -L${PREFIX}/lib -lraylib -sUSE_GLFW=3 -sALLOW_MEMORY_GROWTH
+  - node test_raylib.js
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - nodejs
+  files:
+    recipe:
+    - test_raylib.c
+# raudio bundles miniaudio, whose ma_thread/ma_mutex wrappers call the pthread
+# API (single-threaded stubs in emscripten's libc). Nothing is compiled with
+# -pthread, and the Web Audio backend doesn't need a worker thread.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/raysan5/raylib
+  license: Zlib
+  license_file: LICENSE
+  summary: A simple and easy-to-use library to enjoy videogames programming
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
