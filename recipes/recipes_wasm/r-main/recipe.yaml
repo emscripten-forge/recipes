@@ -13,7 +13,7 @@ source:
   sha256: 5f5dfdf9ebac93b9e43341392513976b541d01e732f7f436cab0055cf5c8eaf7
 
 build:
-  number: 6
+  number: 0
   # Explicit build strings so downstream recipes can require the R / static-libpython
   # variants, e.g. `r-main * *r45*` or `r-main * *static_libpython*`.
   string: ${{ python_build_string ~ r_build_string ~ "h" ~ hash ~ "_" ~ build_number }}
@@ -39,7 +39,7 @@ requirements:
   - r-base ==${{ r_base }}
   - libflang-rt-static
   - libiconv-static
-  - zlib-static
+  - libzlib-static
   - libbzip2-static
   - liblzma-static
   - pcre2-static
@@ -51,15 +51,11 @@ requirements:
   - libexpat-static
   - freetype-static
   - zstd-static
-  - libarchive
+  - libarchive-static
   # For the static-libpython variant: libpython statically linked into RPY executable.
   - if: r_main_module_static_libpython == "1"
     then:
-    - python < 3.14
-    - libpython < 3.14
-    - libffi-static
-    - sqlite
-    - openssl < 4.0
+    - python-dev
   run:
   - if: r_main_module_static_libpython == "1"
     then:
