@@ -9,10 +9,20 @@ package:
 source:
 - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: a593519e28eef91635ca151fc8b258ac6a56ae6c5c714bfdffc8ab167911f477
+# the moc and cdshealpix Rust crates; build.sh adds an emscripten fallback
+# for show_with_default_app (only defined for linux/macos/windows) to both
+# and uses them through [patch.crates-io]
+- url: https://static.crates.io/crates/moc/moc-0.19.2.crate
+  sha256: 6f3ead7aafd8b1397b8432855fd803cc8ab4e19dae31417a14ba1d915a67b222
+  file_name: moc-0.19.2.tar.gz
+  target_directory: moc-crate
+- url: https://static.crates.io/crates/cdshealpix/cdshealpix-0.9.1.crate
+  sha256: 8f43f12e4bfde350aa1936fa2896c5e8dd6d717ec27f854272b6f3cb2e478479
+  file_name: cdshealpix-0.9.1.tar.gz
+  target_directory: cdshealpix-crate
 
 build:
   number: 0
-  script: ${PYTHON} -m pip install . -vvv
 
   files:
     exclude:
@@ -27,14 +37,20 @@ build:
 
 requirements:
   build:
+  - python
   - cross-python_${{ target_platform }}
+  - pip
   - setuptools-rust
   - rust-nightly
   - maturin
+  - ${{ compiler('cxx') }}
   host:
-  - python
+  - python-dev
   run:
+  - python
+  - numpy
   - astropy
+  - cdshealpix
 
 tests:
 - script: pytester
@@ -46,6 +62,10 @@ tests:
   files:
     recipe:
     - test_import_mocpy.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/cds-astro/mocpy/
