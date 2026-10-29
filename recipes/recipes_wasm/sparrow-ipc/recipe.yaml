@@ -1,0 +1,162 @@
+context:
+  name: sparrow-ipc
+  version: 2.0.0
+
+source:
+  url: https://github.com/QuantStack/sparrow-ipc/archive/${{ version }}.tar.gz
+  sha256: 9f9eedf83578c894486e4d1ad2ac029df2d6883a090f236c86834e8d32102fa7
+  patches:
+  - patches/0001-use-host-flatc.patch
+  - patches/0002-add-lz4-zstd-dependencies-to-config.patch
+
+build:
+  number: 0
+
+outputs:
+
+# Two separate builds so that each package ships the CMake config for its
+# own library flavour (sparrow-ipc::sparrow-ipc points at the .a or the .so),
+# the same as the sparrow recipe.
+- staging:
+    name: sparrow-ipc-static-build
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - flatbuffers
+    host:
+    - flatbuffers-static
+    - sparrow-static
+    - lz4-c-static
+    - zstd-static
+  build:
+    script:
+      env:
+        SPARROW_IPC_BUILD_SHARED: "OFF"
+      file: build.sh
+- staging:
+    name: sparrow-ipc-shared-build
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    - flatbuffers
+    host:
+    - flatbuffers-static
+    - sparrow
+    - lz4-c-static
+    - zstd-static
+  build:
+    script:
+      env:
+        SPARROW_IPC_BUILD_SHARED: "ON"
+      file: build.sh
+
+#==============================================================================#
+
+- package:
+    name: sparrow-ipc-static
+    version: ${{ version }}
+  inherit: sparrow-ipc-static-build
+  build:
+    files:
+      exclude:
+      - '**/tests/**'
+  requirements:
+    host:
+    - flatbuffers-static
+    - sparrow-static
+    - lz4-c-static
+    - zstd-static
+    run:
+    - ${{ pin_compatible('sparrow-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('flatbuffers-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('lz4-c-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('zstd-static', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/sparrow_ipc/serialize.hpp
+      - include/sparrow_ipc/deserialize.hpp
+      - lib/libsparrow-ipc.a
+      - share/cmake/sparrow-ipc/sparrow-ipcConfig.cmake
+      - share/cmake/sparrow-ipc/sparrow-ipcConfigVersion.cmake
+      - share/cmake/sparrow-ipc/sparrow-ipcTargets.cmake
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: sparrow-ipc
+    version: ${{ version }}
+  inherit: sparrow-ipc-shared-build
+  build:
+    files:
+      exclude:
+      - '**/tests/**'
+  requirements:
+    host:
+    - flatbuffers-static
+    - sparrow
+    - lz4-c-static
+    - zstd-static
+    run:
+    - ${{ pin_compatible('sparrow', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('flatbuffers-static', lower_bound='x.x.x', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('lz4-c-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('zstd-static', lower_bound='x.x', upper_bound='x.x') }}
+    run_exports:
+    - ${{ pin_subpackage('sparrow-ipc', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/sparrow_ipc/serialize.hpp
+      - include/sparrow_ipc/deserialize.hpp
+      - lib/libsparrow-ipc.so
+      - share/cmake/sparrow-ipc/sparrow-ipcConfig.cmake
+      - share/cmake/sparrow-ipc/sparrow-ipcConfigVersion.cmake
+      - share/cmake/sparrow-ipc/sparrow-ipcTargets.cmake
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  summary: C++20 idiomatic APIs for the Apache Arrow IPC
+  description: C++20 idiomatic APIs for the Apache Arrow IPC
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  homepage: https://github.com/QuantStack/sparrow-ipc
+  documentation: https://github.com/QuantStack/sparrow-ipc
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

@@ -57,8 +57,12 @@ outputs:
   build:
     files:
       exclude:
-      - lib/*.a
       - lib/*.so
+  requirements:
+    run:
+    - ${{ pin_subpackage('openblas', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('openblas', upper_bound='x.x') }}
   tests:
   - package_contents:
       files:
@@ -67,32 +71,6 @@ outputs:
       - include/lapack.h
       - include/lapacke.h
       - include/openblas_config.h
-  - script: generic-testing
-    requirements:
-      build:
-      - generic-testing
-
-#==============================================================================#
-
-# Static library
-- package:
-    name: openblas-static
-    version: ${{ version }}
-  inherit: openblas-build
-  build:
-    files:
-      include:
-      - lib/*.a
-  requirements:
-    host:
-    - libflang-rt-static
-    run:
-    - ${{ pin_subpackage('openblas-dev', exact=True) }}
-    - ${{ pin_compatible('libflang-rt-static', lower_bound='x.x', upper_bound='x.x') }}
-  tests:
-  - package_contents:
-      files:
-      - lib/libopenblas.a
   - script: generic-testing
     requirements:
       build:
@@ -110,8 +88,6 @@ outputs:
       include:
       - lib/*.so
   requirements:
-    run_constraints:
-    - ${{ pin_subpackage('openblas-dev', exact=True) }}
     run_exports:
     - ${{ pin_subpackage('openblas', upper_bound='x.x') }}
   tests:

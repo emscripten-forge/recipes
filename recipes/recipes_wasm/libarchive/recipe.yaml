@@ -1,0 +1,72 @@
+context:
+  name: libarchive
+  version: 3.8.10
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ name }}/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 6ec4ad1b96f92f9fe3a74bac2647e7b122a4496aa804e2fb9b50f2030283582c
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - share/man/man1/**
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - autoconf
+  - automake
+  - libtool
+  - pkg-config
+  host:
+  - libbzip2-static
+  - zlib-static
+  - zstd-static
+  - libxml2-static >=2.15
+  run:
+  - ${{ pin_compatible('libbzip2-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('zstd-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libxml2-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- script:
+  - node $PREFIX/bin/bsdtar --version
+  requirements:
+    build:
+    - nodejs
+- package_contents:
+    files:
+    - bin/bsdcat.wasm
+    - bin/bsdcpio.wasm
+    - bin/bsdtar.wasm
+    - bin/bsdunzip.wasm
+    - include/archive.h
+    - lib/libarchive.a
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: http://www.libarchive.org/
+  license: BSD-2-Clause
+  license_file: COPYING
+  license_family: BSD
+  summary: Multi-format archive and compression library
+  description: |
+    The libarchive project develops a portable, efficient C library that can
+    read and write streaming archives in a variety of formats. It also includes
+    implementations of the common tar, cpio, and zcat command-line tools that
+    use the libarchive library.
+  repository: https://github.com/libarchive/libarchive
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - AnastasiaSliusar

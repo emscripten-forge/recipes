@@ -1,0 +1,19 @@
+--- a/cpp/cmake_modules/FindThriftAlt.cmake
++++ b/cpp/cmake_modules/FindThriftAlt.cmake
+@@ -42,9 +42,13 @@ endif()
+ find_package(Thrift ${find_package_args})
+ if(Thrift_FOUND)
+   set(ThriftAlt_FOUND TRUE)
+-  add_executable(thrift::compiler IMPORTED)
+-  set_target_properties(thrift::compiler PROPERTIES IMPORTED_LOCATION
+-                                                    "${THRIFT_COMPILER}")
++  # a library-only thrift (e.g. emscripten) has no compiler; an imported
++  # executable without IMPORTED_LOCATION makes generate fail
++  if(THRIFT_COMPILER AND NOT TARGET thrift::compiler)
++    add_executable(thrift::compiler IMPORTED)
++    set_target_properties(thrift::compiler PROPERTIES IMPORTED_LOCATION
++                                                      "${THRIFT_COMPILER}")
++  endif()
+   return()
+ endif()
+

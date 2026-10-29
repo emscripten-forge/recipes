@@ -1,0 +1,50 @@
+context:
+  name: re2
+  version: 2025.11.05
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+- url: https://github.com/google/re2/archive/${{ version | replace('.', '-') }}.tar.gz
+  sha256: 87f6029d2f6de8aa023654240a03ada90e876ce9a4676e258dd01ea4c26ffd67
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - ${{ compiler("c") }}
+  - cmake
+  - make
+  - pkg-config
+  host:
+  - libabseil-static
+  run:
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    files:
+    - include/re2/re2.h
+    - lib/libre2.a
+    - lib/pkgconfig/re2.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: |
+    RE2 is a fast, safe, thread-friendly alternative to backtracking regular expression
+    engines like those used in PCRE, Perl, and Python. It is a C++ library.
+  homepage: https://github.com/google/re2/
+
+extra:
+  recipe-maintainers:
+  - martinRenou
+  - DerThorsten
