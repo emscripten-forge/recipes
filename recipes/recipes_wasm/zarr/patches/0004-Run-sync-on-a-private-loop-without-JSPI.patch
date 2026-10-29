@@ -1,0 +1,93 @@
+--- a/src/zarr/core/sync.py
++++ b/src/zarr/core/sync.py
+@@ -5,7 +5,8 @@
+ import logging
+ import os
+ import threading
+-from concurrent.futures import ThreadPoolExecutor, wait
++import time
++from concurrent.futures import Future, ThreadPoolExecutor, wait
+ from textwrap import dedent
+ from typing import TYPE_CHECKING
+ 
+@@ -130,6 +131,10 @@
+     """
+     Make loop run coroutine until it returns. Runs in other thread
+     """
++    if IS_WASM and not _can_run_sync_on_host_loop():
++        # no JSPI-enabled Pyodide WebLoop (e.g. pyjs): run the coroutine to
++        # completion on a private loop in this thread
++        return _run_on_wasm_loop(coro)
+     if IS_WASM:
+         current_loop = asyncio.get_running_loop()
+         result = current_loop.run_until_complete(coro)
+@@ -183,8 +188,69 @@
+         raise return_result
+     else:
+         return return_result
++
++
++def _can_run_sync_on_host_loop() -> bool:
++    """Whether the running (Pyodide WebLoop) loop can block via JSPI"""
++    try:
++        from pyodide.ffi import can_run_sync
++    except ImportError:
++        return False
++    return bool(can_run_sync())
++
++
++class _InlineExecutor(ThreadPoolExecutor):
++    """Executor running submitted work immediately (WASM has no threads)"""
++
++    def submit(self, fn, /, *args, **kwargs):  # type: ignore[no-untyped-def]
++        future: Future[Any] = Future()
++        try:
++            future.set_result(fn(*args, **kwargs))
++        except BaseException as ex:
++            future.set_exception(ex)
++        return future
++
++
++class _NullSelector:
++    """Selector without file descriptors: only waits for the next timer"""
++
++    def select(self, timeout: float | None = None) -> list[Any]:
++        if timeout:
++            time.sleep(timeout)
++        return []
+ 
+ 
++class _WasmEventLoop(asyncio.BaseEventLoop):
++    """Minimal single-threaded event loop (no sockets, no self-pipe)
++
++    asyncio.new_event_loop() may return the host's loop type (e.g. the pyjs
++    WebLoop), which cannot block, so sync() uses this one instead.
++    """
++
++    def __init__(self) -> None:
++        super().__init__()
++        self._selector = _NullSelector()
++        self.set_default_executor(_InlineExecutor(max_workers=1))
++
++    def _process_events(self, event_list: list[Any]) -> None:
++        pass
++
++    def _write_to_self(self) -> None:
++        pass
++
++
++def _run_on_wasm_loop[T](coro: Coroutine[Any, Any, T]) -> T:
++    """Run coro on a private loop, also from within a running (host) loop"""
++    if not isinstance(loop[0], _WasmEventLoop) or loop[0].is_closed():
++        loop[0] = _WasmEventLoop()
++    running = asyncio.events._get_running_loop()
++    asyncio.events._set_running_loop(None)
++    try:
++        return loop[0].run_until_complete(coro)
++    finally:
++        asyncio.events._set_running_loop(running)
++
++
+ def _get_loop() -> asyncio.AbstractEventLoop:
+     """Create or return the default fsspec IO loop
+ 

@@ -1,0 +1,78 @@
+context:
+  name: zarr
+  version: 3.2.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 71565b738a0e7e8ed226f0516eba8c6bb53440ad7669a8c48ebb3534a161d035
+  patches:
+  # 0001-0003 are taken from Pyodide (pyodide-recipes/packages/zarr):
+  # zarr's sync API otherwise runs its event loop on a background thread
+  - patches/0001-Add-WASM-compatible-sync-for-Pyodide.patch
+  - patches/0002-Set-threading.max_workers-1-on-WASM-in-config.patch
+  - patches/0003-Fix-exclusive-atomic-writes-on-Emscripten.patch
+  # without a JSPI-enabled Pyodide WebLoop (e.g. pyjs), run sync() on a
+  # private event loop in the main thread, with an inline executor for
+  # asyncio.to_thread
+  - patches/0004-Run-sync-on-a-private-loop-without-JSPI.patch
+
+build:
+  number: 0
+  noarch: python
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
+  - pip
+  - hatchling
+  - hatch-vcs
+  host:
+  - python
+  run:
+  - python
+  - numpy >=2
+  - numcodecs >=0.16.6,!=0.17.0
+  - google-crc32c
+  - donfig >=0.8
+  - typing_extensions >=4.12
+  - packaging >=22.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_zarr.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/zarr-developers/zarr-python
+  documentation: https://zarr.readthedocs.io/
+  license: MIT
+  license_file: LICENSE.txt
+  summary: An implementation of chunked, compressed, N-dimensional arrays for Python

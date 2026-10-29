@@ -1,9 +1,16 @@
 #!/bin/bash
 set -euxo pipefail
 
-# the .crate sources are downloaded as-is (rattler does not unpack .crate)
-tar xzf moc-crate/moc-0.19.2.tar.gz -C moc-crate --strip-components=1
-tar xzf cdshealpix-crate/cdshealpix-0.9.1.tar.gz -C cdshealpix-crate --strip-components=1
+# Copy the moc and cdshealpix Rust crates pinned in Cargo.lock out of the
+# cargo registry, so they can be patched and used through [patch.crates-io]
+cargo fetch --locked
+vendor_crate() {
+  local ver
+  ver=$(awk -v n="\"$1\"" '$1 == "name" && $3 == n { getline; v = $3; getline; if ($0 ~ /registry\+/) { gsub(/"/, "", v); print v; exit } }' Cargo.lock)
+  cp -R "$(ls -d "${CARGO_HOME:-$HOME/.cargo}"/registry/src/*/"$1-$ver" | head -1)" "$1-crate"
+}
+vendor_crate moc
+vendor_crate cdshealpix
 
 # show_with_default_app only exists for linux/macos/windows in both crates
 add_fallback() {
@@ -22,7 +29,7 @@ EOF
 add_fallback moc-crate/src/deser/img.rs "fn"
 add_fallback cdshealpix-crate/src/nested/map/img.rs "pub fn"
 
-# use the patched crates (see recipe.yaml) instead of crates.io
+# use the patched crates instead of crates.io
 cat >> Cargo.toml <<EOF
 
 [patch.crates-io]

@@ -1,0 +1,69 @@
+context:
+  name: numcodecs
+  version: 0.17.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5069dc01b0087c6135cbb3b043707aaf927c992fcd325248d15d907c51dd3747
+  patches:
+  # meson.build adds -pthread on every non-Windows host
+  - patches/0001-no-pthread-on-emscripten.patch
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cross-python_${{ target_platform }}
+  - cython >=3.1
+  - python
+  - pip
+  - meson-python >=0.17
+  - meson >=1.6.0
+  - ninja
+  - pkg-config
+  - setuptools_scm
+  - numpy >=2
+  host:
+  - numpy
+  - python-dev
+  run:
+  - python
+  - numpy >=2.0
+  - typing_extensions
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_numcodecs.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/zarr-developers/numcodecs
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A Python package providing buffer compression and transformation codecs for use in data storage and 
+    communication applications.

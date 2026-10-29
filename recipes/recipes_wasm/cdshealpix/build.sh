@@ -1,8 +1,16 @@
 #!/bin/bash
 set -euxo pipefail
 
-# the .crate source is downloaded as-is (rattler does not unpack .crate)
-tar xzf cdshealpix-crate/cdshealpix-0.10.1.tar.gz -C cdshealpix-crate --strip-components=1
+# Copy the cdshealpix Rust crate pinned in Cargo.lock out of the cargo
+# registry, so it can be patched and used through [patch.crates-io]
+cargo fetch --locked
+vendor_crate() {
+  local ver
+  # the registry entry (Cargo.lock also lists this binding as "cdshealpix")
+  ver=$(awk -v n="\"$1\"" '$1 == "name" && $3 == n { getline; v = $3; getline; if ($0 ~ /registry\+/) { gsub(/"/, "", v); print v; exit } }' Cargo.lock)
+  cp -R "$(ls -d "${CARGO_HOME:-$HOME/.cargo}"/registry/src/*/"$1-$ver" | head -1)" "$1-crate"
+}
+vendor_crate cdshealpix
 
 # show_with_default_app only exists for linux/macos/windows in the crate
 cat >> cdshealpix-crate/src/nested/map/img.rs <<'EOF'
@@ -17,7 +25,7 @@ pub fn show_with_default_app(path: &str) -> Result<(), io::Error> {
 }
 EOF
 
-# use the patched cdshealpix crate (see recipe.yaml) instead of crates.io
+# use the patched cdshealpix crate instead of crates.io
 cat >> Cargo.toml <<EOF
 
 [patch.crates-io]
