@@ -1,11 +1,11 @@
 #!/bin/bash
+set -euxo pipefail
 
-# Note: the include folder is moved to `$BUILD_PREFIX` by the cross-python activation script
-export NUMPY_INCLUDE_DIR="$BUILD_PREFIX/lib/python${PY_VER}/site-packages/numpy/_core/include"
+# numcodecs >= 0.17 builds with meson-python; no SIMD on wasm.
+# meson finds numpy through pkg-config: use the host (wasm) numpy's numpy.pc
+export PKG_CONFIG_PATH="${PREFIX}/lib/python${PY_VER}/site-packages/numpy/_core/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 
-export DISABLE_NUMCODECS_SSE2=1
-export DISABLE_NUMCODECS_AVX2=1
-
-
-export CFLAGS="$CFLAGS -I$NUMPY_INCLUDE_DIR"
-${PYTHON} -m pip install . -vvv
+${PYTHON} -m pip install . -vvv --no-deps --no-build-isolation \
+    -Csetup-args="--cross-file=$MESON_CROSS_PYTHON_FILE" \
+    -Csetup-args="-Dsse2=disabled" \
+    -Csetup-args="-Davx2=disabled"
