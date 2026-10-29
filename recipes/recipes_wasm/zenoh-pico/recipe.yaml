@@ -3,12 +3,15 @@ context:
   version: 1.10.1
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
   url: https://github.com/eclipse-zenoh/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
   sha256: eba95fa8c95c7972a7c12e7173ece23092ce5c376c8d749748f0e152526622df
+  patches:
+  # size_t used to come in through <pthread.h> (only included with multi-threading)
+  - patches/0001-platform-h-include-stddef.patch
 
 build:
   number: 0
@@ -28,6 +31,20 @@ tests:
     - lib/cmake/zenohpico/zenohpicoConfig.cmake
     - lib/pkgconfig/zenohpico.pc
     - lib/libzenohpico.a
+- script:
+  - emcc test_zenoh_pico.c -o test_zenoh_pico.js -DZENOH_EMSCRIPTEN -I${PREFIX}/include -L${PREFIX}/lib -lzenohpico
+  - node test_zenoh_pico.js
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - nodejs
+  files:
+    recipe:
+    - test_zenoh_pico.c
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://zenoh.io
