@@ -13,9 +13,14 @@ source:
   rev: ${{ rust_rev }}
   depth: 1
   submodules: false
+  patches:
+  # libc >= 0.2.191 has the 32-bit nfds_t of emscripten >= 6.0.1 on wasm64;
+  # with 0.2.189, std's poll() import clashes with C code calling poll()
+  # (wasm-ld: function signature mismatch: poll)
+  - patches/0001-std-libc-0.2.191.patch
 
 build:
-  number: 0
+  number: 1
   script: build.sh
 
 requirements:
