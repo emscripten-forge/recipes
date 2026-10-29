@@ -1,15 +1,17 @@
 --- a/freetype/raw.py
 +++ b/freetype/raw.py
-@@ -341,3 +341,54 @@
+@@ -341,3 +341,63 @@
  FT_Vector_Unit                 = _lib.FT_Vector_Unit
  
  # Wholesale import ends
 +
 +# Prototypes for the functions with FT_Long / FT_ULong / FT_Fixed / FT_Pos
 +# (C long, 64-bit on LP64 targets such as wasm64) arguments or return values,
-+# and for the ones returning pointers. Without them, ctypes passes Python ints
-+# as C int and expects an int result: that only works where long is 32-bit,
-+# and on wasm it traps, because the call signature must match exactly.
++# for the ones returning pointers, and for the ones that freetype-py calls with
++# a plain 0 for a pointer argument (a NULL origin / coordinate array). Without
++# them, ctypes passes Python ints as C int and expects an int result: that
++# only works where long and pointers are 32-bit, and on wasm it traps, because
++# the call signature must match exactly.
 +def _prototype(name, restype, argtypes):
 +    func = globals().get(name)
 +    if func is not None:
@@ -34,6 +36,13 @@
 +    ('FT_Outline_EmboldenXY',   FT_Error, [_P, FT_Pos, FT_Pos]),
 +    ('FT_Outline_Translate',    None,     [_P, FT_Pos, FT_Pos]),
 +    ('FT_Stroker_Set',          None,     [_P, FT_Fixed, c_int, c_int, FT_Fixed]),
++    ('FT_Glyph_To_Bitmap',      FT_Error, [_P, c_int, _P, c_ubyte]),
++    ('FT_Glyph_Stroke',         FT_Error, [_P, _P, c_ubyte]),
++    ('FT_Glyph_StrokeBorder',   FT_Error, [_P, _P, c_ubyte, c_ubyte]),
++    ('FT_Get_Var_Blend_Coordinates',  FT_Error, [_P, FT_UInt, _P]),
++    ('FT_Get_Var_Design_Coordinates', FT_Error, [_P, FT_UInt, _P]),
++    ('FT_Set_Var_Blend_Coordinates',  FT_Error, [_P, FT_UInt, _P]),
++    ('FT_Set_Var_Design_Coordinates', FT_Error, [_P, FT_UInt, _P]),
 +    ('FT_MulDiv',               FT_Long,  [FT_Long, FT_Long, FT_Long]),
 +    ('FT_MulFix',               FT_Long,  [FT_Long, FT_Long]),
 +    ('FT_DivFix',               FT_Long,  [FT_Long, FT_Long]),

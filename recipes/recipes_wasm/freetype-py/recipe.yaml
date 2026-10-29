@@ -36,10 +36,19 @@ requirements:
   - freetype
 
 tests:
-- script: pytester
+- script:
+  # pytester only ships test_*.py files: embed the fonts in test_fontdata.py
+  - python make_test_fontdata.py
+  - pytester
   files:
     recipe:
     - test_freetype_py.py
+    - make_test_fontdata.py
+    # fonts shipped in the sdist
+    source:
+    - examples/Vera.ttf
+    - examples/VeraMono.ttf
+    - examples/SourceSansVariable-Roman.otf
   requirements:
     build:
     - pytester
