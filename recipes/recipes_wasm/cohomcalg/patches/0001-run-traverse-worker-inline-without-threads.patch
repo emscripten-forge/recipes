@@ -1,0 +1,36 @@
+--- a/source/secondarycohom.cpp
++++ b/source/secondarycohom.cpp
+@@ -359,9 +359,14 @@
+ 
+ 
+ 	// Prepare and setup the worker threads
++#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
++	// no threads: a single worker, run in the calling thread (see below)
++	unsigned int numWorkers = 1;
++#else
+ 	unsigned int numWorkers = thread::hardware_concurrency();
+ 	if (numWorkers == 0)
+ 		numWorkers = 4;
++#endif
+ 
+     // Compute the maximal SR bitmask value and the number of buffer runs
+     size_t number_of_srgens = id.GetNumSRgens();
+@@ -412,6 +417,10 @@
+ 	}
+ 	paddedSRvec.clear();
+ 
++#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
++	for (size_t k = 0; k<numWorkers; k++)
++		TraverseWorkerFunction((void*) &workerdat[k]);
++#else
+ 	// Start the workers
+ 	vector<thread *> worker_threads;
+ 	for (size_t k = 0; k<numWorkers; k++)
+@@ -435,6 +444,7 @@
+ 		delete worker_threads[k];
+ 	}
+ 	wstat->Run = false;
++#endif
+ 	
+ 
+ 	// Piece together the individually generated data
