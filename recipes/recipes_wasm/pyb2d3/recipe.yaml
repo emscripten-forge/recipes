@@ -16,13 +16,19 @@ outputs:
 
   build:
     script: build.sh
+    files:
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
 
   requirements:
     build:
     - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
-    - cross-python-cmake_emscripten-wasm32
-    - cmake>=4.0
+    - cross-python_${{ target_platform }}
+    - cmake >=4.0
     - ninja
     - numpy
     - nanobind <2.10.2
@@ -30,10 +36,10 @@ outputs:
     - python
     - pip
     host:
-    - python
+    - python-dev
     - numpy
-    - box2d-static >=3.1.1
-
+    # variant pin 3.1.1: pyb2d3 0.11 does not build against the box2d 3.2 API
+    - box2d-static
     run:
     - numpy
     - python
@@ -48,55 +54,65 @@ outputs:
       - pytester
       run:
       - pytester-run
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: pyb2d3-sandbox
     version: ${{ version }}
   build:
+    # pure-python noarch package: install with the native build python
+    # (cross-python cannot be activated for target_platform=noarch)
     noarch: python
-    script:
-    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox -vv --prefix ${PREFIX}
+    script: python -m pip install companion_packages/pyb2d3_sandbox --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   requirements:
     build:
-    - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
     host:
     - python
     run:
+    - python
     - pyb2d3 >=${{ version }}
   tests:
   - package_contents:
-      files:
-      - site-packages/pyb2d3_sandbox/frontend_base.py
-
-
+      site_packages:
+      - pyb2d3_sandbox/frontend_base.py
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 - package:
     name: pyb2d3-sandbox-ipycanvas
     version: ${{ version }}
   build:
     noarch: python
-    script:
-    - ${PYTHON} -m pip install companion_packages/pyb2d3_sandbox_ipycanvas -vv --prefix ${PREFIX}
+    script: python -m pip install companion_packages/pyb2d3_sandbox_ipycanvas --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   requirements:
     build:
-    - ${{ compiler("cxx") }}
-    - cross-python_emscripten-wasm32
-    - python
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
     host:
     - python
     run:
+    - python
     - ipycanvas >=0.14.2
     - pyb2d3 >=${{ version }}
     - pyb2d3-sandbox >=${{ version }}
     - ipyevents
   tests:
   - package_contents:
-      files:
-      - site-packages/pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+      site_packages:
+      - pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
 
 about:
   license: MIT
