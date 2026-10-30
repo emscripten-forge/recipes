@@ -3,7 +3,7 @@ context:
   version: 2.6.0
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -15,39 +15,34 @@ build:
 
 requirements:
   build:
-  - autoconf
-  - automake
-  - libtool
-  - make
   - ${{ compiler("c") }}
   - ${{ compiler('cxx') }}
-  - pkg-config
+  - cmake
+  - make
   - python
   - cross-python_${{ target_platform }}
   host:
-  - libpython
-  - python
+  - python-dev
   - gmp-static
-  - boost-cpp
-  - openssl
-  - sqlite
-  - matplotlib
-  - sympy
-  - gmpy2
+  - boost-headers
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
 
 tests:
 - package_contents:
     files:
-    - lib/libcadabra2++.a
     - lib/libcadabra2++_static.a
     - include/cadabra2++/include/cadabra2++.hh
-
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://cadabra.science/
   license: GPL-3.0-only
   license_file: LICENSE
-  summary: A field-theory motivated approach to computer algebra.
+  summary: A field-theory motivated approach to computer algebra (C++ library).
 
 extra:
   recipe-maintainers:
