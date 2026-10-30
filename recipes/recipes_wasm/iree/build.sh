@@ -23,6 +23,7 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DClang_DIR="${PREFIX}/lib/cmake/clang" \
     -DMLIR_TABLEGEN_EXE="${BUILD_PREFIX}/bin/mlir-tblgen" \
     -DMLIR_BUILDER_TABLEGEN="${BUILD_PREFIX}/bin/mlir_builder_tblgen" \
+    -DMLIR_BUILDER_TABLEGEN_EXE="${BUILD_PREFIX}/bin/mlir_builder_tblgen" \
     -DIREE_HOST_BIN_DIR="${BUILD_PREFIX}/bin" \
     -DIREE_BUILD_BUNDLED_LLVM=OFF \
     -DIREE_BUILD_COMPILER=ON \
