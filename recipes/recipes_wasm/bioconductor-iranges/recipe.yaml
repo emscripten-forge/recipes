@@ -1,37 +1,29 @@
 context:
-  name : IRanges
-  version: 2.44.0
-  bioc: 3.22
+  name: IRanges
+  version: 2.46.0
+
 package:
   name: bioconductor-${{ name | lower }}
   version: ${{ version }}
 
-# source:
-  # url: https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
-  # sha256: a61e97812b0357411b770c5886b684fc6c0b59c05441f7336e46404e6898b3e9
-
-
-
 source:
-  url: 
-    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
-    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
-    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
-  sha256: 244e55ca485805ae2fcae8621dec7bb35e9fcd0da707271eb5ef984b88605042
+  url:
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: a61e97812b0357411b770c5886b684fc6c0b59c05441f7336e46404e6898b3e9
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on bioconda
-  skip: ${{ r_base == '4.6.0' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
   - cross-r-base ==${{ r_base }}
   - ${{ compiler('c') }}
-  - bioconductor-biocgenerics # Not yet available for R 4.6.0
-  - bioconductor-s4vectors # Not yet available for R 4.6.0
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
   host:
   - r-base ==${{ r_base }}
   - bioconductor-biocgenerics
@@ -44,15 +36,28 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
 
 about:
-  repository: https://github.com/Bioconductor/IRanges 
+  homepage: https://bioconductor.org/packages/${{ name }}
+  repository: https://github.com/Bioconductor/${{ name }}
   license: Artistic-2.0
-  license_file: LICENSE
-  summary: Provides efficient low-level and highly reusable S4 classes for storing, manipulating and aggregating over annotated ranges of integers
-
-
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/Artistic-2.0
+  summary: |
+    Provides efficient low-level and highly reusable S4 classes for storing,
+    manipulating and aggregating over annotated ranges of integers.
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
