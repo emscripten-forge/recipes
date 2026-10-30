@@ -1,0 +1,72 @@
+context:
+  name: cdshealpix
+  version: 0.9.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+# build.sh copies the cdshealpix Rust crate from Cargo.lock out of the cargo
+# registry, adds an emscripten fallback for show_with_default_app (only
+# defined for linux/macos/windows) and uses it through [patch.crates-io]
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e305aa6e7f515bd743affdfe6f514741e60a873ffbfd2fa2949cbe3f72e6e371
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - setuptools-rust
+  - rust-nightly
+  - maturin
+  - ${{ compiler('cxx') }}
+  host:
+  - python-dev
+  run:
+  - python
+  - numpy
+  - astropy
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_cdshealpix.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/cds-astro/cds-healpix-python/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: HEALPix sky tesselation manipulation
+  description: |
+    CDS-HEALPix allows to manipulate the HEALPix sky tesselation in the nested and ring
+    schemes. The library includes geometry-based healpix selections (cone, polygon, 
+    boxes...) and SkyMaps IO and visualization.
+  documentation: https://cds-astro.github.io/cds-healpix-python/
+  repository: https://github.com/cds-astro/cds-healpix-python/

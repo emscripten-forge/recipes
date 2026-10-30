@@ -1,0 +1,56 @@
+context:
+  version: 7.3.0
+
+package:
+  name: traits
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/t/traits/traits-${{ version }}.tar.gz
+  sha256: e062da86ff403443c370c5f74b2d58b9398d3e75ac9d7c64ba2c06901a888133
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/tests/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - python
+  - pip
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_traits.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://docs.enthought.com/traits
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: traits - explicitly typed attributes for Python

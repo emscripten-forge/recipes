@@ -1,0 +1,59 @@
+From c8ccc99a2bd035ea3aa45ceb1af1c590c4a96ae7 Mon Sep 17 00:00:00 2001
+From: Agriya Khetarpal <74401230+agriyakhetarpal@users.noreply.github.com>
+Date: Sun, 17 May 2026 21:10:42 +0530
+Subject: [PATCH 3/3] Fix exclusive atomic writes on Emscripten
+
+Emscripten does not support hard links, so os.link() (used by the POSIX
+_safe_move path to achieve atomic exclusive writes) raises AttributeError
+at import time. Additionally, os.rename() on Emscripten silently replaces
+an existing destination, which could corrupt zarr metadata written by
+set_if_not_exists() (e.g. group .zattrs / zarr.json).
+
+Add an IS_WASM branch in _safe_move that guards with an explicit
+dst.exists() check before renaming. A race between the check and the
+rename is impossible because WASM is single-threaded. When the destination
+already exists the temporary file is cleaned up and FileExistsError is
+raised, preserving the exclusive-write contract.
+
+Upstream reference: https://github.com/zarr-developers/zarr-python/pull/1903
+---
+ src/zarr/storage/_local.py | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/zarr/storage/_local.py b/src/zarr/storage/_local.py
+index 96f1e617..74466270 100644
+--- a/src/zarr/storage/_local.py
++++ b/src/zarr/storage/_local.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ import asyncio
+ import contextlib
++import errno
+ import io
+ import os
+ import shutil
+@@ -10,6 +11,7 @@ import uuid
+ from pathlib import Path
+ from typing import TYPE_CHECKING, Any, BinaryIO, Literal, Self
+ 
++from zarr._constants import IS_WASM
+ from zarr.abc.store import (
+     ByteRequest,
+     OffsetByteRequest,
+@@ -48,6 +50,13 @@ if sys.platform == "win32":
+     # Per the os.rename docs:
+     # On Windows, if dst exists a FileExistsError is always raised.
+     _safe_move = os.rename
++elif IS_WASM:
++
++    def _safe_move(src: Path, dst: Path) -> None:
++        if dst.exists():
++            src.unlink(missing_ok=True)
++            raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), str(dst))
++        os.rename(src, dst)
+ else:
+     # On Unix, os.rename silently replace files, so instead we use os.link like
+     # atomicwrites:
+-- 
+2.50.1 (Apple Git-155)
+

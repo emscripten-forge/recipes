@@ -1,0 +1,54 @@
+context:
+  name: lcalc
+  version: 2.2.2
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://gitlab.com/sagemath/lcalc/-/archive/${{ version }}/lcalc-${{ version }}.tar.gz
+  sha256: 65cb7edc88fc2adf5ae85db7de26b3cd27b3b7cbe03acbe6db7610fb1da5a79c
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - ${{ compiler("c") }}
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  - autoconf-archive
+  - gengetopt
+  host:
+  - pari-static
+  - gmp-static
+  run:
+  - ${{ pin_compatible('pari-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libLfunction.a
+    files:
+    - bin/lcalc
+    - lib/pkgconfig/lcalc.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://gitlab.com/sagemath/lcalc
+  license: GPL-2.0-only
+  license_file: README.md
+  summary: Lcalc is a package for working with L-functions.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

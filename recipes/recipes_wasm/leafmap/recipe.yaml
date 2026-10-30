@@ -1,0 +1,92 @@
+context:
+  version: 0.63.1
+  name: leafmap
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c54b09e7cd200e389a05ccae7671cfcdc681fe667d9048ece90fd3b355270a9a
+
+build:
+  number: 0
+  script: $PYTHON -m pip install . -vv
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_${{ target_platform }}
+  - ${{ compiler("c") }}
+  - pip
+  host:
+  - python-dev
+  run:
+  - python
+  - anywidget
+  - bqplot
+  - folium
+  - gdown
+  - geojson
+  - geopandas
+  - h5netcdf
+  - h5py
+  - ipyevents
+  - ipyfilechooser
+  - ipyleaflet
+  - ipyvuetify
+  - ipywidgets
+  - ipysheet
+    # JupyterLab should not be a dependency for labextensions
+    # - jupyterlab
+    # Will never be available?
+    # - localtileserver
+  - maplibre
+  - matplotlib-base
+  - numpy
+  - opera-utils
+  - pandas
+  - plotly
+  - pmtiles
+  - pyarrow
+  - pycrs
+  - pystac-client
+  - python-box
+  - rioxarray
+  - scooby
+  - whiteboxgui
+  - xyzservices
+    # Not yet available
+    # - python-duckdb >=1.4.1
+
+tests:
+- package_contents:
+    files:
+    - lib/python*/site-packages/leafmap/*.py
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_leafmap.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/opengeos/leafmap
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Python package for geospatial analysis and interactive mapping in a Jupyter environment
+  description: A Python package for geospatial analysis and interactive mapping in a Jupyter environment
+
+extra:
+  recipe-maintainers:
+  - martinRenou

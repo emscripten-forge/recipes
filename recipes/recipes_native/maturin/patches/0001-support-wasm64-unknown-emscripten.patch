@@ -1,0 +1,145 @@
+--- a/src/target/mod.rs
++++ b/src/target/mod.rs
+@@ -96,6 +96,7 @@
+     X86_64,
+     S390X,
+     Wasm32,
++    Wasm64,
+     Riscv32,
+     Riscv64,
+     Mips64el,
+@@ -121,6 +122,7 @@
+             Arch::X86_64 => "x86_64",
+             Arch::S390X => "s390x",
+             Arch::Wasm32 => "wasm32",
++            Arch::Wasm64 => "wasm64",
+             Arch::Riscv32 => "riscv32",
+             Arch::Riscv64 => "riscv64",
+             Arch::Mips64el => "mips64el",
+@@ -159,6 +161,7 @@
+             Arch::Sparc64 => "sparc64",
+             Arch::Sparcv9 => "sparcv9",
+             Arch::Wasm32 => "wasm32",
++            Arch::Wasm64 => "wasm64",
+             Arch::S390X => "s390x",
+             Arch::LoongArch64 => "loongarch64",
+         }
+@@ -230,7 +233,8 @@
+         Os::Illumos => &[Arch::X86_64],
+         Os::Haiku => &[Arch::X86_64],
+         Os::Solaris => &[Arch::X86_64, Arch::Sparc64, Arch::Sparcv9],
+-        Os::Emscripten | Os::Wasi => &[Arch::Wasm32],
++        Os::Emscripten => &[Arch::Wasm32, Arch::Wasm64],
++        Os::Wasi => &[Arch::Wasm32],
+         Os::Aix => &[Arch::Powerpc64],
+         Os::Hurd => &[Arch::X86, Arch::X86_64],
+         Os::Cygwin => &[Arch::X86, Arch::X86_64],
+@@ -330,6 +334,7 @@
+             Architecture::Powerpc64le => Arch::Powerpc64Le,
+             Architecture::S390x => Arch::S390X,
+             Architecture::Wasm32 => Arch::Wasm32,
++            Architecture::Wasm64 => Arch::Wasm64,
+             Architecture::Riscv32(_) => Arch::Riscv32,
+             Architecture::Riscv64(_) => Arch::Riscv64,
+             Architecture::Mips64(mips64_arch) => match mips64_arch {
+@@ -421,6 +426,7 @@
+             Arch::X86_64 => "x86_64",
+             Arch::S390X => "s390x",
+             Arch::Wasm32 => "wasm32",
++            Arch::Wasm64 => "wasm64",
+             Arch::Riscv32 => "riscv32",
+             Arch::Riscv64 => "riscv64",
+             // It's kinda surprising that Python doesn't include the `el` suffix
+@@ -523,6 +529,7 @@
+             Arch::Armv5teL
+             | Arch::Armv6L
+             | Arch::Wasm32
++            | Arch::Wasm64
+             | Arch::Riscv32
+             | Arch::Mips64el
+             | Arch::Mips64
+@@ -547,7 +554,8 @@
+             | Arch::Mips64
+             | Arch::Sparc64
+             | Arch::Sparcv9
+-            | Arch::LoongArch64 => 64,
++            | Arch::LoongArch64
++            | Arch::Wasm64 => 64,
+             Arch::Armv5teL
+             | Arch::Armv6L
+             | Arch::Armv7L
+--- a/src/target/platform_tag.rs
++++ b/src/target/platform_tag.rs
+@@ -161,7 +161,7 @@
+             )
+         }
+         // Emscripten
+-        (Os::Emscripten, Arch::Wasm32) => emscripten_platform_tag()?,
++        (Os::Emscripten, Arch::Wasm32 | Arch::Wasm64) => emscripten_platform_tag(target.target_arch().as_str())?,
+         (Os::Wasi, Arch::Wasm32) => "any".to_string(),
+         // Cygwin
+         (Os::Cygwin, _) => {
+@@ -355,36 +355,36 @@
+ ///    `emscripten_{EMCC_VERSION}_wasm32`. Resolved from
+ ///    `MATURIN_EMSCRIPTEN_VERSION` or `emcc -dumpversion`. Emits a warning
+ ///    explaining that the tag is not PEP 783 compliant.
+-fn emscripten_platform_tag() -> Result<String> {
++fn emscripten_platform_tag(arch: &str) -> Result<String> {
+     if let Some(ver) = first_non_empty_env(&[
+         "MATURIN_PYEMSCRIPTEN_PLATFORM_VERSION",
+         "PYEMSCRIPTEN_PLATFORM_VERSION",
+     ]) {
+-        return Ok(pep783_emscripten_platform_tag(&ver));
++        return Ok(pep783_emscripten_platform_tag(&ver, arch));
+     }
+     if let Some(ver) = first_non_empty_env(&["MATURIN_PYODIDE_ABI_VERSION", "PYODIDE_ABI_VERSION"])
+     {
+-        return Ok(pep783_emscripten_platform_tag(&ver));
++        return Ok(pep783_emscripten_platform_tag(&ver, arch));
+     }
+     if let Some(ver) = pyodide_config_get("pyemscripten_platform_version") {
+-        return Ok(pep783_emscripten_platform_tag(&ver));
++        return Ok(pep783_emscripten_platform_tag(&ver, arch));
+     }
+     if let Some(ver) = pyodide_config_get("pyodide_abi_version") {
+-        return Ok(pep783_emscripten_platform_tag(&ver));
++        return Ok(pep783_emscripten_platform_tag(&ver, arch));
+     }
+     let release = emscripten_version()?.replace(['.', '-'], "_");
+     eprintln!(
+-        "⚠️  Falling back to legacy `emscripten_{release}_wasm32` platform tag. \
++        "\u{26a0}\u{fe0f}  Falling back to legacy `emscripten_{release}_{arch}` platform tag. \
+          This wheel will not be installable on PEP 783-compliant Pyodide runtimes. \
+          Set `MATURIN_PYEMSCRIPTEN_PLATFORM_VERSION` (PEP 783) or \
+          `MATURIN_PYODIDE_ABI_VERSION` (historical Pyodide ABI version env var) \
+          to produce a portable tag."
+     );
+-    Ok(format!("emscripten_{release}_wasm32"))
++    Ok(format!("emscripten_{release}_{arch}"))
+ }
+ 
+-fn pep783_emscripten_platform_tag(version: &str) -> String {
+-    format!("pyemscripten_{version}_wasm32")
++fn pep783_emscripten_platform_tag(version: &str, arch: &str) -> String {
++    format!("pyemscripten_{version}_{arch}")
+ }
+ 
+ /// Return the first env var in `names` that is set to a non-empty (after
+@@ -634,7 +634,7 @@
+     #[test]
+     fn test_pep783_emscripten_platform_tag() {
+         assert_eq!(
+-            pep783_emscripten_platform_tag("2025_0"),
++            pep783_emscripten_platform_tag("2025_0", "wasm32"),
+             "pyemscripten_2025_0_wasm32"
+         );
+     }
+@@ -656,7 +656,7 @@
+         }
+ 
+         assert_eq!(
+-            emscripten_platform_tag().unwrap(),
++            emscripten_platform_tag("wasm32").unwrap(),
+             "pyemscripten_2025_0_wasm32"
+         );
+     }

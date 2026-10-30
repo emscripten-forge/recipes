@@ -1,0 +1,16 @@
+--- a/util/env_posix.cc
++++ b/util/env_posix.cc
+@@ -781,6 +781,13 @@
+ void PosixEnv::Schedule(
+     void (*background_work_function)(void* background_work_arg),
+     void* background_work_arg) {
++#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
++  // Without pthreads std::thread cannot start the background thread, so
++  // run the work (memtable flush / compaction) right away instead.
++  background_work_function(background_work_arg);
++  return;
++#endif
++
+   background_work_mutex_.Lock();
+
+   // Start the background thread, if we haven't done so already.

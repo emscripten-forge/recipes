@@ -1,0 +1,89 @@
+context:
+  name: primesieve
+  version: '12.16'
+
+source:
+  url: https://github.com/kimwalisch/primesieve/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 753530ec2b4cbf3b62808b0661ab00e0382d47bded8a57c4fe41a6a4409f7c94
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: primesieve-build
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# primesieve command line program
+- package:
+    name: primesieve
+    version: ${{ version }}
+  inherit: primesieve-build
+  build:
+    files:
+      include:
+      - bin/
+  tests:
+  - package_contents:
+      files:
+      - bin/primesieve.js
+      - bin/primesieve.wasm
+  # a large range, so that primesieve would split the work across threads
+  - script: 'node $PREFIX/bin/primesieve.js 1e9 --count | grep "Primes: 50847534"'
+    requirements:
+      build:
+      - nodejs
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# static library, headers and cmake / pkg-config files
+- package:
+    name: primesieve-static
+    version: ${{ version }}
+  inherit: primesieve-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/*.a
+      - lib/cmake/primesieve/
+      - lib/pkgconfig/primesieve.pc
+  tests:
+  - package_contents:
+      files:
+      - include/primesieve.h
+      - include/primesieve.hpp
+      - lib/libprimesieve.a
+      - lib/cmake/primesieve/primesieveConfig.cmake
+  # ParallelSieve uses std::async, so libprimesieve.a references
+  # pthread_create. Nothing is compiled with -pthread and without pthreads
+  # hardware_concurrency() is 1, so it sieves in the calling thread (the
+  # primesieve test above counts the primes below 1e9 under node).
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+about:
+  homepage: https://github.com/kimwalisch/primesieve
+  license: BSD-2-Clause
+  license_file: COPYING
+  summary: Fast prime number generator
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

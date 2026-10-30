@@ -2,6 +2,7 @@ import sys
 import os
 from pathlib import Path
 import json
+import re
 import subprocess
 
 
@@ -17,6 +18,47 @@ def run_llvm_readobj(path, *options):
         sys.exit(1)
 
 
+def is_memoryless_function_module(path):
+    with open(path, "rb") as binary:
+        if binary.read(8) != b"\0asm\x01\0\0\0":
+            return False
+        sections = run_llvm_readobj(path, "--sections")
+        types = set(re.findall(r"^\s*Type: (\w+) ", sections, re.MULTILINE))
+        if (not re.search(r"^\s*Name: dylink\.0$", sections, re.MULTILINE)
+                or not types <= {"CUSTOM", "TYPE", "IMPORT", "FUNCTION", "EXPORT", "CODE"}):
+            return False
+        if "IMPORT" not in types:
+            return True
+        match = re.search(r"Type: IMPORT \(0x2\)\s+Size: (\d+)\s+Offset: (\d+)", sections)
+        if match is None:
+            return False
+        size, offset = map(int, match.groups())
+        binary.seek(offset)
+        imports = iter(binary.read(size))
+
+    # LLVM supplies section boundaries; decode only the import descriptions.
+    def read_uleb():
+        value = 0
+        for shift in range(0, 35, 7):
+            byte = next(imports)
+            value |= (byte & 0x7f) << shift
+            if byte < 0x80:
+                return value
+        raise ValueError("Invalid Wasm integer")
+
+    try:
+        for _ in range(read_uleb()):
+            for _ in range(2):  # Skip the module and field names.
+                for _ in range(read_uleb()):
+                    next(imports)
+            if next(imports) != 0:  # Only function imports are width-neutral.
+                return False
+            read_uleb()  # Function type index.
+        return next(imports, None) is None
+    except (StopIteration, ValueError):
+        return False
+
+
 def check_arch_of_lib(path, arch):
     output = run_llvm_readobj(path, "-h")
     # arch is expected to be e.g. "emscripten-wasm32" or "emscripten-wasm64"
@@ -25,6 +67,11 @@ def check_arch_of_lib(path, arch):
     if "Format: WASM" not in output:
         print(f"Error: {path} is not a WebAssembly library")
         sys.exit(1)
+
+    # LLVM defaults to wasm32 for function-only wrappers with no memory width.
+    if (slim_arch == "wasm64" and "Arch: wasm32" in output
+            and is_memoryless_function_module(path)):
+        return
 
     if f"Arch: {slim_arch}" not in output:
         print(f"Error: {path} is not built for architecture {slim_arch}")
@@ -57,8 +104,7 @@ def check_no_pthread_symbols(path, allow_pthread):
 
     pthread_matches = [
         i for i, line in enumerate(lines)
-        if "pthread" in line.lower()
-        and not line.strip().startswith("File:")
+        if re.search(r"^\s*Name:\s+_*pthread_", line)
     ]
 
     if pthread_matches:

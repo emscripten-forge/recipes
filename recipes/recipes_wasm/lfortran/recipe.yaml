@@ -1,0 +1,117 @@
+context:
+  name: lfortran
+  version: 0.68.0
+
+source:
+  url: https://github.com/lfortran/lfortran/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0fdb58f9e0f442530b274d001c7fcdf53a62ee65fa87b7ca26b96c56dd3c7d64
+
+build:
+  number: 0
+
+outputs:
+
+# lfortran builds the shared and the static runtime in one go; the two
+# packages below pick their files from this single build.
+- staging:
+    name: lfortran-build
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+    - lfortran ==${{ version }}
+    host:
+    - zlib-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+- package:
+    name: lfortran
+    version: ${{ version }}
+  inherit: lfortran-build
+  build:
+    files:
+      include:
+      - bin/**
+      - include/lfortran/**
+      - libasr/**
+      - share/lfortran/**
+      - lib/liblfortran_runtime.so
+      exclude:
+      - share/man/man1/**
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('lfortran', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/liblfortran_runtime.so
+      - bin/lfortran.js
+      - bin/test_lfortran.js
+      - bin/test_lfortran.wasm
+      - include/lfortran/ISO_Fortran_binding.h
+  - script:
+    - test ! -e ${PREFIX}/lib/liblfortran_runtime_static.a
+    - node ${PREFIX}/bin/test_lfortran.js
+    requirements:
+      build:
+      - nodejs
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: lfortran-static
+    version: ${{ version }}
+  inherit: lfortran-build
+  # self-contained: ships its own copy of the runtime headers (like
+  # sparrow / sparrow-static) and does not depend on the shared lfortran
+  build:
+    files:
+      include:
+      - lib/liblfortran_runtime_static.a
+      - include/lfortran/**
+  tests:
+  - package_contents:
+      lib:
+      - liblfortran_runtime_static.a
+      include:
+      - lfortran/ISO_Fortran_binding.h
+      - lfortran/impure/lfortran_intrinsics.h
+  - script:
+    - test ! -e ${PREFIX}/lib/liblfortran_runtime.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Modern interactive LLVM-based Fortran compiler
+  description: |
+    LFortran is a modern open-source (BSD licensed) interactive Fortran
+    compiler built on top of LLVM. It can execute user's code interactively to
+    allow exploratory work (much like Python, MATLAB or Julia) as well as
+    compile to binaries with the goal to run user’s code on modern
+    architectures such as multi-core CPUs and GPUs.
+  homepage: https://lfortran.org
+
+extra:
+  recipe-maintainers:
+  - certik
+  - anutosh491
+  - Shaikh-Ubaid

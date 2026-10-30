@@ -14,6 +14,21 @@ index ec4b8f729349..77a3c4d68015 100644
    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
      "${CMAKE_CURRENT_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}")
    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin")
+diff --git a/mlir/cmake/modules/MLIRConfig.cmake.in b/mlir/cmake/modules/MLIRConfig.cmake.in
+--- a/mlir/cmake/modules/MLIRConfig.cmake.in
++++ b/mlir/cmake/modules/MLIRConfig.cmake.in
+@@ -6,6 +6,11 @@
+ find_package(LLVM ${LLVM_VERSION} EXACT REQUIRED CONFIG
+              HINTS "@MLIR_CONFIG_LLVM_CMAKE_DIR@")
+
++if("@CMAKE_SYSTEM_NAME@" STREQUAL "Emscripten")
++  find_package(LLD ${LLVM_VERSION} EXACT REQUIRED CONFIG
++               HINTS "${LLVM_DIR}/../lld")
++endif()
++
+ set(MLIR_EXPORTED_TARGETS "@MLIR_EXPORTS@")
+ set(MLIR_CMAKE_DIR "@MLIR_CONFIG_CMAKE_DIR@")
+ set(MLIR_INCLUDE_DIRS "@MLIR_CONFIG_INCLUDE_DIRS@")
 diff --git a/mlir/cmake/modules/AddMLIRPython.cmake b/mlir/cmake/modules/AddMLIRPython.cmake
 index 4de3a6733770..0e44b08c375f 100644
 --- a/mlir/cmake/modules/AddMLIRPython.cmake
@@ -47,10 +62,10 @@ index 6c438508425b..a753b35b4fc2 100644
  endif()
  
 diff --git a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
-index bf7dff897ab6..153614a3758c 100644
+index bf7dff897ab6..b0b7db45dbeb 100644
 --- a/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
 +++ b/mlir/lib/CAPI/ExecutionEngine/CMakeLists.txt
-@@ -1,16 +1,43 @@
+@@ -1,16 +1,44 @@
 -set(LLVM_LINK_COMPONENTS
 -  nativecodegen
 -  native
@@ -81,6 +96,7 @@ index bf7dff897ab6..153614a3758c 100644
 +
 +    LINK_LIBS PUBLIC
 +    MLIRBuiltinToLLVMIRTranslation
++    MLIRExecutionEngineUtils
 +    MLIRLLVMToLLVMIRTranslation
 +    MLIRTargetLLVMIRExport
 +    MLIRCAPIIR

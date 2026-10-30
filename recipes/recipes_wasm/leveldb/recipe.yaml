@@ -1,0 +1,67 @@
+context:
+  name: leveldb
+  version: "1.23"
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/leveldb/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9a37f8a6174f09bd622bc723b55881dc541cd50747cbd08831c2a82d620f6d76
+  patches:
+  # CMake's Threads target doesn't export correctly for emscripten
+  # and causes consumers to fail with "target was not found"
+  - patches/0001-no-threads-target-on-emscripten.patch
+  # std::thread cannot start the compaction thread without pthreads
+  - patches/0002-run-background-work-inline-without-threads.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - ${{ compiler("c") }}
+  - cmake
+  - make
+
+tests:
+- package_contents:
+    files:
+    - include/leveldb/c.h
+    - include/leveldb/db.h
+    - lib/libleveldb.a
+    - lib/cmake/leveldb/leveldbConfig.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+# Env::StartThread (unused by the DB itself) still references std::thread, and
+# libc++ pulls in pthread_self/pthread_setspecific stubs. Nothing is compiled
+# with -pthread; background compactions run inline (patch 0002), which the
+# C++ test above exercises.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/google/leveldb
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Fast key-value storage library
+  description: |
+    LevelDB is a fast key-value storage library written at Google that
+    provides an ordered mapping from string keys to string values.
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

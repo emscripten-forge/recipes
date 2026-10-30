@@ -1,0 +1,57 @@
+From 4d82408573711ac70e990a2ebeb75cc66ac7d8bb Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 14 Oct 2026 17:42:45 +0200
+Subject: [PATCH] Skip openmp compile test
+
+---
+ configure | 30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/configure b/configure
+index 97d7712..f6d259f 100755
+--- a/configure
++++ b/configure
+@@ -32,20 +32,30 @@ fi
+ # Method 2: Compile test fallback (some R builds omit SHLIB_OPENMP_CXXFLAGS
+ # even though the compiler supports OpenMP, e.g. r2u binary builds).
+ # Try multiple flags to avoid tying to a single compiler family.
+-if test "${R_HAS_OPENMP}" = "no"; then
+-  CONFTEST=conftest_omp_$$
+-  cat > ${CONFTEST}.c <<EOF
++#
++# Skip on Emscripten/wasm: emcc accepts -fopenmp for the probe, but linking
++# then passes --shared-memory while R objects are built without atomics.
++case "${CC}" in
++  *emcc*|*em++*)
++    echo "Emscripten detected: skipping OpenMP compile-test fallback"
++    ;;
++  *)
++    if test "${R_HAS_OPENMP}" = "no"; then
++      CONFTEST=conftest_omp_$$
++      cat > ${CONFTEST}.c <<EOF
+ #include <omp.h>
+ int main(void) { return omp_get_num_threads(); }
+ EOF
+-  for omp_flag in -fopenmp -qopenmp -xopenmp; do
+-    if ${CC} ${omp_flag} -o ${CONFTEST} ${CONFTEST}.c 2>/dev/null; then
+-      OPENMP_FLAG="${omp_flag}"
+-      break
++      for omp_flag in -fopenmp -qopenmp -xopenmp; do
++        if ${CC} ${omp_flag} -o ${CONFTEST} ${CONFTEST}.c 2>/dev/null; then
++          OPENMP_FLAG="${omp_flag}"
++          break
++        fi
++      done
++      rm -f ${CONFTEST}.c ${CONFTEST}
+     fi
+-  done
+-  rm -f ${CONFTEST}.c ${CONFTEST}
+-fi
++    ;;
++esac
+ 
+ if test "${R_HAS_OPENMP}" = "yes" || test -n "${OPENMP_FLAG}"; then
+   TPI_MODE=omp
+-- 
+2.56.0
+

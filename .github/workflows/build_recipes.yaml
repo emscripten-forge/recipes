@@ -68,24 +68,48 @@ jobs:
           needed=$(python -m emci build needs-playwright "$OLD" "$NEW")
           echo "needed=$needed" >> "$GITHUB_OUTPUT"
 
-      - name: Install playwright dependencies
-        if: runner.os == 'Linux' && steps.playwright.outputs.needed == 'true'
-        run: |
-          sudo apt-get update -y && sudo apt-get install -y  \
-          libwoff1  libvpx9  libevent-2.1-7t64 libopus0 libgstreamer-plugins-base1.0-0 \
-          libgstreamer-gl1.0-0 \
-          libgstreamer-plugins-bad1.0-0 \
-          libflite1 \
-          libavif16 \
-          libharfbuzz-icu0 \
-          libsecret-1-0 \
-          libhyphen0 \
-          libmanette-0.2-0 \
-          libgles2 \
-          gstreamer1.0-libav \
-          libgtk-4-1 \
-          libwayland-server0
-
+      # - name: Install playwright dependencies
+      #   if: runner.os == 'Linux' && steps.playwright.outputs.needed == 'true'
+      #   timeout-minutes: 20
+      #   env:
+      #     DEBIAN_FRONTEND: noninteractive
+      #   run: |
+      #     set -euo pipefail
+      
+      #     APT_OPTS=(
+      #       -o Acquire::Retries=5            # per-file retries inside apt
+      #       -o Acquire::http::Timeout=30     # fail a stalled connection fast...
+      #       -o Acquire::https::Timeout=30    # ...instead of hanging for minutes
+      #       -o DPkg::Lock::Timeout=300       # wait for unattended-upgrades instead of failing
+      #     )
+      
+      #     PKGS=(
+      #       libwoff1 libvpx9 libevent-2.1-7t64 libopus0
+      #       libgstreamer-plugins-base1.0-0 libgstreamer-gl1.0-0 libgstreamer-plugins-bad1.0-0
+      #       libflite1 libavif16 libharfbuzz-icu0 libsecret-1-0 libhyphen0
+      #       libmanette-0.2-0 libgles2 gstreamer1.0-libav libgtk-4-1 libwayland-server0
+      #     )
+      
+      #     retry() {
+      #       local n=1 max=4
+      #       until "$@"; do
+      #         if (( n >= max )); then echo "Failed after $n attempts: $*"; return 1; fi
+      #         echo "Attempt $n failed, retrying in $((n * 15))s..."
+      #         sleep $((n * 15)); n=$((n + 1))
+      #       done
+      #     }
+      
+      #     # Skip slow man-db trigger rebuilds on ubuntu-24.04 runners
+      #     sudo rm -f /var/lib/man-db/auto-update
+      
+      #     # Network phases: safe to kill and retry. `timeout` runs *inside* sudo so it can actually kill apt.
+      #     retry sudo timeout -k 30s 4m apt-get "${APT_OPTS[@]}" update
+      #     retry sudo timeout -k 30s 8m apt-get "${APT_OPTS[@]}" install -y --no-install-recommends --download-only "${PKGS[@]}"
+      
+      #     # Local phase: everything is already in /var/cache/apt/archives. Never kill this one.
+      #     sudo dpkg --configure -a || true
+      #     sudo apt-get "${APT_OPTS[@]}" install -y --no-install-recommends "${PKGS[@]}"
+          
       ################################################################
       # PUSH
       ################################################################

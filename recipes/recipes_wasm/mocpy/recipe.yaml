@@ -1,0 +1,74 @@
+context:
+  name: mocpy
+  version: 0.21.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+# build.sh copies the moc and cdshealpix Rust crates from Cargo.lock out of
+# the cargo registry, adds an emscripten fallback for show_with_default_app
+# (only defined for linux/macos/windows) to both and uses them through
+# [patch.crates-io]
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4e89785c36aedd075fed2f5b909a26e0b72505603809eb56e654cbf1951191ed
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**.dist-info/**'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - setuptools-rust
+  - rust-nightly
+  - maturin
+  - ${{ compiler('cxx') }}
+  host:
+  - python-dev
+  run:
+  - python
+  - numpy
+  - astropy
+  - cdshealpix
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_mocpy.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/cds-astro/mocpy/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Multi-Order Coverages manipulation
+  description: |
+    MOCpy allows to read, generate, write and manipulate MOCs. It supports operations
+    between MOCs. The available MOC flavors are Space-MOCs, TimeMOCs, FrequencyMOCs, 
+    Space-TimeMOCs, and SpaceFrequencyMOCs.
+  documentation: https://cds-astro.github.io/mocpy/
+  repository: https://github.com/cds-astro/mocpy/

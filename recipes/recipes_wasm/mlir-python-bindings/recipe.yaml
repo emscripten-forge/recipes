@@ -21,9 +21,17 @@ source:
   - patches/0007-target-native-numpy-memrefs.patch
   # Inline the context threading query when LLVM threads are disabled.
   - patches/0008-single-threaded-helpers.patch
+  # Handle rank-zero descriptors when converting MemRefs back to NumPy.
+  - patches/0009-ranked-memref-zero-dim.patch
+  # Backport the finite min/max identities merged in LLVM #232257.
+  - patches/0010-finite-minmax-identities.patch
+  # Support aliased vector stores (LLVM #232185, including review follow-up).
+  - patches/0011-spirv-aliased-vector-stores.patch
+  # Preserve native TableGen overrides in the installed SDK (LLVM #189918).
+  - patches/0012-cmake-tablegen-overrides.patch
 
 build:
-  number: 4
+  number: 8
 
 outputs:
 - staging:
@@ -91,6 +99,7 @@ outputs:
     requirements:
       build:
       - cmake
+      - llvm-tblgen ==${{ version }}
   # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
   - script: generic-testing --allow-pthread
     requirements:

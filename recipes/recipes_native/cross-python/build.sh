@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# copy meson cross files
+mkdir -p "${PREFIX}/etc"
+cp $RECIPE_DIR/crosspython_wasm32.meson.cross "${PREFIX}/etc/"
+cp $RECIPE_DIR/crosspython_wasm64.meson.cross "${PREFIX}/etc/"
+
 # Copy the [de]activate scripts to $PREFIX/etc/conda/[de]activate.d.
 # This will allow them to be run on environment activation.
 for TASK in "activate" "deactivate"

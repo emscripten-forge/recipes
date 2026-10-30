@@ -1,0 +1,72 @@
+context:
+  name: libheif
+  version: 1.23.7
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/strukturag/libheif/releases/download/v${{ version }}/libheif-${{ version }}.tar.gz
+  sha256: f7483e818503ea6224c8863e4a56ac02c7089021a98472c811c12aa19faf2475
+  patches:
+  - fix-emscripten-val-set.patch # Fixes error: 'val_set' was not declared in this scope, to remove when https://github.com/strukturag/libheif/pull/1565 is merged
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - ninja
+  - pkg-config
+  host:
+  - zlib-static
+  - libtiff-static
+  - libpng-static
+  run:
+  - ${{pin_compatible('zlib-static',lower_bound='x.x',upper_bound='x.x')}}
+  - ${{pin_compatible('libtiff-static',lower_bound='x',upper_bound='x')}}
+  - ${{pin_compatible('libpng-static',lower_bound='x.x',upper_bound='x.x')}}
+
+tests:
+- package_contents:
+    include:
+    - libheif/heif.h
+    lib:
+    - libheif.a
+    files:
+    - lib/cmake/libheif/libheif-config.cmake
+- script:
+  - build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  license: LGPL-3.0-or-later
+  license_file: COPYING
+  summary: ISO/IEC 23008-12:2017 HEIF and AVIF file format decoder and encoder
+  description: |
+    libheif is an ISO/IEC 23008-12:2017 HEIF and AVIF (AV1 Image File Format) file format decoder and encoder.
+    HEIF and AVIF are new image file formats employing HEVC (H.265) or AV1 image coding, respectively, for the
+    best compression ratios currently possible.
+  homepage: https://github.com/strukturag/libheif
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
