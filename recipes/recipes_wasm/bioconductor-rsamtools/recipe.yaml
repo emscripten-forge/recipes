@@ -1,7 +1,6 @@
 context:
-  name : Rsamtools
-  version: 2.26.0
-  bioc: 3.22
+  name: Rsamtools
+  version: 2.28.0
 
 package:
   name: bioconductor-${{ name | lower }}
@@ -9,16 +8,19 @@ package:
 
 source:
   url:
-    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
-    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
-    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
-  sha256: 9cda0a97ef33e0343d8c5ad6228fa043c441f20f92510ef494422a3b7b496be9
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 5840f1035018bf55608f54647265122de53a2ab5e2531bd5f29f770b636fb730
+  patches:
+  - patches/0001-Disable-BiocParallel.patch
+  - patches/0002-Replace-bplapply-with-lapply.patch
+  - patches/0003-Use-Rscript-from-build-prefix.patch
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.0' }}
-
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -44,8 +46,9 @@ requirements:
   - bioconductor-genomicranges
   - bioconductor-rhtslib
   - r-bitops
-  - zlib-static
+  - libzlib-static
   - libbzip2-static
+  - liblzma-static
   run:
   - bioconductor-biocgenerics
   - bioconductor-s4vectors
@@ -61,21 +64,26 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test 
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_import.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
+
 about:
-  repository: https://git.bioconductor.org/packages/XVector
+  homepage: https://bioconductor.org/packages/${{ name }}
+  repository: https://github.com/Bioconductor/${{ name }}
   license: Artistic-2.0
-  license_file: LICENSE
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/Artistic-2.0
   summary: Binary alignment (BAM), FASTA, variant call (BCF), and tabix file import
-
-
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
