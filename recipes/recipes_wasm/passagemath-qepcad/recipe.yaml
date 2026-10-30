@@ -17,7 +17,7 @@ requirements:
   build:
   - python
   - crossenv >=1.2
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - ${{ compiler("c") }}
   - ${{ compiler("cxx") }}
   - pip
@@ -28,9 +28,10 @@ requirements:
   - pkgconfig
   - passagemath-abi == ${{ version }}
   host:
-  - python
+  - python-dev
   run:
   - python
+  # the interface runs the qepcad program from the tarski package
   - tarski
   - cysignals
   - passagemath-environment
@@ -47,6 +48,10 @@ tests:
     run:
     - pytester-run
     - passagemath-symbolics
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: GPL-2.0-or-later
