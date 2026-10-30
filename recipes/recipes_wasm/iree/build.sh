@@ -4,8 +4,16 @@ set -euxo pipefail
 NANOBIND_CMAKE_DIR=$("${BUILD_PREFIX}/bin/python3" -m nanobind --cmake_dir)
 TARGET_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 
-emcmake cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
-    -U 'PYTHON_*' -U PYTHONLIBS_FOUND \
+# Python is configured explicitly below; keep the remaining toolchain arguments.
+cmake_args=()
+for arg in ${CMAKE_ARGS}; do
+    case "$arg" in
+        -DPYTHON_*=*|-DPYTHONLIBS_FOUND=*|-DPYTHONLIBS_FOUND:*=*) ;;
+        *) cmake_args+=("$arg") ;;
+    esac
+done
+
+emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DBUILD_SHARED_LIBS=OFF \
@@ -61,6 +69,7 @@ emcmake cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
     -DNB_SUFFIX="${TARGET_EXT_SUFFIX}" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
+emmake make -C build -j${CPU_COUNT:-4} iree_compiler_API_SharedImpl
 emmake make -C build -j${CPU_COUNT:-4} \
     install-IREECompilerPythonModules install-IREECompilerBuildPythonModules
 
