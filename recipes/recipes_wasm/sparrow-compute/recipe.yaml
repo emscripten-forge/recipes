@@ -1,0 +1,167 @@
+context:
+  name: sparrow-compute
+  version: 0.1.0
+
+source:
+  url: https://github.com/sparrow-org/sparrow-compute/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 47785d7821fcbd3aaeedc628749eee2b52062222cd16df334eba934b8fc8fec8
+  patches:
+  - patches/0001-add-install-rules.patch
+
+build:
+  number: 0
+
+outputs:
+
+# sparrow-compute is a header-only INTERFACE library: both packages ship the
+# same headers and CMake config, and differ only in the sparrow flavour they
+# depend on (sparrow::sparrow points at the .a or the .so). Shipping both keeps
+# sparrow-compute usable with sparrow and sparrow-static, like the sparrow and
+# sparrow-ipc recipes.
+- staging:
+    name: sparrow-compute-static-build
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - sparrow-static
+    - xsimd
+    - xtensor
+    - xtl
+  build:
+    script: build.sh
+- staging:
+    name: sparrow-compute-shared-build
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - sparrow
+    - xsimd
+    - xtensor
+    - xtl
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+- package:
+    name: sparrow-compute-static
+    version: ${{ version }}
+  inherit: sparrow-compute-static-build
+  build:
+    noarch: generic
+  requirements:
+    host:
+    - sparrow-static
+    - xsimd
+    - xtensor
+    - xtl
+    run:
+    - ${{ pin_compatible('sparrow-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('xsimd', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('xtensor', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('xtl', lower_bound='x.x', upper_bound='x.x') }}
+    run_exports:
+    - ${{ pin_subpackage('sparrow-compute-static', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/sparrow-compute.hpp
+      - include/sparrow-compute/arithmetic.hpp
+      - include/sparrow-compute/config/sparrow_compute_version.hpp
+      - include/sparrow-compute/expression.hpp
+      - include/sparrow-compute/math.hpp
+      - include/sparrow-compute/operators.hpp
+      - include/sparrow-compute/xtensor_adaptor.hpp
+      - share/cmake/sparrow-compute/sparrow-computeConfig.cmake
+      - share/cmake/sparrow-compute/sparrow-computeConfigVersion.cmake
+      - share/cmake/sparrow-compute/sparrow-computeTargets.cmake
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: sparrow-compute
+    version: ${{ version }}
+  inherit: sparrow-compute-shared-build
+  build:
+    noarch: generic
+  requirements:
+    host:
+    - sparrow
+    - xsimd
+    - xtensor
+    - xtl
+    run:
+    - ${{ pin_compatible('sparrow', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('xsimd', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('xtensor', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('xtl', lower_bound='x.x', upper_bound='x.x') }}
+    run_exports:
+    - ${{ pin_subpackage('sparrow-compute', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/sparrow-compute.hpp
+      - include/sparrow-compute/arithmetic.hpp
+      - include/sparrow-compute/config/sparrow_compute_version.hpp
+      - include/sparrow-compute/expression.hpp
+      - include/sparrow-compute/math.hpp
+      - include/sparrow-compute/operators.hpp
+      - include/sparrow-compute/xtensor_adaptor.hpp
+      - share/cmake/sparrow-compute/sparrow-computeConfig.cmake
+      - share/cmake/sparrow-compute/sparrow-computeConfigVersion.cmake
+      - share/cmake/sparrow-compute/sparrow-computeTargets.cmake
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  summary: Lazy xtensor expressions for Sparrow primitive arrays
+  description: |
+    sparrow-compute provides lazy xtensor expressions and compute kernels
+    (arithmetic, comparison, and math functions) over sparrow primitive
+    arrays. It is a header-only C++20 library built on top of sparrow,
+    xtensor, and xsimd.
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  homepage: https://github.com/sparrow-org/sparrow-compute
+  repository: https://github.com/sparrow-org/sparrow-compute
+  documentation: https://github.com/sparrow-org/sparrow-compute
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
+  - JohanMabille
