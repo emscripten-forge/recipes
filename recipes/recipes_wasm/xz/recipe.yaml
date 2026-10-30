@@ -19,21 +19,33 @@ requirements:
   - automake
   - libtool
   - make
-  - ${{ compiler('cxx') }}
+  - ${{ compiler('c') }}
+  - nodejs
 
 tests:
+# the xz program only; liblzma is packaged as liblzma-static
 - package_contents:
     files:
-    - lib/liblzma.a
-    - include/lzma.h
     - bin/xz
     - bin/xz.wasm
+# the program is built for the browser: under node it neither sees the host
+# file system nor can it stream (emscripten reports stdin/stdout as terminals,
+# which xz refuses for compressed data), so only check that it runs
+- script:
+  - node ${PREFIX}/bin/xz --version | grep "xz (XZ Utils) ${PKG_VERSION}"
+  requirements:
+    build:
+    - nodejs
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://tukaani.org/xz/
   license: 0BSD
   license_file: COPYING
-  summary: XZ Utils
+  summary: XZ Utils (the xz program)
 
 extra:
   recipe-maintainers:
