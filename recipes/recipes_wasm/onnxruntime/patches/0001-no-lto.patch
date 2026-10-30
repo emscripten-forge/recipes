@@ -1,0 +1,15 @@
+diff --git a/cmake/adjust_global_compile_flags.cmake b/cmake/adjust_global_compile_flags.cmake
+index 6e548ac..499d48b 100644
+--- a/cmake/adjust_global_compile_flags.cmake
++++ b/cmake/adjust_global_compile_flags.cmake
+@@ -19,7 +19,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s ALLOW_UNIMPLEMENTED_SYSCALLS=1 -s DEFAULT_TO_CXX=1")
+ 
+   # Enable LTO for release single-thread build
+-  if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
++  # emscripten-forge: no LTO, the static library must contain wasm objects
++  # (not LLVM bitcode, which is tied to the exact compiler version)
++  if (FALSE)
+     # NOTES:
+     # (1) LTO does not work for WebAssembly multi-thread. (segment fault in worker)
+     # (2) "-flto=thin" does not work correctly for wasm-ld.
