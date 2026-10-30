@@ -1,5 +1,5 @@
 context:
-  name : XVector
+  name: XVector
   version: 0.52.0
 
 package:
@@ -7,13 +7,16 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  url:
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
   sha256: 80b520c984e9da13fe06a2a6bdf712fffa6275705f3d0fb16af60eb5fb28609d
 
 build:
-  number: 3
-  skip: ${{ r_base == '4.6.0' }}
-
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
@@ -27,7 +30,7 @@ requirements:
   - bioconductor-biocgenerics
   - bioconductor-s4vectors
   - bioconductor-iranges
-  - zlib-static
+  - libzlib-static
   run:
   - bioconductor-biocgenerics
   - bioconductor-s4vectors
@@ -37,21 +40,28 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test 
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_import.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
+
 about:
-  repository: https://git.bioconductor.org/packages/XVector
+  homepage: https://bioconductor.org/packages/${{ name }}
+  repository: https://github.com/Bioconductor/${{ name }}
   license: Artistic-2.0
-  license_file: LICENSE
-  summary: Provides memory efficient S4 classes for storing sequences "externally" (e.g. behind an R external pointer, or on disk).
-
-
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/Artistic-2.0
+  summary: |
+    Provides memory efficient S4 classes for storing sequences "externally"
+    (e.g. behind an R external pointer, or on disk).
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
