@@ -1,0 +1,32 @@
+From 796d78d153677abf2f689710f58ceae32499e680 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 30 Oct 2026 13:40:17 +0100
+Subject: [PATCH 3/3] Use Rscript from build prefix
+
+---
+ src/Makevars | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makevars b/src/Makevars
+index 9b23347..26b6134 100644
+--- a/src/Makevars
++++ b/src/Makevars
+@@ -2,11 +2,13 @@
+ ## have "SystemRequirements: GNU make" in the DESCRIPTION file.
+ ## See Rhtslib's vignette for details.
+ 
+-RHTSLIB_LIBS=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e \
++RHTSLIB_LIBS=$(shell env -u R_HOME "${BUILD_PREFIX}/bin/Rscript" -e \
+     'Rhtslib::pkgconfig("PKG_LIBS")')
+-RHTSLIB_CPPFLAGS=$(shell "${R_HOME}/bin${R_ARCH_BIN}/Rscript" -e \
++RHTSLIB_CPPFLAGS=$(shell env -u R_HOME "${BUILD_PREFIX}/bin/Rscript" -e \
+     'Rhtslib::pkgconfig("PKG_CPPFLAGS")')
+ 
+ PKG_LIBS=$(RHTSLIB_LIBS)
+ PKG_CPPFLAGS=$(RHTSLIB_CPPFLAGS)
+ 
++$(info PKG_LIBS=$(PKG_LIBS))
++$(info PKG_CPPFLAGS=$(PKG_CPPFLAGS))
+-- 
+2.56.0
+

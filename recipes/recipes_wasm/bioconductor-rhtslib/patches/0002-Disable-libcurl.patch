@@ -1,0 +1,145 @@
+From 26a1c579c6bb65357a25daf17efb6f2e07822c5d Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 29 Oct 2026 18:56:28 +0100
+Subject: [PATCH 2/3] Disable libcurl
+
+---
+ R/zzz.R                              |  2 +-
+ src/Makevars                         |  2 +-
+ src/htslib-1.18/Makefile.Rhtslib     | 11 ++++-------
+ src/htslib-1.18/configure            |  2 +-
+ src/htslib-1.18/hfile.c              |  2 +-
+ src/htslib-1.18/hts.c                |  4 ++--
+ src/htslib-1.18/test/plugins-dlhts.c |  2 +-
+ 7 files changed, 11 insertions(+), 14 deletions(-)
+
+diff --git a/R/zzz.R b/R/zzz.R
+index f261178..c825339 100644
+--- a/R/zzz.R
++++ b/R/zzz.R
+@@ -34,7 +34,7 @@ pkgconfig <- function(opt=c("PKG_LIBS", "PKG_CPPFLAGS"))
+         } else {
+             ## See how PKG_LIBS is defined in Rhtslib/src/Makevars
+             ## and make sure to produce the same value here.
+-            libs <- "-lcurl -lbz2 -llzma -lz"
++            libs <- "-lbz2 -llzma -lz"
+         }
+         config <- paste(usrlib_path, libs)
+     } else {
+diff --git a/src/Makevars b/src/Makevars
+index 5eecc0e..414dca0 100644
+--- a/src/Makevars
++++ b/src/Makevars
+@@ -12,7 +12,7 @@ HTSLIB_MAKEFILE=Makefile.Rhtslib
+ ## https://github.com/Bioconductor/Rhtslib/pull/35 for an extended discussion.
+ ## Make sure the Rhtslib::pkgconfig() function (defined in R/zzz.R) produces
+ ## the same PKG_LIBS value.
+-PKG_LIBS+=-lcurl -lbz2 -llzma -lz
++PKG_LIBS+=-lbz2 -llzma -lz
+ 
+ ## Even though we should try to avoid using GNU 'make' extensions (for por-
+ ## tability), we use one here to detect the platform :-/ Is there a more
+diff --git a/src/htslib-1.18/Makefile.Rhtslib b/src/htslib-1.18/Makefile.Rhtslib
+index 06d2dd1..061bc11 100644
+--- a/src/htslib-1.18/Makefile.Rhtslib
++++ b/src/htslib-1.18/Makefile.Rhtslib
+@@ -38,7 +38,7 @@ CPPFLAGS := $(shell ${R_HOME}/bin/R CMD config CPPFLAGS)
+ LDFLAGS  := $(shell ${R_HOME}/bin/R CMD config LDFLAGS)
+ 
+ # Default libraries to link if configure is not used
+-htslib_default_libs = -lz -lm -lbz2 -llzma -lcurl
++htslib_default_libs = -lz -lm -lbz2 -llzma
+ 
+ CPPFLAGS += -D_FILE_OFFSET_BITS=64
+ # TODO: make the 64-bit support for VCF optional via configure, for now add -DVCF_ALLOW_INT64
+@@ -201,13 +201,13 @@ LIBHTS_OBJS = \
+ 	cram/open_trace_file.o \
+ 	cram/pooled_alloc.o \
+ 	cram/string_alloc.o \
+-	$(HTSCODECS_OBJS) \
+-	$(NONCONFIGURE_OBJS)
++	$(HTSCODECS_OBJS) 
++
+ 
+ # Without configure we wish to have a rich set of default figures,
+ # but we still need conditional inclusion as we wish to still
+ # support ./configure --disable-blah.
+-NONCONFIGURE_OBJS = hfile_libcurl.o
++
+ 
+ PLUGIN_EXT  =
+ PLUGIN_OBJS =
+@@ -417,9 +417,6 @@ kstring.o kstring.pico: kstring.c config.h $(htslib_kstring_h)
+ header.o header.pico: header.c config.h $(textutils_internal_h) $(header_h)
+ hfile.o hfile.pico: hfile.c config.h $(htslib_hfile_h) $(hfile_internal_h) $(htslib_kstring_h) $(hts_internal_h) $(htslib_khash_h)
+ hfile_gcs.o hfile_gcs.pico: hfile_gcs.c config.h $(htslib_hts_h) $(htslib_kstring_h) $(hfile_internal_h)
+-hfile_libcurl.o hfile_libcurl.pico: hfile_libcurl.c config.h $(hfile_internal_h) $(htslib_hts_h) $(htslib_kstring_h) $(htslib_khash_h)
+-hfile_s3_write.o hfile_s3_write.pico: hfile_s3_write.c config.h $(hfile_internal_h) $(htslib_hts_h) $(htslib_kstring_h) $(htslib_khash_h)
+-hfile_s3.o hfile_s3.pico: hfile_s3.c config.h $(hfile_internal_h) $(htslib_hts_h) $(htslib_kstring_h) $(hts_time_funcs_h)
+ hts.o hts.pico: hts.c config.h os/lzma_stub.h $(htslib_hts_h) $(htslib_bgzf_h) $(cram_h) $(htslib_hfile_h) $(htslib_hts_endian_h) version.h config_vars.h $(hts_internal_h) $(hfile_internal_h) $(sam_internal_h) $(htslib_hts_expr_h) $(htslib_hts_os_h) $(htslib_khash_h) $(htslib_kseq_h) $(htslib_ksort_h) $(htslib_tbx_h) $(htscodecs_htscodecs_h)
+ hts_expr.o hts_expr.pico: hts_expr.c config.h $(htslib_hts_expr_h) $(htslib_hts_log_h) $(textutils_internal_h)
+ hts_os.o hts_os.pico: hts_os.c config.h $(htslib_hts_defs_h) os/rand.c
+diff --git a/src/htslib-1.18/configure b/src/htslib-1.18/configure
+index ac63dee..04f667e 100755
+--- a/src/htslib-1.18/configure
++++ b/src/htslib-1.18/configure
+@@ -5764,7 +5764,7 @@ fi
+ fi
+ 
+ libcurl=disabled
+-if test "$enable_libcurl" != no; then
++if false; then
+   libcurl_devel=ok
+   ac_fn_c_check_header_compile "$LINENO" "curl/curl.h" "ac_cv_header_curl_curl_h" ";
+ "
+diff --git a/src/htslib-1.18/hfile.c b/src/htslib-1.18/hfile.c
+index f8d42e4..dadf1b4 100644
+--- a/src/htslib-1.18/hfile.c
++++ b/src/htslib-1.18/hfile.c
+@@ -1090,7 +1090,7 @@ static int load_hfile_plugins()
+     }
+ #else
+ 
+-#ifdef HAVE_LIBCURL
++#ifdef WE_NEVER_HAVE_LIBCURL
+     init_add_plugin(NULL, hfile_plugin_init_libcurl, "libcurl");
+ #endif
+ #ifdef ENABLE_GCS
+diff --git a/src/htslib-1.18/hts.c b/src/htslib-1.18/hts.c
+index 7cbcbaa..0681585 100644
+--- a/src/htslib-1.18/hts.c
++++ b/src/htslib-1.18/hts.c
+@@ -97,7 +97,7 @@ unsigned int hts_features(void) {
+     feat |= HTS_FEATURE_PLUGINS;
+ #endif
+ 
+-#ifdef HAVE_LIBCURL
++#ifdef WE_NEVER_HAVE_LIBCURL
+     feat |= HTS_FEATURE_LIBCURL;
+ #endif
+ 
+@@ -176,7 +176,7 @@ const char *hts_feature_string(void) {
+     "build=Makefile "
+ #endif
+ 
+-#ifdef HAVE_LIBCURL
++#ifdef WE_NEVER_HAVE_LIBCURL
+     "libcurl=yes "
+ #else
+     "libcurl=no "
+diff --git a/src/htslib-1.18/test/plugins-dlhts.c b/src/htslib-1.18/test/plugins-dlhts.c
+index f90e3bd..75eaa5a 100644
+--- a/src/htslib-1.18/test/plugins-dlhts.c
++++ b/src/htslib-1.18/test/plugins-dlhts.c
+@@ -142,7 +142,7 @@ int main(int argc, char **argv)
+ #endif
+ 
+     if (! skip) {
+-#ifdef HAVE_LIBCURL
++#ifdef WE_NEVER_HAVE_LIBCURL
+         test_hopen("https://localhost:99999/invalid_port", 1);
+ #endif
+ #ifdef ENABLE_GCS
+-- 
+2.56.0
+
