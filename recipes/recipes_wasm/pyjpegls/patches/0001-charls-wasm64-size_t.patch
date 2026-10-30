@@ -1,0 +1,18 @@
+--- a/lib/charls/src/util.h
++++ b/lib/charls/src/util.h
+@@ -351,8 +351,15 @@
+ template<>
+ inline size_t read_big_endian_unaligned<size_t>(const void* buffer) noexcept
+ {
++#if SIZE_MAX > UINT32_MAX
++    // wasm64: read two big endian 32 bit halves
++    const uint8_t* p{static_cast<const uint8_t*>(buffer)};
++    return (static_cast<size_t>(read_big_endian_unaligned<uint32_t>(p)) << 32U) +
++           static_cast<size_t>(read_big_endian_unaligned<uint32_t>(p + 4));
++#else
+     static_assert(sizeof(size_t) == sizeof(uint32_t), "wasm32 only");
+     return read_big_endian_unaligned<uint32_t>(buffer);
++#endif
+ }
+ 
+ #else

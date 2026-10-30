@@ -1,0 +1,64 @@
+context:
+  name: linbox
+  version: 1.7.1
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/linbox-team/linbox/releases/download/v${{ version }}/linbox-${{ version }}.tar.gz
+  sha256: a2b5f910a54a46fa75b03f38ad603cae1afa973c95455813d85cf72c27553bd8
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - ${{ compiler("c") }}
+  - ${{ compiler('cxx') }}
+  - pkg-config
+  - autoconf-archive
+  host:
+  - gmp-static
+  - givaro-static
+  - fflas-ffpack
+  - openblas
+  - ntl-static
+  - libflint-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('givaro-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('fflas-ffpack', lower_bound='x.x', upper_bound='x.x') }}
+  - openblas
+  - ${{ pin_compatible('ntl-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libflint-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    lib:
+    - liblinbox.a
+    include:
+    - linbox/linbox-config.h
+    files:
+    - lib/pkgconfig/linbox.pc
+    - bin/linbox-config
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://linbox-team.github.io/linbox
+  repository: https://github.com/linbox-team/linbox
+  license: LGPL-2.1-only AND GPL-2.0-only
+  license_file: COPYING
+  summary: The Linbox library provides functionalities for exact linear algebra.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

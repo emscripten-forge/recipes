@@ -1,0 +1,63 @@
+context:
+  name: fplll
+  version: 5.5.0
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/fplll/fplll/releases/download/${{ version }}/fplll-${{ version }}.tar.gz
+  sha256: f0af6bdd0ebd5871e87ff3ef7737cb5360b1e38181a4e5a8c1236f3476fec3b2
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - autoconf
+  - automake
+  - libtool
+  - make
+  - pkg-config
+  - autoconf-archive
+  - ${{ compiler('cxx') }}
+  host:
+  - gmp-static
+  - mpfr-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/libfplll.a
+    - include/fplll.h
+- script:
+  - em++ test_fplll.cpp -o test_fplll.js -I${PREFIX}/include -L${PREFIX}/lib -lfplll -lmpfr -lgmp
+  - node test_fplll.js
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - nodejs
+  files:
+    recipe:
+    - test_fplll.cpp
+# fplll's thread pool (parallel enumeration) uses std::thread, so libfplll.a
+# references pthread_create. The pool starts with 0 workers and only grows on
+# set_threads(n > 1); nothing is compiled with -pthread.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/fplll/fplll
+  license: LGPL-2.1-only
+  license_file: COPYING
+  summary: Lattice algorithms using floating-point arithmetic
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

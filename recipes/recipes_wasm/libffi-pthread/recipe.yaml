@@ -1,0 +1,69 @@
+context:
+  name: libffi-pthread
+  version: 3.5.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/libffi/libffi/releases/download/v${{ version }}/libffi-${{ version }}.tar.gz
+  sha256: f99eb68a67c7d54866b7706af245e87ba060d419a062474b456d3bc8d4abdbd1
+  patches:
+      # 64-bit values are read and written through a DataView: OpenJDK Zero
+      # passes jlong/jdouble arguments that are only 4-byte aligned
+  - patches/libffi-wasm32-unaligned-64bit.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - make
+
+tests:
+- package_contents:
+    files:
+    - include/libffi-pthread/ffi.h
+    - include/libffi-pthread/ffitarget.h
+    - lib/libffi-pthread/libffi.a
+    - lib/pkgconfig/libffi-pthread.pc
+    - share/licenses/libffi-pthread/LICENSE
+  # links into a shared-memory (-pthread) program through the pkg-config file
+  # and calls with unaligned 64-bit values, on the main thread and a pthread
+- script:
+  - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+  - emcc -O2 -DTEST_PTHREAD $(pkg-config --cflags libffi-pthread) test_ffi.c $(pkg-config --libs libffi-pthread) 
+    -sWASM_BIGINT -sPTHREAD_POOL_SIZE=1 -sEXIT_RUNTIME=1 -o test_ffi.js
+  - node test_ffi.js
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - pkg-config
+  files:
+    recipe:
+    - test_ffi.c
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://sourceware.org/libffi/
+  repository: https://github.com/libffi/libffi
+  license: MIT
+  license_file: LICENSE
+  summary: libffi for emscripten-wasm32 programs built with pthreads (shared memory)
+  description: |
+    libffi built with -pthread (atomics and bulk memory), for shared-memory
+    (pthreads) WebAssembly programs. 64-bit arguments and results may be only
+    4-byte aligned, as a 32-bit C ABI allows.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: false

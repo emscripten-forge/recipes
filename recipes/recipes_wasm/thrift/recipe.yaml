@@ -1,0 +1,137 @@
+context:
+  version: 0.23.0
+  name: thrift
+
+source:
+  url: https://github.com/apache/thrift/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 087ba9517063c8252e9e7fb4e3891a9fd85e20af80e0309e2276eff16791d75c
+  patches:
+  # build only the serialization part of libthrift (no concurrency /
+  # server / socket code, so no threads) on emscripten
+  - patches/0001-emscripten-serialization-only-libthrift.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: thrift-cpp-build
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - boost-headers
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+- package:
+    name: thrift-cpp-static
+    version: ${{ version }}
+  inherit: thrift-cpp-build
+  build:
+    files:
+      include:
+      - lib/libthrift.a
+      - lib/cmake/thrift/**
+      - lib/cmake/thrift-emscripten/**
+      - lib/pkgconfig/thrift.pc
+      - include/thrift/**
+  requirements:
+    host:
+    - boost-headers
+    run:
+    # thrift's public headers include boost
+    - boost-headers
+  tests:
+  - package_contents:
+      lib:
+      - libthrift.a
+      include:
+      - thrift/Thrift.h
+      - thrift/protocol/TBinaryProtocol.h
+      - thrift/protocol/TCompactProtocol.h
+      - thrift/transport/TBufferTransports.h
+  - script:
+    - bash build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - make
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/thrift-cpp/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: thrift
+    version: ${{ version }}
+  build:
+    script: build_python.sh
+    files:
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - python
+    - cross-python_${{ target_platform }}
+    - pip
+    - setuptools
+    host:
+    - python-dev
+    run:
+    - python
+    - six
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_thrift.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  homepage: https://thrift.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Apache Thrift - A scalable cross-language services development framework
+  description: |
+    Apache Thrift is a software framework for scalable cross-language services development.
+    It combines a software stack with a code generation engine to build services that work
+    efficiently and seamlessly between C++, Java, Python, PHP, Ruby, Erlang, Perl, Haskell,
+    C#, Cocoa, JavaScript, Node.js, Smalltalk, OCaml and Delphi and other languages.
+    On emscripten the C++ library only contains the serialization part (protocols and
+    in-memory / file transports), no servers, sockets or threads.
+  documentation: https://thrift.apache.org/docs/
+  repository: https://github.com/apache/thrift
+  license_family: Apache
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

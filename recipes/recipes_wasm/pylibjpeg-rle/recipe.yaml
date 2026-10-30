@@ -1,0 +1,64 @@
+context:
+  name: pylibjpeg-rle
+  version: 2.2.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pylibjpeg_rle-${{ version }}.tar.gz
+  sha256: 1a37353afbdd6f67aa3c2007879fff8ca30a98552cab7ed7f2aa00725ea4bb27
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyi'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/tests/**'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - rust-nightly
+  - maturin >=1.0,<2.0
+  - ${{ compiler('c') }}
+  host:
+  - python-dev
+  run:
+  - python
+  - numpy >=2.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pylibjpeg_rle.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/pydicom/pylibjpeg-rle
+  repository: https://github.com/pydicom/pylibjpeg-rle
+  license: MIT
+  license_file: LICENSE
+  summary: Fast DICOM RLE decoding/encoding plugin for pylibjpeg (Rust)
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

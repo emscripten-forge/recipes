@@ -30,3 +30,17 @@ test -s /tmp/smoke.wasm
 rustc --crate-type=cdylib -O "${SMOKE_SRC}" \
     --target wasm32-unknown-emscripten -Cpanic=abort -o /tmp/smoke32.wasm
 test -s /tmp/smoke32.wasm
+
+# std's libc must agree with emscripten's C headers: link Rust and C code
+# that both call poll() (nfds_t is 32-bit on wasm64 since emscripten 6.0.1)
+emcc -c tests/poll_user.c -sMEMORY64=1 -o /tmp/poll_user64.o
+rustc --crate-type=cdylib -O tests/poll_abi.rs \
+    --target wasm64-unknown-emscripten -Cpanic=abort \
+    -C link-arg=/tmp/poll_user64.o -o /tmp/poll_abi64.wasm
+test -s /tmp/poll_abi64.wasm
+
+emcc -c tests/poll_user.c -o /tmp/poll_user32.o
+rustc --crate-type=cdylib -O tests/poll_abi.rs \
+    --target wasm32-unknown-emscripten -Cpanic=abort \
+    -C link-arg=/tmp/poll_user32.o -o /tmp/poll_abi32.wasm
+test -s /tmp/poll_abi32.wasm

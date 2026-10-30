@@ -1,0 +1,60 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -289,7 +289,9 @@
+ configure_file(${PROJECT_SOURCE_DIR}/soplex-config.cmake.in "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/soplex-config.cmake" @ONLY)
+ 
+ add_subdirectory(src)
++if(NOT EMSCRIPTEN)
+ add_subdirectory(tests/c_interface)
++endif()
+ add_subdirectory(check)
+ 
+ enable_testing()
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -167,6 +167,7 @@
+ target_link_libraries(libsoplex ${libs})
+ set_property(TARGET libsoplex PROPERTY INTERPROCEDURAL_OPTIMIZATION ${LTO_AVAILABLE})
+ 
++if(NOT EMSCRIPTEN)
+ # create C shared library
+ add_library(libsoplexshared SHARED ${sources})
+ if(MSVC)
+@@ -191,6 +192,8 @@
+ set_target_properties(libsoplexshared PROPERTIES CXX_VISIBILITY_PRESET default)
+ # TODO: enable Windows LTO
+ set_property(TARGET libsoplexshared PROPERTY INTERPROCEDURAL_OPTIMIZATION NOT MSVC AND ${LTO_AVAILABLE})
++set(soplex_shared_target libsoplexshared)
++endif()
+ 
+ # create soplex binary using library without pic
+ add_executable(soplex soplexmain.cpp)
+@@ -205,7 +208,9 @@
+     find_package(Sanitizers)
+     add_sanitizers(libsoplex)
+     add_sanitizers(libsoplex-pic)
+-    add_sanitizers(libsoplexshared)
++    if(soplex_shared_target)
++        add_sanitizers(libsoplexshared)
++    endif()
+     add_sanitizers(soplex)
+     get_target_property(CONF_SANITIZE_FLAGS libsoplex SANITIZE_FLAGS)
+ endif(SANITIZE)
+@@ -246,7 +251,7 @@
+ install(FILES ${PROJECT_SOURCE_DIR}/src/soplex/external/zstr/License.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/soplex/zstr)
+ 
+ # install the binary and the library to appropriate lcoations and add them to an export group
+-install(TARGETS soplex libsoplex libsoplex-pic libsoplexshared EXPORT soplex-targets
++install(TARGETS soplex libsoplex libsoplex-pic ${soplex_shared_target} EXPORT soplex-targets
+     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+@@ -263,7 +268,7 @@
+ endif()
+ 
+ # Add library targets to the build-tree export set
+-export(TARGETS libsoplex libsoplex-pic libsoplexshared
++export(TARGETS libsoplex libsoplex-pic ${soplex_shared_target}
+   FILE "${CMAKE_BINARY_DIR}/soplex-targets.cmake")
+ 
+ #configure the config file for the build tree
