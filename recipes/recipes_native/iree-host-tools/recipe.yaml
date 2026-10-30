@@ -1,0 +1,95 @@
+context:
+  version: '20261030'
+  revision: 526e041fa2b59352b9641526b8cc1a4083666c2e
+  llvm_version: 23.1.2
+
+package:
+  name: iree-host-tools
+  version: ${{ version }}
+
+source:
+- git: https://github.com/anutosh491/iree.git
+  rev: ${{ revision }}
+  depth: 1
+  submodules: false
+- git: https://github.com/anutosh491/stablehlo.git
+  rev: 26cf850fe6f4a6e63545289ae141b4dd1fc8ca22
+  depth: 1
+  submodules: false
+  target_directory: third_party/stablehlo
+- git: https://github.com/dvidelabs/flatcc.git
+  rev: 9362cd00f0007d8cbee7bff86e90fb4b6b227ff3
+  depth: 1
+  submodules: false
+  target_directory: third_party/flatcc
+
+build:
+  number: 0
+  skip: win
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake
+  - make
+  - python
+  host:
+  - llvmdev ==${{ llvm_version }}
+  - mlir ==${{ llvm_version }}
+  - clangdev ==${{ llvm_version }}
+  - lld ==${{ llvm_version }}
+  - zlib
+  - zstd
+  run:
+  - libllvm23 ==${{ llvm_version }}
+
+tests:
+- package_contents:
+    files:
+      exists:
+      - bin/iree-tblgen
+      - bin/iree-flatcc-cli
+      - bin/mlir_builder_tblgen
+      - bin/iree-c-embed-data
+      not_exists:
+      - lib/**
+      - include/**
+- script: |
+    set -eux
+    printf 'def Smoke;\n' > smoke.td
+    iree-tblgen --print-records smoke.td -o records.txt
+    grep -q 'def Smoke' records.txt
+
+    printf 'namespace smoke; table Item { value:int; } root_type Item;\n' > smoke.fbs
+    iree-flatcc-cli -a smoke.fbs
+    grep -q 'smoke_Item' smoke_reader.h
+
+    mlir_builder_tblgen --gen-builder-decls \
+      -I "${PREFIX}/include" \
+      "${PREFIX}/include/mlir/Dialect/Func/IR/FuncOps.td" -o builders.h.inc
+    grep -q 'void Return(' builders.h.inc
+
+    printf 'hello' > input.bin
+    iree-c-embed-data --identifier=smoke \
+      --output_header=smoke.h --output_impl=smoke.c input.bin
+    grep -q 'smoke_create' smoke.h
+    grep -q 'input.bin' smoke.c
+  requirements:
+    run:
+    - mlir ==${{ llvm_version }}
+
+about:
+  homepage: https://iree.dev
+  repository: https://github.com/iree-org/iree
+  license: Apache-2.0 WITH LLVM-exception AND Apache-2.0
+  license_file:
+  - LICENSE
+  - third_party/stablehlo/LICENSE
+  - third_party/flatcc/LICENSE
+  summary: Native code generators for cross-compiling IREE with LLVM/MLIR 23.1.2
+
+extra:
+  recipe-maintainers:
+  - anutosh491
