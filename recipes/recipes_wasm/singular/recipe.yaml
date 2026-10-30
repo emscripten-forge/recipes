@@ -43,8 +43,40 @@ outputs:
 
 #==============================================================================#
 
-# the Singular program (node / browser, JSPI) with its libraries (LIB) and the
-# manual, plus the web frontend in bin/singular
+# Singular's libraries (share/singular/LIB) and the manual for `help`, read at
+# runtime by the Singular program and by everything linking libSingular
+- package:
+    name: singular-data
+    version: ${{ version }}
+  inherit: singular-build
+  build:
+    files:
+      include:
+      - share/**
+  requirements:
+    ignore_run_exports:
+      by_name:
+      - gmp-static
+      - ntl-static
+      - libflint-static
+      - mpfr-static
+      - cddlib-static
+      - normaliz-static
+      - memtailor-static
+      - mathic-static
+      - mathicgb
+  tests:
+  # plain data files, no generic-testing
+  - package_contents:
+      files:
+      - share/info/singular.info
+      - share/singular/singular.idx
+      - share/singular/LIB/standard.lib
+
+#==============================================================================#
+
+# the Singular program (node / browser, JSPI) plus the web frontend in
+# bin/singular
 - package:
     name: singular
     version: ${{ version }}
@@ -53,9 +85,10 @@ outputs:
     files:
       include:
       - bin/**
-      - share/**
       - libexec/**
   requirements:
+    run:
+    - ${{ pin_subpackage('singular-data', exact=True) }}
     ignore_run_exports:
       by_name:
       - gmp-static
@@ -74,9 +107,6 @@ outputs:
       - bin/Singular.wasm
       - bin/Singular.data
       - bin/Singular.data.js
-      - share/info/singular.info
-      - share/singular/singular.idx
-      - share/singular/LIB/standard.lib
   - script: bash test_singular.sh
     requirements:
       build:
@@ -120,6 +150,10 @@ outputs:
     - ${{ pin_compatible('cddlib-static', lower_bound='x.x', upper_bound='x.x') }}
     - ${{ pin_compatible('normaliz-static', lower_bound='x.x', upper_bound='x.x') }}
     - mathicgb
+    # libSingular loads standard.lib & co. at runtime: every package linking
+    # it needs the LIB files in its runtime environment
+    run_exports:
+    - ${{ pin_subpackage('singular-data', exact=True) }}
   tests:
   - package_contents:
       files:
