@@ -2,12 +2,12 @@ context:
   version: 10.8.13
 
 package:
-  name: passagemath-eclib
+  name: passagemath-sympow
   version: ${{ version }}
 
 source:
-- url: https://pypi.org/packages/source/p/passagemath-eclib/passagemath_eclib-${{ version }}.tar.gz
-  sha256: ac6dd01203c7f76847881d13289edb1beaa0f5d272c67f6a7d6025efdf409bad
+- url: https://pypi.org/packages/source/p/passagemath-sympow/passagemath_sympow-${{ version }}.tar.gz
+  sha256: 435f52b5a6ab41fb38ab8909017fbe5b83264df9fb7bdd7a659ccc120c6a2217
 
 build:
   script: ${{ PYTHON }} -m pip install .
@@ -17,7 +17,7 @@ requirements:
   build:
   - python
   - crossenv >=1.2
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - ${{ compiler("c") }}
   - ${{ compiler("cxx") }}
   - pip
@@ -26,58 +26,47 @@ requirements:
   - cython<3.3
   - cysignals
   - pkgconfig
-  - numpy
   - passagemath-abi == ${{ version }}
   host:
-  - python
-  - numpy
-  - eclib
-  - fflas-ffpack
-  - givaro-static
-  - gmp-static
-  - libflint-static
-  - linbox
-  - mpfr
-  - ntl-static
-  - pari
+  - python-dev
+  - sympow
   - passagemath-categories
-  - passagemath-flint
-  - passagemath-linbox
-  - passagemath-modules
-  - passagemath-ntl
   run:
   - python
   - cysignals
+  - sympow
   - passagemath-categories
   - passagemath-linbox
   - passagemath-modules
-  - passagemath-ntl
 
 tests:
 - script: pytester
   files:
     recipe:
-    - test_passagemath_eclib.py
+    - test_passagemath_sympow.py
   requirements:
     build:
     - pytester
     run:
     - pytester-run
     - passagemath-repl
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: GPL-2.0-or-later
   license_file: README.rst
-  summary: 'passagemath: Elliptic curves over the rationals with eclib/mwrank'
+  summary: 'passagemath: Special values of symmetric power elliptic curve L-functions with sympow'
   description: |
     Distribution of a part of the Sage library.
-    It provides the Cython interface to John Cremona's programs for enumerating
-    and computing with elliptic curves defined over the rational numbers.
+    It provides an interface to sympow.
 
 extra:
   emscripten_tests:
     python:
       pytest_files:
-      - test_passagemath_eclib.py
+      - test_passagemath_sympow.py
   recipe-maintainers:
   - mkoeppe
