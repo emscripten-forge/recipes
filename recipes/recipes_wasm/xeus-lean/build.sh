@@ -32,20 +32,17 @@ LEAN_TOOLCHAIN_DIR=${SRC_DIR}/_lean
 # The lean toolchain ships its own clang, so keep it off PATH for the emscripten build.
 PATH=${LEAN_TOOLCHAIN_DIR}/bin:${PATH} lake build REPL CommBus Display WasmRepl
 
-# gmp (for mini-gmp) is still fetched by FetchContent (pinned via URL_HASH)
 emcmake cmake -S . -B wasm-build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
     -DCMAKE_PREFIX_PATH=${PREFIX} \
+    -DCMAKE_FIND_ROOT_PATH=${PREFIX} \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
-    -DCMAKE_MODULE_PATH=${SRC_DIR}/_deps/xeus/cmake \
     -DPython3_EXECUTABLE=${BUILD_PREFIX}/bin/python \
     -DLEAN_TOOLCHAIN_DIR=${LEAN_TOOLCHAIN_DIR} \
     -DLEAN4_VERSION=v${LEAN_VERSION} \
-    -DFETCHCONTENT_SOURCE_DIR_LEAN4=${SRC_DIR}/_deps/lean4 \
-    -DFETCHCONTENT_SOURCE_DIR_XEUS=${SRC_DIR}/_deps/xeus \
-    -DFETCHCONTENT_SOURCE_DIR_XEUS-LITE=${SRC_DIR}/_deps/xeus-lite \
-    -DFETCHCONTENT_SOURCE_DIR_XTL=${SRC_DIR}/_deps/xtl
+    -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
+    -DFETCHCONTENT_SOURCE_DIR_LEAN4=${SRC_DIR}/_deps/lean4
 
 emmake make -C wasm-build -j${CPU_COUNT} xlean test_wasm_node
 
