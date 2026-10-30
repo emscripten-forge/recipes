@@ -1,7 +1,6 @@
 context:
-  name : Rhtslib
-  version: 3.6.0
-  bioc: 3.22
+  name: Rhtslib
+  version: 3.8.0
 
 package:
   name: bioconductor-${{ name | lower }}
@@ -9,15 +8,18 @@ package:
 
 source:
   url:
-    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
-    - https://bioconductor.org/packages/${{ bioc }}/bioc/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
-    - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
-    - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
-  sha256: 8b5fc0dfba39efb7371b5b0f930445047c7e06238d07c2293a50317612da6692
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: e89153bbac580adc2e988a095ce39c26e28cdf23b9a337988d18f66bc3b1eded
+  patches:
+  - patches/0001-Disable-threads.patch
+  - patches/0002-Disable-libcurl.patch
+  - patches/0003-Disable-soversions.patch
 
 build:
-  number: 1
-
+  number: 0
+  script: $R CMD INSTALL $R_ARGS  .
 
 requirements:
   build:
@@ -25,30 +27,36 @@ requirements:
   - ${{ compiler('c') }}
   host:
   - r-base ==${{ r_base }}
-  - zlib-static
+  - libzlib-static
   - libbzip2-static
   - liblzma-static
-
 
 tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test 
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing --allow-pthread
   files:
     recipe:
-    - test_import.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
+
 about:
-  repository: https://git.bioconductor.org/packages/Rhtslib
+  homepage: https://bioconductor.org/packages/${{ name }}
+  repository: https://github.com/Bioconductor/${{ name }}
   license: LGPL-2.0-or-later
-  license_file: LICENSE
-  summary: Provides memory efficient S4 classes for storing sequences "externally" (e.g. behind an R external pointer, or on disk).
-
-
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/LGPL-2
+  summary: |
+    Provides memory efficient S4 classes for storing sequences "externally"
+    (e.g. behind an R external pointer, or on disk).
 
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes

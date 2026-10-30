@@ -1,0 +1,38 @@
+From 50ec68df5d3fc5296b0a643409a70dcae1e10e4c Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 29 Oct 2026 19:22:43 +0100
+Subject: [PATCH 3/3] Disable soversions
+
+---
+ src/Makevars                     | 1 -
+ src/htslib-1.18/Makefile.Rhtslib | 3 +--
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/src/Makevars b/src/Makevars
+index 414dca0..320d510 100644
+--- a/src/Makevars
++++ b/src/Makevars
+@@ -28,6 +28,5 @@ else
+ 
+ populate-usrlib-dir: htslib mk-usrlib-dir
+ 	cd "${HTSLIB_SOURCE_DIR}" && cp libhts.so libhts.a "${USRLIB_DIR}"
+-	cd "${USRLIB_DIR}" && ln -s libhts.so libhts.so.2
+ 
+ endif
+diff --git a/src/htslib-1.18/Makefile.Rhtslib b/src/htslib-1.18/Makefile.Rhtslib
+index 061bc11..31510c3 100644
+--- a/src/htslib-1.18/Makefile.Rhtslib
++++ b/src/htslib-1.18/Makefile.Rhtslib
+@@ -333,8 +333,7 @@ print-config:
+ # file used at runtime (when $LD_LIBRARY_PATH includes the build directory).
+ 
+ libhts.so: $(LIBHTS_OBJS:.o=.pico)
+-	$(CC) -shared -Wl,-soname,libhts.so.$(LIBHTS_SOVERSION) $(VERSION_SCRIPT_LDFLAGS) $(LDFLAGS) -o $@ $(LIBHTS_OBJS:.o=.pico) $(LIBS) 
+-	ln -sf $@ libhts.so.$(LIBHTS_SOVERSION)
++	$(CC) -shared $(VERSION_SCRIPT_LDFLAGS) $(LDFLAGS) -o $@ $(LIBHTS_OBJS:.o=.pico) $(LIBS)
+ 
+ # Similarly this also creates libhts.NN.dylib as a byproduct, so that programs
+ # when run can find this uninstalled shared library (when $DYLD_LIBRARY_PATH
+-- 
+2.56.0
+
