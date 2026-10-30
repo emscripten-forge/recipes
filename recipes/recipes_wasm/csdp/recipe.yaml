@@ -1,0 +1,102 @@
+context:
+  name: csdp
+  version: 6.2.0
+
+source:
+  url: https://github.com/coin-or/Csdp/archive/refs/tags/releases/${{ version }}.tar.gz
+  sha256: 3d341974af1f8ed70e1a37cc896e7ae4a513375875e5b46db8e8f38b7680b32f
+  patches:
+  # prototypes with the hidden Fortran string length arguments for the BLAS /
+  # LAPACK routines (the flang-built openblas expects them)
+  - patches/0001-hidden-string-length-prototypes.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: csdp-build
+  requirements:
+    build:
+    - make
+    - ${{ compiler("c") }}
+    host:
+    - openblas-dev
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# libsdp.a + headers
+- package:
+    name: libcsdp-static
+    version: ${{ version }}
+  inherit: csdp-build
+  build:
+    files:
+      include:
+      - lib/libsdp.a
+      - include/**
+  requirements:
+    host:
+    # libsdp.a calls BLAS/LAPACK: openblas-dev's run_exports add openblas
+    - openblas-dev
+  tests:
+  - package_contents:
+      files:
+      - lib/libsdp.a
+      - include/index.h
+      - include/declarations.h
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# the csdp solver and the theta programs
+- package:
+    name: csdp
+    version: ${{ version }}
+  inherit: csdp-build
+  build:
+    files:
+      include:
+      - bin/**
+  requirements:
+    host:
+    - openblas-dev
+  tests:
+  - package_contents:
+      files:
+      - bin/csdp
+      - bin/csdp.wasm
+      - bin/theta
+      - bin/theta.wasm
+  # the program loads (incl. libopenblas.so) and prints its usage; under node,
+  # emscripten looks for the shared openblas next to the program's .js file
+  - script:
+    - mkdir -p run
+    - cp ${PREFIX}/bin/csdp ${PREFIX}/bin/csdp.wasm ${PREFIX}/lib/libopenblas.so run/
+    - (node run/csdp || true) > usage.txt 2>&1
+    - cat usage.txt
+    - grep -i "usage" usage.txt
+    requirements:
+      build:
+      - nodejs
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+about:
+  homepage: https://github.com/coin-or/Csdp/wiki
+  license: CPL-1.0
+  license_file: LICENSE
+  summary: CSDP is a solver for semidefinite programming problems.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
