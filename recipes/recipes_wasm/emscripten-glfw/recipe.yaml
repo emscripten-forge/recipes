@@ -1,0 +1,120 @@
+context:
+  name: emscripten-glfw
+  version: 3.5.1.20261028
+
+source:
+  url: https://github.com/pongasoft/emscripten-glfw/releases/download/v${{ version }}/emscripten-glfw3-${{ version }}.zip
+  sha256: 4dd42a51fc7c55fd92149218e8663f26c9c5e78c0921cf4ff5f915208e2d1b0c
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: glfw-static-build
+  build:
+    script:
+      env:
+        GLFW_BUILD_SHARED: "OFF"
+        GLFW_VERSION: ${{ version }}
+      file: build.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+
+- staging:
+    name: glfw-shared-build
+  build:
+    script:
+      env:
+        GLFW_BUILD_SHARED: "ON"
+        GLFW_VERSION: ${{ version }}
+      file: build.sh
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+
+- package:
+    name: ${{ name }}-static
+    version: ${{ version }}
+  inherit: glfw-static-build
+  tests:
+  - package_contents:
+      include:
+      - GLFW/glfw3.h
+      - GLFW/glfw3native.h
+      - GLFW/emscripten_glfw3.h
+      - GLFW/emscripten_glfw3_version.h
+      files:
+      - lib/libglfw3.a
+      - lib/cmake/glfw3/glfw3Config.cmake
+      - lib/cmake/glfw3/glfw3ConfigVersion.cmake
+      - lib/pkgconfig/glfw3.pc
+      - share/glfw/glfw3.js
+  - script: test_cmake.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - ninja
+    files:
+      recipe:
+      - test_cmake.sh
+      - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  inherit: glfw-shared-build
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage(name, upper_bound="x.x") }}
+  tests:
+  - package_contents:
+      include:
+      - GLFW/glfw3.h
+      - GLFW/glfw3native.h
+      - GLFW/emscripten_glfw3.h
+      - GLFW/emscripten_glfw3_version.h
+      files:
+      - lib/libglfw3.so
+      - lib/cmake/glfw3/glfw3Config.cmake
+      - lib/cmake/glfw3/glfw3ConfigVersion.cmake
+      - lib/pkgconfig/glfw3.pc
+      - share/glfw/glfw3.js
+  - script: test_cmake.sh
+    requirements:
+      build:
+      - ${{ compiler("cxx") }}
+      - cmake
+      - ninja
+    files:
+      recipe:
+      - test_cmake.sh
+      - tests/
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  homepage: https://www.glfw.org/
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: A multi-platform library for OpenGL, window and input (Emscripten port)
+  description: |
+    GLFW is an Open Source, multi-platform library for OpenGL, OpenGL ES and
+    Vulkan development on the desktop. This package provides the official
+    Emscripten port maintained at pongasoft/emscripten-glfw, implementing the
+    GLFW API on top of the browser DOM for emscripten-wasm32 and
+    emscripten-wasm64.
+  documentation: https://www.glfw.org/documentation.html
+  repository: https://github.com/pongasoft/emscripten-glfw
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET
