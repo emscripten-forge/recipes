@@ -119,6 +119,11 @@ ranlib='emranlib'
 
 lns='/bin/ln'
 
+# Makefile.SH ends with `rm -f $firstmakefile`; with the default 'makefile'
+# that deletes the just written Makefile on case-insensitive file systems
+# (macOS), so do what hints/darwin.sh does
+firstmakefile='GNUmakefile'
+
 ###############################################################################
 # Do not search host libraries.
 #
@@ -158,11 +163,9 @@ uselargefiles='n'
 usenm='false'
 
 ###############################################################################
-# WASM32
+# Pointer size dependent values (selectminbits, alignbytes) are appended for
+# the target platform by build.sh, below this file.
 ###############################################################################
-
-selectminbits='32'
-alignbytes='4'
 
 ###############################################################################
 # Dynamic loading is unavailable in the browser runtime.
@@ -243,6 +246,12 @@ ldflags="$ldflags -O2"
 
 libs="$libs -lm"
 EOF
+
+if [ "${target_platform}" == "emscripten-wasm64" ]; then
+    printf "selectminbits='64'\nalignbytes='8'\n" >> hints/emscripten.sh
+else
+    printf "selectminbits='32'\nalignbytes='4'\n" >> hints/emscripten.sh
+fi
 
 chmod 644 hints/emscripten.sh
 
@@ -412,7 +421,8 @@ PARSERS
 
 # Licenses
 
-LICENSE_DIR="${PREFIX}/share/licenses/${PKG_NAME}"
+# (PKG_NAME is empty in the staging output that runs this script)
+LICENSE_DIR="${PREFIX}/share/licenses/perl"
 
 mkdir -p "${LICENSE_DIR}"
 

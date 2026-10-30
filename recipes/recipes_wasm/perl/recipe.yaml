@@ -5,10 +5,6 @@ context:
   # dependent library directory after
   series: "5.44"
 
-package:
-  name: ${{ name }}
-  version: ${{ version }}
-
 source:
   - url: https://www.cpan.org/src/5.0/perl-${{ version }}.tar.gz
     sha256: 3b855066b92491cb40e86affb1ca57d1a388aa43e51b91c7806a32c2f65f96c3
@@ -80,11 +76,13 @@ source:
     target_directory: cpan-dists/Moo
 
 build:
-  number: 1
-  script: build.sh
+  number: 0
 
-requirements:
-  build:
+outputs:
+- staging:
+    name: perl-build
+  requirements:
+    build:
     - autoconf
     - automake
     - libtool
@@ -98,38 +96,114 @@ requirements:
     - ${{ compiler("c") }}
     - ${{ compiler('cxx') }}
     - nodejs
+  build:
+    script:
+      env:
+        # PKG_VERSION is empty in a staging output, so pass the version explicitly
+        PKG_VERSION: ${{ version }}
+      file: build.sh
 
-tests:
-- package_contents:
+#==============================================================================#
+
+# the perl modules (core_perl, site_perl with the bundled pure-perl CPAN
+# distributions, Config.pm & co.), read at runtime by the perl program and by
+# everything embedding libperl
+- package:
+    name: perl-data
+    version: ${{ version }}
+  inherit: perl-build
+  build:
     files:
-    - bin/perl.wasm
-    - bin/perl
-    # what an embedder links against: the interpreter itself, plus the core
-    # extensions, which a perl without dynamic loading keeps as separate archives
-    # rather than inside libperl.a
-    - lib/perl5/${{ series }}/core_perl/CORE/libperl.a
-    - lib/perl5/${{ series }}/core_perl/CORE/perl.h
-    - lib/perl5/${{ series }}/core_perl/auto/POSIX/POSIX.a
-    - lib/perl5/${{ series }}/core_perl/auto/List/Util/Util.a
-    # pure-perl distributions
-    - lib/perl5/site_perl/JSON.pm
-    - lib/perl5/site_perl/XML/SAX.pm
-    - lib/perl5/site_perl/XML/SAX/Base.pm
-    - lib/perl5/site_perl/XML/SAX/PurePerl.pm
-    - lib/perl5/site_perl/XML/SAX/ParserDetails.ini
-    - lib/perl5/site_perl/XML/NamespaceSupport.pm
-    - lib/perl5/site_perl/XML/Writer.pm
-    - lib/perl5/site_perl/SVG.pm
-    - lib/perl5/site_perl/Try/Tiny.pm
-    - lib/perl5/site_perl/YAML/Tiny.pm
-    - lib/perl5/site_perl/Path/Tiny.pm
-    - lib/perl5/site_perl/File/Which.pm
-    - lib/perl5/site_perl/Text/CSV.pm
-    - lib/perl5/site_perl/URI.pm
-    - lib/perl5/site_perl/Role/Tiny.pm
-    - lib/perl5/site_perl/Class/Method/Modifiers.pm
-    - lib/perl5/site_perl/Sub/Quote.pm
-    - lib/perl5/site_perl/Moo.pm
+      include:
+      - lib/perl5/**
+      - share/**
+      exclude:
+      - lib/perl5/*/core_perl/CORE/**
+      - lib/perl5/**/*.a
+  tests:
+  # plain perl sources, no generic-testing
+  - package_contents:
+      files:
+      - lib/perl5/core_perl/strict.pm
+      - lib/perl5/${{ series }}/core_perl/Config.pm
+      # pure-perl distributions
+      - lib/perl5/site_perl/JSON.pm
+      - lib/perl5/site_perl/XML/SAX.pm
+      - lib/perl5/site_perl/XML/SAX/Base.pm
+      - lib/perl5/site_perl/XML/SAX/PurePerl.pm
+      - lib/perl5/site_perl/XML/SAX/ParserDetails.ini
+      - lib/perl5/site_perl/XML/NamespaceSupport.pm
+      - lib/perl5/site_perl/XML/Writer.pm
+      - lib/perl5/site_perl/SVG.pm
+      - lib/perl5/site_perl/Try/Tiny.pm
+      - lib/perl5/site_perl/YAML/Tiny.pm
+      - lib/perl5/site_perl/Path/Tiny.pm
+      - lib/perl5/site_perl/File/Which.pm
+      - lib/perl5/site_perl/Text/CSV.pm
+      - lib/perl5/site_perl/URI.pm
+      - lib/perl5/site_perl/Role/Tiny.pm
+      - lib/perl5/site_perl/Class/Method/Modifiers.pm
+      - lib/perl5/site_perl/Sub/Quote.pm
+      - lib/perl5/site_perl/Moo.pm
+
+#==============================================================================#
+
+# what an embedder (e.g. polymake) links against: the interpreter itself, plus
+# the core extensions, which a perl without dynamic loading keeps as separate
+# archives rather than inside libperl.a
+- package:
+    name: libperl-static
+    version: ${{ version }}
+  inherit: perl-build
+  build:
+    files:
+      include:
+      - lib/perl5/*/core_perl/CORE/**
+      - lib/perl5/**/*.a
+  requirements:
+    run:
+    # Config.pm & co. are needed when building an embedder (ExtUtils::Embed)
+    - ${{ pin_subpackage('perl-data', exact=True) }}
+    # and the modules at runtime by everything linking libperl
+    run_exports:
+    - ${{ pin_subpackage('perl-data', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/perl5/${{ series }}/core_perl/CORE/libperl.a
+      - lib/perl5/${{ series }}/core_perl/CORE/perl.h
+      - lib/perl5/${{ series }}/core_perl/auto/POSIX/POSIX.a
+      - lib/perl5/${{ series }}/core_perl/auto/List/Util/Util.a
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# the perl program (node)
+- package:
+    name: perl
+    version: ${{ version }}
+  inherit: perl-build
+  build:
+    files:
+      include:
+      - bin/**
+  requirements:
+    run:
+    - ${{ pin_subpackage('perl-data', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - bin/perl.wasm
+      - bin/perl
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
 
 about:
   homepage: https://www.perl.org/
