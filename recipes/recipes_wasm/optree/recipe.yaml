@@ -1,0 +1,56 @@
+context:
+  version: 0.20.0
+
+package:
+  name: optree
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/o/optree/optree-${{ version }}.tar.gz
+  sha256: c7403eb0f2b2a060a97803a8f52904212df85ed6cff4b0eeed9cc6e38c2cf88d
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools >=77
+  - pybind11 >=2.12
+  - cmake >=4.3.3
+  - make
+  host:
+  - python-dev
+  run:
+  - ${{ pin_compatible('python', lower_bound='x.x', upper_bound='x.x') }}
+  - typing_extensions >=4.12
+
+tests:
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+- script: pytester
+  files:
+    recipe:
+    - test_optree.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/metaopt/optree
+  documentation: https://optree.readthedocs.io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Optimized PyTree utilities
+
+extra:
+  recipe-maintainers:
+  - anutosh491
