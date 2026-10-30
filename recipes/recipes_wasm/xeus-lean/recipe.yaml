@@ -1,0 +1,79 @@
+context:
+  name: xeus-lean
+  version: 0.1.0
+  # upstream has no tags/releases yet
+  rev: 55c16cfc949504146526e36907c8c686e998787b
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- git: https://github.com/Verilean/xeus-lean.git
+  rev: ${{ rev }}
+# the sources below replace FetchContent downloads of the upstream CMakeLists.txt
+# lean4 must match the lean-toolchain file of xeus-lean (see LEAN_VERSION in build.sh)
+- git: https://github.com/leanprover/lean4.git
+  tag: v4.28.0
+  depth: 1
+  target_directory: _deps/lean4
+- git: https://github.com/jupyter-xeus/xeus.git
+  tag: 5.2.6
+  depth: 1
+  target_directory: _deps/xeus
+- git: https://github.com/jupyter-xeus/xeus-lite.git
+  tag: 3.2.1
+  depth: 1
+  target_directory: _deps/xeus-lite
+- git: https://github.com/xtensor-stack/xtl.git
+  tag: 0.7.7
+  depth: 1
+  target_directory: _deps/xtl
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - ${{ compiler("c") }}
+  - cmake
+  - make
+  - python
+  - zstd
+  # GNU tar and stat for scripts/pack-olean-modules.sh
+  - tar
+  - coreutils
+  host:
+  - nlohmann_json
+  - nlohmann_json-abi
+
+tests:
+- package_contents:
+    files:
+    - bin/xlean.js
+    - bin/xlean.wasm
+    - share/jupyter/kernels/xlean/kernel.json
+    - share/jupyter/olean/manifest-v2.json
+    - share/jupyter/olean/Init-olean.tar.zst
+    - share/jupyter/olean/Std-olean.tar.zst
+    - share/jupyter/olean/Lean-olean.tar.zst
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Lean 4 kernel for Jupyter based on xeus
+  homepage: https://github.com/Verilean/xeus-lean
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  ci:
+    platforms:
+      # Lean's .olean format depends on the pointer size and upstream only supports Memory64
+      emscripten-wasm32: false
+      emscripten-wasm64: true
