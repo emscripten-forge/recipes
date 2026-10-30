@@ -13,7 +13,8 @@ MODULES_CSV="${SINGULAR_MODULES// /,}"
 emconfigure ./configure \
     CPPFLAGS="-I${PWD}" \
     ac_cv_func_qsort_r=no \
-    --host=wasm32-unknown-emscripten \
+    --build=${BUILD} \
+    --host=${HOST} \
     --disable-shared \
     --enable-static \
     --without-pic \
@@ -32,7 +33,6 @@ emconfigure ./configure \
     --with-cdd="${PREFIX}" \
     --with-ntl="${PREFIX}" \
     --with-normaliz="${PREFIX}" \
-    --with-topcom="${PREFIX}" \
     --with-mathicgb="${PREFIX}" \
     MATHICGB_CFLAGS="-I${PREFIX}/include" \
     MATHICGB_LIBS="-L${PREFIX}/lib -lmathicgb -lmathic -lmemtailor" \
@@ -47,19 +47,24 @@ emconfigure ./configure \
     LDFLAGS="-L${PREFIX}/lib -s TOTAL_STACK=32mb -s INITIAL_MEMORY=512mb -s ALLOW_MEMORY_GROWTH=1 -s MAXIMUM_MEMORY=4gb -s FORCE_FILESYSTEM=1 -Wl,--allow-multiple-definition -s JSPI=1" \
     --prefix="${PREFIX}"
 
-find . -type f -name "Makefile" -exec sed -i 's/[[:space:]]*-[pP]thread//g' {} +
-find . -type f -name "Makefile" -exec sed -i 's/-Wl,-rpath,[^ ]*//g' {} +
-find . -type f -name "libtool" -exec sed -i 's/^hardcode_libdir_flag_spec=.*/hardcode_libdir_flag_spec=""/g' {} +
-find . -type f -name "libtool" -exec sed -i 's/^runpath_var=.*/runpath_var=""/g' {} +
-sed -i 's/systhreads//g' Singular/dyn_modules/Makefile
+# sed -i.bak works with both GNU and BSD sed
+find . -type f -name "Makefile" -exec sed -i.bak 's/[[:space:]]*-[pP]thread//g' {} +
+find . -type f -name "Makefile" -exec sed -i.bak 's/-Wl,-rpath,[^ ]*//g' {} +
+find . -type f -name "libtool" -exec sed -i.bak 's/^hardcode_libdir_flag_spec=.*/hardcode_libdir_flag_spec=""/g' {} +
+find . -type f -name "libtool" -exec sed -i.bak 's/^runpath_var=.*/runpath_var=""/g' {} +
+sed -i.bak 's/systhreads//g' Singular/dyn_modules/Makefile
 
-sed -i 's/Singular_LDADD =/Singular_LDADD = ..\/wasm_patch.o/g' Singular/Makefile
+sed -i.bak 's/Singular_LDADD =/Singular_LDADD = ..\/wasm_patch.o/g' Singular/Makefile
 
-emmake make -j8
+emmake make -j${CPU_COUNT}
 emmake make install
 
 cp Singular/all.lib Singular/LIB/
 
+# make install puts the program at bin/Singular; it is installed as
+# bin/Singular.js below, and bin/Singular would clash with the bin/singular
+# directory of the web frontend on case-insensitive file systems
+rm -f "${PREFIX}/bin/Singular"
 mkdir -p "${PREFIX}/bin/singular"
 cp Singular/Singular "${PREFIX}/bin/Singular.js"
 cp Singular/Singular.wasm "${PREFIX}/bin/"
