@@ -20,23 +20,21 @@ requirements:
   - cmake
   - ninja
   host:
-  - xeus >=6.0,<6.1
-  - xeus-lite >=5.0,<6
+  - xeus
+  - xeus-lite-static
   - nlohmann_json
-  # libSingular and its dependencies are linked statically. libflint and ntl
-  # must match the versions the singular package was built with.
-  - singular ==${{ singular_version }}
-  - libflint ==3.6.0
-  - ntl ==11.6.0
-  - gmp
-  - mpfr
+  - nlohmann_json-abi
+  - libsingular-static ==${{ singular_version }}
+  - libflint-static
+  - ntl-static
+  - gmp-static
+  - mpfr-static
   - cddlib-static
   - mathicgb
-  - mathic
-  - memtailor
-  run:
-  # Singular's .lib files must match the libSingular linked into the kernel.
-  - singular ==${{ singular_version }}
+  - mathic-static
+  - memtailor-static
+  # Singular's LIB files (share/singular/LIB), loaded at runtime, come with
+  # singular-data from libsingular-static's run_exports
 
 tests:
 - package_contents:
@@ -46,6 +44,10 @@ tests:
     - share/jupyter/kernels/xsingular/kernel.json
     - share/jupyter/kernels/xsingular/logo-32x32.png
     - share/jupyter/kernels/xsingular/logo-64x64.png
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/wangyenshu/xeus-singular
