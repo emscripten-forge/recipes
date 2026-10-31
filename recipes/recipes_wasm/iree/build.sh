@@ -4,13 +4,9 @@ set -euxo pipefail
 NANOBIND_CMAKE_DIR=$("${BUILD_PREFIX}/bin/python3" -m nanobind --cmake_dir)
 TARGET_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 
-# Python is configured explicitly below; keep the remaining toolchain arguments.
 cmake_args=()
 for arg in ${CMAKE_ARGS}; do
-    case "$arg" in
-        -DPYTHON_*=*|-DPYTHONLIBS_FOUND=*|-DPYTHONLIBS_FOUND:*=*) ;;
-        *) cmake_args+=("$arg") ;;
-    esac
+    [[ "$arg" == -DPYTHON* ]] || cmake_args+=("$arg")
 done
 
 emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
