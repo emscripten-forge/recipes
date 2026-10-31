@@ -59,6 +59,7 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DDAWN_MARKUPSAFE_DIR="${BUILD_PREFIX}/lib/python${PY_VER}/site-packages/markupsafe" \
     -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -fwasm-exceptions -mno-tail-call" \
     -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -fwasm-exceptions -mno-tail-call" \
+    -DCMAKE_SHARED_LINKER_FLAGS="${LDFLAGS:-} -g2" \
     -DPython3_EXECUTABLE="${PYTHON}" \
     -DPython3_INCLUDE_DIR="${PREFIX}/include/python${PY_VER}" \
     -DPython3_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a" \
