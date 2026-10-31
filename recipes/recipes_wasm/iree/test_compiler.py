@@ -41,7 +41,7 @@ def test_compile_webgpu_in_process(input_type, model):
             "--iree-opt-level=O3",
             "--iree-opt-const-eval=false",
         )
-        assert isinstance(session.context, ir.Context)
+        ir.Module.parse("module {}", context=session.context)
         with (
             session.invocation() as invocation,
             Source.wrap_buffer(session, model.encode()) as source,
