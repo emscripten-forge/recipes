@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euxo pipefail
 
-export EMCC_CFLAGS="${EMCC_CFLAGS} -g2"
-
 NANOBIND_CMAKE_DIR=$("${BUILD_PREFIX}/bin/python3" -m nanobind --cmake_dir)
 TARGET_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 
