@@ -74,7 +74,7 @@ emmake make -C build -j${CPU_COUNT:-4} \
     IREECompilerBuildPythonModules iree_runtime_bindings_python_PyExtRt
 
 for component in IREECompilerPythonModules IREECompilerBuildPythonModules IreePythonPackage-runtime; do
-    cmake --install build --component "$component" --prefix "${SRC_DIR}/build/install"
+    command cmake --install build --component "$component" --prefix "${SRC_DIR}/build/install"
 done
 
 mkdir -p "${SP_DIR}/iree"
