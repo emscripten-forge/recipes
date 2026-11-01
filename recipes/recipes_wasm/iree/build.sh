@@ -24,7 +24,8 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DIREE_BUILD_BUNDLED_LLVM=OFF \
     -DIREE_BUILD_COMPILER=ON \
     -DIREE_BUILD_PYTHON_BINDINGS=ON \
-    -DIREE_BUILD_RUNTIME_PYTHON_BINDINGS=OFF \
+    -DIREE_BUILD_RUNTIME_PYTHON_BINDINGS=ON \
+    -DIREE_BUILD_RUNTIME_PYTHON_TOOLS=OFF \
     -DIREE_BUILD_COMPILER_PYTHON_TOOLS=OFF \
     -DIREE_ENABLE_PYTHON_STABLE_ABI=OFF \
     -DMLIR_ENABLE_PYTHON_STABLE_ABI=OFF \
@@ -46,6 +47,8 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DIREE_INPUT_TOSA=OFF \
     -DIREE_OUTPUT_FORMAT_C=OFF \
     -DIREE_HAL_DRIVER_DEFAULTS=OFF \
+    -DIREE_CMAKE_PLUGIN_PATHS="${SRC_DIR}/build_tools/emscripten" \
+    -DIREE_EXTERNAL_HAL_DRIVERS=webgpu \
     -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
     -DFETCHCONTENT_SOURCE_DIR_DAWN="${SRC_DIR}/third_party/dawn" \
     -DFETCHCONTENT_SOURCE_DIR_ABSEIL="${SRC_DIR}/third_party/abseil" \
@@ -53,8 +56,8 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DFETCHCONTENT_SOURCE_DIR_SPIRV-TOOLS="${SRC_DIR}/third_party/spirv-tools" \
     -DDAWN_JINJA2_DIR="${BUILD_PREFIX}/lib/python${PY_VER}/site-packages/jinja2" \
     -DDAWN_MARKUPSAFE_DIR="${BUILD_PREFIX}/lib/python${PY_VER}/site-packages/markupsafe" \
-    -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -fwasm-exceptions -mno-tail-call" \
-    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -fwasm-exceptions -mno-tail-call" \
+    -DCMAKE_C_FLAGS="${CFLAGS:-} ${EMCC_CFLAGS} -fwasm-exceptions -mno-tail-call -DIREE_FILE_IO_ENABLE=1" \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS} -fwasm-exceptions -mno-tail-call -DIREE_FILE_IO_ENABLE=1" \
     -DPython3_EXECUTABLE="${PYTHON}" \
     -DPython3_INCLUDE_DIR="${PREFIX}/include/python${PY_VER}" \
     -DPython3_LIBRARY="${PREFIX}/lib/libpython${PY_VER}.a" \
@@ -66,13 +69,22 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DNB_SUFFIX="${TARGET_EXT_SUFFIX}" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
-emmake make -C build -j${CPU_COUNT:-4} iree_compiler_API_SharedImpl
 emmake make -C build -j${CPU_COUNT:-4} \
-    install-IREECompilerPythonModules install-IREECompilerBuildPythonModules
+    iree_compiler_API_SharedImpl IREECompilerPythonModules \
+    IREECompilerBuildPythonModules iree_runtime_bindings_python_PyExtRt
 
-mkdir -p "${SP_DIR}"
-mv "${PREFIX}/python_packages/iree_compiler/iree" "${SP_DIR}/iree"
-rmdir "${PREFIX}/python_packages/iree_compiler" "${PREFIX}/python_packages"
+for component in IREECompilerPythonModules IREECompilerBuildPythonModules IreePythonPackage-runtime; do
+    cmake --install build --component "$component" --prefix "${SRC_DIR}/build/install"
+done
+
+mkdir -p "${SP_DIR}/iree"
+cp -a build/install/python_packages/iree_compiler/iree/. "${SP_DIR}/iree/"
+cp -a build/install/python_packages/iree_runtime/iree/. "${SP_DIR}/iree/"
+
+printf 'PACKAGE_SUFFIX = ""\nVERSION = "%s"\nREVISIONS = {"IREE": "%s"}\n' \
+    "${IREE_PACKAGE_VERSION}" "${IREE_SOURCE_REVISION}" > "${SP_DIR}/iree/_runtime_libs/version.py"
+touch "${SP_DIR}/iree/_runtime_libs/__init__.py"
+
 install -m 644 build/lib/libIREECompiler.so "${SP_DIR}/iree/compiler/_mlir_libs/"
 
 touch "${SP_DIR}/iree/__init__.py" \
