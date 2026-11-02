@@ -7,7 +7,7 @@ To use emscripten-forge conda packages, you need to add the `emscripten-forge` c
 
 ```bash
 micromamba create -n myenv --platform=emscripten-wasm32 \
-    -c https://prefix.dev/channels/@emscripten-forge/6x \
+    -c https://prefix.dev/emscripten-forge/6x \
     -c conda-forge \
     python numpy
 ```
