@@ -1,17 +1,17 @@
-From e9cdc3eb8c1fabe265942e4e32827853ce7d1d95 Mon Sep 17 00:00:00 2001
+From c7d14e058d64c62d3ddc77edd28a13ce81567a62 Mon Sep 17 00:00:00 2001
 From: Isabel Paredes <isabel.paredes@quantstack.net>
-Date: Fri, 22 Aug 2025 11:33:37 +0200
-Subject: [PATCH 16/19] Disable gui calls and threading
+Date: Mon, 2 Nov 2026 23:31:53 +0530
+Subject: [PATCH] Disable gui calls and threading
 
 ---
  libinterp/corefcn/interpreter.cc | 21 +++++++++++++--------
  1 file changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/libinterp/corefcn/interpreter.cc b/libinterp/corefcn/interpreter.cc
-index 8ef8f32..7528f51 100644
+index 2442694..ccd5435 100644
 --- a/libinterp/corefcn/interpreter.cc
 +++ b/libinterp/corefcn/interpreter.cc
-@@ -487,13 +487,14 @@ interpreter::interpreter (application *app_context)
+@@ -484,8 +484,8 @@ interpreter::interpreter (application *app_context)
    // Matlab uses "C" locale for LC_NUMERIC class regardless of local setting
    std::setlocale (LC_NUMERIC, "C");
    std::setlocale (LC_TIME, "C");
@@ -20,6 +20,9 @@ index 8ef8f32..7528f51 100644
 +  // sys::env::putenv ("LC_NUMERIC", "C");
 +  // sys::env::putenv ("LC_TIME", "C");
  
+   // Perform system-dependent initialization here in case it has not
+   // already been executed (for example, by the application
+@@ -495,7 +495,8 @@ interpreter::interpreter (application *app_context)
    // Initialize the default floating point unit control state.
    octave_set_default_fpucw ();
  
@@ -29,7 +32,7 @@ index 8ef8f32..7528f51 100644
  
    octave_ieee_init ();
  
-@@ -750,11 +751,12 @@ interpreter::initialize ()
+@@ -755,11 +756,12 @@ interpreter::initialize ()
  
    initialize_load_path ();
  
@@ -44,7 +47,7 @@ index 8ef8f32..7528f51 100644
    octave_interrupt_hook = nullptr;
  
    catch_interrupts ();
-@@ -956,7 +958,8 @@ interpreter::shutdown ()
+@@ -964,7 +966,8 @@ interpreter::shutdown ()
  
    m_initialized = false;
  
@@ -54,7 +57,7 @@ index 8ef8f32..7528f51 100644
  
    // Any atexit functions added after this function call won't be
    // executed.  Each atexit function is executed with
-@@ -989,7 +992,8 @@ interpreter::shutdown ()
+@@ -997,7 +1000,8 @@ interpreter::shutdown ()
    // works with the new terminal widget), process pending events and
    // disable the link.
  
@@ -64,7 +67,7 @@ index 8ef8f32..7528f51 100644
    OCTAVE_SAFE_CALL (m_event_manager.process_events, (true));
    OCTAVE_SAFE_CALL (m_event_manager.disable, ());
  
-@@ -997,7 +1001,8 @@ interpreter::shutdown ()
+@@ -1005,7 +1009,8 @@ interpreter::shutdown ()
  
    // We may still have some figures.  Close them.
  
@@ -74,6 +77,3 @@ index 8ef8f32..7528f51 100644
  
    // What is supposed to happen if a figure has a closerequestfcn or
    // deletefcn callback registered that creates other figures or
--- 
-2.50.1
-
