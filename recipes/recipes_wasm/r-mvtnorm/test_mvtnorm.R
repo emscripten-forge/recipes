@@ -1,14 +1,29 @@
-# Define the parameters
-p <- 3          # dimension of the multivariate normal distribution
-n <- 5          # number of samples to generate
-x <- rep(0, p)  # a point where to evaluate the density (must be a vector of length p)
-
 library(mvtnorm)
 
-# This evaluates the density at point x
-dmvnorm(x, mean = rep(0, p), sigma = diag(p), log = FALSE, checkSymmetry = TRUE)
+test_1 <- function() {
+    p <- 3
+    x <- rep(0, p)
+    dens <- dmvnorm(x, mean = rep(0, p), sigma = diag(p), log = FALSE, checkSymmetry = TRUE)
+    print(dens)
+    stopifnot(is.numeric(dens), length(dens) == 1)
+}
 
-# This generates n random samples from the multivariate normal distribution
-rmvnorm(n, mean = rep(0, p), sigma = diag(p),
-        method = c("eigen", "svd", "chol"), pre0.9_9994 = FALSE, 
-        checkSymmetry = TRUE, rnorm = stats::rnorm)
+test_2 <- function() {
+    p <- 3
+    n <- 5
+    samples <- rmvnorm(
+        n,
+        mean = rep(0, p),
+        sigma = diag(p),
+        method = "chol",
+        checkSymmetry = TRUE
+    )
+    print(samples)
+    stopifnot(is.matrix(samples), nrow(samples) == n, ncol(samples) == p)
+}
+
+print("Running test_1")
+test_1()
+
+print("Running test_2")
+test_2()

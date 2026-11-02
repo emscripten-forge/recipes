@@ -1,6 +1,6 @@
 context:
-  version: 1.4-2
   name: mvtnorm
+  version: 1.4-2
 
 package:
   name: r-${{ name }}
@@ -20,6 +20,7 @@ requirements:
   build:
   - cross-r-base ==${{ r_base }}
   - ${{ compiler('c') }}
+  - llvm-toolchain_${{ target_platform }}
   host:
   - r-base ==${{ r_base }}
   - libflang-rt-static
@@ -28,19 +29,23 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_mvtnorm.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://codeberg.org/thothorn/mvtnorm
   license: GPL-2.0-only
   license_family: GPL2
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   summary: |
     Computes multivariate normal and t probabilities, quantiles, random
     deviates, and densities. Log-likelihoods for multivariate Gaussian models
@@ -53,3 +58,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
