@@ -1,0 +1,104 @@
+context:
+  version: 3.12.1
+  name: lapack
+
+source:
+  url: https://github.com/Reference-LAPACK/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422
+  patches:
+  - patches/0001_Disable_fortran_compiler_check.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: lapack-build
+  requirements:
+    build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("fortran") }}
+    - cmake
+    - ninja
+    host:
+    - libflang-rt-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+- package:
+    name: libblas-static
+    version: ${{ version }}
+  inherit: lapack-build
+  build:
+    files:
+      include:
+      - lib/libblas.a
+      - lib/pkgconfig/blas.pc
+  tests:
+  - package_contents:
+      files:
+      - lib/libblas.a
+      - lib/pkgconfig/blas.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: libcblas-static
+    version: ${{ version }}
+  inherit: lapack-build
+  build:
+    files:
+      include:
+      - include/cblas*
+      - lib/libcblas.a
+      - lib/pkgconfig/cblas.pc
+      - lib/cmake/cblas-${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libcblas.a
+      - lib/pkgconfig/cblas.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: liblapack-static
+    version: ${{ version }}
+  inherit: lapack-build
+  build:
+    files:
+      include:
+      - lib/liblapack.a
+      - lib/pkgconfig/lapack.pc
+      - lib/cmake/lapack-${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - lib/liblapack.a
+      - lib/pkgconfig/lapack.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+about:
+  homepage: http://www.netlib.org/lapack
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Linear Algebra PACKage
+
+extra:
+  maintainers:
+  - IsabelParedes
