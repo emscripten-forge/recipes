@@ -9,57 +9,89 @@ source:
   - patches/0001_Disable_fortran_compiler_check.patch
 
 build:
-  number: 4
-
-# TODO: Use cache output once it's not experimental
+  number: 0
 
 outputs:
-- package:
-    name: libblas
-    version: ${{ version }}
-  build:
-    files:
-    - lib/libblas.a
-    - lib/pkgconfig/blas.pc
+- staging:
+    name: lapack-build
   requirements:
     build:
     - ${{ compiler("c") }}
-    - flang_${{ target_platform }}
+    - ${{ compiler("fortran") }}
+    - cmake
     - ninja
-  tests:
-  - script: test -f $PREFIX/lib/libblas.a
+    host:
+    - libflang-rt-static
+  build:
+    script: build.sh
+
+#==============================================================================#
 
 - package:
-    name: libcblas
+    name: libblas-static
     version: ${{ version }}
+  inherit: lapack-build
   build:
     files:
-    - lib/libcblas.a
-    - lib/pkgconfig/cblas.pc
-    - lib/cmake/cblas-${{ version }}/cblas*
-  requirements:
-    build:
-    - ${{ compiler("c") }}
-    - flang_${{ target_platform }}
-    - ninja
+      include:
+      - lib/libblas.a
+      - lib/pkgconfig/blas.pc
   tests:
-  - script: test -f $PREFIX/lib/libcblas.a
+  - package_contents:
+      files:
+      - lib/libblas.a
+      - lib/pkgconfig/blas.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
 
 - package:
-    name: liblapack
+    name: libcblas-static
     version: ${{ version }}
+  inherit: lapack-build
   build:
     files:
-    - lib/liblapack.a
-    - lib/pkgconfig/lapack.pc
-    - lib/cmake/lapack-${{ version }}/lapack*
-  requirements:
-    build:
-    - ${{ compiler("c") }}
-    - flang_${{ target_platform }}
-    - ninja
+      include:
+      - include/cblas*
+      - lib/libcblas.a
+      - lib/pkgconfig/cblas.pc
+      - lib/cmake/cblas-${{ version }}
   tests:
-  - script: test -f $PREFIX/lib/liblapack.a
+  - package_contents:
+      files:
+      - lib/libcblas.a
+      - lib/pkgconfig/cblas.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+- package:
+    name: liblapack-static
+    version: ${{ version }}
+  inherit: lapack-build
+  build:
+    files:
+      include:
+      - lib/liblapack.a
+      - lib/pkgconfig/lapack.pc
+      - lib/cmake/lapack-${{ version }}
+  tests:
+  - package_contents:
+      files:
+      - lib/liblapack.a
+      - lib/pkgconfig/lapack.pc
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
 
 about:
   homepage: http://www.netlib.org/lapack

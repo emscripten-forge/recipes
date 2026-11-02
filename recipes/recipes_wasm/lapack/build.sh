@@ -9,7 +9,7 @@ emcmake cmake -S . -B _build \
     -DBUILD_TESTING=OFF \
     -DCMAKE_Fortran_PREPROCESS=yes \
     -DCMAKE_Fortran_COMPILER=$FC \
-    -DCMAKE_Fortran_FLAGS=$FFLAGS \
+    -DCMAKE_Fortran_FLAGS="$FFLAGS $FINTRINSIC_MODS" \
     -DCMAKE_INSTALL_LIBDIR="lib" \
     -DCMAKE_INSTALL_PREFIX=$PREFIX
 
