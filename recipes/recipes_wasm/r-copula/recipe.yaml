@@ -3,7 +3,7 @@ context:
   version: 1.1-7
 
 package:
-  name: r-${{ name | lower }}
+  name: r-${{ name }}
   version: ${{ version | replace('-', '_') }}
 
 source:
@@ -15,7 +15,7 @@ source:
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -65,13 +65,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
     run:
     - r-mass
 
@@ -101,3 +104,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
