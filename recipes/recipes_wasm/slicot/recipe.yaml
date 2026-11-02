@@ -1,0 +1,48 @@
+context:
+  name: slicot-static
+  version: 5.9.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/SLICOT/SLICOT-Reference/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 37b0c0fc1800454f8d7553a004a5bb6fac9e042fe2b592ce1eec92045ce9b7a1
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('fortran') }}
+  - cmake
+  - make
+  host:
+  - openblas-dev
+  - libflang-rt-static
+
+tests:
+- package_contents:
+    files:
+    - lib/libslicot.a
+    - lib/pkgconfig/slicot.pc
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://www.slicot.org
+  repository: https://github.com/SLICOT/SLICOT-Reference
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Subroutine Library In Control Theory
+  description: |
+    SLICOT is a Fortran library of numerical algorithms for computations in
+    systems and control theory.
+
+extra:
+  recipe-maintainers:
+  - arjxn-py
