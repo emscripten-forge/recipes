@@ -1,0 +1,75 @@
+context:
+  name: Biostrings
+  version: 2.80.2
+
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 769b264c2110017581396e2487e274cfd93082cc79629571c52483c1f2ec8c14
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  - bioconductor-iranges
+  - bioconductor-xvector
+  - bioconductor-seqinfo
+  - r-crayon
+  host:
+  - r-base ==${{ r_base }}
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  - bioconductor-iranges
+  - bioconductor-xvector
+  - bioconductor-seqinfo
+  - r-crayon
+  run:
+  - bioconductor-biocgenerics
+  - bioconductor-s4vectors
+  - bioconductor-iranges
+  - bioconductor-xvector
+  - bioconductor-seqinfo
+  - r-crayon
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://bioconductor.org/packages/${{ name }}
+  repository: https://github.com/Bioconductor/${{ name }}
+  license: Artistic-2.0
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/Artistic-2.0
+  summary: |
+    Provides memory efficient S4 classes for storing sequences "externally"
+    (e.g. behind an R external pointer, or on disk).
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes

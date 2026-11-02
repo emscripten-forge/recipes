@@ -1,0 +1,291 @@
+From 983e5667be0919634aff0dc45853124c00a94940 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 29 Oct 2026 18:36:30 +0100
+Subject: [PATCH 1/3] Disable threads
+
+---
+ src/htslib-1.18/Makefile.Rhtslib              | 88 +++++++++----------
+ .../htscodecs/htscodecs/rANS_static.c         |  2 +-
+ .../htscodecs/htscodecs/rANS_static4x16pr.c   |  4 +-
+ src/htslib-1.18/htscodecs/htscodecs/utils.c   |  4 +-
+ 4 files changed, 49 insertions(+), 49 deletions(-)
+
+diff --git a/src/htslib-1.18/Makefile.Rhtslib b/src/htslib-1.18/Makefile.Rhtslib
+index 245ec0e..06d2dd1 100644
+--- a/src/htslib-1.18/Makefile.Rhtslib
++++ b/src/htslib-1.18/Makefile.Rhtslib
+@@ -333,7 +333,7 @@ print-config:
+ # file used at runtime (when $LD_LIBRARY_PATH includes the build directory).
+ 
+ libhts.so: $(LIBHTS_OBJS:.o=.pico)
+-	$(CC) -shared -Wl,-soname,libhts.so.$(LIBHTS_SOVERSION) $(VERSION_SCRIPT_LDFLAGS) $(LDFLAGS) -o $@ $(LIBHTS_OBJS:.o=.pico) $(LIBS) -lpthread
++	$(CC) -shared -Wl,-soname,libhts.so.$(LIBHTS_SOVERSION) $(VERSION_SCRIPT_LDFLAGS) $(LDFLAGS) -o $@ $(LIBHTS_OBJS:.o=.pico) $(LIBS) 
+ 	ln -sf $@ libhts.so.$(LIBHTS_SOVERSION)
+ 
+ # Similarly this also creates libhts.NN.dylib as a byproduct, so that programs
+@@ -345,10 +345,10 @@ libhts.dylib: $(LIBHTS_OBJS)
+ 	ln -sf $@ libhts.$(LIBHTS_SOVERSION).dylib
+ 
+ cyghts-$(LIBHTS_SOVERSION).dll libhts.dll.a: $(LIBHTS_OBJS)
+-	$(CC) -shared -Wl,--out-implib=libhts.dll.a -Wl,--enable-auto-import $(LDFLAGS) -o $@ -Wl,--whole-archive $(LIBHTS_OBJS) -Wl,--no-whole-archive $(LIBS) -lpthread
++	$(CC) -shared -Wl,--out-implib=libhts.dll.a -Wl,--enable-auto-import $(LDFLAGS) -o $@ -Wl,--whole-archive $(LIBHTS_OBJS) -Wl,--no-whole-archive $(LIBS) 
+ 
+ hts-$(LIBHTS_SOVERSION).dll hts.dll.a: $(LIBHTS_OBJS)
+-	$(CC) -shared -Wl,--out-implib=hts.dll.a -Wl,--enable-auto-import -Wl,--exclude-all-symbols $(LDFLAGS) -o $@ -Wl,--whole-archive $(LIBHTS_OBJS) -Wl,--no-whole-archive $(LIBS) -lpthread
++	$(CC) -shared -Wl,--out-implib=hts.dll.a -Wl,--enable-auto-import -Wl,--exclude-all-symbols $(LDFLAGS) -o $@ -Wl,--whole-archive $(LIBHTS_OBJS) -Wl,--no-whole-archive $(LIBS) 
+ 
+ hts-$(LIBHTS_SOVERSION).def: hts-$(LIBHTS_SOVERSION).dll
+ 	gendef hts-$(LIBHTS_SOVERSION).dll
+@@ -395,7 +395,7 @@ hts-object-files: $(LIBHTS_OBJS)
+ # may not be able to access libhts symbols via the main program's libhts
+ # if that was dynamically loaded without an explicit RTLD_GLOBAL.
+ %.so: %.pico libhts.so
+-	$(CC) -shared -Wl,-E $(LDFLAGS) -o $@ $< libhts.so $(LIBS) -lpthread
++	$(CC) -shared -Wl,-E $(LDFLAGS) -o $@ $< libhts.so $(LIBS) 
+ 
+ # For programs *statically* linked to libhts.a, on macOS loading a plugin
+ # linked to a shared libhts.NN.dylib would lead to conflicting duplicate
+@@ -476,13 +476,13 @@ htscodecs/htscodecs/rANS_static32x16pr_avx512.o htscodecs/htscodecs/rANS_static3
+ htscodecs/htscodecs/rANS_static32x16pr_sse4.o htscodecs/htscodecs/rANS_static32x16pr_sse4.pico: TARGET_CFLAGS = $(HTS_CFLAGS_SSE4)
+ 
+ bgzip: bgzip.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ bgzip.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ bgzip.o libhts.a $(LIBS) 
+ 
+ htsfile: htsfile.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ htsfile.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ htsfile.o libhts.a $(LIBS) 
+ 
+ tabix: tabix.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ tabix.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ tabix.o libhts.a $(LIBS) 
+ 
+ bgzip.o: bgzip.c config.h $(htslib_bgzf_h) $(htslib_hts_h) $(htslib_hfile_h)
+ htsfile.o: htsfile.c config.h $(htslib_hfile_h) $(htslib_hts_h) $(htslib_sam_h) $(htslib_vcf_h)
+@@ -587,82 +587,82 @@ test/hts_endian: test/hts_endian.o
+ 	$(CC) $(LDFLAGS) -o $@ test/hts_endian.o $(LIBS)
+ 
+ test/fuzz/hts_open_fuzzer: test/fuzz/hts_open_fuzzer.o
+-	$(CC) $(LDFLAGS) -o $@ test/fuzz/hts_open_fuzzer.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/fuzz/hts_open_fuzzer.o libhts.a $(LIBS) 
+ 
+ test/fieldarith: test/fieldarith.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/fieldarith.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/fieldarith.o libhts.a $(LIBS) 
+ 
+ test/hfile: test/hfile.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/hfile.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/hfile.o libhts.a $(LIBS) 
+ 
+ test/pileup: test/pileup.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/pileup.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/pileup.o libhts.a $(LIBS) 
+ 
+ test/pileup_mod: test/pileup_mod.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/pileup_mod.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/pileup_mod.o libhts.a $(LIBS) 
+ 
+ test/plugins-dlhts: test/plugins-dlhts.o
+ 	$(CC) $(LDFLAGS) -o $@ test/plugins-dlhts.o $(LIBS)
+ 
+ test/sam: test/sam.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/sam.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/sam.o libhts.a $(LIBS) 
+ 
+ test/test_bgzf: test/test_bgzf.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_bgzf.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_bgzf.o libhts.a -lz $(LIBS) 
+ 
+ test/test_expr: test/test_expr.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_expr.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_expr.o libhts.a -lz $(LIBS) 
+ 
+ test/test_faidx: test/test_faidx.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_faidx.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_faidx.o libhts.a -lz $(LIBS) 
+ 
+ test/test_kfunc: test/test_kfunc.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_kfunc.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_kfunc.o libhts.a -lz $(LIBS) 
+ 
+ test/test_kstring: test/test_kstring.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_kstring.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_kstring.o libhts.a -lz $(LIBS) 
+ 
+ test/test_mod: test/test_mod.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_mod.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_mod.o libhts.a $(LIBS) 
+ 
+ test/test_realn: test/test_realn.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_realn.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_realn.o libhts.a $(LIBS) 
+ 
+ test/test-regidx: test/test-regidx.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-regidx.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-regidx.o libhts.a $(LIBS) 
+ 
+ test/test-parse-reg: test/test-parse-reg.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-parse-reg.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-parse-reg.o libhts.a $(LIBS) 
+ 
+ test/test_str2int: test/test_str2int.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_str2int.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_str2int.o libhts.a $(LIBS) 
+ 
+ test/test_time_funcs: test/test_time_funcs.o
+ 	$(CC) $(LDFLAGS) -o $@ test/test_time_funcs.o
+ 
+ test/test_view: test/test_view.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_view.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_view.o libhts.a $(LIBS) 
+ 
+ test/test_index: test/test_index.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_index.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_index.o libhts.a $(LIBS) 
+ 
+ test/test-vcf-api: test/test-vcf-api.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-vcf-api.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-vcf-api.o libhts.a $(LIBS) 
+ 
+ test/test-vcf-sweep: test/test-vcf-sweep.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-vcf-sweep.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-vcf-sweep.o libhts.a $(LIBS) 
+ 
+ test/test-bcf-sr: test/test-bcf-sr.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-bcf-sr.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-bcf-sr.o libhts.a -lz $(LIBS) 
+ 
+ test/test-bcf-translate: test/test-bcf-translate.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-bcf-translate.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-bcf-translate.o libhts.a -lz $(LIBS) 
+ 
+ test/test_introspection: test/test_introspection.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test_introspection.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test_introspection.o libhts.a $(LIBS) 
+ 
+ test/test-bcf_set_variant_type: test/test-bcf_set_variant_type.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/test-bcf_set_variant_type.o libhts.a $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/test-bcf_set_variant_type.o libhts.a $(LIBS) 
+ 
+ # Extra tests for bundled htscodecs
+ test_htscodecs_rans4x8: htscodecs/tests/rans4x8
+@@ -684,22 +684,22 @@ test_htscodecs_varint: htscodecs/tests/varint
+ 	cd htscodecs/tests && ./varint
+ 
+ htscodecs/tests/arith_dynamic: htscodecs/tests/arith_dynamic_test.o $(HTSCODECS_OBJS)
+-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm -lpthread
++	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm 
+ 
+ htscodecs/tests/fqzcomp_qual: htscodecs/tests/fqzcomp_qual_test.o $(HTSCODECS_OBJS)
+-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm -lpthread
++	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm 
+ 
+ htscodecs/tests/rans4x16pr: htscodecs/tests/rANS_static4x16pr_test.o $(HTSCODECS_OBJS)
+-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm -lpthread
++	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm 
+ 
+ htscodecs/tests/rans4x8: htscodecs/tests/rANS_static_test.o $(HTSCODECS_OBJS)
+-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm -lpthread
++	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm 
+ 
+ htscodecs/tests/tokenise_name3: htscodecs/tests/tokenise_name3_test.o $(HTSCODECS_OBJS)
+-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm -lpthread
++	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm 
+ 
+ htscodecs/tests/varint: htscodecs/tests/varint_test.o $(HTSCODECS_OBJS)
+-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm -lpthread
++	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) -lm 
+ 
+ htscodecs/tests/arith_dynamic_test.o: CPPFLAGS += -Ihtscodecs
+ htscodecs/tests/arith_dynamic_test.o: htscodecs/tests/arith_dynamic_test.c config.h $(htscodecs_arith_dynamic_h)
+@@ -744,25 +744,25 @@ test/test-bcf_set_variant_type.o: test/test-bcf_set_variant_type.c config.h $(ht
+ 
+ 
+ test/thrash_threads1: test/thrash_threads1.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads1.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads1.o libhts.a -lz $(LIBS) 
+ 
+ test/thrash_threads2: test/thrash_threads2.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads2.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads2.o libhts.a -lz $(LIBS) 
+ 
+ test/thrash_threads3: test/thrash_threads3.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads3.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads3.o libhts.a -lz $(LIBS) 
+ 
+ test/thrash_threads4: test/thrash_threads4.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads4.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads4.o libhts.a -lz $(LIBS) 
+ 
+ test/thrash_threads5: test/thrash_threads5.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads5.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads5.o libhts.a -lz $(LIBS) 
+ 
+ test/thrash_threads6: test/thrash_threads6.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads6.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads6.o libhts.a -lz $(LIBS) 
+ 
+ test/thrash_threads7: test/thrash_threads7.o libhts.a
+-	$(CC) $(LDFLAGS) -o $@ test/thrash_threads7.o libhts.a -lz $(LIBS) -lpthread
++	$(CC) $(LDFLAGS) -o $@ test/thrash_threads7.o libhts.a -lz $(LIBS) 
+ 
+ test_thrash: $(BUILT_THRASH_PROGRAMS)
+ 
+diff --git a/src/htslib-1.18/htscodecs/htscodecs/rANS_static.c b/src/htslib-1.18/htscodecs/htscodecs/rANS_static.c
+index e629cb9..513b8de 100644
+--- a/src/htslib-1.18/htscodecs/htscodecs/rANS_static.c
++++ b/src/htslib-1.18/htscodecs/htscodecs/rANS_static.c
+@@ -56,7 +56,7 @@
+ #include <string.h>
+ #include <limits.h>
+ #include <sys/time.h>
+-#ifndef NO_THREADS
++#ifdef ENABLE_THREADS
+ #include <pthread.h>
+ #endif
+ 
+diff --git a/src/htslib-1.18/htscodecs/htscodecs/rANS_static4x16pr.c b/src/htslib-1.18/htscodecs/htscodecs/rANS_static4x16pr.c
+index 732d9f5..45aa2b3 100644
+--- a/src/htslib-1.18/htscodecs/htscodecs/rANS_static4x16pr.c
++++ b/src/htslib-1.18/htscodecs/htscodecs/rANS_static4x16pr.c
+@@ -57,7 +57,7 @@
+ #include <limits.h>
+ #include <math.h>
+ 
+-#ifndef NO_THREADS
++#ifdef ENABLE_THREADS
+ #include <pthread.h>
+ #endif
+ 
+@@ -850,7 +850,7 @@ void rans_set_cpu(int opts) {
+ // not migrating between processes with different instruction stes, but
+ // to date the only systems I know of that support this don't have different
+ // capabilities (that we use) per core.
+-#ifndef NO_THREADS
++#ifdef ENABLE_THREADS
+ static pthread_once_t rans_cpu_once = PTHREAD_ONCE_INIT;
+ #endif
+ 
+diff --git a/src/htslib-1.18/htscodecs/htscodecs/utils.c b/src/htslib-1.18/htscodecs/htscodecs/utils.c
+index 399b055..d0df61d 100644
+--- a/src/htslib-1.18/htscodecs/htscodecs/utils.c
++++ b/src/htslib-1.18/htscodecs/htscodecs/utils.c
+@@ -40,13 +40,13 @@
+ 
+ #include "utils.h"
+ 
+-#ifndef NO_THREADS
++#ifdef ENABLE_THREADS
+ #include <pthread.h>
+ #endif
+ 
+ //#define TLS_DEBUG
+ 
+-#ifndef NO_THREADS
++#ifdef ENABLE_THREADS
+ /*
+  * Thread local storage per thread in the pool.
+  *
+-- 
+2.56.0
+
