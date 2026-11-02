@@ -24,7 +24,7 @@ test_2 <- function() {
     output <- clustCombi(data = ex4.4.1)
     output # is of class clustCombi
 
-    # plots the hierarchy of combined solutions, then some "entropy plots" which 
+    # plots the hierarchy of combined solutions, then some "entropy plots" which
     # may help one to select the number of classes
     plot(output)
 }
@@ -32,10 +32,10 @@ test_2 <- function() {
 test_3 <- function() {
     # multi-class case
     class <- factor(c(5,5,5,2,5,3,1,2,1,1), levels = 1:5)
-    probs <- matrix(c(0.15, 0.01, 0.08, 0.23, 0.01, 0.23, 0.59, 0.02, 0.38, 0.45, 
-                      0.36, 0.05, 0.30, 0.46, 0.15, 0.13, 0.06, 0.19, 0.27, 0.17, 
-                      0.40, 0.34, 0.18, 0.04, 0.47, 0.34, 0.32, 0.01, 0.03, 0.11, 
-                      0.04, 0.04, 0.09, 0.05, 0.28, 0.27, 0.02, 0.03, 0.12, 0.25, 
+    probs <- matrix(c(0.15, 0.01, 0.08, 0.23, 0.01, 0.23, 0.59, 0.02, 0.38, 0.45,
+                      0.36, 0.05, 0.30, 0.46, 0.15, 0.13, 0.06, 0.19, 0.27, 0.17,
+                      0.40, 0.34, 0.18, 0.04, 0.47, 0.34, 0.32, 0.01, 0.03, 0.11,
+                      0.04, 0.04, 0.09, 0.05, 0.28, 0.27, 0.02, 0.03, 0.12, 0.25,
                       0.05, 0.56, 0.35, 0.22, 0.09, 0.03, 0.01, 0.75, 0.20, 0.02),
                     nrow = 10, ncol = 5)
     cbind(class, probs, map = map(probs))
@@ -43,13 +43,13 @@ test_3 <- function() {
 
     # two-class case
     class <- factor(c(1,1,1,2,2,1,1,2,1,1), levels = 1:2)
-    probs <- matrix(c(0.91, 0.4, 0.56, 0.27, 0.37, 0.7, 0.97, 0.22, 0.68, 0.43, 
+    probs <- matrix(c(0.91, 0.4, 0.56, 0.27, 0.37, 0.7, 0.97, 0.22, 0.68, 0.43,
                       0.09, 0.6, 0.44, 0.73, 0.63, 0.3, 0.03, 0.78, 0.32, 0.57),
                     nrow = 10, ncol = 2)
     cbind(class, probs, map = map(probs))
     BrierScore(probs, class)
 
-    # two-class case when predicted probabilities are constrained to be equal to 
+    # two-class case when predicted probabilities are constrained to be equal to
     # 0 or 1, then the (normalized) Brier Score is equal to the classification
     # error rate
     probs <- ifelse(probs > 0.5, 1, 0)
@@ -60,7 +60,7 @@ test_3 <- function() {
     # plot Brier score for predicted probabilities in range [0,1]
     class <- factor(rep(1, each = 100), levels = 0:1)
     prob  <- seq(0, 1, by = 0.01)
-    brier <- sapply(prob, function(p) 
+    brier <- sapply(prob, function(p)
       { z <- matrix(c(1-p,p), nrow = length(class), ncol = 2, byrow = TRUE)
         BrierScore(z, class)
       })
@@ -70,7 +70,7 @@ test_3 <- function() {
     # brier score for predicting balanced data with constant prob
     class <- factor(rep(c(1,0), each = 50), levels = 0:1)
     prob  <- seq(0, 1, by = 0.01)
-    brier <- sapply(prob, function(p) 
+    brier <- sapply(prob, function(p)
       { z <- matrix(c(1-p,p), nrow = length(class), ncol = 2, byrow = TRUE)
         BrierScore(z, class)
       })
@@ -80,7 +80,7 @@ test_3 <- function() {
     # brier score for predicting unbalanced data with constant prob
     class <- factor(rep(c(0,1), times = c(90,10)), levels = 0:1)
     prob  <- seq(0, 1, by = 0.01)
-    brier <- sapply(prob, function(p) 
+    brier <- sapply(prob, function(p)
       { z <- matrix(c(1-p,p), nrow = length(class), ncol = 2, byrow = TRUE)
         BrierScore(z, class)
       })
@@ -92,12 +92,12 @@ test_4 <- function() {
 
     data(GvHD)
     dat <- GvHD.pos[1:500,] # only a few lines for a quick example
-    output <- clustCombi(data = dat) 
+    output <- clustCombi(data = dat)
     output # is of class clustCombi
     # plot the hierarchy of combined solutions
-    plot(output, what = "classification") 
+    plot(output, what = "classification")
     # plot some "entropy plots" which may help one to select the number of classes
-    plot(output, what = "entropy") 
+    plot(output, what = "entropy")
     # plot the tree structure obtained from combining mixture components
     plot(output, what = "tree")
 }
@@ -116,16 +116,16 @@ test_5 <- function() {
     mod4 <- Mclust(iris[,1:4], prior = priorControl(functionName="defaultPrior", shrinkage=0.1))
     summary(mod4)
 
-    # Clustering of faithful data with some artificial noise added 
+    # Clustering of faithful data with some artificial noise added
     nNoise <- 100
     set.seed(0) # to make it reproducible
-    Noise <- apply(faithful, 2, function(x) 
+    Noise <- apply(faithful, 2, function(x)
                   runif(nNoise, min = min(x)-.1, max = max(x)+.1))
     data <- rbind(faithful, Noise)
     plot(faithful)
     points(Noise, pch = 20, cex = 0.5, col = "lightgrey")
     set.seed(0)
-    NoiseInit <- sample(c(TRUE,FALSE), size = nrow(faithful)+nNoise, 
+    NoiseInit <- sample(c(TRUE,FALSE), size = nrow(faithful)+nNoise,
               replace = TRUE, prob = c(3,1)/4)
     mod5 <- Mclust(data, initialization = list(noise = NoiseInit))
     summary(mod5, parameter = TRUE)
@@ -136,7 +136,7 @@ test_6 <- function() {
 
     data(diabetes)
     X <- diabetes[,-1]
-    modClust <- Mclust(X) 
+    modClust <- Mclust(X)
     bootClust <- MclustBootstrap(modClust)
     summary(bootClust, what = "se")
     summary(bootClust, what = "ci")
@@ -195,7 +195,7 @@ test_7 <- function() {
 
 
     # simulated 1D data
-    n <- 250 
+    n <- 250
     set.seed(1)
     triModal <- c(rnorm(n,-5), rnorm(n,0), rnorm(n,5))
     triClass <- c(rep(1,n), rep(2,n), rep(3,n))
@@ -237,7 +237,7 @@ test_8 <- function() {
     plot(dr, what = "scatterplot")
     plot(dr, what = "evalues")
 
-    dr <- MclustDR(mod, lambda = 0.5) 
+    dr <- MclustDR(mod, lambda = 0.5)
     summary(dr)
     plot(dr, what = "scatterplot")
     plot(dr, what = "evalues")
@@ -323,7 +323,7 @@ test_10 <- function() {
     pch <- class
     pch[!is.na(cl)] = ifelse(cl[!is.na(cl)] == 1, 19, 17)
     plot(X, pch = pch, col = col)
-    contour(xgrid, ygrid, matrix(pred_SSC$z[,1], ngrid, ngrid), 
+    contour(xgrid, ygrid, matrix(pred_SSC$z[,1], ngrid, ngrid),
             add = TRUE, levels = 0.5, drawlabels = FALSE, lty = 2, lwd = 2)
 }
 
@@ -373,17 +373,17 @@ test_13 <- function() {
     z2 <- unmap(hclass(hcVVV(faithful),2)) # initial value for 2 class case
 
     model <- me(modelName = "EEE", data = faithful, z = z2)
-    cdens(modelName = "EEE", data = faithful, logarithm = TRUE, 
+    cdens(modelName = "EEE", data = faithful, logarithm = TRUE,
           parameters = model$parameters)[1:5,]
 
     data(cross)
     odd <- seq(1, nrow(cross), by = 2)
-    oddBIC <- mclustBIC(cross[odd,-1]) 
+    oddBIC <- mclustBIC(cross[odd,-1])
     oddModel <- mclustModel(cross[odd,-1], oddBIC) ## best parameter estimates
     names(oddModel)
 
     even <- odd + 1
-    densities <- cdens(modelName = oddModel$modelName, data = cross[even,-1], 
+    densities <- cdens(modelName = oddModel$modelName, data = cross[even,-1],
                        parameters = oddModel$parameters)
     cbind(class = cross[even,1], densities)[1:5,]
 }
@@ -419,10 +419,10 @@ test_15 <- function() {
 
     par(mfrow = c(2,2))
     dens.waiting <- densityMclust(faithful$waiting)
-    plot(cdfMclust(dens.waiting), type = "l", 
+    plot(cdfMclust(dens.waiting), type = "l",
          xlab = dens.waiting$varname, ylab = "CDF")
     dens.eruptions <- densityMclust(faithful$eruptions)
-    plot(cdfMclust(dens.eruptions), type = "l", 
+    plot(cdfMclust(dens.eruptions), type = "l",
          xlab = dens.eruptions$varname, ylab = "CDF")
     par(mfrow = c(1,1))
 }
@@ -431,8 +431,8 @@ test_16 <- function() {
     clPairs(iris[,1:4], cl = iris$Species)
 
     clp <- clPairs(iris[,1:4], cl = iris$Species, lower.panel = NULL)
-    clPairsLegend(0.1, 0.4, class = clp$class, 
-                  col = clp$col, pch = clp$pch, 
+    clPairsLegend(0.1, 0.4, class = clp$class,
+                  col = clp$col, pch = clp$pch,
                   title = "Iris data")
 }
 
@@ -446,10 +446,10 @@ test_17 <- function() {
     classError(a, b)
 
     class <- factor(c(5,5,5,2,5,3,1,2,1,1), levels = 1:5)
-    probs <- matrix(c(0.15, 0.01, 0.08, 0.23, 0.01, 0.23, 0.59, 0.02, 0.38, 0.45, 
-                      0.36, 0.05, 0.30, 0.46, 0.15, 0.13, 0.06, 0.19, 0.27, 0.17, 
-                      0.40, 0.34, 0.18, 0.04, 0.47, 0.34, 0.32, 0.01, 0.03, 0.11, 
-                      0.04, 0.04, 0.09, 0.05, 0.28, 0.27, 0.02, 0.03, 0.12, 0.25, 
+    probs <- matrix(c(0.15, 0.01, 0.08, 0.23, 0.01, 0.23, 0.59, 0.02, 0.38, 0.45,
+                      0.36, 0.05, 0.30, 0.46, 0.15, 0.13, 0.06, 0.19, 0.27, 0.17,
+                      0.40, 0.34, 0.18, 0.04, 0.47, 0.34, 0.32, 0.01, 0.03, 0.11,
+                      0.04, 0.04, 0.09, 0.05, 0.28, 0.27, 0.02, 0.03, 0.12, 0.25,
                       0.05, 0.56, 0.35, 0.22, 0.09, 0.03, 0.01, 0.75, 0.20, 0.02),
                     nrow = 10, ncol = 5)
     cbind(class, probs, map = map(probs))
@@ -462,10 +462,10 @@ test_18 <- function() {
     n <- 10000
     mixpro <- c(0.9, 0.1)
     class <- factor(sample(0:1, size = n, prob = mixpro, replace = TRUE))
-    x <- ifelse(class == 1, rnorm(n, mean = 3, sd = 1), 
+    x <- ifelse(class == 1, rnorm(n, mean = 3, sd = 1),
                             rnorm(n, mean = 0, sd = 1))
 
-    hist(x[class==0], breaks = 11, xlim = range(x), main = "", xlab = "x", 
+    hist(x[class==0], breaks = 11, xlim = range(x), main = "", xlab = "x",
          col = adjustcolor("dodgerblue2", alpha.f = 0.5), border = "white")
     hist(x[class==1], breaks = 11, add = TRUE,
          col = adjustcolor("red3", alpha.f = 0.5), border = "white")
@@ -475,11 +475,11 @@ test_18 <- function() {
     # f(x) = 0.5 * N(0,1) + 0.5 * N(3,1)
     n_train <- 1000
     class_train <- factor(sample(0:1, size = n_train, prob = c(0.5, 0.5), replace = TRUE))
-    x_train <- ifelse(class_train == 1, rnorm(n_train, mean = 3, sd = 1), 
+    x_train <- ifelse(class_train == 1, rnorm(n_train, mean = 3, sd = 1),
                                         rnorm(n_train, mean = 0, sd = 1))
 
-    hist(x_train[class_train==0], breaks = 11, xlim = range(x_train), 
-         main = "", xlab = "x", 
+    hist(x_train[class_train==0], breaks = 11, xlim = range(x_train),
+         main = "", xlab = "x",
          col = adjustcolor("dodgerblue2", alpha.f = 0.5), border = "white")
     hist(x_train[class_train==1], breaks = 11, add = TRUE,
          col = adjustcolor("red3", alpha.f = 0.5), border = "white")
@@ -512,13 +512,13 @@ test_18 <- function() {
     BrierScore(pred$z, class)
 
     matplot(priorProp, cbind(CE,BS), type = "l", lty = 1, lwd = 2,
-            xlab = "Class prior probability", ylab = "", ylim = c(0,max(CE,BS)), 
-            panel.first = 
+            xlab = "Class prior probability", ylab = "", ylim = c(0,max(CE,BS)),
+            panel.first =
               { abline(h = seq(0,1,by=0.05), col = "grey", lty = 3)
-                abline(v = seq(0,1,by=0.05), col = "grey", lty = 3) 
+                abline(v = seq(0,1,by=0.05), col = "grey", lty = 3)
               })
     abline(v = mod$prop[2], lty = 2)              # training prop
-    abline(v = mean(class==1), lty = 4)           # test prop (usually unknown) 
+    abline(v = mean(class==1), lty = 4)           # test prop (usually unknown)
     abline(v = priorProbs[2], lty = 3, lwd = 2)      # estimated prior probs
     legend("topleft", legend = c("ClassError", "BrierScore"),
            col = 1:2, lty = 1, lwd = 2, inset = 0.02)
@@ -533,7 +533,7 @@ test_19 <- function() {
     data(Baudry_etal_2010_JCGS_examples)
 
     # run Mclust using provided data
-    output <- clustCombi(data = ex4.1) 
+    output <- clustCombi(data = ex4.1)
 
     # or run Mclust and then clustcombi on the returned object
     mod <- Mclust(ex4.1)
@@ -549,40 +549,40 @@ test_19 <- function() {
 
 
     # plot the hierarchy of combined solutions
-    plot(output, what = "classification") 
+    plot(output, what = "classification")
     # plot some "entropy plots" which may help one to select the number of classes
-    plot(output, what = "entropy") 
+    plot(output, what = "entropy")
     # plot the tree structure obtained from combining mixture components
-    plot(output, what = "tree") 
+    plot(output, what = "tree")
 
     # the selected model and number of components obtained from Mclust using BIC
-    output$MclustOutput 
+    output$MclustOutput
 
-    # the matrix whose [i,k]th entry is the probability that i-th observation in 
+    # the matrix whose [i,k]th entry is the probability that i-th observation in
     # the data belongs to the k-th class according to the BIC solution
-    head( output$combiz[[output$MclustOutput$G]] ) 
-    # the matrix whose [i,k]th entry is the probability that i-th observation in 
+    head( output$combiz[[output$MclustOutput$G]] )
+    # the matrix whose [i,k]th entry is the probability that i-th observation in
     # the data belongs to the k-th class according to the first combined solution
-    head( output$combiz[[output$MclustOutput$G-1]] ) 
-    # the matrix describing how to merge the 6-classes solution to get the 
+    head( output$combiz[[output$MclustOutput$G-1]] )
+    # the matrix describing how to merge the 6-classes solution to get the
     # 5-classes solution
-    output$combiM[[5]] 
-    # for example the following code returns the label of the class (in the 
+    output$combiM[[5]]
+    # for example the following code returns the label of the class (in the
     # 5-classes combined solution) to which the 4th class (in the 6-classes
-    # solution) is assigned. Only two classes in the (K+1)-classes solution 
-    # are assigned the same class in the K-classes solution: the two which 
-    # are merged at this step 
-    output$combiM[[5]] 
-    # recover the 5-classes soft clustering from the 6-classes soft clustering 
+    # solution) is assigned. Only two classes in the (K+1)-classes solution
+    # are assigned the same class in the K-classes solution: the two which
+    # are merged at this step
+    output$combiM[[5]]
+    # recover the 5-classes soft clustering from the 6-classes soft clustering
     # and the 6 -> 5 combining matrix
-    all( output$combiz[[5]] == t( output$combiM[[5]] %*% t(output$combiz[[6]]) ) ) 
+    all( output$combiz[[5]] == t( output$combiM[[5]] %*% t(output$combiz[[6]]) ) )
     # the hard clustering under the 5-classes solution
     head( output$classification[[5]] )
 }
 
 test_20 <- function() {
     data(Baudry_etal_2010_JCGS_examples)
-    output <- clustCombi(data = ex4.1) 
+    output <- clustCombi(data = ex4.1)
     combiOptim <- clustCombiOptim(output)
     str(combiOptim)
 
@@ -598,7 +598,7 @@ test_20 <- function() {
 test_21 <- function() {
 
     data(Baudry_etal_2010_JCGS_examples)
-    MclustOutput <- Mclust(ex4.1) 
+    MclustOutput <- Mclust(ex4.1)
 
     MclustOutput$G # Mclust/BIC selected 6 classes
 
@@ -606,7 +606,7 @@ test_21 <- function() {
 
     combiM0 <- diag(6) # is the identity matrix
     # no merging: plot the initial solution, given by z
-    combiPlot(ex4.1, MclustOutput$z, combiM0, cex = 3) 
+    combiPlot(ex4.1, MclustOutput$z, combiM0, cex = 3)
     title("No combining")
 
     combiM1 <- combMat(6, 1, 2) # let's merge classes labeled 1 and 2
@@ -614,24 +614,24 @@ test_21 <- function() {
     combiPlot(ex4.1, MclustOutput$z, combiM1)
     title("Combine 1 and 2")
 
-    # let's merge classes labeled 1 and 2, and then components labeled (in this 
+    # let's merge classes labeled 1 and 2, and then components labeled (in this
     # new 5-classes combined solution) 1 and 2
-    combiM2 <- combMat(5, 1, 2) %*% combMat(6, 1, 2) 
-    combiM2 
+    combiM2 <- combMat(5, 1, 2) %*% combMat(6, 1, 2)
+    combiM2
     combiPlot(ex4.1, MclustOutput$z, combiM2)
     title("Combine 1, 2 and then 1 and 2 again")
 
     plot(0,0,type="n", xlab = "", ylab = "", axes = FALSE)
     legend("center", legend = 1:6,
-           col = mclust.options("classPlotColors"), 
-           pch = mclust.options("classPlotSymbols"), 
+           col = mclust.options("classPlotColors"),
+           pch = mclust.options("classPlotSymbols"),
            title = "Class labels:")
 }
 
 test_22 <- function() {
 
     data(Baudry_etal_2010_JCGS_examples)
-    output <- clustCombi(data = ex4.1) 
+    output <- clustCombi(data = ex4.1)
     combiTree(output)
     combiTree(output, type = "rectangle")
     combiTree(output, yaxis = "step")
@@ -643,9 +643,9 @@ test_23 <- function() {
     est <- meVVV(iris[,-5], unmap(iris[,5]))
     par(pty = "s", mfrow = c(1,1))
     coordProj(iris[,-5], dimens=c(2,3), parameters = est$parameters, z = est$z,
-              what = "classification", main = TRUE) 
+              what = "classification", main = TRUE)
     coordProj(iris[,-5], dimens=c(2,3), parameters = est$parameters, z = est$z,
-              truth = iris[,5], what = "error", main = TRUE) 
+              truth = iris[,5], what = "error", main = TRUE)
     coordProj(iris[,-5], dimens=c(2,3), parameters = est$parameters, z = est$z,
               what = "uncertainty", main = TRUE)
 }
@@ -661,7 +661,7 @@ test_24 <- function() {
 }
 
 test_25 <- function() {
-    # discriminant coordinates for the iris data using known classes 
+    # discriminant coordinates for the iris data using known classes
     data("iris")
     CRIMCOORDS = crimcoords(iris[,-5], iris$Species)
     summary(CRIMCOORDS)
@@ -670,7 +670,7 @@ test_25 <- function() {
     # banknote data
     data("banknote")
 
-    # discriminant coordinate on known classes 
+    # discriminant coordinate on known classes
     CRIMCOORDS = crimcoords(banknote[,-1], banknote$Status)
     summary(CRIMCOORDS)
     plot(CRIMCOORDS)
@@ -682,14 +682,14 @@ test_25 <- function() {
     plot(CRIMCOORDS)
     plot(CRIMCOORDS$projection, type = "n")
     text(CRIMCOORDS$projection, cex = 0.8,
-         labels = strtrim(banknote$Status, 2), 
+         labels = strtrim(banknote$Status, 2),
          col = mclust.options("classPlotColors")[1:mod$G][mod$classification])
 }
 
 test_26 <- function() {
     # This dataset was created as follows
 
-    n <- 250 
+    n <- 250
     set.seed(0)
     cross <- rbind(matrix(rnorm(n*2), n, 2) %*% diag(c(1,9)),
                    matrix(rnorm(n*2), n, 2) %*% diag(c(1,9))[,2:1])
@@ -734,7 +734,7 @@ test_27 <- function() {
 }
 
 test_28 <- function() {
-    meEst <- meVEV(iris[,-5], unmap(iris[,5])) 
+    meEst <- meVEV(iris[,-5], unmap(iris[,5]))
     names(meEst)
     meEst$parameters$variance
 
@@ -751,7 +751,7 @@ test_29 <- function() {
     summary(irisBIC, iris[,-5])
 
     # equivalent to previous example
-    irisBIC <- mclustBIC(iris[,-5], 
+    irisBIC <- mclustBIC(iris[,-5],
                          prior = priorControl(functionName = "defaultPrior"))
     summary(irisBIC, iris[,-5])
 
@@ -788,7 +788,7 @@ test_31 <- function() {
     dens <- densityMclust(faithful, modelNames = "EEE", G = 3, plot = FALSE)
     summary(dens)
     summary(dens, parameters = TRUE)
-    plot(dens, what = "density", data = faithful, 
+    plot(dens, what = "density", data = faithful,
          drawlabels = FALSE, points.pch = 20)
     plot(dens, what = "density", type = "hdr")
     plot(dens, what = "density", type = "hdr", prob = c(0.1, 0.9))
@@ -798,7 +798,7 @@ test_31 <- function() {
 
     dens <- densityMclust(iris[,1:4], G = 2)
     summary(dens, parameters = TRUE)
-    plot(dens, what = "density", data = iris[,1:4], 
+    plot(dens, what = "density", data = iris[,1:4],
          col = "slategrey", drawlabels = FALSE, nlevels = 7)
     plot(dens, what = "density", type = "hdr", data = iris[,1:4])
     plot(dens, what = "density", type = "persp", col = grey(0.9))
@@ -841,7 +841,7 @@ test_34 <- function() {
 
 test_35 <- function() {
 
-    msEst <- mstep(modelName = "EEE", data = iris[,-5], 
+    msEst <- mstep(modelName = "EEE", data = iris[,-5],
                    z = unmap(iris[,5]))
     names(msEst)
 
@@ -866,9 +866,9 @@ test_38 <- function() {
 
     data(Baudry_etal_2010_JCGS_examples)
     # run Mclust to get the MclustOutput
-    output <- clustCombi(data = ex4.2, modelNames = "VII") 
+    output <- clustCombi(data = ex4.2, modelNames = "VII")
 
-    entPlot(output$MclustOutput$z, output$combiM, reg = c(2,3)) 
+    entPlot(output$MclustOutput$z, output$combiM, reg = c(2,3))
     # legend: in red, the single-change-point piecewise linear regression;
     #         in blue, the two-change-point piecewise linear regression.
 }
@@ -885,7 +885,7 @@ test_39 <- function() {
     # one side bars
     b <- barplot(n, ylim = c(0, max(n)*1.5))
     errorBars(b, lower = n, upper = n+se, lwd = 2, col = "red3", code = 1)
-    # 
+    #
     plot(x, n, ylim = c(0, max(n)*1.5), pch = 0)
     errorBars(x, lower = n-se, upper = n+se, lwd = 2, col = "red3")
     #
@@ -915,16 +915,17 @@ test_42 <- function() {
     data(faithful)
     mod <- Mclust(faithful)
     summary(mod)
-    plot(as.densityMclust(mod), faithful, what = "density", 
-         points.pch = mclust.options("classPlotSymbols")[mod$classification], 
+    plot(as.densityMclust(mod), faithful, what = "density",
+         points.pch = mclust.options("classPlotSymbols")[mod$classification],
          points.col = mclust.options("classPlotColors")[mod$classification])
 
-    GMMHD <- gmmhd(mod)
-    summary(GMMHD)
+    # This requires r-geometry (not yet available)
+    # GMMHD <- gmmhd(mod)
+    # summary(GMMHD)
 
-    plot(GMMHD, what = "mode")
-    plot(GMMHD, what = "cores")
-    plot(GMMHD, what = "clusters")
+    # plot(GMMHD, what = "mode")
+    # plot(GMMHD, what = "cores")
+    # plot(GMMHD, what = "clusters")
 }
 
 test_43 <- function() {
@@ -999,7 +1000,7 @@ test_47 <- function() {
     # Example 2: univariate Gaussian mixture
     set.seed(1)
     cl <- sample(1:2, size = 1000, prob = c(0.7, 0.3), replace = TRUE)
-    x <- ifelse(cl == 1, 
+    x <- ifelse(cl == 1,
                 rnorm(1000, mean = 0, sd = 1),
                 rnorm(1000, mean = 4, sd = 1))
     f <- 0.7*dnorm(x, mean = 0, sd = 1) + 0.3*dnorm(x, mean = 4, sd = 1)
@@ -1038,26 +1039,30 @@ test_49 <- function() {
 
 test_50 <- function() {
 
-    # Note that package 'mix' must be installed
-    data(stlouis, package = "mix")
- 
-    # impute the continuos variables in the stlouis data
-    stlimp <- imputeData(stlouis[,-(1:3)])
+    # r-mix not yet available
 
-    # plot imputed values
-    imputePairs(stlouis[,-(1:3)], stlimp)
+    # # Note that package 'mix' must be installed
+    # data(stlouis, package = "mix")
+
+    # # impute the continuos variables in the stlouis data
+    # stlimp <- imputeData(stlouis[,-(1:3)])
+
+    # # plot imputed values
+    # imputePairs(stlouis[,-(1:3)], stlimp)
 }
 
 test_51 <- function() {
 
-    # Note that package 'mix' must be installed
-    data(stlouis, package = "mix")
- 
-    # impute the continuos variables in the stlouis data
-    stlimp <- imputeData(stlouis[,-(1:3)])
+    # r-mix not yet available
 
-    # plot imputed values
-    imputePairs(stlouis[,-(1:3)], stlimp)
+    # # Note that package 'mix' must be installed
+    # data(stlouis, package = "mix")
+
+    # # impute the continuos variables in the stlouis data
+    # stlimp <- imputeData(stlouis[,-(1:3)])
+
+    # # plot imputed values
+    # imputePairs(stlouis[,-(1:3)], stlimp)
 }
 
 test_52 <- function() {
@@ -1117,16 +1122,16 @@ test_58 <- function() {
     mclust.options()
 
     oldpar <- par(mfrow = c(2,1), no.readonly = TRUE)
-    n <- with(mclust.options(), 
+    n <- with(mclust.options(),
               max(sapply(list(bicPlotSymbols, bicPlotColors),length)))
-    plot(seq(n), rep(1,n), ylab = "", xlab = "", yaxt = "n", 
-         pch = mclust.options("bicPlotSymbols"), 
+    plot(seq(n), rep(1,n), ylab = "", xlab = "", yaxt = "n",
+         pch = mclust.options("bicPlotSymbols"),
          col = mclust.options("bicPlotColors"))
     title("mclust.options(\"bicPlotSymbols\") \n mclust.options(\"bicPlotColors\")")
-    n <- with(mclust.options(), 
+    n <- with(mclust.options(),
               max(sapply(list(classPlotSymbols, classPlotColors),length)))
-    plot(seq(n), rep(1,n), ylab = "", xlab = "", yaxt = "n", 
-         pch = mclust.options("classPlotSymbols"), 
+    plot(seq(n), rep(1,n), ylab = "", xlab = "", yaxt = "n",
+         pch = mclust.options("classPlotSymbols"),
          col = mclust.options("classPlotColors"))
     title("mclust.options(\"classPlotSymbols\") \n mclust.options(\"classPlotColors\")")
     par(oldpar)
@@ -1141,13 +1146,13 @@ test_59 <- function() {
 
     yModel <- Mclust(y)
 
-    mclust1Dplot(y, parameters = yModel$parameters, z = yModel$z, 
+    mclust1Dplot(y, parameters = yModel$parameters, z = yModel$z,
                  what = "classification")
 
-    mclust1Dplot(y, parameters = yModel$parameters, z = yModel$z, 
+    mclust1Dplot(y, parameters = yModel$parameters, z = yModel$z,
                  what = "error", truth = yclass)
 
-    mclust1Dplot(y, parameters = yModel$parameters, z = yModel$z, 
+    mclust1Dplot(y, parameters = yModel$parameters, z = yModel$z,
                  what = "density")
 
     mclust1Dplot(y, z = yModel$z, parameters = yModel$parameters,
@@ -1158,10 +1163,10 @@ test_60 <- function() {
 
     faithfulModel <- Mclust(faithful)
 
-    mclust2Dplot(faithful, parameters=faithfulModel$parameters, 
+    mclust2Dplot(faithful, parameters=faithfulModel$parameters,
                  z=faithfulModel$z, what = "classification", main = TRUE)
 
-    mclust2Dplot(faithful, parameters=faithfulModel$parameters, 
+    mclust2Dplot(faithful, parameters=faithfulModel$parameters,
                  z=faithfulModel$z, what = "uncertainty", main = TRUE)
 }
 
@@ -1176,11 +1181,11 @@ test_61 <- function() {
     irisBIC
     plot(irisBIC)
 
-    irisBIC1 <- mclustBIC(iris[,-5], G=seq(from=1,to=9,by=2), 
+    irisBIC1 <- mclustBIC(iris[,-5], G=seq(from=1,to=9,by=2),
                         modelNames=c("EII", "EEI", "EEE"))
     irisBIC1
     plot(irisBIC1)
-    irisBIC2  <- mclustBIC(iris[,-5], G=seq(from=2,to=8,by=2), 
+    irisBIC2  <- mclustBIC(iris[,-5], G=seq(from=2,to=8,by=2),
                            modelNames=c("VII", "VVI", "VVV"), x= irisBIC1)
     irisBIC2
     plot(irisBIC2)
@@ -1188,7 +1193,7 @@ test_61 <- function() {
 
     nNoise <- 450
     set.seed(0)
-    poissonNoise <- apply(apply( iris[,-5], 2, range), 2, function(x, n) 
+    poissonNoise <- apply(apply( iris[,-5], 2, range), 2, function(x, n)
                           runif(n, min = x[1]-.1, max = x[2]+.1), n = nNoise)
     set.seed(0)
     noiseInit <- sample(c(TRUE,FALSE),size=nrow(iris)+nNoise,replace=TRUE,
@@ -1202,7 +1207,7 @@ test_61 <- function() {
 
 test_62 <- function() {
 
-    data(galaxies, package = "MASS") 
+    data(galaxies, package = "MASS")
     galaxies <- galaxies / 1000
 
     # use several random starting points
@@ -1271,7 +1276,7 @@ test_69 <- function() {
     w = w/mean(w)
     c(summary(w), sum = sum(w))
     z = unmap(sample(1:3, size = nrow(iris), replace = TRUE))
-    MEW = me.weighted(data = iris[,-5], modelName = "VVV", 
+    MEW = me.weighted(data = iris[,-5], modelName = "VVV",
                       z = z, weights = w)
     str(MEW,1)
 }
@@ -1295,27 +1300,27 @@ test_73 <- function() {
 
     set.seed(0)
     x <- rnorm(n, mean = -1, sd = 2)
-    mvn(modelName = "X", x) 
+    mvn(modelName = "X", x)
 
     mu <- c(-1, 0, 1)
 
     set.seed(0)
-    x <- sweep(matrix(rnorm(n*3), n, 3) %*% (2*diag(3)), 
+    x <- sweep(matrix(rnorm(n*3), n, 3) %*% (2*diag(3)),
                MARGIN = 2, STATS = mu, FUN = "+")
-    mvn(modelName = "XII", x) 
-    mvn(modelName = "Spherical", x) 
+    mvn(modelName = "XII", x)
+    mvn(modelName = "Spherical", x)
 
     set.seed(0)
-    x <- sweep(matrix(rnorm(n*3), n, 3) %*% diag(1:3), 
+    x <- sweep(matrix(rnorm(n*3), n, 3) %*% diag(1:3),
                MARGIN = 2, STATS = mu, FUN = "+")
     mvn(modelName = "XXI", x)
     mvn(modelName = "Diagonal", x)
 
     Sigma <- matrix(c(9,-4,1,-4,9,4,1,4,9), 3, 3)
     set.seed(0)
-    x <- sweep(matrix(rnorm(n*3), n, 3) %*% chol(Sigma), 
+    x <- sweep(matrix(rnorm(n*3), n, 3) %*% chol(Sigma),
                MARGIN = 2, STATS = mu, FUN = "+")
-    mvn(modelName = "XXX", x) 
+    mvn(modelName = "XXX", x)
     mvn(modelName = "Ellipsoidal", x)
 }
 
@@ -1325,23 +1330,23 @@ test_74 <- function() {
 
     set.seed(0)
     x <- rnorm(n, mean = -1, sd = 2)
-    mvnX(x) 
+    mvnX(x)
 
     mu <- c(-1, 0, 1)
 
     set.seed(0)
-    x <- sweep(matrix(rnorm(n*3), n, 3) %*% (2*diag(3)), 
+    x <- sweep(matrix(rnorm(n*3), n, 3) %*% (2*diag(3)),
                MARGIN = 2, STATS = mu, FUN = "+")
-    mvnXII(x) 
+    mvnXII(x)
 
     set.seed(0)
-    x <- sweep(matrix(rnorm(n*3), n, 3) %*% diag(1:3), 
+    x <- sweep(matrix(rnorm(n*3), n, 3) %*% diag(1:3),
                MARGIN = 2, STATS = mu, FUN = "+")
     mvnXXI(x)
 
     Sigma <- matrix(c(9,-4,1,-4,9,4,1,4,9), 3, 3)
     set.seed(0)
-    x <- sweep(matrix(rnorm(n*3), n, 3) %*% chol(Sigma), 
+    x <- sweep(matrix(rnorm(n*3), n, 3) %*% chol(Sigma),
                MARGIN = 2, STATS = mu, FUN = "+")
     mvnXXX(x)
 }
@@ -1446,7 +1451,7 @@ test_81 <- function() {
     plot(irisMclustDA, what = "error", newdata = X.test, newclass = Class.test, dimens = 4)
 
     # simulated 1D data
-    n <- 250 
+    n <- 250
     set.seed(1)
     triModal <- c(rnorm(n,-5), rnorm(n,0), rnorm(n,5))
     triClass <- c(rep(1,n), rep(2,n), rep(3,n))
@@ -1529,27 +1534,27 @@ test_84 <- function() {
 
     data(Baudry_etal_2010_JCGS_examples)
 
-    ## 1D Example 
+    ## 1D Example
     output <- clustCombi(data = Test1D, G=1:15)
 
-    # plots the hierarchy of combined solutions, then some "entropy plots" which 
-    # may help one to select the number of classes (please see the article cited 
+    # plots the hierarchy of combined solutions, then some "entropy plots" which
+    # may help one to select the number of classes (please see the article cited
     # in the references)
-    plot(output) 
+    plot(output)
 
-    ## 2D Example 
-    output <- clustCombi(data = ex4.1) 
+    ## 2D Example
+    output <- clustCombi(data = ex4.1)
 
-    # plots the hierarchy of combined solutions, then some "entropy plots" which 
-    # may help one to select the number of classes (please see the article cited 
+    # plots the hierarchy of combined solutions, then some "entropy plots" which
+    # may help one to select the number of classes (please see the article cited
     # in the references)
-    plot(output) 
+    plot(output)
 
-    ## 3D Example 
+    ## 3D Example
     output <- clustCombi(data = ex4.4.2)
 
-    # plots the hierarchy of combined solutions, then some "entropy plots" which 
-    # may help one to select the number of classes (please see the article cited 
+    # plots the hierarchy of combined solutions, then some "entropy plots" which
+    # may help one to select the number of classes (please see the article cited
     # in the references)
     plot(output)
 }
@@ -1565,7 +1570,7 @@ test_85 <- function() {
     dens <- densityMclust(faithful, plot = FALSE)
     summary(dens)
     summary(dens, parameters = TRUE)
-    plot(dens, what = "density", data = faithful, 
+    plot(dens, what = "density", data = faithful,
          drawlabels = FALSE, points.pch = 20)
     plot(dens, what = "density", type = "hdr")
     plot(dens, what = "density", type = "hdr", prob = seq(0.1, 0.9, by = 0.1))
@@ -1574,7 +1579,7 @@ test_85 <- function() {
 
     dens <- densityMclust(iris[,1:4], plot = FALSE)
     summary(dens, parameters = TRUE)
-    plot(dens, what = "density", data = iris[,1:4], 
+    plot(dens, what = "density", data = iris[,1:4],
          col = "slategrey", drawlabels = FALSE, nlevels = 7)
     plot(dens, what = "density", type = "hdr", data = iris[,1:4])
     plot(dens, what = "density", type = "persp", col = grey(0.9))
@@ -1613,10 +1618,10 @@ test_89 <- function() {
     model <- Mclust(faithful)
 
     # predict cluster for the observed data
-    pred <- predict(model) 
+    pred <- predict(model)
     str(pred)
     pred$z              # equal to model$z
-    pred$classification # equal to 
+    pred$classification # equal to
     plot(faithful, col = pred$classification, pch = pred$classification)
 
     # predict cluster over a grid
@@ -1707,9 +1712,9 @@ test_95 <- function() {
     est <- meVVV(iris[,-5], unmap(iris[,5]))
     par(pty = "s", mfrow = c(1,1))
     randProj(iris[,-5], seeds=1:3, parameters = est$parameters, z = est$z,
-              what = "classification", main = TRUE) 
+              what = "classification", main = TRUE)
     randProj(iris[,-5], seeds=1:3, parameters = est$parameters, z = est$z,
-              truth = iris[,5], what = "error", main = TRUE) 
+              truth = iris[,5], what = "error", main = TRUE)
     randProj(iris[,-5], seeds=1:3, parameters = est$parameters, z = est$z,
               what = "uncertainty", main = TRUE)
 }
@@ -1720,7 +1725,7 @@ test_96 <- function() {
 }
 
 test_97 <- function() {
-    meEst <- meEEE(iris[,-5], unmap(iris[,5])) 
+    meEst <- meEEE(iris[,-5], unmap(iris[,5]))
     names(meEst$parameters$variance)
     meEst$parameters$variance$Sigma
 
@@ -1731,8 +1736,8 @@ test_98 <- function() {
     irisBIC <- mclustBIC(iris[,-5])
     irisModel <- mclustModel(iris[,-5], irisBIC)
     names(irisModel)
-    irisSim <- sim(modelName = irisModel$modelName, 
-                   parameters = irisModel$parameters, 
+    irisSim <- sim(modelName = irisModel$modelName,
+                   parameters = irisModel$parameters,
                    n = nrow(iris))
 
 
@@ -1750,16 +1755,16 @@ test_98 <- function() {
     xlim <- lims[,1]
     ylim <- lims[,2]
 
-    coordProj(iris[,-5], parameters=irisModel$parameters, 
-              classification=map(irisModel$z), 
+    coordProj(iris[,-5], parameters=irisModel$parameters,
+              classification=map(irisModel$z),
               dimens=dimens, xlim=xlim, ylim=ylim)
 
-    coordProj(iris[,-5], parameters=irisModel$parameters, 
+    coordProj(iris[,-5], parameters=irisModel$parameters,
               classification=map(irisModel$z), truth = irisSim[,-1],
               dimens=dimens, xlim=xlim, ylim=ylim)
 
     irisModel3 <- mclustModel(iris[,-5], irisBIC, G=3)
-    irisSim3 <- sim(modelName = irisModel3$modelName, 
+    irisSim3 <- sim(modelName = irisModel3$modelName,
                    parameters = irisModel3$parameters, n = 500, seed = 1)
 
      irisModel3$n <- NULL
@@ -1782,13 +1787,13 @@ test_99 <- function() {
 
     variance <- list(d= d, G = G, scale = scale, shape = shape, orientation = O)
     mu <- matrix(0, d, G) ## center at the origin
-    simdat <- simEEV( n = 200, 
+    simdat <- simEEV( n = 200,
                       parameters = list(pro=c(1,1),mean=mu,variance=variance),
                       seed = NULL)
 
     cl <- simdat[,1]
 
-    sigma <- array(apply(O, 3, function(x,y) crossprod(x*y), 
+    sigma <- array(apply(O, 3, function(x,y) crossprod(x*y),
                      y = sqrt(scale*shape)), c(2,2,2))
     paramList <- list(mu = mu, sigma = sigma)
     coordProj( simdat, parameters = paramList, classification = cl)
@@ -1832,7 +1837,7 @@ test_103 <- function() {
 
     data(diabetes)
     X = diabetes[,-1]
-    modClust = Mclust(X) 
+    modClust = Mclust(X)
     bootClust = MclustBootstrap(modClust)
     summary(bootClust, what = "se")
     summary(bootClust, what = "ci")
@@ -1872,341 +1877,24 @@ test_107 <- function() {
     irisModel3 <-  Mclust(iris[,-5], G = 3)
 
     uncerPlot(z = irisModel3$z)
- 
+
     uncerPlot(z = irisModel3$z, truth = iris[,5])
 }
 
 test_108 <- function() {
     z <- unmap(iris[,5])
     z[1:5, ]
-  
+
     emEst <- me(modelName = "VVV", data = iris[,-5], z = z)
     emEst$z[1:5,]
-  
+
     map(emEst$z)
 }
 
-cat("Running test_1\n")
-test_1()
-
-cat("Running test_2\n")
-test_2()
-
-cat("Running test_3\n")
-test_3()
-
-cat("Running test_4\n")
-test_4()
-
-cat("Running test_5\n")
-test_5()
-
-cat("Running test_6\n")
-test_6()
-
-cat("Running test_7\n")
-test_7()
-
-cat("Running test_8\n")
-test_8()
-
-cat("Running test_9\n")
-test_9()
-
-cat("Running test_10\n")
-test_10()
-
-cat("Running test_11\n")
-test_11()
-
-cat("Running test_12\n")
-test_12()
-
-cat("Running test_13\n")
-test_13()
-
-cat("Running test_14\n")
-test_14()
-
-cat("Running test_15\n")
-test_15()
-
-cat("Running test_16\n")
-test_16()
-
-cat("Running test_17\n")
-test_17()
-
-cat("Running test_18\n")
-test_18()
-
-cat("Running test_19\n")
-test_19()
-
-cat("Running test_20\n")
-test_20()
-
-cat("Running test_21\n")
-test_21()
-
-cat("Running test_22\n")
-test_22()
-
-cat("Running test_23\n")
-test_23()
-
-cat("Running test_24\n")
-test_24()
-
-cat("Running test_25\n")
-test_25()
-
-cat("Running test_26\n")
-test_26()
-
-cat("Running test_27\n")
-test_27()
-
-cat("Running test_28\n")
-test_28()
-
-cat("Running test_29\n")
-test_29()
-
-cat("Running test_30\n")
-test_30()
-
-cat("Running test_31\n")
-test_31()
-
-cat("Running test_32\n")
-test_32()
-
-cat("Running test_33\n")
-test_33()
-
-cat("Running test_34\n")
-test_34()
-
-cat("Running test_35\n")
-test_35()
-
-cat("Running test_36\n")
-test_36()
-
-cat("Running test_37\n")
-test_37()
-
-cat("Running test_38\n")
-test_38()
-
-cat("Running test_39\n")
-test_39()
-
-cat("Running test_40\n")
-test_40()
-
-cat("Running test_41\n")
-test_41()
-
-cat("Running test_42\n")
-test_42()
-
-cat("Running test_43\n")
-test_43()
-
-cat("Running test_44\n")
-test_44()
-
-cat("Running test_45\n")
-test_45()
-
-cat("Running test_46\n")
-test_46()
-
-cat("Running test_47\n")
-test_47()
-
-cat("Running test_48\n")
-test_48()
-
-cat("Running test_49\n")
-test_49()
-
-cat("Running test_50\n")
-test_50()
-
-cat("Running test_51\n")
-test_51()
-
-cat("Running test_52\n")
-test_52()
-
-cat("Running test_53\n")
-test_53()
-
-cat("Running test_54\n")
-test_54()
-
-cat("Running test_55\n")
-test_55()
-
-cat("Running test_56\n")
-test_56()
-
-cat("Running test_57\n")
-test_57()
-
-cat("Running test_58\n")
-test_58()
-
-cat("Running test_59\n")
-test_59()
-
-cat("Running test_60\n")
-test_60()
-
-cat("Running test_61\n")
-test_61()
-
-cat("Running test_62\n")
-test_62()
-
-cat("Running test_63\n")
-test_63()
-
-cat("Running test_64\n")
-test_64()
-
-cat("Running test_65\n")
-test_65()
-
-cat("Running test_66\n")
-test_66()
-
-cat("Running test_67\n")
-test_67()
-
-cat("Running test_68\n")
-test_68()
-
-cat("Running test_69\n")
-test_69()
-
-cat("Running test_70\n")
-test_70()
-
-cat("Running test_71\n")
-test_71()
-
-cat("Running test_72\n")
-test_72()
-
-cat("Running test_73\n")
-test_73()
-
-cat("Running test_74\n")
-test_74()
-
-cat("Running test_75\n")
-test_75()
-
-cat("Running test_76\n")
-test_76()
-
-cat("Running test_77\n")
-test_77()
-
-cat("Running test_78\n")
-test_78()
-
-cat("Running test_79\n")
-test_79()
-
-cat("Running test_80\n")
-test_80()
-
-cat("Running test_81\n")
-test_81()
-
-cat("Running test_82\n")
-test_82()
-
-cat("Running test_83\n")
-test_83()
-
-cat("Running test_84\n")
-test_84()
-
-cat("Running test_85\n")
-test_85()
-
-cat("Running test_86\n")
-test_86()
-
-cat("Running test_87\n")
-test_87()
-
-cat("Running test_88\n")
-test_88()
-
-cat("Running test_89\n")
-test_89()
-
-cat("Running test_90\n")
-test_90()
-
-cat("Running test_91\n")
-test_91()
-
-cat("Running test_92\n")
-test_92()
-
-cat("Running test_93\n")
-test_93()
-
-cat("Running test_94\n")
-test_94()
-
-cat("Running test_95\n")
-test_95()
-
-cat("Running test_96\n")
-test_96()
-
-cat("Running test_97\n")
-test_97()
-
-cat("Running test_98\n")
-test_98()
-
-cat("Running test_99\n")
-test_99()
-
-cat("Running test_100\n")
-test_100()
-
-cat("Running test_101\n")
-test_101()
-
-cat("Running test_102\n")
-test_102()
-
-cat("Running test_103\n")
-test_103()
-
-cat("Running test_104\n")
-test_104()
-
-cat("Running test_105\n")
-test_105()
-
-cat("Running test_106\n")
-test_106()
-
-cat("Running test_107\n")
-test_107()
-
-cat("Running test_108\n")
-test_108()
+test_names <- ls(pattern = "^test_[0-9]+$")
+test_names <- test_names[order(as.integer(sub("^test_", "", test_names)))]
+for (name in test_names) {
+  cat("Running ", name, "\n", sep = "")
+  get(name)()
+}
 
