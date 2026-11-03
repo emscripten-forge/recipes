@@ -149,7 +149,7 @@ files the program needs:
       files: { '/app/Main.class': 'Main.class' } // VM path: URL to fetch
     })
 
-#### Java Web Start
+### Java Web Start
 
 On a page that loads `openjdk8-web.js`, following a link to a `.jnlp` file
 starts that application with Java Web Start, as a browser with Java installed
