@@ -14,7 +14,7 @@ Upstream reference: https://github.com/zarr-developers/zarr-python/pull/1903
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/src/zarr/core/config.py b/src/zarr/core/config.py
-index 7dcbc78e..d6656556 100644
+index 42c5ed3..effdce7 100644
 --- a/src/zarr/core/config.py
 +++ b/src/zarr/core/config.py
 @@ -33,6 +33,8 @@ from typing import TYPE_CHECKING, Any, Literal, cast
@@ -26,15 +26,15 @@ index 7dcbc78e..d6656556 100644
  if TYPE_CHECKING:
      from donfig.config_obj import ConfigSet
  
-@@ -101,7 +103,7 @@ config = Config(
-                 "rectilinear_chunks": False,
+@@ -103,7 +105,7 @@ config = Config(
+                 "sharding_coalesce_max_bytes": 16 << 20,  # 16 MiB
              },
              "async": {"concurrency": 10, "timeout": None},
 -            "threading": {"max_workers": None},
 +            "threading": {"max_workers": 1 if IS_WASM else None},
              "json_indent": 2,
              "codec_pipeline": {
-                 "path": "zarr.core.codec_pipeline.BatchedCodecPipeline",
+                 # FusedCodecPipeline is the faster synchronous pipeline, but it stays
 -- 
 2.50.1 (Apple Git-155)
 
