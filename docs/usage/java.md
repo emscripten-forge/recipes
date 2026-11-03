@@ -66,7 +66,7 @@ If you link to `.js` instead of `.html`, no service worker is added. Your page
 must then send the headers itself. None of this applies to
 programs linked with `--node`.
 
-#### Prelinked runtime
+### Prelinked runtime
 
 The `openjdk21` package also contains the runtime already linked, like
 `openjdk8` does, so a page can run Java without `openjdk21-wasm-link`. Copy
