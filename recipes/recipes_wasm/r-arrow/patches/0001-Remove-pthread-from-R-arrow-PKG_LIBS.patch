@@ -1,0 +1,30 @@
+From 1784a6cf9e30f216bef3ede29296ce2c0321d35f Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Tue, 3 Nov 2026 15:01:51 +0100
+Subject: [PATCH] Remove-pthread-from-R-arrow-PKG_LIBS
+
+---
+ r/configure | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/r/configure b/r/configure
+index 9919a39..02d74ae 100755
+--- a/r/configure
++++ b/r/configure
+@@ -271,6 +271,13 @@ set_pkg_vars_with_pc () {
+   PKG_CFLAGS="`${PKG_CONFIG} --cflags  ${pkg_config_names}` $PKG_CFLAGS"
+   PKG_CFLAGS="$PKG_CFLAGS $PKG_CFLAGS_FEATURES"
+   PKG_LIBS=`${PKG_CONFIG} --libs-only-l --libs-only-other ${pkg_config_names}`
++  # Emscripten: Arrow C++ was built without atomics/shared-memory; -pthread
++  # comes from re2.pc and must not reach em++ compile or link.
++  PKG_CFLAGS=$(echo "$PKG_CFLAGS" | sed 's/ -pthread / /g' | sed 's/^-pthread //g' | sed 's/ -pthread$//g')
++  PKG_LIBS=$(echo "$PKG_LIBS" | sed 's/ -pthread / /g' | sed 's/^-pthread //g' | sed 's/ -pthread$//g')
++  # brotlicommon is Requires.private of brotlidec/enc; needed for static .a link
++  PKG_LIBS="$PKG_LIBS -lbrotlicommon"
++
+   PKG_LIBS="$PKG_LIBS $PKG_LIBS_FEATURES"
+   PKG_DIRS=`${PKG_CONFIG} --libs-only-L  ${pkg_config_names}`
+ }
+-- 
+2.56.0
+
