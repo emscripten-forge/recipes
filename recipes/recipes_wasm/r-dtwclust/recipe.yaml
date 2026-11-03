@@ -3,30 +3,25 @@ context:
   version: 6.0.0
 
 package:
-  name: r-${{ name | lower }}
-  version: ${{ version | replace('-', '_') }}
+  name: r-${{ name }}
+  version: ${{ version }}
 
 source:
   url: https://github.com/asardaes/dtwclust/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 71af074898d6b00041d2b73f19ad6c4b626d6860596994b89d68cb6ec19c6f96
-  # path: /Users/thorstenbeier/src/dtwclust
   patches:
-   - patches/no_thread_usage.patch
+  - patches/no_thread_usage.patch
 
 build:
   number: 0
-  skip: ${{ r_base == '4.6.1' }}
-
-   
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
 
 requirements:
   build:
-  # - if: linux
-  #   then:
   - cross-r-base ==${{ r_base }}
   - ${{ compiler('c') }}
   - r-base
-  # - clang
   - r-rcpp
   - r-rcpparmadillo
   - r-clue
@@ -40,9 +35,6 @@ requirements:
   - r-rspectra
   - r-reshape2
   - r-proxy >= 0.4_16
-  # # only use these deps when we are building on a linux machine
-  # - if: linux
-  #   then:
   - r-dtw
   - r-flexclust
   host:
@@ -83,13 +75,16 @@ tests:
 - package_contents:
     lib:
     - R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_${{ name }}.R
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
     - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://github.com/asardaes/dtwclust
@@ -98,7 +93,9 @@ about:
   license: GPL-3.0-only
   license_file:
   - ${{ PREFIX }}/lib/R/share/licenses/GPL-3
-  summary: "Time Series Clustering Along with Optimizations for the Dynamic\nTime Warping Distance"
+  summary: |
+    Time Series Clustering Along with Optimizations for the Dynamic Time Warping
+    Distance
   description: |-
     Time series clustering along with optimized techniques related
     to the Dynamic Time Warping distance and its corresponding lower bounds.
@@ -114,3 +111,4 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
+  - IsabelParedes
