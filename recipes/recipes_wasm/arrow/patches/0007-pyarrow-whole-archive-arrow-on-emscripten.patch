@@ -1,0 +1,19 @@
+--- a/python/CMakeLists.txt
++++ b/python/CMakeLists.txt
+@@ -524,6 +524,17 @@
+ # to depend on everything, as python loads modules separately
+ if(ARROW_BUILD_SHARED)
+   target_link_libraries(arrow_python PUBLIC ${PYARROW_CPP_LINK_LIBS})
++elseif(EMSCRIPTEN)
++  # The Cython modules only link arrow_python and resolve Arrow symbols from
++  # libarrow_python.so when the side modules are loaded, so it must contain
++  # all of Arrow, not just the archive members arrow_python itself uses.
++  # Arrow::arrow_static is only a transitive dependency of the component
++  # libraries in PYARROW_CPP_LINK_LIBS, so name it explicitly.
++  foreach(_pyarrow_static_lib ${PYARROW_CPP_LINK_LIBS} Arrow::arrow_static)
++    target_link_libraries(arrow_python
++                          PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,${_pyarrow_static_lib}>")
++  endforeach()
+ else()
+   target_link_libraries(arrow_python PRIVATE ${PYARROW_CPP_LINK_LIBS})
+ endif()

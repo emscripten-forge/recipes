@@ -1,0 +1,125 @@
+context:
+  name: libgdal-core
+  version: 3.13.3
+
+source:
+  url: https://github.com/OSGeo/gdal/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 645472bdff3453a2ebbf057edfa3932a7a4577ac61c45b74cc6063880e7e450d
+  patches:
+  - patches/0001-Add-CPL_CPUID-guards.patch
+  - patches/0002-Add-CPL_CPUID-guard-AVX2.patch
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - pkg-config
+    host:
+    - libtiff-static
+    - proj >=9.8
+    - libiconv-static
+    - geos
+    - libpng-static
+    - zlib-static
+    - libjpeg-turbo-static
+    - libsqlite-static
+    run_exports:
+    - ${{ pin_subpackage(name, upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libgdal.so
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: ${{ name }}-tests
+    version: ${{ version }}
+  build:
+    script: build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - ninja
+    host:
+    - ${{ pin_subpackage(name, exact=True) }}
+    - geos
+    - proj >=9.8
+    run:
+    - ${{ pin_subpackage(name, exact=True) }}
+    - geos
+    - proj >=9.8
+  tests:
+  - script:
+    - run_tests.sh
+    files:
+      recipe:
+      - run_tests.sh
+    requirements:
+      build:
+      - nodejs
+- package:
+    name: ${{ name }}-static
+    version: ${{ version }}
+  build:
+    script: build_static.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cmake
+    - pkg-config
+    host:
+    - libtiff-static
+    - proj-static
+    - libiconv-static
+    - geos-static
+    - libpng-static
+    - zlib-static
+    - libjpeg-turbo-static
+    - libsqlite-static
+    run:
+    - ${{ pin_compatible('libtiff-static', lower_bound='x.x', upper_bound='x') }}
+    - ${{ pin_compatible('proj-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libiconv-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('geos-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libpng-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+    - ${{ pin_compatible('libjpeg-turbo-static', lower_bound='x.x', upper_bound='x') }}
+    - ${{ pin_compatible('libsqlite-static', lower_bound='x.x', upper_bound='x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libgdal.a
+
+  # claude claims:
+  # CPL threading is disabled (GDAL_USE_CPL_MULTIPROC_PTHREAD=OFF), but a few
+  # optional code paths (viewshed, GeoPackage async RTree, raster tile
+  # algorithm) still use std::thread/std::async. Nothing is compiled with
+  # -pthread; those paths fail at runtime when used, as on 4x.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  homepage: https://gdal.org/
+  license: MIT
+  license_file: LICENSE.TXT
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes
+  - mmesch

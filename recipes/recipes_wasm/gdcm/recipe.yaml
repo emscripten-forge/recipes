@@ -1,0 +1,164 @@
+context:
+  name: gdcm
+  version: 3.2.11
+
+source:
+  url: https://github.com/malaterre/GDCM/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3969bd514674bcfeb8f09df58de86dbc8a5eb1bd8ad5d0b1061567da8ce10f78
+  patches:
+  # SWIG >= 4.1 dropped the Python 2 compat macros (PyString_*, PyInt_*)
+  - patches/0001-swig-python3-api.patch
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: gdcm-build
+  build:
+    script: build.sh
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - swig
+    - cross-python_${{ target_platform }}
+    - python
+    host:
+    - python-dev
+    ignore_run_exports:
+      from_package:
+      - python
+      - python-dev
+      - libpython-static
+      - cross-python_${{ target_platform }}
+
+#==============================================================================#
+
+# C++ libraries (static) + headers + cmake config
+- package:
+    name: gdcm-static
+    version: ${{ version }}
+  inherit: gdcm-build
+  build:
+    files:
+      include:
+      - lib/*.a
+      - lib/gdcm-*/**
+      - include/gdcm-*/**
+  tests:
+  - package_contents:
+      lib:
+      - libgdcmCommon.a
+      - libgdcmDSED.a
+      - libgdcmIOD.a
+      - libgdcmMSFF.a
+      - libgdcmMEXD.a
+      - libgdcmDICT.a
+      - libgdcmjpeg8.a
+      - libgdcmjpeg12.a
+      - libgdcmjpeg16.a
+      - libgdcmopenjp2.a
+      - libgdcmcharls.a
+      - libgdcmuuid.a
+      - libgdcmzlib.a
+      - libgdcmexpat.a
+      - libsocketxx.a
+      files:
+        exists:
+        - include/gdcm-*/gdcmReader.h
+        - include/gdcm-*/gdcmWriter.h
+        - include/gdcm-*/gdcmImage.h
+        - lib/gdcm-*/GDCMConfig.cmake
+        - lib/gdcm-*/GDCMTargets.cmake
+        not_exists:
+        - '**/*.so'
+        - lib/python*/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script:
+    - build_tests.sh
+    requirements:
+      build:
+      - ${{ compiler('cxx') }}
+      - cmake
+      - ninja
+      - nodejs
+    files:
+      recipe:
+      - build_tests.sh
+      - tests/
+
+#==============================================================================#
+
+# the SWIG python bindings (`import gdcm`), as python-gdcm on PyPI/conda-forge
+- package:
+    name: python-gdcm
+    version: ${{ version }}
+  inherit: gdcm-build
+  build:
+    files:
+      include:
+      - lib/python*/site-packages/gdcm.py
+      - lib/python*/site-packages/gdcmswig.py
+      - lib/python*/site-packages/_gdcmswig.so
+      exclude:
+      - '**/*.pyc'
+      - '**/__pycache__/**'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    host:
+    - python
+    run:
+    - python
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/python*/site-packages/gdcm.py
+        - lib/python*/site-packages/gdcmswig.py
+        - lib/python*/site-packages/_gdcmswig.so
+        not_exists:
+        - '**/*.a'
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_python_gdcm.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+      - numpy
+      - pydicom
+
+#==============================================================================#
+
+about:
+  homepage: https://github.com/malaterre/GDCM
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: Copyright.txt
+  summary: Grassroots DICOM library
+  description: |
+    GDCM (Grassroots DICOM) is a C++ library for reading, writing and
+    manipulating DICOM (Digital Imaging and Communications in Medicine)
+    medical image files. It provides a complete implementation of the DICOM
+    standard including multiple transfer syntaxes, image codecs, and
+    the DICOM dictionary.
+  documentation: http://gdcm.sourceforge.net/wiki/
+  repository: https://github.com/malaterre/GDCM
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

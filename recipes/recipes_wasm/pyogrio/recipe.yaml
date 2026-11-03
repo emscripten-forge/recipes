@@ -1,0 +1,68 @@
+context:
+  name: pyogrio
+  version: 0.13.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/geopandas/pyogrio/releases/download/v${{ version }}/pyogrio-${{ version }}.tar.gz
+  sha256: 9614f27a1891113f80653e0b76b4233ea1fb3beeb1ac46d118ab22e1670f8f13
+  patches:
+  - patches/0001-Set-GDAL_DATA-environment-variable-and-remove-ValueE.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - cython
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - pip
+  - setuptools
+  - versioneer
+  - tomli
+  - numpy
+  host:
+  - python-dev
+  - libgdal-core
+  - numpy
+  run:
+  - python
+  - libgdal-core
+  - packaging
+  - numpy
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_pyogrio.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/geopandas/pyogrio/
+  license: MIT
+  license_file: LICENSE
+  summary: Vectorized vector I/O using GDAL
+  description: |
+    Provide faster I/O using GDAL OGR to read / write vector geospatial files.
+    Intended for use with libraries that consume WKB for their internal constructs, such as pygeos.
+  documentation: https://pyogrio.readthedocs.io/
+  repository: https://github.com/geopandas/pyogrio
+
+extra:
+  recipe-maintainers:
+  - jjerphan

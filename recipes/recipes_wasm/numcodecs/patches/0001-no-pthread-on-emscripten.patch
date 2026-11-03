@@ -1,0 +1,13 @@
+--- a/src/numcodecs/meson.build
++++ b/src/numcodecs/meson.build
+@@ -2,7 +2,9 @@
+ c_args = []
+ link_args = []
+
+-if host_machine.system() != 'windows'
++# emscripten-forge builds without pthreads (no shared memory); c-blosc
++# falls back to its single-threaded code path then
++if host_machine.system() not in ['windows', 'emscripten']
+   c_args += ['-pthread']
+   link_args += ['-pthread']
+ endif

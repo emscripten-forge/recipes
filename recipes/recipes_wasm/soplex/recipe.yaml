@@ -1,0 +1,59 @@
+context:
+  version: 8.1.0
+
+package:
+  name: soplex-static
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scipopt/soplex/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 5aad34f158d251549e2aadbfbef706629f38652fcd027c12b0a8b2d3c8ff0719
+  patches:
+  # soplex always builds libsoplexshared; skip it on emscripten
+  - patches/0001-no-shared-lib-on-emscripten.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - boost-headers
+  - gmp-static
+  - mpfr-static
+  - zlib-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('mpfr-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('zlib-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libsoplex.a
+    - libsoplex-pic.a
+    include:
+    - soplex.h
+    - soplex/spxdefines.h
+    files:
+    - bin/soplex.js
+    - bin/soplex.wasm
+    - lib/cmake/soplex/soplex-config.cmake
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Linear optimization solver using the revised simplex method
+  homepage: https://github.com/scipopt/soplex
+
+extra:
+  recipe-maintainers:
+  - mkoeppe

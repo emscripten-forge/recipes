@@ -1,0 +1,100 @@
+From e1b0d4c48b209936ab5a0b9b6ccdda82067f867a Mon Sep 17 00:00:00 2001
+From: Agriya Khetarpal <74401230+agriyakhetarpal@users.noreply.github.com>
+Date: Sun, 17 May 2026 21:09:09 +0530
+Subject: [PATCH 1/3] Add WASM-compatible sync() for Pyodide
+
+Pyodide uses WebLoop as its asyncio event loop, which registers itself as
+the running loop at process start. zarr's sync() previously spawned a
+background I/O thread with its own event loop, which is incompatible with
+WASM's single-threaded model and causes RuntimeErrors when called from the
+browser.
+
+On WASM, sync() now delegates to the already-running WebLoop via
+run_until_complete(). If JSPI is not available the loop returns the
+coroutine as a Future instead of awaiting it; we detect this and raise a
+descriptive RuntimeError pointing users to the async API or a
+JSPI-enabled environment. _get_loop() likewise raises immediately on WASM
+since the background thread and its loop are never created there.
+
+Upstream reference: https://github.com/zarr-developers/zarr-python/pull/1903
+---
+ src/zarr/_constants.py |  6 ++++++
+ src/zarr/core/sync.py  | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+)
+ create mode 100644 src/zarr/_constants.py
+
+diff --git a/src/zarr/_constants.py b/src/zarr/_constants.py
+new file mode 100644
+index 00000000..18cf9b8e
+--- /dev/null
++++ b/src/zarr/_constants.py
+@@ -0,0 +1,6 @@
++from __future__ import annotations
++
++import platform
++import sys
++
++IS_WASM: bool = sys.platform == "emscripten" or platform.machine() in ["wasm32", "wasm64"]
+diff --git a/src/zarr/core/sync.py b/src/zarr/core/sync.py
+index 7bcb0bf0..6f0ef264 100644
+--- a/src/zarr/core/sync.py
++++ b/src/zarr/core/sync.py
+@@ -6,10 +6,12 @@ import logging
+ import os
+ import threading
+ from concurrent.futures import ThreadPoolExecutor, wait
++from textwrap import dedent
+ from typing import TYPE_CHECKING
+ 
+ from typing_extensions import ParamSpec
+ 
++from zarr._constants import IS_WASM
+ from zarr.core.config import config
+ 
+ if TYPE_CHECKING:
+@@ -128,6 +130,29 @@ def sync[T](
+     """
+     Make loop run coroutine until it returns. Runs in other thread
+     """
++    if IS_WASM:
++        current_loop = asyncio.get_running_loop()
++        result = current_loop.run_until_complete(coro)
++        if isinstance(result, (asyncio.Task, asyncio.Future)):
++            raise RuntimeError(
++                dedent("""
++                Cannot use synchronous Zarr API in browser-based environments without JSPI.
++                Zarr requires JavaScript Promise Integration (JSPI) to block for asynchronous
++                operations, which is not supported or enabled in your current environment.
++
++                The available solutions are to either use Zarr's async API instead via
++                `zarr.api.asynchronous`, or run your application in a JSPI-enabled environment.
++
++                For detailed requirements and environment setup instructions, please see:
++                - The [Pyodide JSPI Blog Post](https://blog.pyodide.org/posts/jspi/)
++                - The [Pyodide 0.28 Release Notes](https://blog.pyodide.org/posts/0.28-release/)
++
++                Note: If you are using Node.js v20 to v24, you must pass the `--experimental-wasm-jspi`
++                flag (JSPI is unflagged and enabled by default starting in Node.js v25 and later).
++            """)
++            )
++        return result
++
+     if loop is None:
+         # NB: if the loop is not running *yet*, it is OK to submit work
+         # and we will wait for it
+@@ -165,6 +190,12 @@ def _get_loop() -> asyncio.AbstractEventLoop:
+ 
+     The loop will be running on a separate thread.
+     """
++    if IS_WASM:
++        raise RuntimeError(
++            "Thread-based event loop not available in WASM environment. "
++            "Use zarr.api.asynchronous or ensure sync() handles WASM case."
++        )
++
+     if loop[0] is None:
+         with _get_lock():
+             # repeat the check just in case the loop got filled between the
+-- 
+2.50.1 (Apple Git-155)
+

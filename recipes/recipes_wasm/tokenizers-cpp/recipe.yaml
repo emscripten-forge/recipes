@@ -1,0 +1,84 @@
+context:
+  name: tokenizers-cpp
+  version: 0.1.1
+
+package:
+  name: ${{ name }}-static
+  version: ${{ version }}
+
+source:
+- url: https://github.com/mlc-ai/tokenizers-cpp/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3e0b9ec325a326b0a2cef5cf164ee94a74ac372c5881ae5af634036db0441823
+
+build:
+  number: 0
+  script:
+    file: build.sh
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  # no cmake here: rust-nightly pins libcurl 7, cmake 4 needs libcurl 8
+  - rust-nightly
+  - python
+  host:
+  - sentencepiece-static
+  - libabseil-static
+  - msgpack-cpp
+  run:
+  - ${{ pin_compatible('sentencepiece-static', lower_bound='x.x', upper_bound='x.x') }}
+  - ${{ pin_compatible('libabseil-static', lower_bound='x', upper_bound='x') }}
+  - msgpack-cpp
+
+tests:
+- package_contents:
+    lib:
+    - libtokenizers_cpp.a
+    - libtokenizers_c.a
+    include:
+    - tokenizers_cpp.h
+    - tokenizers_c.h
+    files:
+    - lib/cmake/tokenizers-cpp/tokenizers-cppConfig.cmake
+    - lib/cmake/tokenizers-cpp/tokenizers-cppConfigVersion.cmake
+    - lib/cmake/tokenizers-cpp/tokenizers-cppTargets.cmake
+- script:
+  - bash build_tests.sh
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - nodejs
+  files:
+    recipe:
+    - build_tests.sh
+    - tests/
+# libtokenizers_c.a is a Rust staticlib and bundles the whole Rust std,
+# including std::thread / std::sync (pthread_create, mutexes, condvars).
+# Only that archive trips the check (libtokenizers_cpp.a is clean); the
+# tokenizers crate is used without rayon and the node test above runs
+# without -pthread (same situation as llguidance-cpp).
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/mlc-ai/tokenizers-cpp
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Cross-platform C++ tokenizer binding library for HF and SentencePiece
+  description: |
+    Universal cross-platform tokenizer binding library that can be universally
+    deployed. Wraps and binds the HuggingFace tokenizers library (via Rust) and
+    sentencepiece, providing a minimum common C++ interface. Used in MLC LLM
+    and supports iOS, Android, Windows, Linux, and Web browsers.
+  documentation: https://github.com/mlc-ai/tokenizers-cpp
+  repository: https://github.com/mlc-ai/tokenizers-cpp
+
+extra:
+  recipe-maintainers:
+  - Alex-PLACET

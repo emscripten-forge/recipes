@@ -1,0 +1,198 @@
+context:
+  version: '20261030'
+  revision: 3e88fab3f213ce937049843e6d89335af93ea5e6
+  llvm_version: 23.1.2
+source:
+- git: https://github.com/anutosh491/iree.git
+  rev: ${{ revision }}
+  depth: 1
+  submodules: false
+- git: https://github.com/anutosh491/stablehlo.git
+  rev: 26cf850fe6f4a6e63545289ae141b4dd1fc8ca22
+  depth: 1
+  submodules: false
+  target_directory: third_party/stablehlo
+- git: https://github.com/dvidelabs/flatcc.git
+  rev: 9362cd00f0007d8cbee7bff86e90fb4b6b227ff3
+  depth: 1
+  submodules: false
+  target_directory: third_party/flatcc
+- git: https://github.com/iree-org/torch-mlir.git
+  rev: ec8720bf26b0c7b35f98b93730b75fb2f4b0fccb
+  depth: 1
+  submodules: false
+  target_directory: third_party/torch-mlir
+- git: https://github.com/ArthurSonzogni/dawn.git
+  rev: 851ba3e50c354ef66d16c518d4341c01ed6828cc
+  depth: 1
+  submodules: false
+  target_directory: third_party/dawn
+- git: https://github.com/abseil/abseil-cpp.git
+  rev: 04f3bc01d12cf58c90a1bb68990f087fa3c3ed19
+  depth: 1
+  submodules: false
+  target_directory: third_party/abseil
+  patches:
+  - patches/abseil-emscripten-version-macros.patch
+- git: https://github.com/KhronosGroup/SPIRV-Headers.git
+  rev: 465055f6c9128772e20082e893d974146acf7a02
+  depth: 1
+  submodules: false
+  target_directory: third_party/spirv-headers
+- git: https://github.com/KhronosGroup/SPIRV-Tools.git
+  rev: 5a1eea1546c372a945a27d9b10e0a059db6cc651
+  depth: 1
+  submodules: false
+  target_directory: third_party/spirv-tools
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: iree-build
+  build:
+    script:
+      file: build.sh
+      env:
+        IREE_PACKAGE_VERSION: ${{ version }}
+        IREE_SOURCE_REVISION: ${{ revision }}
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake >=4.3.3,<4.4
+    - make
+    - iree-host-tools ==${{ version }}
+    - llvm-tblgen ==${{ llvm_version }}
+    - cross-python_${{ target_platform }}
+    - nanobind >=2.9,<3
+    - jinja2
+    host:
+    - python
+    - python-dev
+    - numpy
+    - llvm-static ==${{ llvm_version }}
+    - mlir-static ==${{ llvm_version }}[build_number='>=8']
+    - clangdev-static ==${{ llvm_version }}
+    - lld-static ==${{ llvm_version }}
+- package:
+    name: iree-base-compiler
+    version: ${{ version }}
+  inherit: iree-build
+  build:
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+    files:
+      include:
+      - lib/python*/site-packages/iree/compiler/**
+      - lib/python*/site-packages/iree/__init__.py
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('iree-base-compiler', exact=True) }}
+    run:
+    - python
+    - numpy
+    - sympy
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/python*/site-packages/iree/compiler/api/ctypes_dl.py
+        - lib/python*/site-packages/iree/compiler/extras/fx_importer.py
+        - lib/python*/site-packages/iree/compiler/_mlir_libs/libIREECompiler.so
+        - lib/python*/site-packages/iree/compiler/_mlir_libs/_mlir*.so
+        - lib/python*/site-packages/iree/compiler/_mlir_libs/_ireeCompilerDialects*.so
+        - lib/python*/site-packages/iree/compiler/_mlir_libs/libnanobind-iree_compiler.so
+        not_exists:
+        - '**/*.a'
+        - '**/*.so.*'
+        - bin/**
+        - include/**
+        - lib/python*/site-packages/iree/runtime/**
+  # Match the LLVM/MLIR SDK's allowance for unused std::async pthread symbols.
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_compiler.py
+    requirements:
+      build:
+      - pytester =${{ pytester }}
+      run:
+      - pytester-run =${{ pytester_run }}
+- package:
+    name: iree-base-runtime
+    version: ${{ version }}
+  inherit: iree-build
+  build:
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+    files:
+      include:
+      - lib/python*/site-packages/iree/runtime/**
+      - lib/python*/site-packages/iree/_runtime/**
+      - lib/python*/site-packages/iree/_runtime_libs/**
+  requirements:
+    run_exports:
+    - ${{ pin_subpackage('iree-base-runtime', exact=True) }}
+    run:
+    - python
+    - numpy
+    - ml_dtypes
+  tests:
+  - package_contents:
+      files:
+        exists:
+        - lib/python*/site-packages/iree/runtime/webgpu.py
+        - lib/python*/site-packages/iree/_runtime_libs/_runtime*.so
+        - lib/python*/site-packages/iree/_runtime_libs/version.py
+        not_exists:
+        - '**/*.a'
+        - '**/*.so.*'
+        - bin/**
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+  - script: pytester
+    files:
+      recipe:
+      - test_runtime.py
+    requirements:
+      build:
+      - pytester =${{ pytester }}
+      run:
+      - pytester-run =${{ pytester_run }}
+      - ${{ pin_subpackage('iree-base-compiler', exact=True) }}
+about:
+  homepage: https://iree.dev
+  repository: https://github.com/iree-org/iree
+  license: Apache-2.0 WITH LLVM-exception AND Apache-2.0 AND BSD-3-Clause AND MIT
+  license_file:
+  - LICENSE
+  - third_party/stablehlo/LICENSE
+  - third_party/flatcc/LICENSE
+  - third_party/torch-mlir/LICENSE
+  - third_party/dawn/LICENSE
+  - third_party/abseil/LICENSE
+  - third_party/spirv-headers/LICENSE
+  - third_party/spirv-tools/LICENSE
+  summary: MLIR-based end-to-end compiler and runtime
+  description: |
+    IREE (Intermediate Representation Execution Environment, pronounced as "eerie")
+    is an MLIR-based end-to-end compiler and runtime that lowers Machine Learning
+    (ML) models to a unified IR that scales up to meet the needs of the datacenter
+    and down to satisfy the constraints and special considerations of mobile and
+    edge deployments.
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
+  recipe-maintainers:
+  - anutosh491

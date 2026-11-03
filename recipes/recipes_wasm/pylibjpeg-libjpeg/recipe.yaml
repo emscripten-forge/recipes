@@ -1,0 +1,70 @@
+context:
+  name: pylibjpeg-libjpeg
+  version: 2.5.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pylibjpeg_libjpeg-${{ version }}.tar.gz
+  sha256: fa78f090632aa712ac7c235d2d4bee30b85b19f9c6801375ec3b36558550e1d7
+
+build:
+  number: 0
+  # builds the bundled (Thomas Richter) libjpeg sources into the extension
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/tests/**'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - poetry-core >=1.8,<2
+  - setuptools
+  - cython >=3.0
+  - numpy >=2
+  host:
+  - python-dev
+  - numpy
+  run:
+  - python
+  - numpy >=2.0,<3.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pylibjpeg_libjpeg.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - pillow
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/pydicom/pylibjpeg-libjpeg
+  repository: https://github.com/pydicom/pylibjpeg-libjpeg
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: A JPEG, JPEG-LS and JPEG XT plugin for pylibjpeg (Python wrapper for libjpeg)
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

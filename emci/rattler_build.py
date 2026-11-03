@@ -79,7 +79,7 @@ def build_with_rattler(recipe=None, recipes_dir=None, target_platform=None,
 
     # add conda forge and emscripten-forge channels
     cmd.extend([
-        "-c", "https://repo.prefix.dev/emscripten-forge-bot/emscripten-forge-6x",
+        "-c", "https://prefix.dev/emscripten-forge/6x",
         "-c", "conda-forge",
         "-c", "bioconda"
     ])
