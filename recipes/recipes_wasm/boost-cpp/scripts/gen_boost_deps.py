@@ -78,8 +78,8 @@ EXTRA_ARCH: dict[ModuleKey, list[str]] = {"iostreams": ["libz.a", "libbz2.a"]}  
 # other. libboost-static depends on libboost-headers (headers pull no deps).
 HEADERS_PKG: PkgName = "libboost-headers"
 STATIC_PKG: PkgName = "libboost-static"
-STATIC_RUN = ["libbzip2-static", "zlib-static"]  # archives linked by boost_iostreams' config
-EXTRA_RUN: dict[ModuleKey, list[str]] = {"iostreams": STATIC_RUN}  # conda pkgs shipping those libs
+EXTERNAL_RUN = ["libbzip2-static", "zlib-static"]
+EXTRA_RUN: dict[ModuleKey, list[str]] = {"iostreams": EXTERNAL_RUN}
 
 
 def base_of(key: ModuleKey) -> str:
@@ -99,6 +99,12 @@ def pin(dep: PkgName) -> str:
     line); external deps (zlib, bzip2) pass through unchanged."""
     return (f"${{{{ pin_subpackage('{dep}', upper_bound='x.x') }}}}"
             if dep.startswith(("boost-", "libboost-")) else dep)
+
+
+def pin_compatible(dep: PkgName) -> str:
+    """Pin an external package to its variant version (x.x bounds)."""
+    return (f"${{{{ pin_compatible('{dep}', lower_bound='x.x', "
+            f"upper_bound='x.x') }}}}")
 
 
 def archives_for(mod: ModuleKey) -> list[str]:
@@ -323,12 +329,15 @@ _UNSET = object()
 def package_block(pkg: PkgName, script: str, files: list[Claim] | None = None,
                   run: list[PkgName] | object = _UNSET,
                   tests: list[dict[str, object]] | None = None,
-                  run_exports: bool = True) -> dict[str, object]:
+                  run_exports: bool = True,
+                  host: list[PkgName] | None = None) -> dict[str, object]:
     """One complete output block: package, build, requirements and tests."""
     build: dict[str, object] = {"script": script}
     if files is not None:
         build["files"] = {"include": files}
     requirements: dict[str, object] = {}
+    if host:
+        requirements["host"] = host
     if run is not _UNSET:  # omitted for dependency-free outputs
         requirements["run"] = run or None
     if run_exports:
@@ -600,8 +609,9 @@ def merged_blocks(tree: BoostTree) -> list[dict[str, object]]:
         build = "\n".join(compiled_cfg_call(m, tree.link) for m in tree.compiled)
         tests = [contents_test(libs=lib_names(libs)),
                  bulk_script_test(tree.compiled)]
+        run = [pin(HEADERS_PKG)] + [pin_compatible(d) for d in EXTERNAL_RUN]
         return package_block(STATIC_PKG, build, libs + cfg_files(tree.compiled),
-                             [pin(HEADERS_PKG)] + STATIC_RUN, tests)
+                             run, tests, run_exports=False, host=EXTERNAL_RUN)
 
     return [headers_block(), static_block()]
 
