@@ -2,15 +2,6 @@
 
 set -eux
 
-if [[ "${target_platform}" == "emscripten-wasm64" ]]; then
-  WASM_TARGET="wasm64-unknown-emscripten"
-elif [[ "${target_platform}" == "emscripten-wasm32" ]]; then
-  WASM_TARGET="wasm32-unknown-emscripten"
-else
-  echo "Unsupported target_platform: $target_platform"
-  exit 1
-fi
-
 ################################################################################
 # Patched LLVM + Flang toolchain
 ################################################################################
@@ -26,7 +17,7 @@ rm $BUILD_PREFIX/bin/llvm-ar
 ln -s $LLVM_DIR/bin/llvm-ar $BUILD_PREFIX/bin/llvm-ar
 
 # Intrinsic .mod files (iso_c_binding, etc.) from libflang when installed.
-for FINTRINSIC_PATH in "$PREFIX"/lib/clang/*/finclude/flang/"$WASM_TARGET"; do
+for FINTRINSIC_PATH in "$PREFIX"/lib/clang/*/finclude/flang/"$HOST"; do
   if [ -d "$FINTRINSIC_PATH" ]; then
     export FINTRINSIC_MODS="-fintrinsic-modules-path $FINTRINSIC_PATH"
     break
@@ -41,7 +32,7 @@ export F77=$FLANG
 export F90=$FLANG
 export F95=$FLANG
 export F18=$FLANG
-export FFLAGS="--target=${WASM_TARGET} ${FINTRINSIC_MODS}"
+export FFLAGS="--target=$HOST ${FINTRINSIC_MODS}"
 export FPICFLAGS="-fPIC"
 export FCLIBS="-lflang_rt.runtime"
 
