@@ -1,5 +1,5 @@
 context:
-  name: arpack
+  name: arpack-static
   version: 3.9.1
 
 package:
@@ -11,24 +11,35 @@ source:
   sha256: f6641deb07fa69165b7815de9008af3ea47eb39b2bb97521fbf74c97aba6e844
 
 build:
-  number: 1
+  number: 0
 
 requirements:
   build:
   - ${{ compiler('c') }}
-  - ${{ compiler('fortran') }}
+  # - ${{ compiler('fortran') }}
+  # Patched llvm + flang to support common symbols
+  - llvm-toolchain_${{ target_platform }}
   - cmake
   - make
   host:
-  - libblas
-  - liblapack
+  - libblas-static
+  - liblapack-static
   - libflang-rt-static
+  run:
+  - ${{pin_compatible("libblas-static", lower_bound="x.x", upper_bound="x.x") }}
+  - ${{pin_compatible("liblapack-static", lower_bound="x.x", upper_bound="x.x") }}
+  - ${{pin_compatible("libflang-rt-static", lower_bound="x.x", upper_bound="x.x") }}
 
 tests:
 - package_contents:
     files:
     - include/arpack/arpack.hpp
     - lib/libarpack.a
+- script: test.sh
+  requirements:
+    build:
+    - llvm-toolchain_${{ target_platform }}
+    - generic-testing # Needs the patched llvm-readobj + llvm.so
 
 about:
   homepage: https://github.com/opencollab/arpack-ng
@@ -44,3 +55,4 @@ about:
 extra:
   recipe-maintainers:
   - wolfv
+  - IsabelParedes
