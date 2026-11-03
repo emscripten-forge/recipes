@@ -42,7 +42,6 @@ import json
 import os
 import re
 import sys
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
@@ -323,7 +322,8 @@ _UNSET = object()
 
 def package_block(pkg: PkgName, script: str, files: list[Claim] | None = None,
                   run: list[PkgName] | object = _UNSET,
-                  tests: list[dict[str, object]] | None = None) -> dict[str, object]:
+                  tests: list[dict[str, object]] | None = None,
+                  run_exports: bool = True) -> dict[str, object]:
     """One complete output block: package, build, requirements and tests."""
     build: dict[str, object] = {"script": script}
     if files is not None:
@@ -331,10 +331,13 @@ def package_block(pkg: PkgName, script: str, files: list[Claim] | None = None,
     requirements: dict[str, object] = {}
     if run is not _UNSET:  # omitted for dependency-free outputs
         requirements["run"] = run or None
-    requirements["run_exports"] = [pin(pkg)]
-    return {"package": {"name": pkg, "version": "${{ version }}"},
-            "inherit": "build-cache", "build": build,
-            "requirements": requirements, "tests": tests or []}
+    if run_exports:
+        requirements["run_exports"] = [pin(pkg)]
+    block = {"package": {"name": pkg, "version": "${{ version }}"},
+             "inherit": "build-cache", "build": build, "tests": tests or []}
+    if requirements:
+        block["requirements"] = requirements
+    return block
 
 
 def contents_test(*, libs: list[str] | None = None,
@@ -358,6 +361,20 @@ def script_test(name: str, extra_run: list[PkgName] | None = None) -> dict[str, 
             "files": {"recipe": ["tests/build_tests_cmake.sh",
                                  "tests/CMakeLists.txt",
                                  f"tests/test_{name}.cpp"]}}
+
+
+def bulk_script_test(modules: list[ModuleKey]) -> dict[str, object]:
+    """One test item running several module tests in the same environment."""
+    assert modules, "bulk_script_test needs at least one module"
+    names = [base_of(m) for m in modules]
+    if len(names) == 1:
+        command = f"bash tests/build_tests_cmake.sh {names[0]}"
+    else:
+        command = "bash tests/build_tests_cmake.sh \\\n" + " \\\n".join(
+            f"  {name}" for name in names)
+    return {"script": [command],
+            "requirements": {"build": ['${{ compiler("cxx") }}']},
+            "files": {"recipe": ["tests/"]}}
 
 
 def cfg_call(key: ModuleKey, kind: str, whole: list[str], deps: list[str]) -> str:
@@ -426,25 +443,19 @@ def test_extra_reqs(tests_dir: Path, owner: dict[str, ModuleKey], key: ModuleKey
 
 
 def header_only_tests(keys: list[ModuleKey], tests_dir: Path,
-                      claims: dict[ModuleKey, list[Claim]], boost_dir: Path,
-                      extra_for: Callable[[ModuleKey], list[PkgName]] | None = None) \
-        -> tuple[list[dict[str, object]], list[str]]:
-    """(script tests, probe headers) for header-only modules.
-
-    Modules with a hand-written test get a CMake script test; the others are
-    covered by a package_contents probe.
-    """
-    scripts: list[dict[str, object]] = []
+                      claims: dict[ModuleKey, list[Claim]], boost_dir: Path) \
+        -> tuple[list[ModuleKey], list[str]]:
+    """(modules with a test file, probe headers for the others)."""
+    tested: list[ModuleKey] = []
     probes: list[str] = []
     for k in keys:
-        base = base_of(k)
-        if (tests_dir / f"test_{base}.cpp").is_file():
-            scripts.append(script_test(base, extra_for(k) if extra_for else None))
+        if (tests_dir / f"test_{base_of(k)}.cpp").is_file():
+            tested.append(k)
         else:
             probe = header_probe(claims[k], boost_dir)
             assert probe, f"{k}: no probe header in claims {claims[k]}"
             probes.append(probe)
-    return scripts, probes
+    return tested, probes
 
 
 def sync_recipe(region: str, update: bool) -> bool:
@@ -546,11 +557,14 @@ def modules_blocks(tree: BoostTree) -> list[dict[str, object]]:
              script_test(m, test_extra_reqs(tree.tests_dir, tree.owner, m, tree.compiled))])
 
     def ho_block(k: ModuleKey) -> dict[str, object]:
-        scripts, probes = header_only_tests(
-            [k], tree.tests_dir, tree.claims, tree.boost_dir,
-            lambda key: test_extra_reqs(tree.tests_dir, tree.owner, key, tree.compiled))
-        return module_block(k, [], cfg_call(k, "header-only", [], []),
-                            scripts + [contents_test(includes=[p]) for p in probes])
+        tested, probes = header_only_tests(
+            [k], tree.tests_dir, tree.claims, tree.boost_dir)
+        tests = [script_test(base_of(key),
+                             test_extra_reqs(tree.tests_dir, tree.owner, key,
+                                             tree.compiled))
+                 for key in tested]
+        tests += [contents_test(includes=[p]) for p in probes]
+        return module_block(k, [], cfg_call(k, "header-only", [], []), tests)
 
     def meta_block(name: PkgName, roster: list[PkgName]) -> dict[str, object]:
         return package_block(name, 'echo "Collecting files from cache"',
@@ -569,26 +583,23 @@ def merged_blocks(tree: BoostTree) -> list[dict[str, object]]:
         # Ownership checks in build_ownership guarantee that include/boost/**
         # is exactly the merged tree, whichever module owns which header.
         build = "\n".join(cfg_call(k, "header-only", [], []) for k in tree.header_only)
-        tests, probes = header_only_tests(tree.header_only, tree.tests_dir,
+        tested, probes = header_only_tests(tree.header_only, tree.tests_dir,
                                           tree.claims, tree.boost_dir)
         # The whole tree is here, so also probe one header per compiled module
         # (the per-module recipe did this in the compiled packages).
         probes += [p for m in tree.compiled if (p := header_probe(tree.claims[m]))]
+        tests: list[dict[str, object]] = [bulk_script_test(tested)] if tested else []
         if probes:
             tests.insert(0, contents_test(includes=probes))
         return package_block(HEADERS_PKG, build,
                              ["include/boost/**"] + cfg_files(tree.header_only),
-                             tests=tests)
+                             tests=tests, run_exports=False)
 
     def static_block() -> dict[str, object]:
         libs = all_libs(tree.compiled)
         build = "\n".join(compiled_cfg_call(m, tree.link) for m in tree.compiled)
-        tests: list[dict[str, object]] = [contents_test(libs=lib_names(libs))]
-        for m in tree.compiled:
-            base = base_of(m)
-            assert (tree.tests_dir / f"test_{base}.cpp").is_file(), \
-                f"compiled module {m} has no tests/test_{base}.cpp"
-            tests.append(script_test(base))
+        tests = [contents_test(libs=lib_names(libs)),
+                 bulk_script_test(tree.compiled)]
         return package_block(STATIC_PKG, build, libs + cfg_files(tree.compiled),
                              [pin(HEADERS_PKG)] + STATIC_RUN, tests)
 
