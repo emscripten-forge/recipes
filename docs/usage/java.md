@@ -40,7 +40,7 @@ openjdk21-wasm-link --prefix ./jdk21env -o out/multifilejar.html --app ./multifi
 | `--module` | Link only the runtime, as a module like the prelinked one below (`-o DIR/openjdk21.js`). |
 | `--` | Pass everything after it to emcc. |
 
-#### Hosting the page
+### Hosting the page
 
 For this openjdk21 recipe, `SharedArrayBuffer` is needed. It must be served with these two headers:
 
