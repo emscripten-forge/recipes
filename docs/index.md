@@ -31,6 +31,7 @@ usage/installing_packages
 usage/jupyterlite
 usage/package_server
 usage/qtapp
+usage/java
 ```
 
 ```{toctree}

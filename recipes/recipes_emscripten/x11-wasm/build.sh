@@ -14,33 +14,19 @@ python3 "$RECIPE_DIR/add_proxy.py" js/emscripten/library/*.js
 # the GPU (Chrome warns about exactly this otherwise).
 sed -i 's/getContext("2d")/getContext("2d", { willReadFrequently: true })/g' js/browser/dom/*.js
 
-# XlibWasm.h (pulled in by Xlib.h) defines a bare EXTERN macro, which real
-# Xlib does not; it breaks code that uses EXTERN as a token, such as
-# OpenJDK's OGL_EXPRESS_ALL_FUNCS(EXTERN). Only that header uses it.
-sed -i 's/\bEXTERN\b/X11WASM_EXTERN/g' include/X11/XlibWasm.h
-
 # x11.wasm's ninja compile rule has no -pthread, but OpenJDK links with shared
 # memory, so every object has to be built with atomics/bulk-memory.
 # emcc appends EMCC_CFLAGS to every invocation.
 export EMCC_CFLAGS="-pthread -O2 ${EMCC_CFLAGS:-}"
 ninja -f build.ninja x11wasm_lib x11wasm_js
 
-# x11.wasm keeps its state in plain globals (errorHandler, eventQueue,
-# atomList, ...). Linked into a large program those names collide -- OpenJDK's
-# liblcms has its own errorHandler. Rebuild with every global outside the
-# Xlib / x11.wasm namespaces renamed to x11wasm_<name>. (ckalloc/ckfree are
-# guarded by #ifndef in a public header, so they keep their names.)
+# Linked into a large program, x11.wasm's private globals must not collide
+# with the program's (OpenJDK's liblcms has its own errorHandler); x11.wasm
+# keeps them under x11wasm_ names. Fail if a plain name shows up again.
 NM="$(em-config LLVM_ROOT)/llvm-nm"
-"$NM" --defined-only -g build/emscripten/libx11wasm.a 2>/dev/null \
-  | awk 'NF == 3 { print $3 }' \
-  | grep -v -E '^(X|_X|Browser|X11Wasm|x11wasm|ck)' | sort -u > private-globals.txt
-echo "renaming $(wc -l < private-globals.txt) private globals"
-RENAMES="$(sed 's/.*/-D&=x11wasm_&/' private-globals.txt | tr '\n' ' ')"
-ninja -f build.ninja -t clean >/dev/null
-EMCC_CFLAGS="$EMCC_CFLAGS $RENAMES" ninja -f build.ninja x11wasm_lib x11wasm_js
 if "$NM" --defined-only -g build/emscripten/libx11wasm.a 2>/dev/null \
-     | awk 'NF == 3 { print $3 }' | grep -q -x -F -f private-globals.txt; then
-  echo "private globals were not renamed" >&2
+     | awk 'NF == 3 { print $3 }' | grep -v -E '^(X|_X|Browser|X11Wasm|x11wasm|ck)'; then
+  echo "x11.wasm defines the globals above outside its namespaces" >&2
   exit 1
 fi
 

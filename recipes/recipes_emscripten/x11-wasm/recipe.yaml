@@ -1,26 +1,22 @@
 context:
   name: x11-wasm
-  version: "0.1.0"
+  version: "0.1.1"
 
 package:
   name: ${{ name }}
   version: ${{ version }}
 
 source:
-  - url: https://github.com/wangyenshu/x11.wasm/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: a88293ba01036918d6a386fdd864d540c20f2a2e27d1a042052c19472f806c75
+  - url: https://github.com/t3tra-dev/x11.wasm/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 1f0fa29cd4529d1d95e74a3d122b4cbcacab98983c6e4058609e2d6ee8aa08f9
     patches:
       # hooks that let a cooperative (single-threaded, JSPI) runtime wait
       # for events in XNextEvent & co.; no change without hooks
       - patches/0001-runtime-hooks.patch
-      # XGetImage of a window includes the window background
+      # XGetImage of a window without a background shows its parent's
       - patches/0002-getimage-composites-window-background.patch
       # Module.x11WasmDocumentTitle = false keeps the page title
       - patches/0003-optional-document-title-sync.patch
-      # typed "A" and "!" arrived as "a" and "1": text key events get the
-      # Shift state that selects their keysym
-      - patches/0004-text-events-shift-state.patch
-      - patches/0005-pointer-events-subwindow.patch
   # headers only -- nothing from these is compiled
   - url: https://www.x.org/releases/individual/proto/xorgproto-2024.1.tar.xz
     sha256: 372225fd40815b8423547f5d890c5debc72e88b91088fbfb13158c20495ccb59
@@ -92,7 +88,7 @@ tests:
         - tests/
 
 about:
-  homepage: https://github.com/wangyenshu/x11.wasm
+  homepage: https://github.com/t3tra-dev/x11.wasm
   summary: Browser X11/Xlib compatibility layer (x11.wasm) plus Xorg extension headers and link stubs
   description: |
     x11.wasm implements Xlib on HTML canvases. This package adds what X11
@@ -104,13 +100,18 @@ about:
     pthreads.js, which keeps DOM input from racing Xlib calls made on worker
     threads. x11.wasm is patched to let single-threaded programs that
     switch stacks (JSPI) wait for events through X11WasmSetHooks(), to
-    include window backgrounds in XGetImage, to give typed characters the
-    Shift state that X clients expect, and to leave document.title alone
-    when Module.x11WasmDocumentTitle is false.
-  license: MIT AND X11
+    show a window's parent in XGetImage where a window without a background
+    was not drawn, and to leave document.title alone when
+    Module.x11WasmDocumentTitle is false.
+  # x11.wasm: MIT; its X11 headers and tables X11 and Tk (TCL) terms; the
+  # bundled window manager icons ISC (Lucide)
+  license: MIT AND X11 AND TCL AND ISC
   license_file:
-    # x11.wasm (MIT, stated in its README; the repository has no license file)
-    - LICENSE-x11.wasm.txt
+    - LICENSE
+    - THIRD_PARTY_NOTICES.md
+    - LICENSES/X11.txt
+    - LICENSES/Tk.txt
+    - LICENSES/Lucide.txt
     # the Xorg headers installed next to it
     - xorg/libX11/COPYING
     - xorg/libXext/COPYING

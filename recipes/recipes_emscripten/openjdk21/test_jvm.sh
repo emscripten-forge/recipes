@@ -6,13 +6,14 @@
 set -euxo pipefail
 unset JAVA_TOOL_OPTIONS || true
 
-LINK="$PREFIX/bin/openjdk21-wasm-link"
+# openjdk21-wasm-link comes from openjdk-tools (test requirement)
+LINK=(openjdk21-wasm-link --prefix "$PREFIX")
 JAVAC="$(command -v javac || echo "$BUILD_PREFIX/lib/jvm/bin/javac")"
 
 mkdir -p classes out
 "$JAVAC" --release 21 -d classes tests/Hello.java tests/GcStress.java tests/SwingDemo.java
 
-"$LINK" --node -o out/node/jvm.js --app classes@/app/classes --app tests/Hi.java@/app/src/Hi.java
+"${LINK[@]}" --node -o out/node/jvm.js --app classes@/app/classes --app tests/Hi.java@/app/src/Hi.java
 
 node out/node/jvm.js -version
 
@@ -30,8 +31,17 @@ grep -q 'ALL TESTS PASSED' hello.log
 node out/node/jvm.js /app/src/Hi.java x | tee hi.log
 grep -q 'compiled in wasm: Point\[x=4, y=16\] args=x' hi.log
 
+# the prelinked runtime module (share/openjdk21-wasm/openjdk21.js), under
+# node through openjdk21-java (from openjdk-tools)
+export OPENJDK21_WASM_HOME="$PREFIX/share/openjdk21-wasm"
+openjdk21-java -version
+openjdk21-java -cp classes Hello | tee hello-module.log
+grep -q 'ALL TESTS PASSED' hello-module.log
+openjdk21-java tests/Hi.java y | tee hi-module.log
+grep -q 'compiled in wasm: Point\[x=4, y=16\] args=y' hi-module.log
+
 # browser build with the X11 toolkit
-"$LINK" -o out/web/swing.html --app classes@/app/classes \
+"${LINK[@]}" -o out/web/swing.html --app classes@/app/classes \
   --arg -cp --arg /app/classes --arg SwingDemo
 test -s out/web/swing.wasm
 test -s out/web/swing.html
