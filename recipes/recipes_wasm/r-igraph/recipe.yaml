@@ -10,6 +10,7 @@ source:
   url:
   - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
   - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
   sha256: 38b114f4ebc9b61af6c29a56d72a2329cd08191e4b3612df4f184c519ee60740
   patches:
   - patches/0001-Use-external-arpack.patch
@@ -17,13 +18,15 @@ source:
 
 build:
   number: 0
-  # Dependencies not yet available for R 4.6.0 on conda-forge
-  skip: ${{ r_base == '4.6.1' }}
+  skip: ${{ r_base >= '4.6.0' }}
 
 requirements:
   build:
   - cross-r-base ==${{ r_base }}
-  - ${{ compiler('fortran') }}
+  - ${{ compiler('c') }}
+  # - ${{ compiler('fortran') }}
+  - llvm-toolchain_${{ target_platform }}
+  - pkg-config
   - r-cli
   - r-cpp11
   - r-lifecycle
@@ -33,12 +36,12 @@ requirements:
   - r-rlang
   - r-vctrs
   host:
-  - r-base ==${{ r_base }}
   - libflang-rt-static
-  - arpack
+  - arpack-static
   - glpk-static
   - gmp-static
   - libxml2-static
+  - r-base ==${{ r_base }}
   - r-cli
   - r-cpp11
   - r-lifecycle
@@ -59,22 +62,26 @@ requirements:
 
 tests:
 - package_contents:
-    files:
-    - lib/R/library/${{ name }}/libs/${{ name }}.so
-- script: run_r_test test_igraph.R
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
   files:
     recipe:
-    - test_igraph.R
+    - test_${{ name }}.R
   requirements:
     build:
     - r-wasm-tester
+    - generic-testing
 
 about:
   homepage: https://cran.r-project.org/package=igraph
   documentation: https://r.igraph.org/
   repository: https://github.com/igraph/rigraph
   license: GPL-2.0-or-later
-  license_file: GPL-2
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
   license_family: GPL3
   summary: Network Analysis and Visualization
   description: |
