@@ -180,7 +180,7 @@ draw title bars on top-level windows so they can be moved and closed
 shows the name of a hidden helper window ("FocusProxy") rather than the
 frame's title.
 
-#### Outside the browser
+### Outside the browser
 
 Outside the browser, `openjdk8-java` from the `openjdk-tools` package (see the
 openjdk21 section) runs Java programs under Node.js 24 or later, with headless
