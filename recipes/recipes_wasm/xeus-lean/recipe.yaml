@@ -1,0 +1,113 @@
+context:
+  name: xeus-lean
+  version: 0.1.0
+  # upstream has no tags/releases yet; the fork's emscripten-forge branch is
+  # Verilean/xeus-lean main + using xeus/xeus-lite/gmp from emscripten-forge
+  rev: 8e0f3073c71d7b37b33c69d58df8c3e0efc38033
+
+source:
+- git: https://github.com/DerThorsten/xeus-lean.git
+  rev: ${{ rev }}
+# lean runtime / stage0 sources (compiled to wasm by the xeus-lean cmake);
+# must match the lean-toolchain file of xeus-lean (see LEAN_VERSION in build.sh)
+- git: https://github.com/leanprover/lean4.git
+  tag: v4.28.0
+  depth: 1
+  target_directory: _deps/lean4
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: xeus-lean-build
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("c") }}
+    - cmake
+    - make
+    - python
+    - zstd
+    # GNU tar and stat for scripts/pack-olean-modules.sh
+    - tar
+    - coreutils
+    host:
+    - nlohmann_json
+    - nlohmann_json-abi
+    - xeus
+    - xeus-lite-static
+    - gmp-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# Init / Std / Lean .olean files of the Lean version xlean is built against,
+# as per-module zstd tarballs (+ manifest-v2.json). The kernel unpacks them
+# into /lib/lean at startup.
+- package:
+    name: xeus-lean-data
+    version: ${{ version }}
+  inherit: xeus-lean-build
+  build:
+    files:
+      include:
+      - share/jupyter/olean/**
+  requirements:
+    ignore_run_exports:
+      by_name:
+      - nlohmann_json-abi
+      - xeus
+      - xeus-lite-static
+      - gmp-static
+  tests:
+  # plain data files, no generic-testing
+  - package_contents:
+      files:
+      - share/jupyter/olean/manifest-v2.json
+      - share/jupyter/olean/Init-olean.tar.zst
+      - share/jupyter/olean/Std-olean.tar.zst
+      - share/jupyter/olean/Lean-olean.tar.zst
+
+#==============================================================================#
+
+# the xlean kernel (xlean.js / xlean.wasm) and its kernelspec
+- package:
+    name: xeus-lean
+    version: ${{ version }}
+  inherit: xeus-lean-build
+  build:
+    files:
+      include:
+      - bin/**
+      - share/jupyter/kernels/**
+  requirements:
+    run:
+    # the oleans must match the Lean runtime compiled into xlean.wasm
+    - ${{ pin_subpackage('xeus-lean-data', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - bin/xlean.js
+      - bin/xlean.wasm
+      - share/jupyter/kernels/xlean/kernel.json
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Lean 4 kernel for Jupyter based on xeus
+  homepage: https://github.com/Verilean/xeus-lean
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  ci:
+    platforms:
+      # Lean's .olean format depends on the pointer size and upstream only supports Memory64
+      emscripten-wasm32: false
+      emscripten-wasm64: true
