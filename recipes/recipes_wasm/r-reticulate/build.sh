@@ -8,7 +8,8 @@ if [ ! -f src/Makevars ]; then
   exit 1
 fi
 
-sed -i "s/python3\.13/python${PY_VER}/g" src/Makevars
+sed -i.bak "s/python3\.13/python${PY_VER}/g" src/Makevars
+rm -f src/Makevars.bak
 
 rm src/libpython.cpp
 rm src/libpython.h
