@@ -3,7 +3,7 @@ context:
   version: "d89bf2f383ea5005b4dee58d45079ae5c9a22ef8"
 
 package:
-  name: ${{ name }}
+  name: ${{ name }}-static
   version: ${{ version }}
 
 source:
@@ -21,6 +21,11 @@ requirements:
   - cmake
   - ninja
   - python
+  host:
+  - cpuinfo-static
+  run:
+  # libXNNPACK.a links against libcpuinfo.a from cpuinfo-static
+  - cpuinfo-static
 
 tests:
 - package_contents:
@@ -43,6 +48,13 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+# The bundled pthreadpool is built as its single-threaded shim (no threads,
+# nothing compiled with -pthread); XNNPACK's one-time initialisation still
+# calls pthread_once, which emscripten's non-threaded libc provides.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/google/XNNPACK
