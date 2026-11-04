@@ -1,0 +1,26 @@
+get_filename_component(_glfw3_prefix "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+
+if(NOT TARGET glfw)
+  add_library(glfw @GLFW_LIBRARY_TYPE@ IMPORTED)
+  set_target_properties(glfw PROPERTIES
+    IMPORTED_LOCATION "${_glfw3_prefix}/lib/@GLFW_LIBRARY_FILE@"
+    INTERFACE_INCLUDE_DIRECTORIES "${_glfw3_prefix}/include"
+    INTERFACE_LINK_LIBRARIES "GL"
+    INTERFACE_LINK_OPTIONS "--js-library=${_glfw3_prefix}/share/glfw/glfw3.js;-sMAX_WEBGL_VERSION=2;-sDEFAULT_TO_CXX"
+    INTERFACE_COMPILE_FEATURES "cxx_std_17"
+    INTERFACE_COMPILE_DEFINITIONS "EMSCRIPTEN_USE_PORT_CONTRIB_GLFW3=@PKG_VERSION_TAG@"
+  )
+endif()
+
+if(NOT TARGET glfw3::glfw)
+  add_library(glfw3::glfw ALIAS glfw)
+endif()
+
+if(NOT TARGET glfw3)
+  add_library(glfw3 ALIAS glfw)
+endif()
+
+set(glfw3_FOUND TRUE)
+set(glfw3_VERSION "@GLFW_API_VERSION@")
+set(glfw3_INCLUDE_DIRS "${_glfw3_prefix}/include")
+set(glfw3_LIBRARIES "${_glfw3_prefix}/lib/@GLFW_LIBRARY_FILE@")
