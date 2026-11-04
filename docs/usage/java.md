@@ -8,7 +8,7 @@ Create one environment with the tools (`openjdk21-wasm-link` and the Emscripten
 toolchain it uses), and one with the JVM:
 
 ```bash
-CH="-c https://repo.prefix.dev/emscripten-forge-4x -c conda-forge"
+CH="-c https://repo.prefix.dev/emscripten-forge/4x -c conda-forge"
 micromamba create -y -n env_tools $CH openjdk-tools
 micromamba activate env_tools
 micromamba create -y -p ./jdk21env --platform emscripten-wasm32 $CH openjdk21
@@ -118,7 +118,7 @@ Install the package and copy its browser files into one directory on your
 web server:
 
 ```bash
-micromamba create -y -p ./jdk8env --platform emscripten-wasm32 -c https://repo.prefix.dev/emscripten-forge-4x -c conda-forge openjdk8
+micromamba create -y -p ./jdk8env --platform emscripten-wasm32 -c https://repo.prefix.dev/emscripten-forge/4x -c conda-forge openjdk8
 ls jdk8env/share/openjdk8-wasm/
 # openjdk8-web.js  openjdk8.js  openjdk8.wasm  openjdk8-jre.json  openjdk8-jre.data.gz
 # openjdk8-javaws.jar
