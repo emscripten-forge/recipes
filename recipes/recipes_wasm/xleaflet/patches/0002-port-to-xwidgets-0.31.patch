@@ -1,0 +1,1076 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5ad7dae..5d0e097 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -101,6 +101,16 @@ if (NOT TARGET xtensor)
+     find_package(xtensor ${xtensor_REQUIRED_VERSION} REQUIRED)
+ endif ()
+ 
++# xtensor >= 0.28 needs C++20, but the xeus target exports --std=c++17 as an
++# interface compile option, which would come after (and override) ours
++if (TARGET xeus)
++    get_target_property(_xeus_opts xeus INTERFACE_COMPILE_OPTIONS)
++    if (_xeus_opts)
++        list(REMOVE_ITEM _xeus_opts "--std=c++17" "-std=c++17")
++        set_target_properties(xeus PROPERTIES INTERFACE_COMPILE_OPTIONS "${_xeus_opts}")
++    endif ()
++endif ()
++
+ # Source files
+ # ============
+ 
+diff --git a/include/xleaflet/xbasemaps.hpp b/include/xleaflet/xbasemaps.hpp
+index faeff3f..0871dc1 100644
+--- a/include/xleaflet/xbasemaps.hpp
++++ b/include/xleaflet/xbasemaps.hpp
+@@ -102,13 +102,14 @@ namespace xlf
+             min_zoom = mapspec["min_zoom"].get<int>();
+         }
+ 
+-        return tile_layer::initialize()
+-            .url(url)
+-            .attribution(attribution)
+-            .name(name)
+-            .max_zoom(max_zoom)
+-            .min_zoom(min_zoom)
+-            .finalize();
++        // the new xproperty has no chained setters: assign on the generator
++        auto layer = tile_layer::initialize();
++        layer.url = url;
++        layer.attribution = attribution;
++        layer.name = name;
++        layer.max_zoom = max_zoom;
++        layer.min_zoom = min_zoom;
++        return std::move(layer).finalize();
+     }
+ }
+ 
+diff --git a/include/xleaflet/xcircle.hpp b/include/xleaflet/xcircle.hpp
+index c019fcc..fd5bc7d 100644
+--- a/include/xleaflet/xcircle.hpp
++++ b/include/xleaflet/xcircle.hpp
+@@ -40,8 +40,8 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(point_type, derived_type, location);
+-        XPROPERTY(int, derived_type, radius, 1000);
++        XPROPERTY(point_type, xw::xcommon, location);
++        XPROPERTY(int, xw::xcommon, radius, 1000);
+ 
+     protected:
+ 
+@@ -77,10 +77,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(location, patch, buffers);
+-        set_property_from_patch(radius, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xcircle_marker.hpp b/include/xleaflet/xcircle_marker.hpp
+index a5ae223..a79d885 100644
+--- a/include/xleaflet/xcircle_marker.hpp
++++ b/include/xleaflet/xcircle_marker.hpp
+@@ -36,7 +36,7 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(int, derived_type, radius, 10);
++        XPROPERTY(int, xw::xcommon, radius, 10);
+ 
+     protected:
+ 
+@@ -71,9 +71,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(radius, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xcontrol.hpp b/include/xleaflet/xcontrol.hpp
+index ebbf8be..da7af2e 100644
+--- a/include/xleaflet/xcontrol.hpp
++++ b/include/xleaflet/xcontrol.hpp
+@@ -39,8 +39,8 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::vector<std::string>, derived_type, options);
+-        XPROPERTY(std::string, derived_type, position, "topleft", XEITHER("topright", "topleft", "bottomright", "bottomleft"));
++        XPROPERTY(std::vector<std::string>, xw::xcommon, options);
++        XPROPERTY(std::string, xw::xcommon, position, "topleft", XEITHER("topright", "topleft", "bottomright", "bottomleft"));
+ 
+     protected:
+ 
+@@ -76,10 +76,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(options, patch, buffers);
+-        set_property_from_patch(position, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xdraw_control.hpp b/include/xleaflet/xdraw_control.hpp
+index c62fdb5..7e1ad97 100644
+--- a/include/xleaflet/xdraw_control.hpp
++++ b/include/xleaflet/xdraw_control.hpp
+@@ -53,16 +53,16 @@ namespace xlf
+ 
+         void handle_custom_message(const nl::json&);
+ 
+-        XPROPERTY(feature_group_type, derived_type, layer);
+-        XPROPERTY(nl::json, derived_type, polyline, {});
+-        XPROPERTY(nl::json, derived_type, polygon, {});
+-        XPROPERTY(nl::json, derived_type, circle, {});
+-        XPROPERTY(nl::json, derived_type, rectangle, {});
+-        XPROPERTY(nl::json, derived_type, marker, {});
+-        XPROPERTY(bool, derived_type, edit, true);
+-        XPROPERTY(bool, derived_type, remove, true);
+-        XPROPERTY(nl::json, derived_type, last_draw, {});
+-        XPROPERTY(std::string, derived_type, last_action, "");
++        XPROPERTY(feature_group_type, xw::xcommon, layer);
++        XPROPERTY(nl::json, xw::xcommon, polyline, {});
++        XPROPERTY(nl::json, xw::xcommon, polygon, {});
++        XPROPERTY(nl::json, xw::xcommon, circle, {});
++        XPROPERTY(nl::json, xw::xcommon, rectangle, {});
++        XPROPERTY(nl::json, xw::xcommon, marker, {});
++        XPROPERTY(bool, xw::xcommon, edit, true);
++        XPROPERTY(bool, xw::xcommon, remove, true);
++        XPROPERTY(nl::json, xw::xcommon, last_draw, {});
++        XPROPERTY(std::string, xw::xcommon, last_action, "");
+ 
+     protected:
+ 
+@@ -108,18 +108,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+-
+-        set_property_from_patch(layer, patch, buffers);
+-        set_property_from_patch(polyline, patch, buffers);
+-        set_property_from_patch(polygon, patch, buffers);
+-        set_property_from_patch(circle, patch, buffers);
+-        set_property_from_patch(rectangle, patch, buffers);
+-        set_property_from_patch(marker, patch, buffers);
+-        set_property_from_patch(edit, patch, buffers);
+-        set_property_from_patch(remove, patch, buffers);
+-        set_property_from_patch(last_draw, patch, buffers);
+-        set_property_from_patch(last_action, patch, buffers);
++
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xgeo_json.hpp b/include/xleaflet/xgeo_json.hpp
+index 1692fac..02577fc 100644
+--- a/include/xleaflet/xgeo_json.hpp
++++ b/include/xleaflet/xgeo_json.hpp
+@@ -47,9 +47,9 @@ namespace xlf
+ 
+         void handle_custom_message(const nl::json&);
+ 
+-        XPROPERTY(nl::json, derived_type, data);
+-        XPROPERTY(nl::json, derived_type, style);
+-        XPROPERTY(nl::json, derived_type, hover_style);
++        XPROPERTY(nl::json, xw::xcommon, data);
++        XPROPERTY(nl::json, xw::xcommon, style);
++        XPROPERTY(nl::json, xw::xcommon, hover_style);
+ 
+     protected:
+ 
+@@ -88,11 +88,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(data, patch, buffers);
+-        set_property_from_patch(style, patch, buffers);
+-        set_property_from_patch(hover_style, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xheatmap.hpp b/include/xleaflet/xheatmap.hpp
+index 5d26c17..a53a0f9 100644
+--- a/include/xleaflet/xheatmap.hpp
++++ b/include/xleaflet/xheatmap.hpp
+@@ -40,13 +40,13 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(locations_type, derived_type, locations);
+-        XPROPERTY(double, derived_type, min_opacity, 0.05);
+-        XPROPERTY(int, derived_type, max_zoom, 18);
+-        XPROPERTY(double, derived_type, max, 1.0);
+-        XPROPERTY(double, derived_type, radius, 25.0);
+-        XPROPERTY(double, derived_type, blur, 15.0);
+-        XPROPERTY(nl::json, derived_type, gradient);
++        XPROPERTY(locations_type, xw::xcommon, locations);
++        XPROPERTY(double, xw::xcommon, min_opacity, 0.05);
++        XPROPERTY(int, xw::xcommon, max_zoom, 18);
++        XPROPERTY(double, xw::xcommon, max, 1.0);
++        XPROPERTY(double, xw::xcommon, radius, 25.0);
++        XPROPERTY(double, xw::xcommon, blur, 15.0);
++        XPROPERTY(nl::json, xw::xcommon, gradient);
+ 
+     protected:
+ 
+@@ -87,15 +87,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(locations, patch, buffers);
+-        set_property_from_patch(min_opacity, patch, buffers);
+-        set_property_from_patch(max_zoom, patch, buffers);
+-        set_property_from_patch(max, patch, buffers);
+-        set_property_from_patch(radius, patch, buffers);
+-        set_property_from_patch(blur, patch, buffers);
+-        set_property_from_patch(gradient, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xicon.hpp b/include/xleaflet/xicon.hpp
+index f0890a2..0e47e3a 100644
+--- a/include/xleaflet/xicon.hpp
++++ b/include/xleaflet/xicon.hpp
+@@ -39,13 +39,13 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, icon_url, "");
+-        XPROPERTY(std::optional<std::string>, derived_type, shadow_url);
+-        XPROPERTY(std::optional<size_type>, derived_type, icon_size);
+-        XPROPERTY(std::optional<size_type>, derived_type, shadow_size);
+-        XPROPERTY(std::optional<size_type>, derived_type, icon_anchor);
+-        XPROPERTY(std::optional<size_type>, derived_type, shadow_anchor);
+-        XPROPERTY(std::optional<size_type>, derived_type, popup_anchor);
++        XPROPERTY(std::string, xw::xcommon, icon_url, "");
++        XPROPERTY(std::optional<std::string>, xw::xcommon, shadow_url);
++        XPROPERTY(std::optional<size_type>, xw::xcommon, icon_size);
++        XPROPERTY(std::optional<size_type>, xw::xcommon, shadow_size);
++        XPROPERTY(std::optional<size_type>, xw::xcommon, icon_anchor);
++        XPROPERTY(std::optional<size_type>, xw::xcommon, shadow_anchor);
++        XPROPERTY(std::optional<size_type>, xw::xcommon, popup_anchor);
+ 
+     protected:
+ 
+@@ -86,15 +86,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(icon_url, patch, buffers);
+-        set_property_from_patch(shadow_url, patch, buffers);
+-        set_property_from_patch(icon_size, patch, buffers);
+-        set_property_from_patch(shadow_size, patch, buffers);
+-        set_property_from_patch(icon_anchor, patch, buffers);
+-        set_property_from_patch(shadow_anchor, patch, buffers);
+-        set_property_from_patch(popup_anchor, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/ximage_overlay.hpp b/include/xleaflet/ximage_overlay.hpp
+index 024e9fb..6e07067 100644
+--- a/include/xleaflet/ximage_overlay.hpp
++++ b/include/xleaflet/ximage_overlay.hpp
+@@ -41,9 +41,9 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, url, "");
+-        XPROPERTY(bounds_type, derived_type, bounds);
+-        XPROPERTY(std::string, derived_type, attribution, "");
++        XPROPERTY(std::string, xw::xcommon, url, "");
++        XPROPERTY(bounds_type, xw::xcommon, bounds);
++        XPROPERTY(std::string, xw::xcommon, attribution, "");
+ 
+     protected:
+ 
+@@ -80,11 +80,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(url, patch, buffers);
+-        set_property_from_patch(bounds, patch, buffers);
+-        set_property_from_patch(attribution, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xlayer.hpp b/include/xleaflet/xlayer.hpp
+index d0a7e87..114b29e 100644
+--- a/include/xleaflet/xlayer.hpp
++++ b/include/xleaflet/xlayer.hpp
+@@ -39,11 +39,11 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, name, "");
+-        XPROPERTY(bool, derived_type, base, true);
+-        XPROPERTY(bool, derived_type, bottom, true);
+-        XPROPERTY(std::optional<widget_type>, derived_type, popup);
+-        XPROPERTY(std::vector<std::string>, derived_type, options);
++        XPROPERTY(std::string, xw::xcommon, name, "");
++        XPROPERTY(bool, xw::xcommon, base, true);
++        XPROPERTY(bool, xw::xcommon, bottom, true);
++        XPROPERTY(std::optional<widget_type>, xw::xcommon, popup);
++        XPROPERTY(std::vector<std::string>, xw::xcommon, options);
+ 
+     protected:
+ 
+@@ -82,13 +82,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(name, patch, buffers);
+-        set_property_from_patch(base, patch, buffers);
+-        set_property_from_patch(bottom, patch, buffers);
+-        set_property_from_patch(popup, patch, buffers);
+-        set_property_from_patch(options, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xlayer_group.hpp b/include/xleaflet/xlayer_group.hpp
+index 0271b02..87d9bbf 100644
+--- a/include/xleaflet/xlayer_group.hpp
++++ b/include/xleaflet/xlayer_group.hpp
+@@ -52,7 +52,7 @@ namespace xlf
+ 
+         void clear_layers();
+ 
+-        XPROPERTY(layer_list_type, derived_type, layers);
++        XPROPERTY(layer_list_type, xw::xcommon, layers);
+ 
+     protected:
+ 
+@@ -87,9 +87,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(layers, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xmap.hpp b/include/xleaflet/xmap.hpp
+index bbd94f7..f2e3fec 100644
+--- a/include/xleaflet/xmap.hpp
++++ b/include/xleaflet/xmap.hpp
+@@ -85,37 +85,37 @@ namespace xlf
+ 
+         void handle_custom_message(const nl::json&);
+ 
+-        XPROPERTY(point_type, derived_type, center);
+-        XPROPERTY(int, derived_type, zoom_start, 12);
+-        XPROPERTY(int, derived_type, zoom, 12);
+-        XPROPERTY(int, derived_type, max_zoom, 18);
+-        XPROPERTY(int, derived_type, min_zoom, 1);
+-        XPROPERTY(bool, derived_type, dragging, true);
+-        XPROPERTY(bool, derived_type, touch_zoom, true);
+-        XPROPERTY(bool, derived_type, scroll_wheel_zoom, false);
+-        XPROPERTY(bool, derived_type, double_click_zoom, true);
+-        XPROPERTY(bool, derived_type, box_zoom, true);
+-        XPROPERTY(bool, derived_type, tap, true);
+-        XPROPERTY(int, derived_type, tap_tolerance, 15);
+-        XPROPERTY(bool, derived_type, world_copy_jump, false);
+-        XPROPERTY(bool, derived_type, close_popup_on_click, true);
+-        XPROPERTY(bool, derived_type, bounce_at_zoom_limits, true);
+-        XPROPERTY(bool, derived_type, keyboard, true);
+-        XPROPERTY(int, derived_type, keyboard_pan_offset, 80);
+-        XPROPERTY(int, derived_type, keyboard_zoom_offset, 1);
+-        XPROPERTY(bool, derived_type, inertia, true);
+-        XPROPERTY(int, derived_type, inertia_deceleration, 3000);
+-        XPROPERTY(int, derived_type, inertia_max_speed, 1500);
+-        XPROPERTY(bool, derived_type, zoom_control, true);
+-        XPROPERTY(bool, derived_type, attribution_control, true);
+-        XPROPERTY(int, derived_type, zoom_animation_threshold, 4);
+-
+-        XPROPERTY(std::vector<std::string>, derived_type, options);
+-
+-        XPROPERTY(bounds_type, derived_type, bounds)
+-        XPROPERTY(bounds_polygon_type, derived_type, bounds_polygon)
+-        XPROPERTY(layer_list_type, derived_type, layers);
+-        XPROPERTY(control_list_type, derived_type, controls);
++        XPROPERTY(point_type, xw::xcommon, center);
++        XPROPERTY(int, xw::xcommon, zoom_start, 12);
++        XPROPERTY(int, xw::xcommon, zoom, 12);
++        XPROPERTY(int, xw::xcommon, max_zoom, 18);
++        XPROPERTY(int, xw::xcommon, min_zoom, 1);
++        XPROPERTY(bool, xw::xcommon, dragging, true);
++        XPROPERTY(bool, xw::xcommon, touch_zoom, true);
++        XPROPERTY(bool, xw::xcommon, scroll_wheel_zoom, false);
++        XPROPERTY(bool, xw::xcommon, double_click_zoom, true);
++        XPROPERTY(bool, xw::xcommon, box_zoom, true);
++        XPROPERTY(bool, xw::xcommon, tap, true);
++        XPROPERTY(int, xw::xcommon, tap_tolerance, 15);
++        XPROPERTY(bool, xw::xcommon, world_copy_jump, false);
++        XPROPERTY(bool, xw::xcommon, close_popup_on_click, true);
++        XPROPERTY(bool, xw::xcommon, bounce_at_zoom_limits, true);
++        XPROPERTY(bool, xw::xcommon, keyboard, true);
++        XPROPERTY(int, xw::xcommon, keyboard_pan_offset, 80);
++        XPROPERTY(int, xw::xcommon, keyboard_zoom_offset, 1);
++        XPROPERTY(bool, xw::xcommon, inertia, true);
++        XPROPERTY(int, xw::xcommon, inertia_deceleration, 3000);
++        XPROPERTY(int, xw::xcommon, inertia_max_speed, 1500);
++        XPROPERTY(bool, xw::xcommon, zoom_control, true);
++        XPROPERTY(bool, xw::xcommon, attribution_control, true);
++        XPROPERTY(int, xw::xcommon, zoom_animation_threshold, 4);
++
++        XPROPERTY(std::vector<std::string>, xw::xcommon, options);
++
++        XPROPERTY(bounds_type, xw::xcommon, bounds)
++        XPROPERTY(bounds_polygon_type, xw::xcommon, bounds_polygon)
++        XPROPERTY(layer_list_type, xw::xcommon, layers);
++        XPROPERTY(control_list_type, xw::xcommon, controls);
+ 
+     protected:
+ 
+@@ -177,36 +177,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+-
+-        set_property_from_patch(center, patch, buffers);
+-        set_property_from_patch(zoom_start, patch, buffers);
+-        set_property_from_patch(zoom, patch, buffers);
+-        set_property_from_patch(max_zoom, patch, buffers);
+-        set_property_from_patch(min_zoom, patch, buffers);
+-        set_property_from_patch(dragging, patch, buffers);
+-        set_property_from_patch(touch_zoom, patch, buffers);
+-        set_property_from_patch(scroll_wheel_zoom, patch, buffers);
+-        set_property_from_patch(double_click_zoom, patch, buffers);
+-        set_property_from_patch(box_zoom, patch, buffers);
+-        set_property_from_patch(tap, patch, buffers);
+-        set_property_from_patch(tap_tolerance, patch, buffers);
+-        set_property_from_patch(world_copy_jump, patch, buffers);
+-        set_property_from_patch(close_popup_on_click, patch, buffers);
+-        set_property_from_patch(keyboard, patch, buffers);
+-        set_property_from_patch(keyboard_pan_offset, patch, buffers);
+-        set_property_from_patch(keyboard_zoom_offset, patch, buffers);
+-        set_property_from_patch(inertia, patch, buffers);
+-        set_property_from_patch(inertia_deceleration, patch, buffers);
+-        set_property_from_patch(inertia_max_speed, patch, buffers);
+-        set_property_from_patch(zoom_control, patch, buffers);
+-        set_property_from_patch(attribution_control, patch, buffers);
+-        set_property_from_patch(zoom_animation_threshold, patch, buffers);
+-        set_property_from_patch(options, patch, buffers);
+-        set_property_from_patch(bounds, patch, buffers);
+-        set_property_from_patch(bounds_polygon, patch, buffers);
+-        set_property_from_patch(layers, patch, buffers);
+-        set_property_from_patch(controls, patch, buffers);
++
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xmarker.hpp b/include/xleaflet/xmarker.hpp
+index 3d98431..d23f9b4 100644
+--- a/include/xleaflet/xmarker.hpp
++++ b/include/xleaflet/xmarker.hpp
+@@ -50,20 +50,20 @@ namespace xlf
+ 
+         void handle_custom_message(const nl::json&);
+ 
+-        XPROPERTY(point_type, derived_type, location);
+-        XPROPERTY(int, derived_type, z_index_offset, 0.0);
+-        XPROPERTY(bool, derived_type, draggable, true);
+-        XPROPERTY(bool, derived_type, keyboard, true);
+-        XPROPERTY(std::string, derived_type, title, "");
+-        XPROPERTY(std::string, derived_type, alt, "");
+-        XPROPERTY(bool, derived_type, rise_on_hover, false);
++        XPROPERTY(point_type, xw::xcommon, location);
++        XPROPERTY(int, xw::xcommon, z_index_offset, 0.0);
++        XPROPERTY(bool, xw::xcommon, draggable, true);
++        XPROPERTY(bool, xw::xcommon, keyboard, true);
++        XPROPERTY(std::string, xw::xcommon, title, "");
++        XPROPERTY(std::string, xw::xcommon, alt, "");
++        XPROPERTY(bool, xw::xcommon, rise_on_hover, false);
+         // TODO: bounded between 0.0 and 1.0
+-        XPROPERTY(double, derived_type, opacity, 1.0);
+-        XPROPERTY(bool, derived_type, visible, true);
+-        XPROPERTY(std::optional<icon_type>, derived_type, icon);
+-        XPROPERTY(double, derived_type, rotation_angle, 0.);
+-        XPROPERTY(std::string, derived_type, rotation_origin, "");
+-        XPROPERTY(int, derived_type, rise_offset, 250);
++        XPROPERTY(double, xw::xcommon, opacity, 1.0);
++        XPROPERTY(bool, xw::xcommon, visible, true);
++        XPROPERTY(std::optional<icon_type>, xw::xcommon, icon);
++        XPROPERTY(double, xw::xcommon, rotation_angle, 0.);
++        XPROPERTY(std::string, xw::xcommon, rotation_origin, "");
++        XPROPERTY(int, xw::xcommon, rise_offset, 250);
+ 
+     protected:
+ 
+@@ -112,21 +112,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+-
+-        set_property_from_patch(location, patch, buffers);
+-        set_property_from_patch(z_index_offset, patch, buffers);
+-        set_property_from_patch(draggable, patch, buffers);
+-        set_property_from_patch(keyboard, patch, buffers);
+-        set_property_from_patch(title, patch, buffers);
+-        set_property_from_patch(alt, patch, buffers);
+-        set_property_from_patch(rise_on_hover, patch, buffers);
+-        set_property_from_patch(opacity, patch, buffers);
+-        set_property_from_patch(visible, patch, buffers);
+-        set_property_from_patch(icon, patch, buffers);
+-        set_property_from_patch(rotation_angle, patch, buffers);
+-        set_property_from_patch(rotation_origin, patch, buffers);
+-        set_property_from_patch(rise_offset, patch, buffers);
++
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xmarker_cluster.hpp b/include/xleaflet/xmarker_cluster.hpp
+index 60c13d0..4e1b3e5 100644
+--- a/include/xleaflet/xmarker_cluster.hpp
++++ b/include/xleaflet/xmarker_cluster.hpp
+@@ -41,7 +41,7 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::vector<xw::xholder>, derived_type, markers);
++        XPROPERTY(std::vector<xw::xholder>, xw::xcommon, markers);
+ 
+     protected:
+ 
+@@ -76,9 +76,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(markers, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xmeasure_control.hpp b/include/xleaflet/xmeasure_control.hpp
+index d6cb0c9..2e55157 100644
+--- a/include/xleaflet/xmeasure_control.hpp
++++ b/include/xleaflet/xmeasure_control.hpp
+@@ -43,18 +43,18 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, position, "topright", XEITHER("topright", "topleft", "bottomright", "bottomleft"));
+-        XPROPERTY(std::string, derived_type, primary_length_unit, "feet", XEITHER("feet", "meters", "miles", "kilometers"));
+-        XPROPERTY(std::optional<std::string>, derived_type, secondary_length_unit, {}, XEITHER_OPTIONAL("feet", "meters", "miles", "kilometers"));
+-        XPROPERTY(std::string, derived_type, primary_area_unit, "acres", XEITHER("acres", "hectares", "sqfeet", "sqmeters", "sqmiles"));
+-        XPROPERTY(std::optional<std::string>, derived_type, secondary_area_unit, {}, XEITHER_OPTIONAL("acres", "hectares", "sqfeet", "sqmeters", "sqmiles"));
+-        XPROPERTY(xw::html_color, derived_type, active_color, "#ABE67E");
+-        XPROPERTY(xw::html_color, derived_type, completed_color, "#C8F2BE");
+-        XPROPERTY(nl::json, derived_type, popup_options, R"({
++        XPROPERTY(std::string, xw::xcommon, position, "topright", XEITHER("topright", "topleft", "bottomright", "bottomleft"));
++        XPROPERTY(std::string, xw::xcommon, primary_length_unit, "feet", XEITHER("feet", "meters", "miles", "kilometers"));
++        XPROPERTY(std::optional<std::string>, xw::xcommon, secondary_length_unit, {}, XEITHER_OPTIONAL("feet", "meters", "miles", "kilometers"));
++        XPROPERTY(std::string, xw::xcommon, primary_area_unit, "acres", XEITHER("acres", "hectares", "sqfeet", "sqmeters", "sqmiles"));
++        XPROPERTY(std::optional<std::string>, xw::xcommon, secondary_area_unit, {}, XEITHER_OPTIONAL("acres", "hectares", "sqfeet", "sqmeters", "sqmiles"));
++        XPROPERTY(xw::html_color, xw::xcommon, active_color, "#ABE67E");
++        XPROPERTY(xw::html_color, xw::xcommon, completed_color, "#C8F2BE");
++        XPROPERTY(nl::json, xw::xcommon, popup_options, R"({
+             "className": "leaflet-measure-resultpopup",
+             "autoPanPadding": [10, 10]
+         })"_json);
+-        XPROPERTY(int, derived_type, capture_z_index, 10000);
++        XPROPERTY(int, xw::xcommon, capture_z_index, 10000);
+ 
+     protected:
+ 
+@@ -96,16 +96,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(primary_length_unit, patch, buffers);
+-        set_property_from_patch(secondary_length_unit, patch, buffers);
+-        set_property_from_patch(primary_area_unit, patch, buffers);
+-        set_property_from_patch(secondary_area_unit, patch, buffers);
+-        set_property_from_patch(active_color, patch, buffers);
+-        set_property_from_patch(completed_color, patch, buffers);
+-        set_property_from_patch(popup_options, patch, buffers);
+-        set_property_from_patch(capture_z_index, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xpath.hpp b/include/xleaflet/xpath.hpp
+index 82c5b55..4de1c29 100644
+--- a/include/xleaflet/xpath.hpp
++++ b/include/xleaflet/xpath.hpp
+@@ -37,18 +37,18 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(bool, derived_type, stroke, true);
+-        XPROPERTY(xw::html_color, derived_type, color, "#0033FF");
+-        XPROPERTY(int, derived_type, weight, 5);
+-        XPROPERTY(bool, derived_type, fill, true);
+-        XPROPERTY(xw::html_color, derived_type, fill_color, "#0033FF");
+-        XPROPERTY(double, derived_type, fill_opacity, 0.2);
+-        XPROPERTY(std::string, derived_type, dash_array, "");
+-        XPROPERTY(std::string, derived_type, line_cap, "");
+-        XPROPERTY(std::string, derived_type, line_join, "");
+-        XPROPERTY(std::string, derived_type, pointer_events, "");
+-        XPROPERTY(std::string, derived_type, class_name, "");
+-        XPROPERTY(double, derived_type, opacity, 1.0);
++        XPROPERTY(bool, xw::xcommon, stroke, true);
++        XPROPERTY(xw::html_color, xw::xcommon, color, "#0033FF");
++        XPROPERTY(int, xw::xcommon, weight, 5);
++        XPROPERTY(bool, xw::xcommon, fill, true);
++        XPROPERTY(xw::html_color, xw::xcommon, fill_color, "#0033FF");
++        XPROPERTY(double, xw::xcommon, fill_opacity, 0.2);
++        XPROPERTY(std::string, xw::xcommon, dash_array, "");
++        XPROPERTY(std::string, xw::xcommon, line_cap, "");
++        XPROPERTY(std::string, xw::xcommon, line_join, "");
++        XPROPERTY(std::string, xw::xcommon, pointer_events, "");
++        XPROPERTY(std::string, xw::xcommon, class_name, "");
++        XPROPERTY(double, xw::xcommon, opacity, 1.0);
+ 
+     protected:
+ 
+@@ -93,20 +93,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+-
+-        set_property_from_patch(stroke, patch, buffers);
+-        set_property_from_patch(color, patch, buffers);
+-        set_property_from_patch(weight, patch, buffers);
+-        set_property_from_patch(fill, patch, buffers);
+-        set_property_from_patch(fill_color, patch, buffers);
+-        set_property_from_patch(fill_opacity, patch, buffers);
+-        set_property_from_patch(dash_array, patch, buffers);
+-        set_property_from_patch(line_cap, patch, buffers);
+-        set_property_from_patch(line_join, patch, buffers);
+-        set_property_from_patch(pointer_events, patch, buffers);
+-        set_property_from_patch(class_name, patch, buffers);
+-        set_property_from_patch(opacity, patch, buffers);
++
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xpolyline.hpp b/include/xleaflet/xpolyline.hpp
+index 5e11438..2df1238 100644
+--- a/include/xleaflet/xpolyline.hpp
++++ b/include/xleaflet/xpolyline.hpp
+@@ -38,9 +38,9 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(locations_type, derived_type, locations);
+-        XPROPERTY(double, derived_type, smooth_factor, 1.0);
+-        XPROPERTY(bool, derived_type, no_clip, false);
++        XPROPERTY(locations_type, xw::xcommon, locations);
++        XPROPERTY(double, xw::xcommon, smooth_factor, 1.0);
++        XPROPERTY(bool, xw::xcommon, no_clip, false);
+ 
+     protected:
+ 
+@@ -77,11 +77,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(locations, patch, buffers);
+-        set_property_from_patch(smooth_factor, patch, buffers);
+-        set_property_from_patch(no_clip, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xpopup.hpp b/include/xleaflet/xpopup.hpp
+index 2b462e6..2877240 100644
+--- a/include/xleaflet/xpopup.hpp
++++ b/include/xleaflet/xpopup.hpp
+@@ -43,20 +43,20 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(point_type, derived_type, location);
+-        XPROPERTY(std::optional<widget_type>, derived_type, child);
+-        XPROPERTY(int, derived_type, max_width, 300);
+-        XPROPERTY(int, derived_type, min_width, 50);
+-        XPROPERTY(int, derived_type, max_height);
+-        XPROPERTY(bool, derived_type, auto_pan, true);
+-        XPROPERTY(point_type, derived_type, auto_pan_padding_top_left);
+-        XPROPERTY(point_type, derived_type, auto_pan_padding_bottom_right);
+-        XPROPERTY(point_type, derived_type, auto_pan_padding);
+-        XPROPERTY(bool, derived_type, keep_in_view, false);
+-        XPROPERTY(bool, derived_type, close_button, true);
+-        XPROPERTY(bool, derived_type, auto_close, true);
+-        XPROPERTY(bool, derived_type, close_on_escape_key, true);
+-        XPROPERTY(std::string, derived_type, class_name, "");
++        XPROPERTY(point_type, xw::xcommon, location);
++        XPROPERTY(std::optional<widget_type>, xw::xcommon, child);
++        XPROPERTY(int, xw::xcommon, max_width, 300);
++        XPROPERTY(int, xw::xcommon, min_width, 50);
++        XPROPERTY(int, xw::xcommon, max_height);
++        XPROPERTY(bool, xw::xcommon, auto_pan, true);
++        XPROPERTY(point_type, xw::xcommon, auto_pan_padding_top_left);
++        XPROPERTY(point_type, xw::xcommon, auto_pan_padding_bottom_right);
++        XPROPERTY(point_type, xw::xcommon, auto_pan_padding);
++        XPROPERTY(bool, xw::xcommon, keep_in_view, false);
++        XPROPERTY(bool, xw::xcommon, close_button, true);
++        XPROPERTY(bool, xw::xcommon, auto_close, true);
++        XPROPERTY(bool, xw::xcommon, close_on_escape_key, true);
++        XPROPERTY(std::string, xw::xcommon, class_name, "");
+ 
+     protected:
+ 
+@@ -104,22 +104,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+-
+-        set_property_from_patch(location, patch, buffers);
+-        set_property_from_patch(child, patch, buffers);
+-        set_property_from_patch(max_width, patch, buffers);
+-        set_property_from_patch(min_width, patch, buffers);
+-        set_property_from_patch(max_height, patch, buffers);
+-        set_property_from_patch(auto_pan, patch, buffers);
+-        set_property_from_patch(auto_pan_padding_top_left, patch, buffers);
+-        set_property_from_patch(auto_pan_padding_bottom_right, patch, buffers);
+-        set_property_from_patch(auto_pan_padding, patch, buffers);
+-        set_property_from_patch(keep_in_view, patch, buffers);
+-        set_property_from_patch(close_button, patch, buffers);
+-        set_property_from_patch(auto_close, patch, buffers);
+-        set_property_from_patch(close_on_escape_key, patch, buffers);
+-        set_property_from_patch(class_name, patch, buffers);
++
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xraster_layer.hpp b/include/xleaflet/xraster_layer.hpp
+index 3a8181b..4571b7f 100644
+--- a/include/xleaflet/xraster_layer.hpp
++++ b/include/xleaflet/xraster_layer.hpp
+@@ -34,8 +34,8 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(double, derived_type, opacity, 1.0);
+-        XPROPERTY(bool, derived_type, visible, true);
++        XPROPERTY(double, xw::xcommon, opacity, 1.0);
++        XPROPERTY(bool, xw::xcommon, visible, true);
+ 
+     protected:
+ 
+@@ -73,10 +73,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(opacity, patch, buffers);
+-        set_property_from_patch(visible, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xrectangle.hpp b/include/xleaflet/xrectangle.hpp
+index 469e58a..abcf50c 100644
+--- a/include/xleaflet/xrectangle.hpp
++++ b/include/xleaflet/xrectangle.hpp
+@@ -39,7 +39,7 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(bounds_type, derived_type, bounds);
++        XPROPERTY(bounds_type, xw::xcommon, bounds);
+ 
+     protected:
+ 
+@@ -74,9 +74,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(bounds, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xsplit_map_control.hpp b/include/xleaflet/xsplit_map_control.hpp
+index 052ae1e..4cc1f73 100644
+--- a/include/xleaflet/xsplit_map_control.hpp
++++ b/include/xleaflet/xsplit_map_control.hpp
+@@ -39,8 +39,8 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(tile_layer_type, derived_type, left_layer);
+-        XPROPERTY(tile_layer_type, derived_type, right_layer);
++        XPROPERTY(tile_layer_type, xw::xcommon, left_layer);
++        XPROPERTY(tile_layer_type, xw::xcommon, right_layer);
+ 
+     protected:
+ 
+@@ -76,10 +76,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(left_layer, patch, buffers);
+-        set_property_from_patch(right_layer, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xtile_layer.hpp b/include/xleaflet/xtile_layer.hpp
+index 5bd6e7d..0721a32 100644
+--- a/include/xleaflet/xtile_layer.hpp
++++ b/include/xleaflet/xtile_layer.hpp
+@@ -45,16 +45,14 @@ namespace xlf
+ 
+         void handle_custom_message(const nl::json&);
+ 
+-        XPROPERTY(
+-            std::string, derived_type, url,
++        XPROPERTY(std::string, xw::xcommon, url,
+             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
+-        XPROPERTY(int, derived_type, min_zoom, 0);
+-        XPROPERTY(int, derived_type, max_zoom, 18);
+-        XPROPERTY(int, derived_type, tile_size, 256);
+-        XPROPERTY(
+-            std::string, derived_type, attribution,
++        XPROPERTY(int, xw::xcommon, min_zoom, 0);
++        XPROPERTY(int, xw::xcommon, max_zoom, 18);
++        XPROPERTY(int, xw::xcommon, tile_size, 256);
++        XPROPERTY(std::string, xw::xcommon, attribution,
+             "Map data (c) <a href=\"https://openstreetmap.org\">OpenStreetMap</a> contributors");
+-        XPROPERTY(bool, derived_type, detect_retina, false);
++        XPROPERTY(bool, xw::xcommon, detect_retina, false);
+ 
+     protected:
+ 
+@@ -96,14 +94,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(url, patch, buffers);
+-        set_property_from_patch(min_zoom, patch, buffers);
+-        set_property_from_patch(max_zoom, patch, buffers);
+-        set_property_from_patch(tile_size, patch, buffers);
+-        set_property_from_patch(attribution, patch, buffers);
+-        set_property_from_patch(detect_retina, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xvelocity.hpp b/include/xleaflet/xvelocity.hpp
+index 77035a5..a47ebe5 100644
+--- a/include/xleaflet/xvelocity.hpp
++++ b/include/xleaflet/xvelocity.hpp
+@@ -39,10 +39,10 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(nl::json, derived_type, data);
+-        XPROPERTY(std::string, derived_type, units);
+-        XPROPERTY(bool, derived_type, display_values, true);
+-        XPROPERTY(nl::json, derived_type, display_options, R"({
++        XPROPERTY(nl::json, xw::xcommon, data);
++        XPROPERTY(std::string, xw::xcommon, units);
++        XPROPERTY(bool, xw::xcommon, display_values, true);
++        XPROPERTY(nl::json, xw::xcommon, display_options, R"({
+             "velocityType": "Global Wind",
+             "position": "bottomleft",
+             "emptyString": "No velocity data",
+@@ -51,10 +51,10 @@ namespace xlf
+             "displayEmptyString": "No velocity data",
+             "speedUnit": "kt"
+         })"_json);
+-        XPROPERTY(double, derived_type, min_velocity, 0);
+-        XPROPERTY(double, derived_type, max_velocity, 10);
+-        XPROPERTY(double, derived_type, velocity_scale, 0.005);
+-        XPROPERTY(std::vector<xw::html_color>, derived_type, color_scale);
++        XPROPERTY(double, xw::xcommon, min_velocity, 0);
++        XPROPERTY(double, xw::xcommon, max_velocity, 10);
++        XPROPERTY(double, xw::xcommon, velocity_scale, 0.005);
++        XPROPERTY(std::vector<xw::html_color>, xw::xcommon, color_scale);
+ 
+     protected:
+ 
+@@ -96,16 +96,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(data, patch, buffers);
+-        set_property_from_patch(units, patch, buffers);
+-        set_property_from_patch(display_values, patch, buffers);
+-        set_property_from_patch(display_options, patch, buffers);
+-        set_property_from_patch(min_velocity, patch, buffers);
+-        set_property_from_patch(max_velocity, patch, buffers);
+-        set_property_from_patch(velocity_scale, patch, buffers);
+-        set_property_from_patch(color_scale, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xvideo_overlay.hpp b/include/xleaflet/xvideo_overlay.hpp
+index 3044131..c97c378 100644
+--- a/include/xleaflet/xvideo_overlay.hpp
++++ b/include/xleaflet/xvideo_overlay.hpp
+@@ -41,9 +41,9 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, url, "");
+-        XPROPERTY(bounds_type, derived_type, bounds);
+-        XPROPERTY(std::string, derived_type, attribution, "");
++        XPROPERTY(std::string, xw::xcommon, url, "");
++        XPROPERTY(bounds_type, xw::xcommon, bounds);
++        XPROPERTY(std::string, xw::xcommon, attribution, "");
+ 
+     protected:
+ 
+@@ -80,11 +80,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(url, patch, buffers);
+-        set_property_from_patch(bounds, patch, buffers);
+-        set_property_from_patch(attribution, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xwidget_control.hpp b/include/xleaflet/xwidget_control.hpp
+index fe13b2f..e29df0c 100644
+--- a/include/xleaflet/xwidget_control.hpp
++++ b/include/xleaflet/xwidget_control.hpp
+@@ -40,11 +40,11 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(widget_type, derived_type, widget);
+-        XPROPERTY(std::optional<int>, derived_type, max_width);
+-        XPROPERTY(std::optional<int>, derived_type, min_width);
+-        XPROPERTY(std::optional<int>, derived_type, max_height);
+-        XPROPERTY(std::optional<int>, derived_type, min_height);
++        XPROPERTY(widget_type, xw::xcommon, widget);
++        XPROPERTY(std::optional<int>, xw::xcommon, max_width);
++        XPROPERTY(std::optional<int>, xw::xcommon, min_width);
++        XPROPERTY(std::optional<int>, xw::xcommon, max_height);
++        XPROPERTY(std::optional<int>, xw::xcommon, min_height);
+ 
+     protected:
+ 
+@@ -83,13 +83,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(widget, patch, buffers);
+-        set_property_from_patch(max_width, patch, buffers);
+-        set_property_from_patch(min_width, patch, buffers);
+-        set_property_from_patch(max_height, patch, buffers);
+-        set_property_from_patch(min_height, patch, buffers);
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xwms_layer.hpp b/include/xleaflet/xwms_layer.hpp
+index bd0066b..789671d 100644
+--- a/include/xleaflet/xwms_layer.hpp
++++ b/include/xleaflet/xwms_layer.hpp
+@@ -36,15 +36,15 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, service, "WMS");
+-        XPROPERTY(std::string, derived_type, request, "GetMap");
+-        XPROPERTY(std::string, derived_type, layers, "");
+-        XPROPERTY(std::string, derived_type, styles, "");
+-        XPROPERTY(std::string, derived_type, format, "image/jpeg");
+-        XPROPERTY(bool, derived_type, transparent);
+-        XPROPERTY(std::string, derived_type, version, "1.1.1");
+-        XPROPERTY(std::string, derived_type, crs, "");
+-        XPROPERTY(bool, derived_type, uppercase);
++        XPROPERTY(std::string, xw::xcommon, service, "WMS");
++        XPROPERTY(std::string, xw::xcommon, request, "GetMap");
++        XPROPERTY(std::string, xw::xcommon, layers, "");
++        XPROPERTY(std::string, xw::xcommon, styles, "");
++        XPROPERTY(std::string, xw::xcommon, format, "image/jpeg");
++        XPROPERTY(bool, xw::xcommon, transparent);
++        XPROPERTY(std::string, xw::xcommon, version, "1.1.1");
++        XPROPERTY(std::string, xw::xcommon, crs, "");
++        XPROPERTY(bool, xw::xcommon, uppercase);
+ 
+     protected:
+ 
+@@ -87,17 +87,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+-
+-        set_property_from_patch(service, patch, buffers);
+-        set_property_from_patch(request, patch, buffers);
+-        set_property_from_patch(layers, patch, buffers);
+-        set_property_from_patch(styles, patch, buffers);
+-        set_property_from_patch(format, patch, buffers);
+-        set_property_from_patch(transparent, patch, buffers);
+-        set_property_from_patch(version, patch, buffers);
+-        set_property_from_patch(crs, patch, buffers);
+-        set_property_from_patch(uppercase, patch, buffers);
++
+     }
+ 
+     template <class D>
+diff --git a/include/xleaflet/xzoom_control.hpp b/include/xleaflet/xzoom_control.hpp
+index 71ba053..57b70b8 100644
+--- a/include/xleaflet/xzoom_control.hpp
++++ b/include/xleaflet/xzoom_control.hpp
+@@ -40,10 +40,10 @@ namespace xlf
+         void serialize_state(nl::json&, xeus::buffer_sequence&) const;
+         void apply_patch(const nl::json&, const xeus::buffer_sequence&);
+ 
+-        XPROPERTY(std::string, derived_type, zoom_in_text, "+");
+-        XPROPERTY(std::string, derived_type, zoom_in_title, "Zoom in");
+-        XPROPERTY(std::optional<std::string>, derived_type, zoom_out_text, "-");
+-        XPROPERTY(std::string, derived_type, zoom_out_title, "Zoom out");
++        XPROPERTY(std::string, xw::xcommon, zoom_in_text, "+");
++        XPROPERTY(std::string, xw::xcommon, zoom_in_title, "Zoom in");
++        XPROPERTY(std::optional<std::string>, xw::xcommon, zoom_out_text, "-");
++        XPROPERTY(std::string, xw::xcommon, zoom_out_title, "Zoom out");
+ 
+     protected:
+ 
+@@ -81,12 +81,7 @@ namespace xlf
+     {
+         base_type::apply_patch(patch, buffers);
+ 
+-        using xw::set_property_from_patch;
+ 
+-        set_property_from_patch(zoom_in_text, patch, buffers);
+-        set_property_from_patch(zoom_in_title, patch, buffers);
+-        set_property_from_patch(zoom_out_text, patch, buffers);
+-        set_property_from_patch(zoom_out_title, patch, buffers);
+     }
+ 
+     template <class D>
