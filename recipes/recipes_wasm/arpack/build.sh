@@ -32,7 +32,7 @@ export F77=$FLANG
 export F90=$FLANG
 export F95=$FLANG
 export F18=$FLANG
-export FFLAGS="--target=$HOST ${FINTRINSIC_MODS}"
+export FFLAGS="-fPIC --target=$HOST ${FINTRINSIC_MODS}"
 export FPICFLAGS="-fPIC"
 export FCLIBS="-lflang_rt.runtime"
 
@@ -48,6 +48,7 @@ emcmake cmake -S . -B _build \
     -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_Fortran_COMPILER=$FC \
     -DCMAKE_Fortran_FLAGS="$FFLAGS" \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
     -DBUILD_SHARED_LIBS=OFF \
     -DMPI=OFF \
