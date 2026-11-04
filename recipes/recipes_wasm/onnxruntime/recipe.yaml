@@ -2,12 +2,14 @@ context:
   version: 1.31.1
 
 package:
-  name: onnxruntime-cpp
+  name: onnxruntime-cpp-static
   version: ${{ version }}
 
 source:
 - url: https://github.com/microsoft/onnxruntime/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 92ffbf8b97872fd1e73c9eebdf3319d9a3b24919ae438d27db903b72ee08939e
+  patches:
+  - patches/0001-no-lto.patch
 
 build:
   number: 0
@@ -37,20 +39,31 @@ tests:
     - ${{ compiler("cxx") }}
     - cmake
     - make
+    - curl
+    - nodejs
   files:
     recipe:
     - build_tests.sh
     - tests/
+# Built with onnxruntime_ENABLE_WEBASSEMBLY_THREADS=OFF and nothing compiled with
+# -pthread: the vendored abseil only uses the mutex/condvar/TLS-key API
+# (single-threaded stubs in emscripten's libc), and ORT's Env::CreateThread
+# (pthread_create) is only reached when a session asks for more than one
+# intra/inter-op thread.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://onnxruntime.ai/
   license: MIT
   license_file: LICENSE
-  summary: ONNX Runtime WebAssembly static library for emscripten-wasm32
+  summary: ONNX Runtime WebAssembly static library for emscripten
   description: |
     ONNX Runtime is a cross-platform inference and training machine-learning
     accelerator. This package provides the WebAssembly static library
-    (libonnxruntime_webassembly.a) built with SIMD and threads support,
+    (libonnxruntime_webassembly.a) built with SIMD support (no threads),
     suitable for linking into Emscripten-compiled C/C++ applications.
   documentation: https://onnxruntime.ai/docs/build/web.html
   repository: https://github.com/microsoft/onnxruntime

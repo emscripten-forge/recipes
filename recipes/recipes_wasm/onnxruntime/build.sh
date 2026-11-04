@@ -4,8 +4,11 @@ set -euo pipefail
 export CFLAGS="${CFLAGS:-} ${EMCC_CFLAGS:-} -Wno-pass-failed"
 export CXXFLAGS="${CXXFLAGS:-} ${EMCC_CFLAGS:-} -Wno-pass-failed"
 
-# ORT cmake entry point is in the cmake/ subdirectory
-emcmake cmake -S cmake -B build \
+# ORT cmake entry point is in the cmake/ subdirectory.
+# --compile-no-warning-as-error: ORT sets COMPILE_WARNING_AS_ERROR on its
+# targets, and clang 23 / emscripten 6 add new warnings (deprecations in the
+# vendored abseil, nodiscard, unused templates, ...)
+emcmake cmake --compile-no-warning-as-error -S cmake -B build \
     -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
