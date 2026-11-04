@@ -1,0 +1,63 @@
+context:
+  version: 0.6.2
+
+package:
+  name: gfanlib-static
+  version: ${{ version }}
+
+source:
+  url: https://math.au.dk/~jensen/software/gfan/gfanlib${{ version }}.tar.gz
+  sha256: 39f0c46fc8657741220419d3177b487eac64a4e391493789f130d4f4c5aac381
+  patches:
+  # Matrix::operator*(Matrix, Matrix) called the commented-out vectormultiply(),
+  # so any code that includes gfanlib_matrix.h failed to compile with clang
+  - patches/0001-fix-matrix-product.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - make
+  - pkg-config
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  host:
+  - gmp-static
+  - cddlib-static
+  run:
+  - ${{ pin_compatible('gmp-static', lower_bound='x', upper_bound='x') }}
+  - ${{ pin_compatible('cddlib-static', lower_bound='x.x', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - include/gfanlib.h
+    - lib/libgfan.a
+- script:
+  - em++ test_gfanlib.cpp -o test_gfanlib.js -I${PREFIX}/include -I${PREFIX}/include/cddlib -L${PREFIX}/lib -lgfan -lcddgmp -lgmp
+  - node test_gfanlib.js
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - nodejs
+  files:
+    recipe:
+    - test_gfanlib.cpp
+# The parallel traverser of mixedVolume() uses std::thread, so libgfan.a
+# references pthread_create. Threads are only started when the caller passes
+# nthreads > 0 (default 0); nothing is compiled with -pthread.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://math.au.dk/~jensen/software/gfan/gfan.html
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Gfan is a software package for computing Gröbner fans and tropical varieties. Parts of gfan have been put into a library.
+
+extra:
+  recipe-maintainers:
+  - wangyenshu
