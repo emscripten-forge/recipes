@@ -5,10 +5,18 @@ if(NOT DEFINED MOD)
     message(FATAL_ERROR "pass -DMOD=<base>, e.g. -DMOD=accumulators")
 endif()
 
-find_package(boost_${MOD} CONFIG REQUIRED)
+include("${CMAKE_CURRENT_LIST_DIR}/boost_libs.cmake" OPTIONAL)
 
 add_executable(test_${MOD} test_${MOD}.cpp)
-target_link_libraries(test_${MOD} PRIVATE Boost::${MOD})
+target_include_directories(test_${MOD} PRIVATE "$ENV{PREFIX}/include")
+
+if(DEFINED BOOST_${MOD}_LIBS)
+    target_link_libraries(test_${MOD} PRIVATE ${BOOST_${MOD}_LIBS})
+else()
+    # Historical per-module layout: packages ship generated CMake configs.
+    find_package(boost_${MOD} CONFIG REQUIRED)
+    target_link_libraries(test_${MOD} PRIVATE Boost::${MOD})
+endif()
 
 target_compile_options(test_${MOD} PRIVATE
     -fwasm-exceptions -DBOOST_HAS_PTHREADS=1 -DBOOST_SP_DISABLE_THREADS=1 -DBOOST_WAVE_SUPPORT_THREADING=0)
