@@ -1,12 +1,11 @@
 #!/bin/bash
-set -e
+set -euxo pipefail
 
-echo "=========================================="
-echo "Building llguidance for emscripten-wasm32"
-echo "=========================================="
-
-# Add wasm32-unknown-emscripten target for Rust
-rustup target add wasm32-unknown-emscripten
+if [ "$target_platform" == "emscripten-wasm32" ]; then
+    RUST_TARGET=wasm32-unknown-emscripten
+elif [ "$target_platform" == "emscripten-wasm64" ]; then
+    RUST_TARGET=wasm64-unknown-emscripten
+fi
 
 # Build the parser crate with WASM-appropriate features
 # Disable rayon (threading not available in WASM)
@@ -17,7 +16,7 @@ rustup target add wasm32-unknown-emscripten
 # which fails on emscripten when SIDE_MODULE=2 exports Rust-mangled symbols
 # (e.g. serde_json::value::Index) that contain invalid export name characters.
 cargo rustc \
-    --target wasm32-unknown-emscripten \
+    --target ${RUST_TARGET} \
     --release \
     --package llguidance \
     --no-default-features \
@@ -28,7 +27,7 @@ echo "Installing library and headers..."
 
 # Install static library
 mkdir -p $PREFIX/lib
-cp target/wasm32-unknown-emscripten/release/libllguidance.a $PREFIX/lib/
+cp target/${RUST_TARGET}/release/libllguidance.a $PREFIX/lib/
 
 # Install C header (pre-generated, committed in repo)
 mkdir -p $PREFIX/include
@@ -64,7 +63,8 @@ else()
     endif()
 endif()
 CMAKE_EOF
-sed -i "s/LLG_VERSION_PLACEHOLDER/${PKG_VERSION}/" $PREFIX/lib/cmake/llguidance/llguidanceConfigVersion.cmake
+sed -i.bak "s/LLG_VERSION_PLACEHOLDER/${PKG_VERSION}/" $PREFIX/lib/cmake/llguidance/llguidanceConfigVersion.cmake
+rm $PREFIX/lib/cmake/llguidance/llguidanceConfigVersion.cmake.bak
 
 # llguidanceConfig.cmake
 cat > $PREFIX/lib/cmake/llguidance/llguidanceConfig.cmake << 'CMAKE_EOF'
