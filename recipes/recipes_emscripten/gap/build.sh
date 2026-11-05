@@ -88,19 +88,21 @@ cp native-build/build/c_*.c native-build/build/ffdata.* src/
 emmake make -j${CPU_COUNT} LDFLAGS="-lidbfs.js -lworkerfs.js -s ASYNCIFY=1 -sASYNCIFY_STACK_SIZE=16mb -sTOTAL_STACK=32mb -sINITIAL_MEMORY=2048mb -O2" EXEEXT=".html"
 emmake make install-bin install-gaproot install-sysinfo install-headers install-libgap
 
-cp gap.js "$PREFIX/bin/"
-cp gap.wasm "$PREFIX/bin/"
+mkdir -p "${PREFIX}/bin/gapwasm"
+
+cp gap.js "$PREFIX/bin/gapwasm/"
+cp gap.wasm "$PREFIX/bin/gapwasm/"
 
 EMSCRIPTEN_DIR="$(dirname "$(readlink -f "$(command -v emcc)")")"
 python3 "${EMSCRIPTEN_DIR}/tools/file_packager.py" \
-  "${PREFIX}/bin/gap.data" \
+  "${PREFIX}/bin/gapwasm/gap.data" \
   --preload "${SRC_DIR}/pkg@/pkg" \
   --preload "${SRC_DIR}/lib@/lib" \
   --preload "${SRC_DIR}/grp@/grp" \
   --preload "${SRC_DIR}/doc@/doc" \
   --preload "${SRC_DIR}/hpcgap@/hpcgap" \
   --separate-metadata \
-  --js-output="${PREFIX}/bin/gap.data.js"
+  --js-output="${PREFIX}/bin/gapwasm/gap.data.js"
 
-gzip -9 "${PREFIX}/bin/gap.data"
-cp -a "$SRC_DIR"/web/* "$PREFIX/bin/"
+gzip -9 "${PREFIX}/bin/gapwasm/gap.data"
+cp -a "$SRC_DIR"/web/* "$PREFIX/bin/gapwasm/"

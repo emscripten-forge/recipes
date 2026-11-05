@@ -1,5 +1,3 @@
-autoreconf -fiv
-
 export CONFIG_CFLAGS="\
     -Os \
     "

@@ -1,5 +1,7 @@
 """Tests of the cadabra2 Python API (no Cadabra notation involved)."""
 
+import re
+
 import pytest
 
 
@@ -30,7 +32,8 @@ def test_import(cdb):
 
 def test_kernel(cdb):
     kernel = cdb.create_scope()
-    assert kernel.version == "2.5.14"
+    # Not pinned to the release, so that automated version bumps keep passing.
+    assert re.fullmatch(r"\d+\.\d+\.\d+", kernel.version), kernel.version
     assert isinstance(kernel.build, str)
     # Module-level kernel created on import.
     assert isinstance(cdb.__cdbkernel__, cdb.Kernel)

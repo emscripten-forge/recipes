@@ -24,14 +24,12 @@ export LDFLAGS="\
     -lproxyfs.js \
     "
 
-emmake make -f Makefile.aut distfiles
-
 emconfigure ./configure \
     --host=wasm32-unknown-emscripten \
     --with-regex=pcre2
 
 # Build less but not lessecho and lesskey.
-emmake make less.js EXEEXT=.js -j${CPU_COUNT} LDFLAGS="
+emmake make less.js EXE=.js -j${CPU_COUNT} LDFLAGS="
     $LDFLAGS \
     --preload-file $XTERM_256COLOR@/usr/local/share/terminfo/x/xterm-256color \
     "
