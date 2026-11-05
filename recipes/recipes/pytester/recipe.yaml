@@ -1,10 +1,8 @@
 context:
-  version: '1.6.2'
+  version: '1.6.3'
   build_number: 0
 
 source:
-  - path: bin
-    target_directory: bin
   - path: pytester
     target_directory: pytester
 
@@ -18,9 +16,10 @@ outputs:
 
     build:
       script: ./build.sh
-      noarch: generic
-    
-
+      noarch: python
+      python:
+        entry_points:
+          - pytester = pytester.__main__:main
     requirements:
     
       build:
@@ -37,11 +36,10 @@ outputs:
       - package_contents:
           strict: false
           files:
-            - bin/pytester
-            - lib/python*/site-packages/pytester/__init__.py
-            - lib/python*/site-packages/pytester/__main__.py
-            - lib/python*/site-packages/pytester/empack_config.yaml
-            - lib/python*/site-packages/pytester/main_mount/main.py
+            - site-packages/pytester/__init__.py
+            - site-packages/pytester/__main__.py
+            - site-packages/pytester/empack_config.yaml
+            - site-packages/pytester/main_mount/main.py
       - script: |
           python -c "from playwright._impl import _driver as d; import os; p=d.compute_driver_executable(); print(p); print(os.path.exists(p[0] if isinstance(p, (tuple, list)) else p))"
 
