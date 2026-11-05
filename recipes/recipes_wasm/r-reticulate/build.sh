@@ -8,9 +8,10 @@ if [ ! -f src/Makevars ]; then
   exit 1
 fi
 
+sed -i.bak "s/python3\.13/python${PY_VER}/g" src/Makevars
+rm -f src/Makevars.bak
 
-rm -f src/libpython.cpp
-rm -f src/libpython.h
-
+rm src/libpython.cpp
+rm src/libpython.h
 
 $R CMD INSTALL $R_ARGS .
