@@ -65,3 +65,33 @@ emcc \
 
 
 node node_test_wrapper.js
+
+# ---------------------------------------------------------------------------
+# browser test (playwright): the same python tests in headless browsers,
+# python stdlib preloaded into the emscripten FS.
+# Browsers: PYTHON_TEST_BROWSERS (default: chromium); skip: PYTHON_SKIP_BROWSER_TEST=1
+# ---------------------------------------------------------------------------
+if [ "${PYTHON_SKIP_BROWSER_TEST:-0}" = "1" ]; then
+    echo "==> skipping browser test (PYTHON_SKIP_BROWSER_TEST=1)"
+    exit 0
+fi
+
+echo "==> compiling and linking (browser)"
+emcc \
+    "${FLAGS[@]}" \
+    -sENVIRONMENT=web,worker \
+    --preload-file "$PREFIX/lib/python${PY_VER}@/lib/python${PY_VER}" \
+    --exclude-file "*__pycache__*" \
+    --exclude-file "*/test/*" \
+    --exclude-file "*/idlelib/*" \
+    --exclude-file "*/tkinter/*" \
+    --exclude-file "*/turtledemo/*" \
+    test_main.cpp \
+    "${LIBS[@]}" \
+    -o test_main_web.js
+
+echo "==> installing browsers: ${PYTHON_TEST_BROWSERS:-chromium}"
+python -m playwright install ${PYTHON_TEST_BROWSERS:-chromium}
+
+echo "==> running browser test"
+python browser_test.py

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import createModule from "./test_main.js";
+import { pythonTests } from "./python_tests.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -135,4 +136,18 @@ if (Number(ret_code) === 1) {
 else {
   throw new Error(`Python code did not return the return code when an exception was raised. Expected 1, got ${ret_code}`);
 }
-  
+
+
+// --- plain python tests (python_tests.mjs) ------------------------------------
+const failed = [];
+for (const test of pythonTests) {
+  console.log(`=== ${test.name}`);
+  const ret = Number(Module.ccall('run_python', 'number', ['string'], [test.code]));
+  if (ret !== 0) {
+    failed.push(test.name);
+  }
+}
+if (failed.length > 0) {
+  throw new Error(`python tests failed: ${failed.join(", ")}`);
+}
+console.log(`all ${pythonTests.length} python tests passed`);
