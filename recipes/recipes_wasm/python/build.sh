@@ -166,6 +166,16 @@ cp Setup.local "${BUILD}/Modules/"
 
   # Clear out libinstall deps (we install what we need explicitly)
   sed -i -e 's/libinstall:.*/libinstall:/' Makefile
+
+  # wasm-gc call trampoline (Python/emscripten_trampoline_inner.c, loaded at
+  # runtime by Python/emscripten_trampoline.c): upstream only targets wasm32.
+  # On wasm64 use emscripten_trampoline_inner_wasm64.c (see there and the
+  # comment in recipe.yaml), same clang invocation with the wasm64 target.
+  if [[ "${WASM_BITNESS}" == "64" ]]; then
+    cp "${RECIPE_DIR}/emscripten_trampoline_inner_wasm64.c" Python/
+    sed -i -e 's|^\(\t.*/bin/clang -o \$@ \)\$<\( -mgc .*\)-target wasm32-unknown-unknown|\1$(srcdir)/Python/emscripten_trampoline_inner_wasm64.c\2-target wasm64-unknown-unknown|' Makefile
+    grep -q -- "emscripten_trampoline_inner_wasm64.c .*-target wasm64-unknown-unknown" Makefile
+  fi
 )
 
 # ---------------------------------------------------------------------------

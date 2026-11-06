@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 6
+  build_number: 7
   abi_tag: cp${{ ver2nd }}
 
 build:
@@ -19,7 +19,23 @@ source:
   # - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
   - patches/0011-disable-uuid-generate-time-safe-on-emscripten.patch
   - patches/0012-hacl_no_simd_for_wasm.patch
-  # wasm-gc call trampoline (needed for JSPI stack switching, e.g. pyjs.run_sync)
+  # Call trampoline (Python/emscripten_trampoline.c): CPython calls C functions
+  # (PyCFunction, descriptor getters / setters, ...) through a trampoline. The
+  # JS fallback trampoline puts a JS frame on the stack, which breaks JSPI stack
+  # switching (e.g. pyjs.run_sync: "trying to suspend JS frames"), so the
+  # wasm-gc trampoline module must be used:
+  #   - wasm32: upstream Python/emscripten_trampoline_inner.c (clang -mgc)
+  #   - wasm64: emscripten_trampoline_inner_wasm64.c (this recipe, compiled
+  #     like upstream with -target wasm64-unknown-unknown, see build.sh), because
+  #       * clang (still LLVM 24) lowers __builtin_wasm_test_function_pointer_signature
+  #         to a table.get with an i32 index, invalid for the table64 of wasm64:
+  #         the signature test (table.get + ref.test) is inline asm instead
+  #       * functions returning a C int have a different wasm type than
+  #         pointers on wasm64 ((i64...) -> i32), CPython calls those through
+  #         the trampoline too (e.g. descr_set_trampoline_call)
+  #     Once LLVM handles table64 there, the builtin can replace the inline asm.
+  # Tested by the python-dev test (node + browser): the wasm-gc trampoline must
+  # be used wherever the runtime supports wasm-gc.
   - patches/0016-backport-gh-145037-emscripten-trampoline-emcc-4.0.19.patch
   - patches/0017-emscripten-trampoline-robust-setup.patch
   # only when target_platform is emscripten-wasm32

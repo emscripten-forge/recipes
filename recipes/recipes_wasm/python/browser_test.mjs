@@ -18,7 +18,8 @@ globalThis.runPythonTests = async function () {
   });
   const run = (code) => Number(Module.ccall("run_python", "number", ["string"], [code]));
   const results = [];
-  // first: a second Py_Initialize resets _PyRuntime, ie. the call trampoline
+  // trampoline check (a second Py_Initialize resets _PyRuntime, the trampoline
+  // pointer is restored from a static on the next call, see patches/0017)
   const trampolineOk = run("import math; assert math.hypot(3, 4) == 5.0; assert 'a'.upper() == 'A'") === 0;
   const pointerSize = Number(Module.ccall("pointer_size", "number", [], []));
   const wasmGcTrampoline = Number(Module.ccall("uses_wasm_gc_trampoline", "number", [], [])) === 1;
