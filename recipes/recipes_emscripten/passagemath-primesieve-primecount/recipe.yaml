@@ -1,0 +1,64 @@
+context:
+  version: 0.1.1.3
+
+package:
+  name: passagemath-primesieve-primecount
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/p/passagemath-primesieve-primecount/passagemath_primesieve_primecount-${{ version }}.tar.gz
+  sha256: 980f9244afb46efdf10850e04269189bae87d8574b2f8c5920be8e1fa60c5fd7
+
+build:
+  number: 0
+  script: |
+    ${{ PYTHON }} -m pip install .
+
+requirements:
+  build:
+  - python
+  - crossenv >=1.2
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - cython
+  - gmpy2
+  - cysignals
+  - pkgconfig
+  host:
+  - python
+  - gmp
+  - mpc
+  - mpfr
+  - primecount
+  run:
+  - python
+  - gmpy2
+  - cysignals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_passagemath_primesieve_primecount.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  summary: 'passagemath: Cython interface to primecount'
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  description: |
+    Cython interface to the C++ library primecount.
+    It is a compatible fork of primecountpy.
+extra:
+  emscripten_tests:
+    python:
+      pytest_files:
+      - test_passagemath_primesieve_primecount.py
+  recipe-maintainers:
+  - mkoeppe
