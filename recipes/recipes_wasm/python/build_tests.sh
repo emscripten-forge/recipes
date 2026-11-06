@@ -31,6 +31,14 @@ LIBS=(
     "$PYTHON_LIB"
 )
 
+# memory limit: emscripten's default is 2GB (also for wasm64)
+if emcc -dM -E - < /dev/null | grep -q "__wasm64__"; then
+    MAXIMUM_MEMORY=16GB
+else
+    MAXIMUM_MEMORY=4GB
+fi
+echo "==> MAXIMUM_MEMORY=$MAXIMUM_MEMORY"
+
 echo "==> compiling and linking"
 
 
@@ -54,6 +62,7 @@ FLAGS=(
     -s ALLOW_MEMORY_GROWTH=1
     -s STACK_SIZE=32mb
     -s INITIAL_MEMORY=64MB
+    -sMAXIMUM_MEMORY=$MAXIMUM_MEMORY
 )
 
 

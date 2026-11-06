@@ -1,7 +1,8 @@
 // Plain python tests, shared by the node test (node_test_wrapper.js) and the
 // browser test (browser_test.html / browser_test.py).
 // Each snippet runs in a fresh interpreter (run_python: Py_Initialize ..
-// Py_FinalizeEx) and must not raise.
+// Py_FinalizeEx) and must not raise. `pointerSize` (optional): only run on
+// wasm32 (4) / wasm64 (8).
 
 export const pythonTests = [
   {
@@ -278,6 +279,23 @@ results = run_all(worker("a", 3, log), worker("b", 3, log))
 assert sorted(results) == ["a", "b"], results
 assert log == ["a", "b"] * 3, log
 import asyncio  # importable, even though asyncio.run is not usable here
+`,
+  },
+  {
+    // needs -sMAXIMUM_MEMORY > 4GB (build_tests.sh: 16GB on wasm64)
+    name: "wasm64: more than 4 GiB of memory",
+    pointerSize: 8,
+    code: `
+import ctypes, sys
+assert sys.maxsize > 2**32
+n = 4 * 2**30 + 2**28  # 4.25 GiB
+buf = bytearray(n)
+buf[0] = 1
+buf[-1] = 42
+last = ctypes.addressof((ctypes.c_char * n).from_buffer(buf)) + n - 1
+assert last >= 2**32, hex(last)
+assert buf[0] == 1 and buf[-1] == 42 and buf[n // 2] == 0
+del buf
 `,
   },
 ];

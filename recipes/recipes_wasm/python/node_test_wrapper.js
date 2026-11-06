@@ -141,6 +141,10 @@ else {
 // --- plain python tests (python_tests.mjs) ------------------------------------
 const failed = [];
 for (const test of pythonTests) {
+  if (test.pointerSize !== undefined && test.pointerSize !== pointer_size) {
+    console.log(`=== ${test.name} (skipped, pointer size ${pointer_size})`);
+    continue;
+  }
   console.log(`=== ${test.name}`);
   const ret = Number(Module.ccall('run_python', 'number', ['string'], [test.code]));
   if (ret !== 0) {

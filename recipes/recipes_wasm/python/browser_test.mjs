@@ -24,6 +24,10 @@ globalThis.runPythonTests = async function () {
   const wasmGcTrampoline = Number(Module.ccall("uses_wasm_gc_trampoline", "number", [], [])) === 1;
   results.push({ name: "trampoline calls", ok: trampolineOk });
   for (const test of pythonTests) {
+    if (test.pointerSize !== undefined && test.pointerSize !== pointerSize) {
+      console.log(`=== ${test.name} (skipped, pointer size ${pointerSize})`);
+      continue;
+    }
     console.log(`=== ${test.name}`);
     results.push({ name: test.name, ok: run(test.code) === 0 });
   }
