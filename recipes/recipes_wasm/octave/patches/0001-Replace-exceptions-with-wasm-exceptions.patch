@@ -1,0 +1,49 @@
+From 33b01a039dcef6ff0a21d322d5741ba2a626805a Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 4 Nov 2026 15:36:23 +0100
+Subject: [PATCH 1/8] Replace exceptions with wasm-exceptions
+
+---
+ configure.ac | 26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 0bdc03b..94f9c8c 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1013,16 +1013,22 @@ case $canonical_host_type in
+   ;;
+ esac
+ 
+-## Check if C and Fortran compilers support -fexceptions to support unwinding
+-## the stack for C++ exceptions through frames in C or Fortran code.
+-
+-# CFLAGS are used only in the configure script.
+-# XTRA_CFLAGS are used only after the configure script.
+-OCTAVE_CC_FLAG([-fexceptions], [
+-  CFLAGS="$CFLAGS -fexceptions"
+-  XTRA_CFLAGS="$XTRA_CFLAGS -fexceptions"
+-  AC_MSG_NOTICE([adding -fexceptions to XTRA_CFLAGS])])
+-OCTAVE_F77_FLAG([-fexceptions])
++## Check if C, C++, and Fortran compilers support -fwasm-exceptions so C++
++## exceptions can unwind through C/Fortran frames (required for Emscripten).
++
++# CFLAGS/CXXFLAGS are used only in the configure script.
++# XTRA_*FLAGS are used only after the configure script.
++OCTAVE_CC_FLAG([-fwasm-exceptions], [
++  CFLAGS="$CFLAGS -fwasm-exceptions"
++  XTRA_CFLAGS="$XTRA_CFLAGS -fwasm-exceptions"
++  AC_MSG_NOTICE([adding -fwasm-exceptions to XTRA_CFLAGS])])
++OCTAVE_CXX_FLAG([-fwasm-exceptions], [
++  CXXFLAGS="$CXXFLAGS -fwasm-exceptions"
++  XTRA_CXXFLAGS="$XTRA_CXXFLAGS -fwasm-exceptions"
++  AC_MSG_NOTICE([adding -fwasm-exceptions to XTRA_CXXFLAGS])])
++OCTAVE_F77_FLAG([-fwasm-exceptions], [
++  FFLAGS="$FFLAGS -fwasm-exceptions"
++  AC_MSG_NOTICE([adding -fwasm-exceptions to FFLAGS])])
+ 
+ AC_SUBST(XTRA_CFLAGS)
+ AC_SUBST(XTRA_CXXFLAGS)
+-- 
+2.56.0
+

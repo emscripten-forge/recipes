@@ -1,0 +1,294 @@
+From 80b8901d6a37c4bdd23893e77acf06a1cf6ddd88 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 4 Nov 2026 16:28:35 +0100
+Subject: [PATCH 2/8] Disable threads
+
+---
+ configure.ac                             | 40 +++++++++---------
+ liboctave/util/oct-mutex.cc              | 54 +++++-------------------
+ liboctave/wrappers/cxx-signal-helpers.cc | 44 ++-----------------
+ liboctave/wrappers/signal-wrappers.c     | 11 ++---
+ 4 files changed, 37 insertions(+), 112 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 94f9c8c..fe40ba2 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -552,26 +552,23 @@ OCTAVE_LLVM_LIBCXX
+ OCTAVE_BSD_LIBC
+ 
+ ### Check for pthread library.
+-
+-AX_PTHREAD
+-dnl Include pthread libs and flags early in case other config tests need them.
+-dnl They seem to be required for the OpenGL tests on Debian systems.
+-LIBS="$PTHREAD_LIBS $LIBS"
+-XTRA_CFLAGS="$XTRA_CFLAGS $PTHREAD_CFLAGS"
+-XTRA_CXXFLAGS="$XTRA_CXXFLAGS $PTHREAD_CFLAGS"
+-dnl Set these for any other tests that may require them.
+-dnl They will be reset before output files are generated.
+-CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+-CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+-
+-dnl Clang compiler will produce bogus warning during linking only.
+-AM_CONDITIONAL([AMCOND_CLANG_PTHREAD_WARNING],
+-               [test $ax_cv_PTHREAD_CLANG = yes])
+-
+-dnl Check if glibc uses wrong stack size
+-OCTAVE_CHECK_BROKEN_PTHREAD_STACKSIZE
+-AM_CONDITIONAL([OCTAVE_CHECK_BROKEN_PTHREAD_STACKSIZE],
+-  [test $octave_cv_broken_pthread_stacksize = yes])
++dnl Completely disable pthreads (single-threaded / Emscripten builds).
++AC_MSG_NOTICE([pthreads support disabled])
++PTHREAD_LIBS=
++PTHREAD_CFLAGS=
++PTHREAD_CC="$CC"
++PTHREAD_CXX="$CXX"
++ax_cv_PTHREAD_CLANG=no
++octave_cv_broken_pthread_stacksize=no
++AC_SUBST([PTHREAD_LIBS])
++AC_SUBST([PTHREAD_CFLAGS])
++AC_SUBST([PTHREAD_CC])
++AC_SUBST([PTHREAD_CXX])
++dnl Ensure HAVE_PTHREAD_H is not defined.
++ac_cv_header_pthread_h=no
++
++AM_CONDITIONAL([AMCOND_CLANG_PTHREAD_WARNING], [false])
++AM_CONDITIONAL([OCTAVE_CHECK_BROKEN_PTHREAD_STACKSIZE], [false])
+ 
+ ### Test whether the compiler supports OpenMP.
+ dnl This is enabled by default to allow the option of using OpenMP in
+@@ -1143,7 +1140,8 @@ AC_HEADER_SYS_WAIT
+ 
+ dnl Use multiple AC_CHECKs to avoid line continuations '\' in list.
+ AC_CHECK_HEADERS([dlfcn.h floatingpoint.h fpu_control.h grp.h])
+-AC_CHECK_HEADERS([ieeefp.h pthread.h pwd.h sys/ioctl.h])
++AC_CHECK_HEADERS([ieeefp.h pwd.h sys/ioctl.h])
++dnl pthread.h intentionally not checked; pthreads support is disabled.
+ AC_CHECK_HEADERS([stropts.h sys/stropts.h])
+ 
+ ## Some versions of GCC fail when using -fopenmp and including
+diff --git a/liboctave/util/oct-mutex.cc b/liboctave/util/oct-mutex.cc
+index d7c6a12..32e721a 100644
+--- a/liboctave/util/oct-mutex.cc
++++ b/liboctave/util/oct-mutex.cc
+@@ -32,8 +32,6 @@
+ 
+ #if defined (OCTAVE_USE_WINDOWS_API)
+ #  include <windows.h>
+-#elif defined (HAVE_PTHREAD_H)
+-#  include <pthread.h>
+ #endif
+ 
+ OCTAVE_BEGIN_NAMESPACE(octave)
+@@ -107,61 +105,33 @@ thread::is_thread ()
+   return (GetCurrentThreadId () == thread_id);
+ }
+ 
+-#elif defined (HAVE_PTHREAD_H)
++#else
++
++// Pthreads disabled: single-threaded no-op mutex.
+ 
+-class pthread_mutex : public base_mutex
++class null_mutex : public base_mutex
+ {
+ public:
++  null_mutex () : base_mutex () { }
+ 
+-  pthread_mutex ()
+-    : base_mutex (), m_pm ()
+-  {
+-    pthread_mutexattr_t attr;
+-
+-    pthread_mutexattr_init (&attr);
+-    pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_RECURSIVE);
+-    pthread_mutex_init (&m_pm, &attr);
+-    pthread_mutexattr_destroy (&attr);
+-  }
++  ~null_mutex () = default;
+ 
+-  OCTAVE_DISABLE_COPY_MOVE (pthread_mutex)
++  void lock () { /* no-op: single threaded */ }
+ 
+-  ~pthread_mutex ()
+-  {
+-    pthread_mutex_destroy (&m_pm);
+-  }
+-
+-  void lock ()
+-  {
+-    pthread_mutex_lock (&m_pm);
+-  }
++  void unlock () { /* no-op: single threaded */ }
+ 
+-  void unlock ()
+-  {
+-    pthread_mutex_unlock (&m_pm);
+-  }
+-
+-  bool try_lock ()
+-  {
+-    return (pthread_mutex_trylock (&m_pm) == 0);
+-  }
+-
+-private:
+-  pthread_mutex_t m_pm;
++  bool try_lock () { return true; }
+ };
+ 
+-static pthread_t thread_id = 0;
+-
+ void
+ thread::init ()
+ {
+-  thread_id = pthread_self ();
+ }
+ 
+ bool
+ thread::is_thread ()
+ {
+-  return (pthread_equal (thread_id, pthread_self ()) != 0);
++  return true;
+ }
+ 
+ #endif
+@@ -171,10 +141,8 @@ init_rep ()
+ {
+ #if defined (OCTAVE_USE_WINDOWS_API)
+   return new w32_mutex ();
+-#elif defined (HAVE_PTHREAD_H)
+-  return new pthread_mutex ();
+ #else
+-  return new base_mutex ();
++  return new null_mutex ();
+ #endif
+ }
+ 
+diff --git a/liboctave/wrappers/cxx-signal-helpers.cc b/liboctave/wrappers/cxx-signal-helpers.cc
+index 7862875..71840f8 100644
+--- a/liboctave/wrappers/cxx-signal-helpers.cc
++++ b/liboctave/wrappers/cxx-signal-helpers.cc
+@@ -34,8 +34,6 @@
+ 
+ #if defined (__WIN32__) && ! defined (__CYGWIN__)
+ #  include <windows.h>
+-#else
+-#  include <pthread.h>
+ #endif
+ 
+ #include "signal-wrappers.h"
+@@ -151,7 +149,7 @@ void
+ octave_block_async_signals ()
+ {
+ #if ! defined (__WIN32__) || defined (__CYGWIN__)
+-  pthread_sigmask (SIG_BLOCK, &async_signals, 0);
++  sigprocmask (SIG_BLOCK, &async_signals, 0);
+ #endif
+ }
+ 
+@@ -159,51 +157,15 @@ void
+ octave_unblock_async_signals ()
+ {
+ #if ! defined (__WIN32__) || defined (__CYGWIN__)
+-  pthread_sigmask (SIG_UNBLOCK, &async_signals, 0);
++  sigprocmask (SIG_UNBLOCK, &async_signals, 0);
+ #endif
+ }
+ 
+-#if ! defined (__WIN32__) || defined (__CYGWIN__)
+-
+-static void *
+-signal_watcher (void *arg)
+-{
+-  octave_sig_handler *handler = reinterpret_cast<octave_sig_handler *> (arg);
+-
+-  octave_unblock_async_signals ();
+-
+-  while (1)
+-    {
+-      int sig_caught;
+-
+-      if (sigwait (&async_signals, &sig_caught))
+-        {
+-          // FIXME: what else should we do?
+-          abort ();
+-        }
+-
+-      // Let handler have complete control over what to do.
+-      (*handler) (sig_caught);
+-    }
+-}
+-
+-#endif
+-
+ void
+ octave_create_interrupt_watcher_thread (octave_sig_handler *handler)
+ {
+-#if ! defined (__WIN32__)
+-  pthread_t sighandler_thread_id;
+-
+-  if (pthread_create (&sighandler_thread_id, 0, signal_watcher,
+-                      reinterpret_cast<void *> (handler)))
+-    {
+-      // FIXME: what else should we do?
+-      abort ();
+-    }
+-#else
++  // Pthreads disabled: no dedicated signal watcher thread.
+   octave_unblock_async_signals ();
+ 
+   octave_unused_parameter (handler);
+-#endif
+ }
+diff --git a/liboctave/wrappers/signal-wrappers.c b/liboctave/wrappers/signal-wrappers.c
+index 23e022a..ea4b648 100644
+--- a/liboctave/wrappers/signal-wrappers.c
++++ b/liboctave/wrappers/signal-wrappers.c
+@@ -40,8 +40,6 @@
+ 
+ #if defined (__WIN32__) && ! defined (__CYGWIN__)
+ #  include <windows.h>
+-#else
+-#  include <pthread.h>
+ #endif
+ 
+ #include "signal-wrappers.h"
+@@ -479,7 +477,7 @@ block_or_unblock_signal (int how, int sig)
+ 
+   sigaddset (&signal_mask, sig);
+ 
+-  pthread_sigmask (how, &signal_mask, 0);
++  sigprocmask (how, &signal_mask, 0);
+ 
+ #else
+ 
+@@ -594,14 +592,13 @@ print_sigset (FILE *of, const char *prefix, const sigset_t *sigset)
+       if (sigismember (sigset, sig))
+         {
+           cnt++;
+-          fprintf (of, "%ld: %s%d (%s)\n", (long int) pthread_self (),
++          fprintf (of, "%s%d (%s)\n",
+                    prefix, sig, strsignal (sig));
+         }
+     }
+ 
+   if (cnt == 0)
+-    fprintf (of, "%ld: %s<empty signal set>\n", (long int) pthread_self (),
+-             prefix);
++    fprintf (of, "%s<empty signal set>\n", prefix);
+ }
+ 
+ static int
+@@ -612,7 +609,7 @@ print_sigmask (FILE *of, const char *msg)
+   if (msg)
+     fprintf (of, "%s", msg);
+ 
+-  if (pthread_sigmask (SIG_BLOCK, NULL, &sigmask) == -1)
++  if (sigprocmask (0, 0, &sigmask) == -1)
+     return -1;
+ 
+   print_sigset (of, "\t\t", &sigmask);
+-- 
+2.56.0
+

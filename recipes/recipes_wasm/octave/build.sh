@@ -2,147 +2,116 @@
 
 set -eux
 
-###############################
-# CONFIGURE BUILD ENVIRONMENT #
-###############################
+################################################################################
+# LLVM + FLANG TOOLCHAIN TO SUPPORT COMMON SYMBOLS                             #
+################################################################################
 
-# set pkg config path to prefix
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+export LLVM_DIR="$BUILD_PREFIX/lib/llvm-toolchain"
+export PATH="$LLVM_DIR/bin:$PATH"
 
-# Install custom LLVM and flang which includes patch for common symbols
-LLVM_DIR="$(pwd)/llvm_dir"
-LLVM_PKG="llvm_emscripten-wasm32-20.1.7-h2e33cc4_5.tar.bz2"
-mkdir -p $LLVM_DIR
-wget --quiet https://github.com/IsabelParedes/llvm-project/releases/download/v20.1.7_emscripten-wasm32/$LLVM_PKG
-tar -xf $LLVM_PKG --directory $LLVM_DIR
+# Remove links to Emscripten's LLVM binaries
+rm $BUILD_PREFIX/bin/wasm-ld
+ln -s $LLVM_DIR/bin/lld $BUILD_PREFIX/bin/wasm-ld
 
-# Check install
-$LLVM_DIR/bin/flang --version
-$LLVM_DIR/bin/llvm-nm --version
+rm $BUILD_PREFIX/bin/llvm-ar
+ln -s $LLVM_DIR/bin/llvm-ar $BUILD_PREFIX/bin/llvm-ar
 
-# Set flags
+# Intrinsic .mod files (iso_c_binding, etc.) from libflang when installed.
+for FINTRINSIC_PATH in "$PREFIX"/lib/clang/*/finclude/flang/"$HOST"; do
+  if [ -d "$FINTRINSIC_PATH" ]; then
+    export FINTRINSIC_MODS="-fintrinsic-modules-path $FINTRINSIC_PATH"
+    break
+  fi
+done
+
+# Set flags (similar to Flang's activation script)
 export EM_LLVM_ROOT=$LLVM_DIR
-export FLANG=$LLVM_DIR/bin/flang
+export FLANG=$RECIPE_DIR/flang.sh
 export FC=$FLANG
 export F77=$FLANG
 export F90=$FLANG
 export F95=$FLANG
 export F18=$FLANG
-
-export FFLAGS="-fPIC --target=wasm32-unknown-emscripten"
+export FFLAGS="-fPIC --target=$HOST ${FINTRINSIC_MODS}"
 export FPICFLAGS="-fPIC"
-export FLIBS="-lFortranRuntime"
-export FCLIBS="-lFortranRuntime"
+export FCLIBS="-lflang_rt.runtime"
 
-export LDFLAGS="-fPIC -L$PREFIX/lib -fwasm-exceptions"
-export LD_STATIC_FLAG="-static"
-export SH_LDFLAGS="-sSIDE_MODULE=1"
-export DL_LDFLAGS="-sSIDE_MODULE=1"
-export MKOCTFILE_DL_LDFLAGS="-sSIDE_MODULE=1"
+################################################################################
+# CONFIGURE BUILD ENVIRONMENT                                                  #
+################################################################################
 
-export CFLAGS="-O2 -g0 -fPIC -fwasm-exceptions"
-export CXXFLAGS="-g0 -fPIC -fwasm-exceptions"
+# Copy the patched libtool.m4 before it gets rewritten
+rm $BUILD_PREFIX/share/aclocal/libtool.m4
+cp m4/libtool.m4 $BUILD_PREFIX/share/aclocal/libtool.m4
 
-export EXEEXT=".js"
-export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
+autoreconf -fi
 
-sed -i 's/-fexceptions/-fwasm-exceptions/g' configure
+# Do not use conda-forge wrapper, it adds paths to system libs
+rm $BUILD_PREFIX/bin/pkg-config
+mv $BUILD_PREFIX/bin/pkg-config.bin $BUILD_PREFIX/bin/pkg-config
 
-# This flag is set by some of the configure tests which drag in some of the
-# compiler libraries including legacy exceptions. They are not needed.
-sed -i 's/postdeps_CXX='"'"'.*'"'"'/postdeps_CXX='\'\''/g' configure
+# Copy --pre-js file for octave-cli
+envsubst '$PKG_VERSION' < ${RECIPE_DIR}/pre.js > ./pre.js
+cli_flags=(
+  "--pre-js=$SRC_DIR/pre.js"
+  "-sNODERAWFS=1"
+  "-sALLOW_MEMORY_GROWTH=1"
+)
+export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
-####################
-# CONFIGURE OCTAVE #
-####################
+export CXXFLAGS="-fPIC -I$PREFIX/include"
+export CFLAGS="-fPIC -I$PREFIX/include"
+export CPPFLAGS="-I$PREFIX/include"
+export LDFLAGS="-fPIC -L$PREFIX/lib"
 
-BUILD="x86_64-unknown-linux-gnu"
-HOST="wasm32-unknown-emscripten"
+# For cross tools
+export BUILD_CC=gcc
+export BUILD_CXX=g++
+
+################################################################################
+# CONFIGURE OCTAVE                                                             #
+################################################################################
 
 BUILD_DIR="_build"
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
-# Force autotools to NOT rerun after patches
-find . -name "_build*" -prune -o -exec touch -t $(date +%Y%m%d%H%M) {} \;
-
-# Override some tests
-export ac_octave_suitesparseconfig_pkg_check=no
-export gl_cv_func_setlocale_null_all_mtsafe=no
-export gl_cv_func_setlocale_null_one_mtsafe=no
-export ac_octave_spqr_check_for_lib=no
 export ac_cv_func_pthread_sigmask=no
-export ac_cv_header_pthread_h=no
-export ac_cv_header_threads_h=no
-export ac_cv_type_pthread_t=no
-export ac_cv_type_pthread_spinlock_t=no
-export gl_cv_const_PTHREAD_CREATE_DETACHED=no
-export gl_cv_const_PTHREAD_MUTEX_RECURSIVE=no
-export gl_cv_const_PTHREAD_MUTEX_ROBUST=no
-export gl_cv_const_PTHREAD_PROCESS_SHARED=no
+export ac_cv_prog_f77_v=-v
+export ac_cv_f77_libs="-lflang_rt.runtime"
 
-# Assume putenv is compatible
-export gl_cv_func_svid_putenv=yes
+# Test fails with unknown type name `namespace` - configure bug
+export octave_cv_lib_fontconfig=yes
 
-
-# ensure $PREFIX/lib is considered for finding libraries
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib"
-
-# link
-export LIBS="-lz -lMagick++-6.Q16 -lMagickWand-6.Q16 -lMagickCore-6.Q16 -lbz2 -ltiff -lpng -ljpeg -lxml2"
-
-# delete shared zlib
-rm -f $PREFIX/lib/libz.so
-rm -f $PREFIX/lib/libz.so.*
-
-emconfigure ../configure \
-   --prefix="${PREFIX}" \
-   --build="${BUILD}"\
-   --host="${HOST}" \
-   --srcdir=".." \
-   --enable-static \
-   --enable-fortran-calling-convention="gfortran" \
-   --disable-docs \
-   --disable-readline \
-   --enable-threads=no \
-   --disable-threads \
-   --disable-fftw-threads \
-   --disable-rpath \
-   --without-amd \
-   --without-camd \
-   --without-colamd \
-   --without-ccolamd \
-   --without-cholmod \
-   --without-curl \
-   --without-cxsparse \
-   --without-suitesparseconfig \
-   --without-spqr \
-   --without-fftw3 \
-   --without-fftw3f \
-   --without-glpk \
-   --without-glpk \
-   --without-hdf5 \
-   --without-klu \
-   --without-opengl \
-   --without-qhull_r \
-   --without-qrupdate \
-   --without-umfpack \
-   --without-z \
-   --without-framework-carbon \
-   --without-framework-opengl \
-   --without-qt \
-   --with-magick=Magick++ \
-   MAGICK_CFLAGS="$(pkg-config --cflags Magick++)" \
-   MAGICK_LIBS="$(pkg-config --libs Magick++)" \
-|| cat config.log
+emconfigure \
+  env PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig" \
+  ../configure \
+  --srcdir=".." \
+  --prefix="${PREFIX}" \
+  --build="${BUILD}" \
+  --host="${HOST}" \
+  --enable-fortran-calling-convention="gfortran" \
+  --disable-lib-visibility-flags \
+  --disable-docs \
+  --disable-threads \
+  --disable-readline \
+  --disable-openmp \
+  --without-opengl \
+  --enable-cross-tools
 
 
-#####################
-# BUILD AND INSTALL #
-#####################
+################################################################################
+# BUILD AND INSTALL                                                            #
+################################################################################
 
-emmake make --jobs 3
-
+emmake make --jobs 3 # V=1
 emmake make install
 
-cp src/octave*.wasm $PREFIX/bin/
+# Cross tools
+cp src/$HOST-mkoctfile $PREFIX/bin/
+cp src/$HOST-octave-config $PREFIX/bin/
+
+
+echo "🌞🌞🌞 Test"
+node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
+echo "🐞🐞🐞 Test complete"

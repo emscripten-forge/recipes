@@ -1,0 +1,36 @@
+From 01711cf228390b6af80b673a218beb91c4447006 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 5 Nov 2026 17:16:47 +0100
+Subject: [PATCH 6/8] Install *.wasm files
+
+---
+ src/module.mk | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/module.mk b/src/module.mk
+index b349b26..730d2bf 100644
+--- a/src/module.mk
++++ b/src/module.mk
+@@ -241,10 +241,19 @@ make-version-links:
+ 	  mv $$f$(EXEEXT) $$f-$(version)$(EXEEXT) && \
+ 	    $(LN_S) $$f-$(version)$(EXEEXT) $$f$(EXEEXT); \
+ 	done
++	for f in $(notdir $(basename $(bin_PROGRAMS))); do \
++	  for dir in %reldir%/.libs %reldir%; do \
++	    if test -f "$$dir/$$f.wasm"; then \
++	      $(INSTALL_PROGRAM) "$$dir/$$f.wasm" "$(DESTDIR)$(bindir)/$$f.wasm" || exit 1; \
++	      break; \
++	    fi; \
++	  done; \
++	done
+ 
+ remove-version-links:
+ 	for f in $(notdir $(basename $(bin_PROGRAMS))); do \
+ 	  rm -f $(DESTDIR)$(bindir)/$$f-$(version)$(EXEEXT); \
++	  rm -f "$(DESTDIR)$(bindir)/$$f.wasm"; \
+ 	done
+ 
+ .PHONY: make-version-links remove-version-links
+-- 
+2.56.0
+

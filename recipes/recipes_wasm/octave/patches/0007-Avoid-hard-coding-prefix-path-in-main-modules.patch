@@ -1,0 +1,55 @@
+From 664b422e530c1e726bc8112dfadcab696cbb83f8 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 5 Nov 2026 19:02:03 +0100
+Subject: [PATCH 7/8] Avoid hard-coding prefix path in main modules
+
+Absolute -rpath is rewritten by rattler and corrupts .wasm
+
+failed to asynchronously prepare wasm: CompileError:
+WebAssembly.instantiate(): reached end while decoding length @+382
+Aborted(CompileError: WebAssembly.instantiate(): reached end while
+decoding length @+382)
+---
+ m4/libtool.m4 | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/m4/libtool.m4 b/m4/libtool.m4
+index cc66568..e110329 100644
+--- a/m4/libtool.m4
++++ b/m4/libtool.m4
+@@ -3208,6 +3208,10 @@ emscripten*)
+   _LT_TAGVAR(archive_expsym_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
+   _LT_TAGVAR(archive_cmds_need_lc, $1)=no
+   _LT_TAGVAR(no_undefined_flag, $1)=
++  _LT_TAGVAR(hardcode_libdir_flag_spec, $1)=
++  _LT_TAGVAR(hardcode_libdir_flag_spec_ld, $1)=
++  _LT_TAGVAR(hardcode_automatic, $1)=no
++  _LT_TAGVAR(hardcode_into_libs, $1)=no
+   ;;
+ 
+ *)
+@@ -5489,6 +5493,10 @@ _LT_EOF
+     emscripten*)
+       _LT_TAGVAR(archive_cmds, $1)='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags -o $lib'
+       _LT_TAGVAR(archive_expsym_cmds, $1)='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags -o $lib'
++      _LT_TAGVAR(hardcode_libdir_flag_spec, $1)=
++      _LT_TAGVAR(hardcode_libdir_flag_spec_ld, $1)=
++      _LT_TAGVAR(hardcode_automatic, $1)=no
++      _LT_TAGVAR(hardcode_into_libs, $1)=no
+       ;;
+ 
+     *)
+@@ -7569,6 +7577,10 @@ if test yes != "$_lt_caught_CXX_error"; then
+         _LT_TAGVAR(ld_shlibs, $1)=yes
+         _LT_TAGVAR(archive_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
+         _LT_TAGVAR(archive_expsym_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
++        _LT_TAGVAR(hardcode_libdir_flag_spec, $1)=
++        _LT_TAGVAR(hardcode_libdir_flag_spec_ld, $1)=
++        _LT_TAGVAR(hardcode_automatic, $1)=no
++        _LT_TAGVAR(hardcode_into_libs, $1)=no
+         ;;
+ 
+       *)
+-- 
+2.56.0
+

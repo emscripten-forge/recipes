@@ -1,0 +1,63 @@
+From fe23583256512b8411ffafbd2156a86ca6099e9a Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 4 Nov 2026 17:03:26 +0100
+Subject: [PATCH 3/8] Enable shared libs
+
+---
+ m4/libtool.m4 | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/m4/libtool.m4 b/m4/libtool.m4
+index 8d323b3..cc66568 100644
+--- a/m4/libtool.m4
++++ b/m4/libtool.m4
+@@ -3204,8 +3204,8 @@ emscripten*)
+   finish_cmds=
+   dynamic_linker="Emscripten linker"
+   _LT_COMPILER_PIC($1)='-fPIC'
+-  _LT_TAGVAR(archive_cmds, $1)='$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib'
+-  _LT_TAGVAR(archive_expsym_cmds, $1)='$SED "s|^|_|" $export_symbols >$output_objdir/$soname.expsym~$CC -sSIDE_MODULE=2 -shared $libobjs $deplibs $compiler_flags -o $lib -s EXPORTED_FUNCTIONS=@$output_objdir/$soname.expsym'
++  _LT_TAGVAR(archive_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
++  _LT_TAGVAR(archive_expsym_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
+   _LT_TAGVAR(archive_cmds_need_lc, $1)=no
+   _LT_TAGVAR(no_undefined_flag, $1)=
+   ;;
+@@ -3674,6 +3674,10 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+   lt_cv_deplibs_check_method=pass_all
+   ;;
+ 
++emscripten*)
++  lt_cv_deplibs_check_method=pass_all
++  ;;
++
+ *-mlibc)
+   lt_cv_deplibs_check_method=pass_all
+   ;;
+@@ -5482,6 +5486,11 @@ _LT_EOF
+       _LT_TAGVAR(hardcode_shlibpath_var, $1)=no
+       ;;
+ 
++    emscripten*)
++      _LT_TAGVAR(archive_cmds, $1)='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags -o $lib'
++      _LT_TAGVAR(archive_expsym_cmds, $1)='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags -o $lib'
++      ;;
++
+     *)
+       if $LD --help 2>&1 | $GREP ': supported targets:.* elf' > /dev/null; then
+ 	_LT_TAGVAR(archive_cmds, $1)='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags $wl-soname $wl$soname -o $lib'
+@@ -7556,6 +7565,12 @@ if test yes != "$_lt_caught_CXX_error"; then
+         _LT_TAGVAR(ld_shlibs, $1)=no
+         ;;
+ 
++      emscripten*)
++        _LT_TAGVAR(ld_shlibs, $1)=yes
++        _LT_TAGVAR(archive_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
++        _LT_TAGVAR(archive_expsym_cmds, $1)='$CC -shared $libobjs $deplibs $compiler_flags -o $lib'
++        ;;
++
+       *)
+         # FIXME: insert proper C++ library support
+         _LT_TAGVAR(ld_shlibs, $1)=no
+-- 
+2.56.0
+
