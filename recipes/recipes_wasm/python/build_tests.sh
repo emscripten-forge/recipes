@@ -77,7 +77,9 @@ node node_test_wrapper.js
 
 # ---------------------------------------------------------------------------
 # browser test (playwright): the same python tests in headless browsers,
-# python stdlib preloaded into the emscripten FS.
+# python stdlib preloaded into the emscripten FS. (The exclude patterns match
+# the full host path, which may contain e.g. ".../test/..." itself: anchor them
+# at lib/pythonX.Y.)
 # Browsers: PYTHON_TEST_BROWSERS (default: chromium); skip: PYTHON_SKIP_BROWSER_TEST=1
 # ---------------------------------------------------------------------------
 if [ "${PYTHON_SKIP_BROWSER_TEST:-0}" = "1" ]; then
@@ -91,10 +93,10 @@ emcc \
     -sENVIRONMENT=web,worker \
     --preload-file "$PREFIX/lib/python${PY_VER}@/lib/python${PY_VER}" \
     --exclude-file "*__pycache__*" \
-    --exclude-file "*/test/*" \
-    --exclude-file "*/idlelib/*" \
-    --exclude-file "*/tkinter/*" \
-    --exclude-file "*/turtledemo/*" \
+    --exclude-file "*/lib/python${PY_VER}/test/*" \
+    --exclude-file "*/lib/python${PY_VER}/idlelib/*" \
+    --exclude-file "*/lib/python${PY_VER}/tkinter/*" \
+    --exclude-file "*/lib/python${PY_VER}/turtledemo/*" \
     test_main.cpp \
     "${LIBS[@]}" \
     -o test_main_web.js
