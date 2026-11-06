@@ -56,6 +56,7 @@ cli_flags=(
   "--pre-js=$SRC_DIR/pre.js"
   "-sNODERAWFS=1"
   "-sALLOW_MEMORY_GROWTH=1"
+  "-fwasm-exceptions"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
