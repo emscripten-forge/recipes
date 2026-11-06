@@ -1,0 +1,25 @@
+From fedbc27502da1d32b1224057373e37486246f9a7 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Fri, 6 Nov 2026 15:42:22 +0100
+Subject: [PATCH 7/7] Set Fortran char len to size_t
+
+---
+ liboctave/util/f77-fcn.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/liboctave/util/f77-fcn.h b/liboctave/util/f77-fcn.h
+index f6a0c8d..28c6754 100644
+--- a/liboctave/util/f77-fcn.h
++++ b/liboctave/util/f77-fcn.h
+@@ -236,7 +236,7 @@ octave_make_cray_const_ftn_ch_dsc (const char *ptr_arg, unsigned long len_arg)
+ #define F77_CONST_CHAR_ARG2(x, l) F77_CHAR_ARG2 (x, l)
+ #define F77_CXX_STRING_ARG(x) F77_CONST_CHAR_ARG2 (x.c_str (), x.length ())
+ #define F77_CHAR_ARG_LEN(l) , l
+-#if defined (__GNUC__) && __GNUC__ >= 8
++#if defined (__GNUC__) && __GNUC__ >= 8 || defined __EMSCRIPTEN__
+ #  define F77_CHAR_ARG_LEN_TYPE size_t
+ #else
+ #  define F77_CHAR_ARG_LEN_TYPE int
+-- 
+2.56.0
+
