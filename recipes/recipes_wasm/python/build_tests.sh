@@ -46,7 +46,7 @@ FLAGS=(
     -sMODULARIZE=1
     -sEXPORT_NAME="createModule"
     -sEXPORTED_RUNTIME_METHODS='["FS","cwrap", "ccall", "stringToUTF8", "allocateUTF8"]'
-    -sEXPORTED_FUNCTIONS='["_run_python"]'
+    -sEXPORTED_FUNCTIONS='["_run_python","_uses_wasm_gc_trampoline","_pointer_size"]'
     -sINVOKE_RUN=0
     -sNO_EXIT_RUNTIME=1
     -fwasm-exceptions
