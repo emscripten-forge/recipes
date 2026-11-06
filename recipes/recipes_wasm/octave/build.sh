@@ -107,7 +107,7 @@ emconfigure \
 # BUILD AND INSTALL                                                            #
 ################################################################################
 
-emmake make --jobs 3 # V=1
+emmake make --jobs 3 V=1
 emmake make install
 
 # Cross tools
