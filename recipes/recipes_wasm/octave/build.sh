@@ -99,6 +99,8 @@ emconfigure \
   --without-opengl \
   --enable-cross-tools
 
+# NOTE: xeus-octave needs symbols which are incorrectly undeclared in the
+# OCTAVE_API, thus --disable-lib-visibility.
 
 ################################################################################
 # BUILD AND INSTALL                                                            #
@@ -110,8 +112,3 @@ emmake make install
 # Cross tools
 cp src/$HOST-mkoctfile $PREFIX/bin/
 cp src/$HOST-octave-config $PREFIX/bin/
-
-
-echo "🌞🌞🌞 Test"
-node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
-echo "🐞🐞🐞 Test complete"

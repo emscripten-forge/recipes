@@ -16,7 +16,7 @@ for a in "$@"; do
   esac
 done
 
-# Link step: compile any Fortran sources with flang -c, then emcc
+# Compile any Fortran sources with flang -c, then link with emcc
 outdir=$(mktemp -d)
 trap 'rm -rf "$outdir"' EXIT
 
