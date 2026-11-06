@@ -63,7 +63,7 @@ export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 export CXXFLAGS="-fPIC -I$PREFIX/include"
 export CFLAGS="-fPIC -I$PREFIX/include"
 export CPPFLAGS="-I$PREFIX/include"
-export LDFLAGS="-fPIC -L$PREFIX/lib"
+export LDFLAGS="-fPIC -fwasm-exceptions -L$PREFIX/lib"
 
 # For cross tools
 export BUILD_CC=gcc
