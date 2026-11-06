@@ -59,8 +59,8 @@ console.log("Python files copied to Emscripten FS.");
 
 
 // --- call trampoline ---------------------------------------------------------
-// checked first: a second Py_Initialize (after Py_FinalizeEx) resets _PyRuntime
-// to its initial values, ie. back to the JS trampoline (pystate.c)
+// (a second Py_Initialize resets _PyRuntime, the trampoline pointer is restored
+// from a static on the next call, see patches/0017)
 // C functions with 0..3 arguments are called through the trampoline
 // (METH_NOARGS / METH_O / METH_VARARGS / METH_VARARGS|METH_KEYWORDS ...)
 const trampoline_code = `
@@ -95,8 +95,8 @@ const wasm_gc_supported = (() => {
   }
 })();
 console.log(`pointer size ${pointer_size}, wasm-gc supported ${wasm_gc_supported}, wasm-gc trampoline used ${uses_wasm_gc === 1}`);
-if (pointer_size === 4 && wasm_gc_supported && uses_wasm_gc !== 1) {
-  throw new Error("wasm32: the wasm-gc call trampoline is not used (JS trampoline breaks JSPI stack switching)");
+if (wasm_gc_supported && uses_wasm_gc !== 1) {
+  throw new Error(`wasm${pointer_size * 8}: the wasm-gc call trampoline is not used (JS trampoline breaks JSPI stack switching)`);
 }
 
 

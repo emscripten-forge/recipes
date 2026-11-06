@@ -2,7 +2,7 @@
 
 Serves the current directory (test_main_web.{js,wasm,data}, browser_test.html,
 ...) and checks per browser that all python tests pass and that the wasm-gc call
-trampoline is used where wasm-gc is available (wasm32), which JSPI stack
+trampoline is used where wasm-gc is available, which JSPI stack
 switching (e.g. pyjs.run_sync) depends on.
 
 Usage: python browser_test.py [browser ...]   (default: chromium,
@@ -64,8 +64,11 @@ async def main(browsers):
                 failed = [r["name"] for r in res["results"] if not r["ok"]]
                 if failed:
                     errors.append(f"{browser_name}: python tests failed: {', '.join(failed)}")
-                if res["pointerSize"] == 4 and res["wasmGcSupported"] and not res["wasmGcTrampoline"]:
-                    errors.append(f"{browser_name}: wasm32 but the wasm-gc call trampoline is not used")
+                if res["wasmGcSupported"] and not res["wasmGcTrampoline"]:
+                    errors.append(
+                        f"{browser_name}: wasm{res['pointerSize'] * 8}: "
+                        "the wasm-gc call trampoline is not used"
+                    )
                 if not failed:
                     print(f"  all {len(res['results'])} tests passed", flush=True)
     finally:
