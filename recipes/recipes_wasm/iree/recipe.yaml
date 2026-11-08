@@ -1,6 +1,6 @@
 context:
-  version: '20261030'
-  revision: a682ad82e3c3ea65d8f3ff004906f7be72baed95
+  version: '20261108'
+  revision: 2e3173ef956d214e19772d90ee4bf0fc0457f184
   llvm_version: 23.1.2
 source:
 - git: https://github.com/anutosh491/iree.git
@@ -17,8 +17,8 @@ source:
   depth: 1
   submodules: false
   target_directory: third_party/flatcc
-- git: https://github.com/iree-org/torch-mlir.git
-  rev: ec8720bf26b0c7b35f98b93730b75fb2f4b0fccb
+- git: https://github.com/anutosh491/torch-mlir.git
+  rev: e653ead9acbdf0b145c0e10953f834db8c295116
   depth: 1
   submodules: false
   target_directory: third_party/torch-mlir
@@ -45,7 +45,7 @@ source:
   submodules: false
   target_directory: third_party/spirv-tools
 build:
-  number: 1
+  number: 0
 
 outputs:
 - staging:
@@ -61,9 +61,11 @@ outputs:
     - ${{ compiler('c') }}
     - ${{ compiler('cxx') }}
     - cmake >=4.3.3,<4.4
-    - make
+    - ninja
     - iree-host-tools ==${{ version }}
     - llvm-tblgen ==${{ llvm_version }}
+    - clang ==${{ llvm_version }}
+    - llvm-tools ==${{ llvm_version }}
     - cross-python_${{ target_platform }}
     - nanobind >=2.9,<3
     - jinja2
@@ -72,7 +74,7 @@ outputs:
     - python-dev
     - numpy
     - llvm-static ==${{ llvm_version }}
-    - mlir-static ==${{ llvm_version }}[build_number='>=8']
+    - mlir-static ==${{ llvm_version }}[build_number='>=9']
     - clangdev-static ==${{ llvm_version }}
     - lld-static ==${{ llvm_version }}
 - package:
@@ -148,6 +150,7 @@ outputs:
   - package_contents:
       files:
         exists:
+        - lib/python*/site-packages/iree/runtime/asyncio.py
         - lib/python*/site-packages/iree/runtime/webgpu.py
         - lib/python*/site-packages/iree/_runtime_libs/_runtime*.so
         - lib/python*/site-packages/iree/_runtime_libs/version.py
