@@ -1,7 +1,14 @@
+Subject: [PATCH] [CMake] Allow disabling Torch-MLIR tests
+Upstream: https://github.com/llvm/torch-mlir/pull/4855 (merged)
+Commit: 9342ba9101dd83667e7fcf71b6f802bbc40ba802
+Backport includes setup.py forwarding and documentation; the older snapshot
+does not have the later StableHLO setup.py option used as upstream context.
+
 diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 09e3d8a..f5f33c8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -39,6 +39,8 @@ option(TORCH_MLIR_USE_INSTALLED_PYTORCH "If depending on PyTorch use it as installed i
+@@ -40,6 +40,8 @@ option(TORCH_MLIR_USE_INSTALLED_PYTORCH "If depending on PyTorch use it as insta
 
  option(TORCH_MLIR_ENABLE_REFBACKEND "Enable reference backend" ON)
 
@@ -33,3 +40,61 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 
  if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
    install(DIRECTORY include/torch-mlir include/torch-mlir-c include/torch-mlir-dialects
+diff --git a/docs/development.md b/docs/development.md
+index 2d8e4e0..4f5f9c0 100644
+--- a/docs/development.md
++++ b/docs/development.md
+@@ -178,6 +178,9 @@ sudo apt install clang ccache lld
+
+     - NOTE: The JIT IR importer depends on the native PyTorch extension features and defaults to `ON` if not changed.
+
++Torch-MLIR test targets are enabled by default. To omit them, append
++`-DTORCH_MLIR_INCLUDE_TESTS=OFF` to either CMake configuration command above.
++
+ #### Initiate Build
+
+ 1. [Configure the build](#configure-for-building) if you haven't already done so.
+@@ -480,6 +483,13 @@ python -m pip install -r requirements.txt
+ CMAKE_GENERATOR=Ninja python setup.py bdist_wheel
+ ```
+
++To omit Torch-MLIR test targets when building a wheel, set
++`TORCH_MLIR_INCLUDE_TESTS=OFF` (default: `ON`):
++
++```shell
++TORCH_MLIR_INCLUDE_TESTS=OFF CMAKE_GENERATOR=Ninja python setup.py bdist_wheel
++```
++
+ To package a completed CMake build directory,
+ you can use the `TORCH_MLIR_CMAKE_BUILD_DIR` and `TORCH_MLIR_CMAKE_ALREADY_BUILT` environment variables:
+
+diff --git a/setup.py b/setup.py
+index 43d506b..f681d17 100644
+--- a/setup.py
++++ b/setup.py
+@@ -16,6 +16,9 @@
+ #   TORCH_MLIR_ENABLE_LTC:
+ #       enables the Lazy Tensor Core Backend
+ #
++#   TORCH_MLIR_INCLUDE_TESTS:
++#       generates Torch-MLIR test targets (default: ON)
++#
+ #   LLVM_INSTALL_DIR:
+ #       build the project *out-of-tree* using the built llvm-project
+ #
+@@ -83,6 +86,7 @@ PACKAGE_VERSION = os.getenv("TORCH_MLIR_PYTHON_PACKAGE_VERSION", "0.0.1")
+
+ # If true, enable LTC build by default
+ TORCH_MLIR_ENABLE_LTC = _check_env_flag("TORCH_MLIR_ENABLE_LTC", True)
++TORCH_MLIR_INCLUDE_TESTS = _check_env_flag("TORCH_MLIR_INCLUDE_TESTS", True)
+ TORCH_MLIR_ENABLE_ONLY_MLIR_PYTHON_BINDINGS = _check_env_flag(
+     "TORCH_MLIR_ENABLE_ONLY_MLIR_PYTHON_BINDINGS", True
+ )
+@@ -135,6 +139,7 @@ class CMakeBuild(build_py):
+             f"-DCMAKE_C_VISIBILITY_PRESET=hidden",
+             f"-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
+             f"-DTORCH_MLIR_ENABLE_LTC={'ON' if TORCH_MLIR_ENABLE_LTC else 'OFF'}",
++            f"-DTORCH_MLIR_INCLUDE_TESTS={'ON' if TORCH_MLIR_INCLUDE_TESTS else 'OFF'}",
+             f"-DTORCH_MLIR_ENABLE_PYTORCH_EXTENSIONS={'OFF' if TORCH_MLIR_ENABLE_ONLY_MLIR_PYTHON_BINDINGS else 'ON'}",
+             f"-DMLIR_ENABLE_PYTHON_STABLE_ABI={'ON' if use_stable_abi else 'OFF'}",
+         ]
