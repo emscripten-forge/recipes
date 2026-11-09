@@ -1,3 +1,4 @@
+import copy
 import io
 import zipfile
 
@@ -5,6 +6,35 @@ import torch
 import iree.runtime as rt
 from torch.fx.experimental.proxy_tensor import make_fx
 from iree.turbine import aot
+
+
+def test_compile_cpu_training():
+    torch.manual_seed(0)
+    model = torch.nn.Linear(1, 1)
+    reference = copy.deepcopy(model)
+    inputs = torch.tensor([[-1.0], [-0.5], [0.5], [1.0]])
+    targets = 2 * inputs + 1
+    optimizer = torch.optim.SGD(model.parameters(), lr=.1, momentum=.9)
+    reference_optimizer = torch.optim.SGD(reference.parameters(), lr=.1, momentum=.9)
+
+    @torch.compile(backend='turbine_cpu', fullgraph=True)
+    def objective(inputs, targets):
+        return torch.nn.functional.mse_loss(model(inputs), targets)
+
+    for _ in range(3):
+        optimizer.zero_grad()
+        reference_optimizer.zero_grad()
+        loss = objective(inputs, targets)
+        expected = torch.nn.functional.mse_loss(reference(inputs), targets)
+        torch.testing.assert_close(loss, expected)
+        loss.backward()
+        expected.backward()
+        for actual, wanted in zip(model.parameters(), reference.parameters()):
+            torch.testing.assert_close(actual.grad, wanted.grad)
+        optimizer.step()
+        reference_optimizer.step()
+        for actual, wanted in zip(model.parameters(), reference.parameters()):
+            torch.testing.assert_close(actual, wanted)
 
 
 class TrainingStep(torch.nn.Module):
