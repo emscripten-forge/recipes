@@ -1,13 +1,9 @@
 #!/bin/bash
 
-if [[ "${target_platform}" == "emscripten-wasm64" ]]; then
-  host="wasm64-unknown-emscripten"
-else
-  host="wasm32-unknown-emscripten"
-fi
+exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
 
-export CFLAGS="$CFLAGS -fPIC -fwasm-exceptions -I$PREFIX/include"
-export LDFLAGS="$LDFLAGS -fwasm-exceptions -L$PREFIX/lib"
+export CFLAGS="$CFLAGS -fPIC ${exception_flags} -I$PREFIX/include"
+export LDFLAGS="$LDFLAGS ${exception_flags} -L$PREFIX/lib"
 export AM_LDFLAGS="-static" # for executables
 
 ./autogen.sh
@@ -17,7 +13,7 @@ sed -i 's/-sSIDE_MODULE=2 //g' m4/libtool.m4
 
 emconfigure ./configure \
     --prefix=$PREFIX \
-    --host="${host}" \
+    --host="$HOST" \
     --enable-shared \
     --enable-pcre2-16 \
     --enable-pcre2-32 || cat config.log

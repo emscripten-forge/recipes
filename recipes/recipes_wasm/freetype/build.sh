@@ -1,8 +1,10 @@
 mkdir build && cd build
 
-export CFLAGS="${CFLAGS} -fwasm-exceptions"
-export LDFLAGS="${LDFLAGS} -fwasm-exceptions"
-export CXXFLAGS="${CXXFLAGS} -fwasm-exceptions"
+exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
+
+export CFLAGS="${CFLAGS} ${exception_flags}"
+export LDFLAGS="${LDFLAGS} ${exception_flags}"
+export CXXFLAGS="${CXXFLAGS} ${exception_flags}"
 
 # if pkg name is freetype, build shared,
 # if its freetype-static build static
@@ -22,10 +24,10 @@ fi
 emcmake cmake .. ${CMAKE_ARGS} \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
     -DFT_DYNAMIC_HARFBUZZ=OFF \
-    -DCMAKE_C_FLAGS="-matomics -mbulk-memory -fwasm-exceptions" \
-    -DCMAKE_CXX_FLAGS="-matomics -mbulk-memory -fwasm-exceptions" \
+    -DCMAKE_C_FLAGS="-matomics -mbulk-memory ${CFLAGS}" \
+    -DCMAKE_CXX_FLAGS="-matomics -mbulk-memory ${CXXFLAGS}" \
     -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
     -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS} \
-    -DCMAKE_EXE_LINKER_FLAGS="-matomics -mbulk-memory -fwasm-exceptions"
+    -DCMAKE_EXE_LINKER_FLAGS="-matomics -mbulk-memory ${exception_flags}"
 
 make install -j${CPU_COUNT}
