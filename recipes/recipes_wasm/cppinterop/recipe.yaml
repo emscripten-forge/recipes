@@ -1,0 +1,58 @@
+context:
+  version: 2.0.0
+  llvm_version: 23.1.2
+
+package:
+  name: cppinterop
+  version: ${{ version }}
+
+source:
+  url: https://github.com/compiler-research/CppInterOp/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 59c1118a02edd1b1a69b5ea2f223b849bc5f1cb51abec40930d33f432f7f1260
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake >=4.3.3,<4.4
+  - ninja
+  - cppinterop-tblgen ==${{ version }}
+  host:
+  - llvm-static ==${{ llvm_version }}[build_number='>=2']
+  - clangdev-static ==${{ llvm_version }}[build_number='>=5']
+  - clang-interpreter-static ==${{ llvm_version }}
+  - lld-static ==${{ llvm_version }}
+  run:
+  - clangdev-static ==${{ llvm_version }}[build_number='>=5']
+  run_exports:
+  - ${{ pin_subpackage('cppinterop', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+      exists:
+      - include/CppInterOp/CppInterOp.h
+      - lib/cmake/CppInterOp/CppInterOpConfig.cmake
+      - lib/libclangCppInterOp.so
+- script: test -f "${PREFIX}/lib/clang/23/include/stddef.h"
+
+about:
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: LICENSE.txt
+  summary: CppInterOp C++ interoperability library for WebAssembly
+  homepage: https://github.com/compiler-research/CppInterOp
+
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
+  recipe-maintainers:
+  - alexander-penev
+  - vgvassilev
+  - mcbarton
+  - anutosh491
