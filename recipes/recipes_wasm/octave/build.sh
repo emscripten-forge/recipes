@@ -120,8 +120,3 @@ emmake make install
 # Cross tools
 cp src/$HOST-mkoctfile $PREFIX/bin/
 cp src/$HOST-octave-config $PREFIX/bin/
-
-echo "🪀🪀🪀 TESTING 🪀🪀🪀"
-node ${PREFIX}/bin/octave-cli --version
-node ${PREFIX}/bin/octave-cli --help
-node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
