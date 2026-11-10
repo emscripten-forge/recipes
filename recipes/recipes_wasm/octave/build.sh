@@ -42,13 +42,6 @@ export FFLAGS="-fPIC --target=$HOST ${FINTRINSIC_MODS}"
 export FPICFLAGS="-fPIC"
 export FCLIBS="-lflang_rt.runtime"
 
-cat > ./eh_warm.cpp <<'EOF'
-int main() { try { throw 1; } catch (...) { return 0; } }
-EOF
-
-em++ -fPIC -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm \
-  ./eh_warm.cpp -o ./eh_warm.js
-
 ################################################################################
 # CONFIGURE BUILD ENVIRONMENT                                                  #
 ################################################################################
@@ -129,8 +122,3 @@ emmake make install
 # Cross tools
 cp src/$HOST-mkoctfile $PREFIX/bin/
 cp src/$HOST-octave-config $PREFIX/bin/
-
-echo "🦎🦎🦎 TESTING 🦎🦎🦎"
-node ${PREFIX}/bin/octave-cli --version
-node ${PREFIX}/bin/octave-cli --help
-node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
