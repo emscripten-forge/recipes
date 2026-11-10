@@ -9,9 +9,10 @@ source:
   - patches/fix_initialization_logs.patch
   - patches/support_wasm64.patch
   - patches/standalone-emscripten-lld.patch
+  - patches/wasm-eh-personality-abi.patch
 
 build:
-  number: 5
+  number: 6
 
 outputs:
 - staging:
@@ -26,7 +27,7 @@ outputs:
     - make
     - llvm-tblgen ==${{ version }}
     host:
-    - llvm-static ==${{ version }}[build_number='>=2']
+    - llvm-static ==${{ version }}[build_number='>=5']
     - lld-static ==${{ version }}
 
 - package:
@@ -48,7 +49,7 @@ outputs:
       - lib/libclangInterpreter.a
   requirements:
     host:
-    - llvm-static ==${{ version }}[build_number='>=2']
+    - llvm-static ==${{ version }}[build_number='>=5']
     - lld-static ==${{ version }}
     run:
     - ${{ pin_compatible('llvm-static', exact=True) }}
@@ -96,7 +97,7 @@ outputs:
       - lib/cmake/clang/ClangInterpreterTargets*.cmake
   requirements:
     host:
-    - llvm-static ==${{ version }}[build_number='>=2']
+    - llvm-static ==${{ version }}[build_number='>=5']
     - ${{ pin_subpackage('clangdev-static', exact=True) }}
     - lld-static ==${{ version }}
     run:
@@ -142,7 +143,7 @@ outputs:
       - lib/cmake/clang/ClangLibClangTargets*.cmake
   requirements:
     host:
-    - llvm-static ==${{ version }}[build_number='>=2']
+    - llvm-static ==${{ version }}[build_number='>=5']
     - lld-static ==${{ version }}
     run_exports:
     - ${{ pin_subpackage('libclang', lower_bound='x.x', upper_bound='x.x') }}
@@ -178,7 +179,7 @@ outputs:
       - lib/cmake/clang/ClangClangCppTargets*.cmake
   requirements:
     host:
-    - llvm-static ==${{ version }}[build_number='>=2']
+    - llvm-static ==${{ version }}[build_number='>=5']
     - lld-static ==${{ version }}
     run_exports:
     - ${{ pin_subpackage('libclang-cpp', lower_bound='x.x', upper_bound='x.x') }}
