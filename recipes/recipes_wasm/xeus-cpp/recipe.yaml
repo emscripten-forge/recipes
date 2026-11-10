@@ -1,0 +1,66 @@
+context:
+  version: 0.10.0
+  cppinterop_version: 2.0.0
+  llvm_version: 23.1.2
+
+package:
+  name: xeus-cpp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/compiler-research/xeus-cpp/archive/refs/tags/${{ version }}.tar.gz
+  sha256: f84ae9fab0016b8995f60cc52ba68d287b224dfcf8b8c21a34b5200522799446
+  patches:
+  - patches/cppinterop-2.0-api.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake >=4.3.3,<4.4
+  - ninja
+  host:
+  - nlohmann_json
+  - nlohmann_json-abi
+  - xeus >=6.0.0,<7
+  - xeus-lite-static >=5.0.0,<6
+  - cpp-argparse
+  - pugixml-static
+  - cppinterop ==${{ cppinterop_version }}[build_number='>=1']
+  - clangdev-static ==${{ llvm_version }}[build_number='>=6']
+  run:
+  - cppinterop ==${{ cppinterop_version }}[build_number='>=1']
+  - ${{ pin_compatible('nlohmann_json', upper_bound='x.x.x') }}
+
+tests:
+- package_contents:
+    files:
+      exists:
+      - bin/xcpp.js
+      - bin/xcpp.wasm
+      - bin/xcpp.data
+      - share/jupyter/kernels/xcpp23/kernel.json
+- script: |
+    grep -q '"/bin/xcpp"' "${PREFIX}/share/jupyter/kernels/xcpp23/kernel.json"
+    grep -q '"libclangCppInterOp.so"' "${PREFIX}/share/jupyter/kernels/xcpp23/kernel.json"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: xeus-cpp Jupyter kernel for WebAssembly
+  homepage: https://github.com/compiler-research/xeus-cpp
+
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
+  recipe-maintainers:
+  - alexander-penev
+  - vgvassilev
+  - DerThorsten
+  - anutosh491
