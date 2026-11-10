@@ -7,12 +7,18 @@ set -eux
 ################################################################################
 
 export LLVM_DIR="$BUILD_PREFIX/lib/llvm-toolchain"
-export PATH="$LLVM_DIR/bin:$PATH"
+# export PATH="$LLVM_DIR/bin:$PATH"
 
+# NEEDED:
+# wasm-ld: error: liboctave/.libs/liboctave.lax/libranlib.a/advnst.o:
+# invalid data segment index: 928
 # Remove links to Emscripten's LLVM binaries
 rm $BUILD_PREFIX/bin/wasm-ld
 ln -s $LLVM_DIR/bin/lld $BUILD_PREFIX/bin/wasm-ld
 
+# NEEDED:
+# $BUILD_PREFIX/bin/llvm-ar: error: liboctave/external/ranlib/.libs/libranlib.a:
+# 'advnst.o': invalid data segment index: 928
 rm $BUILD_PREFIX/bin/llvm-ar
 ln -s $LLVM_DIR/bin/llvm-ar $BUILD_PREFIX/bin/llvm-ar
 
@@ -25,7 +31,7 @@ for FINTRINSIC_PATH in "$PREFIX"/lib/clang/*/finclude/flang/"$HOST"; do
 done
 
 # Set flags (similar to Flang's activation script)
-export EM_LLVM_ROOT=$LLVM_DIR
+# export EM_LLVM_ROOT=$LLVM_DIR
 export FLANG=$RECIPE_DIR/flang.sh
 export FC=$FLANG
 export F77=$FLANG
@@ -35,6 +41,13 @@ export F18=$FLANG
 export FFLAGS="-fPIC --target=$HOST ${FINTRINSIC_MODS}"
 export FPICFLAGS="-fPIC"
 export FCLIBS="-lflang_rt.runtime"
+
+cat > ./eh_warm.cpp <<'EOF'
+int main() { try { throw 1; } catch (...) { return 0; } }
+EOF
+
+em++ -fPIC -fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm \
+  ./eh_warm.cpp -o ./eh_warm.js
 
 ################################################################################
 # CONFIGURE BUILD ENVIRONMENT                                                  #
@@ -56,14 +69,17 @@ cli_flags=(
   "--pre-js=$SRC_DIR/pre.js"
   "-sNODERAWFS=1"
   "-sALLOW_MEMORY_GROWTH=1"
+  "-sWASM_LEGACY_EXCEPTIONS=0"
   "-fwasm-exceptions"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
-export CXXFLAGS="-fPIC -I$PREFIX/include"
-export CFLAGS="-fPIC -I$PREFIX/include"
-export CPPFLAGS="-I$PREFIX/include"
-export LDFLAGS="-fPIC -fwasm-exceptions -L$PREFIX/lib"
+exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
+
+export CXXFLAGS="-fPIC ${exception_flags} -I$PREFIX/include"
+export CFLAGS="-fPIC ${exception_flags} -I$PREFIX/include"
+export CPPFLAGS="${exception_flags} -I$PREFIX/include"
+export LDFLAGS="-fPIC ${exception_flags} -L$PREFIX/lib"
 
 # For cross tools
 export BUILD_CC=gcc
@@ -113,3 +129,8 @@ emmake make install
 # Cross tools
 cp src/$HOST-mkoctfile $PREFIX/bin/
 cp src/$HOST-octave-config $PREFIX/bin/
+
+echo "🦎🦎🦎 TESTING 🦎🦎🦎"
+node ${PREFIX}/bin/octave-cli --version
+node ${PREFIX}/bin/octave-cli --help
+node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
