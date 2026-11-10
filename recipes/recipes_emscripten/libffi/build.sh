@@ -32,5 +32,4 @@ cp include/ffi_common.h build/include/
 
 cp -r build/* $PREFIX/
 
-# delete broken pkg-config files
-rm -rf $PREFIX/lib/pkgconfig
+sed -i 's|^prefix=.*|prefix=${pcfiledir}/../..|' $PREFIX/lib/pkgconfig/libffi.pc
