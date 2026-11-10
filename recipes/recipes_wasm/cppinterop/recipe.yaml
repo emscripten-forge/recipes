@@ -26,10 +26,12 @@ requirements:
   - clangdev-static ==${{ llvm_version }}[build_number='>=5']
   - clang-interpreter-static ==${{ llvm_version }}
   - lld-static ==${{ llvm_version }}
-  run:
-  - clangdev-static ==${{ llvm_version }}[build_number='>=5']
   run_exports:
   - ${{ pin_subpackage('cppinterop', upper_bound='x.x') }}
+  run_constraints:
+  - llvm-static ==${{ llvm_version }}[build_number='>=2']
+  - clangdev-static ==${{ llvm_version }}[build_number='>=5']
+  - clang-interpreter-static ==${{ llvm_version }}
 
 tests:
 - package_contents:
@@ -38,7 +40,6 @@ tests:
       - include/CppInterOp/CppInterOp.h
       - lib/cmake/CppInterOp/CppInterOpConfig.cmake
       - lib/libclangCppInterOp.so
-- script: test -f "${PREFIX}/lib/clang/23/include/stddef.h"
 
 about:
   license: Apache-2.0 WITH LLVM-exception
