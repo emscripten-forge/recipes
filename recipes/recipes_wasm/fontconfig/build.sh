@@ -2,17 +2,15 @@
 
 set -ex
 
-exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
-
-export CFLAGS="${CFLAGS} ${exception_flags}"
-export CXXFLAGS="${CXXFLAGS} ${exception_flags}"
-export LDFLAGS="${LDFLAGS} ${exception_flags}"
+export CFLAGS="${CFLAGS} -fwasm-exceptions"
+export CXXFLAGS="${CXXFLAGS} -fwasm-exceptions"
+export LDFLAGS="${LDFLAGS} -fwasm-exceptions"
 
 meson_setup_args=(
     -Dtests=disabled
     -Dtools=disabled
-    -Dc_args="${exception_flags}"
-    -Dc_link_args="${exception_flags}"
+    -Dc_args="-fwasm-exceptions"
+    -Dc_link_args="-fwasm-exceptions"
 )
 
 meson setup builddir \

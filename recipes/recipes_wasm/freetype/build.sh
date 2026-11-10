@@ -1,10 +1,8 @@
 mkdir build && cd build
 
-exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
-
-export CFLAGS="${CFLAGS} ${exception_flags}"
-export LDFLAGS="${LDFLAGS} ${exception_flags}"
-export CXXFLAGS="${CXXFLAGS} ${exception_flags}"
+export CFLAGS="${CFLAGS} -fwasm-exceptions"
+export LDFLAGS="${LDFLAGS} -fwasm-exceptions"
+export CXXFLAGS="${CXXFLAGS} -fwasm-exceptions"
 
 # if pkg name is freetype, build shared,
 # if its freetype-static build static
@@ -28,6 +26,6 @@ emcmake cmake .. ${CMAKE_ARGS} \
     -DCMAKE_CXX_FLAGS="-matomics -mbulk-memory ${CXXFLAGS}" \
     -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
     -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS} \
-    -DCMAKE_EXE_LINKER_FLAGS="-matomics -mbulk-memory ${exception_flags}"
+    -DCMAKE_EXE_LINKER_FLAGS="-matomics -mbulk-memory -fwasm-exceptions"
 
 make install -j${CPU_COUNT}
