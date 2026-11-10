@@ -1,12 +1,13 @@
-emscripten-forge wasm64: the JS trampoline returns pointers as BigInt, and the
-wasm-gc trampoline module (built for wasm32 in Makefile.pre.in) is not used.
+emscripten-forge wasm64: pointers are i64, ie. BigInt in JS: the JS trampoline
+returns them as BigInt and the wasm-gc trampoline pointer is passed as BigInt.
+The wasm-gc trampoline module itself is built for wasm64 (build.sh).
 Applies on top of 0016 / 0017.
 
 diff --git a/Python/emscripten_trampoline.c b/Python/emscripten_trampoline.c
-index d98e136..d912f0d 100644
+index 312c5a1..807064b 100644
 --- a/Python/emscripten_trampoline.c
 +++ b/Python/emscripten_trampoline.c
-@@ -54,10 +54,18 @@ typedef PyObject* (*TrampolineFunc)(int* success,
+@@ -54,7 +54,12 @@ typedef PyObject* (*TrampolineFunc)(int* success,
   * Backwards compatible trampoline works with all JS runtimes
   */
  EM_JS(PyObject*, _PyEM_TrampolineCall_JS, (PyCFunctionWithKeywords func, PyObject *arg1, PyObject *arg2, PyObject *arg3), {
@@ -20,9 +21,15 @@ index d98e136..d912f0d 100644
  }
  // Try to compile wasm-gc trampoline if possible.
  function getPyEMTrampolinePtr() {
-+    // emscripten-forge wasm64: the wasm-gc trampoline module is built for
-+    // wasm32 (Makefile.pre.in), use the JS trampoline
-+    return 0;
-     // Starting with iOS 18.3.1, WebKit on iOS has an issue with the garbage
-     // collector that breaks the call trampoline. See #130418 and
-     // https://bugs.webkit.org/show_bug.cgi?id=293113 for details.
+@@ -99,7 +104,10 @@ addOnPreRun(function setEmscriptenTrampoline() {
+     try {
+         const ptr = getPyEMTrampolinePtr();
+         if (ptr) {
+-            wasmExports["_PyEM_SetTrampoline"](ptr);
++            // emscripten-forge wasm64: function pointers are i64 (BigInt);
++            // the trampoline module is built with -target wasm64-unknown-unknown
++            // (build.sh)
++            wasmExports["_PyEM_SetTrampoline"](typeof ptr === "bigint" ? ptr : BigInt(ptr));
+         }
+     } catch (e) {
+         console.warn("python: could not set up the wasm-gc call trampoline, using the JS trampoline", e);

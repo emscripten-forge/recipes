@@ -3,9 +3,11 @@ modules (pyjs, xeus-python, ...): declare the JS library dependencies of the
 trampoline setup and fall back to the JS trampoline instead of failing at
 startup: _PyRuntime is set via a KEEPALIVE C function instead of the
 exported __PyRuntime symbol (main modules other than python.js do not export it).
+The trampoline pointer is also kept in a static: a second Py_Initialize resets
+_PyRuntime (pystate.c), which would fall back to the JS trampoline.
 
 diff --git a/Python/emscripten_trampoline.c b/Python/emscripten_trampoline.c
-index 1833311..d98e136 100644
+index 1833311..312c5a1 100644
 --- a/Python/emscripten_trampoline.c
 +++ b/Python/emscripten_trampoline.c
 @@ -4,6 +4,9 @@
@@ -18,7 +20,7 @@ index 1833311..d98e136 100644
  // We use the _PyRuntime.emscripten_trampoline field to store a function pointer
  // for a wasm-gc based trampoline if it works. Otherwise fall back to JS
  // trampoline. The JS trampoline breaks stack switching but every runtime that
-@@ -88,12 +91,29 @@ function getPyEMTrampolinePtr() {
+@@ -88,12 +91,35 @@ function getPyEMTrampolinePtr() {
  // _PyRuntimeState.emscripten_trampoline from JS startup code that runs every
  // time, whether we are restoring a snapshot or not.
  addOnPreRun(function setEmscriptenTrampoline() {
@@ -41,13 +43,30 @@ index 1833311..d98e136 100644
  });
  );
  
++// emscripten-forge: also kept outside of _PyRuntime, a second Py_Initialize
++// (after Py_FinalizeEx) resets _PyRuntime to its initial values (pystate.c),
++// ie. would fall back to the JS trampoline
++static TrampolineFunc _PyEM_trampoline = 0;
++
 +// emscripten-forge: called from the JS startup code above
 +EMSCRIPTEN_KEEPALIVE void
 +_PyEM_SetTrampoline(TrampolineFunc trampoline)
 +{
++    _PyEM_trampoline = trampoline;
 +    _PyRuntime.emscripten_trampoline = trampoline;
 +}
 +
  PyObject*
  _PyEM_TrampolineCall(PyCFunctionWithKeywords func,
                       PyObject* self,
+@@ -101,6 +127,10 @@ _PyEM_TrampolineCall(PyCFunctionWithKeywords func,
+                      PyObject* kw)
+ {
+     TrampolineFunc trampoline = _PyRuntime.emscripten_trampoline;
++    if (trampoline == 0) {
++        // emscripten-forge: see _PyEM_trampoline
++        trampoline = _PyRuntime.emscripten_trampoline = _PyEM_trampoline;
++    }
+     if (trampoline == 0) {
+         return _PyEM_TrampolineCall_JS(func, self, args, kw);
+     }
