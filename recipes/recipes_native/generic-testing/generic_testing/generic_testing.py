@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import json
 import subprocess
+import re
 
 from .check_lib import check_lib,run_llvm_readobj
 
@@ -14,6 +15,13 @@ def is_wasmish(file_path):
     return "Format: WASM" in output
 
 def per_file_test(file_path, arch, allow_pthread):
+
+    if file_path.name.lower().endswith(("configversion.cmake", "config-version.cmake")):
+        match = re.search(r'if\(NOT CMAKE_SIZEOF_VOID_P STREQUAL "([48])"\)', file_path.read_text())
+        expected = "8" if arch == "emscripten-wasm64" else "4"
+        if match and match.group(1) != expected:
+            print(f"Error: {file_path} checks for {match.group(1)}-byte pointers; expected {expected}")
+            sys.exit(1)
 
     # do somewhat elaborate checks for libraries and 
     # shared libraries

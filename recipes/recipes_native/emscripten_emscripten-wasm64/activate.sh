@@ -11,4 +11,5 @@ if [ -z ${CONDA_FORGE_EMSCRIPTEN_WASM_64_ACTIVATED+x} ]; then
     export CFLAGS="${CFLAGS} -m64"
     export CXXFLAGS="${CXXFLAGS} -m64"
     export LDFLAGS="${LDFLAGS} -m64"
+    export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_C_FLAGS=-m64"
 fi
