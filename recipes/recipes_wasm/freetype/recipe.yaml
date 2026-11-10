@@ -9,15 +9,15 @@ source:
   sha256: 9186627467a616d9a9e3e574748ac0c45fa77398e6364edef3041a8ba8d92f64
 
 build:
-  number: 0
+  number: 1
 
 outputs:
+
 - package:
     name: freetype-static
     version: ${{ version }}
-
   build:
-    script: build_pkg.sh
+    script: build.sh
   requirements:
     build:
     - ${{ compiler('c') }}
@@ -27,22 +27,22 @@ outputs:
     - libpng-static
     run:
     - ${{pin_compatible("libpng-static", lower_bound="x.x", upper_bound="x.x") }}
-
   tests:
-  - script:
-    - test -f $PREFIX/include/freetype2/freetype/freetype.h
-    - test -f $PREFIX/include/freetype2/ft2build.h
-    - test -f $PREFIX/lib/libfreetype.a
-    - generic-testing
+  - package_contents:
+      files:
+      - include/freetype2/freetype/freetype.h
+      - include/freetype2/ft2build.h
+      - lib/libfreetype.a
+  - script: generic-testing
     requirements:
       build:
       - generic-testing
+
 - package:
     name: freetype
     version: ${{ version }}
-
   build:
-    script: build_pkg.sh
+    script: build.sh
   requirements:
     build:
     - ${{ compiler('c') }}
@@ -52,13 +52,13 @@ outputs:
     - libpng-static
     run_exports:
     - ${{ pin_subpackage('freetype', upper_bound='x.x') }}
-
   tests:
-  - script:
-    - test -f $PREFIX/include/freetype2/freetype/freetype.h
-    - test -f $PREFIX/include/freetype2/ft2build.h
-    - test -f $PREFIX/lib/libfreetype.so
-    - generic-testing
+  - package_contents:
+      files:
+      - include/freetype2/freetype/freetype.h
+      - include/freetype2/ft2build.h
+      - lib/libfreetype.so
+  - script: generic-testing
     requirements:
       build:
       - generic-testing
