@@ -1,11 +1,9 @@
 # Get an updated config.sub and config.guess
 cp $BUILD_PREFIX/share/libtool/build-aux/config.* .
 
-exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
-
-export CFLAGS="-I$PREFIX/include -fPIC ${exception_flags}"
-export CPPFLAGS="-I$PREFIX/include ${exception_flags}"
-export LDFLAGS="$LDFLAGS -L$PREFIX/lib ${exception_flags}"
+export CFLAGS="-I$PREFIX/include -fPIC -fwasm-exceptions"
+export CPPFLAGS="-I$PREFIX/include -fwasm-exceptions"
+export LDFLAGS="$LDFLAGS -L$PREFIX/lib -fwasm-exceptions"
 
 mkdir -p build
 cd build
