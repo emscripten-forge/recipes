@@ -64,6 +64,7 @@ cli_flags=(
   "-sNODERAWFS=1"
   "-sALLOW_MEMORY_GROWTH=1"
   "-fwasm-exceptions"
+  "-Wl,--allow-multiple-definition"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
@@ -84,7 +85,6 @@ BUILD_DIR="_build"
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
-export ac_cv_func_pthread_sigmask=no
 export ac_cv_prog_f77_v=-v
 export ac_cv_f77_libs="-lflang_rt.runtime"
 
