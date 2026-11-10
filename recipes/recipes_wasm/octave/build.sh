@@ -60,19 +60,18 @@ mv $BUILD_PREFIX/bin/pkg-config.bin $BUILD_PREFIX/bin/pkg-config
 envsubst '$PKG_VERSION' < ${RECIPE_DIR}/pre.js > ./pre.js
 cli_flags=(
   "--pre-js=$SRC_DIR/pre.js"
+  "-sMAIN_MODULE=1"
   "-sNODERAWFS=1"
   "-sALLOW_MEMORY_GROWTH=1"
-  "-sWASM_LEGACY_EXCEPTIONS=0"
   "-fwasm-exceptions"
+  "-Wl,--allow-multiple-definition"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
-exception_flags="-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm"
-
-export CXXFLAGS="-fPIC ${exception_flags} -I$PREFIX/include"
-export CFLAGS="-fPIC ${exception_flags} -I$PREFIX/include"
-export CPPFLAGS="${exception_flags} -I$PREFIX/include"
-export LDFLAGS="-fPIC ${exception_flags} -L$PREFIX/lib"
+export CXXFLAGS="-fPIC -fwasm-exceptions -I$PREFIX/include"
+export CFLAGS="-fPIC -fwasm-exceptions -I$PREFIX/include"
+export CPPFLAGS="-fwasm-exceptions -I$PREFIX/include"
+export LDFLAGS="-fPIC -fwasm-exceptions -L$PREFIX/lib"
 
 # For cross tools
 export BUILD_CC=gcc
@@ -86,7 +85,6 @@ BUILD_DIR="_build"
 mkdir -p $BUILD_DIR
 cd $BUILD_DIR
 
-export ac_cv_func_pthread_sigmask=no
 export ac_cv_prog_f77_v=-v
 export ac_cv_f77_libs="-lflang_rt.runtime"
 
