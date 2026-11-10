@@ -5,7 +5,6 @@ cd build
 # Configure step
 cmake ${CMAKE_ARGS} ..             \
     -GNinja                        \
-    -DCMAKE_C_FLAGS="${CFLAGS:-}"   \
     -DCMAKE_BUILD_TYPE=Release     \
     -DCMAKE_PREFIX_PATH=$PREFIX    \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
