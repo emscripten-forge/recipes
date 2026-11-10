@@ -6,6 +6,7 @@ mkdir build
 cd build
 
 cmake .. \
+ -DCMAKE_C_FLAGS="${CFLAGS:-}" \
  -DCMAKE_BUILD_TYPE=Release \
  -DCMAKE_INSTALL_PREFIX=$PREFIX \
  -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=TRUE \

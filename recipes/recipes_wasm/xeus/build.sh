@@ -4,6 +4,7 @@ cd build
 
 # Configure step
 emcmake cmake .. \
+    -DCMAKE_C_FLAGS="${CFLAGS:-}" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH=$PREFIX \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
