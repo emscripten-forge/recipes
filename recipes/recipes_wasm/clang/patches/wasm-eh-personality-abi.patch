@@ -1,0 +1,36 @@
+diff --git a/clang/lib/CodeGen/CGException.cpp b/clang/lib/CodeGen/CGException.cpp
+index 99dfaa80be4290..b0fb3b4d85d156 100644
+--- a/clang/lib/CodeGen/CGException.cpp
++++ b/clang/lib/CodeGen/CGException.cpp
+@@ -265,8 +265,14 @@ const EHPersonality &EHPersonality::get(CodeGenFunction &CGF) {
+ 
+ static llvm::FunctionCallee getPersonalityFn(CodeGenModule &CGM,
+                                              const EHPersonality &Personality) {
+-  return CGM.CreateRuntimeFunction(llvm::FunctionType::get(CGM.Int32Ty, true),
+-                                   Personality.PersonalityFn,
++  llvm::FunctionType *FTy;
++
++  if (Personality.isWasmPersonality()) {
++    FTy = llvm::FunctionType::get(CGM.Int32Ty, {CGM.VoidPtrTy}, false);
++  } else {
++    FTy = llvm::FunctionType::get(CGM.Int32Ty, true);
++  }
++  return CGM.CreateRuntimeFunction(FTy, Personality.PersonalityFn,
+                                    llvm::AttributeList(), /*Local=*/true);
+ }
+ 
+diff --git a/clang/test/CodeGen/WebAssembly/wasm-eh.ll b/clang/test/CodeGen/WebAssembly/wasm-eh.ll
+index 9d7e70cab9f99b..db4fc34d54777e 100644
+--- a/clang/test/CodeGen/WebAssembly/wasm-eh.ll
++++ b/clang/test/CodeGen/WebAssembly/wasm-eh.ll
+@@ -30,9 +30,8 @@ try.cont:                                         ; preds = %entry, %catch.start
+ }
+ 
+ declare void @foo()
+-declare i32 @__gxx_wasm_personality_v0(...)
++declare i32 @__gxx_wasm_personality_v0(ptr)
+ declare ptr @llvm.wasm.get.exception(token)
+ declare i32 @llvm.wasm.get.ehselector(token)
+ declare ptr @__cxa_begin_catch(ptr)
+ declare void @__cxa_end_catch()
+-

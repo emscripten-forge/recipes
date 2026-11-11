@@ -22,8 +22,8 @@ fi
 emcmake cmake .. ${CMAKE_ARGS} \
     -DCMAKE_INSTALL_PREFIX=${PREFIX} \
     -DFT_DYNAMIC_HARFBUZZ=OFF \
-    -DCMAKE_C_FLAGS="-matomics -mbulk-memory -fwasm-exceptions" \
-    -DCMAKE_CXX_FLAGS="-matomics -mbulk-memory -fwasm-exceptions" \
+    -DCMAKE_C_FLAGS="-matomics -mbulk-memory ${CFLAGS}" \
+    -DCMAKE_CXX_FLAGS="-matomics -mbulk-memory ${CXXFLAGS}" \
     -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} \
     -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS} \
     -DCMAKE_EXE_LINKER_FLAGS="-matomics -mbulk-memory -fwasm-exceptions"
