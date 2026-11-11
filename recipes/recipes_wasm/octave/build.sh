@@ -65,6 +65,10 @@ cli_flags=(
   "-sALLOW_MEMORY_GROWTH=1"
   "-fwasm-exceptions"
   "-Wl,--allow-multiple-definition"
+  "-Wl,--whole-archive"
+  "-lc++ -lc++abi"
+  "-Wl,--no-whole-archive"
+  "-lbz2" "-ltiff" "-ljpeg" "-lxml2" "-lz" "-lpng"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
@@ -105,7 +109,8 @@ emconfigure \
   --disable-readline \
   --disable-openmp \
   --without-opengl \
-  --enable-cross-tools
+  --enable-cross-tools \
+  --with-magick=ImageMagick++
 
 # NOTE: xeus-octave needs symbols which are incorrectly undeclared in the
 # OCTAVE_API, thus --disable-lib-visibility.
@@ -114,7 +119,7 @@ emconfigure \
 # BUILD AND INSTALL                                                            #
 ################################################################################
 
-emmake make --jobs 3 V=1
+emmake make --jobs 3 # V=1
 emmake make install
 
 # Cross tools
