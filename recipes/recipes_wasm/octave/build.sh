@@ -66,9 +66,9 @@ cli_flags=(
   "-fwasm-exceptions"
   "-Wl,--allow-multiple-definition"
   "-Wl,--whole-archive"
-  "-lc++"
-  "-lc++abi"
+  "-lc++ -lc++abi"
   "-Wl,--no-whole-archive"
+  "-lbz2" "-ltiff" "-ljpeg" "-lxml2" "-lz" "-lpng"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
