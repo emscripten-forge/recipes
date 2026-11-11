@@ -1,0 +1,68 @@
+context:
+  version: 2.0.0
+  llvm_version: 23.1.2
+
+package:
+  name: cppinterop-tblgen
+  version: ${{ version }}
+
+source:
+  url: https://github.com/compiler-research/CppInterOp/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 59c1118a02edd1b1a69b5ea2f223b849bc5f1cb51abec40930d33f432f7f1260
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - llvmdev ==${{ llvm_version }}
+  - zlib
+  - zstd
+
+tests:
+- package_contents:
+    files:
+      exists:
+      - bin/cppinterop-tblgen
+- script: |
+    set -eux
+    cat > smoke.td <<'EOF'
+    class Arg {
+      string Type;
+      string Name;
+      string Default = "";
+      bit IsOut = 0;
+    }
+    class CppInterOpAPI {
+      string CppName = NAME;
+      string DispatchName = NAME;
+      string ReturnType;
+      string Doc = "";
+      string Deprecated = "";
+      bit NoCWrapper = 0;
+      list<Arg> Args = [];
+    }
+    def Smoke : CppInterOpAPI {
+      let ReturnType = "int";
+    }
+    EOF
+    cppinterop-tblgen --gen-cppinterop-api smoke.td -o smoke.inc
+    grep -q 'CPPINTEROP_API_FUNC(Smoke, Smoke, int' smoke.inc
+
+about:
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: LICENSE.txt
+  summary: Native TableGen emitter for CppInterOp cross-builds
+  homepage: https://github.com/compiler-research/CppInterOp
+
+extra:
+  recipe-maintainers:
+  - anutosh491
+  - mcbarton
+  - vgvassilev

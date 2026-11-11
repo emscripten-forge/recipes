@@ -1,0 +1,387 @@
+Subject: [PATCH] [mlir][SPIRV] Preserve scalar storage for WebGPU aliases
+Upstream: https://github.com/llvm/llvm-project/pull/239584 (open)
+Commit: 18f800a9f753cc4d91264b3a4390ae4ce310ae7d
+LLVM 23 API adaptation: getDiscardableAttrOfType -> getAttrOfType.
+
+diff --git a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp b/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
+--- a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
++++ b/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
+@@ -83,7 +83,7 @@
+ /// resource that all resources should be unified into. Returns std::nullopt if
+ /// unable to unify.
+ static std::optional<int>
+-deduceCanonicalResource(ArrayRef<spirv::SPIRVType> types) {
++deduceCanonicalResource(ArrayRef<spirv::SPIRVType> types, bool preferScalar) {
+   // scalarNumBits: contains all resources' scalar types' bit counts.
+   // vectorNumBits: only contains resources whose element types are vectors.
+   // vectorIndices: each vector's original index in `types`.
+@@ -110,6 +110,24 @@
+       vectorIndices.push_back(indexedTypes.index());
+     } else {
+       scalarNumBits.push_back(type.getIntOrFloatBitWidth());
++    }
++  }
++
++  // A WGSL vector-component write may update the whole vector. Preserve
++  // independent scalar memory locations when scalar and vector views alias.
++  if (preferScalar) {
++    std::optional<int> scalarIndex;
++    for (auto [index, type] : llvm::enumerate(types)) {
++      if (type.isIntOrFloat() &&
++          (!scalarIndex || scalarNumBits[index] < scalarNumBits[*scalarIndex]))
++        scalarIndex = index;
++    }
++    if (scalarIndex) {
++      int bits = scalarNumBits[*scalarIndex];
++      // Reuse scalar-sized lanes; leave mixed-width packing to the existing
++      // canonicalization rules below.
++      if (llvm::all_of(scalarNumBits, [&](int value) { return value == bits; }))
++        return scalarIndex;
+     }
+   }
+
+@@ -166,7 +184,7 @@
+ public:
+   MLIR_DEFINE_EXPLICIT_INTERNAL_INLINE_TYPE_ID(ResourceAliasAnalysis)
+
+-  explicit ResourceAliasAnalysis(Operation *);
++  explicit ResourceAliasAnalysis(Operation *, bool preferScalar);
+
+   /// Returns true if the given `op` can be rewritten to use a canonical
+   /// resource.
+@@ -185,6 +203,8 @@
+   spirv::SPIRVType getElementType(spirv::GlobalVariableOp varOp) const;
+
+ private:
++  bool preferScalar;
++
+   /// Given the descriptor and aliased resources bound to it, analyze whether we
+   /// can unify them and record if so.
+   void recordIfUnifiable(const Descriptor &descriptor,
+@@ -204,14 +224,15 @@
+ };
+ } // namespace
+
+-ResourceAliasAnalysis::ResourceAliasAnalysis(Operation *root) {
++ResourceAliasAnalysis::ResourceAliasAnalysis(Operation *root, bool preferScalar)
++    : preferScalar(preferScalar) {
+   // Collect all aliased resources first and put them into different sets
+   // according to the descriptor.
+   AliasedResourceMap aliasedResources =
+       collectAliasedResources(cast<spirv::ModuleOp>(root));
+
+-  // For each resource set, analyze whether we can unify; if so, try to identify
+-  // a canonical resource, whose element type has the largest bitwidth.
++  // For each resource set, determine whether its views can share a canonical
++  // storage representation.
+   for (const auto &descriptorResource : aliasedResources) {
+     recordIfUnifiable(descriptorResource.first, descriptorResource.second);
+   }
+@@ -282,7 +303,8 @@
+     elementTypes.push_back(type);
+   }
+
+-  std::optional<int> index = deduceCanonicalResource(elementTypes);
++  std::optional<int> index =
++      deduceCanonicalResource(elementTypes, preferScalar);
+   if (!index)
+     return;
+
+@@ -353,6 +375,15 @@
+   LogicalResult
+   matchAndRewrite(spirv::GlobalVariableOp varOp, OpAdaptor adaptor,
+                   ConversionPatternRewriter &rewriter) const override {
++    // The canonical variable serves every aliased view. Keep an access
++    // restriction only when it also holds for the view being removed.
++    auto canonicalOp = analysis.getCanonicalResource(varOp);
++    rewriter.modifyOpInPlace(canonicalOp, [&] {
++      for (StringRef attr : {"non_readable", "non_writable"}) {
++        if (!varOp->getDiscardableAttr(attr))
++          canonicalOp->removeDiscardableAttr(attr);
++      }
++    });
+     // Just remove the aliased resource. Users will be rewritten to use the
+     // canonical one.
+     rewriter.eraseOp(varOp);
+@@ -437,7 +468,8 @@
+     }
+
+     if ((srcElemType.isIntOrFloat() && dstElemType.isIntOrFloat()) ||
+-        (isa<VectorType>(srcElemType) && isa<VectorType>(dstElemType))) {
++        (isa<VectorType>(srcElemType) &&
++         (isa<VectorType>(dstElemType) || dstElemType.isIntOrFloat()))) {
+       // The source indices are for a buffer with larger bitwidth scalar/vector
+       // element types. Rewrite them into a buffer with smaller bitwidth element
+       // types. We only need to scale the last index.
+@@ -497,7 +529,8 @@
+     }
+
+     if ((srcElemType.isIntOrFloat() && dstElemType.isIntOrFloat()) ||
+-        (isa<VectorType>(srcElemType) && isa<VectorType>(dstElemType))) {
++        (isa<VectorType>(srcElemType) &&
++         (isa<VectorType>(dstElemType) || dstElemType.isIntOrFloat()))) {
+       // The source and destination have scalar types of different bitwidths, or
+       // vector types of different component counts. For such cases, we load
+       // multiple smaller bitwidth values and construct a larger bitwidth one.
+@@ -521,12 +554,12 @@
+       if (!acOp)
+         return rewriter.notifyMatchFailure(loadOp, "ptr not spirv.AccessChain");
+
+-      auto i32Type = rewriter.getI32Type();
+-      Value oneValue = spirv::ConstantOp::getOne(i32Type, loc, rewriter);
+       auto indices = llvm::to_vector<4>(acOp.getIndices());
++      Type indexType = indices.back().getType();
++      Value oneValue = spirv::ConstantOp::getOne(indexType, loc, rewriter);
+       for (int i = 1; i < ratio; ++i) {
+         // Load all subsequent components belonging to this element.
+-        indices.back() = spirv::IAddOp::create(rewriter, loc, i32Type,
++        indices.back() = spirv::IAddOp::create(rewriter, loc, indexType,
+                                                indices.back(), oneValue);
+         auto componentAcOp = spirv::AccessChainOp::create(
+             rewriter, loc, acOp.getBasePtr(), indices);
+@@ -545,25 +578,26 @@
+       if (!isa<VectorType>(srcElemType))
+         vectorType = VectorType::get({ratio}, dstElemType);
+
+-      // If both the source and destination are vector types, we need to make
+-      // sure the scalar type is the same for composite construction later.
+-      if (auto srcElemVecType = dyn_cast<VectorType>(srcElemType))
+-        if (auto dstElemVecType = dyn_cast<VectorType>(dstElemType)) {
+-          if (srcElemVecType.getElementType() !=
+-              dstElemVecType.getElementType()) {
+-            int64_t count =
+-                dstNumBytes / (srcElemVecType.getElementTypeBitWidth() / 8);
+-
+-            // Make sure not to create 1-element vectors, which are illegal in
+-            // SPIR-V.
+-            Type castType = srcElemVecType.getElementType();
+-            if (count > 1)
+-              castType = VectorType::get({count}, castType);
+-
+-            for (Value &c : components)
+-              c = spirv::BitcastOp::create(rewriter, loc, castType, c);
+-          }
++      // Match each component to the source vector element type before
++      // reconstructing the loaded vector.
++      if (auto srcElemVecType = dyn_cast<VectorType>(srcElemType)) {
++        Type dstPrimitiveType = dstElemType;
++        if (auto dstElemVecType = dyn_cast<VectorType>(dstElemType))
++          dstPrimitiveType = dstElemVecType.getElementType();
++        if (srcElemVecType.getElementType() != dstPrimitiveType) {
++          int64_t count =
++              dstNumBytes / (srcElemVecType.getElementTypeBitWidth() / 8);
++
++          // Make sure not to create 1-element vectors, which are illegal in
++          // SPIR-V.
++          Type castType = srcElemVecType.getElementType();
++          if (count > 1)
++            castType = VectorType::get({count}, castType);
++
++          for (Value &c : components)
++            c = spirv::BitcastOp::create(rewriter, loc, castType, c);
+         }
++      }
+       Value vectorValue = spirv::CompositeConstructOp::create(
+           rewriter, loc, vectorType, components);
+
+@@ -593,29 +627,35 @@
+     Value value = adaptor.getValue();
+     auto srcVector = dyn_cast<VectorType>(srcElemType);
+     auto dstVector = dyn_cast<VectorType>(dstElemType);
+-    if (srcVector && dstVector && srcVector != dstVector) {
++    if (srcVector && (dstVector || dstElemType.isIntOrFloat()) &&
++        srcElemType != dstElemType) {
++      Type dstComponentType =
++          dstVector ? dstVector.getElementType() : dstElemType;
++      unsigned count = dstVector ? dstVector.getNumElements() : 1;
+       if (srcVector.getElementTypeBitWidth() !=
+-              dstVector.getElementTypeBitWidth() ||
+-          srcVector.getNumElements() % dstVector.getNumElements() != 0)
++              dstComponentType.getIntOrFloatBitWidth() ||
++          srcVector.getNumElements() % count != 0)
+         return rewriter.notifyMatchFailure(storeOp,
+                                            "incompatible vector types");
+       auto acOp = adaptor.getPtr().getDefiningOp<spirv::AccessChainOp>();
+       if (!acOp)
+         return rewriter.notifyMatchFailure(storeOp,
+                                            "ptr not spirv.AccessChain");
+-      if (srcVector.getElementType() != dstVector.getElementType())
++      if (srcVector.getElementType() != dstComponentType)
+         value = spirv::BitcastOp::create(
+             rewriter, loc,
+-            VectorType::get(srcVector.getShape(), dstVector.getElementType()),
+-            value);
+-      unsigned count = dstVector.getNumElements();
++            VectorType::get(srcVector.getShape(), dstComponentType), value);
+       unsigned ratio = srcVector.getNumElements() / count;
+-      unsigned bytes = count * dstVector.getElementTypeBitWidth() / 8;
+-
+-      // Split the value into vectors matching the canonical resource and store
+-      // them at consecutive vector indices. Adjust each store's alignment for
++      unsigned bytes = count * dstComponentType.getIntOrFloatBitWidth() / 8;
++
++      // Split the value into elements matching the canonical resource and store
++      // them at consecutive indices. Adjust each store's alignment for
+       // its byte offset from the original pointer.
+       auto getPart = [&](unsigned i) -> Value {
++        if (!dstVector)
++          return spirv::CompositeExtractOp::create(
++              rewriter, loc, dstElemType, value,
++              rewriter.getI32ArrayAttr({static_cast<int32_t>(i)}));
+         if (ratio == 1)
+           return value;
+         SmallVector<int32_t> components;
+@@ -688,11 +728,13 @@
+   spirv::ModuleOp moduleOp = getOperation();
+   MLIRContext *context = &getContext();
+
++  spirv::TargetEnvAttr targetEnv = getTargetEnvFn
++                                       ? getTargetEnvFn(moduleOp)
++                                       : spirv::lookupTargetEnv(moduleOp);
+   if (getTargetEnvFn) {
+     // This pass is only needed for targeting WebGPU, Metal, or layering
+     // Vulkan on Metal via MoltenVK, where we need to translate SPIR-V into
+     // WGSL or MSL. The translation has limitations.
+-    spirv::TargetEnvAttr targetEnv = getTargetEnvFn(moduleOp);
+     spirv::ClientAPI clientAPI = targetEnv.getClientAPI();
+     bool isVulkanOnAppleDevices =
+         clientAPI == spirv::ClientAPI::Vulkan &&
+@@ -702,8 +744,12 @@
+       return;
+   }
+
+-  // Analyze aliased resources first.
+-  ResourceAliasAnalysis &analysis = getAnalysis<ResourceAliasAnalysis>();
++  // WGSL treats a vector-component write as an access to the whole vector.
++  // Use scalar storage for mixed scalar/vector aliases to keep independent
++  // scalar stores from racing with each other.
++  bool preferScalar =
++      targetEnv && targetEnv.getClientAPI() == spirv::ClientAPI::WebGPU;
++  ResourceAliasAnalysis analysis(moduleOp, preferScalar);
+
+   ConversionTarget target(*context);
+   target.addDynamicallyLegalOp<spirv::GlobalVariableOp, spirv::AddressOfOp,
+diff --git a/mlir/test/Dialect/SPIRV/Transforms/unify-aliased-resource.mlir b/mlir/test/Dialect/SPIRV/Transforms/unify-aliased-resource.mlir
+--- a/mlir/test/Dialect/SPIRV/Transforms/unify-aliased-resource.mlir
++++ b/mlir/test/Dialect/SPIRV/Transforms/unify-aliased-resource.mlir
+@@ -750,3 +750,120 @@
+ // CHECK-SAME: %[[PTR:.+]]: !spirv.ptr<vector<4xf32>, StorageBuffer>, %[[VALUE:.+]]: vector<4xf32>)
+ // CHECK-NOT: spirv.AccessChain
+ // CHECK: spirv.Store "StorageBuffer" %[[PTR]], %[[VALUE]] : vector<4xf32>
++
++// -----
++
++// WGSL vector-component stores may access the entire vector. When scalar and
++// emulated i64 views share a binding, keep scalar memory locations independent.
++// CHECK-LABEL: module attributes {spirv.target_env = {{.*}}api=WebGPU
++// CHECK: spirv.GlobalVariable @scalar bind(0, 0) : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++// CHECK-NOT: spirv.GlobalVariable @wide
++// CHECK-LABEL: spirv.func @wide_load_scalar_store
++// CHECK: spirv.Load "StorageBuffer" {{.*}} : f32
++// CHECK: spirv.Load "StorageBuffer" {{.*}} : f32
++// CHECK: spirv.CompositeConstruct {{.*}} -> vector<2xi32>
++// CHECK: spirv.Store "StorageBuffer" {{.*}} : f32
++// CHECK-LABEL: spirv.func @wide_store
++// CHECK: spirv.CompositeExtract {{.*}}[0 : i32] : vector<2xf32>
++// CHECK: spirv.Store "StorageBuffer" {{.*}}["Volatile|Aligned", 8] : f32
++// CHECK: spirv.CompositeExtract {{.*}}[1 : i32] : vector<2xf32>
++// CHECK: spirv.Store "StorageBuffer" {{.*}}["Volatile|Aligned", 4] : f32
++
++module attributes {spirv.target_env = #spirv.target_env<#spirv.vce<v1.0, [Shader], []>, api=WebGPU, #spirv.resource_limits<>>} {
++  spirv.module Logical GLSL450 {
++    spirv.GlobalVariable @scalar bind(0, 0) {aliased} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++    spirv.GlobalVariable @wide bind(0, 0) {aliased} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++    spirv.func @wide_load_scalar_store(%index: i32) "None" {
++      %c0 = spirv.Constant 0 : i32
++      %v = spirv.mlir.addressof @wide : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++      %vp = spirv.AccessChain %v[%c0, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<vector<2xi32>, StorageBuffer>
++      %pair = spirv.Load "StorageBuffer" %vp : vector<2xi32>
++      %bits = spirv.CompositeExtract %pair[0 : i32] : vector<2xi32>
++      %value = spirv.Bitcast %bits : i32 to f32
++      %s = spirv.mlir.addressof @scalar : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++      %sp = spirv.AccessChain %s[%c0, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<f32, StorageBuffer>
++      spirv.Store "StorageBuffer" %sp, %value : f32
++      spirv.Return
++    }
++    spirv.func @wide_store(%index: i32, %value: vector<2xi32>) "None" {
++      %c0 = spirv.Constant 0 : i32
++      %v = spirv.mlir.addressof @wide : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++      %vp = spirv.AccessChain %v[%c0, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<vector<2xi32>, StorageBuffer>
++      spirv.Store "StorageBuffer" %vp, %value ["Volatile|Aligned", 8] : vector<2xi32>
++      spirv.Return
++    }
++  }
++}
++
++// -----
++
++// A read-only scalar view cannot make the unified writable vector view read-only.
++// CHECK-LABEL: spirv.GlobalVariable @readonly_scalar bind(0, 0) : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++// CHECK-NOT: spirv.GlobalVariable @writable_vector
++// CHECK-LABEL: spirv.func @store_wide
++// CHECK: spirv.Store "StorageBuffer" {{.*}} : f32
++// CHECK: spirv.Store "StorageBuffer" {{.*}} : f32
++
++module attributes {spirv.target_env = #spirv.target_env<#spirv.vce<v1.0, [Shader], []>, api=WebGPU, #spirv.resource_limits<>>} {
++  spirv.module Logical GLSL450 {
++    spirv.GlobalVariable @readonly_scalar bind(0, 0) {aliased, non_writable} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++    spirv.GlobalVariable @writable_vector bind(0, 0) {aliased} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++    spirv.func @load_scalar(%index: i32) -> f32 "None" {
++      %zero = spirv.Constant 0 : i32
++      %address = spirv.mlir.addressof @readonly_scalar : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++      %pointer = spirv.AccessChain %address[%zero, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<f32, StorageBuffer>
++      %value = spirv.Load "StorageBuffer" %pointer : f32
++      spirv.ReturnValue %value : f32
++    }
++    spirv.func @store_wide(%index: i32, %value: vector<2xi32>) "None" {
++      %zero = spirv.Constant 0 : i32
++      %address = spirv.mlir.addressof @writable_vector : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++      %pointer = spirv.AccessChain %address[%zero, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<vector<2xi32>, StorageBuffer>
++      spirv.Store "StorageBuffer" %pointer, %value : vector<2xi32>
++      spirv.Return
++    }
++  }
++}
++
++// -----
++
++// A write-only scalar view cannot make the unified vector view write-only.
++// CHECK-LABEL: spirv.GlobalVariable @writeonly_scalar bind(0, 0) : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++// CHECK-NOT: spirv.GlobalVariable @readable_vector
++// CHECK-LABEL: spirv.func @read_vector
++// CHECK: spirv.Load "StorageBuffer" {{.*}} : f32
++// CHECK: spirv.Load "StorageBuffer" {{.*}} : f32
++
++module attributes {spirv.target_env = #spirv.target_env<#spirv.vce<v1.0, [Shader], []>, api=WebGPU, #spirv.resource_limits<>>} {
++  spirv.module Logical GLSL450 {
++    spirv.GlobalVariable @writeonly_scalar bind(0, 0) {aliased, non_readable} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++    spirv.GlobalVariable @readable_vector bind(0, 0) {aliased} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++    spirv.func @read_vector(%index: i32) -> vector<2xi32> "None" {
++      %c0 = spirv.Constant 0 : i32
++      %v = spirv.mlir.addressof @readable_vector : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++      %vp = spirv.AccessChain %v[%c0, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<vector<2xi32>, StorageBuffer>
++      %value = spirv.Load "StorageBuffer" %vp : vector<2xi32>
++      spirv.ReturnValue %value : vector<2xi32>
++    }
++  }
++}
++
++// -----
++
++// Preserve a read-only restriction shared by every view.
++// CHECK-LABEL: spirv.GlobalVariable @all_readonly_scalar bind(0, 0) {non_writable} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++// CHECK-NOT: spirv.GlobalVariable @all_readonly_vector
++
++module attributes {spirv.target_env = #spirv.target_env<#spirv.vce<v1.0, [Shader], []>, api=WebGPU, #spirv.resource_limits<>>} {
++  spirv.module Logical GLSL450 {
++    spirv.GlobalVariable @all_readonly_scalar bind(0, 0) {aliased, non_writable} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<f32, stride=4> [0])>, StorageBuffer>
++    spirv.GlobalVariable @all_readonly_vector bind(0, 0) {aliased, non_writable} : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++    spirv.func @read_vector(%index: i32) -> vector<2xi32> "None" {
++      %c0 = spirv.Constant 0 : i32
++      %v = spirv.mlir.addressof @all_readonly_vector : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>
++      %vp = spirv.AccessChain %v[%c0, %index] : !spirv.ptr<!spirv.struct<(!spirv.rtarray<vector<2xi32>, stride=8> [0])>, StorageBuffer>, i32, i32 -> !spirv.ptr<vector<2xi32>, StorageBuffer>
++      %value = spirv.Load "StorageBuffer" %vp : vector<2xi32>
++      spirv.ReturnValue %value : vector<2xi32>
++    }
++  }
++}

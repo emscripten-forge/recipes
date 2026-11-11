@@ -3,14 +3,16 @@ set -euxo pipefail
 
 NANOBIND_CMAKE_DIR=$("${BUILD_PREFIX}/bin/python3" -m nanobind --cmake_dir)
 TARGET_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
+CLANG_RESOURCE_DIR=$("${BUILD_PREFIX}/bin/clang" -print-resource-dir)
 
 cmake_args=()
 for arg in ${CMAKE_ARGS}; do
     [[ "$arg" == -DPYTHON* ]] || cmake_args+=("$arg")
 done
 
-emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
+emcmake cmake "${cmake_args[@]}" -S . -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_SCAN_FOR_MODULES=OFF \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DBUILD_SHARED_LIBS=OFF \
     -DLLVM_DIR="${PREFIX}/lib/cmake/llvm" \
@@ -21,6 +23,9 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DMLIR_BUILDER_TABLEGEN="${BUILD_PREFIX}/bin/mlir_builder_tblgen" \
     -DMLIR_BUILDER_TABLEGEN_EXE="${BUILD_PREFIX}/bin/mlir_builder_tblgen" \
     -DIREE_HOST_BIN_DIR="${BUILD_PREFIX}/bin" \
+    -DIREE_CLANG_BINARY="${BUILD_PREFIX}/bin/clang" \
+    -DIREE_LLVM_LINK_BINARY="${BUILD_PREFIX}/bin/llvm-link" \
+    -DIREE_CLANG_BUILTIN_HEADERS_PATH="${CLANG_RESOURCE_DIR}/include" \
     -DIREE_BUILD_BUNDLED_LLVM=OFF \
     -DIREE_BUILD_COMPILER=ON \
     -DIREE_BUILD_PYTHON_BINDINGS=ON \
@@ -39,7 +44,8 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DIREE_ERROR_ON_MISSING_SUBMODULES=OFF \
     -DIREE_ENABLE_WERROR_FLAG=OFF \
     -DIREE_TARGET_BACKEND_DEFAULTS=OFF \
-    -DIREE_TARGET_BACKEND_LLVM_CPU=OFF \
+    -DIREE_TARGET_BACKEND_LLVM_CPU=ON \
+    -DIREE_TARGET_BACKEND_LLVM_CPU_WASM=ON \
     -DIREE_TARGET_BACKEND_WEBGPU_SPIRV=ON \
     -DIREE_INPUT_TORCH=ON \
     -DIREE_INPUT_STABLEHLO=ON \
@@ -47,6 +53,10 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DIREE_INPUT_TOSA=OFF \
     -DIREE_OUTPUT_FORMAT_C=OFF \
     -DIREE_HAL_DRIVER_DEFAULTS=OFF \
+    -DIREE_HAL_DRIVER_LOCAL_SYNC=ON \
+    -DIREE_HAL_DRIVER_LOCAL_TASK=OFF \
+    -DIREE_HAL_EXECUTABLE_LOADER_SYSTEM_LIBRARY=ON \
+    -DIREE_HAL_EXECUTABLE_LOADER_EMBEDDED_ELF=OFF \
     -DIREE_CMAKE_PLUGIN_PATHS="${SRC_DIR}/build_tools/emscripten" \
     -DIREE_EXTERNAL_HAL_DRIVERS=webgpu \
     -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
@@ -69,7 +79,7 @@ emcmake cmake "${cmake_args[@]}" -S . -B build -G "Unix Makefiles" \
     -DNB_SUFFIX="${TARGET_EXT_SUFFIX}" \
     -Dnanobind_DIR="${NANOBIND_CMAKE_DIR}"
 
-emmake make -C build -j${CPU_COUNT:-4} \
+emmake ninja -C build -j${CPU_COUNT:-4} \
     iree_compiler_API_SharedImpl IREECompilerPythonModules \
     IREECompilerBuildPythonModules iree_runtime_bindings_python_PyExtRt
 

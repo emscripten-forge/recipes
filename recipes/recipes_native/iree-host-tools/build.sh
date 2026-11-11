@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
+cmake ${CMAKE_ARGS} -S . -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
     -DCMAKE_PREFIX_PATH="${PREFIX}" \
@@ -22,7 +22,7 @@ cmake ${CMAKE_ARGS} -S . -B build -G "Unix Makefiles" \
     -DIREE_INPUT_TORCH=OFF \
     -DIREE_INPUT_TOSA=OFF
 
-make -C build -j"${CPU_COUNT:-2}" \
+ninja -C build -j"${CPU_COUNT:-2}" \
     iree-tblgen iree-flatcc-cli mlir_builder_tblgen iree-c-embed-data
 
 mkdir -p "${PREFIX}/bin"
