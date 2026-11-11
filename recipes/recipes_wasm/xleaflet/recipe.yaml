@@ -10,6 +10,10 @@ source:
   sha256: 6553676a2b634a7e16d03defb4b07c25e413fc834f6e24799ded375c0ba92909
   patches:
   - patches/shared.patch
+  # xwidgets 0.31 uses the new xproperty: properties are declared with the
+  # xcommon owner and patched generically (no set_property_from_patch); also
+  # drops the --std=c++17 the xeus target exports (xtensor 0.28 needs C++20)
+  - patches/0002-port-to-xwidgets-0.31.patch
 
 build:
   number: 0
@@ -20,14 +24,21 @@ requirements:
   - cmake
   - make
   host:
-  - xproperty >=0.12.0,<0.13
-  - xwidgets >=0.30.0,<0.31
-  - xtensor>=0.27,<0.28
+  - xproperty
+  - xwidgets
+  - xtensor
+  - nlohmann_json
+  run_exports:
+  - ${{ pin_subpackage("xleaflet", upper_bound="x.x") }}
 
 tests:
 - script:
   - test -f $PREFIX/share/xleaflet/basemaps.json
   - test -f $PREFIX/lib/libxleaflet.so
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   license: BSD-3-Clause
