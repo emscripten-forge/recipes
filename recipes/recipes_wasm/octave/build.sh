@@ -65,6 +65,10 @@ cli_flags=(
   "-sALLOW_MEMORY_GROWTH=1"
   "-fwasm-exceptions"
   "-Wl,--allow-multiple-definition"
+  "-Wl,--whole-archive"
+  "-lc++"
+  "-lc++abi"
+  "-Wl,--no-whole-archive"
 )
 export OCTAVE_CLI_LTLDFLAGS="${cli_flags[*]}"
 
