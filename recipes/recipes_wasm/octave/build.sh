@@ -109,7 +109,8 @@ emconfigure \
   --disable-readline \
   --disable-openmp \
   --without-opengl \
-  --enable-cross-tools
+  --enable-cross-tools \
+  --with-magick=ImageMagick++
 
 # NOTE: xeus-octave needs symbols which are incorrectly undeclared in the
 # OCTAVE_API, thus --disable-lib-visibility.
@@ -118,7 +119,7 @@ emconfigure \
 # BUILD AND INSTALL                                                            #
 ################################################################################
 
-emmake make --jobs 3 V=1
+emmake make --jobs 3 # V=1
 emmake make install
 
 # Cross tools
