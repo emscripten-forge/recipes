@@ -1,0 +1,31 @@
+diff --git a/src/xinspect.cpp b/src/xinspect.cpp
+index 1ec4571..3d03c80 100644
+--- a/src/xinspect.cpp
++++ b/src/xinspect.cpp
+@@ -73 +73 @@ namespace xcpp
+-            if (auto* type = Cpp::GetType(expression))
++            if (auto type = Cpp::GetType(expression))
+@@ -75 +75,3 @@ namespace xcpp
+-                return Cpp::GetQualifiedName(type);
++                if (auto klass = Cpp::GetScopeFromType(type))
++                    return Cpp::GetQualifiedName(klass);
++                return Cpp::GetTypeAsString(type);
+@@ -83,3 +85,5 @@ namespace xcpp
+-                Cpp::TCppScope_t lookup = Cpp::GetNamed(id, nullptr);
+-                Cpp::TCppType_t lookup_ty = Cpp::GetTypeFromScope(lookup);
+-                return Cpp::GetQualifiedCompleteName(Cpp::GetCanonicalType(lookup_ty));
++                Cpp::DeclRef lookup = Cpp::GetNamed(id, nullptr);
++                Cpp::TypeRef canonical = Cpp::GetCanonicalType(Cpp::GetTypeFromScope(lookup));
++                if (auto klass = Cpp::GetScopeFromType(canonical))
++                    return Cpp::GetQualifiedCompleteName(klass);
++                return Cpp::GetTypeAsString(canonical);
+diff --git a/src/xinterpreter.cpp b/src/xinterpreter.cpp
+index 4c5a6e1..a2b5a05 100644
+--- a/src/xinterpreter.cpp
++++ b/src/xinterpreter.cpp
+@@ -34 +34 @@ using Args = std::vector<const char*>;
+-void* createInterpreter(const Args &ExtraArgs = {}) {
++Cpp::InterpRef createInterpreter(const Args &ExtraArgs = {}) {
+@@ -59 +59 @@ void* createInterpreter(const Args &ExtraArgs = {}) {
+-  Cpp::TInterp_t res = Cpp::CreateInterpreter(ClangArgs /*, {"-cuda"}*/);
++  Cpp::InterpRef res = Cpp::CreateInterpreter(ClangArgs /*, {"-cuda"}*/);
