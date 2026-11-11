@@ -7,11 +7,8 @@ package:
   version: ${{ version }}
 
 source:
-  url: 
-    https://downloads.sourceforge.net/project/octave/Octave%20Forge%20Packages/Individual%20Package%20Releases/image-${{
-    version }}.tar.gz
+  url: https://downloads.sourceforge.net/octave/image-${{ version }}.tar.gz
   sha256: b4b6865e7f65ee5b9c254a69128bf10e93b38bc27f5bc5b973fef300217fc725
-  target_directory: ${{ name }}
 
 build:
   number: 0
@@ -19,25 +16,32 @@ build:
 requirements:
   build:
   - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
   - make
-  - wabt
-  - octave 10.3.*
   host:
-  - octave 10.3.*
+  - octave
 
 tests:
 - package_contents:
     files:
     - share/octave/packages/${{ name }}-${{ version }}/imgetfile.m
+- script:
+  - node "$PREFIX/bin/octave-cli" "./image.m"
+  files:
+    recipe:
+    - image.m
+  requirements:
+    build:
+    - nodejs
+    - generic-testing
 
 about:
   homepage: https://octave.sourceforge.io/image/
   license: GPL-3.0-or-later
-  license_file: ${{ name }}/COPYING
+  license_file: COPYING
   summary: Image processing toolbox for GNU Octave
 
 extra:
   recipe-maintainers:
   - arjxn-py
   - DerThorsten
+  - IsabelParedes
