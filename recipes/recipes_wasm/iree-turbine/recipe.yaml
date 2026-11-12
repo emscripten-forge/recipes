@@ -1,7 +1,7 @@
 context:
   version: 3.10.0
-  revision: 96c5617e9fb84d2a19b7105987f4edf4ecb0ccb7
-  iree_version: '20261030'
+  revision: 3403454f1fe4d7746908a73e31fc28aaca1ea95b
+  iree_version: '20261108'
 
 package:
   name: iree-turbine
@@ -14,7 +14,7 @@ source:
   submodules: false
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   python:
@@ -31,7 +31,7 @@ requirements:
   - python =${{ python_min }}
   run:
   - python >=${{ python_min }}
-  - pytorch >=2.15.0a0,<2.16
+  - pytorch >=2.15.0a0,<2.16[build_number='>=1']
   - iree-base-compiler ==${{ iree_version }}
   - iree-base-runtime ==${{ iree_version }}
   - decorator >=5.2.1
@@ -44,6 +44,8 @@ tests:
 - package_contents:
     site_packages:
     - iree/turbine/aot/exporter.py
+    - iree/turbine/dynamo/backends/async_backend.py
+    - iree/turbine/runtime/torch_device.py
     files:
       not_exists:
       - '**/*.so'
