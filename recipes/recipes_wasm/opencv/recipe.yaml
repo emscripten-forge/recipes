@@ -24,7 +24,7 @@ outputs:
     - ${{ compiler('cxx') }}
     - cmake
     - ninja
-    - cross-python_emscripten-wasm32
+    - cross-python_${{ target_platform }}
     host:
     - zlib-static
     - libpng-static
@@ -35,19 +35,19 @@ outputs:
     - python-dev
     - numpy
     - eigen
-    - libgdal-core
+    - libgdal-core-static
     - geos-static
     - proj-static
     - libiconv-static
-    - sqlitecpp
-    - jasper
-    - gdcm
+    - sqlitecpp-static
+    - jasper-static
+    - gdcm-static
     - ffmpeg-static
     ignore_run_exports:
       from_package:
       - python
       - numpy
-      - cross-python_emscripten-wasm32
+      - cross-python_${{ target_platform }}
 
 - package:
     name: libopencv
@@ -82,7 +82,7 @@ outputs:
     - libiconv-static
     - sqlitecpp-static
     - jasper-static
-    - gdcm
+    - gdcm-static
     - ffmpeg-static
     run_exports:
     - ${{ pin_subpackage('libopencv', exact=True) }}
@@ -151,9 +151,12 @@ outputs:
       - '**/*.py'
   requirements:
     host:
+    - python
     - python-dev
     - numpy
     run:
+    - python
+    - numpy
     - libopencv =${{ version }}
 
   tests:

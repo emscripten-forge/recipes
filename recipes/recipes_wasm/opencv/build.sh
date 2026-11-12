@@ -22,7 +22,7 @@ mkdir -p _build
 cd _build
 
 TARGET_PYTHON_SITE_PACKAGES="${PREFIX}/lib/python${PY_VER}/site-packages"
-TARGET_PYTHON_EXT_SUFFIX=".cpython-${PY_VER/./}-wasm32-emscripten.so"
+TARGET_PYTHON_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 TARGET_PYTHON_LOADER_DIR="${TARGET_PYTHON_SITE_PACKAGES}/cv2/python-${PY_VER}"
 BUILD_PYTHON="${BUILD_PREFIX}/bin/python"
 TARGET_PYTHON_INCLUDE="${PREFIX}/include/python${PY_VER}"

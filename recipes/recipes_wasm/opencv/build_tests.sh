@@ -25,11 +25,12 @@ echo "=== Running test ==="
 set +e
 (cd "$BUILD_DIR" && node test_opencv.js) > "$BUILD_DIR/test_output.txt" 2>&1
 NODE_EXIT=$?
+set -e
 echo "=== Test output ==="
 cat "$BUILD_DIR/test_output.txt"
 echo "=== Test end (exit=$NODE_EXIT) ==="
 
-if grep -q "All tests passed" "$BUILD_DIR/test_output.txt"; then
+if [ "$NODE_EXIT" -eq 0 ] && grep -q "All tests passed" "$BUILD_DIR/test_output.txt"; then
     echo "Test PASSED"
     exit 0
 fi
