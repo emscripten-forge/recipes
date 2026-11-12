@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import createModule from "./test_main.js";
+import { pythonTests } from "./python_tests.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -57,6 +58,49 @@ console.log("Python files copied to Emscripten FS.");
 // Everything is mounted now.
 
 
+// --- call trampoline ---------------------------------------------------------
+// (a second Py_Initialize resets _PyRuntime, the trampoline pointer is restored
+// from a static on the next call, see patches/0017)
+// C functions with 0..3 arguments are called through the trampoline
+// (METH_NOARGS / METH_O / METH_VARARGS / METH_VARARGS|METH_KEYWORDS ...)
+const trampoline_code = `
+import math, itertools, operator
+assert len([1, 2]) == 2                         # METH_O
+assert "abc".upper() == "ABC"                   # METH_NOARGS
+assert "a,b".split(",") == ["a", "b"]           # METH_FASTCALL|METH_KEYWORDS
+assert sorted([3, 1, 2], reverse=True) == [3, 2, 1]
+assert math.hypot(3, 4) == 5.0                  # METH_FASTCALL
+assert dict(a=1)["a"] == 1
+assert list(itertools.islice(itertools.count(), 3)) == [0, 1, 2]
+assert operator.add(1, 2) == 3
+assert {1: 2}.get(1) == 2
+assert [1, 2].index(2) == 1
+assert int("10", base=2) == 2
+print("trampoline calls ok")
+`;
+const ret_trampoline = Module.ccall('run_python', 'number', ['string'], [trampoline_code]);
+if (Number(ret_trampoline) !== 0) {
+  throw new Error(`calls through the trampoline failed (return code ${ret_trampoline})`);
+}
+
+const pointer_size = Number(Module.ccall('pointer_size', 'number', [], []));
+const uses_wasm_gc = Number(Module.ccall('uses_wasm_gc_trampoline', 'number', [], []));
+const wasm_gc_supported = (() => {
+  // a module with a wasm-gc struct type
+  try {
+    return WebAssembly.validate(new Uint8Array([
+      0, 97, 115, 109, 1, 0, 0, 0, 1, 3, 1, 95, 0]));
+  } catch (e) {
+    return false;
+  }
+})();
+console.log(`pointer size ${pointer_size}, wasm-gc supported ${wasm_gc_supported}, wasm-gc trampoline used ${uses_wasm_gc === 1}`);
+if (wasm_gc_supported && uses_wasm_gc !== 1) {
+  throw new Error(`wasm${pointer_size * 8}: the wasm-gc call trampoline is not used (JS trampoline breaks JSPI stack switching)`);
+}
+
+
+
 
 let ret_code_0 = Module.ccall(
   'run_python',     // C function name
@@ -92,4 +136,22 @@ if (Number(ret_code) === 1) {
 else {
   throw new Error(`Python code did not return the return code when an exception was raised. Expected 1, got ${ret_code}`);
 }
-  
+
+
+// --- plain python tests (python_tests.mjs) ------------------------------------
+const failed = [];
+for (const test of pythonTests) {
+  if (test.pointerSize !== undefined && test.pointerSize !== pointer_size) {
+    console.log(`=== ${test.name} (skipped, pointer size ${pointer_size})`);
+    continue;
+  }
+  console.log(`=== ${test.name}`);
+  const ret = Number(Module.ccall('run_python', 'number', ['string'], [test.code]));
+  if (ret !== 0) {
+    failed.push(test.name);
+  }
+}
+if (failed.length > 0) {
+  throw new Error(`python tests failed: ${failed.join(", ")}`);
+}
+console.log(`all ${pythonTests.length} python tests passed`);

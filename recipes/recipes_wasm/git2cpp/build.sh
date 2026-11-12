@@ -16,8 +16,11 @@ export CONFIG_LDFLAGS="\
     -lproxyfs.js \
     "
 
+# -DEMSCRIPTEN=1 no longer needed with git2cpp > 0.0.12
+
 emcmake cmake \
     -Bbuild \
+    -DEMSCRIPTEN=1 \
     -DCMAKE_PREFIX_PATH=$PREFIX \
     -Dlibgit2_DIR=$PREFIX/lib/cmake/libgit2 \
     -Dtermcolor_DIR=$BUILD_PREFIX/lib/cmake/termcolor \

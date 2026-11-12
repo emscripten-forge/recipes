@@ -1,0 +1,93 @@
+context:
+  name: arrow
+  version: 26.0.1
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/apache/arrow/releases/download/apache-arrow-${{ version }}/apache-arrow-${{ version }}.tar.gz
+  sha256: 1dd1b6701d9de58a4ed82b107539682f46ef6b9e22747e18e03204125c05a987
+  patches:
+  - patches/0001-Remove-pthread-from-R-arrow-PKG_LIBS.patch
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - pkg-config
+  - cross-r-base ==${{ r_base }}
+  - r-assertthat
+  - r-bit64
+  - r-cpp11
+  - r-glue
+  - r-purrr
+  - r-r6
+  - r-rlang
+  - r-tidyselect
+  - r-vctrs
+  host:
+  - arrow-cpp-static ==${{ version }}
+  - arrow-cpp-parquet-static ==${{ version }}
+  - arrow-cpp-compute-static ==${{ version }}
+  - arrow-cpp-acero-static ==${{ version }}
+  - arrow-cpp-dataset-static ==${{ version }}
+  - brotli-static
+  - r-base ==${{ r_base }}
+  - r-assertthat
+  - r-bit64
+  - r-cpp11
+  - r-glue
+  - r-purrr
+  - r-r6
+  - r-rlang
+  - r-tidyselect
+  - r-vctrs
+  run:
+  - r-assertthat
+  - r-bit64
+  - r-cpp11
+  - r-glue
+  - r-purrr
+  - r-r6
+  - r-rlang
+  - r-tidyselect
+  - r-vctrs
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://arrow.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: 'Arrow: A cross-language development platform for in-memory analytics'
+  description: |
+    Apache Arrow is a cross-language development platform for in-memory
+    analytics. This recipe builds the Arrow C++ library, Python bindings
+    (pyarrow), and R bindings (r-arrow).
+  license_family: APACHE
+
+extra:
+  recipe-maintainers:
+  - Klaim
+  - martinRenou
+  - DerThorsten
+  - Alex-PLACET
+  - IsabelParedes

@@ -31,6 +31,14 @@ LIBS=(
     "$PYTHON_LIB"
 )
 
+# memory limit: emscripten's default is 2GB (also for wasm64)
+if emcc -dM -E - < /dev/null | grep -q "__wasm64__"; then
+    MAXIMUM_MEMORY=16GB
+else
+    MAXIMUM_MEMORY=4GB
+fi
+echo "==> MAXIMUM_MEMORY=$MAXIMUM_MEMORY"
+
 echo "==> compiling and linking"
 
 
@@ -46,7 +54,7 @@ FLAGS=(
     -sMODULARIZE=1
     -sEXPORT_NAME="createModule"
     -sEXPORTED_RUNTIME_METHODS='["FS","cwrap", "ccall", "stringToUTF8", "allocateUTF8"]'
-    -sEXPORTED_FUNCTIONS='["_run_python"]'
+    -sEXPORTED_FUNCTIONS='["_run_python","_uses_wasm_gc_trampoline","_pointer_size"]'
     -sINVOKE_RUN=0
     -sNO_EXIT_RUNTIME=1
     -fwasm-exceptions
@@ -54,6 +62,7 @@ FLAGS=(
     -s ALLOW_MEMORY_GROWTH=1
     -s STACK_SIZE=32mb
     -s INITIAL_MEMORY=64MB
+    -sMAXIMUM_MEMORY=$MAXIMUM_MEMORY
 )
 
 
@@ -65,3 +74,35 @@ emcc \
 
 
 node node_test_wrapper.js
+
+# ---------------------------------------------------------------------------
+# browser test (playwright): the same python tests in headless browsers,
+# python stdlib preloaded into the emscripten FS. (The exclude patterns match
+# the full host path, which may contain e.g. ".../test/..." itself: anchor them
+# at lib/pythonX.Y.)
+# Browsers: PYTHON_TEST_BROWSERS (default: chromium); skip: PYTHON_SKIP_BROWSER_TEST=1
+# ---------------------------------------------------------------------------
+if [ "${PYTHON_SKIP_BROWSER_TEST:-0}" = "1" ]; then
+    echo "==> skipping browser test (PYTHON_SKIP_BROWSER_TEST=1)"
+    exit 0
+fi
+
+echo "==> compiling and linking (browser)"
+emcc \
+    "${FLAGS[@]}" \
+    -sENVIRONMENT=web,worker \
+    --preload-file "$PREFIX/lib/python${PY_VER}@/lib/python${PY_VER}" \
+    --exclude-file "*__pycache__*" \
+    --exclude-file "*/lib/python${PY_VER}/test/*" \
+    --exclude-file "*/lib/python${PY_VER}/idlelib/*" \
+    --exclude-file "*/lib/python${PY_VER}/tkinter/*" \
+    --exclude-file "*/lib/python${PY_VER}/turtledemo/*" \
+    test_main.cpp \
+    "${LIBS[@]}" \
+    -o test_main_web.js
+
+echo "==> installing browsers: ${PYTHON_TEST_BROWSERS:-chromium}"
+python -m playwright install ${PYTHON_TEST_BROWSERS:-chromium}
+
+echo "==> running browser test"
+python browser_test.py

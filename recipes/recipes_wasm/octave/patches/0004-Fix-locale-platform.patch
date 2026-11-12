@@ -1,0 +1,35 @@
+From 75af5390a03737a9f0cd521b59cf77d2238a5711 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Thu, 5 Nov 2026 12:55:54 +0100
+Subject: [PATCH 4/7] Fix locale platform
+
+Fixes "Please port gnulib getlocalename_l-unsafe.c to your platform! Report this to bug-gnulib."
+---
+ libgnu/getlocalename_l-unsafe.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libgnu/getlocalename_l-unsafe.c b/libgnu/getlocalename_l-unsafe.c
+index 27cc5f3..d7cba5e 100644
+--- a/libgnu/getlocalename_l-unsafe.c
++++ b/libgnu/getlocalename_l-unsafe.c
+@@ -34,7 +34,7 @@
+ #endif
+ #include "setlocale_null.h"
+ 
+-#if (__GLIBC__ >= 2 && !defined __UCLIBC__) || (defined __linux__ && HAVE_LANGINFO_H) || defined __CYGWIN__
++#if (__GLIBC__ >= 2 && !defined __UCLIBC__) || (defined __EMSCRIPTEN__ && HAVE_LANGINFO_H) || defined __CYGWIN__
+ # include <langinfo.h>
+ #endif
+ #if defined __sun
+@@ -471,7 +471,7 @@ getlocalename_l_unsafe (int category, locale_t locale)
+            nl_langinfo_l (_NL_LOCALE_NAME (category), locale).  */
+         name = locale->__names[category];
+       return (struct string_with_storage) { name, STORAGE_OBJECT };
+-#elif defined __linux__ && HAVE_LANGINFO_H && defined NL_LOCALE_NAME
++#elif defined __EMSCRIPTEN__ && HAVE_LANGINFO_H && defined NL_LOCALE_NAME
+       /* musl libc */
+       const char *name = nl_langinfo_l (NL_LOCALE_NAME (category), locale);
+       return (struct string_with_storage) { name, STORAGE_OBJECT };
+-- 
+2.56.0
+

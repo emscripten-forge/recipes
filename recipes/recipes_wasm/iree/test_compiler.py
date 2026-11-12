@@ -31,6 +31,20 @@ from iree.compiler.api import Output, Session, Source
             }
             """,
         ),
+        (
+            "torch",
+            """
+            func.func @fma(%a: !torch.vtensor<[4],f32>,
+                           %b: !torch.vtensor<[4],f32>,
+                           %c: !torch.vtensor<[4],f32>)
+                -> !torch.vtensor<[4],f32> {
+              %result = torch.prims.fma %a, %b, %c
+                  : !torch.vtensor<[4],f32>, !torch.vtensor<[4],f32>,
+                    !torch.vtensor<[4],f32> -> !torch.vtensor<[4],f32>
+              return %result : !torch.vtensor<[4],f32>
+            }
+            """,
+        ),
     ],
 )
 def test_compile_webgpu_in_process(input_type, model):
