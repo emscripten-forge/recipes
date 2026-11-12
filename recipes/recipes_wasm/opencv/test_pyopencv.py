@@ -35,10 +35,11 @@ def test_basic_core_ops():
     assert norm == 320.0
 
 
-def test_imencode_imdecode():
+@pytest.mark.parametrize("extension", [".png", ".jpg"])
+def test_imencode_imdecode(extension):
     img = np.zeros((10, 10, 3), dtype=np.uint8)
     img[2:8, 2:8] = [255, 0, 0]
-    ok, buf = cv2.imencode(".png", img)
+    ok, buf = cv2.imencode(extension, img)
     assert ok, "imencode failed"
     assert len(buf) > 0
 

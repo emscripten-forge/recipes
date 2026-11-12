@@ -52,6 +52,12 @@ int main() {
 
     bool have_jpeg_writer = cv::haveImageWriter(".jpg");
     std::cout << "  haveImageWriter(.jpg)=" << have_jpeg_writer << std::endl;
+    CHECK(have_jpeg_writer, "JPEG writer unavailable");
+    std::vector<uchar> jpeg_buf;
+    CHECK(cv::imencode(".jpg", img, jpeg_buf), "imencode JPEG failed");
+    cv::Mat jpeg_decoded = cv::imdecode(jpeg_buf, cv::IMREAD_COLOR);
+    CHECK(jpeg_decoded.size() == img.size() && jpeg_decoded.type() == img.type(),
+          "JPEG roundtrip dimensions or type wrong");
 
     std::vector<uchar> png_buf;
     bool png_ok = cv::imencode(".png", img, png_buf);
