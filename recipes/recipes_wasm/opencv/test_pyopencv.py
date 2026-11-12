@@ -106,33 +106,29 @@ def test_enabled_module_entry_points_exist():
     assert blob.ndim == 4
 
 
-def test_video_capture():
-    """Download a short video and try reading it with VideoCapture."""
-    import os
-    import urllib.request
-
-    url = (
-        "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/"
-        "Big_Buck_Bunny_360_10s_5MB.mp4"
+def test_video_capture(tmp_path):
+    video_path = str(tmp_path / "frames.avi")
+    writer = cv2.VideoWriter(
+        video_path, cv2.CAP_FFMPEG, cv2.VideoWriter_fourcc(*"MJPG"), 5.0, (32, 32)
     )
-    tmp_path = "/tmp/bigbuckbunny.mp4"
-
+    assert writer.isOpened(), "Failed to open FFmpeg video writer"
     try:
-        urllib.request.urlretrieve(url, tmp_path)
-    except Exception as exc:
-        # Downloading may not work in the pyjs/browser environment
-        pytest.skip(f"Download failed ({exc}), skipping video test")
+        for value in (40, 120, 200):
+            writer.write(np.full((32, 32, 3), value, dtype=np.uint8))
+    finally:
+        writer.release()
 
-    assert os.path.getsize(tmp_path) > 0, "Downloaded file is empty"
-
-    cap = cv2.VideoCapture(tmp_path)
-    assert cap.isOpened(), "Failed to open video file with VideoCapture"
-
-    ret, frame = cap.read()
-    assert ret, "Failed to read first frame"
-    assert frame is not None, "First frame is None"
-    assert frame.size > 0, "First frame has no pixels"
-
-    # Clean up
-    cap.release()
-    os.remove(tmp_path)
+    cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
+    assert cap.isOpened(), "Failed to open generated video with FFmpeg"
+    frames = 0
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            assert frame.shape == (32, 32, 3)
+            assert frame.dtype == np.uint8
+            frames += 1
+    finally:
+        cap.release()
+    assert frames == 3
