@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 7
+  build_number: 8
   abi_tag: cp${{ ver2nd }}
 
 build:
@@ -191,6 +191,8 @@ outputs:
         - '**/*.pyc'
         - "**/*.a"
         - "**/*.h"
+        - '**/pkgconfig/**'
+        - '**/*.pc'
 
       python:
         skip_pyc_compilation:
@@ -207,6 +209,7 @@ outputs:
       - script:
         - test ! -f $PREFIX/lib/libpython${{ver2}}.a
         - test ! -f $PREFIX/include/python${{ver2}}/Python.h
+        - test ! -f $PREFIX/lib/pkgconfig/python-${{ver2}}.pc
         - test -f $PREFIX/lib/python${{ver2}}/enum.py
         - test -f $PREFIX/lib/python${{ver2}}/ast.py
         - generic-testing
@@ -218,12 +221,25 @@ outputs:
   - package:
       name: python-dev
       version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "Packaging pkg-config files"
+      files:
+        include:
+          - lib/pkgconfig/**
     requirements:
       run:
       - ${{pin_subpackage('python', lower_bound='x.x.x', upper_bound='x.x.x')}}
       - ${{pin_subpackage('libpython-static', lower_bound='x.x.x', upper_bound='x.x.x')}}
 
     tests:
+      - package_contents:
+          files:
+          - lib/pkgconfig/python-${{ver2}}.pc
+          - lib/pkgconfig/python-${{ver2}}-embed.pc
+          - lib/pkgconfig/python3.pc
+          - lib/pkgconfig/python3-embed.pc
       - script:
         - test -f $PREFIX/include/python${{ver2}}/Python.h
         - test -f $PREFIX/lib/libpython${{ver2}}.a
@@ -249,7 +265,6 @@ outputs:
           - browser_test.mjs
           - browser_test.py
 
-    
 about:
   license: Python-2.0
   license_file: LICENSE
@@ -267,7 +282,3 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-  ci:
-    platforms:
-      emscripten-wasm32: true
-      emscripten-wasm64: true
