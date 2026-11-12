@@ -1,0 +1,100 @@
+context:
+  name: primecount
+  version: '8.8'
+
+source:
+  url: https://github.com/kimwalisch/primecount/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9e2a3a779d5a274607cc40119544317b5eb41761b84cebb348d5af7d75d073b6
+
+build:
+  number: 0
+
+outputs:
+- staging:
+    name: primecount-build
+  requirements:
+    build:
+    - ${{ compiler('cxx') }}
+    - cmake
+    - make
+    host:
+    - primesieve-static
+  build:
+    script: build.sh
+
+#==============================================================================#
+
+# primecount command line program
+- package:
+    name: primecount
+    version: ${{ version }}
+  inherit: primecount-build
+  build:
+    files:
+      include:
+      - bin/
+  requirements:
+    # listed so that rattler-build orders this output after primesieve-static
+    # (the dependency of the staging cache alone is not taken into account);
+    # the program is statically linked, so no run dependency
+    host:
+    - primesieve-static
+    ignore_run_exports:
+      from_package:
+      - primesieve-static
+  tests:
+  - package_contents:
+      files:
+      - bin/primecount.js
+      - bin/primecount.wasm
+  - script: node $PREFIX/bin/primecount.js 1e10 | grep 455052511
+    requirements:
+      build:
+      - nodejs
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+# static library, header and cmake / pkg-config files
+- package:
+    name: primecount-static
+    version: ${{ version }}
+  inherit: primecount-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/*.a
+      - lib/cmake/primecount/
+      - lib/pkgconfig/primecount.pc
+  requirements:
+    host:
+    - primesieve-static
+    run:
+    - ${{ pin_compatible('primesieve-static', lower_bound='x.x', upper_bound='x.x') }}
+  tests:
+  - package_contents:
+      files:
+      - include/primecount.h
+      - include/primecount.hpp
+      - lib/libprimecount.a
+      - lib/cmake/primecount/primecountConfig.cmake
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+#==============================================================================#
+
+about:
+  homepage: https://github.com/kimwalisch/primecount/
+  license: BSD-2-Clause
+  license_file: COPYING
+  summary: Fast prime counting function library
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

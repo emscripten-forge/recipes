@@ -1,0 +1,80 @@
+context:
+  version: 3.10.0
+  revision: 3403454f1fe4d7746908a73e31fc28aaca1ea95b
+  iree_version: '20261108'
+
+package:
+  name: iree-turbine
+  version: ${{ version }}
+
+source:
+- git: https://github.com/anutosh491/iree-turbine.git
+  rev: ${{ revision }}
+  depth: 1
+  submodules: false
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+  python:
+    entry_points:
+    - iree-boo-driver = iree.turbine.kernel.boo.driver.driver:main
+
+requirements:
+  build:
+  - python =${{ python_min }}
+  - pip
+  - setuptools
+  - wheel
+  host:
+  - python =${{ python_min }}
+  run:
+  - python >=${{ python_min }}
+  - pytorch >=2.15.0a0,<2.16[build_number='>=1']
+  - iree-base-compiler ==${{ iree_version }}
+  - iree-base-runtime ==${{ iree_version }}
+  - decorator >=5.2.1
+  - numpy
+  - jinja2 >=3.1.4
+  - ml_dtypes >=0.5.0
+  - typing_extensions
+
+tests:
+- package_contents:
+    site_packages:
+    - iree/turbine/aot/exporter.py
+    - iree/turbine/dynamo/backends/async_backend.py
+    - iree/turbine/runtime/torch_device.py
+    files:
+      not_exists:
+      - '**/*.so'
+      - '**/*.a'
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+- script: pytester
+  files:
+    recipe:
+    - test_turbine.py
+  requirements:
+    build:
+    - pytester =${{ pytester }}
+    run:
+    - pytester-run =${{ pytester_run }}
+
+about:
+  homepage: https://iree.dev/
+  repository: https://github.com/iree-org/iree-turbine
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: LICENSE
+  summary: IREE Turbine Machine Learning Deployment Tools
+
+extra:
+  ci:
+    platforms:
+      emscripten-wasm32: true
+      emscripten-wasm64: true
+  recipe-maintainers:
+  - anutosh491

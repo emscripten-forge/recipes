@@ -1,0 +1,42 @@
+From 55fa219e3f2868dd02c109edd608a6c411fa47c4 Mon Sep 17 00:00:00 2001
+From: Isabel Paredes <isabel.paredes@quantstack.net>
+Date: Wed, 11 Nov 2026 18:01:32 +0100
+Subject: [PATCH 1/2] Update libraries
+
+---
+ CMakeLists.txt | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 126bae6..74e6497 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -276,7 +276,7 @@ macro(xeus_octave_create_target target_name linkage output_name)
+         target_link_libraries(
+             ${target_name}
+             PUBLIC xeus PkgConfig::octinterp
+-            PRIVATE FortranRuntime
++            PRIVATE flang_rt.runtime
+         )
+     else()
+         target_link_libraries(
+@@ -339,6 +339,7 @@ if(XEUS_OCTAVE_BUILD_EXECUTABLE)
+         xeus_wasm_compile_options(xoctave)
+         xeus_wasm_link_options(xoctave "web,worker")
+         target_compile_options(xoctave PRIVATE ${octinterp_CFLAGS})
++        target_link_libraries(xoctave PRIVATE bz2 tiff jpeg xml2)
+         target_link_options(
+             xoctave
+             PUBLIC
+@@ -347,8 +348,6 @@ if(XEUS_OCTAVE_BUILD_EXECUTABLE)
+             "SHELL: --post-js ${CMAKE_CURRENT_SOURCE_DIR}/wasm/post.js"
+             PRIVATE
+             ${octinterp_LDFLAGS}
+-            PRIVATE
+-            "SHELL: -L${CMAKE_INSTALL_PREFIX}/lib -lfreetype -lFortranDecimal -Wl,--allow-multiple-definition"
+         )
+     endif()
+ endif()
+-- 
+2.56.0
+

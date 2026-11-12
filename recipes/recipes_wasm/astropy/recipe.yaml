@@ -1,0 +1,137 @@
+context:
+  name: astropy
+  version: 8.0.2
+
+source:
+- url: https://pypi.io/packages/source/a/astropy/astropy-${{ version }}.tar.gz
+  sha256: e6af35823099ad6a40b57dbe5ff845f577374ea131925c9fa4b49eeab06c5310
+  # patches:
+  # - patches/skip_ep.patch
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: astropy-base
+    version: ${{ version }}
+  build:
+    script: build-base.sh
+    files:
+      exclude:
+      - '**/*.pyi'
+      - '**/tests/**'
+      - '**/*.pyx'
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_${{ target_platform }}
+    - python
+    - cython
+    - numpy
+    - pip
+    - extension-helpers
+    # build-base.sh edits sources with `sed -i`
+    - sed
+    host:
+    - python-dev
+    - jinja2
+    - markupsafe
+    - numpy
+    run:
+    - numpy
+    - pyerfa
+    - pyyaml
+    - packaging
+    - astropy-iers-data>=0.2024.7.1.0.34.3
+  tests:
+  - script: pytester
+    requirements:
+      build:
+      - pytester >= 0.9.0
+      run:
+      - pytester-run >= 0.9.0
+    files:
+      recipe:
+      - test_astropy.py
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+  build:
+    noarch: python
+  requirements:
+    host:
+    - python-dev
+    run:
+    - python
+    # not exact=True: this noarch package is shared by the wasm32 and wasm64
+    # astropy-base builds, whose build strings differ
+    - ${{ pin_subpackage('astropy-base', upper_bound='x.x.x') }}
+    - matplotlib-base >=3.8.0
+    - scipy >=1.9.2
+    - certifi >=2022.6.15.1
+    - ipython >=8.0.0
+    - ipywidgets >=7.7.3
+    - ipydatagrid >=1.1.13
+    - dask-core >=2024.8.0
+    - h5py >=3.9.0
+    - pyarrow >=14.0.2
+    - beautifulsoup4 >=4.9.3
+    - html5lib >=1.1
+    - bleach >=3.2.1
+    - pandas >=2.0
+    - sortedcontainers >=2.1.0
+    - pytz >=2016.10
+    - jplephem >=2.17.0
+    - mpmath >=1.2.1
+    - fsspec >=2023.4.0
+    - narwhals >=1.42.0
+    # fsspec's optional remote backends (aiohttp, s3fs) are left out: the 6x
+    # aiohttp build's _http_parser can't be loaded (undefined llhttp
+    # callback wasm_on_message_begin), which breaks preloading in the tests
+    - uncompresspy >=0.4.0
+  tests:
+  - script: pytester
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+    files:
+      recipe:
+      - test_astropy.py
+  # noarch output: generic-testing needs a concrete target platform
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  homepage: https://www.astropy.org/
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: Community-developed Python Library for Astronomy
+  description: |
+    The Astropy Project is a community effort to develop a single package for
+    Astronomy in Python. It contains core functionality and common tools
+    needed for performing astronomy and astrophysics research with Python.
+  documentation: https://docs.astropy.org/en/stable/
+  repository: https://github.com/astropy/astropy
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - astrofrog
+  - bsipocz
+  - mwcraig

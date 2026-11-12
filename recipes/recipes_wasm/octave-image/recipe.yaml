@@ -1,0 +1,47 @@
+context:
+  name: image
+  version: 2.20.1
+
+package:
+  name: octave-${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://downloads.sourceforge.net/octave/image-${{ version }}.tar.gz
+  sha256: b4b6865e7f65ee5b9c254a69128bf10e93b38bc27f5bc5b973fef300217fc725
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - make
+  host:
+  - octave
+
+tests:
+- package_contents:
+    files:
+    - share/octave/packages/${{ name }}-${{ version }}/imgetfile.m
+- script:
+  - node "$PREFIX/bin/octave-cli" "./image.m"
+  files:
+    recipe:
+    - image.m
+  requirements:
+    build:
+    - nodejs
+    - generic-testing
+
+about:
+  homepage: https://octave.sourceforge.io/image/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: Image processing toolbox for GNU Octave
+
+extra:
+  recipe-maintainers:
+  - arjxn-py
+  - DerThorsten
+  - IsabelParedes

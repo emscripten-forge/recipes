@@ -1,0 +1,198 @@
+From ba58d3b90cda99bff2f6988dfbcbf27628bc11c6
+Subject: [PATCH] [mlir][arith] Honor finite min/max reduction identities
+Upstream: https://github.com/llvm/llvm-project/pull/232257
+
+Backport to 23.1.2; pad-neutral.mlir does not exist in this release.
+
+diff --git a/mlir/include/mlir/Dialect/Arith/IR/Arith.h b/mlir/include/mlir/Dialect/Arith/IR/Arith.h
+--- a/mlir/include/mlir/Dialect/Arith/IR/Arith.h
++++ b/mlir/include/mlir/Dialect/Arith/IR/Arith.h
+@@ -155,15 +155,17 @@
+ /// E.g., The identity value for maxf is in theory `-Inf`, but if we want to
+ /// stay in the finite range, it would be `BiggestRepresentableNegativeFloat`.
+ /// The purpose of this boolean is to offer constants that will play nice
+-/// with fast math related optimizations.
++/// with fast math related optimizations. The caller must ensure that using a
++/// finite value preserves the reduction semantics.
+ TypedAttr getIdentityValueAttr(AtomicRMWKind kind, Type resultType,
+                                OpBuilder &builder, Location loc,
+                                bool useOnlyFiniteValue = false);
+
+ /// Return the identity numeric value associated to the give op. Return
+ /// std::nullopt if there is no known neutral element.
+-/// If `op` has `FastMathFlags::ninf`, only finite values will be used
+-/// as neutral element.
++/// Finite min/max identities require `FastMathFlags::ninf`. NaN-ignoring
++/// min/max operations additionally require `FastMathFlags::nnan`; otherwise,
++/// their neutral element is NaN.
+ std::optional<TypedAttr> getNeutralElement(Operation *op);
+
+ /// Returns the identity value associated with an AtomicRMWKind op.
+diff --git a/mlir/lib/Dialect/Arith/IR/ArithOps.cpp b/mlir/lib/Dialect/Arith/IR/ArithOps.cpp
+--- a/mlir/lib/Dialect/Arith/IR/ArithOps.cpp
++++ b/mlir/lib/Dialect/Arith/IR/ArithOps.cpp
+@@ -2938,7 +2938,9 @@
+   case AtomicRMWKind::maxnumf: {
+     const llvm::fltSemantics &semantic =
+         llvm::cast<FloatType>(resultType).getFloatSemantics();
+-    APFloat identity = APFloat::getNaN(semantic, /*Negative=*/true);
++    APFloat identity = useOnlyFiniteValue
++                           ? APFloat::getLargest(semantic, /*Negative=*/true)
++                           : APFloat::getNaN(semantic, /*Negative=*/true);
+     return builder.getFloatAttr(resultType, identity);
+   }
+   case AtomicRMWKind::addf:
+@@ -2967,7 +2969,9 @@
+   case AtomicRMWKind::minnumf: {
+     const llvm::fltSemantics &semantic =
+         llvm::cast<FloatType>(resultType).getFloatSemantics();
+-    APFloat identity = APFloat::getNaN(semantic, /*Negative=*/false);
++    APFloat identity = useOnlyFiniteValue
++                           ? APFloat::getLargest(semantic, /*Negative=*/false)
++                           : APFloat::getNaN(semantic, /*Negative=*/false);
+     return builder.getFloatAttr(resultType, identity);
+   }
+   case AtomicRMWKind::mins:
+@@ -3022,6 +3026,16 @@
+     arith::FastMathFlagsAttr fmfAttr = fmfOpInterface.getFastMathFlagsAttr();
+     useOnlyFiniteValue =
+         bitEnumContainsAny(fmfAttr.getValue(), arith::FastMathFlags::ninf);
++    if (*maybeKind == AtomicRMWKind::maxnumf ||
++        *maybeKind == AtomicRMWKind::minnumf) {
++      if (bitEnumContainsAny(fmfAttr.getValue(), arith::FastMathFlags::nnan)) {
++        *maybeKind = *maybeKind == AtomicRMWKind::maxnumf
++                         ? AtomicRMWKind::maximumf
++                         : AtomicRMWKind::minimumf;
++      } else {
++        useOnlyFiniteValue = false;
++      }
++    }
+   }
+
+   // Builder only used as helper for attribute creation.
+diff --git a/mlir/test/Dialect/Linalg/transform-op-decompose.mlir b/mlir/test/Dialect/Linalg/transform-op-decompose.mlir
+--- a/mlir/test/Dialect/Linalg/transform-op-decompose.mlir
++++ b/mlir/test/Dialect/Linalg/transform-op-decompose.mlir
+@@ -369,7 +369,7 @@
+ // CHECK-LABEL:      func.func @softmax(
+ // CHECK-SAME:           %[[ARG0:[a-zA-Z0-9_]+]]: tensor<2x16x32xf32>, %[[DST:[a-zA-Z0-9_]+]]: tensor<2x16x32xf32>) -> tensor<2x16x32xf32> {
+ // CHECK-DAG:        %[[D1:.+]] = tensor.empty() : tensor<2x16xf32>
+-// CHECK-DAG:        %[[CST:.+]] = arith.constant 0xFFC00000 : f32
++// CHECK-DAG:        %[[CST:.+]] = arith.constant -3.40282347E+38 : f32
+ // CHECK:        %[[D2:.+]] = linalg.fill ins(%[[CST]] : f32) outs(%[[D1]] : tensor<2x16xf32>) -> tensor<2x16xf32>
+ // CHECK:        %[[D3:.+]] = linalg.generic {indexing_maps = [#[[$MAP]], #[[$MAP1]]], iterator_types = ["parallel",
+ // CHECK-SAME:     "parallel", "reduction"]} ins(%[[ARG0]] : tensor<2x16x32xf32>) outs(%[[D2]] : tensor<2x16xf32>) {
+diff --git a/mlir/test/Dialect/Linalg/transform-op-split-reduction.mlir b/mlir/test/Dialect/Linalg/transform-op-split-reduction.mlir
+--- a/mlir/test/Dialect/Linalg/transform-op-split-reduction.mlir
++++ b/mlir/test/Dialect/Linalg/transform-op-split-reduction.mlir
+@@ -499,3 +499,110 @@
+       transform.yield
+   }
+ }
++
++// -----
++
++// CHECK-LABEL: func.func @maxnumf_ninf(
++// CHECK: %[[INIT:.*]] = arith.constant 0xFFC00000 : f32
++// CHECK: linalg.fill ins(%[[INIT]] : f32)
++// CHECK: arith.maxnumf {{.*}} fastmath<ninf> : f32
++func.func @maxnumf_ninf(%in: tensor<32xf32>, %out: tensor<f32>) -> tensor<f32> {
++  %r = linalg.generic {
++    indexing_maps = [affine_map<(d0) -> (d0)>, affine_map<(d0) -> ()>],
++    iterator_types = ["reduction"]
++  } ins(%in : tensor<32xf32>) outs(%out : tensor<f32>) {
++  ^bb0(%value: f32, %acc: f32):
++    %result = arith.maxnumf %value, %acc fastmath<ninf> : f32
++    linalg.yield %result : f32
++  } -> tensor<f32>
++  return %r : tensor<f32>
++}
++
++// CHECK-LABEL: func.func @maxnumf_nnan(
++// CHECK: %[[INIT:.*]] = arith.constant 0xFF800000 : f32
++// CHECK: linalg.fill ins(%[[INIT]] : f32)
++// CHECK: arith.maxnumf {{.*}} fastmath<nnan> : f32
++func.func @maxnumf_nnan(%in: tensor<32xf32>, %out: tensor<f32>) -> tensor<f32> {
++  %r = linalg.generic {
++    indexing_maps = [affine_map<(d0) -> (d0)>, affine_map<(d0) -> ()>],
++    iterator_types = ["reduction"]
++  } ins(%in : tensor<32xf32>) outs(%out : tensor<f32>) {
++  ^bb0(%value: f32, %acc: f32):
++    %result = arith.maxnumf %value, %acc fastmath<nnan> : f32
++    linalg.yield %result : f32
++  } -> tensor<f32>
++  return %r : tensor<f32>
++}
++
++// CHECK-LABEL: func.func @minnumf_ninf(
++// CHECK: %[[INIT:.*]] = arith.constant 0x7FC00000 : f32
++// CHECK: linalg.fill ins(%[[INIT]] : f32)
++// CHECK: arith.minnumf {{.*}} fastmath<ninf> : f32
++func.func @minnumf_ninf(%in: tensor<32xf32>, %out: tensor<f32>) -> tensor<f32> {
++  %r = linalg.generic {
++    indexing_maps = [affine_map<(d0) -> (d0)>, affine_map<(d0) -> ()>],
++    iterator_types = ["reduction"]
++  } ins(%in : tensor<32xf32>) outs(%out : tensor<f32>) {
++  ^bb0(%value: f32, %acc: f32):
++    %result = arith.minnumf %value, %acc fastmath<ninf> : f32
++    linalg.yield %result : f32
++  } -> tensor<f32>
++  return %r : tensor<f32>
++}
++
++// CHECK-LABEL: func.func @minnumf_nnan(
++// CHECK: %[[INIT:.*]] = arith.constant 0x7F800000 : f32
++// CHECK: linalg.fill ins(%[[INIT]] : f32)
++// CHECK: arith.minnumf {{.*}} fastmath<nnan> : f32
++func.func @minnumf_nnan(%in: tensor<32xf32>, %out: tensor<f32>) -> tensor<f32> {
++  %r = linalg.generic {
++    indexing_maps = [affine_map<(d0) -> (d0)>, affine_map<(d0) -> ()>],
++    iterator_types = ["reduction"]
++  } ins(%in : tensor<32xf32>) outs(%out : tensor<f32>) {
++  ^bb0(%value: f32, %acc: f32):
++    %result = arith.minnumf %value, %acc fastmath<nnan> : f32
++    linalg.yield %result : f32
++  } -> tensor<f32>
++  return %r : tensor<f32>
++}
++
++// CHECK-LABEL: func.func @maxnumf_nnan_ninf
++// CHECK: %[[MAX_INIT:.*]] = arith.constant -3.40282347E+38 : f32
++// CHECK: linalg.fill ins(%[[MAX_INIT]] : f32)
++// CHECK: arith.maxnumf {{.*}} fastmath<nnan,ninf> : f32
++func.func @maxnumf_nnan_ninf(%in: tensor<32xf32>, %out: tensor<f32>) -> tensor<f32> {
++  %r = linalg.generic {
++    indexing_maps = [affine_map<(d0) -> (d0)>, affine_map<(d0) -> ()>],
++    iterator_types = ["reduction"]
++  } ins(%in : tensor<32xf32>) outs(%out : tensor<f32>) {
++  ^bb0(%value: f32, %acc: f32):
++    %max = arith.maxnumf %value, %acc fastmath<nnan,ninf> : f32
++    linalg.yield %max : f32
++  } -> tensor<f32>
++  return %r : tensor<f32>
++}
++
++// CHECK-LABEL: func.func @minnumf_nnan_ninf
++// CHECK: %[[MIN_INIT:.*]] = arith.constant 3.40282347E+38 : f32
++// CHECK: linalg.fill ins(%[[MIN_INIT]] : f32)
++// CHECK: arith.minnumf {{.*}} fastmath<nnan,ninf> : f32
++func.func @minnumf_nnan_ninf(%in: tensor<32xf32>, %out: tensor<f32>) -> tensor<f32> {
++  %r = linalg.generic {
++    indexing_maps = [affine_map<(d0) -> (d0)>, affine_map<(d0) -> ()>],
++    iterator_types = ["reduction"]
++  } ins(%in : tensor<32xf32>) outs(%out : tensor<f32>) {
++  ^bb0(%value: f32, %acc: f32):
++    %min = arith.minnumf %value, %acc fastmath<nnan,ninf> : f32
++    linalg.yield %min : f32
++  } -> tensor<f32>
++  return %r : tensor<f32>
++}
++
++module attributes {transform.with_named_sequence} {
++  transform.named_sequence @__transform_main(%root: !transform.any_op {transform.readonly}) {
++    %ops = transform.structured.match ops{["linalg.generic"]} in %root : (!transform.any_op) -> !transform.any_op
++    %split:4 = transform.structured.split_reduction %ops <split_factor = 4, insert_split_dimension = 0, inner_parallel>
++      : (!transform.any_op) -> (!transform.any_op, !transform.any_op, !transform.any_op, !transform.any_op)
++    transform.yield
++  }
++}

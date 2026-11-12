@@ -1,0 +1,44 @@
+The fp128 runtime only special-cases __wasm32__; on emscripten-wasm64 it
+falls through to the x86/ARM ABI wrappers and hits an #error. Use
+__wasm__ so wasm64 takes the same path as wasm32 (emscripten's
+compiler-rt provides the __*tf2 helpers).
+
+diff -ru a/src/libasr/runtime/lfortran_float128.c b/src/libasr/runtime/lfortran_float128.c
+--- a/src/libasr/runtime/lfortran_float128.c	2026-10-27 09:14:22
++++ b/src/libasr/runtime/lfortran_float128.c	2026-10-27 09:14:22
+@@ -460,7 +460,7 @@
+ /* Struct-ABI implementations. The public __*tf2 entry points that LLVM calls
+  * are defined per platform further down, because LLVM passes their operands
+  * with the native fp128 calling convention rather than as a 16-byte struct. */
+-#if !defined(__wasm32__)
++#if !defined(__wasm__)
+ int __eqtf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) == 0 ? 0 : 1; }
+ int __netf2_lf_impl   (lf_float128 a, lf_float128 b) { return f128_cmp_internal(a,b) != 0 ? 1 : 0; }
+ int __lttf2_lf_impl   (lf_float128 a, lf_float128 b) { int c=f128_cmp_internal(a,b); return c>=2?1:c; }
+@@ -1673,7 +1673,7 @@
+  * The conversions are pure memcpy, so no fp128 arithmetic is generated here
+  * and these wrappers cannot recurse into themselves.
+  * ======================================================================== */
+-#if !defined(__aarch64__) && !defined(__wasm32__)
++#if !defined(__aarch64__) && !defined(__wasm__)
+ 
+ #if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
+ typedef double lf_f128_abi __attribute__((vector_size(16)));
+@@ -1736,7 +1736,7 @@
+  * byval C structs. Keep the portable implementation struct-based internally,
+  * but export the compiler-rt symbols with the ABI LLVM expects.
+  * ======================================================================== */
+-#if defined(__wasm32__) && !defined(__EMSCRIPTEN__)
++#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+ 
+ #define LF_WASM_TF2_ATTR __attribute__((weak))
+ 
+@@ -1879,7 +1879,7 @@
+  * macOS asm symbol mangling: leading underscore required.
+  * Linux/ELF: no leading underscore.
+  * ======================================================================== */
+-#if defined(__aarch64__) && !defined(__wasm32__)
++#if defined(__aarch64__) && !defined(__wasm__)
+ 
+ #if defined(__APPLE__)
+ #  define _LF_SYM(n) "_" #n

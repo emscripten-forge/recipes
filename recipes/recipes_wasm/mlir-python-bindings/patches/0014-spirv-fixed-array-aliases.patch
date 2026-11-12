@@ -1,0 +1,87 @@
+Subject: [PATCH] [mlir][SPIRV] Unify compatible fixed and runtime array aliases
+Downstream LLVM 23 backport from the validated browser SDK.
+Only identical layouts modulo the array extent are unified; the
+existing runtime-array view remains canonical. No upstream PR yet.
+
+diff --git a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp b/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
+--- a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
++++ b/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
+@@ -58,10 +58,8 @@
+   return aliasedResources;
+ }
+
+-/// Returns the element type if the given `type` is a runtime array resource:
+-/// `!spirv.ptr<!spirv.struct<!spirv.rtarray<...>>>`. Returns null type
+-/// otherwise.
+-static Type getRuntimeArrayElementType(Type type) {
++/// Returns the element type of a fixed-size or runtime array resource.
++static Type getArrayElementType(Type type) {
+   auto ptrType = dyn_cast<spirv::PointerType>(type);
+   if (!ptrType)
+     return {};
+@@ -72,8 +70,11 @@
+
+   auto rtArrayType =
+       dyn_cast<spirv::RuntimeArrayType>(structType.getElementType(0));
+-  if (!rtArrayType)
++  if (!rtArrayType) {
++    if (auto arrayType = dyn_cast<spirv::ArrayType>(structType.getElementType(0)))
++      return arrayType.getElementType();
+     return {};
++  }
+
+   return rtArrayType.getElementType();
+ }
+@@ -270,7 +271,7 @@
+   // Collect the element types for all resources in the current set.
+   SmallVector<spirv::SPIRVType> elementTypes;
+   for (spirv::GlobalVariableOp resource : resources) {
+-    Type elementType = getRuntimeArrayElementType(resource.getType());
++    Type elementType = getArrayElementType(resource.getType());
+     if (!elementType)
+       return; // Unexpected resource variable type.
+
+@@ -284,6 +285,43 @@
+   std::optional<int> index = deduceCanonicalResource(elementTypes);
+   if (!index)
+     return;
++
++  bool hasFixedArray = llvm::any_of(resources, [](auto resource) {
++    auto ptr = cast<spirv::PointerType>(resource.getType());
++    return isa<spirv::ArrayType>(
++        cast<spirv::StructType>(ptr.getPointeeType()).getElementType(0));
++  });
++  if (hasFixedArray) {
++    index = std::nullopt;
++    Type canonicalType;
++    for (auto indexedResource : llvm::enumerate(resources)) {
++      auto resource = indexedResource.value();
++      auto ptr = cast<spirv::PointerType>(resource.getType());
++      auto structure = cast<spirv::StructType>(ptr.getPointeeType());
++      if (auto array =
++              dyn_cast<spirv::ArrayType>(structure.getElementType(0))) {
++        SmallVector<spirv::StructType::OffsetInfo> offsets;
++        if (structure.hasOffset())
++          offsets.push_back(structure.getMemberOffset(0));
++        SmallVector<spirv::StructType::MemberDecorationInfo> memberDecorations;
++        structure.getMemberDecorations(memberDecorations);
++        SmallVector<spirv::StructType::StructDecorationInfo> structDecorations;
++        structure.getStructDecorations(structDecorations);
++        structure = spirv::StructType::get(
++            {spirv::RuntimeArrayType::get(array.getElementType(),
++                                          array.getArrayStride())},
++            offsets, memberDecorations, structDecorations);
++        ptr = spirv::PointerType::get(structure, ptr.getStorageClass());
++      } else {
++        index = indexedResource.index();
++      }
++      if (canonicalType && canonicalType != ptr)
++        return;
++      canonicalType = ptr;
++    }
++    if (!index)
++      return;
++  }
+
+   // Update internal data structures for later use.
+   resourceMap[descriptor].assign(resources.begin(), resources.end());

@@ -23,9 +23,21 @@ source:
   - patches/0008-single-threaded-helpers.patch
   # Handle rank-zero descriptors when converting MemRefs back to NumPy.
   - patches/0009-ranked-memref-zero-dim.patch
+  # Backport the finite min/max identities merged in LLVM #232257.
+  - patches/0010-finite-minmax-identities.patch
+  # Support aliased vector stores (LLVM #232185, including review follow-up).
+  - patches/0011-spirv-aliased-vector-stores.patch
+  # Preserve native TableGen overrides in the installed SDK (LLVM #189918).
+  - patches/0012-cmake-tablegen-overrides.patch
+  # Keep erfc approximation constants finite for WGSL (LLVM #239507).
+  - patches/0013-erfc-finite-bound.patch
+  # Unify compatible fixed/runtime array views from WebGPU dispatches.
+  - patches/0014-spirv-fixed-array-aliases.patch
+  # Preserve scalar writes and alias access permissions (LLVM #239584).
+  - patches/0015-spirv-webgpu-scalar-storage.patch
 
 build:
-  number: 6
+  number: 9
 
 outputs:
 - staging:
@@ -93,6 +105,7 @@ outputs:
     requirements:
       build:
       - cmake
+      - llvm-tblgen ==${{ version }}
   # libc++ can retain unused pthread symbols from LLVM's deferred std::async.
   - script: generic-testing --allow-pthread
     requirements:

@@ -1,0 +1,28 @@
+The in-browser cell executor hard-codes wasm32: on emscripten-wasm64 the
+per-cell side modules must also be wasm64 (memory64) to be dlopen-able.
+
+diff -ru a/src/libasr/codegen/evaluator.cpp b/src/libasr/codegen/evaluator.cpp
+--- a/src/libasr/codegen/evaluator.cpp	2026-10-27 09:18:57
++++ b/src/libasr/codegen/evaluator.cpp	2026-10-27 09:18:57
+@@ -1157,7 +1157,11 @@
+         for (llvm::GlobalVariable &g : mod->globals()) qualify(g);
+     }
+ 
++#if defined(__wasm64__)
++    const std::string triple = "wasm64-unknown-emscripten";
++#else
+     const std::string triple = "wasm32-unknown-emscripten";
++#endif
+     std::string err;
+ #if LLVM_VERSION_MAJOR >= 21
+     const llvm::Target *Target = llvm::TargetRegistry::lookupTarget(llvm::Triple(triple), err);
+@@ -1197,6 +1201,9 @@
+ 
+     std::vector<const char *> LinkerArgs = {
+         "wasm-ld", "-shared",
++#if defined(__wasm64__)
++        "-mwasm64",
++#endif
+         "--import-memory", "--experimental-pic", "--stack-first", "--allow-undefined",
+         objFile.c_str(), "-o", wasmFile.c_str()
+     };

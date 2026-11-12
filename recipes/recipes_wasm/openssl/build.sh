@@ -6,10 +6,15 @@ export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS"
 export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
 
 
+# The generic "gcc" target makes BN_ULONG a 32-bit unsigned int (BN_LLONG).
+# On wasm64 (LP64), linux-generic64 gives a 64-bit BN_ULONG (unsigned long),
+# which is what the Rust openssl / openssl-sys crates expect there.
 if [[ "$target_platform" == "emscripten-wasm32" ]]; then
     MEM_FLAGS=""
+    OPENSSL_TARGET="gcc"
 elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
     MEM_FLAGS="-m64 -sMEMORY64=1"
+    OPENSSL_TARGET="linux-generic64"
 else
     echo "Unsupported target_platform: $target_platform"
     exit 1
@@ -25,7 +30,7 @@ ls -l $BUILD_PREFIX/bin
 
 
 
-CFLAGS="-fPIC -fvisibility=hidden $MEM_FLAGS" emconfigure ./Configure gcc \
+CFLAGS="-fPIC -fvisibility=hidden $MEM_FLAGS" emconfigure ./Configure $OPENSSL_TARGET \
       no-shared \
       no-dso \
       no-asm \

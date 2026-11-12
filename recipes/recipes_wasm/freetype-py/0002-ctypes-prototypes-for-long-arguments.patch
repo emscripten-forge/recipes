@@ -1,0 +1,66 @@
+--- a/freetype/raw.py
++++ b/freetype/raw.py
+@@ -341,3 +341,63 @@
+ FT_Vector_Unit                 = _lib.FT_Vector_Unit
+ 
+ # Wholesale import ends
++
++# Prototypes for the functions with FT_Long / FT_ULong / FT_Fixed / FT_Pos
++# (C long, 64-bit on LP64 targets such as wasm64) arguments or return values,
++# for the ones returning pointers, and for the ones that freetype-py calls with
++# a plain 0 for a pointer argument (a NULL origin / coordinate array). Without
++# them, ctypes passes Python ints as C int and expects an int result: that
++# only works where long and pointers are 32-bit, and on wasm it traps, because
++# the call signature must match exactly.
++def _prototype(name, restype, argtypes):
++    func = globals().get(name)
++    if func is not None:
++        func.restype = restype
++        func.argtypes = argtypes
++
++_P = c_void_p
++for _name, _restype, _argtypes in [
++    ('FT_New_Face',             FT_Error, [_P, c_char_p, FT_Long, _P]),
++    ('FT_New_Memory_Face',      FT_Error, [_P, _P, FT_Long, FT_Long, _P]),
++    ('FT_Open_Face',            FT_Error, [_P, _P, FT_Long, _P]),
++    ('FT_Set_Char_Size',        FT_Error, [_P, FT_F26Dot6, FT_F26Dot6, FT_UInt, FT_UInt]),
++    ('FT_Load_Char',            FT_Error, [_P, FT_ULong, FT_Int32]),
++    ('FT_Get_Char_Index',       FT_UInt,  [_P, FT_ULong]),
++    ('FT_Get_First_Char',       FT_ULong, [_P, _P]),
++    ('FT_Get_Next_Char',        FT_ULong, [_P, FT_ULong, _P]),
++    ('FT_Get_CMap_Language_ID', FT_ULong, [_P]),
++    ('FT_Get_CMap_Format',      FT_Long,  [_P]),
++    ('FT_Get_Track_Kerning',    FT_Error, [_P, FT_Fixed, FT_Int, _P]),
++    ('FT_Get_Sfnt_Table',       _P,       [_P, c_int]),
++    ('FT_Outline_Embolden',     FT_Error, [_P, FT_Pos]),
++    ('FT_Outline_EmboldenXY',   FT_Error, [_P, FT_Pos, FT_Pos]),
++    ('FT_Outline_Translate',    None,     [_P, FT_Pos, FT_Pos]),
++    ('FT_Stroker_Set',          None,     [_P, FT_Fixed, c_int, c_int, FT_Fixed]),
++    ('FT_Glyph_To_Bitmap',      FT_Error, [_P, c_int, _P, c_ubyte]),
++    ('FT_Glyph_Stroke',         FT_Error, [_P, _P, c_ubyte]),
++    ('FT_Glyph_StrokeBorder',   FT_Error, [_P, _P, c_ubyte, c_ubyte]),
++    ('FT_Get_Var_Blend_Coordinates',  FT_Error, [_P, FT_UInt, _P]),
++    ('FT_Get_Var_Design_Coordinates', FT_Error, [_P, FT_UInt, _P]),
++    ('FT_Set_Var_Blend_Coordinates',  FT_Error, [_P, FT_UInt, _P]),
++    ('FT_Set_Var_Design_Coordinates', FT_Error, [_P, FT_UInt, _P]),
++    ('FT_MulDiv',               FT_Long,  [FT_Long, FT_Long, FT_Long]),
++    ('FT_MulFix',               FT_Long,  [FT_Long, FT_Long]),
++    ('FT_DivFix',               FT_Long,  [FT_Long, FT_Long]),
++    ('FT_RoundFix',             FT_Fixed, [FT_Fixed]),
++    ('FT_CeilFix',              FT_Fixed, [FT_Fixed]),
++    ('FT_FloorFix',             FT_Fixed, [FT_Fixed]),
++    ('FT_Sin',                  FT_Fixed, [FT_Angle]),
++    ('FT_Cos',                  FT_Fixed, [FT_Angle]),
++    ('FT_Tan',                  FT_Fixed, [FT_Angle]),
++    ('FT_Atan2',                FT_Angle, [FT_Fixed, FT_Fixed]),
++    ('FT_Angle_Diff',           FT_Angle, [FT_Angle, FT_Angle]),
++    ('FT_Vector_Unit',          None,     [_P, FT_Angle]),
++    ('FT_Vector_Rotate',        None,     [_P, FT_Angle]),
++    ('FT_Vector_Length',        FT_Fixed, [_P]),
++    ('FT_Vector_From_Polar',    None,     [_P, FT_Fixed, FT_Angle]),
++    # upstream sets FT_Face_GetVariantsOfChar.argtypes a second time where
++    # FT_Face_GetCharsOfVariant's were meant
++    ('FT_Face_GetCharsOfVariant', POINTER(FT_UInt32), [FT_Face, FT_ULong]),
++]:
++    _prototype(_name, _restype, _argtypes)
++del _name, _restype, _argtypes, _P

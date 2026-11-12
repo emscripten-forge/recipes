@@ -1,0 +1,72 @@
+emscripten-forge: libpython is linked as a static library into different main
+modules (pyjs, xeus-python, ...): declare the JS library dependencies of the
+trampoline setup and fall back to the JS trampoline instead of failing at
+startup: _PyRuntime is set via a KEEPALIVE C function instead of the
+exported __PyRuntime symbol (main modules other than python.js do not export it).
+The trampoline pointer is also kept in a static: a second Py_Initialize resets
+_PyRuntime (pystate.c), which would fall back to the JS trampoline.
+
+diff --git a/Python/emscripten_trampoline.c b/Python/emscripten_trampoline.c
+index 1833311..312c5a1 100644
+--- a/Python/emscripten_trampoline.c
++++ b/Python/emscripten_trampoline.c
+@@ -4,6 +4,9 @@
+ #include <Python.h>
+ #include "pycore_runtime.h"         // _PyRuntime
+ 
++// emscripten-forge: make sure the JS library functions used below are linked
++EM_JS_DEPS(_PyEM_trampoline_deps, "$addFunction,$addOnPreRun");
++
+ // We use the _PyRuntime.emscripten_trampoline field to store a function pointer
+ // for a wasm-gc based trampoline if it works. Otherwise fall back to JS
+ // trampoline. The JS trampoline breaks stack switching but every runtime that
+@@ -88,12 +91,35 @@ function getPyEMTrampolinePtr() {
+ // _PyRuntimeState.emscripten_trampoline from JS startup code that runs every
+ // time, whether we are restoring a snapshot or not.
+ addOnPreRun(function setEmscriptenTrampoline() {
+-    const ptr = getPyEMTrampolinePtr();
+-    const offset = HEAP32[__PyEM_EMSCRIPTEN_TRAMPOLINE_OFFSET / 4];
+-    HEAP32[(__PyRuntime + offset) / 4] = ptr;
++    // emscripten-forge: libpython is a static library linked into different
++    // main modules (pyjs, xeus-python, ...) which do not export _PyRuntime
++    // (upstream relies on -sEXPORTED_FUNCTIONS=__PyRuntime of python.js).
++    // Set the field via a KEEPALIVE C function (always a wasm export) and
++    // keep the JS trampoline (field stays 0) instead of failing at startup.
++    try {
++        const ptr = getPyEMTrampolinePtr();
++        if (ptr) {
++            wasmExports["_PyEM_SetTrampoline"](ptr);
++        }
++    } catch (e) {
++        console.warn("python: could not set up the wasm-gc call trampoline, using the JS trampoline", e);
++    }
+ });
+ );
+ 
++// emscripten-forge: also kept outside of _PyRuntime, a second Py_Initialize
++// (after Py_FinalizeEx) resets _PyRuntime to its initial values (pystate.c),
++// ie. would fall back to the JS trampoline
++static TrampolineFunc _PyEM_trampoline = 0;
++
++// emscripten-forge: called from the JS startup code above
++EMSCRIPTEN_KEEPALIVE void
++_PyEM_SetTrampoline(TrampolineFunc trampoline)
++{
++    _PyEM_trampoline = trampoline;
++    _PyRuntime.emscripten_trampoline = trampoline;
++}
++
+ PyObject*
+ _PyEM_TrampolineCall(PyCFunctionWithKeywords func,
+                      PyObject* self,
+@@ -101,6 +127,10 @@ _PyEM_TrampolineCall(PyCFunctionWithKeywords func,
+                      PyObject* kw)
+ {
+     TrampolineFunc trampoline = _PyRuntime.emscripten_trampoline;
++    if (trampoline == 0) {
++        // emscripten-forge: see _PyEM_trampoline
++        trampoline = _PyRuntime.emscripten_trampoline = _PyEM_trampoline;
++    }
+     if (trampoline == 0) {
+         return _PyEM_TrampolineCall_JS(func, self, args, kw);
+     }

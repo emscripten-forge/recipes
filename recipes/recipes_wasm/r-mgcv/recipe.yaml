@@ -1,0 +1,69 @@
+context:
+  name: mgcv
+  version: 1.9-5
+
+package:
+  name: r-${{ name }}
+  version: ${{ version | replace('-', '_') }}
+
+source:
+  url:
+  - https://cran.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cloud.r-project.org/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://cran.r-project.org/src/contrib/Archive/${{ name }}/${{ name }}_${{ version }}.tar.gz
+  sha256: d079c68e500708de4df79692e83493636004915dc6689cd7350e226291abd992
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  - r-nlme
+  - r-matrix
+  host:
+  - r-base ==${{ r_base }}
+  - libblas-static
+  - liblapack-static
+  - libflang-rt-static
+  - r-nlme
+  - r-matrix
+  run:
+  - r-nlme
+  - r-matrix
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+
+about:
+  homepage: https://CRAN.R-project.org/package=mgcv
+  license: GPL-2.0-or-later
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/GPL-2
+  license_family: GPL2
+  summary: Mixed GAM Computation Vehicle with Automatic Smoothness Estimation
+  description: |
+    Generalized additive (mixed) models, some of their extensions and other
+    generalized ridge regression with multiple smoothing parameter estimation by
+    (Restricted) Marginal Likelihood, Generalized Cross Validation and similar,
+    or using iterated nested Laplace approximation for fully Bayesian inference.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
+  - anutosh491

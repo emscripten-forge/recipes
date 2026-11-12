@@ -1,0 +1,68 @@
+context:
+  name: casa_formats_io
+  version: 0.3.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9b71132c4f3c3ee6e6fc0eaa1138ec14940197c364cdc267fa248fbccbf1a069
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - python
+  - pip
+  - setuptools
+  - setuptools_scm
+  - numpy >=1.21
+  host:
+  - python-dev
+  - numpy >=1.21
+  run:
+  - python
+  - numpy >=1.21
+  - dask-core >=2.0
+  - astropy-base >=4.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_casa_formats_io.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: http://casa-formats-io.readthedocs.org
+  summary: Dask-based reader for CASA data
+  description: |
+    casa-formats-io
+    ---------------
+
+    A small package implementing I/O for CASA data formats - see https://casa-formats-io.readthedocs.io for more details.
+
+    While developing this package, we made use of the https://github.com/casacore/casacore package to better understand
+    the file format and have re-used some of the data class names. Therefore, since some parts of casa-formats-io may
+    be considered translations of casacore into Python, we license casa-formats-io under the same LGPL license as casacore.
+
+
+    casa-formats-io supports python versions >=3.9.
+  license: LGPL-2.0-only
+  license_file:
+  - LICENSE

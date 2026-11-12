@@ -1,0 +1,75 @@
+context:
+  name: pyjpegls
+  version: 1.5.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d0fe09dfb7f75ce78e3b1e0519912a42f1827d68bbc3609652f4f8743c956025
+  patches:
+  # CharLS' __EMSCRIPTEN__ code path assumes a 32 bit size_t
+  - patches/0001-charls-wasm64-size_t.patch
+# the sdist does not ship the license file
+- url: https://raw.githubusercontent.com/pydicom/pyjpegls/v${{ version }}/license.txt
+  sha256: 31d11ddd5cfd55534951f4cfb3540ae9596f29b60cacc8d879d601109d92d5ef
+  file_name: license.txt
+
+build:
+  number: 0
+  # builds the bundled CharLS sources into the extension
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/tests/**'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - cython
+  - numpy >=2
+  host:
+  - python-dev
+  - numpy
+  run:
+  - python
+  - numpy >=2.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pyjpegls.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/pydicom/pyjpegls
+  repository: https://github.com/pydicom/pyjpegls
+  license: MIT
+  license_file: license.txt
+  summary: JPEG-LS for Python via CharLS C++ Library
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

@@ -1,0 +1,125 @@
+context:
+  version: 0.11.1
+  name: pyb2d3
+
+source:
+- url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
+  sha256: 50b56338b1ade7659d36283a68f57f128916c31ebd4dc6478d1c4a2753273a7f
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: pyb2d3
+    version: ${{ version }}
+
+  build:
+    script: build.sh
+    files:
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+
+  requirements:
+    build:
+    - ${{ compiler("cxx") }}
+    - cross-python_${{ target_platform }}
+    - cmake >=4.0
+    - ninja
+    - numpy
+    - nanobind <2.10.2
+    - scikit-build-core
+    - python
+    - pip
+    host:
+    - python-dev
+    - numpy
+    # variant pin 3.1.1: pyb2d3 0.11 does not build against the box2d 3.2 API
+    - box2d-static
+    run:
+    - numpy
+    - python
+
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_pyb2d3.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: pyb2d3-sandbox
+    version: ${{ version }}
+  build:
+    # pure-python noarch package: install with the native build python
+    # (cross-python cannot be activated for target_platform=noarch)
+    noarch: python
+    script: python -m pip install companion_packages/pyb2d3_sandbox --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+  requirements:
+    build:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    host:
+    - python
+    run:
+    - python
+    - pyb2d3 >=${{ version }}
+  tests:
+  - package_contents:
+      site_packages:
+      - pyb2d3_sandbox/frontend_base.py
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: pyb2d3-sandbox-ipycanvas
+    version: ${{ version }}
+  build:
+    noarch: python
+    script: python -m pip install companion_packages/pyb2d3_sandbox_ipycanvas --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+  requirements:
+    build:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    host:
+    - python
+    run:
+    - python
+    - ipycanvas >=0.14.2
+    - pyb2d3 >=${{ version }}
+    - pyb2d3-sandbox >=${{ version }}
+    - ipyevents
+  tests:
+  - package_contents:
+      site_packages:
+      - pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
+  - script: target_platform=${{ host_platform }} generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: python bindings for box2d v3, a 2D physics engine
+  homepage: https://github.com/DerThorsten/pyb2d3
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

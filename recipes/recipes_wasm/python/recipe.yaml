@@ -3,7 +3,7 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 5
+  build_number: 8
   abi_tag: cp${{ ver2nd }}
 
 build:
@@ -14,13 +14,30 @@ source:
 - url: https://www.python.org/ftp/python/${{ version }}/Python-${{ version }}.tar.xz
   sha256: a97d5549e9ad81fe17159ed02c68774ad5d266c72f8d9a0b5a9c371fe85d902b
   patches:
-  - patches/0006-Use-emcc-for-emscripten_trampoline_inner.wasm.patch
-  - patches/0007-Compat-for-missing-builtin_wasm_test_function_pointer_signature.patch
   - patches/0009-wasm_assets-allow-sysconfig-data-path-for-cross.patch
   #  - patches/0008-Disable-HACL-SIMD-for-Emscripten.patch
   # - patches/0010-blake2-undef-HACL-SIMD-macros-for-wasm.patch
   - patches/0011-disable-uuid-generate-time-safe-on-emscripten.patch
   - patches/0012-hacl_no_simd_for_wasm.patch
+  # Call trampoline (Python/emscripten_trampoline.c): CPython calls C functions
+  # (PyCFunction, descriptor getters / setters, ...) through a trampoline. The
+  # JS fallback trampoline puts a JS frame on the stack, which breaks JSPI stack
+  # switching (e.g. pyjs.run_sync: "trying to suspend JS frames"), so the
+  # wasm-gc trampoline module must be used:
+  #   - wasm32: upstream Python/emscripten_trampoline_inner.c (clang -mgc)
+  #   - wasm64: emscripten_trampoline_inner_wasm64.c (this recipe, compiled
+  #     like upstream with -target wasm64-unknown-unknown, see build.sh), because
+  #       * clang (still LLVM 24) lowers __builtin_wasm_test_function_pointer_signature
+  #         to a table.get with an i32 index, invalid for the table64 of wasm64:
+  #         the signature test (table.get + ref.test) is inline asm instead
+  #       * functions returning a C int have a different wasm type than
+  #         pointers on wasm64 ((i64...) -> i32), CPython calls those through
+  #         the trampoline too (e.g. descr_set_trampoline_call)
+  #     Once LLVM handles table64 there, the builtin can replace the inline asm.
+  # Tested by the python-dev test (node + browser): the wasm-gc trampoline must
+  # be used wherever the runtime supports wasm-gc.
+  - patches/0016-backport-gh-145037-emscripten-trampoline-emcc-4.0.19.patch
+  - patches/0017-emscripten-trampoline-robust-setup.patch
   # only when target_platform is emscripten-wasm32
   - if: target_platform == "emscripten-wasm32"
     then:
@@ -174,6 +191,8 @@ outputs:
         - '**/*.pyc'
         - "**/*.a"
         - "**/*.h"
+        - '**/pkgconfig/**'
+        - '**/*.pc'
 
       python:
         skip_pyc_compilation:
@@ -190,6 +209,7 @@ outputs:
       - script:
         - test ! -f $PREFIX/lib/libpython${{ver2}}.a
         - test ! -f $PREFIX/include/python${{ver2}}/Python.h
+        - test ! -f $PREFIX/lib/pkgconfig/python-${{ver2}}.pc
         - test -f $PREFIX/lib/python${{ver2}}/enum.py
         - test -f $PREFIX/lib/python${{ver2}}/ast.py
         - generic-testing
@@ -201,12 +221,26 @@ outputs:
   - package:
       name: python-dev
       version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "Packaging pkg-config files"
+      files:
+        include:
+          - lib/pkgconfig/**
     requirements:
       run:
       - ${{pin_subpackage('python', lower_bound='x.x.x', upper_bound='x.x.x')}}
       - ${{pin_subpackage('libpython-static', lower_bound='x.x.x', upper_bound='x.x.x')}}
+      - ca-certificates
 
     tests:
+      - package_contents:
+          files:
+          - lib/pkgconfig/python-${{ver2}}.pc
+          - lib/pkgconfig/python-${{ver2}}-embed.pc
+          - lib/pkgconfig/python3.pc
+          - lib/pkgconfig/python3-embed.pc
       - script:
         - test -f $PREFIX/include/python${{ver2}}/Python.h
         - test -f $PREFIX/lib/libpython${{ver2}}.a
@@ -220,13 +254,18 @@ outputs:
           - make
           - python=${{ver2}}
           - nodejs
+          - playwright
+          - playwright-python
         files:
           recipe:
           - build_tests.sh
           - test_main.cpp
           - node_test_wrapper.js
+          - python_tests.mjs
+          - browser_test.html
+          - browser_test.mjs
+          - browser_test.py
 
-    
 about:
   license: Python-2.0
   license_file: LICENSE
@@ -244,7 +283,3 @@ about:
 extra:
   recipe-maintainers:
   - DerThorsten
-  ci:
-    platforms:
-      emscripten-wasm32: true
-      emscripten-wasm64: true

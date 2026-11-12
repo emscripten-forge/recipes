@@ -1,0 +1,58 @@
+context:
+  name: arpack-static
+  version: 3.9.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/opencollab/arpack-ng/archive/${{ version }}.tar.gz
+  sha256: f6641deb07fa69165b7815de9008af3ea47eb39b2bb97521fbf74c97aba6e844
+
+build:
+  number: 2
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  # - ${{ compiler('fortran') }}
+  # Patched llvm + flang to support common symbols
+  - llvm-toolchain_${{ target_platform }}
+  - cmake
+  - make
+  host:
+  - libblas-static
+  - liblapack-static
+  - libflang-rt-static
+  run:
+  - ${{pin_compatible("libblas-static", lower_bound="x.x", upper_bound="x.x") }}
+  - ${{pin_compatible("liblapack-static", lower_bound="x.x", upper_bound="x.x") }}
+  - ${{pin_compatible("libflang-rt-static", lower_bound="x.x", upper_bound="x.x") }}
+
+tests:
+- package_contents:
+    files:
+    - include/arpack/arpack.hpp
+    - lib/libarpack.a
+- script: test.sh
+  requirements:
+    build:
+    - llvm-toolchain_${{ target_platform }}
+    - generic-testing # Needs the patched llvm-readobj + llvm.so
+
+about:
+  homepage: https://github.com/opencollab/arpack-ng
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: Solution of large scale eigenvalue problems
+  description: |
+    ARPACK-NG is a collection of Fortran77 subroutines designed to solve
+    large scale eigenvalue problems. It implements the Implicitly Restarted
+    Arnoldi Method (IRAM) for standard and generalized eigenvalue problems.
+  repository: https://github.com/opencollab/arpack-ng
+
+extra:
+  recipe-maintainers:
+  - wolfv
+  - IsabelParedes

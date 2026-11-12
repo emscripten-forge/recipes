@@ -1,0 +1,77 @@
+context:
+  name: regions
+  version: '0.13'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.org/packages/source/r/regions/regions-${{ version }}.tar.gz
+  sha256: 4026a02bbdb84b7e4f61cdebb436d3889147d725d9b15db93cd9f7c54567e25c
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+
+  files:
+    exclude:
+    - '**/tests/**'
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  - setuptools
+  - setuptools_scm >=8.0
+  - cython
+  - extension-helpers
+  - numpy
+  host:
+  - python-dev
+  - numpy
+  run:
+  - python
+  - numpy
+  - astropy >=6.0
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_regions.py
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://astropy-regions.readthedocs.io
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.rst
+  summary: Astropy coordinated package for region handling
+  description: |
+    Regions is a package for region handling based on Astropy. The
+    eventual goal is to merge this package into the Astropy core
+    package.
+
+extra:
+  recipe-maintainers:
+  - astrofrog
+  - bsipocz
+  - mwcraig
