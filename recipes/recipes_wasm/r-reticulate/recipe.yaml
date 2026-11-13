@@ -1,0 +1,92 @@
+context:
+  name: reticulate
+  version: 1.46.0
+
+package:
+  name: r-${{ name }}
+  version: ${{ version }}
+
+source:
+  git: https://github.com/DerThorsten/reticulate.git
+  branch: web-reticulate-py314
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-r-base ==${{ r_base }}
+  - r-matrix
+  - r-rcpp >=1.0.7
+  - r-rcpptoml
+  - r-here
+  - r-jsonlite
+  - r-png
+  - r-rappdirs
+  - r-rlang
+  - r-withr
+  host:
+  - r-base ==${{ r_base }}
+  - r-matrix
+  - r-rcpp >=1.0.7
+  - r-rcpptoml
+  - r-here
+  - r-jsonlite
+  - r-png
+  - r-rappdirs
+  - r-rlang
+  - r-withr
+  - python-dev
+  - numpy
+  run:
+  - r-base ==${{ r_base }}
+  - r-py ==${{ r_base }}
+  - r-matrix
+  - r-rcpp >=1.0.7
+  - r-rcpptoml
+  - r-here
+  - r-jsonlite
+  - r-png
+  - r-rappdirs
+  - r-rlang
+  - r-withr
+  - python
+  - numpy
+  - r-main-module-abi * *static_libpython*
+  run_constraints:
+  - xeus-r >= 0.11.2
+
+tests:
+- package_contents:
+    lib:
+    - R/library/${{ name }}/libs/${{ name }}.so
+- script:
+  - run_r_test --rpy test_${{ name }}.R
+  - generic-testing
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+    - generic-testing
+    run:
+    - r-py ==${{ r_base }}
+
+about:
+  homepage: https://github.com/rstudio/reticulate
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: APACHE
+  summary: Interface to 'Python'
+  description: |
+    Interface to 'Python' modules, classes, and functions. When calling into
+    'Python', R data types are automatically converted to their equivalent
+    'Python' types. When values are returned from 'Python' to R they are
+    converted back to R types. Compatible with all versions of 'Python' >= 2.7.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

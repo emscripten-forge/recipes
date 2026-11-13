@@ -1,0 +1,16 @@
+--- a/cmake/OpenCVFindLibsPerf.cmake
++++ b/cmake/OpenCVFindLibsPerf.cmake
+@@ -137,6 +137,13 @@
+   endif()
+ endif()
+ if(HAVE_EIGEN)
++  if(TARGET Eigen3::Eigen AND NOT EIGEN_INCLUDE_PATH)
++    get_target_property(EIGEN_INCLUDE_PATH Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
++  endif()
++  # Eigen 5 moved its version macros out of Macros.h.
++  if(EXISTS "${EIGEN_INCLUDE_PATH}/Eigen/Version")
++    ocv_parse_header("${EIGEN_INCLUDE_PATH}/Eigen/Version" EIGEN_VERSION_LINES EIGEN_WORLD_VERSION EIGEN_MAJOR_VERSION EIGEN_MINOR_VERSION)
++  endif()
+   if(EIGEN_INCLUDE_PATH AND EXISTS "${EIGEN_INCLUDE_PATH}")
+     ocv_include_directories(SYSTEM ${EIGEN_INCLUDE_PATH})
+   endif()

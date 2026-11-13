@@ -8,6 +8,7 @@ emconfigure ./configure \
     --enable-static \
     --prefix="${PREFIX}" \
     --with-boost="${PREFIX}" \
+    --without-boost-unit-test-framework \
     M4RI_CFLAGS="-I${PREFIX}/include" \
     M4RI_LIBS="-L${PREFIX}/lib -lm4ri" \
     CFLAGS="${CFLAGS:-}" \

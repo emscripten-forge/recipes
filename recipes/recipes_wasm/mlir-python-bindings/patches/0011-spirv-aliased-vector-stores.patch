@@ -1,8 +1,7 @@
-Subject: [PATCH] [mlir][spirv] Unify aliased vector stores
-Upstream: https://github.com/llvm/llvm-project/pull/232185 (unmerged)
-
-Backport of 06733a8ffc8442aab7555c74587e3a9c9d8fc677 with the
-review follow-up: split the first store and add negative cases.
+Subject: [PATCH] [mlir][SPIRV] Handle vector stores when unifying aliased resources
+Upstream: https://github.com/llvm/llvm-project/pull/232185 (merged)
+Commit: ee27f8971fe7bcfda6c8f5389ebc87969e9cdc87
+Backport to LLVM/MLIR 23.1.2, including final review changes.
 
 diff --git a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp b/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
 --- a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp
@@ -67,7 +66,7 @@ diff --git a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp b/ml
 +      firstStore->setDiscardableAttrs(storeOp->getDiscardableAttrDictionary());
 +      for (unsigned i = 1; i < ratio; ++i) {
 +        Value part = getPart(i);
-+        auto indices = llvm::to_vector(acOp.getIndices());
++        SmallVector<Value> indices = llvm::to_vector(acOp.getIndices());
 +        Type indexType = indices.back().getType();
 +        auto offset = spirv::ConstantOp::create(
 +            rewriter, loc, indexType, rewriter.getIntegerAttr(indexType, i));
@@ -75,7 +74,7 @@ diff --git a/mlir/lib/Dialect/SPIRV/Transforms/UnifyAliasedResourcePass.cpp b/ml
 +                                               indices.back(), offset);
 +        Value ptr = spirv::AccessChainOp::create(rewriter, loc,
 +                                                 acOp.getBasePtr(), indices);
-+        auto alignment = storeOp.getAlignmentAttr();
++        IntegerAttr alignment = storeOp.getAlignmentAttr();
 +        if (alignment)
 +          alignment = rewriter.getI32IntegerAttr(
 +              llvm::commonAlignment(llvm::Align(alignment.getInt()), i * bytes)

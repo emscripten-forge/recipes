@@ -1,0 +1,66 @@
+context:
+  name: GenomicRanges
+  version: 1.64.0
+
+package:
+  name: bioconductor-${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://www.bioconductor.org/packages/release/bioc/src/contrib/${{ name }}_${{ version }}.tar.gz
+  - https://bioarchive.galaxyproject.org/${{ name }}_${{ version }}.tar.gz
+  - https://depot.galaxyproject.org/software/bioconductor-${{ name|lower }}/bioconductor-${{ name|lower }}_${{ version }}_src_all.tar.gz
+  sha256: 09fee555b60be2f54c8fa35b0a2238fea9a1b96dea24e9a8c52166b61d44f776
+
+build:
+  number: 0
+  skip: ${{ r_base >= '4.6.0' }}
+  noarch: generic # Pure R package, but not noarch on bioconda yet
+  script: $R CMD INSTALL $R_ARGS .
+
+requirements:
+  build:
+  - cross-r-base ==${{ r_base }}
+  - ${{ compiler('c') }}
+  - bioconductor-biocgenerics
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-seqinfo
+  host:
+  - r-base ==${{ r_base }}
+  - bioconductor-biocgenerics
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-seqinfo
+  run:
+  - bioconductor-biocgenerics
+  - bioconductor-iranges
+  - bioconductor-s4vectors
+  - bioconductor-seqinfo
+
+tests:
+- package_contents:
+    files:
+    - lib/R/library/${{ name }}/R/${{ name }}*
+- script:
+  - run_r_test test_${{ name }}.R
+  files:
+    recipe:
+    - test_${{ name }}.R
+  requirements:
+    build:
+    - r-wasm-tester
+
+about:
+  homepage: https://bioconductor.org/packages/${{ name }}
+  repository: https://github.com/Bioconductor/${{ name }}
+  license: Artistic-2.0
+  license_file:
+  - ${{ PREFIX }}/lib/R/share/licenses/Artistic-2.0
+  summary: Representation and manipulation of genomic intervals
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
+  - IsabelParedes

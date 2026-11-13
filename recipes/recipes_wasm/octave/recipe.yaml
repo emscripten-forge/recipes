@@ -1,0 +1,94 @@
+context:
+  name: octave
+  version: 11.3.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url:
+  - https://ftp.gnu.org/gnu/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  - https://ftpmirror.gnu.org/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: cb589feb3cef84d134854683718c9c13e0b471ea916d0761be7a8c4e261a32d1
+  patches:
+  - patches/0001-Replace-exceptions-with-wasm-exceptions.patch
+  - patches/0002-Disable-threads.patch
+  - patches/0003-Enable-shared-libs.patch
+  - patches/0004-Fix-locale-platform.patch
+  - patches/0005-Install-.wasm-files.patch
+  - patches/0006-Avoid-hard-coding-prefix-path-in-main-modules.patch
+  - patches/0007-Set-Fortran-char-len-to-size_t.patch
+
+build:
+  number: 2
+  string: h${{ hash }}_${{ build_number }}
+  files:
+    exclude:
+    - '**/tests/**'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - llvm-toolchain_${{ target_platform }}
+  - make
+  - automake
+  - libtool>=2.5.4
+  - pkg-config
+  - grep
+  - sed
+  - perl
+  - ghostscript
+  - bison
+  - gperf
+  # For cross tools
+  - gcc
+  - gxx
+  host:
+  - libflang-rt-static
+  - libblas-static
+  - liblapack-static
+  - arpack-static
+  - pcre2-static >=10.49
+  - freetype-static
+  - libfontconfig-static
+  - libbzip2-static
+  - libzlib-static
+  - rapidjson
+  - imagemagick-static <7
+  run_exports:
+  - ${{ pin_subpackage('octave', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    files:
+    - lib/octave/${{ version }}/liboctave.so
+    - lib/octave/${{ version }}/liboctinterp.so
+    - lib/octave/${{ version }}/liboctmex.so
+    - bin/octave-cli.wasm
+    - bin/wasm*-unknown-emscripten-mkoctfile
+    - bin/wasm*-unknown-emscripten-octave-config
+- script:
+  - node ${PREFIX}/bin/octave-cli --version
+  - node ${PREFIX}/bin/octave-cli --help
+  - node ${PREFIX}/bin/octave-cli --eval "A=[2,3;1,4]; b=[7,6]'; x=A\b; disp(x)"
+  - generic-testing
+  requirements:
+    build:
+    - nodejs
+    - generic-testing
+
+about:
+  homepage: https://www.gnu.org/software/octave/
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  documentation: https://www.gnu.org/software/octave/doc/interpreter/
+  summary: Scientific Programming Language
+  description: |
+    GNU Octave is a high-level language, primarily intended for numerical
+    computations.
+
+extra:
+  recipe-maintainers:
+  - IsabelParedes
