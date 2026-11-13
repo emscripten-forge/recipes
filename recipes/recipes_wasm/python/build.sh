@@ -247,6 +247,15 @@ cp "${PYBUILDDIR}/${SYSCONFIG_NAME}.py" "${SYSCONFIGDATA_DIR}/"
     -j"${CPU_COUNT}"
 
   cp "${LIB}" "${PREFIX}/lib/"
+
+  # pkg-config files are installed by libainstall upstream; we only want those
+  # files (not python-config / idle / pydoc / config leftovers from that target).
+  mkdir -p "${PREFIX}/lib/pkgconfig"
+  PC_SUFFIX="${PYMAJOR}.${PYMINOR}${CPYTHON_ABI_FLAGS}"
+  cp Misc/python.pc "${PREFIX}/lib/pkgconfig/python-${PC_SUFFIX}.pc"
+  cp Misc/python-embed.pc "${PREFIX}/lib/pkgconfig/python-${PC_SUFFIX}-embed.pc"
+  ln -sf "python-${PC_SUFFIX}.pc" "${PREFIX}/lib/pkgconfig/python3.pc"
+  ln -sf "python-${PC_SUFFIX}-embed.pc" "${PREFIX}/lib/pkgconfig/python3-embed.pc"
 )
 
 # ---------------------------------------------------------------------------

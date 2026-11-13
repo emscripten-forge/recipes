@@ -22,7 +22,7 @@ mkdir -p _build
 cd _build
 
 TARGET_PYTHON_SITE_PACKAGES="${PREFIX}/lib/python${PY_VER}/site-packages"
-TARGET_PYTHON_EXT_SUFFIX=".cpython-${PY_VER/./}-wasm32-emscripten.so"
+TARGET_PYTHON_EXT_SUFFIX=$("${PYTHON}" -c 'import sysconfig; print(sysconfig.get_config_var("EXT_SUFFIX"))')
 TARGET_PYTHON_LOADER_DIR="${TARGET_PYTHON_SITE_PACKAGES}/cv2/python-${PY_VER}"
 BUILD_PYTHON="${BUILD_PREFIX}/bin/python"
 TARGET_PYTHON_INCLUDE="${PREFIX}/include/python${PY_VER}"
@@ -127,7 +127,7 @@ cmake_args+=(
     -DWITH_ZLIB_NG=OFF
     -DWITH_CLP=OFF
     -DWITH_QUIRC=OFF
-    -DWITH_JASPER=ON
+    -DWITH_JASPER=OFF
     -DWITH_UNIFONT=OFF
     -DWITH_PROTOBUF=ON
     -DWITH_FLATBUFFERS=ON
@@ -147,6 +147,7 @@ cmake_args+=(
     -DBUILD_WEBP=OFF
     -DWITH_OPENJPEG=ON
     -DBUILD_OPENJPEG=OFF
+    -DOPJ_USE_THREAD=OFF
     -DWITH_IMGCODEC_GIF=ON
     -DWITH_IMGCODEC_HDR=ON
     -DWITH_IMGCODEC_PXM=ON
