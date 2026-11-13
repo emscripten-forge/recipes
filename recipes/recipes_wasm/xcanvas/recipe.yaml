@@ -1,40 +1,40 @@
 context:
-  version: 0.7.0
+  version: 0.8.0
 
 
 source:
   url: https://github.com/jupyter-xeus/xcanvas/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 586de0aa53369e8e0804242186f85081bda674314d861fca7f7320815c09a4c9
+  sha256: fa29aae0f500f9d72463f7dce58d258919ed8e429ea5b82f9c40b116b09525ab
 
 build:
-  number: 2
+  number: 0
 
 
 outputs:
-  - package:
-      name: xcanvas
-      version: ${{ version }}
+- package:
+    name: xcanvas
+    version: ${{ version }}
+  build:
+    script: build_pkg.sh
+  requirements:
     build:
-      script: build_pkg.sh
+    - ${{ compiler("cxx") }}
+    - cmake
+    - make
+    host:
+    - xproperty >=0.12.0,<0.13
+    - nlohmann_json
+    - xwidgets
+    run_exports:
+    - ${{ pin_subpackage("xcanvas", upper_bound="x.x") }}
+  tests:
+  - script:
+    - test -f $PREFIX/include/xcanvas/xcanvas.hpp
+    - test -f $PREFIX/lib/libxcanvas.so
+    - generic-testing
     requirements:
       build:
-      - ${{ compiler("cxx") }}
-      - cmake
-      - make
-      host:
-      - xproperty >=0.12.0,<0.13
-      - nlohmann_json
-      - xwidgets
-      run_exports:
-          - ${{ pin_subpackage("xcanvas", upper_bound="x.x") }}
-    tests:
-    - script:
-      - test -f $PREFIX/include/xcanvas/xcanvas.hpp
-      - test -f $PREFIX/lib/libxcanvas.so
       - generic-testing
-      requirements:
-        build:
-        - generic-testing
 
 
 about:
