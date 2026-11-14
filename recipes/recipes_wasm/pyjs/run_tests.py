@@ -1,7 +1,8 @@
 # Entry of the recipe test (pyjs_code_runner --async-main): runs the pyjs test
 # suite (tests/ of the source) without the parts that need the pyjs test
 # driver: the JS tests (ES modules imported over http) and the downloads of
-# /test-data/all_bytes.bin (a file the driver serves).
+# /test-data/all_bytes.bin (a file the driver serves). The npm package tests
+# (tests/npm) are not part of it.
 import sys
 from pathlib import Path
 
