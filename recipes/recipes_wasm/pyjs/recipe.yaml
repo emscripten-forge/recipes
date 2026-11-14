@@ -1,12 +1,11 @@
 context:
-  version: 4.1.0
+  version: 4.3.0
   name: pyjs
   build_number: 0
 
 source:
-  git: https://github.com/DerThorsten/pyjs/
-  rev: 0008af0
-
+  url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 3e441d66432450c726e1a89cea39c93aa58b363b738ddef55110085557223b99
 build:
   number: ${{ build_number }}
 
@@ -95,13 +94,14 @@ outputs:
   - script: |
       echo "install playwright"
       playwright install chromium
+      # run_tests.py (from the recipe) runs tests/ (from the source)
       echo "test in browser (main thread)"
       pyjs_code_runner run script \
           browser-main \
           --conda-env     $PREFIX \
-          --mount         $(pwd)/tests:/tests \
-          --script        main.py \
-          --work-dir      /tests \
+          --mount         $(pwd):/pyjs_tests \
+          --script        run_tests.py \
+          --work-dir      /pyjs_tests \
           --headless \
           --async-main \
           --no-cache
@@ -110,9 +110,9 @@ outputs:
       pyjs_code_runner run script \
           browser-worker \
           --conda-env     $PREFIX \
-          --mount         $(pwd)/tests:/tests \
-          --script        main.py \
-          --work-dir      /tests \
+          --mount         $(pwd):/pyjs_tests \
+          --script        run_tests.py \
+          --work-dir      /pyjs_tests \
           --headless \
           --async-main \
           --no-cache
@@ -129,6 +129,8 @@ outputs:
         
 
     files:
+      recipe:
+      - run_tests.py
       source:
       - tests/**/*
 
