@@ -24,6 +24,13 @@ def find_free_port():
 
 
 def main():
+    # run playwright install via subprocess
+    import subprocess
+    subprocess.run(["playwright", "install"], check=True)
+
+
+
+
     print("Running the main function")
     # get the conda env from the env var "PREFIX"
     prefix = os.environ["PREFIX"]
