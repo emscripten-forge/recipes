@@ -1,0 +1,71 @@
+Subject: [PATCH] [FX importer] Canonicalize prims.device_put
+
+Backport to the LLVM/MLIR 23.1.2 snapshot.
+
+diff --git a/python/torch_mlir/extras/fx_importer.py b/python/torch_mlir/extras/fx_importer.py
+--- a/python/torch_mlir/extras/fx_importer.py
++++ b/python/torch_mlir/extras/fx_importer.py
+@@ -2858,6 +2858,21 @@
+     return wrapper
+
+
++@register_canonicalize(torch.ops.prims.device_put.default)
++def prims_device_put_default(node: torch_fx.Node):
++    # Reuse the existing device-copy op without changing the tensor's dtype.
++    tensor = node.args[0]
++    tensor_meta = tensor.meta.get("tensor_meta") or tensor.meta["val"]
++    device = node.args[1] if len(node.args) > 1 else node.kwargs["device"]
++    non_blocking = (
++        node.args[2] if len(node.args) > 2 else node.kwargs.get("non_blocking", False)
++    )
++    node.target = torch.ops.aten.to.device
++    node.args = (tensor, device, tensor_meta.dtype)
++    node.kwargs = {"non_blocking": non_blocking, "copy": True}
++    return node
++
++
+ @register_canonicalize(torch.ops.aten.lift_fresh_copy.default)
+ def lift_fresh_copy_default(node: torch_fx.Node):
+     # replace lift_fresh_copy with clone op
+diff --git a/test/python/fx_importer/basic_test.py b/test/python/fx_importer/basic_test.py
+--- a/test/python/fx_importer/basic_test.py
++++ b/test/python/fx_importer/basic_test.py
+@@ -26,6 +26,38 @@
+     print("-" * len(f.__name__))
+     f()
+     print()
++
++
++@run
++# CHECK-LABEL: test_prims_device_put_default
++# CHECK-DAG: %[[DEVICE:.*]] = torch.constant.device "cpu"
++# CHECK-DAG: %[[DTYPE:.*]] = torch.constant.int 6
++# CHECK-DAG: %[[FALSE:.*]] = torch.constant.bool false
++# CHECK-DAG: %[[TRUE:.*]] = torch.constant.bool true
++# CHECK: torch.aten.to.device {{.*}}, %[[DEVICE]], %[[DTYPE]], %[[FALSE]], %[[TRUE]], {{.*}} : !torch.vtensor<[2,3],f32>
++def test_prims_device_put_default():
++    class Basic(nn.Module):
++        def forward(self, x):
++            return torch.ops.prims.device_put.default(x, torch.device("cpu"))
++
++    print(fx.export_and_import(Basic(), torch.randn(2, 3)))
++
++
++@run
++# CHECK-LABEL: test_prims_device_put_non_blocking
++# CHECK-DAG: %[[DEVICE:.*]] = torch.constant.device "cuda:1"
++# CHECK-DAG: %[[DTYPE:.*]] = torch.constant.int 4
++# CHECK-DAG: %[[NON_BLOCKING:.*]] = torch.constant.bool true
++# CHECK-DAG: %[[COPY:.*]] = torch.constant.bool true
++# CHECK: torch.aten.to.device {{.*}}, %[[DEVICE]], %[[DTYPE]], %[[NON_BLOCKING]], %[[COPY]], {{.*}} : !torch.vtensor<[2,3],si64>
++def test_prims_device_put_non_blocking():
++    class Basic(nn.Module):
++        def forward(self, x):
++            return torch.ops.prims.device_put.default(
++                x, torch.device("cuda:1"), non_blocking=True
++            )
++
++    print(fx.export_and_import(Basic(), torch.ones(2, 3, dtype=torch.int64)))
+
+
+ @run
