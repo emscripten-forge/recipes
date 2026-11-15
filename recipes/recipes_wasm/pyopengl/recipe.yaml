@@ -1,0 +1,64 @@
+context:
+  name: pyopengl
+  version: 3.1.10
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pyopengl-${{ version }}.tar.gz
+  sha256: c4a02d6866b54eb119c8e9b3fb04fa835a95ab802dd96607ab4cdb0012df8335
+  patches:
+  # platform plugin "emscripten": GL = WebGL2 from the main module (dlsym)
+  - patches/0001-emscripten-platform.patch
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . ${{ PIP_ARGS }}
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - pip
+  - setuptools
+  host:
+  - python-dev
+  run:
+  - python
+  # WebGL2 must be in the runtime (main module)
+  - pyjs >=4.3.0
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pyopengl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - numpy
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/mcfletch/pyopengl
+  license: BSD-3-Clause
+  license_file: license.txt
+  summary: Standard OpenGL bindings for Python
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

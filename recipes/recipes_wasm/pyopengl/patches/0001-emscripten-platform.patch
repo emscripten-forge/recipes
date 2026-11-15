@@ -1,0 +1,93 @@
+--- a/OpenGL/__init__.py
++++ b/OpenGL/__init__.py
+@@ -227,6 +227,8 @@
+ PlatformPlugin(
+     "xwayland", "OpenGL.platform.egl.EGLPlatform"
+ )  # xdg session type, but use egl even though normally you'd expect GLX
++# emscripten (browser): WebGL2 / GLES 3 from emscripten's GL in the main module
++PlatformPlugin("emscripten", "OpenGL.platform.emscripten.EmscriptenPlatform")
+
+
+ def setPlatform(key):
+--- /dev/null
++++ b/OpenGL/platform/emscripten.py
+@@ -0,0 +1,79 @@
++"""Emscripten (browser) platform: OpenGL ES 3 = WebGL2.
++
++The GL functions are implemented by emscripten (in JS) and live in the main
++module (e.g. the pyjs runtime, linked with -sMAX_WEBGL_VERSION=2), so they are
++looked up with dlsym on the main program (``ctypes.CDLL(None)``). A GL context
++is created by the application (SDL2, ``emscripten_webgl_create_context``, ...).
++"""
++import ctypes
++
++from OpenGL.platform import baseplatform
++
++
++class EmscriptenPlatform(baseplatform.BasePlatform):
++    """Emscripten platform: GL / GLES2 / GLES3 from the main module"""
++
++    # every function (also extensions) can be found with dlsym
++    EXTENSIONS_USE_BASE_FUNCTIONS = True
++    DEFAULT_FUNCTION_TYPE = staticmethod(ctypes.CFUNCTYPE)
++
++    @baseplatform.lazy_property
++    def GL(self):
++        return ctypes.CDLL(None)
++
++    @baseplatform.lazy_property
++    def GLES1(self):
++        return None
++
++    @baseplatform.lazy_property
++    def GLES2(self):
++        return self.GL
++
++    @baseplatform.lazy_property
++    def GLES3(self):
++        return self.GL
++
++    @baseplatform.lazy_property
++    def OpenGL(self):
++        return self.GL
++
++    @baseplatform.lazy_property
++    def GLU(self):
++        return None
++
++    @baseplatform.lazy_property
++    def GLUT(self):
++        return None
++
++    @baseplatform.lazy_property
++    def GLE(self):
++        return None
++
++    @baseplatform.lazy_property
++    def EGL(self):
++        return None
++
++    @baseplatform.lazy_property
++    def getExtensionProcedure(self):
++        get_proc_address = self.GL.emscripten_webgl_get_proc_address
++        get_proc_address.restype = ctypes.c_void_p
++        get_proc_address.argtypes = [ctypes.c_char_p]
++        return get_proc_address
++
++    @baseplatform.lazy_property
++    def GetCurrentContext(self):
++        # EMSCRIPTEN_WEBGL_CONTEXT_HANDLE (uintptr_t), 0 = no current context
++        get_current_context = self.GL.emscripten_webgl_get_current_context
++        get_current_context.restype = ctypes.c_size_t
++        get_current_context.argtypes = []
++        return get_current_context
++
++    def getGLUTFontPointer(self, constant):
++        """No GLUT in the browser"""
++        raise NotImplementedError("GLUT is not available on emscripten")
++
++    def safeGetError(self):
++        """glGetError, only with a current context"""
++        if self.GetCurrentContext():
++            return self.GL.glGetError()
++        return 0
