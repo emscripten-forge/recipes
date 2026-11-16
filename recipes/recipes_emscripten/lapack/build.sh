@@ -6,6 +6,7 @@ emcmake cmake -S . -B _build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCBLAS=ON \
     -DLAPACKE=OFF \
+    -DBUILD_DEPRECATED=ON \
     -DBUILD_TESTING=OFF \
     -DCMAKE_Fortran_PREPROCESS=yes \
     -DCMAKE_Fortran_COMPILER=$FC \

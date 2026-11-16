@@ -2,6 +2,10 @@ context:
   version: 3.12.1
   name: lapack
 
+recipe:
+  name: ${{ name }}
+  version: ${{ version }}
+
 source:
   url: https://github.com/Reference-LAPACK/${{ name }}/archive/v${{ version }}.tar.gz
   sha256: 2ca6407a001a474d4d4d35f3a61550156050c48016d949f0da0529c0aa052422
@@ -9,57 +13,64 @@ source:
   - patches/0001_Disable_fortran_compiler_check.patch
 
 build:
-  number: 4
-
-# TODO: Use cache output once it's not experimental
+  number: 5
 
 outputs:
-- package:
-    name: libblas
-    version: ${{ version }}
+
+# Staging output: builds BLAS, CBLAS and LAPACK once; each package output
+# below picks its own files out of the staged prefix.
+- staging:
+    name: lapack-build
   build:
-    files:
-    - lib/libblas.a
-    - lib/pkgconfig/blas.pc
+    script: build
   requirements:
     build:
     - ${{ compiler("c") }}
     - flang_${{ target_platform }}
     - ninja
+
+- package:
+    name: libblas
+    version: ${{ version }}
+  inherit: lapack-build
+  build:
+    files:
+    - lib/libblas.a
+    - lib/pkgconfig/blas.pc
   tests:
   - script: test -f $PREFIX/lib/libblas.a
 
 - package:
     name: libcblas
     version: ${{ version }}
+  inherit: lapack-build
   build:
     files:
     - lib/libcblas.a
     - lib/pkgconfig/cblas.pc
     - lib/cmake/cblas-${{ version }}/cblas*
-  requirements:
-    build:
-    - ${{ compiler("c") }}
-    - flang_${{ target_platform }}
-    - ninja
   tests:
   - script: test -f $PREFIX/lib/libcblas.a
 
 - package:
     name: liblapack
     version: ${{ version }}
+  inherit: lapack-build
   build:
     files:
     - lib/liblapack.a
     - lib/pkgconfig/lapack.pc
     - lib/cmake/lapack-${{ version }}/lapack*
-  requirements:
-    build:
-    - ${{ compiler("c") }}
-    - flang_${{ target_platform }}
-    - ninja
   tests:
   - script: test -f $PREFIX/lib/liblapack.a
+  # the routines LAPACK deprecated (built with BUILD_DEPRECATED=ON), which
+  # older Fortran code such as SLICOT still calls
+  - script:
+    - $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/bin/llvm-nm $PREFIX/lib/liblapack.a | grep -q " T dgeqpf_"
+    - $EMSCRIPTEN_FORGE_EMSDK_DIR/upstream/bin/llvm-nm $PREFIX/lib/liblapack.a | grep -q " T zgeqpf_"
+    requirements:
+      build:
+      - ${{ compiler("c") }}
 
 about:
   homepage: http://www.netlib.org/lapack

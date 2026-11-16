@@ -32,6 +32,15 @@ mkdir -p "$GLUE/lib" "$GLUE/include" "$GLUE/bin" "$STAMPS"
 
 EMSDK_LLVM_BIN="$(em-config LLVM_ROOT)"
 export NM="$EMSDK_LLVM_BIN/llvm-nm"
+
+# SLICOT (mb03od) calls DGEQPF, one of the routines LAPACK deprecated: it is
+# in liblapack from the lapack recipe's build 5 (BUILD_DEPRECATED=ON). The
+# programs are linked with undefined symbols allowed, so without it they
+# would only fail when rankqr & co. are called.
+if ! "$NM" --defined-only "$PREFIX/lib/liblapack.a" | grep -q " T dgeqpf_$"; then
+  echo "liblapack has no DGEQPF: it must be built with BUILD_DEPRECATED=ON (lapack build >= 5)" >&2
+  exit 1
+fi
 export AR=emar RANLIB=emranlib CC=emcc CXX=em++
 
 # The JVM's threads are pthreads, so the whole program is one shared-memory
