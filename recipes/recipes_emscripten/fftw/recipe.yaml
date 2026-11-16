@@ -1,0 +1,63 @@
+context:
+  name: fftw
+  version: 3.3.10
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://www.fftw.org/fftw-${{ version }}.tar.gz
+  sha256: 56c932549852cddcfafdab3820b0200c7742675be92179e59e6215b340e26467
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - gnuconfig
+    - make
+
+tests:
+  - package_contents:
+      include:
+        - fftw3.h
+      lib:
+        - libfftw3.a
+        - libfftw3f.a
+      files:
+        - lib/pkgconfig/fftw3.pc
+        - lib/pkgconfig/fftw3f.pc
+  # a double and a single precision transform, in a program without and one
+  # with pthreads (shared memory): the archives have no atomics or TLS
+  - script:
+      - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+      - emcc -O2 test_fftw.c $(pkg-config --cflags --libs fftw3 fftw3f) -lm -o test_fftw.js
+      - node test_fftw.js
+      - emcc -O2 -pthread test_fftw.c $(pkg-config --cflags --libs fftw3 fftw3f) -lm -o test_fftw_pthread.js
+      - node test_fftw_pthread.js
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - pkg-config
+    files:
+      recipe:
+        - test_fftw.c
+
+about:
+  homepage: https://www.fftw.org/
+  repository: https://github.com/FFTW/fftw3
+  license: GPL-2.0-or-later
+  license_file: COPYING
+  summary: The fastest Fourier transform in the west
+  description: |
+    FFTW computes discrete Fourier transforms (real and complex data, any
+    size, multi-dimensional) and related transforms. This package has the
+    static double (libfftw3) and single precision (libfftw3f) libraries,
+    without threads, so that they link into programs built with or without
+    pthreads.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

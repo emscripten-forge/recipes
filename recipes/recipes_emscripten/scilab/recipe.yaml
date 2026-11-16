@@ -1,0 +1,207 @@
+context:
+  version: "2026.1.0"
+  kit_version: "0.1.0"
+
+package:
+  name: scilab
+  version: ${{ version }}
+
+source:
+  - url: https://gitlab.com/scilab/scilab/-/archive/${{ version }}/scilab-${{ version }}.tar.gz
+    sha256: 85ccd285cb81805a86037f29fe0383ee021d1b5c2463fbd6a7a6dfc3904eb32c
+    patches:
+      # build: xlnt / arrow+parquet optional, configure checks that cannot
+      # run programs when cross-compiling, the target JVM's JNI flags
+      - patches/0001-build-cross-compile-for-emscripten.patch
+      # no dynamic loader: gateways, the JVM and FFTW are looked up in tables
+      # generated when the program is linked
+      - patches/0002-static-symbol-tables-instead-of-dlopen.patch
+      # the JVM (openjdk21) is linked in: its launcher's options, Linux
+      # class library, emscripten builds of Linux code paths
+      - patches/0003-jvm-options-and-linux-paths-for-emscripten.patch
+      # figures drawn with Java2D (SciRenderer's G2D renderer, as for the
+      # vectorial exports) when scilab.graphics.renderer=java2d: no OpenGL
+      - patches/0004-java2d-figure-canvas.patch
+      # fixes found while compiling with emscripten and flang
+      - patches/0005-emscripten-compile-fixes.patch
+      # libraries that are separate shared objects otherwise, in one static
+      # program: weak no-GUI stubs, no duplicate C++ class or strtod
+      - patches/0006-one-static-program.patch
+      # WebAssembly checks the type of indirect calls: Xcos blocks called
+      # with the number of arguments they take, cdf*, the ode examples and
+      # the GUI console's output with their own types
+      - patches/0007-indirect-call-types.patch
+      # matio 1.6 (matio-static): sparse indexes are unsigned since 1.5.18,
+      # which the release-level test missed
+      - patches/0008-matio-1.6-sparse-index-types.patch
+  # Java third parties (including the Scilab builds of jrosetta, flexdock,
+  # jgraphx, skinlf, jlatexmath, JoGL) and the help (JavaHelp jars, images)
+  # of the same version: only these files are used from it
+  - url: https://www.scilab.org/download/${{ version }}/scilab-${{ version }}.bin.x86_64-linux-gnu.tar.xz
+    sha256: 967727d6be507f13b52acb368e3fd401f0abecc29f2c920094cb3a99a040bdc9
+    target_directory: scilab-bin
+  # link scripts, Fortran driver, runtime glue, page loader
+  - url: https://github.com/wangyenshu/scilab-wasm-kit/archive/refs/tags/v${{ kit_version }}.tar.gz
+    sha256: ac8376dc037943eeecdff41028e1d358478d58e19e6eb5276439ac01b1bc96c3
+    target_directory: kit
+
+build:
+  number: 0
+  files:
+    exclude:
+      - share/scilab/modules/*/tests/**
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - make
+    - autoconf
+    - automake
+    - libtool >=2.5.4
+    - m4
+    - pkg-config
+    - gettext
+    - git
+    - findutils
+    - coreutils
+    - sed
+    - grep
+    - patch
+    - zip
+    - unzip
+    # (python3, for the kit's scripts, comes with the emscripten compiler)
+    # Scilab's Java code is compiled with the host JDK and Ant
+    - openjdk 21.*
+    - ant
+    # the macros are compiled by the WebAssembly scilab-cli, under node
+    # (worker threads with shared memory)
+    - nodejs >=24
+  host:
+    # OpenJDK 21 (Zero) with AWT/Swing on x11.wasm: libjvm & co, the JDK
+    # image, the launcher the program reuses
+    - openjdk21
+    - x11-wasm
+    - libffi-pthread
+    - libflang
+    - libblas
+    # with the deprecated routines (DGEQPF, called by SLICOT)
+    - liblapack
+    - arpack
+    - fftw
+    - hdf5-static
+    - matio-static
+    # KLU (sparse Jacobians of the SUNDIALS solvers) and UMFPACK, built
+    # with -pthread
+    - suitesparse-pthread
+    - rapidjson
+    - libxml2
+    - libxslt
+    - pcre2
+    - zlib
+    - libiconv
+    - libarchive
+    # libarchive's compressors
+    - zstd
+    - bzip2
+    - ncurses
+    - eigen
+  run:
+    # the page loads the JDK image of the openjdk21 package (the files in
+    # share/scilab-wasm link to share/openjdk21-wasm)
+    - openjdk21
+    # the terminfo database (share/terminfo), read by the console of
+    # scilab-cli and scilab-wasm-node -nw under node
+    - ncurses
+  ignore_run_exports:
+    # everything is linked statically into scilab.wasm / scilab-cli.wasm
+    from_package:
+      - libflang
+      - libblas
+      - liblapack
+      - arpack
+      - fftw
+      - hdf5-static
+      - matio-static
+      - suitesparse-pthread
+      - libxml2
+      - libxslt
+      - pcre2
+      - zlib
+      - libiconv
+      - libarchive
+      - zstd
+      - bzip2
+      - ncurses
+      - libffi-pthread
+      - x11-wasm
+
+tests:
+  - package_contents:
+      files:
+        - share/scilab-wasm/scilab.js
+        - share/scilab-wasm/scilab.wasm
+        - share/scilab-wasm/scilab-cli.js
+        - share/scilab-wasm/scilab-cli.wasm
+        - share/scilab-wasm/scilab-share.json
+        - share/scilab-wasm/scilab-share.data.gz
+        - share/scilab-wasm/openjdk21-jre.json
+        - share/scilab-wasm/scilab-web.js
+        - share/scilab-wasm/index.html
+        - share/scilab-wasm/coi-serviceworker.js
+        - share/scilab/etc/scilab.start
+        - share/scilab/etc/classpath.xml
+        - share/scilab/modules/core/macros/lib
+        - share/scilab/modules/elementary_functions/macros/lib
+        - share/scilab/modules/gui/jar/org.scilab.modules.gui.jar
+        - share/scilab/modules/xcos/jar/org.scilab.modules.xcos.jar
+        - share/scilab/modules/scirenderer/jar/scirenderer.jar
+        - share/scilab/modules/helptools/jar/scilab_en_US_help.jar
+        - share/scilab/thirdparty/jgraphx-*.jar
+        - share/licenses/scilab/THIRDPARTY.md
+  - script:
+      - bash test_scilab.sh
+    requirements:
+      build:
+        # the programs run Scilab's threads as worker threads sharing memory
+        - nodejs >=24
+    files:
+      recipe:
+        - test_scilab.sh
+        - tests/
+
+about:
+  homepage: https://www.scilab.org/
+  repository: https://gitlab.com/scilab/scilab
+  documentation: https://help.scilab.org/
+  summary: Scilab, with its Java desktop (console, SciNotes, graphics, Xcos), in the browser
+  description: |
+    Scilab 2026.1 compiled to WebAssembly: the interpreter and its modules
+    (C, C++ and Fortran) linked with OpenJDK 21 (the openjdk21 package: Zero
+    interpreter, AWT and Swing on x11.wasm) into one program, so that the
+    whole Java desktop runs in a web page: console, SciNotes, variable
+    browser, file browser, command history, help browser, graphic windows
+    (drawn with Java2D) with their editors and exports, uicontrols, and Xcos
+    with its palettes and simulation.
+
+    share/scilab-wasm holds the page: serve that directory over https or
+    from localhost and open index.html, or call Scilab.run() from
+    scilab-web.js in your own page. The page must be cross-origin isolated:
+    coi-serviceworker.js, next to it, arranges that when the server does
+    not send the headers.
+
+    Not available: compiling and loading code at run time (link, ilib_build,
+    toolboxes with gateways, Modelica blocks, Xcos code generation), Tcl/Tk,
+    external processes (unix_g, host), MPI, OpenGL; xlsx and parquet files.
+  license: GPL-2.0-only
+  license_file:
+    - scilab/COPYING
+    # the Java third parties (jars from the official build) and others
+    - scilab/ACKNOWLEDGEMENTS
+    - scilab/COPYING-BSD
+    - kit/LICENSE
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

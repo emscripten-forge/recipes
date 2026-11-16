@@ -1,0 +1,315 @@
+From: emscripten-forge
+Subject: [PATCH] Build: cross-compiling for emscripten
+
+xlnt and arrow/parquet become optional (--without-xlnt, --without-arrow).
+Configure checks that run programs get a branch for cross-compiling, the
+JoGL native library checks are skipped when cross-compiling, and the JNI
+flags of the target JVM can be given (JAVA_JNI_INCLUDE_TARGET,
+JAVA_JNI_LIBS_TARGET): the JDK configure finds only builds the Java code.
+---
+  scilab/configure.ac                    | 111 +++++++++++++++++++--------------
+  scilab/m4/compiler.m4                  |   4 +-
+  scilab/m4/eigen.m4                     |  11 +++-
+  scilab/m4/hdf5.m4                      |   9 ++-
+  scilab/m4/libarchive.m4                |   5 +-
+  scilab/modules/ast/Makefile.am         |   1 -
+  scilab/modules/spreadsheet/Makefile.am |  20 ++++--
+ 7 files changed, 105 insertions(+), 56 deletions(-)
+
+diff --git a/scilab/configure.ac b/scilab/configure.ac
+index 40aa5889..d80daa20 100644
+--- a/scilab/configure.ac
++++ b/scilab/configure.ac
+@@ -874,60 +874,68 @@ AC_HDF5()
+ 
+ #######################
+ ## XLNT LIBRARY (reading and writing xlsx files)
++## ARROW / PARQUET LIBRARIES (reading and writing parquet files)
++## Optional: without them, xlsx*/parquet* functions are not built.
+ #######################
+-if $WITH_DEVTOOLS; then # Scilab thirdparties
+-    XLNT_CFLAGS="-I$DEVTOOLS_INCDIR"
+-    XLNT_LDFLAGS="-L$DEVTOOLS_LIBDIR"
+-    XLNT_LIBS="-lxlnt"
+-else
+-    AC_RUN_LOG([$PKG_CONFIG --exists --print-errors xlnt]) || {
+-        AC_MSG_ERROR([cannot find pkg-config package for xlnt])
+-    }
+-    XLNT_CFLAGS=`$PKG_CONFIG --cflags xlnt`
+-    XLNT_LDFLAGS=`$PKG_CONFIG --libs-only-L xlnt`
+-    XLNT_LIBS=`$PKG_CONFIG --libs-only-l xlnt`
++AC_ARG_WITH(xlnt,
++    AS_HELP_STRING([--without-xlnt],[Disable the xlsx file functions (xlnt library)]))
++AC_ARG_WITH(arrow,
++    AS_HELP_STRING([--without-arrow],[Disable the parquet file functions (arrow and parquet libraries)]))
++WITH_XLNT=no
++if test "$with_xlnt" != no; then
++    if $WITH_DEVTOOLS; then # Scilab thirdparties
++        XLNT_CFLAGS="-I$DEVTOOLS_INCDIR"
++        XLNT_LDFLAGS="-L$DEVTOOLS_LIBDIR"
++        XLNT_LIBS="-lxlnt"
++    else
++        AC_RUN_LOG([$PKG_CONFIG --exists --print-errors xlnt]) || {
++            AC_MSG_ERROR([cannot find pkg-config package for xlnt (use --without-xlnt to disable the xlsx functions)])
++        }
++        XLNT_CFLAGS=`$PKG_CONFIG --cflags xlnt`
++        XLNT_LDFLAGS=`$PKG_CONFIG --libs-only-L xlnt`
++        XLNT_LIBS=`$PKG_CONFIG --libs-only-l xlnt`
++    fi
++    WITH_XLNT=yes
++    AC_DEFINE([WITH_XLNT], [], [With the xlnt library (xlsx files)])
+ fi
+ AC_SUBST(XLNT_CFLAGS)
+ AC_SUBST(XLNT_LDFLAGS)
+ AC_SUBST(XLNT_LIBS)
+-
+-#######################
+-## ARROW LIBRARY (reading and writing ARROW files)
+-#######################
+-if $WITH_DEVTOOLS; then # Scilab thirdparties
+-    ARROW_CFLAGS="-I$DEVTOOLS_INCDIR"
+-    ARROW_LDFLAGS="-L$DEVTOOLS_LIBDIR"
+-    ARROW_LIBS="-larrow"
+-else
+-    AC_RUN_LOG([$PKG_CONFIG --exists --print-errors arrow]) || {
+-        AC_MSG_ERROR([cannot find pkg-config package for arrow])
+-    }
+-    ARROW_CFLAGS=`$PKG_CONFIG --cflags arrow`
+-    ARROW_LDFLAGS=`$PKG_CONFIG --libs-only-L arrow`
+-    ARROW_LIBS=`$PKG_CONFIG --libs-only-l arrow`
++AM_CONDITIONAL(XLNT, test "$WITH_XLNT" = yes)
++
++WITH_ARROW=no
++if test "$with_arrow" != no; then
++    if $WITH_DEVTOOLS; then # Scilab thirdparties
++        ARROW_CFLAGS="-I$DEVTOOLS_INCDIR"
++        ARROW_LDFLAGS="-L$DEVTOOLS_LIBDIR"
++        ARROW_LIBS="-larrow"
++        PARQUET_CFLAGS="-I$DEVTOOLS_INCDIR"
++        PARQUET_LDFLAGS="-L$DEVTOOLS_LIBDIR"
++        PARQUET_LIBS="-lparquet"
++    else
++        AC_RUN_LOG([$PKG_CONFIG --exists --print-errors arrow]) || {
++            AC_MSG_ERROR([cannot find pkg-config package for arrow (use --without-arrow to disable the parquet functions)])
++        }
++        ARROW_CFLAGS=`$PKG_CONFIG --cflags arrow`
++        ARROW_LDFLAGS=`$PKG_CONFIG --libs-only-L arrow`
++        ARROW_LIBS=`$PKG_CONFIG --libs-only-l arrow`
++        AC_RUN_LOG([$PKG_CONFIG --exists --print-errors parquet]) || {
++            AC_MSG_ERROR([cannot find pkg-config package for parquet (use --without-arrow to disable the parquet functions)])
++        }
++        PARQUET_CFLAGS=`$PKG_CONFIG --cflags parquet`
++        PARQUET_LDFLAGS=`$PKG_CONFIG --libs-only-L parquet`
++        PARQUET_LIBS=`$PKG_CONFIG --libs-only-l parquet`
++    fi
++    WITH_ARROW=yes
++    AC_DEFINE([WITH_ARROW], [], [With the arrow and parquet libraries (parquet files)])
+ fi
+ AC_SUBST(ARROW_CFLAGS)
+ AC_SUBST(ARROW_LDFLAGS)
+ AC_SUBST(ARROW_LIBS)
+-
+-#######################
+-## PARQUET LIBRARY (reading and writing PARQUET files)
+-#######################
+-if $WITH_DEVTOOLS; then # Scilab thirdparties
+-    PARQUET_CFLAGS="-I$DEVTOOLS_INCDIR"
+-    PARQUET_LDFLAGS="-L$DEVTOOLS_LIBDIR"
+-    PARQUET_LIBS="-lparquet"
+-else
+-    AC_RUN_LOG([$PKG_CONFIG --exists --print-errors parquet]) || {
+-        AC_MSG_ERROR([cannot find pkg-config package for parquet])
+-    }
+-    PARQUET_CFLAGS=`$PKG_CONFIG --cflags parquet`
+-    PARQUET_LDFLAGS=`$PKG_CONFIG --libs-only-L parquet`
+-    PARQUET_LIBS=`$PKG_CONFIG --libs-only-l parquet`
+-fi
+ AC_SUBST(PARQUET_CFLAGS)
+ AC_SUBST(PARQUET_LDFLAGS)
+ AC_SUBST(PARQUET_LIBS)
++AM_CONDITIONAL(ARROW, test "$WITH_ARROW" = yes)
+ 
+ #################
+ ## scirenderer
+@@ -1019,6 +1027,17 @@ if test "$with_javasci" != no -o "$with_gui" != no -o "$enable_build_help" != no
+         JAVA_JNI_LIBS=$ac_java_jvm_jni_lib_flags
+         JAVA_JNI_LIBS_PRELOAD=$ac_java_jvm_ld_preload
+ 
++        if test "$cross_compiling" = yes; then
++            # The JDK found above only builds the Java code. The JVM of the
++            # target comes from the environment: JAVA_JNI_INCLUDE_TARGET and
++            # JAVA_JNI_LIBS_TARGET (empty when the program links it itself).
++            if test -n "$JAVA_JNI_INCLUDE_TARGET"; then
++                JAVA_JNI_INCLUDE="$JAVA_JNI_INCLUDE_TARGET"
++            fi
++            JAVA_JNI_LIBS="$JAVA_JNI_LIBS_TARGET"
++            JAVA_JNI_LIBS_PRELOAD=""
++        fi
++
+         AC_JAVA_CLASSPATH
+         JAVA_CLASSPATH=$ac_java_classpath
+         AC_JAVA_TOOLS
+@@ -1125,8 +1144,8 @@ if test "$with_javasci" != no -o "$with_gui" != no -o "$enable_build_help" != no
+                 JOGL2=$PACKAGE_JAR_FILE
+                 AC_SUBST(JOGL2)
+ 
+-                if test "$MACOSX" = 1; then
+-                   echo "Check of the presence of libjogl.jnilib and libjogl_awt.jnilib disabled under Mac OS X"
++                if test "$MACOSX" = 1 -o "$cross_compiling" = yes; then
++                   echo "Check of the presence of libjogl.jnilib and libjogl_awt.jnilib disabled under Mac OS X or when cross-compiling"
+                 else
+                    LDFLAGS_save=$LDFLAGS
+                    # Provide known paths where distribs/OS can store JNI libs
+@@ -1154,8 +1173,8 @@ interface for JOGL2 - or libGL (OpenGL library) are installed and if the version
+                 GLUEGEN2_RT=$PACKAGE_JAR_FILE
+                 AC_SUBST(GLUEGEN2_RT)
+ 
+-                if test "$MACOSX" = 1; then
+-                   echo "Check of the presence of libgluegen-rt.jnilib disabled under Mac OS X"
++                if test "$MACOSX" = 1 -o "$cross_compiling" = yes; then
++                   echo "Check of the presence of libgluegen-rt.jnilib disabled under Mac OS X or when cross-compiling"
+                 else
+                    LDFLAGS_save=$LDFLAGS
+                    # Provide known paths where distribs/OS can store JNI libs
+diff --git a/scilab/m4/compiler.m4 b/scilab/m4/compiler.m4
+index 344c6e70..52dc50d9 100644
+--- a/scilab/m4/compiler.m4
++++ b/scilab/m4/compiler.m4
+@@ -90,7 +90,7 @@ CFLAGS="$CFLAGS -fsanitize=address"
+ LDFLAGS="$LDFLAGS -fsanitize=address"
+ AC_MSG_CHECKING([whether the C compiler accepts -fsanitize=address])
+ AC_LANG_PUSH(C)
+-AC_RUN_IFELSE([AC_LANG_PROGRAM([[const char hw[] = "Hello, AddressSanitizer\n";]], [])], [AC_MSG_RESULT([yes]); asan_supported=yes], [AC_MSG_RESULT([no])])
++AC_RUN_IFELSE([AC_LANG_PROGRAM([[const char hw[] = "Hello, AddressSanitizer\n";]], [])], [AC_MSG_RESULT([yes]); asan_supported=yes], [AC_MSG_RESULT([no])], [AC_MSG_RESULT([no (cross-compiling)])])
+ AC_LANG_POP(C)
+ 
+ CFLAGS="$saved_CFLAGS"
+@@ -119,7 +119,7 @@ asan_supported=no
+ CFLAGS="$CFLAGS -fanalyzer"
+ AC_MSG_CHECKING([whether the C compiler accepts -fanalyzer])
+ AC_LANG_PUSH(C)
+-AC_RUN_IFELSE([AC_LANG_PROGRAM([[const char hw[] = "Hello, Analyzer\n";]], [])], [AC_MSG_RESULT([yes]); analyzer_supported=yes], [AC_MSG_RESULT([no])])
++AC_RUN_IFELSE([AC_LANG_PROGRAM([[const char hw[] = "Hello, Analyzer\n";]], [])], [AC_MSG_RESULT([yes]); analyzer_supported=yes], [AC_MSG_RESULT([no])], [AC_MSG_RESULT([no (cross-compiling)])])
+ AC_LANG_POP(C)
+ 
+ CFLAGS="$saved_CFLAGS"
+diff --git a/scilab/m4/eigen.m4 b/scilab/m4/eigen.m4
+index ee29ce13..5b216aa1 100644
+--- a/scilab/m4/eigen.m4
++++ b/scilab/m4/eigen.m4
+@@ -68,7 +68,16 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
+ #include "$PATH_TO_EIGEN/Eigen/Sparse"
+ ], [if (EIGEN_VERSION_AT_LEAST(3,3,2)) {return 0;}; return 1;])],
+     AC_MSG_RESULT([yes]),
+-    AC_MSG_ERROR([Version $CHK_EIGEN_WORLD.$CHK_EIGEN_MAJOR.$CHK_EIGEN_MINOR of Eigen expected (at least)]))
++    AC_MSG_ERROR([Version $CHK_EIGEN_WORLD.$CHK_EIGEN_MAJOR.$CHK_EIGEN_MINOR of Eigen expected (at least)]),
++    [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
++#include "$PATH_TO_EIGEN/Eigen/Sparse"
++], [
++#if !EIGEN_VERSION_AT_LEAST(3,3,2)
++#error too old
++#endif
++])],
++        AC_MSG_RESULT([yes]),
++        AC_MSG_ERROR([Version $CHK_EIGEN_WORLD.$CHK_EIGEN_MAJOR.$CHK_EIGEN_MINOR of Eigen expected (at least)]))])
+ CXXFLAGS=$ac_saved_cxxflags
+ 
+ AC_SUBST(EIGEN_CPPFLAGS)
+diff --git a/scilab/m4/hdf5.m4 b/scilab/m4/hdf5.m4
+index 8b0cea00..5914e89d 100644
+--- a/scilab/m4/hdf5.m4
++++ b/scilab/m4/hdf5.m4
+@@ -106,7 +106,14 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
+ #if H5_VERSION_GE(1,12,0) == 0
+ exit(1);
+ #endif
+-])], [hdf5_version_ok=yes], [AC_MSG_ERROR(hdf5 must be >= 1.12)])
++])], [hdf5_version_ok=yes], [AC_MSG_ERROR(hdf5 must be >= 1.12)],
++[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
++#include <H5public.h>
++],[
++#if H5_VERSION_GE(1,12,0) == 0
++#error too old
++#endif
++])], [hdf5_version_ok=yes], [AC_MSG_ERROR(hdf5 must be >= 1.12)])])
+ AC_MSG_RESULT($hdf5_version_ok)
+ 
+ dnl check if HDF5 is compiled with needed symbols
+diff --git a/scilab/m4/libarchive.m4 b/scilab/m4/libarchive.m4
+index 87b1e874..0e075413 100644
+--- a/scilab/m4/libarchive.m4
++++ b/scilab/m4/libarchive.m4
+@@ -56,7 +56,10 @@ int minor = (ARCHIVE_VERSION_NUMBER % 1000000) / 1000;
+ int rev = ARCHIVE_VERSION_NUMBER % 1000;
+ printf("%d.%d.%d\n", major, minor, rev);
+ return 0;
+-])], [ LIBARCHIVE_VERSION=$(./conftest$EXEEXT) ], [ AC_MSG_FAILURE("Unable to detect libarchive") ] )
++])], [ LIBARCHIVE_VERSION=$(./conftest$EXEEXT) ], [ AC_MSG_FAILURE("Unable to detect libarchive") ],
++[ AC_COMPUTE_INT([libarchive_version_number], [ARCHIVE_VERSION_NUMBER], [#include <archive.h>],
++                 [AC_MSG_FAILURE("Unable to detect libarchive")])
++  LIBARCHIVE_VERSION="$((libarchive_version_number / 1000000)).$((libarchive_version_number % 1000000 / 1000)).$((libarchive_version_number % 1000))" ] )
+ 
+ LIBARCHIVE_LIBS="$LIBS"
+ LIBARCHIVE_CFLAGS="$CFLAGS"
+diff --git a/scilab/modules/ast/Makefile.am b/scilab/modules/ast/Makefile.am
+index 79cee634..26b8073b 100644
+--- a/scilab/modules/ast/Makefile.am
++++ b/scilab/modules/ast/Makefile.am
+@@ -110,7 +110,6 @@ src/cpp/types/singlestruct.cpp \
+ src/cpp/types/sparse.cpp \
+ src/cpp/types/string.cpp \
+ src/cpp/types/struct.cpp \
+-src/cpp/types/test-types.cpp \
+ src/cpp/types/threadId.cpp \
+ src/cpp/types/tlist.cpp \
+ src/cpp/types/tostring_common.cpp \
+diff --git a/scilab/modules/spreadsheet/Makefile.am b/scilab/modules/spreadsheet/Makefile.am
+index ab7830e5..eb590851 100644
+--- a/scilab/modules/spreadsheet/Makefile.am
++++ b/scilab/modules/spreadsheet/Makefile.am
+@@ -14,14 +14,20 @@ SPREADSHEET_C_SOURCES = \
+     src/c/splitLine.c \
+     src/c/utftolatin.c
+ 
+-SPREADSHEET_CPP_SOURCES = \
++SPREADSHEET_CPP_SOURCES =
++if XLNT
++SPREADSHEET_CPP_SOURCES += \
+     src/cpp/xlsx_read.cpp \
+     src/cpp/xlsx_write.cpp \
+-    src/cpp/xlsx_metadata.cpp \
++    src/cpp/xlsx_metadata.cpp
++endif
++if ARROW
++SPREADSHEET_CPP_SOURCES += \
+     src/cpp/arrow_read.cpp \
+     src/cpp/arrow_write.cpp \
+     src/cpp/arrow_write_utils.cpp \
+     src/cpp/parquet_write.cpp
++endif
+ 
+ RIPOLE_SOURCES = \
+     src/c/ripole/olestream-unwrap.c \
+@@ -34,14 +40,20 @@ RIPOLE_SOURCES = \
+ 
+ GATEWAY_CXX_SOURCES = \
+     sci_gateway/cpp/sci_xls_read.cpp \
+-    sci_gateway/cpp/sci_xls_open.cpp \
++    sci_gateway/cpp/sci_xls_open.cpp
++if XLNT
++GATEWAY_CXX_SOURCES += \
+     sci_gateway/cpp/sci_isXlsx.cpp \
+     sci_gateway/cpp/sci_xlsxInfo.cpp \
+     sci_gateway/cpp/sci_xlsxRead.cpp \
+     sci_gateway/cpp/sci_xlsxSheet.cpp \
+-    sci_gateway/cpp/sci_xlsxWrite.cpp \
++    sci_gateway/cpp/sci_xlsxWrite.cpp
++endif
++if ARROW
++GATEWAY_CXX_SOURCES += \
+     sci_gateway/cpp/sci_parquetRead.cpp \
+     sci_gateway/cpp/sci_parquetWrite.cpp
++endif
+ 
+ libscispreadsheet_la_CPPFLAGS= \
+     -I$(srcdir)/includes/ \

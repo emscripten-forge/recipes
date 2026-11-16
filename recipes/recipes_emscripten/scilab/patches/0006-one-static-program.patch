@@ -1,0 +1,93 @@
+From: emscripten-forge
+Subject: [PATCH] Everything linked into one program: duplicate symbols
+
+A static build links libraries together that are separate shared
+libraries otherwise: the stubs of the no-GUI variants become weak (they
+are linked with the real functions), the console's wrapper of the Java
+class CallScilabBridge gets another C++ name than the gui module's, and
+the AST's dtoa.c keeps its strtod to itself (libc has one).
+---
+  scilab/modules/ast/src/c/types/dtoa.c               |  4 ++++
+  scilab/modules/console/src/jni/CallScilabBridge.hxx |  6 ++++++
+  scilab/modules/console/src/noconsole/noconsole.c    | 13 +++++++++++++
+  scilab/modules/graphics/src/nographics/nographics.c |  8 ++++++++
+ 4 files changed, 31 insertions(+)
+
+diff --git a/scilab/modules/ast/src/c/types/dtoa.c b/scilab/modules/ast/src/c/types/dtoa.c
+index 880f9efd..1236c3cc 100644
+--- a/scilab/modules/ast/src/c/types/dtoa.c
++++ b/scilab/modules/ast/src/c/types/dtoa.c
+@@ -1,3 +1,7 @@
++#ifdef __EMSCRIPTEN__
++/* linked statically with libc, which has a strtod (correctly rounded) of its own */
++#define strtod scilab_dtoa_strtod
++#endif
+ #define IEEE_8087
+ 
+ /****************************************************************
+diff --git a/scilab/modules/console/src/jni/CallScilabBridge.hxx b/scilab/modules/console/src/jni/CallScilabBridge.hxx
+index 2c05d7a0..602a7ee6 100644
+--- a/scilab/modules/console/src/jni/CallScilabBridge.hxx
++++ b/scilab/modules/console/src/jni/CallScilabBridge.hxx
+@@ -21,6 +21,12 @@ along with this program.
+ 
+ #ifndef __ORG_SCILAB_MODULES_GUI_BRIDGE_CALLSCILABBRIDGE__
+ #define __ORG_SCILAB_MODULES_GUI_BRIDGE_CALLSCILABBRIDGE__
++
++#ifdef __EMSCRIPTEN__
++/* The gui module has a wrapper class of the same name (other methods of
++ * the same Java class); everything is linked in one program there. */
++#define CallScilabBridge ConsoleCallScilabBridge
++#endif
+ #include <iostream>
+ #include <string>
+ #include <string.h>
+diff --git a/scilab/modules/console/src/noconsole/noconsole.c b/scilab/modules/console/src/noconsole/noconsole.c
+index d4895f28..62643b01 100644
+--- a/scilab/modules/console/src/noconsole/noconsole.c
++++ b/scilab/modules/console/src/noconsole/noconsole.c
+@@ -31,6 +31,19 @@
+ #include "scilines.h"
+ 
+ #ifndef __APPLE__
++#ifdef __EMSCRIPTEN__
++/* static build: these stubs and the GUI console's functions
++ * (libsciconsole) are linked together in the GUI program */
++#pragma weak ConsoleRead
++#pragma weak ConsolePrintf
++#pragma weak ClearConsolePart
++#pragma weak ClearConsole
++#pragma weak GetCharWithoutOutput
++#pragma weak PromptToHome
++#pragma weak SetConsolePrompt
++#pragma weak ConsoleIsWaitingForInput
++#pragma weak ScilabLinesUpdate
++#endif
+   /*--------------------------------------------------------------------------*/
+ char *ConsoleRead(void)
+ {
+diff --git a/scilab/modules/graphics/src/nographics/nographics.c b/scilab/modules/graphics/src/nographics/nographics.c
+index c753d202..7405b098 100644
+--- a/scilab/modules/graphics/src/nographics/nographics.c
++++ b/scilab/modules/graphics/src/nographics/nographics.c
+@@ -347,12 +347,20 @@ void setDoubleArraySingleValue(double dest[], double value, int nbElement)
+ }
+ 
+ /*--------------------------------------------------------------------------*/
++/* also defined in libscigraphic_objects-disable, which a static build
++ * links together with this library */
++#if defined(__GNUC__)
++__attribute__((weak))
++#endif
+ BOOL sciIsExistingFigure(int figNum)
+ {
+     return FALSE;
+ }
+ 
+ /*--------------------------------------------------------------------------*/
++#if defined(__GNUC__)
++__attribute__((weak))
++#endif
+ int createNewFigureWithAxes(void)
+ {
+     return 0;

@@ -1,0 +1,482 @@
+From: emscripten-forge
+Subject: [PATCH] Calls through function pointers with the callee's own type
+
+WebAssembly checks the type of every indirect call, where native calling
+conventions let a caller pass more arguments, or expect a result the
+callee does not return. scicos calls the computational functions of
+types 0, 1 and 10001 with as many arguments as they take (it passes all 50
+otherwise); the DCDFLIB routines, the ode/odedc/feval example functions and
+the GUI console's output function are called with their types.
+---
+  .../includes/differentialequationfunctions.hxx     |   8 +-
+  .../modules/differential_equations/src/c/arnol.c   |   4 +-
+  .../modules/differential_equations/src/c/arnol.h   |   2 +-
+  .../modules/differential_equations/src/c/feval.c   |   6 +-
+  .../modules/differential_equations/src/c/feval.h   |   4 +-
+  scilab/modules/scicos/src/c/scicos.c               | 210 +++++++++++++++++++++
+  scilab/modules/startup/src/cpp/scilab.cpp          |  17 ++
+  scilab/modules/statistics/src/c/CdfBase.c          |   8 +-
+ 8 files changed, 243 insertions(+), 16 deletions(-)
+
+diff --git a/scilab/modules/differential_equations/includes/differentialequationfunctions.hxx b/scilab/modules/differential_equations/includes/differentialequationfunctions.hxx
+index 5b5744cd..4e811fa5 100644
+--- a/scilab/modules/differential_equations/includes/differentialequationfunctions.hxx
++++ b/scilab/modules/differential_equations/includes/differentialequationfunctions.hxx
+@@ -44,7 +44,9 @@ extern "C"
+     void C2F(lcomp) (int*, double*, double*, double*);
+ 
+     // odedc
+-    typedef int(*odedc_f_t)(int*, int*, int*, double*, double*, double*);
++    /* the functions (fcd, ... and the linked ones) are subroutines: the
++     * types of calls through pointers must match in WebAssembly */
++    typedef void(*odedc_f_t)(int*, int*, int*, double*, double*, double*);
+     void C2F(fcd)   (int*, int*, int*, double*, double*, double*);
+     void C2F(fcd1)  (int*, int*, int*, double*, double*, double*);
+     void C2F(fexcd) (int*, int*, int*, double*, double*, double*);
+@@ -61,8 +63,8 @@ extern "C"
+     void C2F(int3dex)(double*, int*, double*);
+ 
+     // feval
+-    int C2F(parab)  (int*, double*, double*, double*, int*);
+-    int C2F(parabc) (int*, double*, double*, double*, int*);
++    void C2F(parab)  (int*, double*, double*, double*, int*);
++    void C2F(parabc) (int*, double*, double*, double*, int*);
+ 
+     // bvode
+     void C2F(cndg)  (int*, double*, double*);
+diff --git a/scilab/modules/differential_equations/src/c/arnol.c b/scilab/modules/differential_equations/src/c/arnol.c
+index 3f3cbaea..22015c94 100644
+--- a/scilab/modules/differential_equations/src/c/arnol.c
++++ b/scilab/modules/differential_equations/src/c/arnol.c
+@@ -20,7 +20,7 @@ double aa[6] = { 1., 1., 1., 1., 1., 1. };
+ /*--------------------------------------------------------------------------*/
+ /* used in fydottable.c */
+ /*--------------------------------------------------------------------------*/
+-int C2F(arnol)(int *neq, double *t, double *y,	double *ydot)
++void C2F(arnol)(int *neq, double *t, double *y,	double *ydot)
+ {
+     --ydot;
+     --y;
+@@ -28,8 +28,6 @@ int C2F(arnol)(int *neq, double *t, double *y,	double *ydot)
+     ydot[1] = aa[0] * cos(y[2]) + aa[1] * sin(y[3]);
+     ydot[2] = aa[2] * cos(y[3]) + aa[3] * sin(y[1]);
+     ydot[3] = aa[4] * cos(y[1]) + aa[5] * sin(y[2]);
+-
+-    return 0;
+ }
+ /*--------------------------------------------------------------------------*/
+ 
+diff --git a/scilab/modules/differential_equations/src/c/arnol.h b/scilab/modules/differential_equations/src/c/arnol.h
+index 2f16ee4a..f940f801 100644
+--- a/scilab/modules/differential_equations/src/c/arnol.h
++++ b/scilab/modules/differential_equations/src/c/arnol.h
+@@ -19,6 +19,6 @@
+ #include <math.h>
+ #include "machine.h"
+ 
+-int C2F(arnol)(int *neq, double *t, double *y,	double *ydot);
++void C2F(arnol)(int *neq, double *t, double *y,	double *ydot);
+ 
+ #endif /* !__ARNOL__ */
+diff --git a/scilab/modules/differential_equations/src/c/feval.c b/scilab/modules/differential_equations/src/c/feval.c
+index ba0ba79b..9feb4af2 100644
+--- a/scilab/modules/differential_equations/src/c/feval.c
++++ b/scilab/modules/differential_equations/src/c/feval.c
+@@ -16,7 +16,7 @@
+ /*--------------------------------------------------------------------------*/
+ #include "feval.h"
+ /*--------------------------------------------------------------------------*/
+-int C2F(parab)(int *nn, double *x1, double *x2, double *xres, int *itype)
++void C2F(parab)(int *nn, double *x1, double *x2, double *xres, int *itype)
+ {
+     /* Computing 2nd power */
+     if (*nn == 1)
+@@ -29,10 +29,9 @@ int C2F(parab)(int *nn, double *x1, double *x2, double *xres, int *itype)
+         xres[0] = ((*x1) * (*x1)) + ((*x2) * (*x2));
+         *itype = 0;
+     }
+-    return 0;
+ }
+ /*--------------------------------------------------------------------------*/
+-int C2F(parabc)(int *nn, double *x1, double *x2, double *xres, int *itype)
++void C2F(parabc)(int *nn, double *x1, double *x2, double *xres, int *itype)
+ {
+     /* a version which returns complex numbers */
+     /* Computing 2nd power */
+@@ -48,7 +47,6 @@ int C2F(parabc)(int *nn, double *x1, double *x2, double *xres, int *itype)
+         xres[1] = *x1 + *x2;
+         *itype = 1;
+     }
+-    return 0;
+ }
+ /*--------------------------------------------------------------------------*/
+ 
+diff --git a/scilab/modules/differential_equations/src/c/feval.h b/scilab/modules/differential_equations/src/c/feval.h
+index 48c2c07f..837293b7 100644
+--- a/scilab/modules/differential_equations/src/c/feval.h
++++ b/scilab/modules/differential_equations/src/c/feval.h
+@@ -18,8 +18,8 @@
+ /*--------------------------------------------------------------------------*/
+ #include "machine.h"
+ /*--------------------------------------------------------------------------*/
+-int C2F(parab)(int *nn, double *x1, double *x2, double *xres, int *itype);
+-int C2F(parabc)(int *nn, double *x1, double *x2, double *xres, int *itype);
++void C2F(parab)(int *nn, double *x1, double *x2, double *xres, int *itype);
++void C2F(parabc)(int *nn, double *x1, double *x2, double *xres, int *itype);
+ /*--------------------------------------------------------------------------*/
+ #endif /* __FEVAL_H__ */
+ /*--------------------------------------------------------------------------*/
+diff --git a/scilab/modules/scicos/src/c/scicos.c b/scilab/modules/scicos/src/c/scicos.c
+index e73c23ab..03698e19 100644
+--- a/scilab/modules/scicos/src/c/scicos.c
++++ b/scilab/modules/scicos/src/c/scicos.c
+@@ -80,6 +80,128 @@
+ #include "setPrecisionFPU.h"
+ #endif
+ 
++#ifdef __EMSCRIPTEN__
++#include <stdint.h>
++#include <emscripten.h>
++/*
++ * WebAssembly checks the type of every indirect call. The computational
++ * functions are called here with as many arguments as they take: C passes
++ * all those of their type (types 0, 1 and 10001: as many pointer/size pairs
++ * as the block could have ports, 2 and 10002: the zero-crossing surfaces
++ * too), the extra ones being ignored by native calling conventions, and a
++ * type 4 block can be "trash" (a type 0 function), which takes the place of
++ * the scopes in simulations without windows.
++ */
++EM_JS(int, scicos_wasm_nparams, (voidf f), {
++    var fn = wasmTable.get(f);
++    return fn ? fn.length : -1;
++});
++
++static int scicos_nparams(voidf f)
++{
++    /* function pointer -> number of parameters (asked to JS once) */
++    enum { SCW_N = 1024 };
++    static voidf keys[SCW_N];
++    static int vals[SCW_N];
++    unsigned h = (unsigned)(((uintptr_t) f * 2654435761u) % SCW_N);
++    int i = 0;
++    for (i = 0; i < SCW_N; i++, h = (h + 1) % SCW_N)
++    {
++        if (keys[h] == f)
++        {
++            return vals[h];
++        }
++        if (keys[h] == NULL)
++        {
++            vals[h] = scicos_wasm_nparams(f);
++            keys[h] = f;
++            return vals[h];
++        }
++    }
++    return scicos_wasm_nparams(f);
++}
++
++/* call f with the first n of the cap pointers in a (n: its own count) */
++static void scicos_call_pointers(voidf f, void **a, int cap)
++{
++    int n = scicos_nparams(f);
++    if (n < 0 || n > cap)
++    {
++        n = cap;
++    }
++    switch (n)
++    {
++        case 0: ((void (*)(void)) f)(); break;
++        case 1: ((void (*)(void *)) f)(a[0]); break;
++        case 2: ((void (*)(void *, void *)) f)(a[0], a[1]); break;
++        case 3: ((void (*)(void *, void *, void *)) f)(a[0], a[1], a[2]); break;
++        case 4: ((void (*)(void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3]); break;
++        case 5: ((void (*)(void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4]); break;
++        case 6: ((void (*)(void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5]); break;
++        case 7: ((void (*)(void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6]); break;
++        case 8: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]); break;
++        case 9: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]); break;
++        case 10: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9]); break;
++        case 11: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10]); break;
++        case 12: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11]); break;
++        case 13: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12]); break;
++        case 14: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13]); break;
++        case 15: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14]); break;
++        case 16: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15]); break;
++        case 17: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16]); break;
++        case 18: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17]); break;
++        case 19: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18]); break;
++        case 20: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19]); break;
++        case 21: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20]); break;
++        case 22: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21]); break;
++        case 23: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22]); break;
++        case 24: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23]); break;
++        case 25: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24]); break;
++        case 26: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25]); break;
++        case 27: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26]); break;
++        case 28: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27]); break;
++        case 29: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28]); break;
++        case 30: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29]); break;
++        case 31: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30]); break;
++        case 32: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31]); break;
++        case 33: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32]); break;
++        case 34: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33]); break;
++        case 35: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34]); break;
++        case 36: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35]); break;
++        case 37: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36]); break;
++        case 38: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37]); break;
++        case 39: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38]); break;
++        case 40: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39]); break;
++        case 41: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40]); break;
++        case 42: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41]); break;
++        case 43: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42]); break;
++        case 44: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43]); break;
++        case 45: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44]); break;
++        case 46: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44], a[45]); break;
++        case 47: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44], a[45], a[46]); break;
++        case 48: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44], a[45], a[46], a[47]); break;
++        case 49: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44], a[45], a[46], a[47], a[48]); break;
++        case 50: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44], a[45], a[46], a[47], a[48], a[49]); break;
++        case 51: ((void (*)(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)) f)(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15], a[16], a[17], a[18], a[19], a[20], a[21], a[22], a[23], a[24], a[25], a[26], a[27], a[28], a[29], a[30], a[31], a[32], a[33], a[34], a[35], a[36], a[37], a[38], a[39], a[40], a[41], a[42], a[43], a[44], a[45], a[46], a[47], a[48], a[49], a[50]); break;
++        default:
++            break;
++    }
++}
++
++/* fill a[] with the port arguments of a type 1 / 10001 block, from k on */
++static int scicos_port_args(void **a, int k, scicos_block *block, double **args, int *sz)
++{
++    int i = 0;
++    int used = block->nin + block->nout + (block->ztyp > 0 ? 1 : 0);
++    for (i = 0; i < 18; i++)
++    {
++        a[k++] = i < used ? (void *) args[i] : NULL;
++        a[k++] = (void *) &sz[i];
++    }
++    return k;
++}
++#endif
++
+ #include "localization.h"
+ #include "charEncoding.h"
+ #include "common_structure.h"
+@@ -3698,6 +3820,17 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                 }
+             }
+ 
++#ifdef __EMSCRIPTEN__
++            {
++                void *a[18] = { flag, &block->nevprt, t, block->xd, block->x, &block->nx,
++                                block->z, &block->nz, block->evout, &block->nevout,
++                                block->rpar, &block->nrpar, block->ipar, &block->nipar,
++                                args[0], &ni, args[1], &no
++                              };
++                (void) loc0;
++                scicos_call_pointers(loc, a, 18);
++            }
++#else
+             loc0 = (ScicosF0) loc;
+ 
+             (*loc0)(flag, &block->nevprt, t, block->xd, block->x, &block->nx,
+@@ -3705,6 +3838,7 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                     block->evout, &block->nevout, block->rpar, &block->nrpar,
+                     block->ipar, &block->nipar, (double *)args[0], &ni,
+                     (double *)args[1], &no);
++#endif
+ 
+             /* split output vector on each port if necessary */
+             if (block->nout > 1)
+@@ -3762,6 +3896,18 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                 sz[block->nin + block->nout] = block->ng;
+             }
+ 
++#ifdef __EMSCRIPTEN__
++            {
++                void *a[50] = { flag, &block->nevprt, t, block->xd, block->x, &block->nx,
++                                block->z, &block->nz, block->evout, &block->nevout,
++                                block->rpar, &block->nrpar, block->ipar, &block->nipar
++                              };
++                (void) loc1;
++                scicos_call_pointers(loc, a, scicos_port_args(a, 14, block, args, sz));
++            }
++            if (0)
++#endif
++            {
+             loc1 = (ScicosF) loc;
+ 
+             (*loc1)(flag, &block->nevprt, t, block->xd, block->x, &block->nx,
+@@ -3778,6 +3924,7 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                     (double *)args[13], &sz[13], (double *)args[14], &sz[14],
+                     (double *)args[15], &sz[15], (double *)args[16], &sz[16],
+                     (double *)args[17], &sz[17]);
++            }
+ 
+             /* adjust values of output register */
+             for (in = 0; in < block->nevout; ++in)
+@@ -3803,6 +3950,21 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                 }
+             }
+ 
++#ifdef __EMSCRIPTEN__
++            {
++                void *a[23] = { flag, &block->nevprt, t, block->xd, block->x, &block->nx,
++                                block->z, &block->nz, block->evout, &block->nevout,
++                                block->rpar, &block->nrpar, block->ipar, &block->nipar,
++                                block->inptr, block->insz, &block->nin,
++                                block->outptr, block->outsz, &block->nout, block->scsptr,
++                                block->g, &block->ng
++                              };
++                (void) loc2;
++                (void) loc2z;
++                scicos_call_pointers(loc, a, 23);
++            }
++            if (0)
++#endif
+             /* no zero crossing */
+             if (block->ztyp == 0)
+             {
+@@ -3844,9 +4006,19 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+         case 4 :
+         {
+             /* get pointer of the function type 4*/
++#ifdef __EMSCRIPTEN__
++            {
++                /* (also "trash", a type 0 function, which takes the place
++                 * of the scopes in a simulation without windows) */
++                void *a[18] = { block, (void *)(intptr_t) * flag };
++                (void) loc4;
++                scicos_call_pointers(loc, a, 18);
++            }
++#else
+             loc4 = (ScicosF4) loc;
+ 
+             (*loc4)(block, *flag);
++#endif
+ 
+             break;
+         }
+@@ -3884,6 +4056,18 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                 sz[block->nin + block->nout] = block->ng;
+             }
+ 
++#ifdef __EMSCRIPTEN__
++            {
++                void *a[51] = { flag, &block->nevprt, t, block->res, block->xd, block->x,
++                                &block->nx, block->z, &block->nz, block->evout, &block->nevout,
++                                block->rpar, &block->nrpar, block->ipar, &block->nipar
++                              };
++                (void) loci1;
++                scicos_call_pointers(loc, a, scicos_port_args(a, 15, block, args, sz));
++            }
++            if (0)
++#endif
++            {
+             loci1 = (ScicosFi) loc;
+             (*loci1)(flag, &block->nevprt, t, block->res, block->xd, block->x,
+                      &block->nx, block->z, &block->nz,
+@@ -3899,6 +4083,7 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+                      (double *)args[13], &sz[13], (double *)args[14], &sz[14],
+                      (double *)args[15], &sz[15], (double *)args[16], &sz[16],
+                      (double *)args[17], &sz[17]);
++            }
+ 
+             /* adjust values of output register */
+             for (in = 0; in < block->nevout; ++in)
+@@ -3925,6 +4110,21 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+             }
+ 
+             /* implicit block, inputs and outputs given by a table of pointers */
++#ifdef __EMSCRIPTEN__
++            {
++                void *a[23] = { flag, &block->nevprt, t, block->res, block->xd, block->x,
++                                &block->nx, block->z, &block->nz, block->evout, &block->nevout,
++                                block->rpar, &block->nrpar, block->ipar, &block->nipar,
++                                block->inptr, block->insz, &block->nin,
++                                block->outptr, block->outsz, &block->nout,
++                                block->g, &block->ng
++                              };
++                (void) loci2;
++                (void) loci2z;
++                scicos_call_pointers(loc, a, 23);
++            }
++            if (0)
++#endif
+             /* no zero crossing */
+             if (block->ztyp == 0)
+             {
+@@ -3966,9 +4166,19 @@ void callf(double *t, scicos_block *block, scicos_flag *flag)
+         case 10004 :
+         {
+             /* get pointer of the function type 4*/
++#ifdef __EMSCRIPTEN__
++            {
++                /* (also "trash", a type 0 function, which takes the place
++                 * of the scopes in a simulation without windows) */
++                void *a[18] = { block, (void *)(intptr_t) * flag };
++                (void) loc4;
++                scicos_call_pointers(loc, a, 18);
++            }
++#else
+             loc4 = (ScicosF4) loc;
+ 
+             (*loc4)(block, *flag);
++#endif
+ 
+             break;
+         }
+diff --git a/scilab/modules/startup/src/cpp/scilab.cpp b/scilab/modules/startup/src/cpp/scilab.cpp
+index a002f72b..db93a1f4 100644
+--- a/scilab/modules/startup/src/cpp/scilab.cpp
++++ b/scilab/modules/startup/src/cpp/scilab.cpp
+@@ -379,8 +379,21 @@ extern "C"
+ #include <unistd.h>
+ #endif
+     extern char *getCmdLine(void);
++#ifdef __EMSCRIPTEN__
++    extern int ConsolePrintf(const char *);
++#else
+     extern void ConsolePrintf(const char *);
++#endif
++}
++
++#ifdef __EMSCRIPTEN__
++/* ConsolePrintf returns an int, an output method nothing: WebAssembly
++ * checks the type of calls through function pointers */
++static void ConsoleOutput(const char *text)
++{
++    ConsolePrintf(text);
+ }
++#endif
+ 
+ static void TermError(const char *text)
+ {
+@@ -460,7 +473,11 @@ int main(int argc, char *argv[])
+     {
+         setScilabMode(SCILAB_STD);
+         setScilabInputMethod(&ConsoleRead);
++#ifdef __EMSCRIPTEN__
++        setScilabOutputMethod(&ConsoleOutput);
++#else
+         setScilabOutputMethod(&ConsolePrintf);
++#endif
+ 
+ #ifdef _MSC_VER
+         if (pSEI->iCodeAction != -1)
+diff --git a/scilab/modules/statistics/src/c/CdfBase.c b/scilab/modules/statistics/src/c/CdfBase.c
+index cd56675c..42aa2218 100644
+--- a/scilab/modules/statistics/src/c/CdfBase.c
++++ b/scilab/modules/statistics/src/c/CdfBase.c
+@@ -33,9 +33,11 @@ int rotate(int i, int step, int length);
+ char *cdf_options(struct cdf_descriptor const * const desc);
+ void cdf_error(char const * const fname, int status, double bound);
+ int CdfBase(char const * const fname, void* pvApiCtx, int inarg, int oarg, int shift, int which, cdf_fptr fun);
+-typedef int (*cdf_fun4)(int *, double *, double *, double *, double *, int *, double *);
+-typedef int (*cdf_fun5)(int *, double *, double *, double *, double *, double *, int *, double *);
+-typedef int (*cdf_fun6)(int *, double *, double *, double *, double *, double *, double *, int *, double *);
++/* the DCDFLIB routines are Fortran subroutines: no return value (calls
++ * through pointers of another type trap in WebAssembly) */
++typedef void (*cdf_fun4)(int *, double *, double *, double *, double *, int *, double *);
++typedef void (*cdf_fun5)(int *, double *, double *, double *, double *, double *, int *, double *);
++typedef void (*cdf_fun6)(int *, double *, double *, double *, double *, double *, double *, int *, double *);
+ 
+ int cdf_generic(char *fname, void* pvApiCtx, struct cdf_descriptor *cdf)
+ {
