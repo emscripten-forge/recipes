@@ -36,8 +36,10 @@ export NM="$EMSDK_LLVM_BIN/llvm-nm"
 # SLICOT (mb03od) calls DGEQPF, one of the routines LAPACK deprecated: it is
 # in liblapack from the lapack recipe's build 5 (BUILD_DEPRECATED=ON). The
 # programs are linked with undefined symbols allowed, so without it they
-# would only fail when rankqr & co. are called.
-if ! "$NM" --defined-only "$PREFIX/lib/liblapack.a" | grep -q " T dgeqpf_$"; then
+# would only fail when rankqr & co. are called. (Through a file: with
+# pipefail, grep -q stopping at the match would fail nm with SIGPIPE.)
+"$NM" --defined-only "$PREFIX/lib/liblapack.a" > "$SRC_DIR/_liblapack-symbols.txt"
+if ! grep -q " T dgeqpf_$" "$SRC_DIR/_liblapack-symbols.txt"; then
   echo "liblapack has no DGEQPF: it must be built with BUILD_DEPRECATED=ON (lapack build >= 5)" >&2
   exit 1
 fi
