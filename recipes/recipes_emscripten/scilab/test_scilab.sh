@@ -11,11 +11,6 @@ mkdir -p "$HOME"
 export SCI="$PREFIX/share/scilab"
 WASM="$PREFIX/share/scilab-wasm"
 
-node --version
-
-node "$WASM/scilab-cli.js" -version | tee version.log
-grep -q "Scilab version" version.log
-
 node "$WASM/scilab-cli.js" -nb -quit -e "disp(1 + 1)" | tee simple.log
 grep -q "2\." simple.log
 

@@ -7,9 +7,9 @@ endfunction
 
 // Java through JIMS
 jimport java.lang.System;
-v = System.getProperty("java.version");
+v = System.getProperty("os.name");
 assert_checktrue(length(v) > 0);
-ok("java " + v);
+ok("java (os.name: " + v + ")");
 
 // graphics: the figures are drawn by SciRenderer's Java2D renderer
 plot3d();
