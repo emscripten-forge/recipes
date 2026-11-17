@@ -1,9 +1,9 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index cb7868d..a558b79 100644
+index 8486de2..231cab5 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -9,6 +9,13 @@
- cmake_minimum_required(VERSION 3.8)
+ cmake_minimum_required(VERSION 3.24)
  project(xleaflet)
  
 +if(EMSCRIPTEN)
@@ -35,16 +35,16 @@ index cb7868d..a558b79 100644
  
  configure_file (
      "${XLEAFLET_INCLUDE_DIR}/xleaflet/xget_basemaps_path.hpp.in"
-@@ -171,6 +184,8 @@ target_link_libraries(xleaflet
-     PUBLIC xproperty
-     PUBLIC xwidgets)
+@@ -177,6 +190,8 @@ target_link_libraries(xleaflet
+     PUBLIC xwidgets
+     PUBLIC xtensor)
  
 +set_target_properties(xleaflet PROPERTIES NO_SONAME 1)
 +
- set_target_properties(xleaflet PROPERTIES
-                       PUBLIC_HEADER "${XLEAFLET_HEADERS}"
-                       COMPILE_DEFINITIONS "XLEAFLET_EXPORTS"
-@@ -193,6 +208,11 @@ target_compile_features(xleaflet PRIVATE cxx_std_17)
+ if(UNIX)
+     # CMake does not compute the version number of so files as libtool
+     # does on Linux. Strictly speaking, we should exclude FreeBSD and
+@@ -221,6 +236,11 @@ target_compile_features(xleaflet PRIVATE cxx_std_20)
  
  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
      target_compile_options(xleaflet PUBLIC -Wunused-parameter -Wextra -Wreorder)
@@ -57,10 +57,10 @@ index cb7868d..a558b79 100644
      # Enable link time optimization and set the default symbol
      # visibility to hidden (very important to obtain small binaries)
 diff --git a/include/xleaflet/xleaflet_config.hpp b/include/xleaflet/xleaflet_config.hpp
-index 889d727..ad854d4 100644
+index 343d199..bb10f7d 100644
 --- a/include/xleaflet/xleaflet_config.hpp
 +++ b/include/xleaflet/xleaflet_config.hpp
-@@ -52,7 +52,7 @@ inline std::string jupyter_leaflet_semver()
+@@ -54,7 +54,7 @@ inline std::string jupyter_leaflet_semver()
      return std::string("^") + XJUPYTER_LEAFLET_VERSION;
  }
  
