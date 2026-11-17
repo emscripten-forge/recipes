@@ -10,4 +10,4 @@ toolchain_path="${emscripten_root}/cmake/Modules/Platform/Emscripten.cmake"
 export CMAKE_BUILD_PARALLEL_LEVEL="${CPU_COUNT}"
 export CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_TOOLCHAIN_FILE=${toolchain_path}"
 
-${PYTHON} -m pip install . --no-deps -vv
+${PYTHON} -m pip install . --no-deps -vv -Cinstall.strip=false
