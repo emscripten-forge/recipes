@@ -14,7 +14,7 @@ source:
   sha256: 3c7e9d22f7409fa2989008fa6e980c3dd8e2693eb20676acf2470ae7addb0816
 
 build:
-  number: 0
+  number: 1
   script: $R CMD INSTALL $R_ARGS .
 
 requirements:
@@ -38,6 +38,18 @@ tests:
     build:
     - r-wasm-tester
     - generic-testing
+# xeus-r is not yet built for R >= 4.6.0
+- if: r_base < "4.6.0"
+  then:
+  - script: xeus-tester
+    files:
+      recipe:
+      - test_${{ name }}.R
+    requirements:
+      build:
+      - xeus-tester
+      run:
+      - xeus-r
 
 about:
   homepage: http://www.rforge.net/base64enc
