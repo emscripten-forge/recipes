@@ -1,10 +1,10 @@
 context:
-  version: 0.11.1
+  version: 1.0.0
   name: pyb2d3
 
 source:
 - url: https://github.com/DerThorsten/pyb2d3/archive/refs/tags/v${{version}}.tar.gz
-  sha256: 50b56338b1ade7659d36283a68f57f128916c31ebd4dc6478d1c4a2753273a7f
+  sha256: c3d3b4da6d8ab49946f290ff4ab864b9c0143c82d81df7f893ab03a0e4162cd9
 
 build:
   number: 0
@@ -38,8 +38,7 @@ outputs:
     host:
     - python-dev
     - numpy
-    # variant pin 3.1.1: pyb2d3 0.11 does not build against the box2d 3.2 API
-    - box2d-static
+    - box2d-static >=3.2.0
     run:
     - numpy
     - python
@@ -55,61 +54,6 @@ outputs:
       run:
       - pytester-run
   - script: generic-testing
-    requirements:
-      build:
-      - generic-testing
-
-- package:
-    name: pyb2d3-sandbox
-    version: ${{ version }}
-  build:
-    # pure-python noarch package: install with the native build python
-    # (cross-python cannot be activated for target_platform=noarch)
-    noarch: python
-    script: python -m pip install companion_packages/pyb2d3_sandbox --no-deps --no-build-isolation --prefix=${PREFIX} -vv
-  requirements:
-    build:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
-    host:
-    - python
-    run:
-    - python
-    - pyb2d3 >=${{ version }}
-  tests:
-  - package_contents:
-      site_packages:
-      - pyb2d3_sandbox/frontend_base.py
-  - script: target_platform=${{ host_platform }} generic-testing
-    requirements:
-      build:
-      - generic-testing
-
-- package:
-    name: pyb2d3-sandbox-ipycanvas
-    version: ${{ version }}
-  build:
-    noarch: python
-    script: python -m pip install companion_packages/pyb2d3_sandbox_ipycanvas --no-deps --no-build-isolation --prefix=${PREFIX} -vv
-  requirements:
-    build:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
-    host:
-    - python
-    run:
-    - python
-    - ipycanvas >=0.14.2
-    - pyb2d3 >=${{ version }}
-    - pyb2d3-sandbox >=${{ version }}
-    - ipyevents
-  tests:
-  - package_contents:
-      site_packages:
-      - pyb2d3_sandbox_ipycanvas/ipycanvas_frontend.py
-  - script: target_platform=${{ host_platform }} generic-testing
     requirements:
       build:
       - generic-testing
