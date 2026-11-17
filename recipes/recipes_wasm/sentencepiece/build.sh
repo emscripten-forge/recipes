@@ -36,14 +36,16 @@ emcmake cmake -GNinja \
 
 # Build only the static library (CLI tools fail to link due to duplicate
 # abseil symbols between internal protobuf-lite and system libabseil)
-ninja sentencepiece-static
+# generate_installed_headers rewrites the "third_party/absl/..." includes in
+# the public headers to "<absl/...>" for installation.
+ninja sentencepiece-static generate_installed_headers
 
 # Install library and headers manually
 mkdir -p "${PREFIX}/lib"
 mkdir -p "${PREFIX}/include"
 cp src/libsentencepiece.a "${PREFIX}/lib/"
-cp ../src/sentencepiece_processor.h "${PREFIX}/include/"
-cp ../src/sentencepiece_trainer.h "${PREFIX}/include/"
+cp src/installed_headers/sentencepiece_processor.h "${PREFIX}/include/"
+cp src/installed_headers/sentencepiece_trainer.h "${PREFIX}/include/"
 
 # Remove .la files if any
 find "${PREFIX}" -name '*.la' -delete 2>/dev/null || true
