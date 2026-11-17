@@ -34,6 +34,11 @@ source:
       # matio 1.6 (matio-static): sparse indexes are unsigned since 1.5.18,
       # which the release-level test missed
       - patches/0008-matio-1.6-sparse-index-types.patch
+      # direct calls with the callee's signature (WebAssembly checks them):
+      # declarations and calls to Fortran with void results and the hidden
+      # CHARACTER lengths, and a few bugs (DLASD2 replacing LAPACK's,
+      # arguments past column 72, implicitly REAL dlamch...)
+      - patches/0009-direct-call-signatures.patch
   # Java third parties (including the Scilab builds of jrosetta, flexdock,
   # jgraphx, skinlf, jlatexmath, JoGL) and the help (JavaHelp jars, images)
   # of the same version: only these files are used from it
@@ -108,11 +113,8 @@ requirements:
     - ncurses
     - eigen
   run:
-    # the page loads the JDK image of the openjdk21 package (the files in
-    # share/scilab-wasm link to share/openjdk21-wasm)
-    - openjdk21
-    # the terminfo database (share/terminfo), read by the console of
-    # scilab-cli and scilab-wasm-node -nw under node
+    # the terminfo database (share/terminfo), read by the console of the
+    # programs under node (the tests); the page needs nothing else
     - ncurses
   ignore_run_exports:
     # everything is linked statically into scilab.wasm / scilab-cli.wasm
@@ -136,6 +138,8 @@ requirements:
       - ncurses
       - libffi-pthread
       - x11-wasm
+      # (and the JDK image is copied into share/scilab-wasm)
+      - openjdk21
 
 tests:
   - package_contents:

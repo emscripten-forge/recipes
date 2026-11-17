@@ -220,11 +220,24 @@ for f in $(pkg-config --static --libs-only-l libarchive 2>/dev/null); do
 done
 export SCILAB_WASM_LIBS="$(echo $SCILAB_WASM_LIBS)"
 
+# Every direct call matches the definition of the function it calls (patch
+# 0009). The kit's wasm-ld wrapper reports the calls wasm-ld finds with
+# another signature (and would adapt them): here any is an error.
+check_signatures() {
+  local report="$WORK/signature-mismatches-$1.txt"
+  if [ -s "$report" ]; then
+    cat "$report" >&2
+    echo "$1: functions called with another signature than their definition's" >&2
+    exit 1
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # 3. scilab-cli for node (no JVM), and the macros (.bin) compiled with it
 # ---------------------------------------------------------------------------
 if [ ! -f "$STAMPS/cli" ]; then
   bash "$WASM_KIT/link-scilab.sh" cli "$WASM_OUT/cli/scilab-cli.js"
+  check_signatures cli
   touch "$STAMPS/cli"
 fi
 
@@ -254,6 +267,7 @@ fi
 # ---------------------------------------------------------------------------
 if [ ! -f "$STAMPS/gui" ]; then
   bash "$WASM_KIT/link-scilab.sh" gui "$WASM_OUT/gui/scilab.js"
+  check_signatures gui
   touch "$STAMPS/gui"
 fi
 
@@ -327,14 +341,11 @@ python3 "$WASM_KIT/pack-tree.py" "$SCI_DIR" "$OUT_SHARE/scilab-share" --root /us
     --exclude 'modules/helptools/jar/scilab_ja_JP_help.jar' \
     --exclude 'modules/helptools/jar/scilab_pt_BR_help.jar' \
     --exclude 'modules/helptools/jar/scilab_ru_RU_help.jar'
-# (links: the files are the openjdk21 package's)
-ln -sf ../openjdk21-wasm/openjdk21-jre.json "$OUT_SHARE/openjdk21-jre.json"
-ln -sf ../openjdk21-wasm/openjdk21-jre.data.gz "$OUT_SHARE/openjdk21-jre.data.gz"
+# the JDK image the page loads (copies: share/scilab-wasm is the whole site)
+install -m 644 "$PREFIX/share/openjdk21-wasm/openjdk21-jre.json" \
+               "$PREFIX/share/openjdk21-wasm/openjdk21-jre.data.gz" "$OUT_SHARE/"
 install -m 644 "$WASM_KIT/web/scilab-web.js" "$WASM_KIT/web/index.html" "$OUT_SHARE/"
 cp "$PREFIX/share/openjdk21-wasm/coi-serviceworker.js" "$OUT_SHARE/"
-
-# calls adapted by wasm-ld-fixsig, for reference
-cp "$WORK"/signature-mismatches-*.txt "$OUT_SHARE/" 2>/dev/null || true
 
 # nothing else of the build is installed (static archives, headers: there is
 # no way to load compiled toolboxes or link() libraries; desktop integration
