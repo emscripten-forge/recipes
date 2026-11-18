@@ -7,10 +7,11 @@
 #include <vector>
 
 int main() {
-    // 1. Check max concurrency is at least 1
+    // 1. Without pthreads Emscripten reports 1 CPU, so oneTBB runs
+    //    everything on the calling thread.
     int max_concurrency = tbb::this_task_arena::max_concurrency();
     std::cout << "max_concurrency: " << max_concurrency << std::endl;
-    assert(max_concurrency >= 1);
+    assert(max_concurrency == 1);
 
     // 2. Test concurrent_vector basic operations
     tbb::concurrent_vector<int> cv;
@@ -22,7 +23,7 @@ int main() {
         assert(cv[i] == i);
     }
 
-    // 3. Test parallel_for (may run single-threaded on WASM, but must compile
+    // 3. Test parallel_for (runs single-threaded on WASM, but must compile
     //    and execute correctly)
     std::vector<int> data(100, 0);
     tbb::parallel_for(0, 100, [&data](int i) {

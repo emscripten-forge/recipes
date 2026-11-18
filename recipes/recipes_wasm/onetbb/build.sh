@@ -8,11 +8,20 @@ CFLAGS="${CFLAGS:-}"
 CXXFLAGS="${CXXFLAGS:-}"
 LDFLAGS="${LDFLAGS:-}"
 
-# Disable ucontext-based resumable tasks — ucontext symbols
-# (getcontext/makecontext/swapcontext) are not linkable on WASM.
-# This forces oneTBB to use pthread-based coroutines instead.
-export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -D__TBB_RESUMABLE_TASKS_USE_THREADS=1"
-export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -D__TBB_RESUMABLE_TASKS_USE_THREADS=1"
+# -DEMSCRIPTEN=1: Emscripten 6 no longer defines the deprecated EMSCRIPTEN
+# macro on the command line, but oneTBB still checks it in governor.cpp and
+# global_control.cpp (stack base and default stack size).
+#
+# No -pthread: the wasm runtime is single-threaded. sysconf then reports 1
+# CPU, so oneTBB creates a workerless arena and runs tasks on the calling
+# thread. Emscripten's libc provides single-threaded stubs for the pthread
+# symbols oneTBB references (mutexes, TLS, worker launcher).
+#
+# -D__TBB_RESUMABLE_TASKS_USE_THREADS=1: Emscripten declares
+# getcontext/makecontext/swapcontext but does not implement them, so the
+# default ucontext-based resumable-task coroutines would fail to link.
+export CFLAGS="$CFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -DEMSCRIPTEN=1 -D__TBB_RESUMABLE_TASKS_USE_THREADS=1"
+export CXXFLAGS="$CXXFLAGS $EM_FORGE_SIDE_MODULE_CFLAGS -DEMSCRIPTEN=1 -D__TBB_RESUMABLE_TASKS_USE_THREADS=1"
 export LDFLAGS="$LDFLAGS $EM_FORGE_SIDE_MODULE_LDFLAGS"
 
 mkdir -p build

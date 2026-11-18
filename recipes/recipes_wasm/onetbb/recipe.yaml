@@ -34,7 +34,8 @@ tests:
     - oneapi/tbb.h
     files:
     - lib/cmake/TBB/TBBConfig.cmake
-    - lib/pkgconfig/tbb32.pc
+    # wasm32 installs tbb32.pc, wasm64 installs tbb.pc
+    - lib/pkgconfig/tbb*.pc
 - script:
   - bash build_tests.sh
   requirements:
@@ -46,6 +47,13 @@ tests:
     recipe:
     - build_tests.sh
     - tests/
+# Nothing is built with -pthread and no threads are created, but libtbb.a
+# references pthread symbols (mutexes, TLS, the worker launcher) that
+# Emscripten's libc provides as single-threaded stubs.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/uxlfoundation/oneTBB
