@@ -11,12 +11,7 @@ LDFLAGS="${LDFLAGS:-}"
 # -DEMSCRIPTEN=1: Emscripten 6 no longer defines the deprecated EMSCRIPTEN
 # macro on the command line, but oneTBB still checks it in governor.cpp and
 # global_control.cpp (stack base and default stack size).
-#
-# No -pthread: the wasm runtime is single-threaded. sysconf then reports 1
-# CPU, so oneTBB creates a workerless arena and runs tasks on the calling
-# thread. Emscripten's libc provides single-threaded stubs for the pthread
-# symbols oneTBB references (mutexes, TLS, worker launcher).
-#
+
 # -D__TBB_RESUMABLE_TASKS_USE_THREADS=1: Emscripten declares
 # getcontext/makecontext/swapcontext but does not implement them, so the
 # default ucontext-based resumable-task coroutines would fail to link.
