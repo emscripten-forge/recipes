@@ -7,8 +7,13 @@ trap 'rm -rf "$work"' EXIT
 cd "$work"
 read -r -a cflags <<< "${CFLAGS:-}"
 
-# Test static linking and the dlopen/dlsym path used by ABI-mode Python CFFI.
-for mode in static dynamic; do
+modes=("$@")
+if [[ ${#modes[@]} -eq 0 ]]; then
+    modes=(static dynamic)
+fi
+
+# Test static linking and/or the dlopen/dlsym path used by ABI-mode Python CFFI.
+for mode in "${modes[@]}"; do
     options=("$PREFIX/lib/libghostty-vt.a")
     if [[ "$mode" == dynamic ]]; then
         options=(-DTEST_DYNAMIC -sMAIN_MODULE=1 --preload-file

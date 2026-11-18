@@ -1,10 +1,5 @@
-
 context:
-  version: "1.0.1"
-
-package:
-  name: libghostty-vt
-  version: ${{ version }}
+  version: 1.0.1
 
 source:
   - url: https://release.files.ghostty.org/libghostty-vt/${{ version }}/libghostty-vt-${{ version }}.tar.gz
@@ -17,35 +12,104 @@ source:
 
 build:
   number: 0
-  script: build.sh
 
-requirements:
-  run_exports:
-    - ${{ pin_subpackage('libghostty-vt', upper_bound='x') }}
+outputs:
+- staging:
+    name: libghostty-vt-build
+  requirements:
+    build:
+      - ${{ compiler('c') }}
+      - zig 0.17.0.*
   build:
-    - ${{ compiler('c') }}
-    - zig 0.17.0.*
+    script: build.sh
 
-tests:
+#==============================================================================#
+
+# Headers and pkg-config files
+- package:
+    name: libghostty-vt-dev
+    version: ${{ version }}
+  inherit: libghostty-vt-build
+  build:
+    files:
+      include:
+      - include/
+      - lib/pkgconfig/
+  tests:
   - package_contents:
       files:
-        - include/ghostty/vt.h
-        - include/ghostty/vt/osc.h
-        - include/ghostty/vt/terminal.h
-        - include/ghostty/vt/formatter.h
-        - lib/libghostty-vt.a
-        - lib/libghostty-vt.so
-        - lib/pkgconfig/libghostty-vt.pc
-        - lib/pkgconfig/libghostty-vt-static.pc
-  - script: bash test-lib.sh
+      - include/ghostty/vt.h
+      - include/ghostty/vt/osc.h
+      - include/ghostty/vt/terminal.h
+      - include/ghostty/vt/formatter.h
+      - lib/pkgconfig/libghostty-vt.pc
+      - lib/pkgconfig/libghostty-vt-static.pc
+
+#==============================================================================#
+
+- package:
+    name: libghostty-vt-static
+    version: ${{ version }}
+  inherit: libghostty-vt-build
+  build:
+    files:
+      include:
+      - lib/*.a
+  requirements:
+    run:
+    - ${{ pin_subpackage('libghostty-vt-dev', exact=True) }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libghostty-vt.a
+  - script:
+    - bash test-lib.sh static
+    - generic-testing
     requirements:
       build:
         - ${{ compiler('c') }}
         - nodejs
+        - generic-testing
     files:
       recipe:
         - test-lib.sh
         - test-lib.c
+
+#==============================================================================#
+
+- package:
+    name: libghostty-vt
+    version: ${{ version }}
+  inherit: libghostty-vt-build
+  build:
+    files:
+      include:
+      - lib/*.so
+  requirements:
+    run_constraints:
+    - ${{ pin_subpackage('libghostty-vt-dev', exact=True) }}
+    run_exports:
+    - ${{ pin_subpackage('libghostty-vt', upper_bound='x') }}
+  tests:
+  - package_contents:
+      files:
+      - lib/libghostty-vt.so
+  - script:
+    - bash test-lib.sh dynamic
+    - generic-testing
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - nodejs
+        - generic-testing
+      run:
+        - ${{ pin_subpackage('libghostty-vt-dev', exact=True) }}
+    files:
+      recipe:
+        - test-lib.sh
+        - test-lib.c
+
+#==============================================================================#
 
 about:
   homepage: https://ghostty.org
