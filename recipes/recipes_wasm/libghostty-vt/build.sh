@@ -24,7 +24,7 @@ fi
 
 # Link with emcc so Python/CFFI can dlopen the library in the host runtime.
 read -r -a cflags <<< "${CFLAGS:-}"
-emcc "${cflags[@]}" -O2 -sSIDE_MODULE=1 -shared \
+emcc "${cflags[@]}" -O2 -shared \
     -Wl,--whole-archive "$PREFIX/lib/libghostty-vt.a" -Wl,--no-whole-archive \
     -o "$PREFIX/lib/libghostty-vt.so"
 mkdir -p "$PREFIX/include/ghostty" "$PREFIX/lib/pkgconfig"
