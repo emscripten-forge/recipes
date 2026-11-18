@@ -1,0 +1,61 @@
+
+context:
+  version: "1.0.1"
+
+package:
+  name: libghostty-vt
+  version: ${{ version }}
+
+source:
+  - url: https://release.files.ghostty.org/libghostty-vt/${{ version }}/libghostty-vt-${{ version }}.tar.gz
+    sha256: 333dfce97641ef9b536bb9e08907ad86abaaada50e8f7417b70d9284adef37aa
+    patches:
+      - patches/emscripten-side-module.patch
+  - url: https://release.files.ghostty.org/libghostty-vt/${{ version }}/libghostty-vt-${{ version }}-deps.tar.gz
+    sha256: 91a4e10960a52bf5bf4b15aa2a2cddaff8a89d6cd903d3055bda4fd17de3356d
+    target_directory: vt-deps
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  run_exports:
+    - ${{ pin_subpackage('libghostty-vt', upper_bound='x') }}
+  build:
+    - ${{ compiler('c') }}
+    - zig 0.17.0.*
+
+tests:
+  - package_contents:
+      files:
+        - include/ghostty/vt.h
+        - include/ghostty/vt/osc.h
+        - include/ghostty/vt/terminal.h
+        - include/ghostty/vt/formatter.h
+        - lib/libghostty-vt.a
+        - lib/libghostty-vt.so
+        - lib/pkgconfig/libghostty-vt.pc
+        - lib/pkgconfig/libghostty-vt-static.pc
+  - script: bash test-lib.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - nodejs
+    files:
+      recipe:
+        - test-lib.sh
+        - test-lib.c
+
+about:
+  homepage: https://ghostty.org
+  summary: Ghostty VT parsing library with a C API
+  description: Standalone terminal sequence parsing library.
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/ghostty-org/ghostty
+  documentation: https://ghostty.org/docs
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
