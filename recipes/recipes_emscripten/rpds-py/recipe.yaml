@@ -1,0 +1,55 @@
+context:
+  name: rpds-py
+  version: 0.30.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/r/rpds_py/rpds_py-${{ version }}.tar.gz
+  sha256: dd8ff7cf90014af0c0f787eea34794ebf6415242ee1d6fa91eaba725cc441e84
+
+build:
+  number: 0
+  script: |
+    set -e
+    export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+    export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+    rustup component add rust-src
+    ${PYTHON} -m pip install . -vvv
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - maturin
+  - pip
+  - rust-nightly
+  host:
+  - python
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_import_rpds.py
+
+about:
+  homepage: https://rpds.readthedocs.io
+  repository: https://github.com/crate-py/rpds
+  summary: Python bindings to Rust's persistent data structures (rpds)
+  license: MIT
+  license_file: LICENSE
+  documentation: https://rpds.readthedocs.io
+
+extra:
+  recipe-maintainers:
+  - Copilot
