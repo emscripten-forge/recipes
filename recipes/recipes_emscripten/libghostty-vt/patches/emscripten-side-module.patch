@@ -1,0 +1,85 @@
+Support libghostty-vt in an Emscripten-managed heap and side module.
+
+Related upstream PR: https://github.com/ghostty-org/ghostty/pull/15268
+The upstream PR uses a revised implementation of Emscripten support.
+
+--- a/build.zig
++++ b/build.zig
+@@ -182,6 +182,8 @@
+     const native_freestanding = config.target.result.os.tag == .freestanding and
+         !config.target.result.cpu.arch.isWasm();
+     const libghostty_vt_shared: ?buildpkg.GhosttyLibVt = shared: {
++        // Emscripten links the PIC static archive into a side module with emcc.
++        if (config.target.result.os.tag == .emscripten) break :shared null;
+         if (config.target.result.cpu.arch.isWasm()) {
+             break :shared try buildpkg.GhosttyLibVt.initWasm(
+                 b,
+--- a/src/build/GhosttyZig.zig
++++ b/src/build/GhosttyZig.zig
+@@ -164,7 +164,9 @@
+         // no-libcxx mode (HWY_NO_LIBCXX / SIMDUTF_NO_LIBCXX) so we
+         // don't need libcpp. System-provided simdutf headers still
+         // use C++ stdlib headers, so we need libcpp in that case.
+-        .link_libc = if (cfg.simd) true else null,
++        // Use the host Emscripten allocator, sharing memory with Python and dlopen.
++        .link_libc = if (cfg.simd or cfg.target.result.os.tag == .emscripten) true else null,
++        .single_threaded = if (cfg.target.result.os.tag == .emscripten) true else null,
+         .link_libcpp = if (cfg.simd and
+             b.systemIntegrationOption("simdutf", .{}) and
+             cfg.target.result.abi != .msvc) true else null,
+--- a/src/lib_vt.zig
++++ b/src/lib_vt.zig
+@@ -12,6 +12,14 @@
+ const std = @import("std");
+ const builtin = @import("builtin");
+ const stderr = @import("os/stderr.zig");
++
++// Emscripten owns linear memory. Keep Zig's page allocations on its libc heap
++// so memory growth updates the embedding runtime's views and allocator state.
++pub const os = if (builtin.target.os.tag == .emscripten) struct {
++    pub const heap = struct {
++        pub const page_allocator = @import("lib/allocator/emscripten.zig").allocator;
++    };
++} else struct {};
+ 
+ // The public API below reproduces a lot of terminal/main.zig but
+ // is separate because (1) we need our root file to be in `src/`
+--- a/src/terminal/PageList.zig
++++ b/src/terminal/PageList.zig
+@@ -330,7 +330,9 @@
+ ///
+ /// Test builds use the native pool even on wasm so that pool memory goes
+ /// through the testing allocator and participates in leak detection.
+-const wasm_page_pool = builtin.target.cpu.arch.isWasm() and !builtin.is_test;
++// Emscripten must not use the standalone pool's raw memory.grow operations.
++const wasm_page_pool = builtin.target.cpu.arch.isWasm() and
++    builtin.target.os.tag != .emscripten and !builtin.is_test;
+ 
+ /// The memory pool we use for page memory buffers. We use a separate pool
+ /// so we can allocate these with a page allocator. We have to use a page
+--- /dev/null
++++ b/src/lib/allocator/emscripten.zig
+@@ -0,0 +1,23 @@
++//! Zero-initialized page allocations backed by the embedding Emscripten libc.
++const std = @import("std");
++const Allocator = std.mem.Allocator;
++
++pub const allocator: Allocator = .{
++    .ptr = undefined,
++    .vtable = &.{
++        .alloc = alloc,
++        .resize = Allocator.noResize,
++        .remap = Allocator.noRemap,
++        .free = free,
++    },
++};
++
++fn alloc(_: *anyopaque, len: usize, alignment: std.mem.Alignment, ret_addr: usize) ?[*]u8 {
++    const memory = std.heap.c_allocator.rawAlloc(len, alignment, ret_addr) orelse return null;
++    @memset(memory[0..len], 0);
++    return memory;
++}
++
++fn free(_: *anyopaque, memory: []u8, alignment: std.mem.Alignment, ret_addr: usize) void {
++    std.heap.c_allocator.rawFree(memory, alignment, ret_addr);
++}
