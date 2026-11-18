@@ -16,7 +16,7 @@ emcmake cmake -S tests -B build_tests \
   -DCMAKE_CXX_FLAGS="${CXXFLAGS}" \
   -DCMAKE_PREFIX_PATH="${PREFIX}" \
   -DCMAKE_FIND_ROOT_PATH="${PREFIX}" \
-  -DCMAKE_CXX_STANDARD=17
+  -DCMAKE_CXX_STANDARD=20
 
 emmake make -C build_tests -j"${CPU_COUNT}"
 
