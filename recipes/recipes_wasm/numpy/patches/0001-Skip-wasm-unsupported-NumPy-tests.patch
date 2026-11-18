@@ -12,6 +12,8 @@ np.test(label="full") fails these cases on wasm independently of BLAS:
   returning NULL)
 - test_malloc_fails (wasm64 malloc(np.iinfo(np.intp).max) traps instead of
   returning NULL)
+- test_string_too_large_error (wasm64 malloc of 2**55 bytes in np.multiply
+  traps instead of returning NULL)
 - test_to_ctypes and test_big_arrays (wasm64 cannot allocate the 2 GiB
   arrays they need)
 
@@ -169,6 +171,32 @@ index 7d5ce30..9f92b3b 100644
 
          fsci = np.format_float_scientific
 
+diff --git a/numpy/_core/tests/test_stringdtype.py b/numpy/_core/tests/test_stringdtype.py
+index 88735a4..a2373de 100644
+--- a/numpy/_core/tests/test_stringdtype.py
++++ b/numpy/_core/tests/test_stringdtype.py
+@@ -13,7 +13,7 @@ import pytest
+ import numpy as np
+ from numpy._core.tests._natype import pd_NA
+ from numpy.dtypes import StringDType
+-from numpy.testing import assert_array_equal
++from numpy.testing import IS_64BIT, IS_WASM, assert_array_equal
+
+
+ def random_unicode_string_list():
+@@ -284,6 +284,12 @@ def test_null_roundtripping():
+     assert roundtripped.tolist() == strings
+
+
++# On wasm64, the 2**55-byte allocation in np.multiply traps instead of
++# returning NULL (same emscripten_resize_heap issue as
++# test_too_large_array_error_paths). wasm32 raises OverflowError and passes.
++@pytest.mark.skipif(IS_WASM and IS_64BIT, reason=(
++    "wasm64 emscripten_resize_heap accepts requests above 2**53"
++))
+ def test_string_too_large_error():
+     arr = np.array(["a", "b", "c"], dtype=StringDType())
+     with pytest.raises(OverflowError):
 diff --git a/numpy/lib/tests/test_function_base.py b/numpy/lib/tests/test_function_base.py
 index cd3d348..557e8c1 100644
 --- a/numpy/lib/tests/test_function_base.py
