@@ -18,7 +18,7 @@ fi
 "$zig_command" build \
     -Demit-lib-vt=true -Demit-xcframework=false \
     --prefix "$PREFIX" --system "$SRC_DIR/vt-deps" \
-    -Dtarget=wasm32-emscripten -Dcpu=baseline -Doptimize=fast \
+    -Dtarget=$ARCH-emscripten -Dcpu=baseline -Doptimize=fast \
     -Dsimd=false -Dapp-runtime=none -Demit-exe=false \
     -Demit-docs=false -Demit-macos-app=false
 
