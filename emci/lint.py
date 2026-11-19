@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from .find_recipes_with_changes import find_recipes_with_changes
 from .schema import Recipe
 
-EXPERIMENTAL_CHANNEL_PATTERN = "emscripten-forge-*-experimental"
+EXPERIMENTAL_CHANNEL_PATTERN = "*-experimental"
 
 
 def is_experimental_recipe(recipe_data: dict) -> bool:

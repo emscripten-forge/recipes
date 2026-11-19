@@ -143,8 +143,8 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         recipe_file = recipe_dir / recipe_fname
         with open(recipe_file) as file:
             recipe = YAML().load(file)
-        if recipe.get('extra', {}).get('skip-autoupdates'):
-            print(f"Skipping {recipe_dir.name}: extra.skip-autoupdates is set")
+        if recipe.get('extra', {}).get('skip-auto-updates'):
+            print(f"⏭️ Skipping {recipe_dir.name}")
             return False, None, None
         cv, nv, h = get_new_version(recipe_file)
         if nv is not None:
