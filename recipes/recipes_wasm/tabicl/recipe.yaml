@@ -1,0 +1,76 @@
+context:
+  name: tabicl
+  version: 2.2.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: dfc41f2acd9603e4402cedae9e42f9922cfb8cfc9fcf7901d773e26609e47e21
+  patches:
+  # psutil has no Emscripten build; it is only used for memory estimates.
+  - patches/0001-make-psutil-optional.patch
+  # huggingface_hub needs hf-xet (compiled Rust); it is only used to download
+  # checkpoints. Without it, pass a local checkpoint via model_path=.
+  - patches/0002-make-huggingface-hub-optional.patch
+  - patches/0003-drop-psutil-and-huggingface-hub-requirements.patch
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+
+requirements:
+  build:
+  - python ${{ python_min }}.*
+  - pip
+  - hatchling >=1.26.1
+  host:
+  - python
+  run:
+  - python >=${{ python_min }}
+  - pytorch >=2.2
+  - scikit-learn >=1.3.0
+  - numpy
+  - scipy
+  - einops >=0.7
+  - tqdm >=4.64.0
+  # Optional upstream, used for the regressor's isotonic quantile fix
+  # (crossing_method="isotonic"); without it tabicl silently falls back to sort.
+  - numba
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_tabicl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/soda-inria/tabicl
+  repository: https://github.com/soda-inria/tabicl
+  documentation: https://tabicl.readthedocs.io/en/latest/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: 'TabICL: A state-of-the-art tabular foundation model'
+  description: |
+    TabICL is a tabular foundation model for classification and regression
+    using in-context learning. The scikit-learn compatible TabICLClassifier and
+    TabICLRegressor make predictions in a single forward pass.
+
+    This build does not include psutil or huggingface_hub. Checkpoints are not
+    downloaded automatically; download one yourself and pass it via model_path=.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
