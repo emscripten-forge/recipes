@@ -167,9 +167,10 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     with open(recipe_file) as file:
         recipe = YAML().load(file)
 
-        # Multi-outputs recipe
+        # Multi-outputs recipe (skip staging build caches)
         if 'outputs' in recipe:
-            for output in recipe['outputs']:
+            package_outputs = [o for o in recipe['outputs'] if 'staging' not in o]
+            for output in package_outputs:
                 if 'tests' not in output:
                     automerge = False
                     break
