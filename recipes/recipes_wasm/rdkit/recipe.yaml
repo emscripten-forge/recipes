@@ -1,0 +1,79 @@
+context:
+  name: rdkit
+  version: 2026.09.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://github.com/rdkit/rdkit/archive/Release_${{ version | replace('.', '_') }}.tar.gz
+  sha256: 42650cd497f4cb8273c935d75f4b48db6da7b9ddad16a0cb2a46271f509c9760
+  patches:
+  - patches/0001-emscripten-shared-libs.patch
+# fetched by rdkit's CMake at configure time otherwise
+- url: https://github.com/aantron/better-enums/archive/c35576bed0295689540b39873126129adfa0b4c8.tar.gz
+  sha256: 9b78dcef7f88d1345b6f25335bfbcba5f024b08990c7d6dc605b833f4128b8dd
+  target_directory: better_enums
+- url: https://github.com/rareylab/RingDecomposerLib/archive/v1.1.3_rdkit.tar.gz
+  sha256: 944b5816712a48bbf88aa25d4300ce11871ddf6e971218eac08f90ed2192f715
+  target_directory: External/RingFamilies/RingDecomposerLib
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - numpy
+  - nanobind <2.10.2
+  - cmake
+  - ninja
+  host:
+  - python-dev
+  - numpy
+  - libboost-headers
+  - eigen
+  - cairo-static
+  - freetype-static
+  run:
+  - python
+  - numpy
+  - pillow
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_rdkit.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    # rdkit.Chem.Draw.IPythonConsole (notebook rich display) needs IPython
+    - ipython
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  summary: RDKit is a collection of cheminformatics and machine-learning software
+  license: BSD-3-Clause
+  license_file: license.txt
+  homepage: https://www.rdkit.org
+  repository: https://github.com/rdkit/rdkit
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

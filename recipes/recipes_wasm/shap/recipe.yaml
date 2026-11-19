@@ -1,0 +1,75 @@
+context:
+  name: shap
+  version: 0.54.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1de58fde32686a2757bada96a7cb0a77649aa519800e5ab059faaab3900c6720
+
+build:
+  number: 0
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  - cmake >=4.0
+  - ninja
+  - numpy
+  - nanobind
+  - scikit-build-core
+  - setuptools-scm
+  - python
+  - pip
+  host:
+  - python-dev
+  - numpy
+  run:
+  - python
+  - numpy >=2
+  - scipy
+  - scikit-learn
+  - pandas
+  - tqdm >=4.27.0
+  - packaging >20.9
+  - slicer ==0.0.8
+  - cloudpickle
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_shap.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - matplotlib-base
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/shap/shap
+  repository: https://github.com/shap/shap
+  documentation: https://shap.readthedocs.io/en/latest/
+  license: MIT
+  license_file: LICENSE
+  summary: A unified approach to explain the output of any machine learning model.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
