@@ -141,6 +141,11 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     recipe_fname = 'recipe.yaml'
     if (recipe_dir / recipe_fname).exists():
         recipe_file = recipe_dir / recipe_fname
+        with open(recipe_file) as file:
+            recipe = YAML().load(file)
+        if recipe.get('extra', {}).get('skip-autoupdates'):
+            print(f"Skipping {recipe_dir.name}: extra.skip-autoupdates is set")
+            return False, None, None
         cv, nv, h = get_new_version(recipe_file)
         if nv is not None:
             new_version = nv
@@ -162,9 +167,10 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     with open(recipe_file) as file:
         recipe = YAML().load(file)
 
-        # Multi-outputs recipe
+        # Multi-outputs recipe (skip staging build caches)
         if 'outputs' in recipe:
-            for output in recipe['outputs']:
+            package_outputs = [o for o in recipe['outputs'] if 'staging' not in o]
+            for output in package_outputs:
                 if 'tests' not in output:
                     automerge = False
                     break
@@ -332,8 +338,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=50
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python',
-            'libffi', 'r-base-4.5.3'
+            'sqlite', 'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 
