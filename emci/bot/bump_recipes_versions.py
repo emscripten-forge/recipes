@@ -171,7 +171,7 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
         elif 'tests' not in recipe:
             automerge = False
 
-    if target_pr_branch_name != "main":
+    if target_pr_branch_name not in ['main', 'emscripten-6x']:
         automerge = False
 
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
@@ -313,13 +313,13 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
         # Merge PRs if possible
-        if pr_target_branch in ["main"]:
+        if pr_target_branch in ['main', 'emscripten-6x']:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
 
                 try:
-                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
+                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=True)
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
 
