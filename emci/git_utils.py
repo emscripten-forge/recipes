@@ -177,8 +177,8 @@ def make_pr_for_recipe(recipe_dir, pr_title, target_branch_name, branch_name, au
 
     if target_branch_name == "emscripten-6x":
         args.extend(["--label", "6x"])
-        if Path(recipe_dir).parent.name == "recipes_wasm":
-            args.extend(["--label", "migrated"])
+        if Path(recipe_dir).parent.name == "recipes_emscripten":
+            args.extend(["--label", "needs-migration"])
     else:
         args.extend(['--label', 'Automerge' if automerge else 'Needs Tests'])
         if target_branch_name == "main":
