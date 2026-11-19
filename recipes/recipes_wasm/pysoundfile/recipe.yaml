@@ -1,0 +1,62 @@
+context:
+  name: soundfile
+  version: 0.14.0
+
+package:
+  name: pysoundfile
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ba1c1a2d618bca5c406647c83b89f07cc8810fa506a50622a6993ba130c1de11
+  patches:
+  # find libsndfile.so (from the libsndfile package) in <prefix>/lib
+  - patches/0001-load-libsndfile-from-prefix-on-emscripten.patch
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+
+requirements:
+  build:
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
+  # generates the ABI-mode (pure python) _soundfile module
+  - cffi >=1.0
+  host:
+  - python
+  run:
+  - python >=${{ python_min }}
+  - cffi >=1.0
+  - numpy
+  - typing_extensions
+  - libsndfile >=1.2
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_soundfile.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/bastibe/python-soundfile
+  repository: https://github.com/bastibe/python-soundfile
+  documentation: https://python-soundfile.readthedocs.io/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: An audio library based on libsndfile, CFFI and NumPy
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
