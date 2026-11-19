@@ -1,6 +1,6 @@
 context:
   name: pytensor-base
-  version: 3.2.4
+  version: 3.3.8
 
 package:
   name: ${{ name|lower }}
@@ -8,45 +8,41 @@ package:
 
 source:
 - url: https://pypi.org/packages/source/p/pytensor/pytensor-${{ version }}.tar.gz
-  sha256: 91b5d38c9d0162165544b29cbf2ae029427cab0a1c773ac42f687e41a86f6c67
+  sha256: 3e1737d99cdb185c8fa9e9011451ba3e765f685b2c77534f25eae2bad53a0b13
   patches:
   - patches/0001-skip-c-code-loading-on-emscripten.patch
   - patches/0003-avoid-setuptools-import-on-emscripten.patch
-  - patches/0004-use-target-sized-numba-indices.patch
   - patches/0005-disable-numba-disk-cache-on-emscripten.patch
 
 build:
-  number: 2
-
+  number: 0
+  noarch: python
+  script:
+    env:
+      # skip the cython scan extension and build a pure-python wheel,
+      # pytensor's "Python mode" (C compilation is unavailable in the browser)
+      PYODIDE: "1"
+    content: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
   files:
     exclude:
-    - '**/*.pyi'
-    - '**/__pycache__/**'
-    - '**/*.pyc'
     - '**/tests/**'
     - '**/test_*.py'
-  python:
-    skip_pyc_compilation:
-    - '**/*.py'
 
 requirements:
   build:
-  - cross-python_${{ target_platform }}
-  - python
+  - python ${{ python_min }}.*
   - pip
   - setuptools
-  - numpy
-  - versioneer
+  - numpy >=2.0
+  - versioneer 0.29.*
   host:
   - python
-  - numpy
-  - scipy
   run:
-  - python
-  - numpy
-  - scipy
-  - numba 0.66.*
-  - filelock
+  - python >=${{ python_min }}
+  - numpy >=2.0
+  - scipy >=1,<2
+  - numba >=0.58,<=0.68.0
+  - filelock >=3.15
   - etuples
   - logical-unification
   - minikanren
@@ -62,6 +58,22 @@ tests:
     - pytester
     run:
     - pytester-run
+# pymc-base (noarch on conda-forge) runs on top of pytensor-base
+- script: pytester
+  files:
+    recipe:
+    - test_pymc_base.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+    - pymc-base
+    - matplotlib-base
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: https://github.com/pymc-devs/pytensor
