@@ -1,0 +1,57 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 78433d6..1ce5824 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -170,7 +170,7 @@ if(RDK_SWIG_STATIC AND RDK_BUILD_SWIG_WRAPPERS)
+     set(RDK_INSTALL_STATIC_LIBS ON CACHE BOOL "install the rdkit static libraries" FORCE)
+   endif(NOT MSVC AND NOT RDK_INSTALL_STATIC_LIBS)
+ endif()
+-if ((MSVC AND (NOT RDK_INSTALL_DLLS_MSVC)) OR (WIN32 AND RDK_INSTALL_STATIC_LIBS) OR EMSCRIPTEN OR RDK_BUILD_MINIMAL_LIB)
++if ((MSVC AND (NOT RDK_INSTALL_DLLS_MSVC)) OR (WIN32 AND RDK_INSTALL_STATIC_LIBS) OR RDK_BUILD_MINIMAL_LIB)
+   set(RDK_BUILD_STATIC_LIBS_ONLY ON)
+ else()
+   set(RDK_BUILD_STATIC_LIBS_ONLY OFF)
+@@ -380,7 +380,7 @@ if(RDK_BUILD_NANOBIND_WRAPPERS)
+     OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+   find_package(nanobind 2 CONFIG REQUIRED)
+ 
+-  if(nanobind_VERSION GREATER_EQUAL 2.13.0)
++  if(nanobind_VERSION VERSION_GREATER_EQUAL 2.13.0)
+     target_compile_definitions(rdkit_py_base INTERFACE "-DNANOBIND_POOLED_AVAILABLE")
+   endif()
+ 
+diff --git a/Code/GraphMol/ScaffoldNetwork/nbWrap/rdScaffoldNetwork.cpp b/Code/GraphMol/ScaffoldNetwork/nbWrap/rdScaffoldNetwork.cpp
+index 0558f42..2284116 100644
+--- a/Code/GraphMol/ScaffoldNetwork/nbWrap/rdScaffoldNetwork.cpp
++++ b/Code/GraphMol/ScaffoldNetwork/nbWrap/rdScaffoldNetwork.cpp
+@@ -46,12 +46,14 @@ void updateNetworkHelper(const std::vector<std::shared_ptr<ROMol>> &mols,
+   ScaffoldNetwork::updateScaffoldNetwork(mols, net, params);
+ }
+ 
++#ifdef RDK_USE_BOOST_SERIALIZATION
+ std::string serializeNetwork(const ScaffoldNetwork::ScaffoldNetwork &net) {
+   std::stringstream oss;
+   boost::archive::text_oarchive oa(oss);
+   oa << net;
+   return oss.str();
+ }
++#endif
+ }  // namespace
+ 
+ NB_MODULE(rdScaffoldNetwork, m) {
+@@ -150,13 +152,13 @@ NB_MODULE(rdScaffoldNetwork, m) {
+ #else
+       .def("__getstate__",
+            [](const ScaffoldNetwork::ScaffoldNetwork &self) {
+-             throw nb::runtime_error(
++             throw std::runtime_error(
+                  "Pickling of ScaffoldNetwork instances is not "
+                  "enabled in this build");
+            })
+       .def("__setstate__",
+            [](ScaffoldNetwork::ScaffoldNetwork &self, nb::tuple state) {
+-             throw nb::runtime_error(
++             throw std::runtime_error(
+                  "Pickling of ScaffoldNetwork instances is not "
+                  "enabled in this build");
+            });
