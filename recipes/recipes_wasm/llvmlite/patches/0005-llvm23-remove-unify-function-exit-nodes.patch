@@ -1,0 +1,39 @@
+diff --git a/ffi/PASSREGISTRY.def b/ffi/PASSREGISTRY.def
+index 633082d..51dd928 100644
+--- a/ffi/PASSREGISTRY.def
++++ b/ffi/PASSREGISTRY.def
+@@ -54,7 +54,6 @@ FUNCTION_PASS(LowerAtomicPass)
+ FUNCTION_PASS(LowerInvokePass)
+ FUNCTION_PASS(LowerSwitchPass)
+ FUNCTION_PASS(MemCpyOptPass)
+-FUNCTION_PASS(UnifyFunctionExitNodesPass)
+ FUNCTION_PASS(ReassociatePass)
+ FUNCTION_PASS(RegToMemPass)
+ FUNCTION_PASS(SinkingPass)
+diff --git a/ffi/newpassmanagers.cpp b/ffi/newpassmanagers.cpp
+index c17e77e..349256b 100644
+--- a/ffi/newpassmanagers.cpp
++++ b/ffi/newpassmanagers.cpp
+@@ -209,7 +209,6 @@
+ #include "llvm/Transforms/Utils/StripGCRelocates.h"
+ #include "llvm/Transforms/Utils/StripNonLineTableDebugInfo.h"
+ #include "llvm/Transforms/Utils/SymbolRewriter.h"
+-#include "llvm/Transforms/Utils/UnifyFunctionExitNodes.h"
+ #include "llvm/Transforms/Utils/UnifyLoopExits.h"
+ #include "llvm/Transforms/Vectorize/LoadStoreVectorizer.h"
+ #include "llvm/Transforms/Vectorize/LoopVectorize.h"
+@@ -598,6 +597,14 @@ LLVMPY_module_AddModuleDebugInfoPrinterPass(LLVMModulePassManagerRef MPM) {
+     llvm::unwrap(MPM)->addPass(ModuleDebugInfoPrinterPass(llvm::outs()));
+ }
+ 
++// LLVM 23 removed UnifyFunctionExitNodesPass. Keep the entry points so the
++// Python bindings still resolve them, but make them no-ops.
++API_EXPORT(void)
++LLVMPY_module_AddUnifyFunctionExitNodesPass(LLVMModulePassManagerRef MPM) {}
++
++API_EXPORT(void)
++LLVMPY_function_AddUnifyFunctionExitNodesPass(LLVMFunctionPassManagerRef FPM) {}
++
+ #define CGSCC_PASS(NAME)                                                       \
+     API_EXPORT(void) LLVMPY_module_Add##NAME(LLVMModulePassManagerRef MPM) {   \
+         llvm::unwrap(MPM)->addPass(                                            \
