@@ -7,6 +7,7 @@ echo "=========================================="
 
 emcmake cmake -S tests -B build_tests \
   -G Ninja \
+  ${CMAKE_ARGS} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="${PREFIX}" \
   -DCMAKE_FIND_ROOT_PATH="${PREFIX}" \
