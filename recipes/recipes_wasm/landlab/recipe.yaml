@@ -16,14 +16,18 @@ build:
     env:
       # no OpenMP in the browser (it would need shared memory / pthreads)
       WITH_OPENMP: '0'
-      # -O3 instead of the default -O0 for the Cython extensions
-      LANDLAB_BUILD_RELEASE: '1'
-    content: ${PYTHON} -m pip install . -vv --no-deps --no-build-isolation
+    content:
+    # emcc appends EMCC_CFLAGS (-O2 from the emscripten activation) to every
+    # call, so it overrides setup.py's -O flags. -Oz makes the Cython
+    # extensions ~40% smaller (ca/cfuncs: 3.8 -> 2.3 MB).
+    - export EMCC_CFLAGS="${EMCC_CFLAGS/-O2/-Oz}"
+    - ${PYTHON} -m pip install . -vv --no-deps --no-build-isolation
   files:
     exclude:
     # Cython sources and the generated C files (tens of MiB) are not needed at runtime
     - '**/*.pyx'
     - '**/*.c'
+    - '**/*.cpp'
     - '**/__pycache__/**'
     - '**/*.pyc'
   python:
