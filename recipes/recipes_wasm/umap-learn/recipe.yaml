@@ -10,40 +10,43 @@ source:
   url: https://github.com/lmcinnes/umap/archive/refs/tags/release-${{ version }}.tar.gz
   sha256: 88eab759b2300b49ca7218f1c35a9036d25cfd2494f18f66fb2980752e187227
   patches:
-    - patches/num_threads.patch
+  - patches/num_threads.patch
   # path: /Users/thorstenbeier/src/umap
 build:
   number: 0
 
 requirements:
   build:
-    - python
-    - cross-python_emscripten-wasm32
-    - ${{ compiler("c") }}
-    - ${{ compiler("cxx") }}
-    - pip
-    - setuptools
+  - python
+  - cross-python_emscripten-wasm32
+  - ${{ compiler("c") }}
+  - ${{ compiler("cxx") }}
+  - pip
+  - setuptools
 
   host:
-    - python
-
+  - python-dev
   run:
-    - python
-    - setuptools
-    - numpy >=1.17
-    - numba >=0.51.2
-    - scikit-learn >=0.22
-    - scipy >=1.3.1
-    - pynndescent >=0.5
-    - tqdm
+  - python
+  - setuptools
+  - numpy >=1.17
+  - numba >=0.51.2
+  - scikit-learn >=0.22
+  - scipy >=1.3.1
+  - pynndescent >=0.5
+  - tqdm
 
 tests:
-  - package_contents:
-      files:
-        - lib/python*/site-packages/umap/*.py
+- package_contents:
+    files:
+    - lib/python*/site-packages/umap/*.py
 
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
 about:
-  homepage:  http://github.com/lmcinnes/umap
+  homepage: http://github.com/lmcinnes/umap
   license: BSD-2-Clause
   license_file: LICENSE.txt
   summary: Uniform Manifold Approximation and Projection
