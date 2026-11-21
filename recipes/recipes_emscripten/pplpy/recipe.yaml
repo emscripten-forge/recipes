@@ -1,0 +1,63 @@
+context:
+  name: pplpy
+  version: 0.8.10
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/92/d0/664f5ee65a8d9d071c2cdbfc8e42e0476b5b8c5ceefaa5fc9c2e1cd6fa5e/pplpy-${{ version }}.tar.gz
+  sha256: d42a216c82914dcf4d7c000debc98bb336b8f83e026ba5d952cccd9f8074effd
+
+build:
+  number: 0
+  script: |
+    # ppl.hh uses std::mem_fun_ref, which was removed in C++17
+    export CXXFLAGS="$CXXFLAGS -std=c++11"
+    ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cython
+  - cysignals
+  - gmpy2
+  - pip
+  host:
+  - python
+  - pip
+  - setuptools
+  - gmp
+  - ppl
+  - gmpy2
+  - cysignals
+  run:
+  - python
+  - gmpy2
+  - cysignals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pplpy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/sagemath/pplpy
+  license: GPL-3.0-or-later
+  license_file: LICENSE.txt
+  summary: Python PPL wrapper
+  repository: https://github.com/sagemath/pplpy
+
+extra:
+  recipe-maintainers:
+  - Copilot

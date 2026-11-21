@@ -1,0 +1,54 @@
+context:
+  name: clingo
+  version: 5.8.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/c/clingo/clingo-${{ version }}.tar.gz
+  sha256: 28778784f8f4e8d842a027ceabc8afd3493d0ce49494c8a7dfe960a7556be0e9
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake >=3.15
+  - pip
+  - scikit-build-core >=1.0
+  host:
+  - python
+  - pip
+  - cffi
+  run:
+  - python
+  - cffi
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_clingo.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/potassco/clingo
+  license: MIT
+  license_file: LICENSE.md
+  summary: CFFI-based bindings to the clingo solver.
+  repository: https://github.com/potassco/clingo
+
+extra:
+  recipe-maintainers:
+  - Copilot

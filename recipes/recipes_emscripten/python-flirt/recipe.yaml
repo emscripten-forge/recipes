@@ -1,0 +1,54 @@
+context:
+  name: python-flirt
+  version: 0.10.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/p/python_flirt/python_flirt-${{ version }}.tar.gz
+  sha256: f180d7fcdc110cbc5197d27c58fe7cd57adc2eead0a0b562d47ab0b0a85a3b20
+
+build:
+  number: 0
+  script: |
+    set -e
+    export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+    export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+    rustup component add rust-src
+    ${PYTHON} -m pip install . -vvv
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - maturin
+  - pip
+  - rust-nightly
+  host:
+  - python
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_python_flirt.py
+
+about:
+  homepage: https://github.com/williballenthin/lancelot/tree/master/pyflirt
+  repository: https://github.com/williballenthin/lancelot
+  summary: A Python library for parsing, compiling, and matching Fast Library Identification and Recognition Technology (FLIRT) signatures.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+  - Copilot

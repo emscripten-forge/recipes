@@ -1,0 +1,54 @@
+context:
+  name: css-inline
+  version: 0.21.3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/c/css_inline/css_inline-${{ version }}.tar.gz
+  sha256: c402f1d62a7ba61871dd00e87769c59eb31ece7995b135f20b546f7bc9d367a0
+
+build:
+  number: 0
+  script: |
+    set -e
+    export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+    export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+    rustup component add rust-src
+    ${PYTHON} -m pip install . -vvv
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - maturin
+  - pip
+  - rust-nightly
+  host:
+  - python
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_css_inline.py
+
+about:
+  homepage: https://github.com/Stranger6667/css-inline
+  repository: https://github.com/Stranger6667/css-inline
+  summary: High-performance library for inlining CSS into HTML 'style' attributes
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - Copilot

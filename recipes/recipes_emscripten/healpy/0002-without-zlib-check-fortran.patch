@@ -1,0 +1,27 @@
+cfitsio links with zlib and includes a check for zlib in its configure script.
+When building the package out of tree, there is currently no zlib available on
+the host, so the check fails. We disable the check, as suggested by the
+configure docs for cross-builds, and at cross-compile time the correct
+zlib is found.
+
+cfitsio is by default built with support for a Fortran wrapper, which requires
+f2c. Since we do not need the Fortran wrappers, we can simplify the build and
+not build the Fortran wrappers.
+
+Both options are passed from healpy's setup.py script to the configure scripts
+of all subprojects, even though they are only relevant for cfitsio, but the
+other subprojects just ignore the to-them-unknown options.
+
+diff --git a/setup.py b/setup.py
+index 638340b..3cab0f3 100755
+--- a/setup.py
++++ b/setup.py
+@@ -170,6 +170,8 @@ class build_external_clib(build_clib):
+                 "--disable-curl",
+                 "--with-pic",
+                 "--disable-maintainer-mode",
++                "--without-zlib-check",
++                "--without-fortran",
+             ]
+ 
+             log.info("%s", " ".join(cmd))

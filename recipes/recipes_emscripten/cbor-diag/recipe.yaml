@@ -1,0 +1,54 @@
+context:
+  name: cbor-diag
+  version: 1.2.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/c/cbor_diag/cbor_diag-${{ version }}.tar.gz
+  sha256: 355b622ff9091093f27d04bd14c3da5618d8338222f51b7fbb6700a681039d6b
+
+build:
+  number: 0
+  script: |
+    set -e
+    export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+    export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+    rustup component add rust-src
+    ${PYTHON} -m pip install . -vvv
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - maturin
+  - pip
+  - rust-nightly
+  host:
+  - python
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_cbor_diag.py
+
+about:
+  homepage: https://github.com/chrysn/cbor-diag-py
+  repository: https://github.com/chrysn/cbor-diag-py
+  summary: Conversion between CBOR and CBOR Diagnostic Notation
+  license: Apache-2.0 OR MIT
+  license_file: README.rst
+
+extra:
+  recipe-maintainers:
+  - Copilot

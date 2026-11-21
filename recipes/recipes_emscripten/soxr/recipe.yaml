@@ -1,0 +1,64 @@
+context:
+  name: soxr
+  version: 1.1.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9f228ae21c78fa9359ca98d8a5e8e91f30639e438e574133dace62c5b5309e44
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cross-python_${{ target_platform }}
+  - cross-python-cmake_emscripten-wasm32
+  - python
+  - cmake >=3.15
+  - ninja
+  - pip
+  - scikit-build-core
+  - nanobind <2.10
+  - setuptools-scm
+  host:
+  - python
+  - numpy
+  run:
+  - python
+  - numpy
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_soxr.py
+
+about:
+  homepage: https://github.com/dofuuz/python-soxr
+  repository: https://github.com/dofuuz/python-soxr
+  summary: High quality, one-dimensional sample-rate conversion library
+  license: LGPL-2.1-or-later
+  license_file:
+  - COPYING.LGPL
+  - LICENSE.txt
+
+extra:
+  recipe-maintainers:
+  - Copilot

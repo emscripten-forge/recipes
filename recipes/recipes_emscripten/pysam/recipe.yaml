@@ -1,0 +1,69 @@
+context:
+  name: pysam
+  version: 0.24.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/pysam/pysam-${{ version }}.tar.gz
+  sha256: 90f612afccdb454d2447ecb5229266c6e7f991093deed4ed0a791db01f7fc994
+  patches:
+  - 0001-use-prebuilt-htslib-config.patch
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools >=59.0
+  - cython >=3,<3.1
+  - make
+  - pkg-config
+  host:
+  - python
+  - pip
+  - setuptools >=59.0
+  - cython >=3,<3.1
+  - zlib
+  - bzip2
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pysam.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/pysam-developers/pysam
+  repository: https://github.com/pysam-developers/pysam
+  documentation: https://pysam.readthedocs.io/
+  license: MIT
+  license_file: COPYING
+  summary: Package for reading, manipulating, and writing genomic data
+
+extra:
+  recipe-maintainers:
+  - Copilot

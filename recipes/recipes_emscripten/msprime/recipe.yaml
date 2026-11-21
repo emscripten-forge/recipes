@@ -1,0 +1,63 @@
+context:
+  name: msprime
+  version: 1.4.5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/m/msprime/msprime-${{ version }}.tar.gz
+  sha256: 0a06fa30365a69ac2788f5c2ebb40bc0bf4e9ec07d0a4b0a6c30fc38080aa7bc
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy
+  - ${{ compiler('c') }}
+  - pip
+  - setuptools
+  - setuptools_scm
+  - wheel
+  host:
+  - python
+  - pip
+  - setuptools
+  - setuptools_scm
+  - wheel
+  - numpy
+  - gsl
+  run:
+  - python
+  - numpy
+  - newick
+  - tskit
+  - demes
+  - rpds-py
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_msprime.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://tskit.dev/msprime
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Simulate genealogical trees and genomic sequence data using population genetic models
+  repository: https://github.com/tskit-dev/msprime
+
+extra:
+  recipe-maintainers:
+  - Copilot

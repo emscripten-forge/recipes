@@ -1,0 +1,36 @@
+--- a/packager/nativelib.py
++++ b/packager/nativelib.py
+@@ -5,10 +5,11 @@
+ import logging
+ import os
+ import pathlib
++import shlex
+ import shutil
+ import subprocess
+ import sys
+-from platform import system
++from platform import machine, system
+ from typing import Optional
+ 
+ from .build_config import BuildConfiguration
+@@ -16,7 +17,11 @@
+ 
+ def _lib_name() -> str:
+     """Return platform dependent shared object name."""
+-    if system() in ["Linux", "OS400"] or system().upper().endswith("BSD"):
++    if (
++        system() in ["Linux", "OS400"]
++        or system().upper().endswith("BSD")
++        or machine() == "wasm32"
++    ):
+         name = "libxgboost.so"
+     elif system() == "Darwin":
+         name = "libxgboost.dylib"
+@@ -52,6 +57,7 @@
+             "-DKEEP_BUILD_ARTIFACTS_IN_BINARY_DIR=ON",
+         ]
+         cmake_cmd.extend(build_config.get_cmake_args())
++        cmake_cmd.extend(shlex.split(os.environ.get("XGBOOST_EXTRA_CMAKE_ARGS", "")))
+ 
+         logger.info("CMake args: %s", str(cmake_cmd))
+         subprocess.check_call(cmake_cmd, cwd=build_dir)

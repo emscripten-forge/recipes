@@ -1,0 +1,48 @@
+--- a/setup.py
++++ b/setup.py
+@@ -245,26 +245,7 @@
+ 
+ 
+ def configure_library(library_dir, env_options=None, options=[]):
+-
+-    configure_script = os.path.join(library_dir, "configure")
+-
+-    on_rtd = os.environ.get("READTHEDOCS") == "True"
+-    # RTD has no bzip2 development libraries installed:
+-    if on_rtd:
+-        env_options = "--disable-bz2"
+-
+-    if not os.path.exists(configure_script):
+-        raise ValueError(f"configure script {configure_script!r} does not exist")
+-
+-    with changedir(library_dir), set_compiler_envvars():
+-        if env_options is not None:
+-            if run_configure(env_options):
+-                return env_options
+-
+-        for option in options:
+-            if run_configure(option):
+-                return option
+-
++    # htslib is configured for emscripten ahead of time (see build.sh)
+     return None
+ 
+ 
+@@ -532,7 +513,7 @@
+     print(f"# pysam: htslib configure options: {htslib_configure_options}")
+ 
+     config_headers += ["htslib/config.h"]
+-    if htslib_configure_options is None:
++    if not os.path.exists("htslib/config.h"):
+         # create empty config.h file
+         with open("htslib/config.h", "w") as outf:
+             outf.write(
+@@ -550,6 +531,8 @@
+     if "LIBS" in htslib_make_options:
+         external_htslib_libraries.extend(
+             [re.sub("^-l", "", x) for x in htslib_make_options["LIBS"].split(" ") if x.strip()])
++        # htslib's LIBS repeats -lz, which duplicates libz.a under wasm-ld's whole-archive side-module link
++        external_htslib_libraries = list(dict.fromkeys(external_htslib_libraries))
+ 
+     for_redistribution = truthy(os.environ.get("CIBUILDWHEEL", "0"))
+ 

@@ -1,0 +1,66 @@
+context:
+  name: sourmash
+  version: 4.8.14
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/s/sourmash/sourmash-${{ version }}.tar.gz
+  sha256: 9e8f7d5633b529513efc950e25c974c4ecf7c99b4cafbd00f2f135ad0563307f
+  patches:
+  - patches/0001-Bump-maturin.patch
+
+build:
+  number: 0
+  script: |
+    set -e
+    export MATURIN_PYTHON_SYSCONFIGDATA_DIR=${PREFIX}/etc/conda/_sysconfigdata__emscripten_wasm32-emscripten.py
+    export PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+    rustup component add rust-src
+    ${PYTHON} -m pip install . -vvv
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - cffi
+  - maturin
+  - pip
+  - rust-nightly
+  host:
+  - python
+  - pip
+  - cffi
+  run:
+  - python
+  - cffi
+  - screed
+  - deprecation
+  - cachetools
+  - numpy
+  - matplotlib
+  - scipy
+  - bitstring
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_sourmash.py
+
+about:
+  homepage: https://github.com/sourmash-bio/sourmash
+  repository: https://github.com/sourmash-bio/sourmash
+  summary: Compute and compare MinHash signatures for DNA data sets.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - Copilot

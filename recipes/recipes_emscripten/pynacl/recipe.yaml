@@ -1,0 +1,64 @@
+context:
+  name: pynacl
+  version: 1.6.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/pynacl/pynacl-${{ version }}.tar.gz
+  sha256: 018494d6d696ae03c7e656e5e74cdfd8ea1326962cc401bcf018f1ed8436811c
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - make
+  - cffi
+  host:
+  - python
+  - pip
+  - setuptools
+  - cffi
+  run:
+  - python
+  - cffi
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pynacl.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/pyca/pynacl/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python binding to the Networking and Cryptography (NaCl) library
+  repository: https://github.com/pyca/pynacl/
+
+extra:
+  recipe-maintainers:
+  - Copilot

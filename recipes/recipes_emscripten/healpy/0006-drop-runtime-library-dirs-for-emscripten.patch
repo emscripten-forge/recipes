@@ -1,0 +1,16 @@
+Drop runtime library directories when targeting emscripten
+
+The bundled libraries are linked statically, and wasm-ld rejects the
+-R flags that distutils derives from runtime_library_dirs.
+
+--- a/setup.py
++++ b/setup.py
+@@ -304,6 +304,8 @@
+             self.run_command("build_clib")
+             build_clib = self.get_finalized_command("build_clib")
+             for key, value in build_clib.build_args.items():
++                if key == "runtime_library_dirs" and is_emscripten():
++                    continue
+                 for ext in self.extensions:
+                     if not hasattr(ext, key) or getattr(ext, key) is None:
+                         setattr(ext, key, value)
