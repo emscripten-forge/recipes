@@ -1,0 +1,108 @@
+diff --git a/include/declarations.h b/include/declarations.h
+index 1306b59..a388007 100644
+--- a/include/declarations.h
++++ b/include/declarations.h
+@@ -282,12 +282,34 @@ void dpotrs();
+ void dpotri();
+ void dtrtri();
+ #else
+ void dpotrf_();
+ void dpotrs_();
+ void dpotri_();
+ void dtrtri_();
+ #endif
+ #endif
+ 
++#ifdef HIDDENSTRLEN
++/*
++  Full prototypes for the routines called with character arguments, so that
++  the hidden string lengths are passed with the type the Fortran library
++  expects (size_t). Needed for WebAssembly, where a call must match the
++  callee's signature exactly.
++ */
++#include <stddef.h>
++void dgemm_(char *transa, char *transb, int *m, int *n, int *k, double *alpha,
++            double *a, int *lda, double *b, int *ldb, double *beta, double *c,
++            int *ldc, size_t transa_len, size_t transb_len);
++void dgemv_(char *trans, int *m, int *n, double *alpha, double *a, int *lda,
++            double *x, int *incx, double *beta, double *y, int *incy,
++            size_t trans_len);
++void dpotrf_(char *uplo, int *n, double *a, int *lda, int *info,
++             size_t uplo_len);
++void dpotrs_(char *uplo, int *n, int *nrhs, double *a, int *lda, double *b,
++             int *ldb, int *info, size_t uplo_len);
++void dtrtri_(char *uplo, char *diag, int *n, double *a, int *lda, int *info,
++             size_t uplo_len, size_t diag_len);
++#endif
++
+ 
+ #endif
+diff --git a/lib/linesearch.c b/lib/linesearch.c
+index aad47a8..c314968 100644
+--- a/lib/linesearch.c
++++ b/lib/linesearch.c
+@@ -158,21 +158,21 @@ double linesearch(n,dX,work1,work2,work3,cholinv,q,z,workvec,
+        * z=z-lanczosvectors*reorth.
+        *
+        * lanczosvectors is of size n by j, with lda=n.
+        */
+ 
+       scale1=1.0;
+       scale2=0.0;
+       inc=1;
+ 
+ #ifdef HIDDENSTRLEN
+-      dgemv_("T",&n,&j,&scale1,lanczosvectors,&n,z+1,&inc,&scale2,reorth+1,&inc,1,1);
++      dgemv_("T",&n,&j,&scale1,lanczosvectors,&n,z+1,&inc,&scale2,reorth+1,&inc,1);
+ #else
+ #ifdef NOUNDERBLAS
+ #ifdef CAPSBLAS
+       DGEMV("T",&n,&j,&scale1,lanczosvectors,&n,z+1,&inc,&scale2,reorth+1,&inc);
+ #else
+       dgemv("T",&n,&j,&scale1,lanczosvectors,&n,z+1,&inc,&scale2,reorth+1,&inc);
+ #endif
+ #else
+ #ifdef CAPSBLAS
+       DGEMV_("T",&n,&j,&scale1,lanczosvectors,&n,z+1,&inc,&scale2,reorth+1,&inc);
+diff --git a/lib/sdp.c b/lib/sdp.c
+index ce43465..733324d 100644
+--- a/lib/sdp.c
++++ b/lib/sdp.c
+@@ -763,33 +763,37 @@ int sdp(n,k,C,a,constant_offset,constraints,byblocks,fill,X,y,Z,cholxinv,
+ 
+ 	   /*
+ 	     Next, compute the cholesky factorization of the system matrix.
+ 	   */
+ 
+ #ifdef USEGETTIME
+ 	   gettimeofday(&tp,NULL);
+ 	   t1=(double)tp.tv_sec+(1.0e-6)*tp.tv_usec;
+ #endif
+ 
++#ifdef HIDDENSTRLEN
++	   dpotrf_("U",&m,O,&ldam,&info,1);
++#else
+ #ifdef NOUNDERLAPACK
+   #ifdef CAPSLAPACK
+ 	   DPOTRF("U",&m,O,&ldam,&info);
+   #else
+ 	   dpotrf("U",&m,O,&ldam,&info);
+   #endif
+ #else
+   #ifdef CAPSLAPACK
+ 	   DPOTRF_("U",&m,O,&ldam,&info);
+   #else
+ 	   dpotrf_("U",&m,O,&ldam,&info);
+   #endif
+ #endif
++#endif
+ 
+ #ifdef USEGETTIME
+ 	   gettimeofday(&tp,NULL);
+ 	   t2=(double)tp.tv_sec+(1.0e-6)*tp.tv_usec;
+ 	   factortime=factortime+t2-t1;
+ #endif
+ 
+ 	   if (info != 0) 
+ 	     {
+ 	       if (printlevel >= 3)
