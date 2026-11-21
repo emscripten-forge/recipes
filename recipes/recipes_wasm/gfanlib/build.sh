@@ -5,18 +5,17 @@ set -euxo pipefail
 ln -s "${PREFIX}/include/cddlib" ./cdd
 
 # Clang flags to forgive legacy C++ template and access rules
-export CXXFLAGS="-std=c++11 -fdelayed-template-parsing"
+export CXXFLAGS="${CXXFLAGS:-} -std=c++11 -fdelayed-template-parsing -fPIC"
 
 export CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/cddlib"
-export LDFLAGS="-L${PREFIX}/lib"
+export LDFLAGS="${LDFLAGS:-} -L${PREFIX}/lib"
 
 emconfigure ./configure \
-    --build=i686-pc-linux-gnu \
-    --host=wasm32-unknown-emscripten \
+    --build=${BUILD} \
+    --host=${HOST} \
     --disable-shared \
     --enable-static \
     --prefix="${PREFIX}"
 
-
-emmake make -j8
+emmake make -j${CPU_COUNT}
 emmake make install MKINSTALLDIRS="mkdir -p"
