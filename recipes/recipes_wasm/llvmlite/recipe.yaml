@@ -14,6 +14,11 @@ source:
   - patches/0002-add-wasmlinker-cpp.patch
   - patches/0003-add-wasmengine-python.patch
   - patches/0004-emscripten-python-compat.patch
+  # LLVM 23 removed UnifyFunctionExitNodesPass.
+  - patches/0005-llvm23-remove-unify-function-exit-nodes.patch
+  # Upstream bug: the module variant omits the int threshold argtype, so
+  # ctypes makes a variadic call that traps with a signature mismatch on wasm64.
+  - patches/0006-fix-jump-threading-module-argtypes.patch
 
 build:
   number: 0
@@ -26,14 +31,14 @@ requirements:
   - cross-python_${{ target_platform }}
   - cmake
   - make
+  - setuptools
 
   host:
-  - python
-  - setuptools
-  # llvm 22.* matches llvmlite 0.48's official LLVM support range.
-  # liblldWasm.a + liblldCommon.a (for wasmlinker.cpp) are bundled in the
-  # llvm package on emscripten-forge alongside the LLVM static archives.
-  - llvm 22.*
+  - python-dev
+  # LLVM static archives; liblldWasm.a + liblldCommon.a (for wasmlinker.cpp)
+  # come from lld-static.
+  - llvm-static 23.1.*
+  - lld-static 23.1.*
 
   run:
   - python
@@ -51,6 +56,12 @@ tests:
     - pytester
     run:
     - pytester-run
+# Statically linked LLVM only imports pthread_setspecific (TLS key stub in
+# non-threaded builds); no threads are spawned.
+- script: generic-testing --allow-pthread
+  requirements:
+    build:
+    - generic-testing
 
 about:
   homepage: http://llvmlite.pydata.org

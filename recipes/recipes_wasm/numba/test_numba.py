@@ -16,6 +16,17 @@ def require_global_nrt():
         pytest.skip("pytester eagerly preloaded Numba's NRT extension locally")
 
 
+def require_global_helperlib():
+    import ctypes
+
+    # Object-mode code calls _helperlib functions (e.g. numba_py_type), which
+    # are only visible to JIT modules when the extension was loaded globally.
+    try:
+        getattr(ctypes.CDLL(None), "numba_py_type")
+    except AttributeError:
+        pytest.skip("pytester eagerly preloaded Numba's helperlib locally")
+
+
 def test_import_numba():
     import numba
 
@@ -244,3 +255,34 @@ def test_njit_parallel_falls_back_to_serial_pipeline():
     assert sum_squares.targetoptions["parallel"] is False
     llvm_ir = sum_squares.inspect_llvm(sum_squares.signatures[0])
     assert "numba_parallel_for" not in llvm_ir
+
+
+def test_forceobj_object_mode():
+    # Object-mode code calls the CPython C API directly from the JIT module.
+    from numba import jit
+
+    require_global_helperlib()
+
+    @jit(forceobj=True)
+    def build(keys, value):
+        out = {}
+        for key in keys:
+            out[key] = value + len(key)
+        return out
+
+    assert build(["a", "bcd"], 10) == {"a": 11, "bcd": 13}
+
+
+def test_objmode_block_in_njit():
+    from numba import njit, objmode
+
+    require_global_nrt()
+    require_global_helperlib()
+
+    @njit
+    def total(values):
+        with objmode(result="float64"):
+            result = float(sum(values.tolist()))
+        return result * 2.0
+
+    assert total(np.arange(4.0)) == 12.0

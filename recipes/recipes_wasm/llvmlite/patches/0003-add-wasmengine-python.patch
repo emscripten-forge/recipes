@@ -3,7 +3,7 @@ new file mode 100644
 index 00000000..307efef5
 --- /dev/null
 +++ b/llvmlite/binding/wasmengine.py
-@@ -0,0 +1,679 @@
+@@ -0,0 +1,684 @@
 +"""
 +WASM Execution Engine for llvmlite.
 +
@@ -41,6 +41,11 @@ index 00000000..307efef5
 +import tempfile
 +
 +_ON_EMSCRIPTEN = sys.platform == 'emscripten'
++
++
++def _wasm_arch():
++    """'wasm64' in a memory64 (wasm64) process, else 'wasm32'."""
++    return 'wasm64' if sys.maxsize > 2**32 else 'wasm32'
 +
 +# Set LLVMLITE_WASM_DEBUG=1 for verbose pipeline logging.
 +_DEBUG = os.environ.get('LLVMLITE_WASM_DEBUG', '0') != '0'
@@ -320,7 +325,7 @@ index 00000000..307efef5
 +                "as a shared side module"
 +            )
 +            link_args = [
-+                'wasm-ld', '-shared',
++                'wasm-ld', '-shared', *(['-mwasm64'] if _wasm_arch() == 'wasm64' else []),
 +                '--import-memory', '--stack-first', '--allow-undefined',
 +                obj_path, '-o', wasm_path,
 +            ]
@@ -455,7 +460,7 @@ index 00000000..307efef5
 +    Parameters
 +    ----------
 +    target_machine : TargetMachineRef
-+        A wasm32 TargetMachine (wasm32-unknown-emscripten on Emscripten,
++        A WASM TargetMachine (wasm32/wasm64-unknown-emscripten on Emscripten,
 +        wasm32-unknown-unknown elsewhere).
 +    wasm_ld_path : str, optional
 +        Path to wasm-ld binary (native only; ignored on Emscripten).
@@ -644,7 +649,7 @@ index 00000000..307efef5
 +    from llvmlite.binding import targets as _targets
 +
 +    if target_machine is None:
-+        triple = ('wasm32-unknown-emscripten' if _ON_EMSCRIPTEN
++        triple = ((_wasm_arch() + '-unknown-emscripten') if _ON_EMSCRIPTEN
 +                  else 'wasm32-unknown-unknown')
 +        from llvmlite.binding import initfini as _initfini
 +        _initfini.initialize_all_targets()
