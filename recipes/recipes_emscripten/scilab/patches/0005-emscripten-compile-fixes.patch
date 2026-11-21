@@ -1,0 +1,64 @@
+From: emscripten-forge
+Subject: [PATCH] Fixes for emscripten and flang
+
+Found while compiling with emscripten (clang, musl) and flang.
+---
+  scilab/modules/scicos/includes/scicos_base64.hxx | 32 ++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/scilab/modules/scicos/includes/scicos_base64.hxx b/scilab/modules/scicos/includes/scicos_base64.hxx
+index cb09c86e..7ca1799e 100644
+--- a/scilab/modules/scicos/includes/scicos_base64.hxx
++++ b/scilab/modules/scicos/includes/scicos_base64.hxx
+@@ -17,7 +17,10 @@
+ #define MODULES_SCICOS_INCLUDES_BASE64_HXX_
+ 
+ #include <array>
++#include <cerrno>
+ #include <charconv>
++#include <cstdlib>
++#include <type_traits>
+ #include <cmath> // for trunc
+ #include <cstdio> // for sprintf
+ #include <limits>
+@@ -206,11 +209,40 @@ std::errc from_string(const std::string_view& str, T& result)
+     // implementation may be provided by https://github.com/fastfloat/fast_float
+ #ifdef FASTFLOAT_FLOAT_COMMON_H 
+     auto [ptr, ec] = fast_float::from_chars(str.data(), str.data() + str.size(), result);
++#else
++#ifdef __EMSCRIPTEN__
++    // emscripten's libc++ has no floating-point std::from_chars
++    if constexpr (std::is_floating_point<T>::value)
++    {
++        std::string s(str);
++        char* end = nullptr;
++        errno = 0;
++        double v = std::strtod(s.c_str(), &end);
++        if (end == s.c_str())
++        {
++            return std::errc::invalid_argument;
++        }
++        if (errno == ERANGE)
++        {
++            return std::errc::result_out_of_range;
++        }
++        result = static_cast<T>(v);
++        return {};
++    }
++    else
++    {
++        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
++        return ec;
++    }
+ #else
+     // use std::from_chars otherwise (eg. C++17)
+     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
++    return ec;
++#endif
+ #endif
++#ifdef FASTFLOAT_FLOAT_COMMON_H
+     return ec;
++#endif
+ }
+ 
+ template<> inline

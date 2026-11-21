@@ -1,0 +1,32 @@
+From: emscripten-forge
+Subject: [PATCH] matio 1.6: sparse index types
+
+matio's sparse row/column indexes are unsigned since 1.5.18: the test
+only looked at the release level (MATIO_RELEASE_LEVEL < 18), which is 0
+again in matio 1.6.0. Compare the whole version.
+---
+  scilab/modules/matio/src/cpp/GetSparseVariable.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/scilab/modules/matio/src/cpp/GetSparseVariable.cpp b/scilab/modules/matio/src/cpp/GetSparseVariable.cpp
+index 39d4d629..9496526a 100644
+--- a/scilab/modules/matio/src/cpp/GetSparseVariable.cpp
++++ b/scilab/modules/matio/src/cpp/GetSparseVariable.cpp
+@@ -64,7 +64,7 @@ matvar_t* GetSparseMatVar(types::Sparse* pSparse, const char *name)
+     int* itemsRow = new int[pSparse->getRows()];
+     pSparse->getNbItemByRow(itemsRow);
+ 
+-#if MATIO_RELEASE_LEVEL < 18
++#if MATIO_MAJOR_VERSION == 1 && (MATIO_MINOR_VERSION < 5 || (MATIO_MINOR_VERSION == 5 && MATIO_RELEASE_LEVEL < 18))
+     mat_int32_t* colIndexes = (mat_int32_t*)MALLOC(sizeof(mat_int32_t) *  (pSparse->getRows() + 1));
+ #else
+     mat_uint32_t* colIndexes = (mat_uint32_t*)MALLOC(sizeof(mat_uint32_t) *  (pSparse->getRows() + 1));
+@@ -85,7 +85,7 @@ matvar_t* GetSparseMatVar(types::Sparse* pSparse, const char *name)
+         colIndexes[K + 1] = colIndexes[K] + itemsRow[K];
+     }
+ 
+-#if MATIO_RELEASE_LEVEL < 18
++#if MATIO_MAJOR_VERSION == 1 && (MATIO_MINOR_VERSION < 5 || (MATIO_MINOR_VERSION == 5 && MATIO_RELEASE_LEVEL < 18))
+     mat_int32_t* rowIndexes = (mat_int32_t*)MALLOC(sizeof(mat_int32_t) *  nonZeros);
+ #else
+     mat_uint32_t* rowIndexes = (mat_uint32_t*)MALLOC(sizeof(mat_uint32_t) *  nonZeros);

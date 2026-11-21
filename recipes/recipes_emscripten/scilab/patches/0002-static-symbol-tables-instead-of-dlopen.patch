@@ -1,0 +1,164 @@
+From: emscripten-forge
+Subject: [PATCH] No dynamic loader on emscripten: static symbol tables
+
+Everything (Scilab, its modules, the JVM) is linked into one WebAssembly
+program. LoadDynLibrary() accepts the libraries linked in, and
+GetDynLibFuncPtr() looks entry points (gateways, JNI_CreateJavaVM, FFTW)
+up in scilab_static_symbols, generated when the program is linked.
+---
+  .../dynamic_link/includes/dynamiclibrary_others.h  | 18 +++++
+  .../dynamic_link/src/c/dynamiclibrary_others.c     | 90 ++++++++++++++++++++++
+ 2 files changed, 108 insertions(+)
+
+diff --git a/scilab/modules/dynamic_link/includes/dynamiclibrary_others.h b/scilab/modules/dynamic_link/includes/dynamiclibrary_others.h
+index 9ceadeb2..16d6344c 100644
+--- a/scilab/modules/dynamic_link/includes/dynamiclibrary_others.h
++++ b/scilab/modules/dynamic_link/includes/dynamiclibrary_others.h
+@@ -29,7 +29,21 @@ typedef void (*DynLibFuncPtr)();
+ * @param name of dynamic library
+ * @return Handle to the loaded library
+ */
++#ifdef __EMSCRIPTEN__
++/*
++* There is no dynamic loader in the WebAssembly build: Scilab, its modules and
++* the JVM are linked into one program. LoadDynLibrary() succeeds for the
++* libraries that were linked in (returning a handle standing for the program)
++* and GetDynLibFuncPtr() looks the entry points up in a name -> address table
++* generated when the program is linked (scilab_static_symbols). Libraries
++* built at run time (link, ilib_build) cannot be loaded.
++*/
++DynLibHandle sciStaticLoadLibrary(const char *libname);
++char *sciStaticLibraryError(void);
++#define LoadDynLibrary(libname) sciStaticLoadLibrary(libname);
++#else
+ #define LoadDynLibrary(libname) (DynLibHandle) dlopen(libname,  RTLD_NOW | RTLD_GLOBAL);
++#endif
+ 
+ /**
+ * Decrements the reference count of the loaded dynamic-link library
+@@ -50,7 +64,11 @@ DynLibFuncPtr GetDynLibFuncPtr(DynLibHandle hInstance, const char *funcName);
+ * return last dynamic linking error
+ * @return a string
+ */
++#ifdef __EMSCRIPTEN__
++#define GetLastDynLibError() sciStaticLibraryError()
++#else
+ #define GetLastDynLibError() dlerror()
++#endif
+ 
+ 
+ typedef int(*PROC_GATEWAY) (void);
+diff --git a/scilab/modules/dynamic_link/src/c/dynamiclibrary_others.c b/scilab/modules/dynamic_link/src/c/dynamiclibrary_others.c
+index 522b66f6..d70da184 100644
+--- a/scilab/modules/dynamic_link/src/c/dynamiclibrary_others.c
++++ b/scilab/modules/dynamic_link/src/c/dynamiclibrary_others.c
+@@ -26,8 +26,94 @@
+ #define NULL 0
+ #endif
+ /*---------------------------------------------------------------------------*/
++#ifdef __EMSCRIPTEN__
++#include <string.h>
++
++/* generated at link time: every gateway and other entry point that Scilab
++ * looks up by name, null-terminated; and the names of the libraries linked
++ * into the program */
++struct ScilabStaticSymbol
++{
++    const char *name;
++    void *addr;
++};
++extern const struct ScilabStaticSymbol scilab_static_symbols[] __attribute__((weak));
++extern const char *const scilab_static_libraries[] __attribute__((weak));
++
++static __thread char sciStaticError[512];
++
++/* "/path/to/libscixcos.so.6.0" -> "libscixcos" */
++static void libraryBaseName(const char *path, char *out, size_t size)
++{
++    const char *base = strrchr(path, '/');
++    size_t n;
++    base = base ? base + 1 : path;
++    n = strcspn(base, ".");
++    if (n >= size)
++    {
++        n = size - 1;
++    }
++    memcpy(out, base, n);
++    out[n] = '\0';
++}
++
++DynLibHandle sciStaticLoadLibrary(const char *libname)
++{
++    static int programHandle;
++    char base[256];
++    int i;
++
++    sciStaticError[0] = '\0';
++    if (libname == NULL)
++    {
++        return &programHandle;
++    }
++    libraryBaseName(libname, base, sizeof(base));
++    if (&scilab_static_libraries[0] != NULL)
++    {
++        for (i = 0; scilab_static_libraries[i] != NULL; i++)
++        {
++            if (strcmp(scilab_static_libraries[i], base) == 0)
++            {
++                return &programHandle;
++            }
++        }
++    }
++    snprintf(sciStaticError, sizeof(sciStaticError),
++             "%s: dynamic libraries cannot be loaded in this version of Scilab (WebAssembly)", libname);
++    return NULL;
++}
++
++char *sciStaticLibraryError(void)
++{
++    /* like dlerror(): the message of the last failure */
++    return sciStaticError;
++}
++
++static DynLibFuncPtr sciStaticLookup(const char *name)
++{
++    int i;
++    if (name == NULL || &scilab_static_symbols[0] == NULL)
++    {
++        return NULL;
++    }
++    for (i = 0; scilab_static_symbols[i].name != NULL; i++)
++    {
++        if (strcmp(scilab_static_symbols[i].name, name) == 0)
++        {
++            return (DynLibFuncPtr) scilab_static_symbols[i].addr;
++        }
++    }
++    snprintf(sciStaticError, sizeof(sciStaticError), "undefined symbol: %s", name);
++    return NULL;
++}
++#endif
++
+ BOOL FreeDynLibrary(DynLibHandle hInstance)
+ {
++#ifdef __EMSCRIPTEN__
++    return hInstance ? TRUE : FALSE;
++#endif
+     if (hInstance)
+     {
+ 
+@@ -63,10 +149,14 @@ DynLibFuncPtr GetDynLibFuncPtr(DynLibHandle hInstance, const char *funcName)
+     {
+ // ISO C forbids conversion of object pointer to function pointer type
+ // will error will be on caller but not on `dlsym()`.
++#ifdef __EMSCRIPTEN__
++        return sciStaticLookup(funcName);
++#else
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wpedantic"
+         return (DynLibFuncPtr) dlsym(hInstance, funcName);
+ #pragma GCC diagnostic pop
++#endif
+     }
+     return NULL;
+ }
