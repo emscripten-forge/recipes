@@ -1,32 +1,12 @@
 From: emscripten-forge
 Subject: Hooks for cooperative (single-threaded) runtimes
 
-* X11WasmSetHooks(): a host scheduler can block in XNextEvent, XPeekEvent,
-  XIfEvent, XPeekIfEvent, XMaskEvent and XWindowEvent until input arrives
-  (wait_event), learn about queued events (event_queued) and give the
-  display a pollable connection number.  Without hooks nothing changes.
-* XkbKeycodeToKeysym is declared like XKBlib.h declares it (KeyCode when
-  NeedWidePrototypes is 0).
+X11WasmSetHooks(): a host scheduler can block in XNextEvent, XPeekEvent,
+XIfEvent, XPeekIfEvent, XMaskEvent and XWindowEvent until input arrives
+(wait_event), learn about queued events (event_queued) and give the
+display a pollable connection number.  Without hooks nothing changes.
+(Used by openjdk8, whose Java threads are JSPI green threads.)
 ---
-diff --git a/include/X11/XlibWasm.h b/include/X11/XlibWasm.h
-index 5d6c17c..5e73d0c 100644
---- a/include/X11/XlibWasm.h
-+++ b/include/X11/XlibWasm.h
-@@ -67,7 +67,13 @@ EXTERN int XSetAccessControl(Display *d, int mode);
- EXTERN char **XListExtensions(Display *d, int *i);
- EXTERN Colormap *XListInstalledColormaps(Display *d, Window w, int *i);
- EXTERN KeySym XKeycodeToKeysym(Display *d, unsigned int k, int i);
--EXTERN KeySym XkbKeycodeToKeysym(Display *d, unsigned int k, int g, int i);
-+EXTERN KeySym XkbKeycodeToKeysym(Display *d,
-+#if NeedWidePrototypes
-+	unsigned int k,
-+#else
-+	KeyCode k,
-+#endif
-+	int g, int i);
- EXTERN KeySym XStringToKeysym(_Xconst char *c);
- EXTERN Window XRootWindow(Display *d, int i);
- EXTERN int XConnectionNumber(Display *d);
 diff --git a/include/X11Wasm/Hooks.h b/include/X11Wasm/Hooks.h
 new file mode 100644
 index 0000000..6e832cf
@@ -71,10 +51,10 @@ index 0000000..6e832cf
 +
 +#endif /* _X11WASM_HOOKS_H */
 diff --git a/ninja/x11wasm.ninja b/ninja/x11wasm.ninja
-index 3f09863..93f139d 100644
+index abb5d72..61749e2 100644
 --- a/ninja/x11wasm.ninja
 +++ b/ninja/x11wasm.ninja
-@@ -70,7 +70,8 @@ build $x11wasm_xlib_common_deps: phony $
+@@ -74,7 +74,8 @@ build $x11wasm_xlib_common_deps: phony $
    $x11wasm_root/include/X11/keysym.h $
    $x11wasm_root/include/X11/keysymdef.h $
    $x11wasm_root/include/X11Wasm/Browser.h $
@@ -85,10 +65,10 @@ index 3f09863..93f139d 100644
  build $x11wasm_xlib_objects: phony $
    $x11wasm_builddir/Alloc.o $
 diff --git a/src/libX11/Event.c b/src/libX11/Event.c
-index 9e5affc..e095871 100644
+index cc09192..48a06ba 100644
 --- a/src/libX11/Event.c
 +++ b/src/libX11/Event.c
-@@ -325,6 +325,54 @@ BrowserUserQueuedEvent(
+@@ -360,6 +360,54 @@ BrowserUserQueuedEvent(
  	    ? 1 : 0;
  }
  
@@ -109,8 +89,8 @@ index 9e5affc..e095871 100644
 +    } else {
 +	memset(&browserHooks, 0, sizeof(browserHooks));
 +    }
-+    if (browserDisplayInitialized) {
-+	browserDisplay.display.fd = browserHooks.connection_fd;
++    if (x11wasm_browserDisplayInitialized) {
++	x11wasm_browserDisplay.display.fd = browserHooks.connection_fd;
 +    }
 +}
 +
@@ -143,7 +123,7 @@ index 9e5affc..e095871 100644
  static int
  BrowserTakeQueuedEventAfterPump(
      Display *display,
-@@ -398,7 +446,12 @@ XPeekEvent(
+@@ -433,7 +481,12 @@ XPeekEvent(
      Display *display,
      XEvent *event)
  {
@@ -157,7 +137,7 @@ index 9e5affc..e095871 100644
      return Success;
  }
  
-@@ -411,7 +464,9 @@ XNextEvent(
+@@ -446,7 +499,9 @@ XNextEvent(
  	display = X11WasmGetDisplay(NULL);
      }
      BrowserInitDisplay();
@@ -168,7 +148,7 @@ index 9e5affc..e095871 100644
      return Success;
  }
  
-@@ -425,8 +480,13 @@ XMaskEvent(
+@@ -460,8 +515,13 @@ XMaskEvent(
  
      match[0] = (long)None;
      match[1] = mask;
@@ -184,7 +164,7 @@ index 9e5affc..e095871 100644
      return Success;
  }
  
-@@ -503,8 +563,13 @@ XIfEvent(
+@@ -538,8 +598,13 @@ XIfEvent(
  
      userPredicate.predicate = predicate;
      userPredicate.arg = arg;
@@ -200,7 +180,7 @@ index 9e5affc..e095871 100644
      return Success;
  }
  
-@@ -534,8 +599,13 @@ XPeekIfEvent(
+@@ -569,8 +634,13 @@ XPeekIfEvent(
  
      userPredicate.predicate = predicate;
      userPredicate.arg = arg;
@@ -216,15 +196,15 @@ index 9e5affc..e095871 100644
      return Success;
  }
  
-@@ -555,6 +625,7 @@ XPutBackEvent(
-     eventQueue[eventQueueHead].internal = 0;
-     eventQueueCount++;
+@@ -591,6 +661,7 @@ XPutBackEvent(
+     x11wasm_eventQueue[x11wasm_eventQueueHead].internal = 0;
+     x11wasm_eventQueueCount++;
      BrowserUpdateQueueLength();
 +    X11WasmHookEventQueued();
      return Success;
  }
  
-@@ -569,7 +640,9 @@ XWindowEvent(
+@@ -605,7 +676,9 @@ XWindowEvent(
  	display = X11WasmGetDisplay(NULL);
      }
      BrowserInitDisplay();
@@ -236,7 +216,7 @@ index 9e5affc..e095871 100644
  }
  
 diff --git a/src/libX11/OpenDis.c b/src/libX11/OpenDis.c
-index a0d3a6a..b42de52 100644
+index 87f763f..5a50024 100644
 --- a/src/libX11/OpenDis.c
 +++ b/src/libX11/OpenDis.c
 @@ -130,7 +130,7 @@ BrowserInitDisplay(void)
@@ -248,16 +228,16 @@ index a0d3a6a..b42de52 100644
      state->display.proto_major_version = X_PROTOCOL;
      state->display.proto_minor_version = X_PROTOCOL_REVISION;
      state->display.vendor = (char *)"x11.wasm";
-@@ -316,6 +316,7 @@ BrowserQueueEventInternal(
-     eventQueue[tail].internal = internal;
-     eventQueueCount++;
+@@ -344,6 +344,7 @@ BrowserQueueEventInternal(
+     x11wasm_eventQueue[tail].internal = internal;
+     x11wasm_eventQueueCount++;
      BrowserUpdateQueueLength();
 +    X11WasmHookEventQueued();
      return 1;
  }
  
 diff --git a/src/libX11/XlibInt.h b/src/libX11/XlibInt.h
-index 1c0a8c2..63aa845 100644
+index cca8efb..e76e81f 100644
 --- a/src/libX11/XlibInt.h
 +++ b/src/libX11/XlibInt.h
 @@ -42,6 +42,10 @@
