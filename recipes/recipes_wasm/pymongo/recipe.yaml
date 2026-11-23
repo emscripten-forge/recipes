@@ -1,0 +1,68 @@
+context:
+  name: pymongo
+  version: 4.20.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f773b0aec28687587cdeda490463a82debc4566a4a3620dcc8dada9d2c0a1acd
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - hatchling
+  - hatch-requirements-txt
+  - setuptools
+  host:
+  - python-dev
+  run:
+  - dnspython
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pymongo.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://pymongo.readthedocs.io/
+  repository: https://github.com/mongodb/mongo-python-driver
+  documentation: https://pymongo.readthedocs.io/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python driver for MongoDB
+  description: |
+    PyMongo is a Python distribution containing tools for working with MongoDB.
+    The optional C extensions (bson._cbson and pymongo._cmessage) are built.
+
+extra:
+  recipe-maintainers:
+  - Copilot
