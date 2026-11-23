@@ -1,0 +1,56 @@
+context:
+  name: ndindex
+  version: 1.10.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/n/ndindex/ndindex-${{ version }}.tar.gz
+  sha256: 0f6113c1f031248f8818cbee1aa92aa3c9472b7701debcce9fddebcd2f610f11
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - cython
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  - cython
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_ndindex.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://quansight-labs.github.io/ndindex/
+  license: MIT
+  license_file: LICENSE
+  summary: A Python library for manipulating indices of ndarrays.
+  repository: https://github.com/Quansight-Labs/ndindex
+
+extra:
+  recipe-maintainers:
+  - Copilot
