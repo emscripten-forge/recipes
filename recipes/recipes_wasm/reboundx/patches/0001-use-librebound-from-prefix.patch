@@ -1,0 +1,51 @@
+--- a/setup.py
++++ b/setup.py
+@@ -8,25 +8,8 @@
+ from setuptools.command.build_ext import build_ext as _build_ext
+ 
+ def get_reb_paths(sitepackagesdir):
+-    try:
+-        import rebound
+-        rebdir = os.path.dirname(inspect.getfile(rebound))
+-        version = rebound.__version__ 
+-    except:
+-        raise AttributeError("REBOUND was not installed.")
+-
+-    try: # try to get local rebound directory if using editable pip installs
+-        with open(sitepackagesdir+'rebound-'+version+".dist-info/direct_url.json") as f:
+-            lines = f.readlines()
+-            for l in lines:
+-                blocks = l.split('"')
+-                if 'url' in blocks:
+-                    for block in blocks:
+-                        if block.startswith('file://'):
+-                            path = block.strip('file:')
+-        return rebdir, path+'/'
+-    except:
+-        return rebdir, ""
++    # Headers come from the librebound package installed in the build prefix.
++    return os.environ["PREFIX"], ""
+ 
+ suffix = sysconfig.get_config_var('EXT_SUFFIX')
+ if suffix is None:
+@@ -58,11 +41,6 @@
+         
+         self.library_dirs.append(rebdir+'/../')
+         self.library_dirs.append(sitepackagesdir)
+-        for ext in self.extensions:
+-            ext.runtime_library_dirs.append(rebdir+'/../')
+-            ext.extra_link_args.append('-Wl,-rpath,'+rebdir+'/../')
+-            ext.runtime_library_dirs.append(sitepackagesdir)
+-            ext.extra_link_args.append('-Wl,-rpath,'+sitepackagesdir)
+         if editable_rebdir:
+             self.library_dirs.append(editable_rebdir)
+             for ext in self.extensions:
+@@ -90,7 +68,7 @@
+     'libreboundx',
+     sources = sorted(glob("src/*.c")),
+     include_dirs = ['src'],
+-    libraries=['rebound'+suffix[:suffix.rfind('.')]],
++    libraries=['rebound'],
+     extra_compile_args=extra_compile_args,
+     extra_link_args=extra_link_args,
+     )

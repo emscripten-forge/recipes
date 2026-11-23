@@ -1,0 +1,64 @@
+context:
+  name: reboundx
+  version: 5.1.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: 
+    https://files.pythonhosted.org/packages/0e/ea/4ede0a174e85ab986795d6dd37dc7fbd5f526ebed75a949dc8f3063a14b9/reboundx-${{
+    version }}.tar.gz
+  sha256: 25fcccc8194a83b548a8e11d81f295fb12a21ece2538e61be93d8256d9cbc1b2
+  patches:
+  - patches/0001-use-librebound-from-prefix.patch
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  - rebound
+  - librebound
+  - numpy
+  run:
+  - python
+  - rebound
+  - librebound
+  - numpy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_reboundx.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/dtamayo/reboundx
+  repository: https://github.com/dtamayo/reboundx
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: A library for including additional forces in REBOUND
+
+extra:
+  recipe-maintainers:
+  - Copilot
