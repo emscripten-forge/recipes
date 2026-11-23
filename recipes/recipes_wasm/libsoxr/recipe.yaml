@@ -9,9 +9,11 @@ package:
 source:
   url: https://downloads.sourceforge.net/project/soxr/soxr-${{ version }}-Source.tar.xz
   sha256: b111c15fdc8c029989330ff559184198c161100a59312f5dc19ddeb9b5a15889
+  patches:
+  - patches/0001-fix-rdft-callback-signatures.patch
 
 build:
-  number: 0
+  number: 1
 
 requirements:
   build:
@@ -26,6 +28,16 @@ tests:
     - libsoxr.a
     include:
     - soxr.h
+- script:
+  - emcc test_soxr.c -o test_soxr.js -I${PREFIX}/include -L${PREFIX}/lib -lsoxr -lm
+  - node test_soxr.js
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - nodejs
+  files:
+    recipe:
+    - test_soxr.c
 - script: generic-testing
   requirements:
     build:
