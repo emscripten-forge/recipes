@@ -19,7 +19,7 @@ EMSDK_LLVM_BIN="$(em-config LLVM_ROOT)"
 WASM_NATIVE_DIR="$PREFIX/lib/wasm-native"
 JDK_IMAGE_DIR="$PREFIX/jdk-wasm"
 KIT_DIR="$PREFIX/share/openjdk21-wasm"
-mkdir -p "$WASM_NATIVE_DIR" "$KIT_DIR" "$PREFIX/bin"
+mkdir -p "$WASM_NATIVE_DIR" "$KIT_DIR"
 
 # Everything ends up in one shared-memory (pthreads) module, so every object,
 # including third-party ones, must be compiled with atomics + bulk-memory.
@@ -209,10 +209,24 @@ cp "$SRC_DIR/kit/LICENSE-DejaVu" "$JDK_IMAGE_DIR/lib/fonts/LICENSE-DejaVu"
 cp "$SRC_DIR/kit/fontconfig.properties" "$JDK_IMAGE_DIR/lib/fontconfig.properties"
 
 # ---------------------------------------------------------------------------
-# 6. link kit: launcher, symbol-table generator, link script, page shell
+# 6. link kit: launcher and page shell, for openjdk21-wasm-link (openjdk-tools)
 # ---------------------------------------------------------------------------
-cp "$SRC_DIR"/kit/{jvm-main.c,gen-symbols.sh,shell.html,serve.py,x11-display-share.c,coi-serviceworker.js} "$KIT_DIR/"
+cp "$SRC_DIR"/kit/{jvm-main.c,shell.html,x11-display-share.c,coi-serviceworker.js} "$KIT_DIR/"
 mkdir -p "$KIT_DIR/include"
 cp src/java.base/share/native/include/jni.h \
    src/java.base/unix/native/include/jni_md.h "$KIT_DIR/include/"
-install -m 755 "$SRC_DIR/kit/openjdk21-wasm-link" "$PREFIX/bin/openjdk21-wasm-link"
+
+# ---------------------------------------------------------------------------
+# 7. web bundle, like openjdk8's: the runtime linked once as a module
+#    (openjdk21.js/openjdk21.wasm) and the JDK image it loads into its file
+#    system (openjdk21-jre.json/openjdk21-jre.data.gz), for openjdk21-web.js
+#    in pages (with coi-serviceworker.js, copied above) and openjdk21-java
+#    under node. Linked from the archives installed above.
+# ---------------------------------------------------------------------------
+WEB_OUT="$SRC_DIR/_web"
+rm -rf "$WEB_OUT" && mkdir -p "$WEB_OUT"
+bash "$SRC_DIR/kit/openjdk21-wasm-link" --prefix "$PREFIX" --module -o "$WEB_OUT/openjdk21.js"
+bash "$SRC_DIR/kit/stage-jre.sh" "$JDK_IMAGE_DIR" "$SRC_DIR/_web_jre"
+python3 "$SRC_DIR/kit/pack-jre.py" "$SRC_DIR/_web_jre" "$WEB_OUT/openjdk21-jre" --root /java --gzip
+install -m 644 "$WEB_OUT"/openjdk21.{js,wasm} "$WEB_OUT"/openjdk21-jre.{json,data.gz} \
+               "$SRC_DIR/kit/web/openjdk21-web.js" "$KIT_DIR/"

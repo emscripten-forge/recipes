@@ -379,8 +379,8 @@ def sync_migration_branch(
 
     print(f"Opening PR: {pr_title}")
     labels = None
-    if any(Path(p).parent.name == "recipes_wasm" for p in touched_paths):
-        labels = ["migrated"]
+    if any(Path(p).parent.name == "recipes_emscripten" for p in touched_paths):
+        labels = ["needs-migration"]
     make_pr(
         paths=touched_paths,
         pr_title=pr_title,

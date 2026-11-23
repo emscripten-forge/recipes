@@ -9,7 +9,7 @@ continued enhancements is ongoing.
 ```
 
 A small in-browser runner for Qt6-wasm packages published to the
-[emscripten-forge-4x-experimental](https://prefix.dev/channels/emscripten-forge-4x-experimental)
+[emscripten-forge/4x-experimental](https://prefix.dev/channels/@emscripten-forge/4x-experimental)
 channel. Given the URL of a `.tar.bz2` package (or a locally-picked file),
 it fetches, unpacks, and boots the Qt app entirely client-side.
 
@@ -18,7 +18,7 @@ it fetches, unpacks, and boots the Qt app entirely client-side.
 ## Available apps
 
 Currently on the
-[emscripten-forge-4x-experimental](https://prefix.dev/channels/emscripten-forge-4x-experimental)
+[emscripten-forge/4x-experimental](https://prefix.dev/channels/@emscripten-forge/4x-experimental)
 channel:
 
 - **<a href="../qtapp/?pkg=https%3A%2F%2Frepo.prefix.dev%2Femscripten-forge-4x-experimental%2Femscripten-wasm32%2Fqt-calculator-experimental-6.11.2-hc780342_1.tar.bz2">qt-calculator</a>** —
@@ -35,7 +35,7 @@ channel:
   ([recipe](https://github.com/emscripten-forge/recipes/tree/main/recipes/recipes_emscripten/regina)).
 
 The exact `.tar.bz2` filename changes on each rebuild (build-hash suffix);
-browse the [channel index](https://prefix.dev/channels/emscripten-forge-4x-experimental)
+browse the [channel index](https://prefix.dev/channels/@emscripten-forge/4x-experimental)
 for current URLs.
 
 ## Deep-links
@@ -93,7 +93,7 @@ non-obvious bits to watch for; the recipes show them in context.
   `<name>.wasm`, `<name>.js`, `<name>.html` (optional — runner
   produces its own), `qtloader.js`.
 - **Route to the experimental channel** — add
-  `extra.channel: emscripten-forge-4x-experimental` to `recipe.yaml`
+  `extra.channel: emscripten-forge/4x-experimental` to `recipe.yaml`
   until JSPI-Qt reaches the stable channel.
 - **Expect wasm-specific patches** for anything non-trivial. Apps that
   haven't been officially wasm-ported need small `#ifdef __EMSCRIPTEN__`

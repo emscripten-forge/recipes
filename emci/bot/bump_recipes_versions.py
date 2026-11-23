@@ -141,6 +141,11 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     recipe_fname = 'recipe.yaml'
     if (recipe_dir / recipe_fname).exists():
         recipe_file = recipe_dir / recipe_fname
+        with open(recipe_file) as file:
+            recipe = YAML().load(file)
+        if recipe.get('extra', {}).get('skip-auto-updates'):
+            print(f"⏭️ Skipping {recipe_dir.name}")
+            return False, None, None
         cv, nv, h = get_new_version(recipe_file)
         if nv is not None:
             new_version = nv
@@ -162,16 +167,17 @@ def bump_recipe_version(recipe_dir, target_pr_branch_name):
     with open(recipe_file) as file:
         recipe = YAML().load(file)
 
-        # Multi-outputs recipe
+        # Multi-outputs recipe (skip staging build caches)
         if 'outputs' in recipe:
-            for output in recipe['outputs']:
+            package_outputs = [o for o in recipe['outputs'] if 'staging' not in o]
+            for output in package_outputs:
                 if 'tests' not in output:
                     automerge = False
                     break
         elif 'tests' not in recipe:
             automerge = False
 
-    if target_pr_branch_name != "main":
+    if target_pr_branch_name not in ['main', 'emscripten-6x']:
         automerge = False
 
     branch_name = f"bump-{name}_{current_version}_to_{new_version}_for_{target_pr_branch_name}"
@@ -250,7 +256,7 @@ def user_ctx(user, email, bypass=False):
         subprocess.check_output(['git', 'config', '--unset', 'user.email'])
 
 
-def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20):
+def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=50):
     print(f"Bumping recipes in {recipe_dir} to {pr_target_branch}")
     # empty context manager
     @contextlib.contextmanager
@@ -313,13 +319,13 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
         prs_packages = [pr['title'].split()[1] for pr in all_prs]
 
         # Merge PRs if possible
-        if pr_target_branch in ["main"]:
+        if pr_target_branch in ['main', 'emscripten-6x']:
             for pr,pr_pkg in zip(prs_id, prs_packages):
                 # get the recipe dir
                 recipe_dir = recipe_name_to_recipe_dir.get(pr_pkg)
 
                 try:
-                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=(pr_target_branch == "main"))
+                    try_to_merge_pr(pr, recipe_dir=recipe_dir, ping=True)
                 except Exception as e:
                     print(f"Error in {pr}: {e}")
 
@@ -332,8 +338,7 @@ def bump_recipe_versions(recipe_dir, pr_target_branch, use_bot=True, pr_limit=20
 
         skip_recipes = [
             'python', 'python_abi', 'libpython',
-            'sqlite', 'robotics-toolbox-python',
-            'libffi', 'r-base-4.5.3'
+            'sqlite', 'libffi'
         ]
         all_recipes = [recipe for recipe in all_recipes if recipe.name not in skip_recipes]
 

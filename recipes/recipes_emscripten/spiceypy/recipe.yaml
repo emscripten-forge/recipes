@@ -1,0 +1,64 @@
+context:
+  name: spiceypy
+  version: 8.4.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: bedc5ae8296094451a1ec23cefde543442dc2c086b41b9c1dbd9c07b789833e4
+
+build:
+  number: 0
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - cmake >=3.24
+  - ninja
+  - scikit-build-core
+  - cython >=3.1
+  - numpy >=2.0,<3
+  host:
+  - python
+  - numpy >=2.0,<3
+  run:
+  - python
+  - numpy >=1.23.5
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_import_spiceypy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/AndrewAnnex/SpiceyPy
+  repository: https://github.com/AndrewAnnex/SpiceyPy
+  documentation: https://spiceypy.readthedocs.io
+  license: MIT
+  license_file: LICENSE
+  summary: A Python Wrapper for the NAIF CSPICE Toolkit
+
+extra:
+  recipe-maintainers:
+  - AndrewAnnex

@@ -1,0 +1,64 @@
+context:
+  name: openjdk-tools
+  version: "0.2.0"
+  support_version: "0.3.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # openjdk21-wasm-link (and what it reads), openjdk21-java, serve.py
+  - url: https://github.com/wangyenshu/openjdk21-kit/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 0307791388e2cc28ce8aa005da8b5666aff46d94e2511d5adc1773e3dd3b458b
+    target_directory: kit
+  # openjdk8-java / openjdk8-javaws, which run openjdk8 under Node.js
+  - url: https://github.com/wangyenshu/openjdk8-support/archive/refs/tags/v${{ support_version }}.tar.gz
+    sha256: e536e2310fd46aecba10f31b17425dee7a568db7c45d2ee0a59246233b711803
+    target_directory: support
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    # openjdk21-wasm-link links with the emscripten openjdk21 was built with
+    - emscripten_emscripten-wasm32 4.0.9.*
+    - python
+    # openjdk8-java needs WebAssembly JSPI; openjdk21-java, worker threads
+    - nodejs >=24
+
+tests:
+  - script:
+      - openjdk21-wasm-link --help
+      - test -f $PREFIX/share/openjdk-tools/gen-symbols.sh
+      - test -f $PREFIX/share/openjdk-tools/runtime/java_pre.js
+      - test -f $PREFIX/share/openjdk-tools/serve.py
+      - test -x $PREFIX/bin/openjdk21-java
+      - test -x $PREFIX/bin/openjdk8-java
+      - test -x $PREFIX/bin/openjdk8-javaws
+
+about:
+  homepage: https://github.com/wangyenshu/openjdk21-kit
+  summary: Host tools for the emscripten-wasm32 openjdk21 and openjdk8 packages
+  description: |
+    Tools that run on the build machine (linux, osx) for the emscripten-wasm32
+    openjdk21 and openjdk8 packages, which are installed in their own
+    environment:
+
+      openjdk21-wasm-link --prefix path/to/env_wasm -o app.html --app app.jar --arg -jar --arg /app/app.jar
+      OPENJDK21_WASM_HOME=path/to/env_wasm/share/openjdk21-wasm openjdk21-java -cp classes Main
+      OPENJDK8_WASM_HOME=path/to/env_wasm/share/openjdk8-wasm openjdk8-java -cp classes Main
+      OPENJDK8_WASM_HOME=path/to/env_wasm/share/openjdk8-wasm openjdk8-javaws app.jnlp
+
+    share/openjdk-tools/serve.py serves a directory with the cross-origin
+    isolation headers openjdk21 pages need.
+  license: GPL-2.0-only WITH Classpath-exception-2.0
+  license_file:
+    - kit/LICENSE
+    - support/LICENSE
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
