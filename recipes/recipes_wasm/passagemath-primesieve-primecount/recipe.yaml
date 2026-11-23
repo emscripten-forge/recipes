@@ -16,9 +16,8 @@ build:
 
 requirements:
   build:
-  - python
   - crossenv >=1.2
-  - cross-python_emscripten-wasm32
+  - cross-python_${{ target_platform }}
   - ${{ compiler("c") }}
   - ${{ compiler("cxx") }}
   - pip
@@ -27,24 +26,26 @@ requirements:
   - cysignals
   - pkgconfig
   host:
-  - python
-  - gmp
-  - mpc
-  - mpfr
-  - primecount
+  - python-dev
+  - gmp-static
+  - mpc-static
+  - mpfr-static
+  - primecount-static
   run:
-  - python
   - gmpy2
   - cysignals
 
 tests:
-- script: pytester
+- script:
+  - pytester
+  - generic-testing
   files:
     recipe:
     - test_passagemath_primesieve_primecount.py
   requirements:
     build:
     - pytester
+    - generic-testing
     run:
     - pytester-run
 
@@ -55,6 +56,7 @@ about:
   description: |
     Cython interface to the C++ library primecount.
     It is a compatible fork of primecountpy.
+
 extra:
   emscripten_tests:
     python:
