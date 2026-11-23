@@ -1,0 +1,69 @@
+context:
+  name: pyrodigal
+  version: 3.7.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/pyrodigal/pyrodigal-${{ version }}.tar.gz
+  sha256: 0262fc5b5fd0b16c18eb3eb9b6079e1590e6d838c3f8431c46d9027c8e67f600
+  patches:
+  - 0001-clear-static-libpython.patch
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - cmake >=3.15
+  - ninja
+  - scikit-build-core
+  - cython >=3.0
+  host:
+  - python-dev
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pyrodigal.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/althonos/pyrodigal
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: Cython bindings and Python interface to Prodigal, an ORF finder for genomes and metagenomes
+  repository: https://github.com/althonos/pyrodigal
+
+extra:
+  recipe-maintainers:
+  - Copilot
