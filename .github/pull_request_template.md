@@ -13,3 +13,6 @@
 - [ ] Title: *Update pkg_name from x.y.z to x.y.z*
 
 ---
+
+## Build Notes
+<!-- Any special build considerations, patches applied, or issues encountered -->
