@@ -1,0 +1,59 @@
+context:
+  name: tskit
+  version: 1.0.4
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/t/tskit/tskit-${{ version }}.tar.gz
+  sha256: 77589850cc1f69ea904794ad468fcaa5190be09d8730229206578016dd15ea84
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  - numpy
+  run:
+  - python
+  - numpy
+  - jsonschema
+  - rpds-py
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_tskit.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://tskit.dev/tskit
+  license: MIT
+  license_file: LICENSE
+  summary: The tree sequence toolkit.
+  repository: https://github.com/tskit-dev/tskit
+
+extra:
+  recipe-maintainers:
+  - Copilot
