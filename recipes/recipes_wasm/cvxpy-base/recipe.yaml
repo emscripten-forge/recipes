@@ -1,0 +1,74 @@
+context:
+  name: cvxpy-base
+  version: 1.8.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/c/cvxpy_base/cvxpy_base-${{ version }}.tar.gz
+  sha256: 795d39c226207796d190cf6aece24a452748519b4d7bc4edd3bfbb22cd5c6cb5
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - numpy
+  - setuptools >=68.1.0
+  - wheel
+  host:
+  - python-dev
+  - pip
+  - numpy
+  - pybind11 >=3.0
+  - setuptools >=68.1.0
+  - wheel
+  run:
+  - python
+  - numpy >=2.0.0
+  - scipy >=1.13.0
+  - clarabel
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_cvxpy_base.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/cvxpy/cvxpy
+  repository: https://github.com/cvxpy/cvxpy
+  documentation: https://www.cvxpy.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A domain-specific language for modeling convex optimization problems in Python.
+
+extra:
+  recipe-maintainers:
+  - Copilot
