@@ -1,0 +1,20 @@
+--- a/setup.py
++++ b/setup.py
+@@ -283,10 +283,14 @@
+     def finalize_options(self):
+         build_ext.finalize_options(self)
+ 
+-        # Add Numpy header search path path
+-        import numpy
++        # Add Numpy header search path path. Locate numpy without importing it:
++        # the build-time numpy is a wasm package the host interpreter cannot load.
++        import importlib.util
+ 
+-        self.include_dirs.append(numpy.get_include())
++        numpy_dir = importlib.util.find_spec("numpy").submodule_search_locations[0]
++        self.include_dirs.append(os.path.join(numpy_dir, "_core", "include"))
++        # cimport numpy resolves numpy/__init__.pxd relative to the site-packages dir
++        self.include_dirs.append(os.path.dirname(numpy_dir))
+ 
+     def run(self):
+         # If we were asked to build any C/C++ libraries, add the directory

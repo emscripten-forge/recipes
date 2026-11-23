@@ -1,0 +1,28 @@
+Do not append bundled libraries to every link line a second time
+
+build_ext.run() adds the built library names to the compiler's library list, and
+the compiler appends that list to every link line. Each extension already carries
+those names from build_args, so the repeats duplicate the static archive members
+under --whole-archive and the emscripten side-module link fails with duplicate
+symbols.
+
+--- a/setup.py
++++ b/setup.py
+@@ -316,6 +316,15 @@
+                         getattr(ext, key).extend(value)
+         build_ext.run(self)
+ 
++    def build_extensions(self):
++        # build_ext.run() also adds the built library names to the compiler's
++        # library list, which is appended to every link line. Each extension
++        # already carries them from build_args, so the repeats duplicate the
++        # archive members under --whole-archive.
++        self.libraries = []
++        self.compiler.set_libraries([])
++        build_ext.build_extensions(self)
++
+ 
+ ext_kwargs = dict(
+     extra_compile_args=["-std=c++11"],
+ 
+ 

@@ -1,0 +1,18 @@
+Configure cfitsio for a cross build when targeting emscripten
+
+The bundled configure cannot run compiled test programs on wasm, so it
+has to be told it is cross compiling via --host.
+---
+--- a/setup.py
++++ b/setup.py
+@@ -177,6 +177,10 @@
+                 "--disable-openmp",
+             ]
+ 
++            # Cross-compiling: configure must not try to run wasm test programs.
++            if is_emscripten():
++                cmd.append("--host=wasm32-unknown-emscripten")
++
+             log.info("%s", " ".join(cmd))
+             check_call(
+                 cmd,

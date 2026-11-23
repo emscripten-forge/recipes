@@ -1,0 +1,86 @@
+context:
+  name: healpy
+  version: 1.20.1
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/h/healpy/healpy-${{ version }}.tar.gz
+  sha256: 000203dafd09f6cb864147b8308661b405a0f8a9dba10bc0842b7ddfb40717fe
+  patches:
+  - 0001-skip-linking-cfitsio-and-healpix-programs.patch
+  - 0002-without-zlib-check-fortran.patch
+  - 0003-disable-openmp.patch
+  - 0004-numpy-include-without-import.patch
+  - 0005-configure-host-for-emscripten.patch
+  - 0006-drop-runtime-library-dirs-for-emscripten.patch
+  - 0007-disable-shared-libraries-for-emscripten.patch
+  - 0008-do-not-repeat-bundled-libraries-at-link.patch
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - make
+  - pkg-config
+  - autoconf
+  - automake
+  - libtool
+  host:
+  - python-dev
+  - pip
+  - setuptools >=77
+  - setuptools-scm >=8.0
+  - cython >=3.0.12
+  - numpy >=2.0.0
+  - zlib
+  run:
+  - python
+  - numpy >=2.0.0
+  - astropy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_healpy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/healpy/healpy
+  summary: Healpix tools package for Python
+  license: GPL-2.0-only
+  license_file: COPYING
+  description: |
+    healpy is a Python package to handle pixelated data on the sphere. It is
+    based on the HEALPix pixelisation scheme.
+
+extra:
+  recipe-maintainers:
+  - Copilot

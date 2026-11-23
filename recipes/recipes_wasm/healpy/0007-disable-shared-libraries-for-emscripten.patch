@@ -1,0 +1,18 @@
+Disable shared libraries for bundled dependencies when targeting emscripten
+
+libtool builds lib*.so as wasm side modules and installs them next to the
+static archives. The linker then prefers the .so files, which become
+DT_NEEDED entries that cannot be loaded at runtime.
+
+--- a/setup.py
++++ b/setup.py
+@@ -180,6 +180,9 @@
+             # Cross-compiling: configure must not try to run wasm test programs.
+             if is_emscripten():
+                 cmd.append("--host=wasm32-unknown-emscripten")
++                # libtool would otherwise build lib*.so side modules that
++                # shadow the static archives and become DT_NEEDED at runtime.
++                cmd.append("--disable-shared")
+ 
+             log.info("%s", " ".join(cmd))
+             check_call(
