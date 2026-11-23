@@ -1,0 +1,57 @@
+context:
+  name: pyroaring
+  version: 1.2.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/pyroaring/pyroaring-${{ version }}.tar.gz
+  sha256: e33bf8fc8d8aad7373f62147cb5dbfaf0fdcf19af8069d034cd8ef4fb41a78af
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cython
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  - cython
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_pyroaring.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/Ezibenroc/PyRoaringBitMap
+  license: MIT
+  license_file: LICENSE
+  summary: Library for handling efficiently sorted integer sets.
+  repository: https://github.com/Ezibenroc/PyRoaringBitMap
+
+extra:
+  recipe-maintainers:
+  - Copilot
