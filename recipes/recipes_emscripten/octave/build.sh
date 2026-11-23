@@ -31,8 +31,8 @@ export F18=$FLANG
 
 export FFLAGS="-fPIC --target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-export FLIBS="-lFortranRuntime"
-export FCLIBS="-lFortranRuntime"
+export FLIBS="-lflang_rt.runtime"
+export FCLIBS="-lflang_rt.runtime"
 
 export LDFLAGS="-fPIC -L$PREFIX/lib -fwasm-exceptions"
 export LD_STATIC_FLAG="-static"
@@ -44,7 +44,7 @@ export CFLAGS="-O2 -g0 -fPIC -fwasm-exceptions"
 export CXXFLAGS="-g0 -fPIC -fwasm-exceptions"
 
 export EXEEXT=".js"
-export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/lib -lFortranRuntime -lFortranDecimal -lpcre2-8 -lblas -llapack -lfreetype"
+export OCTAVE_CLI_LTLDFLAGS="-sMAIN_MODULE=1 -sALLOW_MEMORY_GROWTH=1 -L$PREFIX/lib -lflang_rt.runtime -lpcre2-8 -lblas -llapack -lfreetype"
 
 sed -i 's/-fexceptions/-fwasm-exceptions/g' configure
 
