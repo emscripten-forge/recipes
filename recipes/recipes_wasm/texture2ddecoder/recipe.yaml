@@ -1,0 +1,55 @@
+context:
+  name: texture2ddecoder
+  version: 1.0.6
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/t/texture2ddecoder/texture2ddecoder-${{ version }}.tar.gz
+  sha256: 88f04d8951018ac13b8dacd07e57e8adad4a6f1cfe5509646e8a1020346a81ca
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_texture2ddecoder.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/K0lb3/texture2ddecoder
+  license: MIT
+  license_file: LICENSE
+  summary: a python wrapper for Perfare's Texture2DDecoder
+  repository: https://github.com/K0lb3/texture2ddecoder
+
+extra:
+  recipe-maintainers:
+  - Copilot
