@@ -13,8 +13,11 @@ source:
 
 build:
   number: 0
-  # builds the xxHash C sources bundled in the sdist (deps/xxhash) into the extension
-  script: ${PYTHON} -m pip install . --no-deps --no-build-isolation -vv
+  # XXHASH_LINK_SO: link xxhash-static instead of the sources bundled in the sdist
+  script:
+    env:
+      XXHASH_LINK_SO: "1"
+    content: ${PYTHON} -m pip install . --no-deps --no-build-isolation -vv
   files:
     exclude:
     - '**/__pycache__/**'
@@ -32,6 +35,7 @@ requirements:
   - setuptools
   host:
   - python-dev
+  - xxhash-static
   run:
   - python
 
