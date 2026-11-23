@@ -1,0 +1,69 @@
+context:
+  name: h3
+  version: 4.5.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/h/h3/h3-${{ version }}.tar.gz
+  sha256: a1e279a1674fc799445c710e35bc4b1b388a406c881d8b5e59a9b8bebeb5bb43
+  patches:
+  - 0001-clear-static-libpython.patch
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - cmake >=3.15
+  - ninja
+  - scikit-build-core >=0.10
+  - cython >=3.0
+  host:
+  - python-dev
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_h3.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://uber.github.io/h3-py/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Uber's hierarchical hexagonal geospatial indexing system
+  repository: https://github.com/uber/h3-py
+
+extra:
+  recipe-maintainers:
+  - Copilot
