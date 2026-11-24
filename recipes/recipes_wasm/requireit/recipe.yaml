@@ -1,0 +1,56 @@
+context:
+  name: requireit
+  version: 0.12.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ebe6800e57d452bef88ec12a2b3f03a20a87ff36c5d294237010d68a8de72cc1
+
+build:
+  number: 0
+  noarch: python
+  # pure-python noarch package: install with the native build python
+  # (cross-python cannot be activated for target_platform=noarch)
+  script: python -m pip install . --no-deps --no-build-isolation --prefix=${PREFIX} -vv
+
+requirements:
+  build:
+  # same python version as the (emscripten) host python, so pip installs
+  # into the matching lib/pythonX.Y/site-packages
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
+  - wheel
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_requireit.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: target_platform=${{ host_platform }} generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  summary: Tiny runtime validators for explicit precondition checks
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/mcflugen/requireit
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

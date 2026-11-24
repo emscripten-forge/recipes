@@ -1,0 +1,49 @@
+context:
+  name: libsndfile
+  version: 1.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/libsndfile/libsndfile/releases/download/${{ version }}/libsndfile-${{ version }}.tar.xz
+  sha256: 3799ca9924d3125038880367bf1468e53a1b7e3686a934f098b7e1d286cdb80e
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - cmake
+  - make
+  run_exports:
+  - ${{ pin_subpackage('libsndfile', upper_bound='x.x') }}
+
+tests:
+- package_contents:
+    lib:
+    - libsndfile.so
+    include:
+    - sndfile.h
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://libsndfile.github.io/libsndfile/
+  repository: https://github.com/libsndfile/libsndfile
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: A C library for reading and writing files containing sampled audio data
+  description: |
+    A C library for reading and writing files containing sampled audio data
+    (WAV, AIFF, AU, CAF, W64, RF64, ...). It is built as a shared library so
+    that python-soundfile can load it via cffi. Built without the external
+    FLAC, Ogg/Vorbis, Opus and MPEG codecs.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

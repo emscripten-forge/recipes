@@ -1,0 +1,91 @@
+context:
+  name: landlab
+  version: 2.11.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 147443e5f763c0f30d0a749aee078a95755d639cd9f1da5ef1e13bc4bd0334c4
+
+build:
+  number: 0
+  script:
+    env:
+      # no OpenMP in the browser (it would need shared memory / pthreads)
+      WITH_OPENMP: '0'
+    content:
+    # emcc appends EMCC_CFLAGS (-O2 from the emscripten activation) to every
+    # call, so it overrides setup.py's -O flags. -Oz makes the Cython
+    # extensions ~40% smaller (ca/cfuncs: 3.8 -> 2.3 MB).
+    - export EMCC_CFLAGS="${EMCC_CFLAGS/-O2/-Oz}"
+    - ${PYTHON} -m pip install . -vv --no-deps --no-build-isolation
+  files:
+    exclude:
+    # Cython sources and the generated C files (tens of MiB) are not needed at runtime
+    - '**/*.pyx'
+    - '**/*.c'
+    - '**/*.cpp'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - cython >=3
+  - numpy
+  - pip
+  - setuptools
+  - wheel
+  host:
+  - python-dev
+  - numpy
+  run:
+  - python
+  - numpy
+  - bmipy
+  - matplotlib-base
+  - netcdf4
+  - pandas
+  - pyshp !=2.3.0
+  - pyyaml
+  - requireit
+  - rich-click
+  - scipy
+  - statsmodels
+  - xarray >=0.16
+  # richdem (only needed by the optional PriorityFloodFlowRouter component,
+  # imported lazily) is not available for emscripten yet
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_landlab.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  summary: A python toolkit for modeling earth surface processes
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://landlab.csdms.io
+  repository: https://github.com/landlab/landlab
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

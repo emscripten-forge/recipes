@@ -3,6 +3,7 @@ set -euo pipefail
 
 emcmake cmake -S . -B build \
   -G Ninja \
+  ${CMAKE_ARGS} \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
   -DCMAKE_INSTALL_LIBDIR=lib \

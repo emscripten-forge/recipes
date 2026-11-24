@@ -1,0 +1,70 @@
+context:
+  name: psutil
+  # the version of upstream psutil whose API this mimics (so `psutil>=5.8` pins resolve);
+  # keep it the same in src/pyproject.toml and src/psutil/__init__.py
+  version: 7.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+# no upstream source: psutil has no Emscripten port (it reads /proc, sysctl, ...). The
+# package is a pure-python stand-in, written here (src/), that answers psutil's API as
+# well as a browser allows: one process, cpu_count() == 1 (no threading), memory = the
+# wasm heap. Arch-specific on purpose (not noarch), so it never replaces the real psutil
+# in a native environment.
+source:
+  path: src
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . --no-deps --no-build-isolation -vv
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  host:
+  - python-dev
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_psutil.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/emscripten-forge/recipes/tree/emscripten-6x/recipes/recipes_wasm/psutil
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: psutil's API for Emscripten / WebAssembly (a pure-python stand-in, not upstream psutil)
+  description: |
+    Libraries import psutil to log memory, size worker pools or pick CPUs. In the
+    browser there is one process, no threads and the wasm heap as memory. This package
+    answers psutil's API accordingly: cpu_count() is 1, virtual_memory() describes the
+    wasm heap, the process list holds only this process, disks / network / sensors are
+    empty. Anything else raises psutil.AccessDenied.
+
+extra:
+  recipe-maintainers:
+  - DerThorsten

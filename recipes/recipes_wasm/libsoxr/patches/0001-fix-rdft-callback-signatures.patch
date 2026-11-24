@@ -1,0 +1,126 @@
+The rdft callback tables (fn_t arrays) are called through the prototypes in
+rdft_t.h, e.g. rdft_delete_setup as void(*)(void *) and rdft_forward /
+rdft_reorder_back as void(*)(int, void *, void *, void *). In 0.1.3 the plain
+C FFT backends define null(void), nothing(void) and 3-argument
+forward/backward, so the indirect calls have a different signature than the
+callee. That happens to work natively but traps in WebAssembly with
+"RuntimeError: function signature mismatch" (call_indirect type check).
+Backport of the upstream fix (libsoxr git master after 0.1.3).
+
+diff --git a/src/avfft32.c b/src/avfft32.c
+--- a/src/avfft32.c
++++ b/src/avfft32.c
+@@ -9,9 +9,9 @@
+
+ static void * forward_setup(int len) {return av_rdft_init((int)(log(len)/log(2)+.5),DFT_R2C);}
+ static void * backward_setup(int len) {return av_rdft_init((int)(log(len)/log(2)+.5),IDFT_C2R);}
+-static void rdft(int length, void * setup, float * h) {av_rdft_calc(setup, h); (void)length;}
++static void rdft(int length, void * setup, float * h, void * scratch) {av_rdft_calc(setup, h); (void)length; (void)scratch;}
+ static int multiplier(void) {return 2;}
+-static void nothing(void) {}
++static void nothing(int length, void * setup, void * H, void * scratch) {(void)length; (void)setup; (void)H; (void)scratch;}
+ static int flags(void) {return 0;}
+
+ fn_t _soxr_rdft32_cb[] = {
+diff --git a/src/avfft32s.c b/src/avfft32s.c
+--- a/src/avfft32s.c
++++ b/src/avfft32s.c
+@@ -8,9 +8,9 @@
+
+ static void * forward_setup(int len) {return av_rdft_init((int)(log(len)/log(2)+.5),DFT_R2C);}
+ static void * backward_setup(int len) {return av_rdft_init((int)(log(len)/log(2)+.5),IDFT_C2R);}
+-static void rdft(int length, void * setup, float * h) {av_rdft_calc(setup, h); (void)length;}
++static void rdft(int length, void * setup, float * h, void * scratch) {av_rdft_calc(setup, h); (void)length; (void)scratch;}
+ static int multiplier(void) {return 2;}
+-static void nothing(void) {}
++static void nothing(int length, void * setup, void * H, void * scratch) {(void)length; (void)setup; (void)H; (void)scratch;}
+ static int flags(void) {return RDFT_IS_SIMD;}
+
+ fn_t _soxr_rdft32s_cb[] = {
+diff --git a/src/fft4g32.c b/src/fft4g32.c
+--- a/src/fft4g32.c
++++ b/src/fft4g32.c
+@@ -9,11 +9,12 @@
+
+ #if WITH_CR32
+ #include "rdft_t.h"
+-static void * null(void) {return 0;}
+-static void forward (int length, void * setup, double * H) {lsx_safe_rdft_f(length,  1, H); (void)setup;}
+-static void backward(int length, void * setup, double * H) {lsx_safe_rdft_f(length, -1, H); (void)setup;}
++static void * null(int length) {(void)length; return 0;}
++static void nothing(void * setup) {(void)setup;}
++static void forward (int length, void * setup, double * H, void * scratch) {lsx_safe_rdft_f(length,  1, H); (void)setup; (void)scratch;}
++static void backward(int length, void * setup, double * H, void * scratch) {lsx_safe_rdft_f(length, -1, H); (void)setup; (void)scratch;}
+ static int multiplier(void) {return 2;}
+-static void nothing(void) {}
++static void nothing2(int length, void * setup, void * H, void * scratch) {(void)length; (void)setup; (void)H; (void)scratch;}
+ static int flags(void) {return 0;}
+
+ fn_t _soxr_rdft32_cb[] = {
+@@ -27,7 +28,7 @@ fn_t _soxr_rdft32_cb[] = {
+   (fn_t)_soxr_ordered_convolve_f,
+   (fn_t)_soxr_ordered_partial_convolve_f,
+   (fn_t)multiplier,
+-  (fn_t)nothing,
++  (fn_t)nothing2,
+   (fn_t)malloc,
+   (fn_t)calloc,
+   (fn_t)free,
+diff --git a/src/fft4g32s.c b/src/fft4g32s.c
+--- a/src/fft4g32s.c
++++ b/src/fft4g32s.c
+@@ -5,11 +5,12 @@
+ #include "util32s.h"
+ #include "rdft_t.h"
+
+-static void * null(void) {return 0;}
+-static void nothing(void) {}
+-static void forward (int length, void * setup, float * H) {lsx_safe_rdft_f(length,  1, H); (void)setup;}
+-static void backward(int length, void * setup, float * H) {lsx_safe_rdft_f(length, -1, H); (void)setup;}
++static void * null(int length) {(void)length; return 0;}
++static void nothing(void * setup) {(void)setup;}
++static void forward (int length, void * setup, float * H, void * scratch) {lsx_safe_rdft_f(length,  1, H); (void)setup; (void)scratch;}
++static void backward(int length, void * setup, float * H, void * scratch) {lsx_safe_rdft_f(length, -1, H); (void)setup; (void)scratch;}
+ static int multiplier(void) {return 2;}
++static void nothing2(int length, void * setup, void * H, void * scratch) {(void)length; (void)setup; (void)H; (void)scratch;}
+ static int flags(void) {return RDFT_IS_SIMD;}
+
+ fn_t _soxr_rdft32s_cb[] = {
+@@ -23,7 +24,7 @@ fn_t _soxr_rdft32s_cb[] = {
+   (fn_t)ORDERED_CONVOLVE_SIMD,
+   (fn_t)ORDERED_PARTIAL_CONVOLVE_SIMD,
+   (fn_t)multiplier,
+-  (fn_t)nothing,
++  (fn_t)nothing2,
+   (fn_t)SIMD_ALIGNED_MALLOC,
+   (fn_t)SIMD_ALIGNED_CALLOC,
+   (fn_t)SIMD_ALIGNED_FREE,
+diff --git a/src/fft4g64.c b/src/fft4g64.c
+--- a/src/fft4g64.c
++++ b/src/fft4g64.c
+@@ -7,11 +7,12 @@
+ #include "soxr-config.h"
+
+ #if WITH_CR64
+-static void * null(void) {return 0;}
+-static void nothing(void) {}
+-static void forward (int length, void * setup, double * H) {lsx_safe_rdft(length,  1, H); (void)setup;}
+-static void backward(int length, void * setup, double * H) {lsx_safe_rdft(length, -1, H); (void)setup;}
++static void * null(int length) {(void)length; return 0;}
++static void nothing(void * setup) {(void)setup;}
++static void forward (int length, void * setup, double * H, void * scratch) {lsx_safe_rdft(length,  1, H); (void)setup; (void)scratch;}
++static void backward(int length, void * setup, double * H, void * scratch) {lsx_safe_rdft(length, -1, H); (void)setup; (void)scratch;}
+ static int multiplier(void) {return 2;}
++static void nothing2(int length, void * setup, void * H, void * scratch) {(void)length; (void)setup; (void)H; (void)scratch;}
+ static int flags(void) {return 0;}
+
+ typedef void (* fn_t)(void);
+@@ -26,7 +27,7 @@ fn_t _soxr_rdft64_cb[] = {
+   (fn_t)_soxr_ordered_convolve,
+   (fn_t)_soxr_ordered_partial_convolve,
+   (fn_t)multiplier,
+-  (fn_t)nothing,
++  (fn_t)nothing2,
+   (fn_t)malloc,
+   (fn_t)calloc,
+   (fn_t)free,
