@@ -1,0 +1,50 @@
+diff --git a/src/tabicl/_model/_cgroup_memory.py b/src/tabicl/_model/_cgroup_memory.py
+index 7891667..894e648 100755
+--- a/src/tabicl/_model/_cgroup_memory.py
++++ b/src/tabicl/_model/_cgroup_memory.py
+@@ -19,7 +19,10 @@ from __future__ import annotations
+ 
+ from pathlib import Path
+ 
+-import psutil
++try:
++    import psutil
++except ImportError:  # e.g. Emscripten; the try below then returns None
++    psutil = None
+ 
+ _PROC_CGROUP = Path("/proc/self/cgroup")
+ _PROC_MOUNTINFO = Path("/proc/self/mountinfo")
+diff --git a/src/tabicl/_model/inference.py b/src/tabicl/_model/inference.py
+index 6fee7a1..db24221 100755
+--- a/src/tabicl/_model/inference.py
++++ b/src/tabicl/_model/inference.py
+@@ -4,8 +4,12 @@ import os
+ import uuid
+ import math
+ import shutil
+-import psutil
+ import warnings
++
++try:
++    import psutil
++except ImportError:  # e.g. Emscripten, where psutil is not available
++    psutil = None
+ import weakref
+ import itertools
+ from enum import Enum, auto
+@@ -853,7 +857,14 @@ class InferenceManager:
+         ``psutil.virtual_memory().available`` with cgroup memory constraints for the current
+         process, if any.
+         """
+-        available = psutil.virtual_memory().available
++        if psutil is not None:
++            available = psutil.virtual_memory().available
++        else:
++            # Without psutil, use the total memory the platform reports.
++            try:
++                available = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
++            except (AttributeError, ValueError, OSError):
++                available = 2 * 1024**3
+         headroom = _cgroup_memory_headroom()
+         if headroom is not None:
+             available = min(available, headroom)
