@@ -2,8 +2,10 @@ context:
   name: xgboost
   version: 2.1.4
 
-package:
-  name: ${{ name }}
+# Package names as on conda-forge: the Python package is `py-xgboost`,
+# `xgboost` is a metapackage that installs it.
+recipe:
+  name: ${{ name }}-split
   version: ${{ version }}
 
 source:
@@ -14,42 +16,61 @@ source:
 
 build:
   number: 0
-  script: build.sh
 
-requirements:
+outputs:
+- package:
+    name: py-${{ name }}
   build:
-  - python
-  - cross-python_${{ target_platform }}
-  - ${{ compiler('c') }}
-  - ${{ compiler('cxx') }}
-  - cmake >=3.18
-  - make
-  - pip
-  - hatchling
-  - packaging
-  host:
-  - python-dev
-  - pip
-  run:
-  - python
-  - numpy
-  - scipy
-
-tests:
-- script: pytester
-  files:
-    recipe:
-    - test_xgboost.py
+    script: build.sh
   requirements:
     build:
-    - pytester
+    - python
+    - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake >=3.18
+    - make
+    - pip
+    - hatchling
+    - packaging
+    host:
+    - python-dev
+    - pip
     run:
-    - pytester-run
+    - python
+    - numpy
+    - scipy
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_xgboost.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
 
-- script: generic-testing
+- package:
+    name: ${{ name }}
   requirements:
-    build:
-    - generic-testing
+    run:
+    - ${{ pin_subpackage('py-' ~ name, exact=True) }}
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_xgboost.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
 about:
   homepage: https://github.com/dmlc/xgboost
   repository: https://github.com/dmlc/xgboost
