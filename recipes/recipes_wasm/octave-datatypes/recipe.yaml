@@ -1,0 +1,52 @@
+context:
+  name: datatypes
+  version: 1.6.2
+
+package:
+  name: octave-${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pr0m1th3as/datatypes/releases/download/release-${{ version }}/datatypes-${{ version }}.tar.gz
+  sha256: 7ef7ffa6ecc53740529807a6331ac27c9d9a67cf5bb816fdf0e75ea6ee725b91
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - make
+  host:
+  - octave
+
+tests:
+- package_contents:
+    files:
+    - share/octave/packages/${{ name }}-${{ version }}/datetime.m
+    - share/octave/packages/${{ name }}-${{ version }}/__datetime__.oct
+    - share/octave/packages/${{ name }}-${{ version }}/tzdata/europe
+- script:
+  - node "$PREFIX/bin/octave-cli" "./datatypes.m"
+  - generic-testing
+  files:
+    recipe:
+    - datatypes.m
+  requirements:
+    build:
+    - nodejs
+    - generic-testing
+
+about:
+  homepage: https://github.com/pr0m1th3as/datatypes
+  license: GPL-3.0-or-later AND MIT
+  license_file:
+  - COPYING
+  - src/ods/LICENSE.md
+  - src/ods/miniz_LICENSE
+  summary: Extra data types for GNU Octave
+
+extra:
+  recipe-maintainers:
+  - arjxn-py
