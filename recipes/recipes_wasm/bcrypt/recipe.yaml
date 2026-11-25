@@ -1,0 +1,53 @@
+context:
+  name: bcrypt
+  version: 5.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://files.pythonhosted.org/packages/source/b/bcrypt/bcrypt-${{ version }}.tar.gz
+  sha256: f748f7c2d6fd375cc93d3fba7ef4a9e3a092421b8dbf34d8d4dc06be9492dfdd
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . -vvv
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - setuptools-rust
+  - rust-nightly
+  - pip
+  host:
+  - python-dev
+  - pip
+  run:
+  - python
+
+tests:
+- script: pytester
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+  files:
+    recipe:
+    - test_bcrypt.py
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/pyca/bcrypt/
+  repository: https://github.com/pyca/bcrypt/
+  summary: Modern password hashing for your software and your servers
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+  - Copilot
