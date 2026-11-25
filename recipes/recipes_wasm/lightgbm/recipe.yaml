@@ -1,0 +1,62 @@
+context:
+  name: lightgbm
+  version: 4.7.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/l/lightgbm/lightgbm-${{ version }}.tar.gz
+  sha256: f8e20f682c9aabd000bcf4a7ed8aa6f473c1adfecccae34ec24e823d156f4af0
+
+build:
+  number: 0
+  script: build.sh
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cmake >=3.15
+  - make
+  - pip
+  - scikit-build-core >=0.10
+  host:
+  - python-dev
+  - pip
+  - numpy
+  run:
+  - python
+  - numpy
+  - scipy
+  - scikit-learn
+  - narwhals
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_lightgbm.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/microsoft/LightGBM
+  license: MIT
+  license_file: LICENSE
+  summary: LightGBM Python Package
+  repository: https://github.com/microsoft/LightGBM
+
+extra:
+  recipe-maintainers:
+  - Copilot
