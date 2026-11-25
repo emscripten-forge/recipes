@@ -1,0 +1,66 @@
+context:
+  name: ripgrep
+  version: 16.0.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/BurntSushi/ripgrep/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 17e7a1a0db80ed9618a0963c7ae4aecb8fce25c70cf7ebed514daf2b38a0d153
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("c") }}
+  - rust-nightly
+  - pkg-config
+  host:
+  - pcre2-static
+
+tests:
+- package_contents:
+    files:
+    - bin/rg.js
+    - bin/rg.wasm
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/rg.js --version | head -1)
+    if [[ ! "$OUTPUT" =~ "ripgrep ${{ version }}" ]]; then
+      echo "Incorrect output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized
+- script: |
+    OUTPUT=$(run_modularized $PREFIX/bin/rg.js --pcre2-version | head -1)
+    if [[ ! "$OUTPUT" =~ "PCRE2" ]]; then
+      echo "Incorrect output: $OUTPUT"
+      exit 1
+    fi
+  requirements:
+    build:
+    - run_modularized
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  license: Unlicense OR MIT
+  license_file:
+  - COPYING
+  - LICENSE-MIT
+  - UNLICENSE
+  summary: |
+    ripgrep recursively searches directories for a regex pattern while
+    respecting your gitignore
+  homepage: https://github.com/BurntSushi/ripgrep
+  repository: https://github.com/BurntSushi/ripgrep
+
+extra:
+  recipe-maintainers:
+  - ianthomas23
