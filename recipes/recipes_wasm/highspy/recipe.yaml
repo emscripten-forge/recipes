@@ -1,0 +1,73 @@
+context:
+  name: highspy
+  version: 1.16.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/h/highspy/highspy-${{ version }}.tar.gz
+  sha256: 83519368321b1ac0ed508b8562b335928b6fd249e2ab42ff0218491e1486d985
+  patches:
+  - 0001-clear-static-libpython.patch
+
+build:
+  number: 0
+  script: build.sh
+
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - cmake >=3.15
+  - ninja
+  - scikit-build-core >=0.3.3
+  - pybind11 <3
+  - numpy
+  host:
+  - python-dev
+  - pip
+  - pybind11 <3
+  - numpy
+  run:
+  - python
+  - numpy
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_highspy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/ERGO-Code/HiGHS
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A thin set of pybind11 wrappers to HiGHS
+  repository: https://github.com/ERGO-Code/HiGHS
+
+extra:
+  recipe-maintainers:
+  - Copilot
