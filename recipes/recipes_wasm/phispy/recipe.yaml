@@ -1,0 +1,61 @@
+context:
+  name: phispy
+  version: 5.0.10
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/phispy/phispy-${{ version }}.tar.gz
+  sha256: 8329fa472b84e150b3ef59b9388830f238dc69b290af2a1ea95567dde29ec6f8
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - numpy
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools >=77.0
+  - wheel
+  - numpy
+  run:
+  - python
+  - biopython
+  - numpy
+  - scikit-learn
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_phispy.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/linsalrob/PhiSpy
+  repository: https://github.com/linsalrob/PhiSpy
+  license: MIT
+  license_file: LICENSE
+  summary: Prophage finder using multiple metrics
+
+extra:
+  recipe-maintainers:
+  - Copilot
