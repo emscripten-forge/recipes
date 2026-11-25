@@ -1,0 +1,85 @@
+context:
+  name: suitesparse-pthread
+  version: "7.12.2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # the suitesparse recipe's
+  url: https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 679412daa5f69af96d6976595c1ac64f252287a56e98cc4a8155d09cc7fd69e8
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+  host:
+    # only for CMake's BLAS check: UMFPACK is compiled with -DNBLAS
+    - libblas
+    - liblapack
+
+tests:
+  - package_contents:
+      files:
+        - include/suitesparse-pthread/suitesparse/klu.h
+        - include/suitesparse-pthread/suitesparse/umfpack.h
+        - include/suitesparse-pthread/suitesparse/SuiteSparse_config.h
+        - lib/suitesparse-pthread/libklu.a
+        - lib/suitesparse-pthread/libumfpack.a
+        - lib/suitesparse-pthread/libbtf.a
+        - lib/suitesparse-pthread/libamd.a
+        - lib/suitesparse-pthread/libcamd.a
+        - lib/suitesparse-pthread/libcolamd.a
+        - lib/suitesparse-pthread/libccolamd.a
+        - lib/suitesparse-pthread/libsuitesparseconfig.a
+        - lib/pkgconfig/suitesparse-pthread.pc
+        - share/licenses/suitesparse-pthread/LICENSE.txt
+  # KLU and UMFPACK solve a 5x5 system in a pthread program, on the main
+  # thread and on a pthread; no BLAS is linked (nor needed)
+  - script:
+      - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+      - emcc -O2 -pthread test_klu_umfpack.c $(pkg-config --cflags --libs suitesparse-pthread)
+        -lm -sPTHREAD_POOL_SIZE=1 -sEXIT_RUNTIME=1 -o test_klu_umfpack.js
+      - node test_klu_umfpack.js
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - pkg-config
+    files:
+      recipe:
+        - test_klu_umfpack.c
+
+about:
+  homepage: https://people.engr.tamu.edu/davis/suitesparse.html
+  repository: https://github.com/DrTimothyAldenDavis/SuiteSparse
+  license: LGPL-2.1-or-later AND GPL-2.0-or-later AND BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - KLU/Doc/License.txt
+    - UMFPACK/Doc/License.txt
+    - AMD/Doc/License.txt
+    - BTF/Doc/License.txt
+  summary: SuiteSparse's KLU and UMFPACK for emscripten-wasm32 programs built with pthreads
+  description: |
+    KLU and UMFPACK (sparse LU factorizations) with the libraries they use
+    (BTF, AMD, CAMD, COLAMD, CCOLAMD, SuiteSparse_config), compiled with
+    -pthread (atomics and bulk memory) for shared-memory (pthreads)
+    WebAssembly programs, as static archives. UMFPACK is built without
+    CHOLMOD (CHOLMOD's METIS recovers from errors with setjmp, which makes
+    objects compiled without -pthread unfit for shared memory: the
+    suitesparse packages cannot be linked into such programs) and without
+    BLAS (-DNBLAS, its own dense kernels: C calls to the Fortran BLAS leave
+    out the hidden string lengths, which traps in WebAssembly). Installed under its own
+    names (include/suitesparse-pthread, lib/suitesparse-pthread,
+    suitesparse-pthread.pc) so that it never replaces, or is mistaken for,
+    the suitesparse packages.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu

@@ -1,0 +1,487 @@
+From: emscripten-forge
+Subject: [PATCH] Figures drawn with Java2D when OpenGL is not available
+
+With -Dscilab.graphics.renderer=java2d, the figure canvas is a Swing
+component drawing the figure with SciRenderer's G2D implementation (the
+one the vectorial exports use) into an image, instead of a JoGL
+GLJPanel/GLCanvas: SwingView does not initialize JoGL, the clipboard,
+image export and bitmap exports use the component's image, and the G2D
+canvas serializes drawing (its scene is static). Java code does not load
+JoGL classes for direct buffers anymore.
+---
+  .../src/java/org/scilab/modules/gui/SwingView.java |  18 ++-
+  .../gui/bridge/canvas/SwingScilabCanvas.java       |  13 +-
+  .../gui/bridge/canvas/SwingScilabCanvasImpl.java   | 136 +++++++++++++++++++++
+  .../scilab/modules/gui/editor/SystemClipboard.java |   5 +
+  .../scilab/modules/gui/utils/ImageExporter.java    |   5 +
+  .../renderer/JoGLView/util/BufferAllocation.java   |   9 +-
+  .../scirenderer/implementation/g2d/G2DCanvas.java  |  86 +++++++++++--
+ 7 files changed, 252 insertions(+), 20 deletions(-)
+
+diff --git a/scilab/modules/gui/src/java/org/scilab/modules/gui/SwingView.java b/scilab/modules/gui/src/java/org/scilab/modules/gui/SwingView.java
+index 844b30c8..dd39b24c 100644
+--- a/scilab/modules/gui/src/java/org/scilab/modules/gui/SwingView.java
++++ b/scilab/modules/gui/src/java/org/scilab/modules/gui/SwingView.java
+@@ -108,6 +108,7 @@ import org.scilab.modules.graphic_objects.figure.Figure;
+ import org.scilab.modules.graphic_objects.graphicController.GraphicController;
+ import org.scilab.modules.graphic_objects.graphicObject.GraphicObjectProperties;
+ import org.scilab.modules.graphic_objects.graphicView.GraphicView;
++import org.scilab.modules.gui.bridge.canvas.SwingScilabCanvasImpl;
+ import org.scilab.modules.gui.bridge.checkbox.SwingScilabCheckBox;
+ import org.scilab.modules.gui.bridge.checkboxmenuitem.SwingScilabCheckBoxMenuItem;
+ import org.scilab.modules.gui.bridge.console.SwingScilabConsole;
+@@ -163,10 +164,13 @@ public final class SwingView implements GraphicView {
+     private Map<Integer, TypedObject> allObjects;
+ 
+     static {
+-        try {
+-            System.loadLibrary("gluegen_rt");
+-        } catch (Exception e) {
+-            System.err.println(e);
++        // JoGL's native part (not needed when figures are drawn with Java2D)
++        if (!SwingScilabCanvasImpl.isJava2D()) {
++            try {
++                System.loadLibrary("gluegen_rt");
++            } catch (Exception e) {
++                System.err.println(e);
++            }
+         }
+     }
+ 
+@@ -177,6 +181,12 @@ public final class SwingView implements GraphicView {
+         GraphicController.getController().register(this);
+         allObjects = Collections.synchronizedMap(new HashMap<Integer, TypedObject>());
+ 
++        if (SwingScilabCanvasImpl.isJava2D()) {
++            // no OpenGL context to query (DataLoader keeps its defaults)
++            FontManager.getSciFontManager();
++            return;
++        }
++
+         try {
+             GLCanvas tmpCanvas = new GLCanvas(new GLCapabilities(GLProfile.getDefault()));
+             tmpCanvas.getContext().makeCurrent();
+diff --git a/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvas.java b/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvas.java
+index c9a9c2c0..9c0923bf 100644
+--- a/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvas.java
++++ b/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvas.java
+@@ -40,6 +40,7 @@ import com.jogamp.opengl.GLAutoDrawable;
+ import javax.swing.JPanel;
+ 
+ import org.scilab.forge.scirenderer.Canvas;
++import org.scilab.forge.scirenderer.implementation.g2d.G2DCanvas;
+ import org.scilab.forge.scirenderer.implementation.jogl.JoGLCanvas;
+ import org.scilab.forge.scirenderer.implementation.jogl.JoGLCanvasFactory;
+ import org.scilab.modules.graphic_objects.axes.AxesContainer;
+@@ -91,7 +92,13 @@ public class SwingScilabCanvas extends JPanel implements SimpleCanvas {
+ 
+         add(drawableComponent, PanelLayout.GL_CANVAS);
+ 
+-        rendererCanvas = JoGLCanvasFactory.createCanvas((GLAutoDrawable) drawableComponent);
++        if (drawableComponent instanceof SwingScilabCanvasImpl.Java2DPanel) {
++            G2DCanvas g2dCanvas = ((SwingScilabCanvasImpl.Java2DPanel) drawableComponent).getCanvas();
++            g2dCanvas.setAntiAliasingLevel(figure.getAntialiasing().intValue());
++            rendererCanvas = g2dCanvas;
++        } else {
++            rendererCanvas = JoGLCanvasFactory.createCanvas((GLAutoDrawable) drawableComponent);
++        }
+         drawerVisitor = null;
+ 
+         /* Workaround for bug 12682: setFocusable(false) did not work...
+@@ -248,6 +255,10 @@ public class SwingScilabCanvas extends JPanel implements SimpleCanvas {
+         if (canvas instanceof JoGLCanvas) {
+             return ((JoGLCanvas) canvas).getImage();
+         }
++        if (canvas instanceof G2DCanvas) {
++            canvas.redrawAndWait();
++            return ((G2DCanvas) canvas).getImage();
++        }
+ 
+         return null;
+     }
+diff --git a/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvasImpl.java b/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvasImpl.java
+index 3553f8ae..81a68988 100644
+--- a/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvasImpl.java
++++ b/scilab/modules/gui/src/java/org/scilab/modules/gui/bridge/canvas/SwingScilabCanvasImpl.java
+@@ -18,7 +18,11 @@ package org.scilab.modules.gui.bridge.canvas;
+ 
+ import java.awt.Component;
+ import java.awt.Frame;
++import java.awt.Graphics;
++import java.awt.Graphics2D;
+ import java.awt.HeadlessException;
++import java.awt.image.BufferedImage;
++import java.lang.reflect.InvocationTargetException;
+ import java.util.Calendar;
+ import java.util.StringTokenizer;
+ 
+@@ -29,6 +33,11 @@ import com.jogamp.opengl.GLProfile;
+ import com.jogamp.opengl.awt.GLCanvas;
+ import com.jogamp.opengl.awt.GLJPanel;
+ 
++import javax.swing.JPanel;
++import javax.swing.SwingUtilities;
++
++import org.scilab.forge.scirenderer.implementation.g2d.G2DCanvas;
++import org.scilab.forge.scirenderer.implementation.g2d.G2DCanvasFactory;
+ import org.scilab.modules.action_binding.InterpreterManagement;
+ import org.scilab.modules.commons.OS;
+ import org.scilab.modules.gui.utils.Debug;
+@@ -36,6 +45,130 @@ import org.scilab.modules.localization.Messages;
+ 
+ public class SwingScilabCanvasImpl {
+ 
++    /**
++     * Figures are drawn with Java2D (the G2D implementation of SciRenderer,
++     * also used for the vectorial exports) instead of OpenGL (JoGL) when the
++     * system property scilab.graphics.renderer is "java2d": where there is no
++     * OpenGL, as in the WebAssembly build, or to work around a broken driver.
++     */
++    private static final boolean JAVA2D = "java2d".equalsIgnoreCase(System.getProperty("scilab.graphics.renderer"));
++
++    /**
++     * @return true if figures are drawn with Java2D rather than JoGL
++     */
++    public static boolean isJava2D() {
++        return JAVA2D;
++    }
++
++    /**
++     * Component drawing a figure with Java2D. Its name starts with the name of
++     * this class, as the JoGL components' names do, which is how
++     * GlobalMouseEventWatcher (xclick, xgetmouse...) recognizes a canvas.
++     * The figure is drawn into an image, kept between repaints: the scene is
++     * only drawn again when the figure changed (redraw) or the size did.
++     */
++    public static final class Java2DPanel extends JPanel {
++        private static final long serialVersionUID = 1L;
++
++        private final G2DCanvas canvas;
++        private BufferedImage image;
++        private boolean dirty = true;
++
++        public Java2DPanel() {
++            super(null);
++            setOpaque(true);
++            BufferedImage initial = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
++            canvas = G2DCanvasFactory.createCanvas(initial.createGraphics(), 1, 1);
++            canvas.setScreenHandlers(this::requestRedraw, this::redrawAndWait, this::getImage);
++        }
++
++        /**
++         * @return the SciRenderer canvas drawn by this component
++         */
++        public G2DCanvas getCanvas() {
++            return canvas;
++        }
++
++        private void requestRedraw() {
++            synchronized (this) {
++                dirty = true;
++            }
++            repaint();
++        }
++
++        private void redrawAndWait() {
++            synchronized (this) {
++                dirty = true;
++            }
++            Runnable paint = () -> paintImmediately(0, 0, getWidth(), getHeight());
++            if (SwingUtilities.isEventDispatchThread()) {
++                paint.run();
++            } else {
++                try {
++                    SwingUtilities.invokeAndWait(paint);
++                } catch (InterruptedException e) {
++                    Thread.currentThread().interrupt();
++                } catch (InvocationTargetException e) {
++                    e.printStackTrace();
++                }
++            }
++        }
++
++        @Override
++        @SuppressWarnings("deprecation")
++        public void reshape(int x, int y, int width, int height) {
++            super.reshape(x, y, width, height);
++            canvas.setDimension(Math.max(width, 1), Math.max(height, 1));
++            synchronized (this) {
++                dirty = true;
++            }
++        }
++
++        @Override
++        protected void paintComponent(Graphics g) {
++            int width = getWidth();
++            int height = getHeight();
++            if (width <= 0 || height <= 0) {
++                return;
++            }
++            BufferedImage shown;
++            synchronized (this) {
++                if (image == null || image.getWidth() != width || image.getHeight() != height) {
++                    image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
++                    dirty = true;
++                }
++                if (dirty) {
++                    dirty = false;
++                    Graphics2D g2d = image.createGraphics();
++                    try {
++                        g2d.setColor(getBackground());
++                        g2d.fillRect(0, 0, width, height);
++                        canvas.setGraphics(g2d, width, height);
++                        canvas.draw();
++                    } finally {
++                        g2d.dispose();
++                    }
++                }
++                shown = image;
++            }
++            g.drawImage(shown, 0, 0, null);
++        }
++
++        /**
++         * @return a copy of the last image painted, or null
++         */
++        public synchronized BufferedImage getImage() {
++            if (image == null) {
++                return null;
++            }
++            BufferedImage copy = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
++            Graphics2D g2d = copy.createGraphics();
++            g2d.drawImage(image, 0, 0, null);
++            g2d.dispose();
++            return copy;
++        }
++    }
++
+     static boolean forceGLCanvas = false;
+     static boolean noGLJPanel = false;
+     static boolean testCanvasAtStartup = false;
+@@ -250,6 +383,9 @@ public class SwingScilabCanvasImpl {
+     }
+ 
+     public Component createOpenGLComponent(int numSamples) {
++        if (JAVA2D) {
++            return new Java2DPanel();
++        }
+         if (enableGLCanvas) {
+             return new SafeGLCanvas();
+         } else {
+diff --git a/scilab/modules/gui/src/java/org/scilab/modules/gui/editor/SystemClipboard.java b/scilab/modules/gui/src/java/org/scilab/modules/gui/editor/SystemClipboard.java
+index 2f509ed8..11a19125 100644
+--- a/scilab/modules/gui/src/java/org/scilab/modules/gui/editor/SystemClipboard.java
++++ b/scilab/modules/gui/src/java/org/scilab/modules/gui/editor/SystemClipboard.java
+@@ -25,6 +25,7 @@ import java.awt.image.BufferedImage;
+ import javax.imageio.ImageIO;
+ import java.util.*;
+ import org.scilab.forge.scirenderer.Canvas;
++import org.scilab.forge.scirenderer.implementation.g2d.G2DCanvas;
+ import org.scilab.forge.scirenderer.implementation.jogl.JoGLCanvas;
+ import org.scilab.modules.graphic_objects.graphicController.GraphicController;
+ import org.scilab.modules.renderer.JoGLView.DrawerVisitor;
+@@ -118,6 +119,10 @@ public class SystemClipboard {
+             //joglCanvas.destroy();
+             return image;
+         }
++        if (canvas instanceof G2DCanvas && ((G2DCanvas) canvas).isScreenCanvas()) {
++            canvas.redrawAndWait();
++            return ((G2DCanvas) canvas).getImage();
++        }
+         return null;
+     }
+ }
+diff --git a/scilab/modules/gui/src/java/org/scilab/modules/gui/utils/ImageExporter.java b/scilab/modules/gui/src/java/org/scilab/modules/gui/utils/ImageExporter.java
+index 8e0e76d2..f64f4e19 100644
+--- a/scilab/modules/gui/src/java/org/scilab/modules/gui/utils/ImageExporter.java
++++ b/scilab/modules/gui/src/java/org/scilab/modules/gui/utils/ImageExporter.java
+@@ -18,6 +18,7 @@ package org.scilab.modules.gui.utils;
+ import java.awt.Image;
+ 
+ import org.scilab.forge.scirenderer.Canvas;
++import org.scilab.forge.scirenderer.implementation.g2d.G2DCanvas;
+ import org.scilab.forge.scirenderer.implementation.jogl.JoGLCanvas;
+ import org.scilab.modules.renderer.JoGLView.DrawerVisitor;
+ 
+@@ -48,6 +49,10 @@ public final class ImageExporter {
+             JoGLCanvas joglCanvas = (JoGLCanvas) canvas;
+             return joglCanvas.getImage();
+         }
++        if (canvas instanceof G2DCanvas && ((G2DCanvas) canvas).isScreenCanvas()) {
++            canvas.redrawAndWait();
++            return ((G2DCanvas) canvas).getImage();
++        }
+ 
+         return null;
+     }
+diff --git a/scilab/modules/renderer/src/java/org/scilab/modules/renderer/JoGLView/util/BufferAllocation.java b/scilab/modules/renderer/src/java/org/scilab/modules/renderer/JoGLView/util/BufferAllocation.java
+index 74eec567..dbbd42bd 100644
+--- a/scilab/modules/renderer/src/java/org/scilab/modules/renderer/JoGLView/util/BufferAllocation.java
++++ b/scilab/modules/renderer/src/java/org/scilab/modules/renderer/JoGLView/util/BufferAllocation.java
+@@ -14,9 +14,8 @@
+ 
+ package org.scilab.modules.renderer.JoGLView.util;
+ 
+-import com.jogamp.opengl.util.GLBuffers;
+-
+ import java.nio.ByteBuffer;
++import java.nio.ByteOrder;
+ import java.nio.FloatBuffer;
+ import java.nio.IntBuffer;
+ 
+@@ -40,7 +39,7 @@ public final class BufferAllocation {
+      */
+     public static ByteBuffer newByteBuffer(int length) throws OutOfMemoryException {
+         haveFreeMemory(length);
+-        ByteBuffer buffer = GLBuffers.newDirectByteBuffer(length);
++        ByteBuffer buffer = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+         if (buffer.limit() != length) {
+             throw new OutOfMemoryException();
+         }
+@@ -55,7 +54,7 @@ public final class BufferAllocation {
+      */
+     public static IntBuffer newIntBuffer(int length) throws OutOfMemoryException {
+         haveFreeMemory(length * Integer.SIZE / Byte.SIZE);
+-        IntBuffer buffer = GLBuffers.newDirectIntBuffer(length);
++        IntBuffer buffer = ByteBuffer.allocateDirect(length * Integer.BYTES).order(ByteOrder.nativeOrder()).asIntBuffer();
+         if (buffer.limit() != length) {
+             throw new OutOfMemoryException();
+         }
+@@ -70,7 +69,7 @@ public final class BufferAllocation {
+      */
+     public static FloatBuffer newFloatBuffer(int length) throws OutOfMemoryException {
+         haveFreeMemory(length * Float.SIZE / Byte.SIZE);
+-        FloatBuffer buffer = GLBuffers.newDirectFloatBuffer(length);
++        FloatBuffer buffer = ByteBuffer.allocateDirect(length * Float.BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
+         if (buffer.limit() != length) {
+             throw new OutOfMemoryException();
+         }
+diff --git a/scilab/modules/scirenderer/src/java/org/scilab/forge/scirenderer/implementation/g2d/G2DCanvas.java b/scilab/modules/scirenderer/src/java/org/scilab/forge/scirenderer/implementation/g2d/G2DCanvas.java
+index 0d0b7e9c..fd0ea7fa 100644
+--- a/scilab/modules/scirenderer/src/java/org/scilab/forge/scirenderer/implementation/g2d/G2DCanvas.java
++++ b/scilab/modules/scirenderer/src/java/org/scilab/forge/scirenderer/implementation/g2d/G2DCanvas.java
+@@ -16,6 +16,8 @@ package org.scilab.forge.scirenderer.implementation.g2d;
+ 
+ import java.awt.Dimension;
+ import java.awt.Graphics2D;
++import java.awt.image.BufferedImage;
++import java.util.function.Supplier;
+ 
+ import org.scilab.forge.scirenderer.Canvas;
+ import org.scilab.forge.scirenderer.Drawer;
+@@ -44,6 +46,21 @@ public final class G2DCanvas implements Canvas {
+ 
+     private boolean drawEnabled = true;
+ 
++    /**
++     * The scene the drawing is built in (Scene) is shared by all G2D canvases,
++     * so only one of them may draw at a time: a figure painted on screen and
++     * an export of another one can happen in different threads.
++     */
++    private static final Object DRAW_LOCK = new Object();
++
++    /**
++     * For a canvas shown on screen (see setScreenHandlers): redraw() asks the
++     * component to repaint, and the component draws in its paint method.
++     */
++    private Runnable redrawHandler;
++    private Runnable redrawAndWaitHandler;
++    private Supplier<BufferedImage> imageSupplier;
++
+     /** The anti-aliasing level */
+     private int antiAliasingLevel = 0;
+ 
+@@ -77,6 +94,45 @@ public final class G2DCanvas implements Canvas {
+         return drawingTools;
+     }
+ 
++    /**
++     * Make this canvas the renderer of a component on screen: redraw() and
++     * redrawAndWait() call the given handlers, which make the component
++     * repaint (and draw this canvas into its Graphics2D, see setGraphics and
++     * draw), and getImage() returns what the component shows.
++     * @param redraw asks for a repaint
++     * @param redrawAndWait repaints and returns when it is done
++     * @param image the last image painted
++     */
++    public void setScreenHandlers(Runnable redraw, Runnable redrawAndWait, Supplier<BufferedImage> image) {
++        this.redrawHandler = redraw;
++        this.redrawAndWaitHandler = redrawAndWait;
++        this.imageSupplier = image;
++    }
++
++    /**
++     * @return true if this canvas is drawn on screen (see setScreenHandlers)
++     */
++    public boolean isScreenCanvas() {
++        return redrawHandler != null;
++    }
++
++    /**
++     * @return the image shown on screen, or null for an offscreen canvas
++     */
++    public BufferedImage getImage() {
++        return imageSupplier == null ? null : imageSupplier.get();
++    }
++
++    /**
++     * Change the size of the drawing (the screen component was resized).
++     * @param width the new width
++     * @param height the new height
++     */
++    public void setDimension(int width, int height) {
++        this.dimension.width = width;
++        this.dimension.height = height;
++    }
++
+     public void setGraphics(Graphics2D g2d, int width, int height) {
+         this.dimension.width = width;
+         this.dimension.height = height;
+@@ -142,12 +198,20 @@ public final class G2DCanvas implements Canvas {
+ 
+     @Override
+     public void redraw() {
+-        draw();
++        if (redrawHandler != null) {
++            redrawHandler.run();
++        } else {
++            draw();
++        }
+     }
+ 
+     @Override
+     public void redrawAndWait() {
+-        redraw();
++        if (redrawAndWaitHandler != null) {
++            redrawAndWaitHandler.run();
++        } else {
++            redraw();
++        }
+     }
+ 
+     @Override
+@@ -165,14 +229,16 @@ public final class G2DCanvas implements Canvas {
+     }
+ 
+     public void draw() {
+-        if (drawEnabled) {
+-            try {
+-                mainDrawer.draw(drawingTools);
+-                getMotor3D().setAntialiased(antiAliasingLevel != 0);
+-                getMotor3D().draw();
+-            } catch (Exception e) {
+-                System.out.println(e + "::::" + mainDrawer);
+-                e.printStackTrace();
++        if (drawEnabled && mainDrawer != null) {
++            synchronized (DRAW_LOCK) {
++                try {
++                    mainDrawer.draw(drawingTools);
++                    getMotor3D().setAntialiased(antiAliasingLevel != 0);
++                    getMotor3D().draw();
++                } catch (Exception e) {
++                    System.out.println(e + "::::" + mainDrawer);
++                    e.printStackTrace();
++                }
+             }
+         }
+     }

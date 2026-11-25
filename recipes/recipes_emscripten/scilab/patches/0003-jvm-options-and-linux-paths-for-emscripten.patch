@@ -1,0 +1,149 @@
+From: emscripten-forge
+Subject: [PATCH] emscripten: JVM options, Linux code paths
+
+The JVM is OpenJDK 21 (Zero) from the openjdk21 package, linked in: add
+the options its launcher passes (java.home, no perf data, serial GC...)
+and the ones Scilab needs there (Java2D figures, no FlatLaf native code);
+SCI_WASM_JAVA_OPTIONS adds more. emscripten's libc is Linux-like and the
+JVM runs the Linux class library: use the Linux branches.
+---
+  scilab/modules/core/includes/getos.h       |  3 +-
+  scilab/modules/fileio/includes/os_wfopen.h |  4 +-
+  scilab/modules/jvm/src/c/getJvmOptions.c   | 88 ++++++++++++++++++++++++++++++
+ 3 files changed, 92 insertions(+), 3 deletions(-)
+
+diff --git a/scilab/modules/core/includes/getos.h b/scilab/modules/core/includes/getos.h
+index 11b2d47d..bbcf285c 100644
+--- a/scilab/modules/core/includes/getos.h
++++ b/scilab/modules/core/includes/getos.h
+@@ -24,7 +24,8 @@
+ #ifdef __APPLE__
+ #define OSNAME "macosx"
+ #else
+-#ifdef __linux__
++#if defined(__linux__) || defined(__EMSCRIPTEN__)
++/* the WebAssembly build runs the Linux version of the JVM's class library */
+ #define OSNAME "linux"
+ #else
+ #ifdef _MSC_VER
+diff --git a/scilab/modules/fileio/includes/os_wfopen.h b/scilab/modules/fileio/includes/os_wfopen.h
+index 2426af1b..de762371 100644
+--- a/scilab/modules/fileio/includes/os_wfopen.h
++++ b/scilab/modules/fileio/includes/os_wfopen.h
+@@ -24,8 +24,8 @@
+ #define os_wfopen       _wfopen
+ #endif
+ 
+-// Linux
+-#ifdef __linux__
++// Linux (and the WebAssembly build, on emscripten's Linux-like libc)
++#if defined(__linux__) || defined(__EMSCRIPTEN__)
+ #define os_wfopen       linux_fopen
+ FILE* linux_fopen(const wchar_t* _pstFilename, const wchar_t* _pstMode);
+ #endif
+diff --git a/scilab/modules/jvm/src/c/getJvmOptions.c b/scilab/modules/jvm/src/c/getJvmOptions.c
+index 9e39564a..f79b9087 100644
+--- a/scilab/modules/jvm/src/c/getJvmOptions.c
++++ b/scilab/modules/jvm/src/c/getJvmOptions.c
+@@ -31,6 +31,90 @@
+ #include "getScilabPreference.h"
+ 
+ static char * getJavaHeapSize(void);
++
++#ifdef __EMSCRIPTEN__
++#include <stdio.h>
++#include <string.h>
++static JavaVMOption * addJvmOption(JavaVMOption *options, int *n, const char *value)
++{
++    options = (JavaVMOption *)REALLOC(options, sizeof(JavaVMOption) * (*n + 1));
++    options[*n].optionString = os_strdup(value);
++    options[*n].extraInfo = NULL;
++    (*n)++;
++    return options;
++}
++
++/*
++ * The JVM is the openjdk21 package's OpenJDK 21 (Zero interpreter), linked
++ * into the program: these are the options its own launcher passes, and what
++ * Scilab needs on top (figures drawn with Java2D, no native look and feel
++ * parts). They are added after jvm_options.xml; SCI_WASM_JAVA_OPTIONS
++ * (options separated by spaces) is added last and overrides all of them.
++ */
++static JavaVMOption * addEmscriptenJvmOptions(JavaVMOption *options, int *n)
++{
++    static const char *const defaults[] =
++    {
++        "-XX:-UsePerfData",             /* no mmap()ed hsperfdata */
++        "-XX:+ReduceSignalUsage",       /* no signals between wasm threads */
++        "-Xss2m",
++        "-Dsun.java.launcher=SUN_STANDARD",
++        "-Djava.awt.headless=false",
++        "-Dswing.bufferPerWindow=false", /* x11.wasm keeps window contents */
++        /* Swing paints in images in the Java heap (Java2D's software
++         * loops: antialiased text, alpha), then puts them in the windows:
++         * x11.wasm reads no pixels back (XGetImage), which the X11
++         * pipeline needs for antialiased text in pixmaps */
++        "-Dswing.volatileImageBufferEnabled=false",
++        "-Dsun.java2d.pmoffscreen=false",
++        "-Dscilab.graphics.renderer=java2d",
++        "-Dflatlaf.useNativeLibrary=false",
++        NULL
++    };
++    const char *home = getenv("JAVA_HOME");
++    const char *extra = getenv("SCI_WASM_JAVA_OPTIONS");
++    char buffer[4096];
++    int i;
++    int hasGC = 0;
++
++    snprintf(buffer, sizeof(buffer), "-Djava.home=%s", home && *home ? home : "/java");
++    options = addJvmOption(options, n, buffer);
++    for (i = 0; defaults[i] != NULL; i++)
++    {
++        options = addJvmOption(options, n, defaults[i]);
++    }
++    for (i = 0; i < *n; i++)
++    {
++        if (strncmp(options[i].optionString, "-XX:+Use", 8) == 0 && strstr(options[i].optionString, "GC") != NULL)
++        {
++            hasGC = 1;
++        }
++    }
++    if (extra && strstr(extra, "-XX:+Use") && strstr(extra, "GC"))
++    {
++        hasGC = 1;
++    }
++    if (!hasGC)
++    {
++        /* HotSpot would pick G1 (2 or more CPUs); the serial collector needs
++         * no helper threads and the least memory */
++        options = addJvmOption(options, n, "-XX:+UseSerialGC");
++    }
++    if (extra)
++    {
++        char *copy = os_strdup(extra);
++        char *save = NULL;
++        char *tok = strtok_r(copy, " ", &save);
++        while (tok)
++        {
++            options = addJvmOption(options, n, tok);
++            tok = strtok_r(NULL, " ", &save);
++        }
++        FREE(copy);
++    }
++    return options;
++}
++#endif
+ /*--------------------------------------------------------------------------*/
+ JavaVMOption * getJvmOptions(char *SCI_PATH, char *filename_xml_conf, int *size_JavaVMOption)
+ {
+@@ -156,6 +240,10 @@ JavaVMOption * getJvmOptions(char *SCI_PATH, char *filename_xml_conf, int *size_
+              * since it needs to be done only once.
+              */
+ 
++#ifdef __EMSCRIPTEN__
++            jvm_options = addEmscriptenJvmOptions(jvm_options, &indice);
++#endif
++
+             if (getenv("SCI_JAVA_ENABLE_HEADLESS") != NULL)
+             {
+                 /* When Scilab is built from a virtual machine, it needs

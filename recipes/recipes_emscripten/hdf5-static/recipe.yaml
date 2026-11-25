@@ -1,0 +1,78 @@
+context:
+  name: hdf5-static
+  version: 1.14.6
+  maj_min_ver: 1.14
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://support.hdfgroup.org/releases/hdf5/v${{ maj_min_ver | replace(".", "_") }}/v${{ version | replace(".", "_") }}/downloads/hdf5-${{ version }}.tar.gz
+  sha256: e4defbac30f50d64e1556374aa49e574417c9e72c6b1de7a4ff88c4b1bea6e9b
+  patches:
+    # the hdf5 recipe's: wasm has no floating-point exception flags
+    - patches/0001-fenv-fe-invalid-guard.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - cmake
+    - make
+    - pkg-config
+  host:
+    - zlib
+  run:
+    # programs that link the archives link libz too
+    - zlib
+
+tests:
+  - package_contents:
+      files:
+        - include/hdf5-static/hdf5.h
+        - include/hdf5-static/hdf5_hl.h
+        - include/hdf5-static/H5pubconf.h
+        - lib/hdf5-static/libhdf5.a
+        - lib/hdf5-static/libhdf5_hl.a
+        - lib/hdf5-static/cmake/hdf5-config.cmake
+        - lib/pkgconfig/hdf5-static.pc
+        - share/licenses/hdf5-static/COPYING
+  # writes and reads back a dataset and an attribute (C and high-level
+  # APIs), in a program without and one with pthreads (shared memory)
+  - script:
+      - export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig"
+      - emcc -O2 test_hdf5.c $(pkg-config --cflags --libs --static hdf5-static) -o test_hdf5.js
+      - node test_hdf5.js
+      - emcc -O2 -pthread test_hdf5.c $(pkg-config --cflags --libs --static hdf5-static) -o test_hdf5_pthread.js
+      - node test_hdf5_pthread.js
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - pkg-config
+    files:
+      recipe:
+        - test_hdf5.c
+
+about:
+  homepage: https://www.hdfgroup.org/solutions/hdf5/
+  repository: https://github.com/HDFGroup/hdf5
+  documentation: https://support.hdfgroup.org/documentation/hdf5/latest/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: COPYING
+  summary: HDF5 (C and high-level libraries) as static archives
+  description: |
+    The hdf5 package has HDF5 as side modules (shared libraries), for
+    programs that load libraries at run time such as Python. This package
+    has the same version as static archives, for programs linked as a whole,
+    including programs built with pthreads, which cannot load side modules.
+    It is installed under its own names (include/hdf5-static,
+    lib/hdf5-static, hdf5-static.pc) so that it never replaces, or is
+    mistaken for, the hdf5 package.
+
+extra:
+  recipe-maintainers:
+    - wangyenshu
