@@ -6,6 +6,11 @@
 //   target_platform: platform of the test environment, e.g. emscripten-wasm32.
 // Every file in the current directory is a test file to run in the kernel.
 //
+// Usage: xeus-tester [--shim <name>]...
+// By default each test file is run directly as one cell. Use `--shim <name>` to run the test files
+// using a shim instead, such as `--shim pytest`; see SHIMS below. `--shim` can be repeated to apply
+// multiple shims in the order given.
+//
 // Each test file is run in node with the kernel in the main thread and in a worker. If playwright is
 // installed alongside xeus-tester, each test file is also run in a headless Chromium browser with the
 // kernel in the main thread and in a worker. A test fails if running it writes anything to stderr,
@@ -302,22 +307,23 @@ function splitSqlCells(source) {
 /**
  * Shims to run test files using a language-specific approach, such as a test framework like pytest.
  * Each shim has:
- *   name:    name of the shim for logging.
- *   applies: function(kernel, packageNames) returning whether the shim applies to this test
- *            environment, given the kernel package name and the names of all installed packages.
- *   cells:   function(testFile, source) returning an array of cells of code to run in turn in the
- *            kernel in place of the test file's source. The test fails at the first cell that writes
- *            to stderr, e.g. raises an exception.
- * The first shim that applies is used. If none apply, each test file is run directly as one cell.
+ *   name:  name of the shim, as used in `--shim <name>`.
+ *   cells: function(testFile, cells) taking an array of cells of code and returning the array of
+ *          cells to run in turn in the kernel in their place. The test fails at the first cell that
+ *          writes to stderr, e.g. raises an exception.
+ * A shim is only used if it is requested using `--shim <name>`. If multiple shims are requested they
+ * are applied in the order given, starting with the test file's source as one cell, and each shim
+ * is passed the cells returned by the previous one. If no shims are requested each test file is run
+ * directly as one cell.
  */
 const SHIMS = [
   {
     name: 'pytest',
-    applies: (kernel, packageNames) => kernel === 'xeus-python' && packageNames.includes('pytest'),
-    cells: (testFile, source) => {
+    cells: (testFile, cells) => {
       // Write the test file into the kernel's filesystem and run it using pytest.
       // A JSON string is also a valid Python string literal.
       const file = JSON.stringify(testFile);
+      const source = cells.join('\n');
       return [
         `import pytest
 with open(${file}, "w") as f:
@@ -331,17 +337,26 @@ if ret != 0:
   },
   {
     name: 'sqlite',
-    applies: (kernel, packageNames) => kernel === 'xeus-sqlite',
-    cells: (testFile, source) => splitSqlCells(source),
+    cells: (testFile, cells) => cells.flatMap(splitSqlCells),
   },
 ];
 
 /**
- * Return the first shim that applies to the test environment, or undefined if none do.
+ * Return an array of the shims requested by the command-line arguments `args`, in the order given.
  */
-function findShim(kernel, records) {
-  const packageNames = records.map((r) => r.name);
-  return SHIMS.find((shim) => shim.applies(kernel, packageNames));
+function findShims(args) {
+  const shims = [];
+  for (let i = 0; i < args.length; i += 2) {
+    if (args[i] !== '--shim' || i + 1 >= args.length) {
+      fail('usage: xeus-tester [--shim <name>]...');
+    }
+    const shim = SHIMS.find((s) => s.name === args[i + 1]);
+    if (shim === undefined) {
+      fail(`unknown shim '${args[i + 1]}', expected one of: ${SHIMS.map((s) => s.name).join(', ')}`);
+    }
+    shims.push(shim);
+  }
+  return shims;
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -352,16 +367,19 @@ function findShim(kernel, records) {
  * Run a test file in a fresh kernel using `mode`, so that test files are isolated from each other.
  * `mode` has a `name` and an `execute(cells)` function that runs cells of code in turn in one kernel
  * and returns the combined {stdout, stderr} from the kernel.
- * If `shim` is defined it is used to run the test file, otherwise the test file is run directly as
- * one cell.
+ * The `shims` are applied in turn to the test file's source to give the cells to run. If there are
+ * no shims the test file is run directly as one cell.
  * Returns whether the test passed.
  */
-async function runTest(mode, testFile, shim) {
+async function runTest(mode, testFile, shims) {
   const name = `${testFile}, ${mode.name}`;
   log(`Running ${name}`);
   const start = performance.now();
   const source = readFileSync(testFile, 'utf8');
-  const cells = shim ? shim.cells(testFile, source) : [source];
+  let cells = [source];
+  for (const shim of shims) {
+    cells = shim.cells(testFile, cells);
+  }
   const ret = await mode.execute(cells);
   if (ret.stdout) {
     console.log(ret.stdout.trimEnd());
@@ -392,13 +410,13 @@ const platform = getEnv('target_platform');
 const records = readCondaMeta(prefix);
 const kernel = findKernel(records);
 const testFiles = findTestFiles();
-const shim = findShim(kernel, records);
+const shims = findShims(process.argv.slice(2));
 const useBrowser = existsSync(path.join(PLAYWRIGHT_DIR, 'index.mjs'));
 
 log(`Package under test: ${packageName}`);
 log(`Kernel: ${kernel}`);
 log(`Test files: ${testFiles.join(', ')}`);
-log(`Running test files ${shim ? `using ${shim.name}` : 'directly'}`);
+log(`Running test files ${shims.length > 0 ? `using ${shims.map((s) => s.name).join(', ')}` : 'directly'}`);
 log(`Running in node${useBrowser ? ' and browser' : ''}`);
 
 // Serve local channels, and xeus-tester's own files for the browser test page.
@@ -435,7 +453,7 @@ try {
   for (const mode of modes) {
     for (const testFile of testFiles) {
       nTests++;
-      if (!(await runTest(mode, testFile, shim))) {
+      if (!(await runTest(mode, testFile, shims))) {
         nFailed++;
       }
     }
