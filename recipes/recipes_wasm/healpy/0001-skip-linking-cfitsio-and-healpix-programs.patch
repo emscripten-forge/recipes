@@ -1,0 +1,31 @@
+Skip linking cfitsio and healpix_cxx programs for emscripten builds
+
+They fail to link with duplicate symbols and are unneeded.
+---
+--- a/setup.py
++++ b/setup.py
+@@ -27,6 +27,10 @@
+     sys.exit(1)
+ 
+ 
++def is_emscripten():
++    return get_config_vars().get("HOST_GNU_TYPE") == "wasm32-unknown-emscripten"
++
++
+ class build_external_clib(build_clib):
+     """Subclass of Distutils' standard build_clib subcommand. Adds support for
+     libraries that are installed externally and detected with pkg-config, with
+@@ -179,6 +183,13 @@
+ 
+             # Run make install.
+             cmd = ["make", "install"]
++
++            # On Emscripten, these binaries fail to link with duplicate symbols.
++            # healpy only needs the libraries and headers, so skip the programs
++            # entirely by emptying the automake variables that list them.
++            if is_emscripten():
++                cmd += ["bin_PROGRAMS=", "noinst_PROGRAMS="]
++
+             log.info("%s", " ".join(cmd))
+             check_call(cmd, cwd=build_temp, env=env)
+ 
