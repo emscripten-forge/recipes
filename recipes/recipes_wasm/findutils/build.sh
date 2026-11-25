@@ -7,7 +7,8 @@ export CONFIG_LDFLAGS="\
     --minify=0 \
     -sALLOW_MEMORY_GROWTH=1 \
     -sEXIT_RUNTIME=1 \
-    -sEXPORTED_RUNTIME_METHODS=FS,ENV,getEnvStrings,TTY \
+    -sEXPORTED_FUNCTIONS=_main,_raise \
+    -sEXPORTED_RUNTIME_METHODS=FS,ENV,TTY \
     -sFORCE_FILESYSTEM=1 \
     -sMODULARIZE=1 \
     "
