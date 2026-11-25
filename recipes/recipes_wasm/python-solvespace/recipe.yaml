@@ -1,0 +1,71 @@
+context:
+  name: python-solvespace
+  version: 3.0.8
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/p/python_solvespace/python_solvespace-${{ version }}.tar.gz
+  sha256: c5c132c1151cfa4cc8719474bbbafedd109d7203317e531f9160a37aaae644b0
+# the sdist does not ship the license file
+- url: https://github.com/KmolYuan/solvespace/archive/refs/tags/py${{ version }}.tar.gz
+  sha256: 75cb8ad7213869ca6dd2a76e31b29225ebac8a72ecf68c6b79d083b40541296c
+  target_directory: solvespace-src
+
+build:
+  script: $PYTHON -m pip install . -vv
+  number: 0
+
+  files:
+    exclude:
+    - '**/*.pyx'
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+    - '**/test_*.py'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - ${{ compiler('c') }}
+  - ${{ compiler('cxx') }}
+  - cython
+  - cross-python_emscripten-wasm32
+  - python
+  - pip
+  - setuptools
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_python_solvespace.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  summary: Python library of Solvespace, a parametric 2D/3D CAD constraint solver
+  license: GPL-3.0-or-later
+  license_file: solvespace-src/COPYING.txt
+  homepage: https://github.com/KmolYuan/solvespace/tree/python
+  repository: https://github.com/KmolYuan/solvespace
+
+extra:
+  recipe-maintainers:
+  - Copilot
