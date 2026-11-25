@@ -37,8 +37,8 @@ export F18=$FLANG
 
 export FFLAGS="-fPIC --target=wasm32-unknown-emscripten"
 export FPICFLAGS="-fPIC"
-export FLIBS="-lFortranRuntime"
-export FCLIBS="-lFortranRuntime"
+export FLIBS="-lflang_rt.runtime"
+export FCLIBS="-lflang_rt.runtime"
 
 export LDFLAGS="-fPIC -L$PREFIX/lib -fwasm-exceptions"
 export LD_STATIC_FLAG="-static"
