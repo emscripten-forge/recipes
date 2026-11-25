@@ -1,0 +1,66 @@
+context:
+  name: xxhash
+  version: 4.1.0
+
+package:
+  # (conda-forge's name: the C library is xxhash / xxhash-static)
+  name: python-xxhash
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c9b288e4c1f5dae54417bc8a05e6f6daf505783d916b4783f4dd2f2e7d5db486
+
+build:
+  number: 0
+  # XXHASH_LINK_SO: link xxhash-static instead of the sources bundled in the sdist
+  script:
+    env:
+      XXHASH_LINK_SO: "1"
+    content: ${PYTHON} -m pip install . --no-deps --no-build-isolation -vv
+  files:
+    exclude:
+    - '**/__pycache__/**'
+    - '**/*.pyc'
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  - setuptools
+  host:
+  - python-dev
+  - xxhash-static
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_xxhash.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+
+about:
+  homepage: https://github.com/ifduyue/python-xxhash
+  repository: https://github.com/ifduyue/python-xxhash
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Python binding for xxHash, an extremely fast non-cryptographic hash algorithm
+
+extra:
+  recipe-maintainers:
+  - DerThorsten
