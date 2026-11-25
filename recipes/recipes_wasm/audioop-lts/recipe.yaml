@@ -1,0 +1,54 @@
+context:
+  name: audioop-lts
+  version: 0.2.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/a/audioop_lts/audioop_lts-${{ version }}.tar.gz
+  sha256: 64d0c62d88e67b98a1a5e71987b7aa7b5bcffc7dcee65b635823dbdd0a8dbbd0
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_audioop_lts.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/AbstractUmbra/audioop-lts
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Port of the audioop module to a standalone package, for Python 3.13+
+  repository: https://github.com/AbstractUmbra/audioop-lts
+
+extra:
+  recipe-maintainers:
+  - Copilot
