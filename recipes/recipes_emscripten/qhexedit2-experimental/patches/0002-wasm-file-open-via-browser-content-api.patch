@@ -1,0 +1,48 @@
+On Qt-wasm the traditional QFileDialog::getOpenFileName can't bridge
+the browser's file picker into MEMFS — the returned "path" doesn't
+have the actual file bytes behind it. Use the wasm-native
+QFileDialog::getOpenFileContent, which delivers (name, bytes) via
+callback: write bytes to a MEMFS scratch path, then re-enter loadFile()
+with the real path. Everything downstream (QHexEdit::setData(QFile))
+works unchanged.
+
+--- a/example/mainwindow.cpp
++++ b/example/mainwindow.cpp
+@@ -1,6 +1,8 @@
+ #include <QFileDialog>
++#include <QDir>
++#include <QFileInfo>
+ #include <QMessageBox>
+ #include <QSettings>
+ #include <QStatusBar>
+@@ -91,10 +93,29 @@ void MainWindow::dataChanged()
+
+ void MainWindow::open()
+ {
++#ifdef __EMSCRIPTEN__
++    // Bridge the browser file picker into MEMFS: getOpenFileContent
++    // delivers bytes via callback, we write them to a fixed MEMFS path,
++    // then re-enter loadFile() so downstream code sees a plain file.
++    QFileDialog::getOpenFileContent(
++        QString(),
++        [this](const QString &name, const QByteArray &bytes) {
++            if (name.isEmpty() || bytes.isEmpty())
++                return;
++            const QString memfs = QStringLiteral("/tmp/wasm-open/") + QFileInfo(name).fileName();
++            QDir().mkpath(QStringLiteral("/tmp/wasm-open"));
++            QFile out(memfs);
++            if (!out.open(QIODevice::WriteOnly))
++                return;
++            out.write(bytes);
++            out.close();
++            loadFile(memfs);
++        });
++#else
+     QString fileName = QFileDialog::getOpenFileName(this);
+     if (!fileName.isEmpty()) {
+         loadFile(fileName);
+     }
++#endif
+ }
+
+ void MainWindow::optionsAccepted()

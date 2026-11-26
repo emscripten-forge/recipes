@@ -1,0 +1,58 @@
+context:
+  name: xeus-singular
+  version: 0.2.0
+  singular_version: 4.4.1p5
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/wangyenshu/xeus-singular/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9386ed08092f1e64ea148ead99ce3fe3a4c323380b807b3a284b1dc1bf647452
+
+build:
+  number: 0
+
+requirements:
+  build:
+  - ${{ compiler("cxx") }}
+  - cmake
+  - ninja
+  host:
+  - xeus >=6.0,<6.1
+  - xeus-lite >=5.0,<6
+  - nlohmann_json
+  # libSingular and its dependencies are linked statically. libflint and ntl
+  # must match the versions the singular package was built with.
+  - singular ==${{ singular_version }}
+  - libflint ==3.6.0
+  - ntl ==11.6.0
+  - gmp
+  - mpfr
+  - cddlib
+  - mathicgb
+  - mathic
+  - memtailor
+  run:
+  # Singular's .lib files must match the libSingular linked into the kernel.
+  - singular ==${{ singular_version }}
+
+tests:
+- package_contents:
+    files:
+    - bin/xsingular.js
+    - bin/xsingular.wasm
+    - share/jupyter/kernels/xsingular/kernel.json
+    - share/jupyter/kernels/xsingular/logo-32x32.png
+    - share/jupyter/kernels/xsingular/logo-64x64.png
+
+about:
+  homepage: https://github.com/wangyenshu/xeus-singular
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Jupyter kernel for Singular based on xeus
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

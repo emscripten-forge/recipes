@@ -1,0 +1,238 @@
+diff --git a/make/modules/jdk.attach/Lib.gmk b/make/modules/jdk.attach/Lib.gmk
+index 6c61926b8..4b1a9b941 100644
+--- a/make/modules/jdk.attach/Lib.gmk
++++ b/make/modules/jdk.attach/Lib.gmk
+@@ -34,6 +34,9 @@ ifeq ($(call isTargetOs, windows), true)
+   LIBATTACH_CFLAGS := -DPSAPI_VERSION=1
+ endif
+ 
++# There are no other VMs to attach to from inside a wasm module.
++ifeq ($(call isTargetOs, emscripten), false)
++
+ $(eval $(call SetupJdkLibrary, BUILD_LIBATTACH, \
+     NAME := attach, \
+     OPTIMIZATION := LOW, \
+@@ -49,4 +52,5 @@ $(BUILD_LIBATTACH): $(call FindLib, java.base, java)
+ 
+ TARGETS += $(BUILD_LIBATTACH)
+ 
++endif
+ ################################################################################
+diff --git a/make/modules/jdk.management/Lib.gmk b/make/modules/jdk.management/Lib.gmk
+index a837e841e..06e374547 100644
+--- a/make/modules/jdk.management/Lib.gmk
++++ b/make/modules/jdk.management/Lib.gmk
+@@ -41,13 +41,17 @@ ifeq ($(call isTargetOs, linux), true)
+   endif
+ endif
+ 
+-# The emscripten sysroot has neither <sys/swap.h> nor <sys/sysinfo.h>, and the
+-# swap/load statistics OperatingSystemImpl.c reports have no meaning inside a
+-# wasm sandbox, so this library is not built there.
+-ifeq ($(call isTargetOs, emscripten), false)
++# The emscripten sysroot has neither <sys/swap.h> nor <sys/sysinfo.h>, and
++# the swap/load statistics the unix OperatingSystemImpl.c reports have no
++# meaning inside a wasm sandbox: emscripten builds the shared sources plus its
++# own OperatingSystemImpl_emscripten.c instead.
++ifeq ($(call isTargetOs, emscripten), true)
++  LIBMANAGEMENT_EXT_EXCLUDE_FILES := OperatingSystemImpl.c
++endif
+ 
+ $(eval $(call SetupJdkLibrary, BUILD_LIBMANAGEMENT_EXT, \
+     NAME := management_ext, \
++    EXCLUDE_FILES := $(LIBMANAGEMENT_EXT_EXCLUDE_FILES), \
+     OPTIMIZATION := $(LIBMANAGEMENT_EXT_OPTIMIZATION), \
+     DISABLED_WARNINGS_clang_UnixOperatingSystem.c := format-nonliteral, \
+     CFLAGS := $(CFLAGS_JDKLIB) $(LIBMANAGEMENT_EXT_CFLAGS), \
+@@ -61,5 +65,3 @@ $(eval $(call SetupJdkLibrary, BUILD_LIBMANAGEMENT_EXT, \
+ $(BUILD_LIBMANAGEMENT_EXT): $(call FindLib, java.base, java)
+ 
+ TARGETS += $(BUILD_LIBMANAGEMENT_EXT)
+-
+-endif
+diff --git a/make/modules/jdk.net/Lib.gmk b/make/modules/jdk.net/Lib.gmk
+index ac7648644..c42807492 100644
+--- a/make/modules/jdk.net/Lib.gmk
++++ b/make/modules/jdk.net/Lib.gmk
+@@ -27,10 +27,17 @@ include LibCommon.gmk
+ 
+ ################################################################################
+ 
+-ifeq ($(call isTargetOs, linux macosx windows aix), true)
++ifeq ($(call isTargetOs, emscripten), true)
++  # The emscripten port runs the Linux class library (LinuxSocketOptions), so
++  # it builds the Linux natives.
++  LIBEXTNET_EXTRA_SRC := $(TOPDIR)/src/jdk.net/linux/native/libextnet
++endif
++
++ifeq ($(call isTargetOs, linux macosx windows aix emscripten), true)
+ 
+   $(eval $(call SetupJdkLibrary, BUILD_LIBEXTNET, \
+       NAME := extnet, \
++      EXTRA_SRC := $(LIBEXTNET_EXTRA_SRC), \
+       OPTIMIZATION := LOW, \
+       CFLAGS := $(CFLAGS_JDKLIB), \
+       LDFLAGS := $(LDFLAGS_JDKLIB) \
+diff --git a/src/jdk.management/emscripten/native/libmanagement_ext/OperatingSystemImpl_emscripten.c b/src/jdk.management/emscripten/native/libmanagement_ext/OperatingSystemImpl_emscripten.c
+new file mode 100644
+index 000000000..ec256b5fd
+--- /dev/null
++++ b/src/jdk.management/emscripten/native/libmanagement_ext/OperatingSystemImpl_emscripten.c
+@@ -0,0 +1,157 @@
++/*
++ * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.  Oracle designates this
++ * particular file as subject to the "Classpath" exception as provided
++ * by Oracle in the LICENSE file that accompanied this code.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++/*
++ * com.sun.management.internal.OperatingSystemImpl for emscripten.
++ *
++ * The unix implementation needs <sys/sysinfo.h>, <sys/swap.h> and /proc,
++ * none of which exist in a wasm module. Here "memory" is the wasm memory:
++ * total = the most it may grow to, free = what is not yet in use. There is
++ * no swap and no host CPU accounting; the process CPU time is the monotonic
++ * run time, and loads are reported as unavailable (-1), as the unix code does
++ * when it cannot read them.
++ */
++
++#include <emscripten/heap.h>
++#include <emscripten/threading.h>
++#include <limits.h>
++#include <sys/resource.h>
++#include <time.h>
++#include <unistd.h>
++
++#include "jni.h"
++#include "com_sun_management_internal_OperatingSystemImpl.h"
++
++JNIEXPORT void JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_initialize0
++  (JNIEnv *env, jclass cls)
++{
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getCommittedVirtualMemorySize0
++  (JNIEnv *env, jobject mbean)
++{
++    return (jlong) emscripten_get_heap_size();
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getTotalSwapSpaceSize0
++  (JNIEnv *env, jobject mbean)
++{
++    return 0;
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getFreeSwapSpaceSize0
++  (JNIEnv *env, jobject mbean)
++{
++    return 0;
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getProcessCpuTime0
++  (JNIEnv *env, jobject mbean)
++{
++    struct timespec ts;
++    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
++        return -1;
++    }
++    return (jlong) ts.tv_sec * 1000000000LL + ts.tv_nsec;
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getFreeMemorySize0
++  (JNIEnv *env, jobject mbean)
++{
++    /* memory the module can still grow into, plus what malloc has free is
++       not tracked separately here */
++    size_t max = emscripten_get_heap_max();
++    size_t cur = emscripten_get_heap_size();
++    return (jlong) (max > cur ? max - cur : 0);
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getTotalMemorySize0
++  (JNIEnv *env, jobject mbean)
++{
++    return (jlong) emscripten_get_heap_max();
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getOpenFileDescriptorCount0
++  (JNIEnv *env, jobject mbean)
++{
++    return -1;
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getMaxFileDescriptorCount0
++  (JNIEnv *env, jobject mbean)
++{
++    struct rlimit rlp;
++    if (getrlimit(RLIMIT_NOFILE, &rlp) == 0) {
++        return (jlong) rlp.rlim_cur;
++    }
++    return -1;
++}
++
++JNIEXPORT jdouble JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getCpuLoad0
++  (JNIEnv *env, jobject dummy)
++{
++    return -1.0;
++}
++
++JNIEXPORT jdouble JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getProcessCpuLoad0
++  (JNIEnv *env, jobject dummy)
++{
++    return -1.0;
++}
++
++JNIEXPORT jdouble JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getSingleCpuLoad0
++  (JNIEnv *env, jobject mbean, jint cpu_number)
++{
++    return -1.0;
++}
++
++JNIEXPORT jint JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getHostConfiguredCpuCount0
++  (JNIEnv *env, jobject mbean)
++{
++    return emscripten_num_logical_cores();
++}
++
++JNIEXPORT jint JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getHostOnlineCpuCount0
++  (JNIEnv *env, jobject mbean)
++{
++    return emscripten_num_logical_cores();
++}
++
++JNIEXPORT jlong JNICALL
++Java_com_sun_management_internal_OperatingSystemImpl_getHostTotalCpuTicks0
++  (JNIEnv *env, jobject mbean)
++{
++    return -1;
++}

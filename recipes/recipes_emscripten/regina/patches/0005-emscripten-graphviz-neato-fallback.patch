@@ -1,0 +1,58 @@
+--- a/qtui/src/graphviz.cpp	2026-09-13 16:21:39.308306492 +0000
++++ b/qtui/src/graphviz.cpp	2026-09-14 03:46:35.827986400 +0000
+@@ -40,17 +40,23 @@
+ 
+ #ifndef LIBGVC_DYNAMIC_PLUGINS
+ #if defined(_WIN32)
+-__declspec(dllimport) gvplugin_library_t gvplugin_neato_layout_LTX_library;
+ __declspec(dllimport) gvplugin_library_t gvplugin_dot_layout_LTX_library;
+ __declspec(dllimport) gvplugin_library_t gvplugin_core_LTX_library;
++#ifndef __EMSCRIPTEN__
++__declspec(dllimport) gvplugin_library_t gvplugin_neato_layout_LTX_library;
++#endif
+ #else
+-extern gvplugin_library_t gvplugin_neato_layout_LTX_library;
+ extern gvplugin_library_t gvplugin_dot_layout_LTX_library;
+ extern gvplugin_library_t gvplugin_core_LTX_library;
++#ifndef __EMSCRIPTEN__
++extern gvplugin_library_t gvplugin_neato_layout_LTX_library;
++#endif
+ #endif // _WIN32
+ 
+ lt_symlist_t link_lt_preloaded_symbols[] = {
++#ifndef __EMSCRIPTEN__
+     { "gvplugin_neato_layout_LTX_library", &gvplugin_neato_layout_LTX_library },
++#endif
+     { "gvplugin_dot_layout_LTX_library", &gvplugin_dot_layout_LTX_library },
+     { "gvplugin_core_LTX_library", &gvplugin_core_LTX_library },
+     { nullptr, nullptr }
+@@ -59,6 +65,17 @@
+ 
+ void Graphviz::render(QSvgWidget* widget, const std::string& dot,
+         Renderer renderer) {
++#ifdef __EMSCRIPTEN__
++    // The Emscripten/WASM build of Regina's Graphviz dependency does not
++    // include the "neato" layout plugin (only "core" and "dot"), so fall
++    // back to the "dot" layout engine for any graph that would otherwise
++    // have requested "neato" (e.g., the triangulation dual/face-pairing
++    // graph). Graphs with loops or multiple edges between the same pair
++    // of nodes still render fine under "dot" -- just with a hierarchical
++    // rather than a force-directed layout.
++    renderer = Graphviz::Renderer::Dot;
++#endif
++
+     // At some point (Graphviz 13), Graphviz changed the type of the svgLen
+     // argument to gvRenderData() from unsigned* to size_t*.  Instead of
+     // trying to fix this via conditional compilation, we ask the compiler
+@@ -79,7 +96,10 @@
+     gvAddLibrary(gvc, &gvplugin_core_LTX_library);
+     switch (renderer) {
+         case Graphviz::Renderer::Neato:
+-            gvAddLibrary(gvc, &gvplugin_neato_layout_LTX_library); break;
++#ifndef __EMSCRIPTEN__
++            gvAddLibrary(gvc, &gvplugin_neato_layout_LTX_library);
++#endif
++            break;
+         case Graphviz::Renderer::Dot:
+             gvAddLibrary(gvc, &gvplugin_dot_layout_LTX_library); break;
+     }

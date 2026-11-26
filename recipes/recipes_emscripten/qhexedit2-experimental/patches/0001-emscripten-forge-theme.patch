@@ -1,0 +1,41 @@
+Apply a dark palette with the emscripten-forge deep-orange accent so
+the packaged app matches the qt-wasm-runner's visual style. Uses Fusion
+(the only QStyle available on wasm anyway) as the base.
+
+--- a/example/main.cpp
++++ b/example/main.cpp
+@@ -1,5 +1,7 @@
+ #include <optional>
+ #include <QApplication>
++#include <QPalette>
++#include <QStyleFactory>
+ #include <QCommandLineParser>
+ #include <QFile>
+ #include <QIcon>
+@@ -58,6 +60,26 @@ int main(int argc, char *argv[])
+     Q_INIT_RESOURCE(qhexedit);
+     QApplication app(argc, argv);
+
++#ifdef __EMSCRIPTEN__
++    // Emscripten-forge theme: dark palette + deep-orange accent
++    // (Material deep-orange 400, #ff7043) so the packaged app matches
++    // the qt-wasm runner's visual style. Fusion is the only QStyle
++    // compiled into qt6-wasm anyway; set it explicitly for clarity.
++    app.setStyle(QStyleFactory::create("Fusion"));
++    QPalette pal;
++    pal.setColor(QPalette::Window,          QColor(26, 26, 26));
++    pal.setColor(QPalette::WindowText,      QColor(220, 220, 220));
++    pal.setColor(QPalette::Base,            QColor(20, 20, 20));
++    pal.setColor(QPalette::AlternateBase,   QColor(32, 32, 32));
++    pal.setColor(QPalette::Text,            QColor(220, 220, 220));
++    pal.setColor(QPalette::Button,          QColor(40, 40, 40));
++    pal.setColor(QPalette::ButtonText,      QColor(220, 220, 220));
++    pal.setColor(QPalette::Highlight,       QColor(255, 112, 67));
++    pal.setColor(QPalette::HighlightedText, QColor(20, 20, 20));
++    pal.setColor(QPalette::Link,            QColor(255, 112, 67));
++    app.setPalette(pal);
++#endif
++
+     QCoreApplication::setApplicationName("QHexEdit");
+     QCoreApplication::setApplicationVersion(QT_VERSION_STR);
+     app.setOrganizationName("QHexEdit");

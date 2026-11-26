@@ -1,0 +1,34 @@
+--- a/engine/CMakeLists.txt	2026-09-13 16:21:46.335848121 +0000
++++ b/engine/CMakeLists.txt	2026-09-13 22:20:38.052864253 +0000
+@@ -46,7 +46,18 @@
+ # such as __declspec(dllexport) and __declspec(dllimport) within the C++ code.
+ SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+ 
+-ADD_LIBRARY("regina-engine" SHARED ${SOURCES} )
++IF (EMSCRIPTEN)
++  # Regina's build normally links its engine as a shared library
++  # (installed alongside the GUI/CLI executables, which dlopen()/link it
++  # at runtime). Emscripten does support "shared" wasm modules, but only
++  # via its own MAIN_MODULE/SIDE_MODULE dynamic-linking scheme, which
++  # would need to be wired up on every consumer of this library too. For
++  # a self-contained, statically-linked WASM application we simply want
++  # a plain static archive here instead.
++  ADD_LIBRARY("regina-engine" STATIC ${SOURCES} )
++ELSE (EMSCRIPTEN)
++  ADD_LIBRARY("regina-engine" SHARED ${SOURCES} )
++ENDIF (EMSCRIPTEN)
+ # All of the libraries that appear in ENGINE_LINK_LIBRARIES feature in
+ # the engine headers, which means they may be expose to third-party apps
+ # that build against libregina-engine.
+@@ -115,4 +126,10 @@
+ 
+ # Miscellaneous extras:
+ ADD_SUBDIRECTORY("doxygen")
+-ADD_SUBDIRECTORY("testsuite")
++IF (NOT EMSCRIPTEN)
++  # The GoogleTest-based C++ test suite produces a native executable that
++  # is meant to be run directly by a developer/CI job.  It is not part of
++  # the WASM application, and (being built for the wasm32 target) it could
++  # not be run directly during the build in any case.
++  ADD_SUBDIRECTORY("testsuite")
++ENDIF (NOT EMSCRIPTEN)

@@ -1,0 +1,58 @@
+--- a/perllib/Polymake/ConfigureStandalone.pm	2026-09-18 22:17:19.451229900 +0000
++++ b/perllib/Polymake/ConfigureStandalone.pm	2026-09-22 14:50:39.638775080 +0000
+@@ -248,6 +248,33 @@
+    $tempdir //= $autonomous ? Polymake::find_writable_dir() : Polymake::Tempdir->new("till_exit");
+ }
+ 
++# Cross-compilation support.
++#
++# When polymake is built for a target which cannot execute its binaries directly
++# (e.g. WebAssembly via Emscripten), the configuration test programs still have to
++# be *run* in order to probe the target libraries.  Setting POLYMAKE_TEST_RUNNER to
++# an emulator/loader command (e.g. "node") makes run_test_program invoke the test
++# program through it.  POLYMAKE_TEST_SUFFIX additionally appends a suffix to the
++# linker output so that the toolchain picks the intended output format; Emscripten
++# infers the output type from the file extension, and ".js" yields a launcher which
++# node can execute together with the generated sidecar .wasm file.
++#
++# POLYMAKE_TEST_LDFLAGS is appended to the link command of test programs only,
++# never to the flags recorded for the real build.  Emscripten needs it: by default
++# the runtime does not flush stdio at exit, so a probe that prints without a
++# trailing newline (the ppl version check does) produces no output at all, just a
++# warning on stderr -- which run_test_program captures and hands to the caller in
++# place of the version string.  -sEXIT_RUNTIME=1 restores normal exit semantics,
++# but would be wrong for the final polymake binary, whose runtime has to stay up.
++my $test_runner = $ENV{POLYMAKE_TEST_RUNNER} // "";
++my $test_suffix = $ENV{POLYMAKE_TEST_SUFFIX} // "";
++my $test_ldflags = $ENV{POLYMAKE_TEST_LDFLAGS} // "";
++
++sub test_program_path {
++   my $dir = get_tempdir();
++   "$dir/polymake_${$}_configure$test_suffix"
++}
++
+ # "C++ source text", ( VarName => "value to prepend locally", ... ) => "error msg"
+ # Compiles and links the given program.
+ # @return error message from the compiler/linker.
+@@ -269,7 +296,8 @@
+          return "$command\n".`$command 2>&1`;
+       } else {
+          # compile and link
+-         my $command = "$CXX $CXXFLAGS -o $dir/polymake_${$}_configure $dir/polymake_${$}_configure.cc $LDFLAGS $LIBS";
++         my $out = test_program_path();
++         my $command = "$CXX $CXXFLAGS -o $out $dir/polymake_${$}_configure.cc $LDFLAGS $LIBS $test_ldflags";
+          return "$command\n".`$command 2>&1`;
+       }
+    }
+@@ -283,8 +311,9 @@
+ 
+ # Run the program previously build with `build_test_program'.
+ sub run_test_program {
+-   my $dir=get_tempdir();
+-   `$dir/polymake_${$}_configure 2>&1`
++   my $prog = test_program_path();
++   my $command = length($test_runner) ? "$test_runner $prog" : $prog;
++   `$command 2>&1`
+ }
+ 
+ END {

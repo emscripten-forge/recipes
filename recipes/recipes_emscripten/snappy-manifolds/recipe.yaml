@@ -1,0 +1,52 @@
+context:
+  name: snappy-manifolds
+  version: '1.4'
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/s/snappy_manifolds/snappy_manifolds-${{ version }}.tar.gz
+  sha256: 3a5b354e6cb545bed6d13a5f0b99a399d03a352c51111662150632c0c7d316dc
+
+build:
+  number: 0
+  script: ${PYTHON} -m pip install . ${PIP_ARGS}
+  python:
+    skip_pyc_compilation:
+    - '**/*.py'
+
+requirements:
+  build:
+  - cross-python_${{ target_platform }}
+  - python
+  - pip
+  - setuptools
+  - wheel
+  host:
+  - python
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_snappy_manifolds.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+about:
+  homepage: https://github.com/3-manifolds/snappy_manifolds
+  license: GPL-2.0-or-later
+  license_file: README.rst
+  summary: Censuses of 3-manifolds for use with SnapPy
+  repository: https://github.com/3-manifolds/snappy_manifolds
+
+extra:
+  recipe-maintainers:
+  - wangyenshu

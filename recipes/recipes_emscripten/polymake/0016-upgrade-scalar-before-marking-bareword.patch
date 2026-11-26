@@ -1,0 +1,22 @@
+--- a/lib/core/src/perl/RefHash.xxs	2026-09-24 16:09:16.125071743 +0000
++++ b/lib/core/src/perl/RefHash.xxs	2026-09-24 16:09:16.127060525 +0000
+@@ -791,8 +791,18 @@
+ OP* intercept_pp_const(pTHX)
+ {
+    SV* sv = cSVOP_sv;
+-   if ((PL_op->op_private & OPpCONST_BARE)  &&  SvTYPE(sv) == SVt_PV)
++   if ((PL_op->op_private & OPpCONST_BARE)  &&  SvTYPE(sv) <= SVt_PV) {
++      // Mark the bareword so that is_keyword() recognizes it; see is_keyword_constant()
++      // below.  The scalar has to be upgraded first: SVf_IVisUV claims that the IV slot
++      // holds a UV, and an SVt_PV has no IV slot at all.  Older perls ignored the flag
++      // on such a scalar, newer ones do not -- copying it then yields undef, so that
++      //    my @list = ( bareword => $value );   and   [ bareword => $value ]
++      // silently lose the bareword, which takes out every Polymake::Struct declaration
++      // and with it the whole perl library.  perl/Ext.h does the same marking on
++      // package name constants and has always upgraded first.
++      SvUPGRADE(sv, SVt_PVIV);
+       SvIsUV_on(sv);
++   }
+    PL_op->op_ppaddr = def_pp_CONST;
+    return def_pp_CONST(aTHX);
+ }

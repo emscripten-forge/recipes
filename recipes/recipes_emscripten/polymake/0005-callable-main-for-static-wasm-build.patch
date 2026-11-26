@@ -1,0 +1,60 @@
+--- a/lib/callable/src/perl/Main.cc	2026-09-18 22:17:19.489569542 +0000
++++ b/lib/callable/src/perl/Main.cc	2026-09-18 22:18:53.801171627 +0000
+@@ -75,6 +75,8 @@
+    return sa.sa_handler != SIG_DFL || (sa.sa_flags & SA_NOCLDWAIT) ? '1' : '0';
+ }
+ 
++// unused in the static WebAssembly build, kept to minimize the delta to upstream
++__attribute__((unused))
+ std::string read_rel_link(std::string link, bool mandatory=true)
+ {
+    struct stat link_stat;
+@@ -106,6 +108,7 @@
+ }
+ 
+ // Follow symbolic links created by the installation script
++__attribute__((unused))
+ void deduce_install_dirs(std::string lib_path, std::string& install_top, std::string& install_arch)
+ {
+    const char stem_name[]="libpolymake";
+@@ -163,32 +166,14 @@
+       return;
+    }
+ 
+-   Dl_info dli_polymake, dli_perl;
+-   void* polyhandle = nullptr;
+-   int dlreturn;
+-   if ((dlreturn = dladdr((void*)&destroy_perl, &dli_polymake))) {
+-      polyhandle = dlopen(dli_polymake.dli_fname, RTLD_LAZY | RTLD_NOLOAD | RTLD_GLOBAL );
+-   }
+-   if (!polyhandle) {
+-      std::cerr << "*** WARNING: Failed to (re-)dlopen libpolymake with RTLD_GLOBAL: " 
+-                << (dlreturn ? dlerror() : "dladdr failed to give shared library pathname.") << "***\n"
+-                   "    Application modules might fail to load." << std::endl;
+-   }
+-
+-   void* perlhandle = nullptr;
+-   if ((dlreturn = dladdr((void*)&perl_destruct, &dli_perl))) {
+-      perlhandle = dlopen(dli_perl.dli_fname, RTLD_LAZY | RTLD_NOLOAD | RTLD_GLOBAL );
+-   }
+-   if (!perlhandle) {
+-      std::cerr << "*** WARNING: Failed to (re-)dlopen libperl with RTLD_GLOBAL: " 
+-                << (dlreturn ? dlerror() : "dladdr failed to give shared library pathname.") << "***\n"
+-                   "    Perl modules might fail to load." << std::endl;
+-   }
+-
+-   if (install_top.empty() != install_arch.empty())
+-      throw std::runtime_error("polymake::Main - install_top and install_arch arguments must both be empty or set to valid paths");
+-   if (install_top.empty())
+-      deduce_install_dirs(dli_polymake.dli_fname, install_top, install_arch);
++   // WebAssembly/Emscripten build: polymake, libperl and all application modules
++   // are linked into one static executable.  There is no shared object to re-open
++   // with RTLD_GLOBAL, dladdr() reports nothing useful, and the installation layout
++   // cannot be deduced from a library path or from the symlinks the installer
++   // creates, because the wasm filesystem image is assembled separately.  The
++   // caller must therefore pass both installation directories explicitly.
++   if (install_top.empty() || install_arch.empty())
++      throw std::runtime_error("polymake::Main - install_top and install_arch arguments must both be set to valid paths in a static WebAssembly build");
+ 
+    std::string script_arg(scr0);
+    script_arg += install_top;

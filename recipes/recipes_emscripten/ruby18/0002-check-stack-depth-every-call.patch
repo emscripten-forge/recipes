@@ -1,0 +1,16 @@
+--- a/eval.c
++++ b/eval.c
+@@ -5631,6 +5631,13 @@
+ eval_check_tick()
+ {
+     static int tick;
++#ifdef __EMSCRIPTEN__
++    /* The WebAssembly engine's own call stack is much smaller than the C
++       stack Ruby measures, and running out of it aborts the program.
++       Check the depth on every call instead of every 256th, so deep
++       recursion raises SystemStackError in time. */
++    stack_check();
++#endif
+     if ((++tick & 0xff) == 0) {
+ 	CHECK_INTS;		/* better than nothing */
+ 	stack_check();

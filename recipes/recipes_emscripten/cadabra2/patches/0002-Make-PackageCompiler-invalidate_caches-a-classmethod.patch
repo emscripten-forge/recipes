@@ -1,0 +1,21 @@
+diff --git a/core/cadabra2_defaults.py.in b/core/cadabra2_defaults.py.in
+index eccb76d..2f0eec6 100644
+--- a/core/cadabra2_defaults.py.in
++++ b/core/cadabra2_defaults.py.in
+@@ -37,7 +37,15 @@ else:
+ class PackageCompiler(MetaPathFinder):
+         @classmethod
+         def find_module(cls, fullname, path):
+-                return find_spec(fullname, path, None)
++                return cls.find_spec(fullname, path, None)
++
++        # The class itself (not an instance) is put on sys.meta_path, so this
++        # needs to be a classmethod too; importlib.invalidate_caches() (called
++        # e.g. by pip/micropip after installing packages) calls it on every
++        # entry of sys.meta_path.
++        @classmethod
++        def invalidate_caches(cls):
++                pass
+ 
+         @classmethod
+         def find_spec(cls, fullname, path, target=None):

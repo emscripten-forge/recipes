@@ -1,0 +1,23 @@
+--- a/cpp_src/lowIndex.cpp
++++ b/cpp_src/lowIndex.cpp
+@@ -27,10 +27,20 @@
+             : short_relators;
+ 
+     // Determine number of threads to use
++#ifdef __EMSCRIPTEN__
++    // This build has no pthreads: std::thread's constructor throws, and
++    // SnapPy calls permutation_reps() with num_threads=0, which would
++    // otherwise resolve to hardware_concurrency(). On Emscripten that
++    // reports navigator.hardwareConcurrency, so the multi-threaded
++    // SimsTree would be selected and the call would fail. Always take the
++    // single-threaded path instead.
++    const unsigned int resolved_num_threads = 1;
++#else
+     const unsigned int resolved_num_threads =
+         (num_threads > 0)
+             ? num_threads
+             : std::thread::hardware_concurrency();
++#endif
+ 
+     // Instantiate appropriate SimsTree implementation
+     std::unique_ptr<SimsTreeBase> t;
