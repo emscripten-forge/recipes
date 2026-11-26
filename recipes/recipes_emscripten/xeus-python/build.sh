@@ -14,13 +14,24 @@ else
     export USE_WASM=OFF
 fi
 
+PYTHON_LIBRARIES="$PREFIX/lib/libbz2.a;\
+$PREFIX/lib/libz.a;\
+$PREFIX/lib/libsqlite3.a;\
+$PREFIX/lib/libffi.a;\
+$PREFIX/lib/libzstd.a;\
+$PREFIX/lib/libssl.a;\
+$PREFIX/lib/libcrypto.a;\
+$PREFIX/lib/liblzma.a;\
+$PREFIX/lib/libpython$PY_VER.a"
+
 # Configure step
 cmake ${CMAKE_ARGS} ..                                \
     -GNinja                                           \
     -DCMAKE_BUILD_TYPE=Release                        \
     -DCMAKE_PREFIX_PATH=$PREFIX                       \
     -DCMAKE_INSTALL_PREFIX=$PREFIX                    \
-    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM
+    -DXPYT_EMSCRIPTEN_WASM_BUILD=$USE_WASM            \
+    -DPYTHON_LIBRARIES="$PYTHON_LIBRARIES"
 
 # Build step
 ninja
