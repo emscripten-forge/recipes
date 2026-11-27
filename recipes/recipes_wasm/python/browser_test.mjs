@@ -1,7 +1,9 @@
 // Runs the plain python tests (python_tests.mjs) in the browser, driven by
 // browser_test.py (playwright). The python stdlib is preloaded into the
 // emscripten FS (--preload-file, see build_tests.sh).
-import { pythonTests } from "./python_tests.mjs";
+import { pythonTests, testCode } from "./python_tests.mjs";
+// written by build_tests.sh: is this a core-only env (no extension outputs)?
+import { coreOnly } from "./test_config.mjs";
 
 function wasmGcSupported() {
   // a module with a wasm-gc struct type
@@ -30,7 +32,7 @@ globalThis.runPythonTests = async function () {
       continue;
     }
     console.log(`=== ${test.name}`);
-    results.push({ name: test.name, ok: run(test.code) === 0 });
+    results.push({ name: test.name, ok: run(testCode(test, coreOnly)) === 0 });
   }
   return {
     results,

@@ -3,6 +3,28 @@
 // Each snippet runs in a fresh interpreter (run_python: Py_Initialize ..
 // Py_FinalizeEx) and must not raise. `pointerSize` (optional): only run on
 // wasm32 (4) / wasm64 (8).
+// `requires` (optional): extension modules that are not builtin modules of
+// the python core but side modules (lib-dynload/*.so) of their own package
+// (python-ssl, python-sqlite3, ...). With all packages installed the test
+// runs as it is; in a core-only env these modules must not be importable.
+
+// The code to run for a test: the test itself, or (core-only env and the test
+// requires extension modules) a check that those modules are missing.
+export function testCode(test, coreOnly) {
+  if (!coreOnly || !test.requires) {
+    return test.code;
+  }
+  return `
+import importlib
+for name in ${JSON.stringify(test.requires)}:
+    try:
+        importlib.import_module(name)
+    except ImportError as e:
+        print("not in the core, as expected:", e)
+    else:
+        raise AssertionError(name + " must not be importable in a core-only env")
+`;
+}
 
 export const pythonTests = [
   {
@@ -136,13 +158,12 @@ assert unicodedata.normalize("NFD", "é") == "e\\u0301"
 `,
   },
   {
-    name: "compression (zlib / bz2 / lzma / zstd)",
+    name: "compression (zlib / bz2 / zstd)",
     code: `
-import zlib, bz2, lzma, gzip, zipfile, tarfile, io
+import zlib, bz2, gzip, zipfile, tarfile, io
 data = b"pyjs " * 1000
 assert zlib.decompress(zlib.compress(data)) == data
 assert bz2.decompress(bz2.compress(data)) == data
-assert lzma.decompress(lzma.compress(data)) == data
 assert gzip.decompress(gzip.compress(data)) == data
 from compression import zstd
 assert zstd.decompress(zstd.compress(data)) == data
@@ -152,12 +173,39 @@ with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
 with zipfile.ZipFile(buf) as z:
     assert z.read("a.txt") == data
 buf = io.BytesIO()
+with tarfile.open(fileobj=buf, mode="w:bz2") as t:
+    info = tarfile.TarInfo("a.txt"); info.size = len(data)
+    t.addfile(info, io.BytesIO(data))
+buf.seek(0)
+with tarfile.open(fileobj=buf, mode="r:bz2") as t:
+    assert t.extractfile("a.txt").read() == data
+`,
+  },
+  {
+    name: "lzma (python-lzma)",
+    requires: ["_lzma"],
+    code: `
+import lzma, tarfile, io
+data = b"pyjs " * 1000
+assert lzma.decompress(lzma.compress(data)) == data
+buf = io.BytesIO()
 with tarfile.open(fileobj=buf, mode="w:xz") as t:
     info = tarfile.TarInfo("a.txt"); info.size = len(data)
     t.addfile(info, io.BytesIO(data))
 buf.seek(0)
 with tarfile.open(fileobj=buf, mode="r:xz") as t:
     assert t.extractfile("a.txt").read() == data
+`,
+  },
+  {
+    // these import ssl / lzma / _hashlib optionally: they must work in a
+    // core-only env too
+    name: "stdlib modules with optional extension modules",
+    code: `
+import http.client, urllib.request, urllib.parse, asyncio, tarfile, zipfile, shutil
+import hashlib, hmac, uuid, email.message, logging.handlers, decimal, fractions
+assert urllib.parse.urlparse("https://example.org/a?b=1").netloc == "example.org"
+assert len(str(uuid.uuid4())) == 36
 `,
   },
   {
@@ -174,12 +222,49 @@ assert len(secrets.token_bytes(16)) == 16
 `,
   },
   {
-    name: "ssl",
+    name: "ssl (python-ssl)",
+    requires: ["_ssl"],
     code: `
-import ssl
+import ssl, _ssl
+assert _ssl.__file__.endswith(".so"), _ssl.__file__  # a side module, not builtin
 assert ssl.OPENSSL_VERSION.startswith("OpenSSL"), ssl.OPENSSL_VERSION
 ctx = ssl.create_default_context()
 assert ctx.verify_mode == ssl.CERT_REQUIRED
+assert len(ssl.RAND_bytes(16)) == 16
+# a TLS handshake start in memory (exercises libssl, not only the bindings)
+incoming, outgoing = ssl.MemoryBIO(), ssl.MemoryBIO()
+obj = ctx.wrap_bio(incoming, outgoing, server_hostname="example.org")
+try:
+    obj.do_handshake()
+except ssl.SSLWantReadError:
+    pass
+assert outgoing.read()[:1] == b"\\x16"  # TLS handshake record (ClientHello)
+`,
+  },
+  {
+    name: "cjk codecs (python-cjkcodecs)",
+    requires: ["_multibytecodec", "_codecs_cn", "_codecs_hk", "_codecs_iso2022", "_codecs_jp", "_codecs_kr", "_codecs_tw"],
+    code: `
+import _codecs_jp
+assert _codecs_jp.__file__.endswith(".so"), _codecs_jp.__file__
+for text, encoding in [("日本語", "shift_jis"), ("日本語", "euc_jp"), ("日本語", "iso2022_jp"),
+                       ("中文", "gb2312"), ("中文", "gbk"), ("中文", "big5"), ("中文", "big5hkscs"),
+                       ("한국어", "euc_kr")]:
+    assert text.encode(encoding).decode(encoding) == text, encoding
+assert "日本語".encode("shift_jis") == b"\\x93\\xfa\\x96\\x7b\\x8c\\xea"
+`,
+  },
+  {
+    name: "test modules (python-test-modules)",
+    requires: ["xxsubtype", "_xxtestfuzz", "_testbuffer", "_testinternalcapi", "_testcapi", "_testlimitedcapi", "_testclinic", "_testclinic_limited"],
+    code: `
+import xxsubtype, _xxtestfuzz, _testbuffer, _testinternalcapi, _testcapi, _testlimitedcapi
+import _testclinic, _testclinic_limited
+assert _testcapi.__file__.endswith(".so"), _testcapi.__file__
+assert _testcapi.INT_MAX == 2**31 - 1
+assert _testinternalcapi.get_recursion_depth() >= 1
+assert bytes(_testbuffer.ndarray([1, 2, 3], shape=[3], format="B")) == b"\\x01\\x02\\x03"
+assert xxsubtype.spamlist([1]).getstate() == 0
 `,
   },
   {
@@ -192,9 +277,11 @@ assert xml.dom.minidom.parseString("<a/>").documentElement.tagName == "a"
 `,
   },
   {
-    name: "sqlite3",
+    name: "sqlite3 (python-sqlite3)",
+    requires: ["_sqlite3"],
     code: `
-import sqlite3
+import sqlite3, _sqlite3
+assert _sqlite3.__file__.endswith(".so"), _sqlite3.__file__  # a side module, not builtin
 con = sqlite3.connect(":memory:")
 con.execute("create table t (a integer, b text)")
 con.executemany("insert into t values (?, ?)", [(1, "x"), (2, "y")])

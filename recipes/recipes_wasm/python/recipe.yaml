@@ -3,8 +3,10 @@ context:
   name: python
   ver2: '3.14'
   ver2nd: ${{ version | version_to_buildstring }}
-  build_number: 8
+  build_number: 9
   abi_tag: cp${{ ver2nd }}
+  # where the extension modules built as emscripten side modules are installed
+  dynload: lib/python${{ ver2 }}/lib-dynload
 
 build:
   number: ${{ build_number }}
@@ -48,6 +50,32 @@ source:
   - patches/0013-remove_not_needed_emscripten_syscalls.patch
   - patches/0015-emit-abi-extension-suffix-for-static-builds.patch
 
+# Outputs
+# -------
+# The interpreter is split at the builtin-module line, so that an embedder
+# (pyjs, xeus-python, ...: an emscripten MAIN_MODULE linking libpythonX.Y.a,
+# which keeps every symbol of every linked archive) only has to link what the
+# core needs:
+#
+#   libpython-static     libpythonX.Y.a + headers: the slim core. openssl,
+#                        sqlite, lzma, the CJK codecs and the test modules are
+#                        not builtin modules anymore.
+#   python-core          the stdlib (as `python` before the split)
+#   python-ssl           _ssl        (+ libssl / libcrypto, linked statically)
+#   python-sqlite3       _sqlite3    (+ libsqlite3)
+#   python-lzma          _lzma       (+ liblzma)
+#   python-cjkcodecs     _multibytecodec, _codecs_{cn,hk,iso2022,jp,kr,tw}
+#   python-test-modules  _testcapi, _testinternalcapi, ... (CPython's own tests)
+#                        each: emscripten side modules in lib-dynload, python
+#                        dlopen's them on import (see SIDE_MODULES in build.sh)
+#   python               meta package: python-core + all of the above except
+#                        python-test-modules (only CPython's own tests use
+#                        those: install python-test-modules explicitly)
+#   python-dev           meta package: python + libpython-static + pkg-config
+#
+# Envs with `python` behave as before. A slim env has `python-core` plus the
+# extension packages it needs; without e.g. python-ssl, `import ssl` raises
+# ModuleNotFoundError: No module named '_ssl'.
 outputs:
   - staging:
       name: python-build
@@ -135,12 +163,15 @@ outputs:
       - libzlib-static
       run:
       - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
-      - ${{ pin_compatible("libopenssl-static", lower_bound='x.x', upper_bound='x.x') }}
+      # The static libraries libpythonX.Y.a needs at link time: whoever links
+      # it (the embedder) needs these archives too, so they are run
+      # dependencies of this package (the one with the .a; python-core has
+      # nothing to link, the side modules contain their libraries).
+      # openssl, lzma and sqlite are not needed: their modules are side
+      # modules now (python-ssl, ...); _uuid is disabled (Setup.local).
+      # Embedders that still list them on their link line need a rebuild.
       - ${{ pin_compatible("libffi-static",     lower_bound='x.x', upper_bound='x.x') }}
-      - ${{ pin_compatible("liblzma-static",    lower_bound='x', upper_bound='x') }}
       - ${{ pin_compatible("zstd-static",       lower_bound='x.x', upper_bound='x.x') }}
-      - ${{ pin_compatible("libuuid-static",    lower_bound='x', upper_bound='x') }}
-      - ${{ pin_compatible("libsqlite-static",  lower_bound='x', upper_bound='x') }}
       - ${{ pin_compatible("libbzip2-static",   lower_bound='x.x', upper_bound='x.x') }}
       - ${{ pin_compatible("libzlib-static",    lower_bound='x.x', upper_bound='x.x') }}
       run_exports:
@@ -169,13 +200,34 @@ outputs:
         # -- begin potential AI nonsense
         # Keeping -sUSE_PTHREADS=0 guarantees Emscripten binds the C Python pthread calls to single-threaded stubs.
         # -- end potential AI nonsense
-        - generic-testing --allow-pthread
+        - generic-testing
         requirements:
           build:
           - generic-testing
+      # the slim core alone: link it without openssl / sqlite / lzma and run
+      # the python tests in a core-only env. Node only: in this env there is
+      # no side module to load, and the browser-specific part (loading side
+      # modules from lib-dynload, compiled while the page loads) is what the
+      # browser run of the full test (python-dev, below) covers. A browser
+      # run here would test the same core code again, for the cost of
+      # installing playwright + a browser and a second link.
+      - script:
+        - PY_VER=${{ ver2 }} PYTHON_SKIP_BROWSER_TEST=1 bash build_tests.sh core
+        requirements:
+          build:
+          - ${{ compiler("c") }}
+          - nodejs
+          run:
+          - ${{ pin_subpackage('python-core', exact=True) }}
+        files:
+          recipe:
+          - build_tests.sh
+          - test_main.cpp
+          - node_test_wrapper.js
+          - python_tests.mjs
 
   - package:
-      name: python
+      name: python-core
       version: ${{ version }}
     inherit: python-build
     build:
@@ -193,6 +245,8 @@ outputs:
         - "**/*.h"
         - '**/pkgconfig/**'
         - '**/*.pc'
+        # the extension modules have their own outputs
+        - ${{ dynload }}/**
 
       python:
         skip_pyc_compilation:
@@ -201,6 +255,12 @@ outputs:
     requirements:
       run:
       - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
+      # pyjs < 6 (and so xeus-python built on it) bootstraps the env by
+      # unpacking only the package named `python` before starting the
+      # interpreter: with the stdlib in python-core it finds none and fails.
+      # The solver gives those envs the unsplit python (build 8) instead.
+      run_constraints:
+      - pyjs >=6
       run_exports:
         weak:
         - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
@@ -212,6 +272,182 @@ outputs:
         - test ! -f $PREFIX/lib/pkgconfig/python-${{ver2}}.pc
         - test -f $PREFIX/lib/python${{ver2}}/enum.py
         - test -f $PREFIX/lib/python${{ver2}}/ast.py
+        - test -f $PREFIX/lib/python${{ver2}}/ssl.py
+        - test ! -e $PREFIX/${{ dynload }}
+        - generic-testing
+        requirements:
+          build:
+          - generic-testing
+
+  # --- extension modules (emscripten side modules) ---------------------------
+  # Functional tests: the python-dev test below imports and uses all of them.
+
+  - package:
+      name: python-ssl
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+      files:
+        include:
+        - ${{ dynload }}/_ssl.*.so
+    requirements:
+      run:
+      - ${{ pin_subpackage('python-core', exact=True) }}
+    tests:
+      - package_contents:
+          files:
+          - ${{ dynload }}/_ssl.*.so
+      - script: generic-testing
+        requirements:
+          build:
+          - generic-testing
+
+  - package:
+      name: python-sqlite3
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+      files:
+        include:
+        - ${{ dynload }}/_sqlite3.*.so
+    requirements:
+      run:
+      - ${{ pin_subpackage('python-core', exact=True) }}
+    tests:
+      - package_contents:
+          files:
+          - ${{ dynload }}/_sqlite3.*.so
+      - script: generic-testing
+        requirements:
+          build:
+          - generic-testing
+
+  - package:
+      name: python-lzma
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+      files:
+        include:
+        - ${{ dynload }}/_lzma.*.so
+    requirements:
+      run:
+      - ${{ pin_subpackage('python-core', exact=True) }}
+    tests:
+      - package_contents:
+          files:
+          - ${{ dynload }}/_lzma.*.so
+      - script: generic-testing
+        requirements:
+          build:
+          - generic-testing
+
+  - package:
+      name: python-cjkcodecs
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+      files:
+        include:
+        - ${{ dynload }}/_multibytecodec.*.so
+        - ${{ dynload }}/_codecs_*.so
+    requirements:
+      run:
+      - ${{ pin_subpackage('python-core', exact=True) }}
+    tests:
+      - package_contents:
+          files:
+          - ${{ dynload }}/_multibytecodec.*.so
+          - ${{ dynload }}/_codecs_cn.*.so
+          - ${{ dynload }}/_codecs_hk.*.so
+          - ${{ dynload }}/_codecs_iso2022.*.so
+          - ${{ dynload }}/_codecs_jp.*.so
+          - ${{ dynload }}/_codecs_kr.*.so
+          - ${{ dynload }}/_codecs_tw.*.so
+      - script: generic-testing
+        requirements:
+          build:
+          - generic-testing
+
+  - package:
+      name: python-test-modules
+      version: ${{ version }}
+    inherit: python-build
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+      script: echo "nothing to do here, we take all content from the python-build package"
+      files:
+        include:
+        - ${{ dynload }}/_test*.so
+        - ${{ dynload }}/_xxtestfuzz.*.so
+        - ${{ dynload }}/xxsubtype.*.so
+    requirements:
+      run:
+      - ${{ pin_subpackage('python-core', exact=True) }}
+    tests:
+      - package_contents:
+          files:
+          - ${{ dynload }}/_testcapi.*.so
+          - ${{ dynload }}/_testinternalcapi.*.so
+          - ${{ dynload }}/_testlimitedcapi.*.so
+          - ${{ dynload }}/_testbuffer.*.so
+          - ${{ dynload }}/_testclinic.*.so
+          - ${{ dynload }}/_testclinic_limited.*.so
+          - ${{ dynload }}/_xxtestfuzz.*.so
+          - ${{ dynload }}/xxsubtype.*.so
+      - script: generic-testing
+        requirements:
+          build:
+          - generic-testing
+
+  # --- meta packages ---------------------------------------------------------
+
+  # the stdlib with all extension modules, as before the split (no files of
+  # its own), but without python-test-modules (not dragged into every env)
+  - package:
+      name: python
+      version: ${{ version }}
+    build:
+      string: h_${{ hash }}_${{ build_number }}_${{ abi_tag }}
+    # (no build tree here: only CPython's LICENSE, the files are in the others)
+    about:
+      license: Python-2.0
+      license_file: LICENSE
+    requirements:
+      run:
+      - python_abi ${{ ver2 }}.* *_${{ abi_tag }}
+      - ${{ pin_subpackage('python-core', exact=True) }}
+      - ${{ pin_subpackage('python-ssl', exact=True) }}
+      - ${{ pin_subpackage('python-sqlite3', exact=True) }}
+      - ${{ pin_subpackage('python-lzma', exact=True) }}
+      - ${{ pin_subpackage('python-cjkcodecs', exact=True) }}
+      # (see python-core)
+      run_constraints:
+      - pyjs >=6
+      run_exports:
+        weak:
+        - python_abi  ${{ ver2 }}.* *_${{ abi_tag }}
+
+    tests:
+      - script:
+        - test ! -f $PREFIX/lib/libpython${{ver2}}.a
+        - test ! -f $PREFIX/include/python${{ver2}}/Python.h
+        - test ! -f $PREFIX/lib/pkgconfig/python-${{ver2}}.pc
+        - test -f $PREFIX/lib/python${{ver2}}/enum.py
+        - test -f $PREFIX/lib/python${{ver2}}/ast.py
+        - ls $PREFIX/${{ dynload }}/_ssl.*.so
+        - ls $PREFIX/${{ dynload }}/_sqlite3.*.so
+        - ls $PREFIX/${{ dynload }}/_lzma.*.so
+        - ls $PREFIX/${{ dynload }}/_codecs_jp.*.so
+        - test ! -e $PREFIX/${{ dynload }}/_testcapi.*.so
         - generic-testing
         requirements:
           build:
@@ -246,16 +482,24 @@ outputs:
         - test -f $PREFIX/lib/libpython${{ver2}}.a
         - test -f $PREFIX/lib/python${{ver2}}/enum.py
         - test -f $PREFIX/lib/python${{ver2}}/ast.py
+      # everything: the slim core + all extension modules loaded from
+      # lib-dynload, in node and in a browser (the test modules too: not part
+      # of the `python` meta package, so requested here)
       - script:
-        - build_tests.sh
+        - PY_VER=${{ ver2 }} bash build_tests.sh full
         requirements:
+          run:
+          - ${{ pin_subpackage('python-test-modules', exact=True) }}
           build:
           - ${{ compiler("c") }}
           - make
           - python=${{ver2}}
           - nodejs
-          - playwright
-          - playwright-python
+          # the node driver and its python API with the same version (a
+          # mismatch fails the browser launch: "BrowserType.launch: timeout:
+          # expected float, got undefined"), as in pytester
+          - playwright 1.62.*
+          - playwright-python 1.62.*
         files:
           recipe:
           - build_tests.sh
@@ -268,7 +512,15 @@ outputs:
 
 about:
   license: Python-2.0
-  license_file: LICENSE
+  # LICENSE: CPython itself; Doc/license.rst also has the licenses of the
+  # libraries CPython bundles and compiles in (expat, mpdecimal, HACL*, ...).
+  # (build.sh moves the source tree to build/<version>/Python-<version>/)
+  license_file:
+  - LICENSE
+  - build/${{ version }}/Python-${{ version }}/Doc/license.rst
+  - build/${{ version }}/Python-${{ version }}/Modules/expat/COPYING
+  # (HACL* has its license only in its source files' headers: copied here)
+  - HACL_LICENSE.txt
   summary: General purpose programming language
   description: |
     Python is a widely used high-level, general-purpose, interpreted, dynamic

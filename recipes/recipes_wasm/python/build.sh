@@ -69,8 +69,30 @@ export OPTFLAGS="${OPTFLAGS:--O2}"
 export DBGFLAGS="${DBGFLAGS:--g0}"
 export EXTRA_CFLAGS="${EXTRA_CFLAGS:-}"
 
+# A debug build of the interpreter, only on request: PYTHON_DEBUG_BUILD=1.
+# (These flags come after OPTFLAGS in CFLAGS_BASE below, and the last -O
+# wins: they turn optimization off. Until build 13 they were always on, which
+# made every embedder's python an -O0 build; pure-Python code in pyjs was
+# measurably slower than in pyodide.)
+if [[ "${PYTHON_DEBUG_BUILD:-0}" == "1" ]]; then
+  export EXTRA_CFLAGS="${EXTRA_CFLAGS} -O0 -g3 -gsource-map"
+fi
 
-export EXTRA_CFLAGS="${EXTRA_CFLAGS} -O0 -g3 -gsource-map"
+# Link-time optimization of the interpreter (CPython's --with-lto, see the
+# configure call). PYTHON_LTO=0 turns it off. It needs llvm-ar; emscripten's
+# is emar. The objects in libpythonX.Y.a are LLVM bitcode then: an embedder
+# linking it (pyjs, xeus-python) must use the same emscripten version, which
+# the pinned compiler of this channel ensures. Extension modules built against
+# this python are not affected (the LTO flags are in CFLAGS_NODIST, which is
+# not passed on to them). generic-testing >= 0.4 accepts bitcode in static
+# libraries and checks its target (wasm32 / wasm64) instead.
+if [[ "${PYTHON_LTO:-1}" == "1" ]]; then
+  # (plain --with-lto: for emcc CPython's configure accepts no LTO variant
+  # like =full / =thin)
+  LTO_ARGS="--with-lto"
+else
+  LTO_ARGS=""
+fi
 
 
 export CFLAGS_BASE="${OPTFLAGS} ${DBGFLAGS} -fPIC -fwasm-exceptions -sSUPPORT_LONGJMP ${EXTRA_CFLAGS}"
@@ -113,9 +135,95 @@ cp "${RECIPE_DIR}/Setup.local" .
 cp "${RECIPE_DIR}/adjust_sysconfig.py" .
 
 # ---------------------------------------------------------------------------
+# Side modules: optional extension modules that are not part of the slim core
+# (libpythonX.Y.a) but emscripten side modules in lib/pythonX.Y/lib-dynload,
+# each one statically containing the C library it needs. The embedder of
+# libpython (a MAIN_MODULE) then does not have to link openssl / sqlite / ...
+# and `import ssl` works once the package with the side module is installed.
+# The recipe outputs (python-ssl, python-sqlite3, ...) pick them by file name.
+# ---------------------------------------------------------------------------
+SIDE_MODULES_SSL="_ssl"
+SIDE_MODULES_SQLITE3="_sqlite3"
+SIDE_MODULES_LZMA="_lzma"
+SIDE_MODULES_CJKCODECS="_multibytecodec _codecs_cn _codecs_hk _codecs_iso2022 _codecs_jp _codecs_kr _codecs_tw"
+SIDE_MODULES_TEST="xxsubtype _xxtestfuzz _testbuffer _testinternalcapi _testcapi _testlimitedcapi _testclinic _testclinic_limited"
+SIDE_MODULES="${SIDE_MODULES_SSL} ${SIDE_MODULES_SQLITE3} ${SIDE_MODULES_LZMA} ${SIDE_MODULES_CJKCODECS} ${SIDE_MODULES_TEST}"
+# lib-dynload: CPython's standard directory for the stdlib's extension
+# modules built as shared libraries (on Linux e.g. _ssl.cpython-314-x86_64-
+# linux-gnu.so lives there). It is on sys.path by default, so `import _ssl`
+# finds the side module there and python dlopens it; nothing to configure.
+DYNLOAD_DIR="${PREFIX}/lib/python${PYMAJOR}.${PYMINOR}/lib-dynload"
+
+# Extra compiler flags a side module needs besides its MODULE_<NAME>_CFLAGS.
+side_module_extra_cflags() {
+  case "$1" in
+    # _ssl.c has `#ifndef OPENSSL_THREADS / #error "Python requires
+    # thread-safe OpenSSL"` (libopenssl-static is built without threads,
+    # there are none in the browser). The define only silences that check:
+    # it compiles no thread code and links no thread library. The locks
+    # _ssl.c takes are CPython's own (PyMutex, PyThread_allocate_lock: no-ops
+    # without threads) and openssl's (X509_STORE_lock: no-ops in a no-threads
+    # openssl). generic-testing checks the side module has no thread code.
+    _ssl) echo "-DOPENSSL_THREADS" ;;
+  esac
+}
+
+# Append a *shared* section with the rules of the side modules to Setup.local.
+# A "rule" is a line of CPython's Setup file format: how to build one
+# extension module, `<module> <source files> <compiler / linker flags>`, e.g.
+#   _lzma _lzmamodule.c
+# (makesetup adds the configure flags MODULE__LZMA_CFLAGS / _LDFLAGS to a
+# rule without flags). CPython's makesetup script turns each line into Makefile targets that
+# compile and link that module; modules below `*shared*` become shared
+# libraries (here: emscripten side modules) instead of builtins of
+# libpython. The rules are taken from upstream's Modules/Setup.stdlib.in, so
+# sources and flags follow CPython.
+append_side_module_rules() {
+  local setup_local="$1" mod rule extra upper
+  echo '*shared*' >> "${setup_local}"
+  for mod in ${SIDE_MODULES}; do
+    rule="$(sed -n "s/^@MODULE_[A-Z0-9_]*_TRUE@\(${mod} .*\)\$/\1/p" "${BUILD}/Modules/Setup.stdlib.in")"
+    if [[ -z "${rule}" ]]; then
+      echo "no rule for side module ${mod} in Modules/Setup.stdlib.in"
+      exit 1
+    fi
+    # makesetup only adds the configure flags to rules without any flag
+    extra="$(side_module_extra_cflags "${mod}")"
+    if [[ -n "${extra}" ]]; then
+      upper="$(echo "${mod}" | tr '[:lower:]' '[:upper:]')"
+      rule="${rule} \$(MODULE_${upper}_CFLAGS) ${extra} \$(MODULE_${upper}_LDFLAGS)"
+    fi
+    echo "${rule}" >> "${setup_local}"
+  done
+}
+
+# Build one side module with CPython's own Makefile rule and install it.
+# SIDE_MODULE=2 + the single exported init function: the linker only keeps
+# what the module needs from the static C library (e.g. of libcrypto).
+# The static C libraries must be built with -fvisibility=hidden (openssl, xz,
+# sqlite >= build 5 are): a default-visibility function whose address is
+# taken is exported by a side module (e.g. all of sqlite via its extension
+# API table), and the dynamic linker may then bind it to another loaded copy.
+build_side_module() {
+  local mod="$1"
+  local target="Modules/${mod}${EXT_SUFFIX}"
+  (
+    cd "${BUILD}"
+    env -u INSTALL PREFIX="${PREFIX}" emmake make \
+      PYTHON_FOR_BUILD="${HOSTPYTHON}" \
+      CROSS_COMPILE=yes \
+      BLDSHARED="\$(CC) -sSIDE_MODULE=2 -sEXPORTED_FUNCTIONS=_PyInit_${mod} -sWASM_BIGINT" \
+      "${target}" \
+      -j"${CPU_COUNT}"
+    cp "${target}" "${DYNLOAD_DIR}/"
+  )
+}
+
+# ---------------------------------------------------------------------------
 # Configure
 # ---------------------------------------------------------------------------
 cp Setup.local "${BUILD}/Modules/"
+append_side_module_rules "${BUILD}/Modules/Setup.local"
 
 (
   cd "${BUILD}"
@@ -142,6 +250,7 @@ cp Setup.local "${BUILD}/Modules/"
   BZIP2_LIBS="-L${PREFIX}/lib -lbz2" \
   CONFIG_SITE=./Tools/wasm/config.site-wasm${WASM_BITNESS}-emscripten \
   READELF=true \
+  LLVM_AR="$(command -v emar)" \
   emconfigure ./configure \
     CFLAGS="${PYTHON_CFLAGS} -I${PREFIX}/include" \
     CPPFLAGS="-I${PREFIX}" \
@@ -151,6 +260,7 @@ cp Setup.local "${BUILD}/Modules/"
     --disable-shared \
     --disable-ipv6 \
     --enable-big-digits=30 \
+    ${LTO_ARGS} \
     --host=wasm${WASM_BITNESS}-unknown-emscripten \
     --build="$(./config.guess)" \
     --prefix="${PREFIX}" \
@@ -195,6 +305,15 @@ cp Setup.local "${BUILD}/Modules/"
     "${LIB}" \
     -j"${CPU_COUNT}"
 )
+
+# ---------------------------------------------------------------------------
+# Build the side modules (lib/pythonX.Y/lib-dynload/*.so)
+# ---------------------------------------------------------------------------
+EXT_SUFFIX="$(sed -n 's/^EXT_SUFFIX=[[:space:]]*//p' "${BUILD}/Makefile")"
+mkdir -p "${DYNLOAD_DIR}"
+for mod in ${SIDE_MODULES}; do
+  build_side_module "${mod}"
+done
 
 # ---------------------------------------------------------------------------
 # First sysconfigdata generation (matches former "sysconfigdata" make target)

@@ -7,7 +7,7 @@ from unittest import mock
 
 from generic_testing.check_lib import (
     check_arch_of_lib,
-    check_no_pthread_symbols,
+    check_no_threads,
     is_memoryless_function_module,
     run_llvm_readobj,
 )
@@ -68,25 +68,141 @@ class MemorylessTests(unittest.TestCase):
                     self.assertEqual(error.code, 1)
 
 
-class PthreadSymbolTests(unittest.TestCase):
-    def test_unrelated_symbol_names(self):
-        output = "\n".join([
-            "File: /tmp/pthread/example.so",
-            "Name: FLAGS_pthreadpool_size",
-            "Name: _ZN4llvm15JumpThreadingPass3runEv",
-            "Name: pthreadpool_parallelize_1d",
-        ])
-        with mock.patch("generic_testing.check_lib.run_llvm_readobj", return_value=output):
-            check_no_pthread_symbols(Path("example.so"), False)
+def archive(*members):
+    """an `ar` archive (static library) with the given (name, bytes) members"""
+    data = b"!<arch>\n"
+    for name, body in members:
+        header = f"{name + '/':<16}{0:<12}{0:<6}{0:<6}{644:<8}{len(body):<10}`\n"
+        data += header.encode() + body + (b"\n" if len(body) % 2 else b"")
+    return data
 
-    def test_actual_pthread_symbols_are_rejected(self):
-        for name in ("pthread_create", "_pthread_join", "__pthread_mutex_lock",
-                     "pthread_create.llvm.123"):
-            with self.subTest(name=name), contextlib.redirect_stdout(io.StringIO()):
-                with mock.patch("generic_testing.check_lib.run_llvm_readobj",
-                                return_value=f"  Name: {name}\n"):
-                    with self.assertRaises(SystemExit):
-                        check_no_pthread_symbols(Path("example.so"), False)
+
+def bitcode(triple):
+    """a stand-in for an LLVM bitcode object: the magic number and, as in
+    the string table of real bitcode, the target triple as plain text"""
+    return b"BC\xc0\xde" + b"\0" * 12 + triple + b"\0" * 7
+
+
+class BitcodeTests(unittest.TestCase):
+    """Static libraries compiled with -flto contain LLVM bitcode: accepted,
+    but only for the right architecture."""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "libexample.a"
+        # (llvm-readobj sees no WebAssembly in bitcode)
+        patcher = mock.patch("generic_testing.check_lib.run_llvm_readobj",
+                             return_value="File: libexample.a\n")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def check(self, data, arch):
+        self.path.write_bytes(data)
+        check_arch_of_lib(self.path, "emscripten-" + arch)
+
+    def test_bitcode_of_the_right_arch(self):
+        for arch in ("wasm32", "wasm64"):
+            triple = f"{arch}-unknown-emscripten".encode()
+            self.check(archive(("a.o", bitcode(triple)), ("b.o", bitcode(triple))), arch)
+
+    def test_bitcode_of_the_wrong_arch_or_without_wasm_triple(self):
+        for triple, arch in ((b"wasm64-unknown-emscripten", "wasm32"),
+                             (b"wasm32-unknown-emscripten", "wasm64"),
+                             (b"x86_64-apple-darwin", "wasm32")):
+            with self.subTest(triple=triple, arch=arch), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(SystemExit):
+                    self.check(archive(("a.o", bitcode(triple))), arch)
+
+    def test_one_wrong_member_is_enough(self):
+        good, bad = bitcode(b"wasm32-unknown-emscripten"), bitcode(b"wasm64-unknown-emscripten")
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit):
+            self.check(archive(("a.o", good), ("b.o", bad)), "wasm32")
+
+    def test_neither_wasm_nor_bitcode(self):
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit):
+            self.check(archive(("a.o", b"\x7fELF" + b"\0" * 12)), "wasm32")
+
+
+def section(section_id, payload):
+    """a WebAssembly section"""
+    return bytes((section_id, len(payload))) + payload
+
+
+def custom_section(name, payload):
+    return section(0, bytes((len(name),)) + name + payload)
+
+
+def target_features(*features):
+    """a "target_features" custom section, as in objects compiled by clang"""
+    entries = b"".join(f[:1].encode() + bytes((len(f) - 1,)) + f[1:].encode() for f in features)
+    return custom_section(b"target_features", bytes((len(features),)) + entries)
+
+
+def wasm_object(*features, symbol=b"pthread_mutex_lock"):
+    """a WebAssembly object: a name in a custom section (stands for its
+    symbols, e.g. a call of pthread_mutex_lock) and its target features"""
+    return HEADER + custom_section(b"names", symbol) + target_features(*features)
+
+
+def linked_module(memory_flags):
+    """a linked module (.so) importing env.memory with the given flags"""
+    entry = b"\x03env\x06memory\x02" + bytes((memory_flags, 1))
+    if memory_flags & 1:
+        entry += b"\x02"
+    return HEADER + section(2, b"\x01" + entry)
+
+
+class ThreadTests(unittest.TestCase):
+    """--allow-pthread is about code compiled with thread support (atomics /
+    shared memory), not about calling pthread_* functions"""
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.directory = Path(directory.name)
+
+    def check(self, name, data, allow_pthread=False):
+        path = self.directory / name
+        path.write_bytes(data)
+        check_no_threads(path, allow_pthread)
+
+    def rejected(self, name, data):
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit):
+            self.check(name, data)
+
+    def test_objects(self):
+        default = ("+bulk-memory", "+mutable-globals", "+sign-ext")
+        # calls pthread_* but compiled without -pthread: fine
+        self.check("libplain.a", archive(("a.o", wasm_object(*default))))
+        self.check("plain.o", wasm_object(*default))
+        # compiled with -pthread: one such member is enough
+        threaded = wasm_object("+atomics", *default)
+        self.rejected("libthreads.a", archive(("a.o", wasm_object(*default)), ("b.o", threaded)))
+        self.rejected("threads.o", threaded)
+        self.check("libthreads.a", archive(("b.o", threaded)), allow_pthread=True)
+
+    def test_linked_modules(self):
+        for flags in (0x00, 0x01, 0x04):
+            self.check("plain.so", linked_module(flags))
+        for flags in (0x02, 0x03):
+            self.rejected("threads.so", linked_module(flags))
+        # (a module without imports, e.g. the forwarder above)
+        self.check("facade.so", FACADE)
+
+    def test_bitcode(self):
+        member = bitcode(b"wasm32-unknown-emscripten")
+        for disassembly, threaded in (
+            (b'attributes #0 = { "target-features"="+bulk-memory,+sign-ext" }', False),
+            (b'attributes #0 = { "target-features"="+atomics,+bulk-memory" }', True),
+        ):
+            result = mock.Mock(stdout=disassembly)
+            with self.subTest(threaded=threaded), \
+                 mock.patch("generic_testing.check_lib.subprocess.run", return_value=result):
+                if threaded:
+                    self.rejected("libexample.a", archive(("a.o", member)))
+                else:
+                    self.check("libexample.a", archive(("a.o", member)))
 
 
 if __name__ == "__main__":
