@@ -1,11 +1,11 @@
 context:
-  version: 4.4.1
+  version: 5.0.0
   name: pyjs
-  build_number: 1
+  build_number: 0
 
 source:
   url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
-  sha256: d5290aecdf2a9173bbce9abf52300795f79bb5ada593561421ba3caeab0efa22
+  sha256: dd1da4d4ed696c3b521c5f755d640fcca2918cdbfe0edca8d3c49e44c62d4372
 build:
   number: ${{ build_number }}
 
@@ -26,7 +26,7 @@ outputs:
     - pybind11
 
 
-- package:  
+- package:
     name: libpyjs-static
     version: ${{ version }}
   inherit: pyjs-build
@@ -35,7 +35,7 @@ outputs:
     script: echo "nothing to do here, we take all content from the pyjs-build package"
     files:
       exclude:
-      - "**/*.py"
+      - '**/*.py'
   requirements:
     build:
     - ${{ compiler("c") }}
@@ -48,20 +48,20 @@ outputs:
     run:
     - ${{ pin_compatible("libpython-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
     run_exports:
-      - ${{ pin_subpackage('pyjs', exact=True) }}
+    - ${{ pin_subpackage('pyjs', exact=True) }}
   tests:
-    - package_contents:
-        strict: false
-        files:
-          - lib/libpyjs.a
-          - include/pyjs/export_js_module.hpp
-          - lib_js/pyjs/pyjs_runtime_browser.js 
-          - lib_js/pyjs/pyjs_runtime_browser.wasm
-          - lib/cmake/pyjs/pyjsConfig.cmake 
+  - package_contents:
+      strict: false
+      files:
+      - lib/libpyjs.a
+      - include/pyjs/export_js_module.hpp
+      - lib_js/pyjs/pyjs_runtime_browser.js
+      - lib_js/pyjs/pyjs_runtime_browser.wasm
+      - lib/cmake/pyjs/pyjsConfig.cmake
 
 
 
-- package:  
+- package:
     name: pyjs # the run-time package
     version: ${{ version }}
   inherit: pyjs-build
@@ -70,22 +70,22 @@ outputs:
     script: echo "nothing to do here, we take all content from the pyjs-build package"
     files:
       include:
-      - "**/*.py"
-      
+      - '**/*.py'
+
 
   requirements:
     run:
     - python
-  
+
   tests:
-    - package_contents:
-        strict: false
-        files:
-          - lib/python*/site-packages/pyjs/core.py 
-- package:  
+  - package_contents:
+      strict: false
+      files:
+      - lib/python*/site-packages/pyjs/core.py
+- package:
     name: pyjs-dev
     version: ${{ version }}
-  
+
   requirements:
     run:
     - ${{pin_subpackage("pyjs", exact=True) }}
@@ -121,14 +121,14 @@ outputs:
 
     requirements:
       build:
-        - nodejs
-        - playwright
-        - playwright-python
-        - pyjs_code_runner >= 3.2.0
+      - nodejs
+      - playwright
+      - playwright-python
+      - pyjs_code_runner >= 3.2.0
       run:
-        - python
-        - pytest
-        
+      - python
+      - pytest
+
 
     files:
       recipe:
