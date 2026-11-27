@@ -1,8 +1,18 @@
+From: emscripten-forge
+Subject: XGetImage of a window shows the parent through where nothing was drawn
+
+x11.wasm paints a window's own background into its canvas when the window
+is mapped or resized, but a window without a background (None, which is
+what AWT gives its windows) stays transparent where nothing was drawn, and
+XGetImage returned black there. An X server shows what is behind such a
+window: composite with the nearest ancestor's background, else the CSS
+background of the root element.
+---
 diff --git a/js/browser/dom/draw.js b/js/browser/dom/draw.js
-index 2d38b82..ef63b88 100644
+index af00494..f716eab 100644
 --- a/js/browser/dom/draw.js
 +++ b/js/browser/dom/draw.js
-@@ -1631,6 +1631,55 @@
+@@ -1682,6 +1682,55 @@
       * @param {number} bitsPerPixel
       * @returns {number}
       */
@@ -58,7 +68,7 @@ index 2d38b82..ef63b88 100644
      getImage(id, srcX, srcY, width, height, bytes, bytesPerLine, bitsPerPixel) {
        const context = this.getContext(id);
        const resource = this.resources.get(id);
-@@ -1653,6 +1702,26 @@
+@@ -1704,6 +1753,26 @@
        const bytesPerPixel = Math.max(1, Math.floor(bitsPerPixel / 8));
        let source = 0;
  
