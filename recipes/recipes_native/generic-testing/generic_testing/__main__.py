@@ -8,7 +8,12 @@ def main():
     parser = argparse.ArgumentParser(description="Run generic tests for a package")
 
 
-    parser.add_argument("--allow-pthread", action="store_true", help="Allow pthread symbols in the package")
+    parser.add_argument(
+        "--allow-pthread",
+        action="store_true",
+        help="Allow code compiled with thread support (-pthread: atomics / shared memory). "
+        "Calling pthread_* functions alone never needs this.",
+    )
 
     args = parser.parse_args()
 

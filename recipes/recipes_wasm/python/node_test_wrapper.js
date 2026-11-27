@@ -2,7 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import createModule from "./test_main.js";
-import { pythonTests } from "./python_tests.mjs";
+import { pythonTests, testCode } from "./python_tests.mjs";
+// written by build_tests.sh: is this a core-only env (no extension outputs)?
+import { coreOnly } from "./test_config.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,6 +28,8 @@ function ensureVirtualFSPathForFile(Module, fsPath) {
   }
 }
 
+// copy the python files and the extension modules (lib-dynload/*.so, side
+// modules that python dlopen's on import) into the emscripten FS
 function copyPyFiles(Module, hostDir, fsDir) {
   for (const entry of fs.readdirSync(hostDir, { withFileTypes: true })) {
     const hostPath = path.join(hostDir, entry.name);
@@ -33,7 +37,7 @@ function copyPyFiles(Module, hostDir, fsDir) {
     if (entry.isDirectory()) {
       Module.FS.mkdirTree(fsPath);
       copyPyFiles(Module, hostPath, fsPath);
-    } else if (entry.isFile() && entry.name.endsWith(".py")) {
+    } else if (entry.isFile() && (entry.name.endsWith(".py") || entry.name.endsWith(".so"))) {
       ensureVirtualFSPathForFile(Module, fsPath);
       Module.FS.writeFile(fsPath, fs.readFileSync(hostPath));
     }
@@ -146,7 +150,7 @@ for (const test of pythonTests) {
     continue;
   }
   console.log(`=== ${test.name}`);
-  const ret = Number(Module.ccall('run_python', 'number', ['string'], [test.code]));
+  const ret = Number(Module.ccall('run_python', 'number', ['string'], [testCode(test, coreOnly)]));
   if (ret !== 0) {
     failed.push(test.name);
   }
@@ -154,4 +158,4 @@ for (const test of pythonTests) {
 if (failed.length > 0) {
   throw new Error(`python tests failed: ${failed.join(", ")}`);
 }
-console.log(`all ${pythonTests.length} python tests passed`);
+console.log(`all ${pythonTests.length} python tests passed (${coreOnly ? "core-only env" : "full env"})`);

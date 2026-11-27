@@ -2,16 +2,35 @@
 set -e
 
 
+# Embeds libpython into a MAIN_MODULE executable and runs python_tests.mjs in
+# node and in a browser.
+# Usage: build_tests.sh core|full
+#   core: the env only has python-core. The extension modules of the other
+#         outputs (python-ssl, python-sqlite3, ...) must not be importable.
+#   full: the env has python (= core + all extension outputs): everything
+#         must work, the extension modules are dlopen'ed from lib-dynload.
+# The executable is the same in both cases: only the slim core is linked
+# (no openssl / sqlite / lzma).
+FLAVOR="${1:?usage: build_tests.sh core|full}"
+case "$FLAVOR" in
+    core) CORE_ONLY=true ;;
+    full) CORE_ONLY=false ;;
+    *) echo "unknown flavor: $FLAVOR"; exit 1 ;;
+esac
+echo "==> flavor: $FLAVOR"
+echo "export const coreOnly = ${CORE_ONLY};" > test_config.mjs
+
 echo "PY_VER: $PY_VER"
 
 PYTHON_LIB="$PREFIX/lib/libpython${PY_VER}.a"
 
-OUT="${OUT:-embed.js}"
-OBJ="${OUT%.js}.o"
+DYNLOAD_DIR="$PREFIX/lib/python${PY_VER}/lib-dynload"
+if [ "$FLAVOR" = "core" ] && ls "$DYNLOAD_DIR"/*.so > /dev/null 2>&1; then
+    echo "core flavor, but there are extension modules in $DYNLOAD_DIR"
+    exit 1
+fi
 
-
-
-
+# everything the slim core needs
 LIBS=(
     "$PREFIX/lib/python${PY_VER}/static/libexpat.a"
     "$PREFIX/lib/python${PY_VER}/static/libmpdec.a"
@@ -22,12 +41,8 @@ LIBS=(
     "$PREFIX/lib/python${PY_VER}/static/libHacl_Hash_SHA3.a"
     "$PREFIX/lib/libbz2.a"
     "$PREFIX/lib/libz.a"
-    "$PREFIX/lib/libsqlite3.a"
     "$PREFIX/lib/libffi.a"
     "$PREFIX/lib/libzstd.a"
-    "$PREFIX/lib/libssl.a"
-    "$PREFIX/lib/libcrypto.a"
-    "$PREFIX/lib/liblzma.a"
     "$PYTHON_LIB"
 )
 
@@ -72,6 +87,12 @@ emcc \
     "${LIBS[@]}" \
     -o test_main.js
 
+echo "==> size of the embed executable (MAIN_MODULE=1, slim core)"
+ls -l test_main.wasm
+if [ -d "$DYNLOAD_DIR" ]; then
+    echo "==> extension modules in lib-dynload"
+    ls -l "$DYNLOAD_DIR"
+fi
 
 node node_test_wrapper.js
 
@@ -87,10 +108,14 @@ if [ "${PYTHON_SKIP_BROWSER_TEST:-0}" = "1" ]; then
     exit 0
 fi
 
+# --use-preload-plugins: the extension modules (lib-dynload/*.so) are compiled
+# asynchronously while the page loads, like the embedders do it (the main
+# thread must not compile large wasm modules synchronously in dlopen)
 echo "==> compiling and linking (browser)"
 emcc \
     "${FLAGS[@]}" \
     -sENVIRONMENT=web,worker \
+    --use-preload-plugins \
     --preload-file "$PREFIX/lib/python${PY_VER}@/lib/python${PY_VER}" \
     --exclude-file "*__pycache__*" \
     --exclude-file "*/lib/python${PY_VER}/test/*" \
