@@ -1,11 +1,11 @@
 context:
-  version: 4.4.1
+  version: 6.0.1
   name: pyjs
-  build_number: 1
+  build_number: 0
 
 source:
   url: https://github.com/emscripten-forge/pyjs/archive/refs/tags/${{ version }}.tar.gz
-  sha256: d5290aecdf2a9173bbce9abf52300795f79bb5ada593561421ba3caeab0efa22
+  sha256: 4b0e1a3638bd96835852fbc7a2258d3dd415d8fd54d5128d3de983b977c3f317
 build:
   number: ${{ build_number }}
 
@@ -21,12 +21,27 @@ outputs:
     - ${{ compiler("cxx") }}
     - cmake
     - make
+    # bundles src/js (TypeScript) into libpyjs
+    - esbuild
     host:
     - libpython-static
-    - pybind11
+    # headers + sources, compiled into libpyjs
+    - nanobind
+    # archive extraction in the runtime (src/extract.cpp)
+    - libarchive-static
+    # the static libraries the runtime links from $PREFIX/lib
+    - libbzip2-static
+    - libzlib-static
+    - libsqlite-static
+    - libffi-static
+    - zstd-static
+    - libopenssl-static <4.0.0a0
+    - liblzma-static
 
 
-- package:  
+# libpyjs + header + cmake config + the runtime (pyjs_runtime_browser.{js,wasm})
+# of THIS architecture
+- package:
     name: libpyjs-static
     version: ${{ version }}
   inherit: pyjs-build
@@ -37,14 +52,8 @@ outputs:
       exclude:
       - "**/*.py"
   requirements:
-    build:
-    - ${{ compiler("c") }}
-    - ${{ compiler("cxx") }}
-    - cmake
-    - make
     host:
     - libpython-static
-    - pybind11
     run:
     - ${{ pin_compatible("libpython-static", lower_bound="x.x.x", upper_bound="x.x.x") }}
     run_exports:
@@ -54,14 +63,19 @@ outputs:
         strict: false
         files:
           - lib/libpyjs.a
-          - include/pyjs/export_js_module.hpp
-          - lib_js/pyjs/pyjs_runtime_browser.js 
+          - include/pyjs/pyjs.h
+          - lib/cmake/pyjs/pyjsConfig.cmake
+          - lib/cmake/pyjs/pyjsTargets.cmake
+          - lib_js/pyjs/pyjs_runtime_browser.js
           - lib_js/pyjs/pyjs_runtime_browser.wasm
-          - lib/cmake/pyjs/pyjsConfig.cmake 
+    - script: generic-testing
+      requirements:
+        build:
+        - generic-testing
 
 
-
-- package:  
+# the python module
+- package:
     name: pyjs # the run-time package
     version: ${{ version }}
   inherit: pyjs-build
@@ -71,70 +85,79 @@ outputs:
     files:
       include:
       - "**/*.py"
-      
 
   requirements:
     run:
     - python
-  
+
   tests:
     - package_contents:
         strict: false
         files:
-          - lib/python*/site-packages/pyjs/core.py 
-- package:  
+          - lib/python*/site-packages/pyjs/__init__.py
+          - lib/python*/site-packages/pyjs/core.py
+
+
+# The JavaScript of the pyjs npm package (lib_js/pyjs/npm: dist/ + package.json
+# + LICENSE), no runtime and no wasm: whoever has a conda env with pyjs-dev
+# (pyjs-code-runner) serves the runtime of libpyjs-static + the packed env as
+# `assetsUrl` and drives them with this JavaScript.
+# Plain JavaScript (esbuild of npm/src), the same in the wasm32 and the wasm64
+# build; still built per architecture (no noarch), like the other outputs.
+# No compiler in its requirements: it must not get emscripten's run_exports.
+# No generic-testing either: it checks binaries, of which there are none here.
+- package:
+    name: pyjs-npm
+    version: ${{ version }}
+
+  build:
+    script:
+    - cd npm
+    # (the build tooling of npm/package-lock.json: esbuild, mambajs, ...)
+    - npm ci --no-audit --no-fund
+    - node build.mjs --js-only --out $PREFIX/lib_js/pyjs/npm
+  requirements:
+    build:
+    - nodejs
+  tests:
+    - package_contents:
+        strict: false
+        files:
+          - lib_js/pyjs/npm/dist/index.js
+          - lib_js/pyjs/npm/dist/wasm64.js
+          - lib_js/pyjs/npm/package.json
+
+
+- package:
     name: pyjs-dev
     version: ${{ version }}
-  
+
   requirements:
     run:
-    - ${{pin_subpackage("pyjs", exact=True) }}
-    - ${{pin_subpackage("libpyjs-static", exact=True) }}
+    - ${{ pin_subpackage("pyjs", exact=True) }}
+    - ${{ pin_subpackage("libpyjs-static", exact=True) }}
+    - ${{ pin_subpackage("pyjs-npm", exact=True) }}
     run_exports:
     - ${{ pin_subpackage('pyjs', exact=True) }}
   tests:
-  - script: |
-      echo "install playwright"
-      playwright install chromium
-      # run_tests.py (from the recipe) runs tests/ (from the source)
-      echo "test in browser (main thread)"
-      pyjs_code_runner run script \
-          browser-main \
-          --conda-env     $PREFIX \
-          --mount         $(pwd):/pyjs_tests \
-          --script        run_tests.py \
-          --work-dir      /pyjs_tests \
-          --headless \
-          --async-main \
-          --no-cache
-      # worker
-      echo "test in browser (worker thread)"
-      pyjs_code_runner run script \
-          browser-worker \
-          --conda-env     $PREFIX \
-          --mount         $(pwd):/pyjs_tests \
-          --script        run_tests.py \
-          --work-dir      /pyjs_tests \
-          --headless \
-          --async-main \
-          --no-cache
-
+  # the whole chain in a browser: this env (python + pyjs), its runtime
+  # (libpyjs-static) and the npm JavaScript (pyjs-npm), put together by
+  # pyjs-code-runner (conda env mode), main thread and worker
+  - script:
+    - playwright install chromium
+    - pyjs_code_runner run script browser-main --conda-env $PREFIX --mount $(pwd):/pyjs_smoke --script smoke_test.py --work-dir /pyjs_smoke --headless --no-async-main
+    - pyjs_code_runner run script browser-worker --conda-env $PREFIX --mount $(pwd):/pyjs_smoke --script smoke_test.py --work-dir /pyjs_smoke --headless --no-async-main
     requirements:
       build:
-        - nodejs
-        - playwright
-        - playwright-python
-        - pyjs_code_runner >= 3.2.0
+      - pyjs_code_runner >=4
+      # the node driver and the python API with the same version
+      - playwright 1.62.*
+      - playwright-python 1.62.*
       run:
-        - python
-        - pytest
-        
-
+      - python
     files:
       recipe:
-      - run_tests.py
-      source:
-      - tests/**/*
+      - smoke_test.py
 
 about:
   license: BSD-3-Clause
