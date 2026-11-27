@@ -1,0 +1,84 @@
+context:
+  name: xgboost
+  version: 2.1.4
+
+# Package names as on conda-forge: the Python package is `py-xgboost`,
+# `xgboost` is a metapackage that installs it.
+recipe:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+- url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ab84c4bbedd7fae1a26f61e9dd7897421d5b08454b51c6eb072abc1d346d08d7
+  patches:
+  - 0001-Build-libxgboost-on-emscripten.patch
+
+build:
+  number: 0
+
+outputs:
+- package:
+    name: py-${{ name }}
+  build:
+    script: build.sh
+  requirements:
+    build:
+    - python
+    - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake >=3.18
+    - make
+    - pip
+    - hatchling
+    - packaging
+    host:
+    - python-dev
+    - pip
+    run:
+    - python
+    - numpy
+    - scipy
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_xgboost.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: generic-testing
+    requirements:
+      build:
+      - generic-testing
+
+- package:
+    name: ${{ name }}
+  requirements:
+    run:
+    - ${{ pin_subpackage('py-' ~ name, exact=True) }}
+  tests:
+  - script: pytester
+    files:
+      recipe:
+      - test_import_xgboost.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+
+about:
+  homepage: https://github.com/dmlc/xgboost
+  repository: https://github.com/dmlc/xgboost
+  documentation: https://xgboost.readthedocs.io/en/stable/
+  license: Apache-2.0
+  license_file: cpp_src/LICENSE
+  summary: XGBoost Python Package
+
+extra:
+  recipe-maintainers:
+  - Copilot
