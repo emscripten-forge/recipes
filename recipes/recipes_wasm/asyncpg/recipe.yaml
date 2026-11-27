@@ -1,0 +1,60 @@
+context:
+  name: asyncpg
+  version: 0.32.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/a/asyncpg/asyncpg-${{ version }}.tar.gz
+  sha256: 45e64e56714d888330b884aad1dfb363d0bf43fb343e3d1a8968525f3bade478
+  patches:
+  - patches/0001-Fall-back-to-pure-Python-PBKDF2.patch
+
+build:
+  number: 0
+  script: |
+    # the sdist ships pre-generated C; regenerate it so the .pyx patch applies
+    export ASYNCPG_BUILD_CYTHON_ALWAYS=1
+    ${PYTHON} -m pip install . ${PIP_ARGS}
+
+requirements:
+  build:
+  - python
+  - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - cython
+  - pip
+  host:
+  - python-dev
+  - pip
+  - setuptools
+  run:
+  - python
+
+tests:
+- script: pytester
+  files:
+    recipe:
+    - test_asyncpg.py
+  requirements:
+    build:
+    - pytester
+    run:
+    - pytester-run
+
+- script: generic-testing
+  requirements:
+    build:
+    - generic-testing
+about:
+  homepage: https://github.com/MagicStack/asyncpg
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An asyncio PostgreSQL driver
+  repository: https://github.com/MagicStack/asyncpg
+
+extra:
+  recipe-maintainers:
+  - Copilot
