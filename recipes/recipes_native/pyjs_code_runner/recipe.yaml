@@ -1,0 +1,59 @@
+# pyjs-code-runner: runs a python script with pyjs in a browser (playwright),
+# what pytester tests every recipe with. Also on conda-forge; built here as
+# well so the emscripten-forge channel (searched first) has the version
+# pytester needs as soon as it is tagged.
+context:
+  version: '4.0.0'
+
+package:
+  name: pyjs_code_runner
+  version: ${{ version }}
+
+source:
+  url: https://github.com/emscripten-forge/pyjs-code-runner/archive/${{ version }}.tar.gz
+  sha256: f7a4536ca7b76521ca6c134319990057aa15c07a38e81550f3c9204d3723663c
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - pyjs_code_runner = pyjs_code_runner.cli.main:app
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - empack >=3
+    - rich
+    - typer
+    # (playwright + playwright-python: pinned together by pytester, which is
+    # what installs the runner for the recipe tests)
+
+tests:
+  - python:
+      imports:
+        - pyjs_code_runner
+        - pyjs_code_runner.run
+      pip_check: false
+  - package_contents:
+      site_packages:
+        - pyjs_code_runner/web/index.html
+        - pyjs_code_runner/web/run.js
+        - pyjs_code_runner/web/worker.js
+  - script:
+      - pyjs_code_runner --help
+
+about:
+  homepage: https://github.com/emscripten-forge/pyjs-code-runner
+  license: MIT
+  license_file: LICENSE
+  summary: Run python code with pyjs in a browser, from an emscripten-forge conda env
+
+extra:
+  recipe-maintainers:
+    - DerThorsten

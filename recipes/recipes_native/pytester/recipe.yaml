@@ -1,5 +1,5 @@
 context:
-  version: '1.6.2'
+  version: '1.7.0'
   build_number: 0
 
 source:
@@ -18,29 +18,42 @@ outputs:
 
     build:
       script: ./build.sh
-      noarch: generic
-    
+      # noarch: python (not generic): the module is installed into the
+      # site-packages of whatever python the env has. With noarch: generic it
+      # stayed in lib/python<build version>/site-packages and a newer python
+      # in the test env (e.g. 3.15 from conda-forge) could not import it
+      # ("No module named pytester").
+      noarch: python
 
     requirements:
-      build:
-        - python
+      host:
+        - python ${{ python_min }}.*
       run:
-        - python
-        - playwright <=  1.62.1 
-        - playwright-python <=  1.62
-        - pyjs_code_runner 
+        - python >=${{ python_min }}
+        # the node driver and its python API must have the same version (a
+        # mismatch fails every browser launch: "BrowserType.launch: timeout:
+        # expected float, got undefined"); >= 1.62 knows ubuntu 26.04. Upper
+        # bounds alone let the solver fall back to an older driver.
+        - playwright 1.62.*
+        - playwright-python 1.62.*
+        # >= 4: driven by the JavaScript of the pyjs npm package, which
+        # pyjs-dev (>= 6, output pyjs-npm) ships in lib_js/pyjs/npm
+        - pyjs_code_runner >=4
     
     tests:
       - package_contents:
           strict: false
+          # (noarch: python layout: installed to bin/ and lib/pythonX.Y/)
           files:
-            - bin/pytester
-            - lib/python*/site-packages/pytester/__init__.py
-            - lib/python*/site-packages/pytester/__main__.py
-            - lib/python*/site-packages/pytester/empack_config.yaml
-            - lib/python*/site-packages/pytester/main_mount/main.py
+            - python-scripts/pytester
+            - site-packages/pytester/__init__.py
+            - site-packages/pytester/__main__.py
+            - site-packages/pytester/empack_config.yaml
+            - site-packages/pytester/main_mount/main.py
       - script: |
           python -c "from playwright._impl import _driver as d; import os; p=d.compute_driver_executable(); print(p); print(os.path.exists(p[0] if isinstance(p, (tuple, list)) else p))"
+          python -c "import pytester.__main__"
+          test -x $PREFIX/bin/pytester
 
 
   - package:
@@ -50,7 +63,8 @@ outputs:
       noarch: generic
     requirements:
       run:
-        - pyjs-dev
+        # (pyjs_code_runner >= 4 needs pyjs >= 6)
+        - pyjs-dev >=6.0.1
         - pytest
         - python 
     tests:

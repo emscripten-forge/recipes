@@ -1,59 +1,42 @@
-echo "DIR" $(pwd)
-
-mkdir -p build
-cd build
-
-# print all arguments passed to the script
-echo "Arguments:" $@
-# print first argument
-echo "First argument:" $1
-
-WHICH_PART=$1
-
+#!/bin/bash
+set -ex
 
 # Specific variables for cross-compilation
 if [[ "$target_platform" == "emscripten-wasm32" ]]; then
     USE_WASM64=FALSE
+    M64_FLAGS=""
 elif [[ "$target_platform" == "emscripten-wasm64" ]]; then
+    # -m64 must be in CMAKE_C_FLAGS on the command line (Emscripten.cmake decides
+    # 32 / 64 bit from it) and in EMCC_CFLAGS (every emcc call, e.g. the ports)
     USE_WASM64=TRUE
+    M64_FLAGS="-m64"
+    export EMCC_CFLAGS="${EMCC_CFLAGS} -m64"
 else
     echo "Unsupported target_platform: $target_platform"
     exit 1
 fi
 
-export CMAKE_PREFIX_PATH=$PREFIX 
-export CMAKE_SYSTEM_PREFIX_PATH=$PREFIX 
-export CC=emcc
-export CXX=em++
-
-
-# detect python version 
-PY_VER=$(
-    basename -- "$PREFIX"/include/python* |
-    sed 's/^python//'
-)
+# detect python version (e.g. 3.14)
+PY_VER=$(basename "$PREFIX"/include/python3.* | sed 's/^python//')
 echo "Detected Python version:" $PY_VER
 
-# Configure step
-emmake cmake ${CMAKE_ARGS} ..  \
+# libpyjs + the runtime (pyjs_runtime_browser.{js,wasm}) + the python module,
+# all installed into $PREFIX (the host env, which is also where the static
+# libraries are linked from). Needs esbuild on PATH (src/js -> libpyjs) and
+# nanobind in the host env's site-packages.
+# (The JavaScript of the npm package is the output pyjs-npm, see recipe.yaml.)
+emcmake cmake ${CMAKE_ARGS} -S . -B _build_conda \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=$PREFIX \
+    -DCMAKE_FIND_ROOT_PATH=$PREFIX \
     -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ON \
-    -DBUILD_RUNTIME_BROWSER=ON \
-    -DBUILD_RUNTIME_NODE=OFF \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
-    -DLINK_LIBLZMA=ON \
-    -DPY_VERSION=$PY_VER \
-    -DPYTHON_SITE_PACKAGES=$PREFIX/lib/python${PY_VER}/site-packages \
-    -DPython_INCLUDE_DIRS=$PREFIX/include/python${PY_VER} \
-    -DPython_LIBRARY=$PREFIX/lib/libpython${PY_VER}.a \
-    -DPython_LIBRARIES=$PREFIX/lib/libpython${PY_VER}.a \
-    -DPython_Interpreter_FOUND=TRUE \
-    -DPython_EXECUTABLE=$BUILD_PREFIX/bin/python${PY_VER} \
-    -DPYTHON_MODULE_EXTENSION=.so \
-    -DPYTHON_MODULE_DEBUG_POSTFIX="" \
-    -DPYTHON_MODULE_EXT_SUFFIX=.so \
-    -DPython_FOUND=TRUE \
+    -DCMAKE_C_FLAGS="${M64_FLAGS}" \
+    -DCMAKE_CXX_FLAGS="${M64_FLAGS}" \
     -DWASM64=$USE_WASM64 \
+    -DPY_VERSION=$PY_VER
 
-
-emmake make
+# (`cmake` is wrapped by emcmake in the build env, which breaks `cmake --build`)
+cd _build_conda
+emmake make -j${CPU_COUNT:-4}
 emmake make install
