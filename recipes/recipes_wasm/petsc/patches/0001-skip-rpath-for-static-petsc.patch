@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: omp <noreply@example.com>
+Date: Fri, 28 Nov 2026 10:00:00 +0100
+Subject: [PATCH] Skip rpath flags for static PETSc
+
+distutils turns ``runtime_library_dirs`` into ``-Wl,--enable-new-dtags
+-Wl,-rpath,<dir>``. Under emscripten the compiler is ``emcc`` and the
+linker step is ``wasm-ld``, which rejects ``--enable-new-dtags``:
+
+    wasm-ld: error: unknown argument: --enable-new-dtags
+
+The guard upstream uses is ``sys.platform != 'win32'``, but under
+cross-python ``sys.platform`` is ``unknown`` (the host interpreter reports
+the build machine), so it does not trigger. ``sysconfig.get_platform()``
+here is ``unknown-wasm32``, and there is no ``sys.platform`` value for
+emscripten at all.
+
+An rpath is meaningless for this build anyway: PETSc is installed static
+(``BUILDSHAREDLIB = no``) and the extension modules are emscripten side
+modules, which do not resolve libraries through the dynamic loader. So
+gate the rpath block on PETSc actually being shared, which is also correct
+for the non-emscripten static case.
+
+--- a/src/binding/petsc4py/conf/confpetsc.py
++++ b/src/binding/petsc4py/conf/confpetsc.py
+@@ -317,8 +317,10 @@
+             '-L{} {}'.format(self['PETSC_LIB_DIR'], self['PETSC_LIB_BASIC']),
+         )
+         petsc_lib = flaglist(lib_flags)
+-        # runtime_library_dirs is not supported on Windows
+-        if sys.platform != 'win32':
++        # runtime_library_dirs is not supported on Windows, and it is
++        # pointless for static PETSc: distutils would pass
++        # -Wl,--enable-new-dtags, which wasm-ld rejects.
++        if sys.platform != 'win32' and self['BUILDSHAREDLIB'] == 'yes':
+             # if DESTDIR is set, then we're building against PETSc in a staging
+             # directory, but rpath needs to point to final install directory.
+             rpath = [strip_prefix(self.DESTDIR, self['PETSC_LIB_DIR'])]
