@@ -1,0 +1,166 @@
+context:
+  name: petsc
+  version: 3.26.1
+  f2c_version: 3.8.0.q2
+
+source:
+- url: https://pypi.io/packages/source/p/petsc/petsc-${{ version }}.tar.gz
+  sha256: a4dc46c1b4403545ac2274741ce10801366c4a9a7b2683b678d18f6663b93496
+  patches:
+  - patches/0001-skip-rpath-for-static-petsc.patch
+- url: https://web.cels.anl.gov/projects/petsc/download/externalpackages/f2cblaslapack-${{ f2c_version }}.tar.gz
+  sha256: 12fa8d5001e313aeeea22eb2054883f59e3e3c656f11129f31abb02ddbf8ad60
+  target_directory: f2cblaslapack
+
+build:
+  number: 0
+
+outputs:
+# PETSc itself: serial, static, with PETSc's own C BLAS/LAPACK.
+- package:
+    name: ${{ name }}
+    version: ${{ version }}
+
+  build:
+    script: build.sh
+
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - make
+    - python
+    - cmake
+    - pkg-config
+    run_exports:
+    - ${{ pin_subpackage('petsc', upper_bound='x.x') }}
+
+  tests:
+  - package_contents:
+      files:
+      - include/petsc.h
+      - include/petscconf.h
+      - lib/libpetsc.a
+      - lib/libf2cblas.a
+      - lib/libf2clapack.a
+      - lib/pkgconfig/PETSc.pc
+  - script: test_petsc.sh
+    files:
+      recipe:
+      - test_petsc.c
+      - test_petsc.sh
+    requirements:
+      build:
+      - ${{ compiler('c') }}
+      - nodejs
+      - pkg-config
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+  about:
+    homepage: https://petsc.org/
+    repository: https://gitlab.com/petsc/petsc
+    license: BSD-2-Clause
+    license_file: LICENSE
+    summary: Portable, Extensible Toolkit for Scientific Computation
+    description: |
+      PETSc is a suite of data structures and routines for the scalable solution of
+      scientific applications modeled by partial differential equations. This
+      WebAssembly build is serial (PETSc MPIUNI) and static, and bundles PETSc's C
+      translation of BLAS/LAPACK (f2cblaslapack), so consumers need no Fortran
+      compiler and no flang runtime.
+    documentation: https://petsc.org/release/
+
+# Python bindings, built from the petsc4py tree shipped inside the PETSc sdist.
+- package:
+    name: petsc4py
+    version: ${{ version }}
+
+  build:
+    script: build_petsc4py.sh
+    # conda's binary prefix relocation is ELF-oriented and corrupts wasm side
+    # modules: it rewrites bytes inside the code section, not just strings.
+    # (build.dynamic_linking.binary_relocation is conda-build only and is
+    # ignored by rattler-build.) Text files still get relocated, so
+    # petsc4py/lib/petsc.cfg picks up the install prefix.
+    prefix_detection:
+      ignore_binary_files: true
+    files:
+      exclude:
+      - '**/__pycache__/**'
+      - '**/*.pyc'
+      - '**/test_*.py'
+    python:
+      skip_pyc_compilation:
+      - '**/*.py'
+
+  requirements:
+    build:
+    - ${{ compiler('c') }}
+    - cross-python_${{ target_platform }}
+    - python
+    - pip
+    - setuptools
+    - cython >=3
+    host:
+    - ${{ pin_subpackage('petsc', exact=True) }}
+    - python-dev
+    - numpy
+    - cython >=3
+    - setuptools
+    - pip
+    run:
+    - python
+    - numpy
+
+  tests:
+  - package_contents:
+      site_packages:
+      - petsc4py/__init__.py
+      - petsc4py/PETSc.pyi
+      - petsc4py/lib/petsc.cfg
+      files:
+      - lib/python*/site-packages/petsc4py/lib/PETSc*.so
+      - lib/python*/site-packages/petsc4py/include/petsc4py/petsc4py.h
+  - script: pytester
+    files:
+      recipe:
+      - test_petsc4py.py
+    requirements:
+      build:
+      - pytester
+      run:
+      - pytester-run
+  - script: generic-testing --allow-pthread
+    requirements:
+      build:
+      - generic-testing
+
+  about:
+    homepage: https://petsc.org/
+    repository: https://gitlab.com/petsc/petsc
+    license: BSD-2-Clause
+    license_file: src/binding/petsc4py/LICENSE.rst
+    summary: PETSc for Python
+    description: |
+      petsc4py is a Python binding for PETSc, the Portable, Extensible Toolkit for
+      Scientific Computation. This WebAssembly build follows the serial static PETSc
+      package in the same recipe and links PETSc into the extension module, so no
+      extra libraries are needed at runtime.
+
+about:
+  homepage: https://petsc.org/
+  repository: https://gitlab.com/petsc/petsc
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Portable, Extensible Toolkit for Scientific Computation
+  description: |
+    PETSc is a suite of data structures and routines for the scalable solution of
+    scientific applications modeled by partial differential equations. This recipe
+    produces the serial static WebAssembly PETSc library and the petsc4py bindings.
+  documentation: https://petsc.org/release/
+
+extra:
+  recipe-maintainers:
+  - Copilot
