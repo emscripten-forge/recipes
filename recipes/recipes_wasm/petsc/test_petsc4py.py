@@ -6,6 +6,12 @@ def test_petsc4py_solve():
 
     assert petsc4py.__version__ == "3.26.1"
 
+    # petsc4py/lib/petsc.cfg records the prefix at install time; if conda's
+    # prefix relocation is skipped it keeps the build directory
+    # (output/bld/rattler-build_...), which never exists in a user env.
+    conf = petsc4py.get_config()
+    assert "/output/bld/" not in conf["PETSC_DIR"], conf["PETSC_DIR"]
+
     A = PETSc.Mat().create()
     A.setSizes([3, 3])
     A.setType("dense")
